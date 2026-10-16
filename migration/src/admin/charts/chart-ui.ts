@@ -8,7 +8,8 @@ export type Who = { key: string; name: string; at: string | null; place?: number
 
 /**
  * A tooltip: the value first, then the label, beside the mark it is about. ChartTip draws it in a layer fixed to the window (lib/tip-place.js
- * decides where), clear of `target` and everything in `clear` (the mark's own label), centred across on `centre` (else on `target`).
+ * decides where), clear of `target` and everything in `clear` (the mark's own label), centred across on `centre` (else on `target`), and where
+ * there is room clear of its card's words and buttons (marked data-tip-avoid).
  */
 export type Tip = { id: string; mark: string; value: string; label: string; extra?: string; target: HTMLElement; clear: HTMLElement[]; centre?: HTMLElement | null };
 

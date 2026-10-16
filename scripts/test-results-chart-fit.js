@@ -50,3 +50,49 @@ describe('a tooltip', () => {
     assert.deepEqual(placeTip(TIP, { left: 100, top: 20, right: 200, bottom: 150 }, 150, small), { left: 50, top: 132, below: true });
   });
 });
+
+// Phase 11a-3, item A: on the real site (PCOE, pms-283ad18, 16 Oct 2026) a tooltip lay over the question, the "got it right first time" line and the
+// Show answer / View as table buttons above its mark. `avoid` is those words and buttons: the tooltip keeps clear of them where the window has room,
+// and where it has none it is still whole, inside the window and clear of the mark and its own label, covering as little of them as it can.
+describe('a tooltip and the words of its card', () => {
+  // The card's words over the top bar: the question 100..1436 across and 300..340 down, the "N answered" line 100..700 and the buttons 1200..1436,
+  // both 350..390 down. The top bar's row is 100..1436 across and 400..440 down, and its tooltip is centred on 768.
+  const QUESTION = { left: 100, top: 300, right: 1436, bottom: 340 };
+  const META = { left: 100, top: 350, right: 700, bottom: 390 };
+  const TOOLS = { left: 1200, top: 350, right: 1436, bottom: 390 };
+  const ROW = { left: 100, top: 400, right: 1436, bottom: 440 };
+  const overlaps = (tip, box) => Math.min(tip.left + TIP.width, box.right) > Math.max(tip.left, box.left) && Math.min(tip.top + TIP.height, box.bottom) > Math.max(tip.top, box.top);
+
+  it('with nothing to avoid, is placed exactly as before', () => {
+    assert.deepEqual(placeTip(TIP, ROW, 768, WINDOW, { avoid: [] }), placeTip(TIP, ROW, 768, WINDOW));
+  });
+
+  it('goes under its mark when above it would lie over the question or the "N answered" line', () => {
+    // Above: 400 - 6 - 60 = 334, which lies over the question (to 340) and the line (350..390). Under: 440 + 6 = 446, clear of all three.
+    const at = placeTip(TIP, ROW, 768, WINDOW, { avoid: [QUESTION, META, TOOLS] });
+    assert.deepEqual(at, { left: 668, top: 446, below: true });
+    for (const box of [QUESTION, META, TOOLS, ROW]) assert.equal(overlaps(at, box), false);
+  });
+
+  it('stays above, moved along, when that clears the words and the mark is still under it', () => {
+    // Only the buttons are in the way: a column 1290..1330 across and 420..600 down, centred on 1310. Above: 420 - 66 = 354, from 1210 to 1410, over the
+    // buttons (1200..1436, 350..390). Moved to end 6 short of the buttons: 1200 - 6 - 200 = 994, which ends at 1194 and does not cover 1310 any more.
+    // So the other side: the buttons' right edge 1436 + 6 = 1442, which ends at 1642, outside the window. Above cannot be cleared: under, 606.
+    const column = { left: 1290, top: 420, right: 1330, bottom: 600 };
+    assert.deepEqual(placeTip(TIP, column, 1310, WINDOW, { avoid: [TOOLS] }), { left: 1210, top: 606, below: true });
+    // Buttons that are narrow, 1250..1300: moved to their right, 1306, the tooltip ends at 1506 and still covers 1310: above, clear of them.
+    const narrow = { left: 1250, top: 350, right: 1300, bottom: 390 };
+    assert.deepEqual(placeTip(TIP, column, 1310, WINDOW, { avoid: [narrow] }), { left: 1306, top: 354, below: false });
+  });
+
+  it('where neither side is clear, takes the side that covers less of the words, still whole and clear of its mark', () => {
+    // A window 520 high and a caption under the chart, 503..520. Under the row (446..506) the tooltip lies over the caption by 3 rows of its 200
+    // across: 600 pixels. Above (334..394, 668..868) it lies over the question by 6 rows (1,200) and the line by 40 rows of 32 (1,280); moved to the
+    // line's right (706..906) it is still over the question by 6 rows: 1,200. Under covers least, and is taken.
+    const short = { width: 1536, height: 520 };
+    const caption = { left: 100, top: 503, right: 1436, bottom: 520 };
+    const at = placeTip(TIP, ROW, 768, short, { avoid: [QUESTION, META, TOOLS, caption] });
+    assert.deepEqual(at, { left: 668, top: 446, below: true });
+    assert.equal(overlaps(at, ROW), false);
+  });
+});

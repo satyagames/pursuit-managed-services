@@ -285,6 +285,26 @@ export const tipProblems = (page: Page, markId: string) => page.evaluate((id) =>
     const height = Math.min(rect.bottom, own.bottom) - Math.max(rect.top, own.top);
     if (width > 0.5 && height > 0.5) problems.push(`${id}: the tooltip lies over the mark's own label "${(label.textContent ?? '').trim().slice(0, 30)}"`);
   }
+  // Phase 11a-3: the card's words and buttons (the question, "N answered" and its "got it right first time", Show answer, View as table, a caption).
+  // The tooltip may lie over them only when the window had no room for it clear of them: here, when the place under the mark and its label, centred
+  // as the tooltip is, would have been clear of them and inside the window.
+  const card = mark.closest('.result-card');
+  const words = [...(card?.querySelectorAll<HTMLElement>('.result-card__headline, .result-card__prompt, .result-card__meta, .result-card__tool, .result-card__caption') ?? [])]
+    .map((element) => ({ element, box: element.getBoundingClientRect() }))
+    .filter(({ box }) => box.width > 0 && box.height > 0);
+  const over = (a: { left: number; top: number; right: number; bottom: number }, b: DOMRect) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 0.5 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 0.5;
+  const covered = words.filter(({ box }) => over(rect, box));
+  if (covered.length > 0) {
+    const ownBox = label?.getBoundingClientRect();
+    const markBox = mark.getBoundingClientRect();
+    const bottom = Math.max(markBox.bottom, ownBox?.bottom ?? 0);
+    const middle = (mark.querySelector('.bars__track') ?? mark).getBoundingClientRect();
+    const left = Math.max(8, Math.min(middle.left + middle.width / 2 - rect.width / 2, view.width - 8 - rect.width));
+    const under = { left, top: bottom + 6, right: left + rect.width, bottom: bottom + 6 + rect.height };
+    if (under.bottom <= view.height - 8 && !words.some(({ box }) => over(under, box))) {
+      problems.push(`${id}: the tooltip lies over ${covered.map(({ element }) => `"${(element.textContent ?? '').trim().slice(0, 30)}"`).join(', ')} although there was room under its mark`);
+    }
+  }
   return problems;
 }, markId);
 

@@ -125,16 +125,16 @@
   style:--chart-scale={scale}
   bind:this={card}
 >
-  <p class="result-card__headline">{chart.headline}</p>
-  <svelte:element this={`h${level}`} class="result-card__prompt" id={promptId}>{chart.prompt}</svelte:element>
+  <p class="result-card__headline" data-tip-avoid>{chart.headline}</p>
+  <svelte:element this={`h${level}`} class="result-card__prompt" id={promptId} data-tip-avoid>{chart.prompt}</svelte:element>
   <!-- (The two buttons say what they will do, so they carry no aria-pressed: a toggle changes its words or its pressed state, never both.) -->
   <div class="result-card__bar">
-    <p class="result-card__meta">{chart.answered} answered{marked && chart.gradedLine ? ` · ${chart.gradedLine}` : ''}</p>
+    <p class="result-card__meta" data-tip-avoid>{chart.answered} answered{marked && chart.gradedLine ? ` · ${chart.gradedLine}` : ''}</p>
     <div class="result-card__tools">
       {#if wall && chart.graded}
-        <button type="button" class="result-card__tool" onclick={() => onToggleAnswer?.()}>{marked ? 'Hide answer' : 'Show answer'}</button>
+        <button type="button" class="result-card__tool" data-tip-avoid onclick={() => onToggleAnswer?.()}>{marked ? 'Hide answer' : 'Show answer'}</button>
       {/if}
-      <button type="button" class="result-card__tool" onclick={() => { numbers = !numbers; }}>{numbers ? 'View as chart' : VIEW_NUMBERS}</button>
+      <button type="button" class="result-card__tool" data-tip-avoid onclick={() => { numbers = !numbers; }}>{numbers ? 'View as chart' : VIEW_NUMBERS}</button>
     </div>
   </div>
 
@@ -152,8 +152,8 @@
     {/if}
   </div>
 
-  {#if chart.caption}<p class="result-card__caption">{chart.caption}</p>{/if}
-  {#if chart.removedLine}<p class="result-card__caption">{chart.removedLine}</p>{/if}
+  {#if chart.caption}<p class="result-card__caption" data-tip-avoid>{chart.caption}</p>{/if}
+  {#if chart.removedLine}<p class="result-card__caption" data-tip-avoid>{chart.removedLine}</p>{/if}
   {#if open}
     <NamesPanel id={panelId} label={open.label} who={open.who} ranking={chart.kind === 'ranking'} headingLevel={level + 1} onClose={close} />
   {/if}

@@ -5,7 +5,7 @@
   // The tooltip of a chart's mark: its value first, its label second. Since Phase 11a-2 it is drawn in a layer fixed to the window, so nothing can cut it
   // off: not its card, not its chart, not a box that scrolls (on the real site a confidence question's tooltip was cut in half by its own chart). It sits
   // next to its mark, clear of the mark and of the mark's own label (above them, or under them when there is no room above), moved along so that it stays
-  // inside the window (lib/tip-place.js), and follows its mark when the page scrolls or the window changes size. Everything it says is also in the chart
+  // inside the window (lib/tip-place.js), clear of its card's words and buttons too where there is room (Phase 11a-3), and follows its mark when the page scrolls or the window changes size. Everything it says is also in the chart
   // (the value is written beside each mark) and in the numbers view, so nobody needs to hover to read it.
   let { tip }: { tip: Tip | null } = $props();
 
@@ -17,7 +17,9 @@
     const clear = around([tip.target, ...tip.clear].map((element) => element.getBoundingClientRect()));
     const middle = (tip.centre ?? tip.target).getBoundingClientRect();
     const own = box.getBoundingClientRect();
-    at = placeTip({ width: own.width, height: own.height }, clear, middle.left + middle.width / 2, { width: document.documentElement.clientWidth, height: window.innerHeight });
+    // The card's words and buttons (ResultCard marks them data-tip-avoid): kept clear of where the window has room (Phase 11a-3).
+    const avoid = [...(tip.target.closest('.result-card')?.querySelectorAll<HTMLElement>('[data-tip-avoid]') ?? [])].map((element) => element.getBoundingClientRect());
+    at = placeTip({ width: own.width, height: own.height }, clear, middle.left + middle.width / 2, { width: document.documentElement.clientWidth, height: window.innerHeight }, { avoid });
   }
 
   $effect(() => {
