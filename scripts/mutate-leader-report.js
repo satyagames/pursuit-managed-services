@@ -1,6 +1,9 @@
 // A mutation check of the leader report's counting. Each entry below breaks ONE rule of migration/src/lib/leader-report.js (or, for the
 // rule that names a participant, of lib/participant-names.js, which the report and Admin → Results share) on purpose, in a copy beside it,
 // never the file itself; scripts/test-leader-report.js is then run against the broken copy and MUST fail.
+// Since Phase 11b the list ends with mutations of the drawing and the words of the files on the chart model (the leader report's results,
+// the Live display's one-page PDF and PowerPoint, the figure, the palette, the iPads line): each names its file and the suites that hold it,
+// and the broken copy is swapped in by a resolve hook (scripts/mutation-redirect.mjs) while those suites run.
 // A mutation the tests do not notice ("survived") is a rule nothing is holding, and this script exits 1.
 //
 //   node scripts/mutate-leader-report.js            (npm run test:report:mutations)
@@ -19,7 +22,7 @@ const SOURCE = path.join(LIB, 'leader-report.js');
 const NAMES = path.join(LIB, 'participant-names.js');
 const TESTS = path.join(ROOT, 'scripts', 'test-leader-report.js');
 
-/** [what is broken, the exact text to find (once), what to put in its place] */
+/** [what is broken, the exact text to find (once), what to put in its place, and (Phase 11b) { file, tests } when it is not the counting's] */
 const MUTATIONS = [
   ['A question’s first-try count uses the LAST answer (a Retry would raise it)',
     'const right = given.filter(({ record }) => isRight(question, record.first, record)).length;',
@@ -125,11 +128,78 @@ const MUTATIONS = [
   ['A light client colour is used as it is (a bar that cannot be seen on white)',
     'for (let step = 1; contrastRatio(accent, \'#FFFFFF\') < MIN_GRAPHIC_CONTRAST && step <= 50; step += 1)',
     'for (let step = 1; contrastRatio(accent, \'#FFFFFF\') < 1 && step <= 50; step += 1)'],
+  // Phase 11b: the drawing and the words on the chart model (each with its file and the suites that hold it).
+  ["The leader report's chart counts the LAST answer of a graded question",
+    "answer: graded ? record.first : record.counted }))",
+    "answer: graded ? record.final : record.counted }))",
+    { file: "migration/src/lib/leader-report.js", tests: ["scripts/test-leader-report-charts.js"] }],
+  ["The leader report prints no headline above a chart",
+    "rows.push(...marked(paragraph(chart.headline,",
+    "rows.push(...marked(paragraph('',",
+    { file: "migration/src/lib/leader-report-layout.js", tests: ["scripts/test-leader-report-charts.js"] }],
+  ["The leader report prints no \"N of M got it right first time\"",
+    "if (chart.gradedLine) rows.push(",
+    "if (false) rows.push(",
+    { file: "migration/src/lib/leader-report-layout.js", tests: ["scripts/test-leader-report-charts.js"] }],
+  ["The leader report draws its bars in the client's colour",
+    "chartFigure(chart, { x, width, palette, measure: figureMeasure,",
+    "chartFigure(chart, { x, width, palette: { ...palette, primary: accent, tint: accent, correct: accent }, measure: figureMeasure,",
+    { file: "migration/src/lib/leader-report-layout.js", tests: ["scripts/test-leader-report-charts.js"] }],
+  ["The last page does not say what the Live display's files count",
+    "const notes = [...report.rules, LIVE_FILES_NOTE, ...report.notes,",
+    "const notes = [...report.rules, ...report.notes,",
+    { file: "migration/src/lib/leader-report-layout.js", tests: ["scripts/test-leader-report-charts.js"] }],
+  ["A correct answer is drawn without its tick",
+    "items.push({ kind: 'tick', x: tagX,",
+    "if (false) items.push({ kind: 'tick', x: tagX,",
+    { file: "migration/src/lib/results-chart-figure.js", tests: ["scripts/test-leader-report-charts.js","scripts/test-results-export.js"] }],
+  ["A correct answer's words are not bold",
+    "lh, text, size, palette.text, { bold: row.strong, role: 'label' })",
+    "lh, text, size, palette.text, { bold: false, role: 'label' })",
+    { file: "migration/src/lib/results-chart-figure.js", tests: ["scripts/test-leader-report-charts.js"] }],
+  ["A ranking's places are left out",
+    "if (row.rank) items.push(",
+    "if (false) items.push(",
+    { file: "migration/src/lib/results-chart-figure.js", tests: ["scripts/test-leader-report-charts.js","scripts/test-results-export.js"] }],
+  ["A scale's average is not marked",
+    "items.push({ kind: 'line', x: at, y: plotTop,",
+    "if (false) items.push({ kind: 'line', x: at, y: plotTop,",
+    { file: "migration/src/lib/results-chart-figure.js", tests: ["scripts/test-results-export.js"] }],
+  ["The top choice is drawn in the tint",
+    "tone === 'top' ? palette.primary : palette.tint",
+    "tone === 'top' ? palette.tint : palette.tint",
+    { file: "migration/src/lib/results-palette.js", tests: ["scripts/test-leader-report-charts.js","scripts/test-results-export.js"] }],
+  ["A scale's columns are all one blue",
+    "export function rampFill(palette, tone, tones) {\n",
+    "export function rampFill(palette, tone, tones) {\n  return palette.primary;\n",
+    { file: "migration/src/lib/results-palette.js", tests: ["scripts/test-results-export.js"] }],
+  ["The one-pager counts every visit as an iPad",
+    "iPads: counts.visits,",
+    "iPads: results.tracks.length,",
+    { file: "public/js/resultsExport.js", tests: ["scripts/test-results-export.js"] }],
+  ["The one-pager prints no headline",
+    "lines(chart.headline, CARD.headlineSize,",
+    "lines('', CARD.headlineSize,",
+    { file: "public/js/resultsExport.js", tests: ["scripts/test-results-export.js"] }],
+  ["The one-pager's words take a colour of their own",
+    "const ink = bare(palette.text);",
+    "const ink = '111827';",
+    { file: "public/js/resultsExport.js", tests: ["scripts/test-results-export.js"] }],
+  ["\"1 answer from 1 iPad\" is in the plural",
+    "${visits === 1 ? 'iPad' : 'iPads'}",
+    "${'iPads'}",
+    { file: "migration/src/lib/results-chart-model.js", tests: ["scripts/test-results-export.js","scripts/test-results-chart-model.js"] }],
 ];
 
 const run = (modulePath) => spawnSync(process.execPath, ['--test', TESTS], {
   cwd: ROOT, encoding: 'utf8', env: { ...process.env, ...(modulePath ? { LEADER_REPORT_MODULE: pathToFileURL(modulePath).href } : {}) },
 });
+/** Phase 11b: `tests` run with `original` swapped for `copy` (scripts/mutation-redirect.mjs), or as they are. */
+const runWith = (tests, original, copy) => spawnSync(process.execPath, ['--import', pathToFileURL(path.join(ROOT, 'scripts', 'mutation-redirect.mjs')).href, '--test', ...tests.map((test) => path.join(ROOT, test))], {
+  cwd: ROOT, encoding: 'utf8', env: { ...process.env, ...(copy ? { MUTATE_FROM: pathToFileURL(original).href, MUTATE_TO: pathToFileURL(copy).href } : {}) },
+});
+/** How many tests failed, from the spec reporter or the TAP one (a pipe gets TAP). */
+const failures = (result) => result.stdout.match(/^ℹ fail (\d+)/m)?.[1] ?? result.stdout.match(/^# fail (\d+)/m)?.[1] ?? '?';
 
 const source = await readFile(SOURCE, 'utf8');
 const names = await readFile(NAMES, 'utf8');
@@ -138,11 +208,35 @@ if (control.status !== 0) {
   console.error('The tests do not pass on the real file, so a mutation check would prove nothing.\n', control.stdout.slice(-2000));
   process.exit(1);
 }
+const drawingSuites = [...new Set(MUTATIONS.filter((entry) => entry[3]).flatMap((entry) => entry[3].tests))];
+const drawingControl = runWith(drawingSuites, null, null);
+if (drawingControl.status !== 0) {
+  console.error('The suites that hold the drawing do not pass on the real files, so a mutation check would prove nothing.\n', drawingControl.stdout.slice(-2000));
+  process.exit(1);
+}
 
 const survived = [];
 let number = 0;
-for (const [what, find, replace] of MUTATIONS) {
+for (const [what, find, replace, where] of MUTATIONS) {
   number += 1;
+  if (where) {
+    // Phase 11b: a mutation of another file, held by the suites it names.
+    const original = path.join(ROOT, where.file);
+    const text = await readFile(original, 'utf8');
+    if (text.split(find).length - 1 !== 1) {
+      console.error(`Mutation ${number} no longer applies (its text is in ${where.file} ${text.split(find).length - 1} times, not once): ${what}`);
+      process.exit(1);
+    }
+    const copy = path.join(path.dirname(original), `.${path.basename(original, path.extname(original))}.mutant-${number}${path.extname(original)}`);
+    await writeFile(copy, text.replace(find, replace));
+    let result;
+    try { result = runWith(where.tests, original, copy); } finally { await rm(copy, { force: true }); }
+    const failed = failures(result);
+    const killed = result.status !== 0;
+    if (!killed) survived.push(what);
+    console.log(`${killed ? 'caught  ' : 'SURVIVED'}  ${String(number).padStart(2)}  ${what}${killed ? `  (${failed} test${failed === '1' ? '' : 's'} failed)` : ''}`);
+    continue;
+  }
   const inReport = source.split(find).length - 1;
   const inNames = names.split(find).length - 1;
   if (inReport + inNames !== 1) {
@@ -159,7 +253,7 @@ for (const [what, find, replace] of MUTATIONS) {
   }
   let result;
   try { result = run(mutant); } finally { await rm(mutant, { force: true }); await rm(mutantNames, { force: true }); }
-  const failed = result.stdout.match(/^ℹ fail (\d+)/m)?.[1] ?? '?';
+  const failed = failures(result);
   const killed = result.status !== 0;
   if (!killed) survived.push(what);
   console.log(`${killed ? 'caught  ' : 'SURVIVED'}  ${String(number).padStart(2)}  ${what}${killed ? `  (${failed} test${failed === '1' ? '' : 's'} failed)` : ''}`);
