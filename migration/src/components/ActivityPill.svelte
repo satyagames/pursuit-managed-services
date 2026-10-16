@@ -12,6 +12,8 @@
   const uid = $props.id();
   const captionId = `${uid}-why`;
   const locked = $derived(state === 'locked');
+  // A locked pill's title is white, as its caption and lock are (Phase 11a-3: in --on-disabled it was about 2:1 and could not be read on the real
+  // site); it still reads as locked by its darker fill, the lock and the caption. (Said here: a comment in <style> is kept in the built page.)
 </script>
 
 <!-- A locked pill stays focusable (aria-disabled, not disabled) so a screen reader can find it
@@ -90,6 +92,10 @@
     background: var(--disabled);
     border-color: color-mix(in srgb, var(--on-disabled) 45%, transparent);
     cursor: not-allowed;
+  }
+
+  .activity[data-state='locked'] .label {
+    color: var(--text);
   }
 
   .caption {

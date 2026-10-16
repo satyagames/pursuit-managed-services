@@ -269,3 +269,23 @@ test('the defaults in tokens.css are exactly what deriveTheme gives for the defa
     assert.equal(declared[name], value.toUpperCase(), `${name} in tokens.css drifted from deriveTheme(${DEFAULT_PRIMARY})`);
   }
 });
+
+// Phase 11a-3, item D(3): a locked activity's title was drawn in --on-disabled on --disabled (#4D80D0 on #034CB5, about 2:1), too faint to read on
+// the real site. It is drawn in white, as the pill's caption already is, and white has 4.5:1 on --disabled for every primary.
+test("a locked activity's title is white, and white reads at 4.5:1 on --disabled for every primary", async () => {
+  const pill = await readFile(path.join(import.meta.dirname, '..', 'migration', 'src', 'components', 'ActivityPill.svelte'), 'utf8');
+  const rule = /\.activity\[data-state='locked'\] \.label\s*\{([^}]*)\}/.exec(pill)?.[1] ?? '';
+  assert.match(rule, /color:\s*var\(--text\)/, "ActivityPill draws a locked title in var(--text)");
+  // Hue every 15 degrees at four saturations and six lightnesses, and the fixed cases of the brand tests.
+  const primaries = ['#045BCC', '#E31837', '#0B648F', '#86BC25', '#FFD100', '#F1D6FF', '#111111', '#FAFAFA'];
+  for (let hue = 0; hue < 360; hue += 15) for (const sat of [0.3, 0.6, 0.85, 1]) for (const light of [0.15, 0.3, 0.5, 0.7, 0.85, 0.95]) {
+    const k = (n) => (n + hue / 30) % 12;
+    const a = sat * Math.min(light, 1 - light);
+    const part = (n) => Math.round(255 * (light - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1)))).toString(16).padStart(2, '0');
+    primaries.push(`#${part(0)}${part(8)}${part(4)}`.toUpperCase());
+  }
+  for (const primary of primaries) {
+    const { tokens } = deriveTheme(primary);
+    assert.ok(contrastRatio(WHITE, tokens['--disabled']) >= MIN_TEXT_CONTRAST, `white on --disabled ${tokens['--disabled']} (primary ${primary})`);
+  }
+});
