@@ -2,7 +2,7 @@
 // fonts (lib/report-fonts.js). Output: pages of primitives in millimetres, which lib/leader-report-pdf.js only draws:
 //   { kind: 'text', x, y, w, text, size, bold?, color, align? }   ONE line; y is the baseline; w is the box it must stay inside
 //   { kind: 'rect', x, y, w, h, fill?, stroke?, radius? }
-//   { kind: 'line', x, y, x2, y2, color }
+//   { kind: 'line', x, y, x2, y2, color, width? }                width in mm (0.2 when it is not given)
 //   { kind: 'tick' | 'cross', x, y, size, color }                the mark beside a right or a wrong answer (never colour alone)
 //   { kind: 'image', x, y, w, h, data }                          the client's logo
 //   { kind: 'wordmark', x, y, w }                                the Deloitte wordmark
@@ -12,10 +12,15 @@
 // otherwise breaks between rows (a long comment is one row a line, so it carries on overleaf and is never cut). A row marked
 // `glue` is never the last on a page.
 //
+// Each question's chart in "Results by activity" (Phase 11b) is the Live display's: lib/results-chart-figure.js draws the chart model's bars, split,
+// scale or words in the Results palette (lib/results-palette.js, from styles/results-tokens.css), with its headline and "N of M got it right first
+// time" above it. The client's colour stays in the report's own structure: the title band, the section rules, the tiles and the completion bars.
+//
 // Plain JS with JSDoc and no DOM.
 
-import { NO_ANSWERS, STRAY_TITLE, UNREADABLE_PERSON, answeredLine, scoreLine, wholePercent } from './leader-report.js';
+import { LIVE_FILES_NOTE, NO_ANSWERS, STRAY_TITLE, UNREADABLE_PERSON, answeredLine, scoreLine, wholePercent } from './leader-report.js';
 import { MISSING } from './report-fonts.js';
+import { chartFigure } from './results-chart-figure.js';
 
 /** @typedef {import('./leader-report.js').LeaderReport} LeaderReport */
 /** @typedef {{ kind: string, x: number, y: number, [key: string]: any }} Item */
@@ -48,19 +53,20 @@ const sum = (values) => values.reduce((total, value) => total + value, 0);
 /**
  * @param {LeaderReport} report
  * @param {ReturnType<typeof import('./report-fonts.js').createMeasure>} measure
- * @param {{ logo?: { data: string, width: number, height: number } | null }} [assets]
+ * @param {{ logo?: { data: string, width: number, height: number } | null, palette: import('./results-palette.js').Palette }} assets The palette is the Results palette (lib/results-palette.js).
  * @returns {{ pages: { items: Item[], section: string }[], missing: number }}
  */
-export function layoutLeaderReport(report, measure, { logo = null } = {}) {
+export function layoutLeaderReport(report, measure, { logo = null, palette } = /** @type {any} */ ({})) {
+  if (!palette) throw new Error('layoutLeaderReport needs the Results palette (lib/results-palette.js).');
   const before = measure.stats.missing;
-  let pages = compose(report, measure, logo, false);
+  let pages = compose(report, measure, logo, false, palette);
   const missing = measure.stats.missing - before;
   // Something could not be printed: say so on the cover, which means laying the pages out once more.
-  if (missing > 0) pages = compose(report, measure, logo, true);
+  if (missing > 0) pages = compose(report, measure, logo, true, palette);
   return { pages, missing };
 }
 
-function compose(report, measure, logo, noteMissing) {
+function compose(report, measure, logo, noteMissing, palette) {
   const { accent, ink } = report.brand;
   const joined = report.summary.joined;
 
@@ -122,6 +128,37 @@ function compose(report, measure, logo, noteMissing) {
     { kind: 'rect', x, y, w, h: 3.2, fill: TRACK, radius: 1.2 },
     ...(percent > 0 ? [{ kind: 'rect', x, y, w: Math.max(1.2, Math.min(1, percent / 100) * w), h: 3.2, fill: accent, radius: 1.2 }] : []),
   ];
+
+  /** The measure the chart figure lays its words out with: the embedded fonts', and fit() where a line may be cut. */
+  const figureMeasure = {
+    wrap: (value, width, size, bold, max) => (max ? fit(value, width, size, bold, max) : wrap(value, width, size, bold)),
+    width: (value, size, bold) => measure.width(measure.clean(value), size, bold),
+    lineHeight: leading,
+  };
+
+  /** Rows marked with what they are (a test finds a chart's words by it); the writer draws them as any other. */
+  const marked = (rows, role) => rows.map((box) => ({ ...box, items: box.items.map((item) => ({ ...item, role })) }));
+
+  /**
+   * A question's chart as rows: one for each bar (a chart longer than what is left of a page carries on overleaf between two bars), or one for a
+   * split bar, a scale or the words. A text item's top becomes its baseline, as this file places text.
+   */
+  function figureRows(chart, x, width) {
+    const figure = chartFigure(chart, { x, width, palette, measure: figureMeasure, size: 9, maxLabelLines: 4, comments: 0, plot: 22, points: true });
+    if (figure.items.length === 0) return [];
+    const cuts = [0, ...(figure.breaks?.length ? figure.breaks : [figure.h])];
+    return cuts.slice(0, -1).map((top, index) => {
+      const bottom = cuts[index + 1];
+      const last = index === cuts.length - 2;
+      const inRow = figure.items.filter((item) => item.y >= top - 0.01 && (last || item.y < bottom - 0.01));
+      return row(bottom - top, inRow.map((item) => {
+        const y = item.y - top;
+        if (item.kind === 'text') return { ...item, y: y + baseline(item.size), text: measure.clean(item.text) };
+        if (item.kind === 'line') return { ...item, y, y2: item.y2 - top };
+        return { ...item, y };
+      }));
+    });
+  }
 
   // ---- Pages ------------------------------------------------------------------------------------------------------------------------
 
@@ -291,7 +328,7 @@ function compose(report, measure, logo, noteMissing) {
 
   // ---- 2. Results by activity -------------------------------------------------------------------------------------------------------
 
-  startSection('Results by activity', 'Every question, with how many people chose each answer. For a question with a correct answer the bars count first answers only; the correct answer is in bold with a tick.');
+  startSection('Results by activity', 'Every question, as the Live display shows it, with how many people chose each answer. For a question with a correct answer the bars count first answers only; the correct answer is in bold, with a tick and the word “Correct”.');
   if (report.activities.length === 0) block(paragraph('This session has no activity that is switched on, so there are no results.', { color: MUTED }));
   const indent = LEFT + 10;
   for (const activity of report.activities) {
@@ -313,20 +350,15 @@ function compose(report, measure, logo, noteMissing) {
         ...(index === 0 ? [text(LEFT, 0, 10, `Q${question.number}`, 10.4, { bold: true, color: MUTED })] : []),
         text(indent, 0, WIDTH - 10, line, 10.4, { bold: true }),
       ], true)));
-      rows.push(row(leading(8.2) + 1.4, [text(indent, 0, WIDTH - 10, fit(`${question.kindLabel}. Answered by ${question.respondents} of ${joined}.`, WIDTH - 10, 8.2)[0], 8.2, { color: MUTED })], question.respondents > 0 || question.options.length > 0));
-      const tally = question.ranking
-        ? question.ranking.map((option, index) => ({ label: `${index + 1}. ${option.label}`, percent: option.percent, value: `${option.score} pts`, correct: false }))
-        : question.options.map((option) => ({ label: option.correct ? `${option.label} (correct answer)` : option.label, percent: option.percent, value: `${option.count} · ${wholePercent(option.percent)}`, correct: option.correct }));
-      if (question.kind !== 'ranking' && question.removed > 0) tally.push({ label: 'An answer option that was later removed', percent: (question.removed / Math.max(1, question.respondents)) * 100, value: `${question.removed} · ${wholePercent((question.removed / Math.max(1, question.respondents)) * 100)}`, correct: false });
-      for (const option of tally) {
-        const lines = fit(option.label, 64, 9, option.correct, 4);
-        rows.push(row(Math.max(lines.length * leading(9), 5) + 1, [
-          ...(option.correct ? [{ kind: 'tick', x: indent + 0.4, y: 0.7, size: 3.2, color: INK }] : []),
-          ...lines.map((line, index) => text(indent + 5, index * leading(9), 64, line, 9, { bold: option.correct })),
-          ...barItems(indent + 72, 0.75, 64, option.percent),
-          text(indent + 139, 0, 29, option.value, 9, { bold: true, align: 'right' }),
-        ]));
-      }
+      rows.push(row(leading(8.2) + 1.4, [text(indent, 0, WIDTH - 10, fit(`${question.kindLabel}. Answered by ${question.respondents} of ${joined}.`, WIDTH - 10, 8.2)[0], 8.2, { color: MUTED })], true));
+      // As the Live display's card: the headline, then for a graded question "N of M got it right first time", then the chart (Phase 11b).
+      const { chart } = question;
+      rows.push(...marked(paragraph(chart.headline, { x: indent, size: 9.6, bold: true, color: palette.text, glue: true }), 'headline'));
+      if (chart.gradedLine) rows.push(...marked(paragraph(chart.gradedLine, { x: indent, size: 8.8, bold: true, color: palette.textSecondary, glue: true }), 'graded-line'));
+      rows.push(gap(1.6));
+      rows.push(...figureRows(chart, indent, WIDTH - 10));
+      // A ranking's caption says what its score means. (A multiple choice's is in the notes below, and so are answers to an option that has gone.)
+      if (question.kind === 'ranking' && chart.caption) rows.push(...marked(paragraph(chart.caption, { x: indent, size: 8.2, color: palette.textSecondary }), 'caption'));
       const facts = [];
       if (question.kind === 'text') facts.push([`${plural(question.respondents, 'written answer')}. ${question.respondents > 0 ? 'Each is in “What participants said”, word for word.' : ''}`, false]);
       else if (question.respondents === 0) facts.push(['Nobody answered this question.', false]);
@@ -452,7 +484,7 @@ function compose(report, measure, logo, noteMissing) {
   };
   aboutLine('About this report', { size: 11, bold: true, after: 1.2 });
   aboutLine(`Session: ${[report.meta.clientName, report.meta.eventTitle, report.meta.dateText].filter(Boolean).join(', ')}. ${report.meta.status}.`, { after: 1.6 });
-  const notes = [...report.rules, ...report.notes, ...(noteMissing ? [`A character this report’s font cannot print (an emoji, a script other than Latin) appears as ${MISSING}. The participant CSV holds every answer in full.`] : [])];
+  const notes = [...report.rules, LIVE_FILES_NOTE, ...report.notes, ...(noteMissing ? [`A character this report’s font cannot print (an emoji, a script other than Latin) appears as ${MISSING}. The participant CSV holds every answer in full.`] : [])];
   for (const note of notes) {
     const from = about.length;
     aboutLine(note, { indent: 3.4, after: 0.7 });

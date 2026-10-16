@@ -7,6 +7,7 @@ import { buildLeaderReport } from '../migration/src/lib/leader-report.js';
 import { layoutLeaderReport } from '../migration/src/lib/leader-report-layout.js';
 import { writeLeaderReportPdf } from '../migration/src/lib/leader-report-pdf.js';
 import { createMeasure, loadReportFonts } from '../migration/src/lib/report-fonts.js';
+import { nodePalette } from './results-palette-node.js';
 
 /**
  * The Deloitte wordmark's shapes, read from the component the app already carries (the admin page takes them from the same
@@ -33,7 +34,7 @@ export async function makeReport(records, { generatedAt = '2026-10-12T09:30:00.0
   const report = buildLeaderReport(records, { generatedAt, timeZone });
   const counted = performance.now();
   const measure = createMeasure(fonts);
-  const { pages, missing } = layoutLeaderReport(report, measure, { logo });
+  const { pages, missing } = layoutLeaderReport(report, measure, { logo, palette: nodePalette() });
   const placed = performance.now();
   const bytes = new Uint8Array(await writeLeaderReportPdf({ jsPDF, pages, fonts, wordmark, properties: { title: `${report.meta.clientName} leader report`, creator: 'Pursuit Managed Services' }, onProgress, signal, pause }));
   const written = performance.now();

@@ -52,7 +52,7 @@ const clamp = (value) => Math.max(0, Math.min(1, Number(value) || 0));
  * The chart of one question at (x, 0), `width` wide.
  * @param {any} chart chartOf(question, { names: null })
  * @param {{ x: number, width: number, palette: Palette, measure: Measure, size?: number, maxLabelLines?: number, comments?: number, plot?: number, points?: boolean }} options
- * @returns {{ h: number, items: Item[] }}
+ * @returns {{ h: number, items: Item[], breaks?: number[] }}
  */
 export function chartFigure(chart, { x, width, palette, measure, size = 8.5, maxLabelLines = 2, comments = 0, plot = 18, points = false }) {
   if (chart.kind === 'text') return wordsFigure(chart, { x, width, palette, measure, size, comments });
@@ -78,6 +78,8 @@ function barsFigure(chart, { x, width, palette, measure, size, maxLabelLines, po
   const barWidth = Math.max(10, width - rankWidth - labelWidth - 2 - valueWidth - 2);
   const barHeight = Math.min(3.4, lh * 0.72);
   const items = [];
+  /** Where one row ends and the next begins: a caller that flows a chart over pages may break it there. */
+  const breaks = [];
   let y = 0;
   rows.forEach((row, index) => {
     const labels = measure.wrap(row.label, labelWidth, size, row.strong, maxLabelLines);
@@ -100,12 +102,14 @@ function barsFigure(chart, { x, width, palette, measure, size, maxLabelLines, po
       }
     }
     const barY = y + (lh - barHeight) / 2;
-    items.push({ kind: 'rect', x: barX, y: barY, w: barWidth, h: barHeight, fill: palette.bandShade, role: 'track' });
+    // The gridlines at 0, 50 and 100% (as the screen's), drawn row by row so a chart can carry on overleaf between two rows.
+    for (const at of [0, 0.5, 1]) items.push({ kind: 'line', x: barX + at * barWidth, y, x2: barX + at * barWidth, y2: y + height, color: palette.grid, width: 0.2, role: 'grid' });
     if (row.fraction > 0) items.push({ kind: 'rect', x: barX, y: barY, w: Math.max(0.6, row.fraction * barWidth), h: barHeight, fill: toneFill(palette, /** @type {any} */ (row.tone)), role: 'bar', tone: row.tone, of: row.id });
     items.push(line(barX + barWidth + 2, y, valueWidth, lh, values[index], size, palette.text, { bold: true, align: 'right', role: 'value' }));
     y += height;
+    breaks.push(y);
   });
-  return { h: y, items };
+  return { h: y, items, breaks };
 }
 
 function splitFigure(chart, { x, width, palette, measure, size }) {
@@ -131,7 +135,8 @@ function splitFigure(chart, { x, width, palette, measure, size }) {
   }
   const barY = lh * 2 + (tagged ? tagLh : 0) + 0.8;
   const barHeight = Math.min(4.2, lh * 0.9);
-  items.push({ kind: 'rect', x, y: barY, w: width, h: barHeight, fill: palette.bandShade, role: 'track' });
+  items.push({ kind: 'line', x, y: barY - 0.6, x2: x, y2: barY + barHeight + 0.6, color: palette.grid, width: 0.2, role: 'grid' });
+  items.push({ kind: 'line', x: x + width, y: barY - 0.6, x2: x + width, y2: barY + barHeight + 0.6, color: palette.grid, width: 0.2, role: 'grid' });
   const tone = (side) => (side.isCorrect ? 'correct' : side.isTop ? 'top' : 'rest');
   const leftWidth = clamp(left.share) * width;
   const rightWidth = clamp(right.share) * width;
@@ -139,7 +144,7 @@ function splitFigure(chart, { x, width, palette, measure, size }) {
   // A thin white gap between the two sides, so they are two marks even in greyscale.
   if (rightWidth > 0) items.push({ kind: 'rect', x: x + width - rightWidth, y: barY, w: Math.max(0.6, rightWidth), h: barHeight, fill: toneFill(palette, tone(right)), role: 'bar', tone: tone(right), of: right.id });
   if (leftWidth > 0 && rightWidth > 0) items.push({ kind: 'rect', x: x + leftWidth - 0.3, y: barY, w: 0.6, h: barHeight, fill: palette.surface, role: 'gap' });
-  return { h: barY + barHeight + 1.2, items };
+  return { h: barY + barHeight + 1.4, items };
 }
 
 function scaleFigure(chart, { x, width, palette, measure, size, plot }) {

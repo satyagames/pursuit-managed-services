@@ -113,7 +113,7 @@ export async function writeLeaderReportPdf({ jsPDF, pages, fonts, wordmark = nul
         else doc.rect(item.x, item.y, item.w, item.h, style);
       } else if (item.kind === 'line') {
         doc.setDrawColor(...rgb(item.color));
-        doc.setLineWidth(0.2);
+        doc.setLineWidth(item.width ?? 0.2);
         doc.line(item.x, item.y, item.x2, item.y2);
       } else if (item.kind === 'tick' || item.kind === 'cross') {
         const { x, y, size } = item;

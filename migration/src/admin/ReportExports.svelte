@@ -8,6 +8,7 @@
   import { layoutLeaderReport } from '../lib/leader-report-layout.js';
   import { writeLeaderReportPdf, type Wordmark } from '../lib/leader-report-pdf.js';
   import { createMeasure, loadReportFonts } from '../lib/report-fonts.js';
+  import { RESULTS_PALETTE } from '../lib/results-palette-source.js';
 
   // The two exports for leaders, for one session of the Results screen (Phase 7b): the leader report, a PDF made here in the page
   // from the session's saved answers (nothing is stored anywhere: it is made again each time), and the participant CSV, one row for
@@ -100,7 +101,7 @@
         status = 'Getting the report ready...';
         const [fonts, pdf, logo] = await Promise.all([loadReportFonts(), import('jspdf'), loadLogo(report.brand.logoUrl)]);
         if (signal.aborted) throw cancelled();
-        const { pages } = layoutLeaderReport(report, createMeasure(fonts), { logo });
+        const { pages } = layoutLeaderReport(report, createMeasure(fonts), { logo, palette: RESULTS_PALETTE });
         const bytes = await writeLeaderReportPdf({
           jsPDF: pdf.jsPDF, pages, fonts, wordmark: wordmark(), signal,
           properties: { title: `${report.meta.clientName} leader report`, subject: `${report.meta.eventTitle || 'Session'}, ${report.meta.dateText}`, creator: APP_NAME },

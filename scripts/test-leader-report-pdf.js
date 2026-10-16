@@ -27,6 +27,7 @@ import { svgPath, writeLeaderReportPdf } from '../migration/src/lib/leader-repor
 import { MISSING, binaryString, createMeasure, loadReportFonts } from '../migration/src/lib/report-fonts.js';
 import { BIG, HARBOUR_MOVED, HARBOUR_PEOPLE, bigComment, bigName, bigRecords, harbourContent, harbourRecords, seedSession } from './leader-report-fixtures.js';
 import { makeReport, wordmarkFromComponent } from './leader-report-node.js';
+import { nodePalette } from './results-palette-node.js';
 import { inspectPdf, squash } from './pdf-inspect.js';
 import { STRAYS, UNINDEXED, createSharePointFake } from './sharepoint-fake.js';
 
@@ -362,7 +363,7 @@ describe('the finished PDF, read back with pdf.js', () => {
     const texts = (page) => page.items.filter((item) => item.kind === 'text').map((item) => item.text);
     const make = (count) => ({ ...notEnded.report, summary: { ...notEnded.report.summary, activities: Array.from({ length: count }, (_unused, index) => ({ title: `Activity number ${index + 1} of the day`, off: false, questions: 3, finished: 4, started: 2, notStarted: 1 })) } });
     for (let count = 1; count <= 30; count += 1) {
-      const pages = layoutLeaderReport(make(count), notEnded.measure).pages;
+      const pages = layoutLeaderReport(make(count), notEnded.measure, { palette: nodePalette() }).pages;
       const where = pages.slice(0, 2).map((page) => texts(page).includes(SESSION_NOT_ENDED));
       const madeOn = pages.slice(0, 2).map((page) => texts(page).some((line) => line.startsWith('Made on ')));
       assert.deepEqual(where, madeOn, `${count} activities: the status line is on the page of the Made on line`);
@@ -373,7 +374,7 @@ describe('the finished PDF, read back with pdf.js', () => {
   it('keeps the tiles and completion on page 1, and puts the hardest and easiest at the top of page 2 when they do not fit', () => {
     // Many activities fill the cover: completion has a row for each.
     const make = (count) => ({ ...small.report, summary: { ...small.report.summary, activities: Array.from({ length: count }, (_unused, index) => ({ title: `Activity number ${index + 1} of the day`, off: false, questions: 3, finished: 4, started: 2, notStarted: 1 })) } });
-    const lay = (report) => layoutLeaderReport(report, small.measure).pages;
+    const lay = (report) => layoutLeaderReport(report, small.measure, { palette: nodePalette() }).pages;
     const texts = (page) => page.items.filter((item) => item.kind === 'text').map((item) => item.text);
     const few = lay(make(3));
     assert.ok(texts(few[0]).includes('Hardest and easiest question'), 'three activities: it all fits');
@@ -416,8 +417,10 @@ describe('the finished PDF, read back with pdf.js', () => {
 
   it('marks the correct answer with words in bold (and a tick drawn beside it), not with colour', () => {
     const page = small.read.pages.find((entry) => entry.text.includes('Which year did the harbour open?') && entry.text.includes('Right first time'));
-    const correct = page.items.find((item) => item.text === '1887 (correct answer)');
+    // (Phase 11b: the answer's own words in bold, with a tick and the word "Correct" under them, as the Live display marks it; until then "1887 (correct answer)".)
+    const correct = page.items.find((item) => item.text === '1887');
     assert.equal(correct.font, 'OpenSans-Bold');
+    assert.equal(page.items.find((item) => item.text === 'Correct')?.font, 'OpenSans-Bold');
     assert.equal(page.items.find((item) => item.text === '1901').font, 'OpenSans-Regular');
     for (const phrase of ['3 \u00B7 50%', '2 \u00B7 33%', '1 \u00B7 17%', '0 \u00B7 0%', 'Right first time: 3 of 6 (50%)', 'Most common wrong first answer: 1901 (2 of 6)', 'After a wrong first answer: 1 got it right on the second try, 1 was shown the answer, 1 did not try again.', 'One correct answer. Answered by 6 of 7.']) {
       assert.ok(squash(page.text).includes(squash(phrase)), phrase);
@@ -428,7 +431,8 @@ describe('the finished PDF, read back with pdf.js', () => {
     assert.equal(ticks, 4 + 7);  // the right answer of Q1, Q2, Q3 and Q9 in the results; right first answers on people's pages: José 2, Zoë 1, Łukasz 3, unnamed 2: 1
     assert.equal(crosses, 8);    // wrong first answers: José 2 (Q3, Q9), Zoë 2 (Q1, Q3), Søren 3, unnamed 1: 1
     const text = allText(small.read);
-    for (const phrase of ['Average: 2.5 on a scale of 1 to 3 (4 answers)', '1. Quality', '8 pts', '2. Cost', '6 pts', '3. Speed', '4 pts', 'Average place: Quality 1.3; Cost 2.0; Speed 2.7', 'People could choose more than one answer', 'Switched off when this report was made.']) assert.ok(text.includes(squash(phrase)), phrase);
+    // (Phase 11b: a ranking's bars are its support scores, with the points beside them; until then "1. Quality" and "8 pts".)
+    for (const phrase of ['Average: 2.5 on a scale of 1 to 3 (4 answers)', 'Quality', 'Support 83 \u00B7 8 pts', 'Cost', 'Support 50 \u00B7 6 pts', 'Speed', 'Support 17 \u00B7 4 pts', 'Average place: Quality 1.3; Cost 2.0; Speed 2.7', 'People could choose more than one answer', 'Switched off when this report was made.']) assert.ok(text.includes(squash(phrase)), phrase);
   });
 
   it('prints every comment in full, with its author', () => {

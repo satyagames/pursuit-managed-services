@@ -20,6 +20,7 @@ import { resolveClientTheme } from './client-theme.js';
 import { masterColours } from './legacy-colours.js';
 import { isGraded, isRecordSettled, MAX_WRONG_TRIES } from './pager-logic.js';
 import { nameParticipants, ownerOf } from './participant-names.js';
+import { chartOf } from './results-chart-model.js';
 import { SAMPLE_REPORT_LINE, needsConfirmation } from './sample-notice.js';
 import { unreadableNotice } from './unreadable.js';
 import { compositeOver, contrastRatio, MIN_GRAPHIC_CONTRAST, MIN_TEXT_CONTRAST } from './theme.js';
@@ -55,6 +56,13 @@ export const COUNTING_RULES = Object.freeze([
   'Someone who joined and answered nothing is listed, with “No answers recorded”.',
   'The wording of questions and answers, and which answer is correct, are read when the report is made, not as they stood when people answered.',
 ]);
+
+/**
+ * One plain sentence for the last page (Phase 11b), beside the rules and not one of them: the Live display's one-page PDF and PowerPoint, and its
+ * screen, count "N answers from M iPads" over the iPads that ANSWERED, while this report counts everyone who opened the session, so a reader who
+ * has both is not surprised by two figures.
+ */
+export const LIVE_FILES_NOTE = 'The Live display and its one-page PDF and PowerPoint count only the iPads that answered (“N answers from M iPads”), so their figure can be lower than the participants listed here, who are everyone who opened the session.';
 
 export const NO_ANSWERS = 'No answers recorded';
 /** Under a participant whose saved answers could not be read (Phase 9b): "No answers recorded" would not be true. */
@@ -219,6 +227,36 @@ function questionResults(question, kind, given) {
   return result;
 }
 
+/**
+ * How the Live display shows this question (Phase 11b): the chart model (lib/results-chart-model.js) handed the counts worked out above, so the
+ * report's bars, headline and "N of M got it right first time" are the screen's words over this report's own numbers. A graded question's answer
+ * is the first pick (what the bars count); nobody is named. Nothing here is counted again.
+ */
+function chartOfQuestion(question, counted, given) {
+  const graded = question.kind === 'graded';
+  const points = new Map((counted.ranking ?? []).map((row) => [row.order, row.score]));
+  // An option's value as the chart needs it, and the same from either storage (a list holds it as text, the local server as it was written):
+  // a scale's place is the one this report averages (scaleValues), a true-or-false side says which is true, and nothing else needs one.
+  const places = question.kind === 'scale' ? scaleValues(question) : null;
+  const valueOf = (option) => {
+    if (places) return places.get(option.id);
+    if (question.type === 'true-false') return option.value === true || String(option.value).toLowerCase() === 'true';
+    return undefined;
+  };
+  return chartOf({
+    id: String(question.id),
+    type: question.kind === 'text' ? 'open-text-feedback' : question.type,
+    prompt: words(question.prompt) || 'Untitled question',
+    respondents: counted.respondents,
+    options: question.options.map((option, index) => ({
+      id: option.id, label: words(option.label), value: valueOf(option), correct: graded ? option.correct === true : null, count: counted.options[index].count,
+      ...(question.kind === 'ranking' ? { score: points.get(index) ?? 0 } : {}),
+    })),
+    // (No times: the report prints none of the chart's comments, which keep the order of the people, and a report reads the same whenever it is made.)
+    responses: given.map(({ person, record }) => ({ questionId: String(question.id), clientTrackId: person.key, answer: graded ? record.first : record.counted })),
+  }, { names: null });
+}
+
 /** One person's answer to one question, as their page and the CSV show it. */
 function answerRow(question, kind, record) {
   if (!record) return { answered: false, first: '', final: '', said: '', verdict: null, firstRight: null, finalRight: null, attempts: 0, at: null, open: false };
@@ -340,10 +378,12 @@ export function buildLeaderReport(records, { generatedAt = new Date(), timeZone,
       finished: mine.filter((own) => own?.status === 'finished').length, started: mine.filter((own) => own?.status === 'started').length,
       questions: activity.questions.map((question) => {
         const given = people.flatMap((person) => { const record = held.get(person.key)?.get(String(question.id)); return record ? [{ person: /** @type {any} */ (personOf.get(person.key)), record }] : []; });
+        const counted = questionResults(question, question.kind, given);
         return {
           number: question.number, id: String(question.id), prompt: words(question.prompt) || 'Untitled question', kind: question.kind, kindLabel: question.type === 'true-false' ? `True or false${question.kind === 'graded' ? '' : ' (poll)'}` : KIND_LABEL[question.kind],
-          ...questionResults(question, question.kind, given),
+          ...counted,
           comments: question.kind === 'text' ? given.map(({ person, record }) => ({ name: person.name, text: String(record.counted ?? '') })) : [],
+          chart: chartOfQuestion(question, counted, given),
         };
       }),
     };
