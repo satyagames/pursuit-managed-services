@@ -13,7 +13,7 @@ met the real site.** You asked to leave the heavy testing for one final round; t
 - **Line endings.** This Windows checkout has `core.autocrlf=true`, so the working tree is CRLF. A page built from it differs from VJR's (LF) build only in CR
   characters; commits here are made with `core.autocrlf=input`. A release package built on this machine will therefore not equal one built from LF sources
   byte for byte. Decide before the final build whether to set `core.autocrlf input` (or a `.gitattributes`) for this repository.
-- **What could not run on this machine:** Playwright's browsers are not installed (`npx playwright install`, about 150 MB, not done), so no browser spec ran; and
+- **What could not run on this machine:** Playwright's browsers were not installed at first (Chromium was installed later the same day; WebKit and Firefox are not); and
   under Node 20.13 a `before` hook at the top of a test file does not run before a `describe`'s tests, so `npm run test:bundle` fails here before it builds anything
   (sizes below were measured with `scripts/analyze-bundle.js`'s `analyzePage` directly). The recorded numbers were made with a newer Node; use Node 22 for the gates.
 
@@ -28,6 +28,17 @@ met the real site.** You asked to leave the heavy testing for one final round; t
 | F, the flake | `73f0b1b` | The cause was the page: `lib/page-watch.ts` dropped an `online` event that came while a look was on its way (and that look could have read the track before the test stamped the restart), so the page waited for its next look. Now `online` during a look asks for one more look as soon as it ends (never two at once; a `Retry-After` is still a floor). The test and its timeout are unchanged. | `scripts/test-page-watch.js` drives the real `page-watch.ts` (via Vite's esbuild) with a stand-in window: failed ("a second look follows the first at once"). |
 | G, the 403 | none | Investigated only; section 3. | — |
 | B, C, D(2) greeting | none | **Skipped: VJR's decisions D1 ("Last, First") and D2 (`/wall` header) are not made.** | — |
+
+**Seen in a browser (Chromium only, Playwright 1.64's own build, installed 16 Oct 2026):**
+
+- A: `results-charts-fit.spec.ts` "the admin view: every tooltip …" **passes**; with item A's four source files put back as they were (`79c5d11^`) it **fails** with 12
+  tooltips over the question, "N answered · N of 4 got it right first time" or View as table "although there was room under its mark" (1280x800 and 390x844): the
+  real-site defect, reproduced. In the pictures (`test-results/11a3/A-v1-*.png`, `A-v4-*.png`) the tooltip of v1's top bar now sits under the bar, clear of the card's
+  words; it covers the next rows' bars and figures instead (marks are not on the brief's list of things to keep clear of).
+- E: the new test "eight answers of 90 characters in full screen are never cut off …" **passes**; with `LiveDisplay.svelte` put back as it was (`613c8c5^`) it **fails**:
+  "1920x600, full screen, w1: the card's contents run 142px past its edge". Pictures `test-results/11a3/E-w1-1920x600-before.png` (cut after the fifth answer) and
+  `-after.png` (all eight answers whole).
+- Not run: WebKit and Firefox, the rest of `test:migration`, and the full-screen and wall tests of `results-charts-fit.spec.ts` at all eleven sizes.
 
 New suites are in `npm test`; `test-present-fit.js` is also in `npm run test:charts`, `test-page-watch.js` in `npm run test:polling`. Run here: `check:svelte` (0 errors),
 `test:charts` (52 of 52), `test-theme.js` (15 of 15), `test-polling.js` and `test-page-watch.js` (23 of 23). Nothing else.
