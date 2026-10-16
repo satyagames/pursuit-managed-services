@@ -74,3 +74,23 @@ every gate (the brief's step 2 was skipped at first, as asked); where a gate fai
 ## 5. The package
 
 Made by `npm run package:release` from the commit that carries this report's gates; its name, checksums and the check from a fresh unzip follow.
+
+**`pms-618b8fc`**, made from commit `618b8fc` on 16 Oct 2026 by `npm run package:release` (a fresh checkout of that commit, Node 22, Windows). In
+`build-svelte/package/pms-618b8fc/` and `pms-618b8fc.zip` (git-ignored, never committed). `SHA256SUMS.txt` passes in the folder (7 OK) and in a fresh unzip (7 OK), which
+holds exactly the folder's 8 files; the release proofs pass (no site address, folder name, PIN hash, demo PIN, `p_cec_` or `CreativeExpCOE` in any page; `pms-config.txt` is the
+settings text exactly; no `.json` file).
+
+| File | Bytes | gzip -9 | SHA-256 |
+|---|---:|---:|---|
+| index.html | 372,890 | 156,729 | `f7fbfd67f27fe80da8c81746bcb3f871b09586b82cdd7f309d7c98928df75ef8` |
+| admin.html | 1,523,473 | 554,225 | `ae4ba715136389298bc0edf0e689626eac6136df207d08f240dcb8e0e52add55` |
+| setup.html | 1,172,119 | 788,832 | `0fe96cd979323191fcd6c3a6e2bfbb90611cc12a36fc03c232c4b7e2f6d8abef` |
+| pms-config.txt | 54 | | `04426124f56abad3973d69fb4a8608e673d86745419bf1cc41c5a70441cc607f` |
+| THIRD-PARTY-NOTICES.txt | 40,835 | | `e4ecfa86a85da94926f3f25b9f2b99791c38cc3ea100c5454bb333e620ec1eb4` |
+| RELEASE-NOTES.md | 21,963 | | `9a4d06e73ba6771889c524ed94f2bfeee4d2593e4aa32ea2ceee6ecefa831575` |
+| RUNBOOK.md | 29,559 | | `91d4baa460cdc5dcc4719422e7025169e5af8b7434364f2c8749ff41a6384a46` |
+| **pms-618b8fc.zip** | 1,532,901 | | `be6c15aaa3046a6bd767ead7e35e7ff601fe23c5c7339d2b5d1ada7ec9ef2186` |
+
+The zip is made by Windows' `tar.exe` (bsdtar), the package script's Windows path (`5761a75`, `618b8fc`; the earlier fix `5761a75`'s first try deleted the contents of
+`node_modules` through the worktree's junction, reinstalled from the lock file with `npm ci`; the script now removes the link first). On PCOE: replace `index.html`, `admin.html`
+and `setup.html` in `Shared Documents/PMS`, keep `pms-config.txt`; Setup then shows the build `pms-618b8fc` (RUNBOOK.md, the note for the PCOE site).
