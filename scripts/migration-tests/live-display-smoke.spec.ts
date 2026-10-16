@@ -28,7 +28,7 @@ test('smoke: the Live display shows the tally, goes full screen and leaves it, a
   await openAdmin(page, local);
   await page.getByRole('button', { name: 'Live display' }).click();
   await expect(page.getByRole('heading', { name: 'Live results' })).toBeVisible();
-  await expect(page.locator('.live__meta')).toContainText('3 answers from 1 iPads');
+  await expect(page.locator('.live__meta')).toContainText('3 answers from 1 iPad ');
   await expect(page.locator('.result-card .bars').first()).toBeVisible();
   await expect(page.locator('.words__text')).toContainText(['Lovely day']);
 

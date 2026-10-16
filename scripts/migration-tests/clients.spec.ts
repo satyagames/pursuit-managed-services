@@ -210,7 +210,7 @@ test('Kroger: the mockup. Its palette, its event title, its activities in order,
   await page.getByRole('textbox', { name: 'PIN' }).fill('1234');
   await page.getByRole('button', { name: 'Unlock' }).click();
   await expect(page.getByRole('heading', { name: 'Live results' })).toBeVisible();
-  await expect(page.getByText(/6 answers from 1 iPads/)).toBeVisible();
+  await expect(page.getByText(/6 answers from 1 iPad\b/)).toBeVisible();
 });
 
 test("Domino's: its own colours, title and two activities, with the name in type where a logo would be", async ({ page }) => {

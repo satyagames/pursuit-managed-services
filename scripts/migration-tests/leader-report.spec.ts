@@ -55,7 +55,7 @@ test('both buttons download: the leader report as a PDF with embedded fonts and 
   for (const phrase of [
     'LEADER REPORT', 'Harbour & Søn', 'Harbour Discovery Day', 'About this report', 'How the numbers are counted',
     'José Álvarez', 'Zoë Brontë', 'Søren Kjær', 'Łukasz Żółć', 'José Álvarez (2)', 'Unnamed participant 1', 'Unnamed participant 2', 'Ada Łęcka',
-    'Right first time: 3 of 6 (50%)', 'Most common wrong first answer: 1901 (2 of 6)', '1887 (correct answer)', 'Average: 2.5 on a scale of 1 to 3',
+    'Right first time: 3 of 6 (50%)', 'Most common wrong first answer: 1901 (2 of 6)', 'The top choice (50%) was 1887.', '3 of 6 got it right first time.', 'Correct', 'Average: 2.5 on a scale of 1 to 3',
     'Søren says: more time for questions, please. And coffee.', '=SUM(A1:A9) "quoted", with a comma', 'Great day — thank you!',
     'No answers recorded.', 'Restarted by the facilitator at', 'Questions no longer in the activity', 'It was fine',
   ]) expect(text, phrase).toContain(squash(phrase));
