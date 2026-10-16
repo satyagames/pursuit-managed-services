@@ -20,6 +20,7 @@ was run on this machine, before (`3a8b32b`) and after; what could not run here i
 | Item | Commit | What changed | Test first (failed on the old code) |
 |---|---|---|---|
 | A, tooltip | `79c5d11` | `placeTip()` (`lib/tip-place.js`) takes `avoid`: the card's words and buttons (`data-tip-avoid` in `ResultCard`: headline, question, "N answered" line, Show answer, View as table, captions). Above, or above moved along while it still spans its mark, then under, or under moved along; where neither side is clear, the place that covers the fewest of their pixels. Always whole, inside the window, clear of the mark and its own label. | 4 tests in `scripts/test-results-chart-fit.js` (3 failed). In Chromium, `results-charts-fit.spec.ts` "the admin view …" passes, and with A's four files put back it fails with 12 tooltips over the question, "N answered · N of 4 got it right first time" or View as table "although there was room under its mark": the real-site defect. Pictures `test-results/11a3/A-*`. |
+| A2, tooltip over other bars' figures | `d12af50` | **Seen on PCOE with pms-618b8fc** (16 Oct 2026, Satyadev's photographs): in full screen a ranking's last bar ("Reduce cost") could not put its tooltip under it (the caption is there) and put it above, over the figures of the two bars above it. `placeTip` now also takes `soft` (the other marks' figures and label text, `data-tip-soft`), kept clear of after the card's words, and `span` (the mark's track), along which it may move. | 4 tests in `scripts/test-results-chart-fit.js` on the photograph's layout (2 failed). A spec points at every bar of VJR's ranking in full screen at 1536x864 and 1920x1080: on the old code "bar 5: the tooltip lies over 56, 31" (the photograph) and eight more; now none. Pictures `test-results/11a3/rank-*`. |
 | B, name order | none | **No change, by VJR's decision D1 (16 Oct 2026):** names stay "Last, First" as the directory gives them, in Results, the charts, the report, the CSV and the greeting. | — |
 | C, `/wall` header | none | **No change, by VJR's decision D2 (16 Oct 2026):** the wall page keeps the admin header, tabs, Lock and Export; Full screen is the projector view. | — |
 | D(1), heroes | `b31c7fc` | **Not a code fault.** VJR's hero sources are JPEGs (no alpha), so the stored heroes are opaque squares; Brand Studio keeps a hero's transparency. `build:sample-pictures` takes `<client>-<slot>.png` when it is there. On PCOE a transparent PNG uploaded in Brand Studio fixes a hero with no new build. | None (tooling; the six pictures did not change). |
@@ -95,3 +96,28 @@ The zip is made by Windows' `tar.exe` (bsdtar), the package script's Windows pat
 through the worktree's junction; they were reinstalled from the lock file with `npm ci` (and the rolldown binary npm skipped, `--no-save`), the gates rerun (`npm test` 1,238 of
 1,238, `check:svelte` 0 errors), and since `91d07fe` the script removes the link first. On PCOE: replace `index.html`, `admin.html`
 and `setup.html` in `Shared Documents/PMS`, keep `pms-config.txt`; Setup then shows the build `pms-618b8fc` (RUNBOOK.md, the note for the PCOE site).
+
+
+## 6. Seen on PCOE with pms-618b8fc (16 Oct 2026, photographed by Satyadev), and the package after it
+
+**Passed:** Setup shows `pms-618b8fc (built in)` and "The lists are the version this app needs."; a single choice's tooltip sits under its bar, clear of the question,
+"4 answered · 0 of 4 got it right first time" and View as table, on the admin view, in full screen and on the iPad (QA item 161); Show answer and Hide answer; View as table and
+back; "Who picked" with "Satyadev, Vedala Venkata" and "(2)" (VJR's D1); the wall page keeps the admin header and has no Names switch (D2); "34 answers from 4 iPads"; with the
+laptop's Wi-Fi off the Live display keeps its charts and says "Connection lost. Retrying…", and comes back when it is on. **Found:** the ranking's tooltip over other bars'
+figures (A2 above). **Not yet seen:** a locked activity on the iPad hub (164), Wi-Fi off and on during a restart on a participant iPad (166), eight long answers on a projector (165).
+
+**`pms-70ad955`**, made from commit `70ad955` by `npm run package:release` (a fresh checkout, Node 22, Windows): `SHA256SUMS.txt` passes in the folder (7 OK) and in a fresh
+unzip (7 OK), which holds exactly the folder's 8 files; the release proofs pass. Gates for A2: `npm test` 1,242 of 1,242; the charts, Live display and participant specs 145
+passed in Chromium and WebKit (1 skipped); `check:svelte` 0 errors; `test:bundle` 35 of 35 (participant 156,729 B, unchanged; admin 554,264 B, +277 B in 11a-3). Its
+`index.html` is byte for byte `pms-618b8fc`'s.
+
+| File | Bytes | gzip -9 | SHA-256 |
+|---|---:|---:|---|
+| index.html | 372,890 | 156,729 | `f7fbfd67f27fe80da8c81746bcb3f871b09586b82cdd7f309d7c98928df75ef8` |
+| admin.html | 1,523,825 | 554,264 | `5577d957f3212e43ad6285b21e4c265025512f821cd925a90332e96f0ee5d372` |
+| setup.html | 1,172,119 | 788,832 | `57f6e5a9e338f69c6680d2443a0c27877aeee6d12256c0a94568e5faa690ee8b` |
+| pms-config.txt | 54 | | `04426124f56abad3973d69fb4a8608e673d86745419bf1cc41c5a70441cc607f` |
+| THIRD-PARTY-NOTICES.txt | 40,835 | | `e4ecfa86a85da94926f3f25b9f2b99791c38cc3ea100c5454bb333e620ec1eb4` |
+| RELEASE-NOTES.md | 22,150 | | `2ade67e55f1171cea1ea678129d72a8a9ee3fb043f9d7abaf4f0cd1f311082f5` |
+| RUNBOOK.md | 29,662 | | `0f48a39982b2064d1506f647e653f4a2cbea54736b4fba56ad1a63fdd23dbe7a` |
+| **pms-70ad955.zip** | 1,533,064 | | `35c981b7102cee7b42b9ba1c62ba505db5d0234b894bdc1f57fb06c55547f4b2` |
