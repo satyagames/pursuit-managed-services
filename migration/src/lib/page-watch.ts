@@ -9,7 +9,9 @@ import { POLL, nextDelay, type PollMode } from './poll-schedule.js';
  *   - The wait depends on what is on screen (`mode`) and on what the last check cost.
  *   - A failed check backs off, and a 429 or 503's Retry-After is a floor for the wait.
  *   - Never two checks at once, and a tab that comes back is not looked at again within POLL.minGapMs of the last look (the network
- *     coming back is: that look is the one the page needs).
+ *     coming back is: that look is the one the page needs). The network coming back while a look is on its way asks for one more look as soon
+ *     as that one ends (Phase 11a-3: the look on its way may have read what was there before, and dropping the request left the page a whole
+ *     wait behind; participant.spec.ts:91 failed now and then for it).
  */
 export type PageWatcher = {
   /** Begin: the first check is one wait from now (the page has just read everything). */
@@ -42,6 +44,8 @@ export function createPageWatcher({ check, mode = () => 'idle', enabled = () => 
   let lastRequests = 1;
   let failures = 0;
   let retryAfterMs = 0;
+  /** The network came back while a look was on its way: look again as soon as it ends. */
+  let lookAgain = false;
 
   const clear = () => { window.clearTimeout(timer); timer = undefined; };
   const delay = () => (wait ? wait({ requests: lastRequests, failures, retryAfterMs, local }) : nextDelay({ mode: mode(), local, requests: lastRequests, failures, retryAfterMs, random }));
@@ -69,7 +73,9 @@ export function createPageWatcher({ check, mode = () => 'idle', enabled = () => 
       } finally {
         running = null;
         lastEnd = now();
-        schedule();
+        const again = lookAgain;
+        lookAgain = false;
+        schedule(again && retryAfterMs === 0 ? 0 : delay()); // (a Retry-After is still a floor)
       }
     })();
     return running;
@@ -88,8 +94,14 @@ export function createPageWatcher({ check, mode = () => 'idle', enabled = () => 
     if (document.hidden) clear();
     else if (started) void checkSoon();
   };
-  // The network came back: look at once (it is the moment the page most needs to), without waiting out the gap.
-  const onOnline = () => { if (started && !running) { clear(); void run(); } };
+  // The network came back: look at once (it is the moment the page most needs to), without waiting out the gap; while a look is on its way, as
+  // soon as it ends.
+  const onOnline = () => {
+    if (!started) return;
+    if (running) { lookAgain = true; return; }
+    clear();
+    void run();
+  };
 
   return {
     start() {
@@ -102,6 +114,7 @@ export function createPageWatcher({ check, mode = () => 'idle', enabled = () => 
     },
     stop() {
       started = false;
+      lookAgain = false;
       clear();
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('online', onOnline);
