@@ -1187,7 +1187,7 @@ WebKit and Firefox at nine sizes and at a Windows laptop's scaling (1536x864 at 
 160. **"N answers from M iPads" counts the iPads that answered.** *(Still to see.)* Kroger's session of 16 Oct (five visits, which answered 9, 8, 0, 8 and 9 times): the
     Live display's header and its Results card's "Live results" both say "34 answers from 4 iPads" (they said 5). On a session that is live, begin a visit on an iPad and
     answer nothing: the count of iPads does not change on the next refresh, and goes up by one once that iPad has answered. (VJR's choice of 16 Oct 2026: the Live
-    display's one-page PDF and PowerPoint still print every visit, "from 5 iPads", until Phase 11b redesigns them.)
+    display's one-page PDF and PowerPoint still printed every visit, "from 5 iPads", until Phase 11b: item 167.)
 
 ### Phase 11a-3 (the polish batch after the 11a-2 real-site checks): not verified on the real site, an iPad, the laptop or a projector
 
@@ -1212,6 +1212,29 @@ were not installed on the machine the work was done on (see RELEASE-11A3.md).
     1,550 px wide or more stopped making the type smaller before it reached its smallest, and cut the card. Whether that is what was seen on the real site is not known.)
 166. **The network coming back during a look.** *(Still to see.)* On an iPad with a question open, turn Wi-Fi off, have the facilitator restart that activity, and turn
     Wi-Fi on. **Expect** the restart notice and the activity's first question within a few seconds, not a minute later.
+
+### Phase 11b (the leader report and the Live display's one-page PDF and PowerPoint on the chart model and palette): not verified on the real site, in PowerPoint or on paper
+
+Everything below was made in node with the same model, layout and writers the admin page uses, read back with pdf.js (the PDFs) and from the slides' XML (the PowerPoint),
+rendered with pdf.js in Playwright's Chromium, and the one-page PowerPoint was exported to a picture by PowerPoint on Satyadev's Windows machine. None of it has been opened from
+the real site, printed, or saved by a browser on the admin page (see RELEASE-11B.md).
+
+167. **The Live display's Export PDF and Export PPT.** *(Still to see.)* Kroger's session of 16 Oct, Admin → Results → **Live display** → **Export PDF** and **Export PPT**.
+    **Expect** the header of both to say "34 answers from 4 iPads" (the iPads that answered, as the Live display's own header; until 11b, "from 5 iPads"); each question drawn
+    as on the screen, with its sentence above it, "N of M got it right first time" for a quiz question, a correct answer in dark green with a tick and the word "Correct", the
+    top choice in blue with "Top choice", a ranking's places and support scores, a confidence scale's columns with its average; **no participant's name anywhere** in either
+    file. Open the .pptx in PowerPoint (not a viewer): every shape and line where the PDF has it, the ticks drawn, nothing outside the slide. In the PDF, words in other scripts
+    and emoji are left out (the PDF's Helvetica cannot draw them; the PowerPoint keeps them): a comment written only in Japanese shows as empty quotation marks.
+168. **The leader report on the chart model.** *(Still to see.)* Results → **Leader report (PDF)** for Kroger and for Domino's, opened in Edge and in Acrobat. **Expect** the cover
+    as it was (the logo, the title band in the client's colour, the tiles, completion, hardest and easiest); under "Results by activity" each question's sentence and "N of M
+    got it right first time" above its bars, the bars in Deloitte's colours (the client's colour only in the title band, the rules and the completion bars), the correct answer
+    in bold with a tick and "Correct", the ranking's places with "Support N · N pts", the confidence scale's columns and average; the comments with their names; and on the last
+    page the eight counting rules, then the sentence "The Live display and its one-page PDF and PowerPoint count only the iPads that answered ...".
+169. **The leader report in black and white.** *(Still to see.)* Print one leader report (and one Export PDF) on a black-and-white printer. **Expect** every chart to read by its
+    words: the correct answer's tick and "Correct", "Top choice", each bar's count and share written beside it, a ranking's places, the scale's average. (The tint of the other
+    bars is 2.4:1 on white, as on the screen: its value is always written beside it.)
+170. **A session with one iPad.** *(Still to see.)* A session where one iPad answered one question. **Expect** "1 answer from 1 iPad" on the Live display's header, on its Results
+    card and in the header of Export PDF and Export PPT (it said "1 answers from 1 iPads").
 
 ### Phase 8 (browsers, devices, accessibility, performance, the unsupported-browser page): not verified on a real device, a real screen reader, or the real SharePoint site
 

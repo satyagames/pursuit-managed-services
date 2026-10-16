@@ -14,7 +14,7 @@ this repository changes them. What went, what moved and what could not go yet is
 (`Operate_Experience_Prototype_Mockup.pdf`) and every phase report (`ARCHITECTURE-10.md`, `PMS-IMPLEMENTATION-PLAN.md`, `REVIEW-9A.md`,
 `CLEAN-BREAK-10C1.md`, `DROPS-10C2A.md`, `SCHEMA-10C2B.md`, `PROVISION-10C3.md` and the rest). Nothing reads them to build, test or ship.
 Each is in git history at `7347c72`: `git show 7347c72:Design-Docs/references/<name>`. A mention of one here or in a comment says so.
-The report of Phase 10f is [RELEASE-10F.md](RELEASE-10F.md), at the root; Phase 10g's is [RELEASE-10G.md](RELEASE-10G.md), Phase 10h's [RELEASE-10H.md](RELEASE-10H.md), Phase 10i's [RELEASE-10I.md](RELEASE-10I.md), Phase 10j's [RELEASE-10J.md](RELEASE-10J.md), Phase 11a's [RELEASE-11A.md](RELEASE-11A.md), Phase 11a-2's [RELEASE-11A2.md](RELEASE-11A2.md) and Phase 11a-3's [RELEASE-11A3.md](RELEASE-11A3.md).
+The report of Phase 10f is [RELEASE-10F.md](RELEASE-10F.md), at the root; Phase 10g's is [RELEASE-10G.md](RELEASE-10G.md), Phase 10h's [RELEASE-10H.md](RELEASE-10H.md), Phase 10i's [RELEASE-10I.md](RELEASE-10I.md), Phase 10j's [RELEASE-10J.md](RELEASE-10J.md), Phase 11a's [RELEASE-11A.md](RELEASE-11A.md), Phase 11a-2's [RELEASE-11A2.md](RELEASE-11A2.md), Phase 11a-3's [RELEASE-11A3.md](RELEASE-11A3.md) and Phase 11b's [RELEASE-11B.md](RELEASE-11B.md).
 
 Read `ARCHITECTURE-10.md` (in git history at `7347c72`) for the architecture.
 [ARCHITECTURE.md](ARCHITECTURE.md) describes the legacy app; its entity model and the local API (sections on
@@ -217,6 +217,12 @@ from Phase 11a-2"). The pages of Phase 11a-2, everything after those steps, and 
   Phase 11a-2 added [scripts/test-results-chart-fit.js](scripts/test-results-chart-fit.js) (where a tooltip goes; part of `npm test` and `npm run test:charts`) and
   `results-charts-fit.spec.ts` (nothing scrolls or is cut inside a card, every tooltip whole and clear of its label, the chart fills its card, the spill, cards that keep
   their own height, a refresh that leaves full screen as it was: nine sizes and two scalings, full screen and the wall page, three engines; pictures `test-results/charts/fit-*.png`).
+- **Phase 11b's suites** (both part of `npm test` and `npm run test:report`; neither is a recorded suite): [scripts/test-results-export.js](scripts/test-results-export.js) (the Live
+  display's one-page PDF and PowerPoint, written in node with jsPDF and PptxGenJS and read back: the iPads line, every chart's words, no names, the layout's colours and order,
+  contrast, nothing outside its box by Helvetica's own widths) and [scripts/test-leader-report-charts.js](scripts/test-leader-report-charts.js) (the leader report's results on the
+  chart model and the palette, worked by hand from Harbour, the last page's sentence, contrast on every page). Their fixtures are
+  [scripts/results-export-fixtures.js](scripts/results-export-fixtures.js); the palette in node is `scripts/results-palette-node.js`; the contrast of a laid-out page is
+  `scripts/print-contrast.js`. `npm run test:report:mutations` has 49 mutations since 11b, 15 of them of the drawing and the words (`scripts/mutation-redirect.mjs`).
 - No linter/formatter is configured, and the shared code left in `public/` has no tsconfig — match the
   existing style by hand. (The Svelte app has `migration/tsconfig.json`.)
 
@@ -728,7 +734,7 @@ not by editing them, so that what the tests measure stays where it is.
   - **Drawn, not rendered.** Rectangles, lines, text, the client's logo as a picture, and two things that are paths: the tick and cross
     beside an answer, and the Deloitte wordmark, whose shapes are read from the mounted `DeloitteWordmark` component (the white letters
     drawn black for a white page, the dot green). Never `doc.html()`, `addSvgAsImage` or html2canvas (the admin build stubs them; a test
-    fails), and never a file from `public/assets/Logos`. The client's colour is an accent only (the title band, bars, rules):
+    fails), and never a file from `public/assets/Logos`. The client's colour is an accent only (the title band, the completion bars, rules; since Phase 11b a question's bars are the Results palette's, see "Rules from Phase 11b"):
     `printColours()` darkens it until it has 3:1 on white and puts white or near-black words on it at 4.5:1. Right and wrong are a mark
     and words, never colour alone, so the page prints in greyscale. A logo drawn for the dark plate keeps a dark plate; a client with no
     logo has its name in type and nothing drawn in a logo's place.
@@ -1350,7 +1356,44 @@ The report is [RELEASE-11A3.md](RELEASE-11A3.md). **These pages have not run on 
   `describe`'s tests); `node_modules` copied from a Mac lacks `@napi-rs/canvas-win32-x64-msvc`, which pdf.js needs (`npm install --no-save` at the lock file's version); set
   `core.autocrlf input`, or the pages built differ from an LF build; WebKit's sound specs and three others fail there before and after 11a-3 alike, and Firefox may be refused by Windows
   (`spawn UNKNOWN`). `test-named-reads.js` compares paths with `/` on every system.
-- **The release documents** name the branch `pms-11a3` (`BRANCH` in `scripts/release-docs.js`) and say what changed since pms-283ad18, newest first.
+- **The release documents** name the branch `pms-11a3` (`BRANCH` in `scripts/release-docs.js`) and say what changed since pms-283ad18, newest first. (Since Phase 11b: `pms-11b`, since pms-e2fbfb6.)
+
+## Rules from Phase 11b (the leader report and the Live display's one-page PDF and PowerPoint on the chart model and palette; keep them holding)
+
+Phase 11a-2 left the Live display's one-page PDF and PowerPoint counting every visit as an iPad (Kroger: "34 answers from 5 iPads" where the screen said 4) and drawing plain bars,
+and the leader report's results in its own words and the client's colour. This phase put the three files on the screen's chart model and palette and changed nothing else: not the
+lists, Setup, what is counted or stored, the CSV files, a request (the baselines did not move) or the participant page (byte for byte). The report is [RELEASE-11B.md](RELEASE-11B.md).
+**None of it has been saved from the real site, opened in PowerPoint from there, or printed**: QA-TESTING.md items 167 to 170.
+
+- **The one-pager is the Live display's chart, on paper** (`public/js/resultsExport.js`): `buildReport` takes `chartOf(question, { names: null })` for each live question and
+  `answerCounts` over them; the card is the headline, the question, "N answered", "N of M got it right first time" and the chart. **No name is in either file**: the model is made
+  with no names. The PDF and the PowerPoint are still ONE layout of primitives (`rect`, `line`, `tick`, `text`, `image`), and still aim for one page with two or three cards
+  across. The writers take their library (`pdfBytes(pages, report, { jsPDF })`, `pptxFile(pages, report, { PptxGenJS })`) so a node test writes and reads both files.
+- **"N answers from M iPads" is `answersFrom(answerCounts(...))`, singular for one** ("1 answer from 1 iPad"), on the screen and in the files: the iPads that answered. The leader
+  report counts everyone who opened the session, on purpose, and its last page says so (`LIVE_FILES_NOTE` in `lib/leader-report.js`, after the rules and not one of them).
+- **A chart on paper is `lib/results-chart-figure.js`** (`chartFigure`), shared by the one-pager and the leader report: it draws what the screen's charts draw (bars on white with
+  gridlines at 0, 50 and 100%, the screen's order, the correct answer Dark Green with a tick and "Correct" in bold, the top choice blue with "Top choice", the rest the tint; a
+  true-or-false split; a scale's columns against the tallest, every other band shaded, its average as a line; a ranking's places and support scores; the words that came up most) as
+  neutral items each caller turns into its own (a text item is one line, `y` the top of its box). It counts nothing. A bar chart reports `breaks`, so the report can carry a long
+  chart overleaf between two bars. Items carry a `role` (`bar`, `label`, `value`, `tag`, `rank`, `average` ...) that the tests read and the writers ignore.
+- **Every colour of a chart on paper is read from `styles/results-tokens.css`** (`lib/results-palette.js` `readPalette` parses the file's text; the admin page imports it with
+  `?raw` in `lib/results-palette-source.ts`, node reads it from disk in `scripts/results-palette-node.js`). A missing token is refused by name. `layoutReport` and
+  `layoutLeaderReport` refuse to lay out without the palette. The client's colours stay in the one-pager's header and the report's structure (title band, rules, tiles, completion
+  bars); D3 (the blues) is still VJR's to decide, and changing them is that one file.
+- **The leader report's "Results by activity"** prints each question's `chart.headline` and `chart.gradedLine` (`chartOfQuestion` in `lib/leader-report.js`: the chart model
+  over the report's OWN counts, a graded question's first pick, no times and no names, so a report reads the same from either storage) and draws it with the figure. Every
+  figure it printed before is still printed (the facts under each question, the bars' counts and shares, the points and average places); `COUNTING_RULES` are as they were and
+  the oracle finds 0 differences. A ranking's bar value is "Support N · N pts". The correct answer's words are bold with a tick and "Correct" (it was "1887 (correct answer)").
+- **Print**: `scripts/print-contrast.js` holds every word of a laid-out page to 4.5:1 against the fill under it and every meaningful mark to 3:1; a tint bar and a scale's light
+  steps (the palette's 2:1, as on the screen) are listed with their ratios and must have their value written beside them. Nothing relies on colour alone: a test finds the tick and
+  "Correct" beside every correct bar. The one-pager's header words are whichever of white and near-black reads better on the client's colour (a fixed threshold gave 3.7:1).
+- **Mutations** (`npm run test:report:mutations`, 49): a mutation of a file other than `leader-report.js` names its file and the suites that hold it, and the broken copy is swapped
+  in by a resolve hook (`scripts/mutation-redirect.mjs`), never written over the file. Add one when you add a rule of drawing or wording.
+- **`PHASE_11B`** (`scripts/bundle-budget.js`): the participant page byte for byte (`participantSha256`, `f7fbfd67…`) and its Tailwind rules 11a's; the admin page at most
+  12,000 B over 554,263 B. The next phase starts from `participantAfter`/`adminAfter`.
+- **The PDF of the one-pager is Helvetica**: words in other scripts and emoji are left out of it (`pdfSafe`), as they always were; the PowerPoint keeps them. A comment written only in
+  another script shows as empty quotation marks there. Known, and left (RELEASE-11B.md).
+- **The release documents** name the branch `pms-11b` and say what changed since pms-e2fbfb6; RUNBOOK.md's note for the PCOE site has a ninth step, the files (QA items 167 to 170).
 
 ## Before finishing a change
 
@@ -1388,6 +1431,9 @@ The report is [RELEASE-11A3.md](RELEASE-11A3.md). **These pages have not run on 
   `npm run test:brand` and `npm run test:migration`, and look at the screenshots `brand-*.png` in `test-results/admin/`.
 - If you touched the leader report, its fonts or the participant CSV: run `npm run test:report`, `npm run test:report:mutations`,
   `npm run test:bundle` and `npm run test:migration`, and look at the pictures in `test-results/report/`.
+- If you touched `public/js/resultsExport.js`, `lib/results-chart-figure.js`, `lib/results-palette*.{js,ts}` or the report's results section: run `npm run test:report` (it holds the
+  one-pager and the report's charts), `npm run test:report:mutations`, `npm run test:charts`, `npm run oracle -- --seeds 500` and `npm run test:bundle`, and LOOK at the pages
+  (`.local/look/` scripts are git-ignored scratch; `scripts/render-pdf-pages.js` renders any PDF), in greyscale too (see "Rules from Phase 11b").
 - If you touched any markup or CSS a person sees, a focus rule, a heading, a colour or a screen change in `migration/`: run `npm run test:a11y` (axe must find
   nothing: fix it, do not waive it) and `npm run test:devices`, and look at `test-results/a11y/reflow/` and `test-results/devices/`. If you touched an HTML shell,
   `src/unsupported/`, an entry's imports or the Vite configs: run `npm run test:unsupported`, `npm run test:bundle` and look at `test-results/unsupported/`.
