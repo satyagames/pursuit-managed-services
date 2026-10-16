@@ -91,6 +91,7 @@ settings text exactly; no `.json` file).
 | RUNBOOK.md | 29,559 | | `91d4baa460cdc5dcc4719422e7025169e5af8b7434364f2c8749ff41a6384a46` |
 | **pms-618b8fc.zip** | 1,532,901 | | `be6c15aaa3046a6bd767ead7e35e7ff601fe23c5c7339d2b5d1ada7ec9ef2186` |
 
-The zip is made by Windows' `tar.exe` (bsdtar), the package script's Windows path (`5761a75`, `618b8fc`; the earlier fix `5761a75`'s first try deleted the contents of
-`node_modules` through the worktree's junction, reinstalled from the lock file with `npm ci`; the script now removes the link first). On PCOE: replace `index.html`, `admin.html`
+The zip is made by Windows' `tar.exe` (bsdtar), the package script's Windows path (`5761a75`, `91d07fe`, `618b8fc`). Its first try, at `5761a75`, deleted the contents of `node_modules`
+through the worktree's junction; they were reinstalled from the lock file with `npm ci` (and the rolldown binary npm skipped, `--no-save`), the gates rerun (`npm test` 1,238 of
+1,238, `check:svelte` 0 errors), and since `91d07fe` the script removes the link first. On PCOE: replace `index.html`, `admin.html`
 and `setup.html` in `Shared Documents/PMS`, keep `pms-config.txt`; Setup then shows the build `pms-618b8fc` (RUNBOOK.md, the note for the PCOE site).
