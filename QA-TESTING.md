@@ -1189,6 +1189,30 @@ WebKit and Firefox at nine sizes and at a Windows laptop's scaling (1536x864 at 
     answer nothing: the count of iPads does not change on the next refresh, and goes up by one once that iPad has answered. (VJR's choice of 16 Oct 2026: the Live
     display's one-page PDF and PowerPoint still print every visit, "from 5 iPads", until Phase 11b redesigns them.)
 
+### Phase 11a-3 (the polish batch after the 11a-2 real-site checks): not verified on the real site, an iPad, the laptop or a projector
+
+**What was seen on the real site, 16 Oct 2026** (`pms-283ad18`, the Windows laptop in Chrome and an iPad in Safari, photographed by Satyadev): a chart's tooltip could lie over
+the question, the "got it right first time" line and the Show answer / View as table buttons above its mark; client heroes showed as squares; a locked activity's title was too
+faint to read. The brief also named a question of eight long answers cut off in portrait full screen. None of what follows has run in a browser yet: Playwright's browsers
+were not installed on the machine the work was done on (see RELEASE-11A3.md).
+
+161. **A tooltip and the words above its mark.** *(Still to see.)* On the laptop, Admin → Results → **Live display**, on the admin view and in **Full screen**: point at the top
+    bar of a single choice, the first column of a confidence question and a side of a true-or-false question. **Expect** the tooltip whole and clear of the question, of
+    "N answered · N of N got it right first time" and of **Show answer** / **View as table** (under its mark when there is no room above), and still clear of the mark's own
+    label, the step names and "Average ... of ...". Only where the window has no room on either side may it lie over those words. The same on the iPad: a touch on a bar.
+162. **Names in the "Who picked" panel and the CSV.** *(Waits for VJR's decision on "Last, First": nothing changed in 11a-3.)*
+163. **The wall page's header.** *(Waits for VJR's decision on hiding the admin header, tabs, Lock and Export on `/wall`: nothing changed in 11a-3.)*
+164. **The participant page's heroes and greeting on an iPad.** *(Still to see.)* The heroes are opaque squares because the pictures stored for them are: VJR's sources were
+    JPEGs, which cannot be transparent (Brand Studio keeps a hero's transparency). To see a round hero: in Brand Studio upload a hero that is a PNG with a transparent
+    background, Save, reload the participant page. **Expect** the hero drawn with no square behind it. The greeting waits for VJR's decision on "Last, First". A locked
+    activity on the hub: its title is white and readable (it was a pale blue on blue), with the lock and "Finish the previous activity".
+165. **Eight long answers in portrait full screen.** *(Still to see.)* The large session's question of eight answers of about 90 characters (or any question that long), in
+    **Full screen** on the iPad held upright, on a screen 1,600 px wide or more (a projector, a large monitor) and on the laptop with the window made short. **Expect** the whole
+    card on the screen, or else the type made as small as it goes and the screen scrolling as one page with "More below": never a card cut at its edge. (Until 11a-3 a window
+    1,550 px wide or more stopped making the type smaller before it reached its smallest, and cut the card. Whether that is what was seen on the real site is not known.)
+166. **The network coming back during a look.** *(Still to see.)* On an iPad with a question open, turn Wi-Fi off, have the facilitator restart that activity, and turn
+    Wi-Fi on. **Expect** the restart notice and the activity's first question within a few seconds, not a minute later.
+
 ### Phase 8 (browsers, devices, accessibility, performance, the unsupported-browser page): not verified on a real device, a real screen reader, or the real SharePoint site
 
 A printable sheet for the real devices, one page each for iPad Safari, iPhone Safari, Safari on a Mac, Chrome, Edge and Firefox, built from these items and from
