@@ -183,7 +183,7 @@ export const PHASE_11A3 = Object.freeze({
 export const PHASE_11B = Object.freeze({
   participantBefore: PHASE_11A3.participantAfter, adminBefore: PHASE_11A3.adminAfter, participantAllowance: 0, adminAllowance: 12_000,
   participantSha256: 'f7fbfd67f27fe80da8c81746bcb3f871b09586b82cdd7f309d7c98928df75ef8',
-  participantAfter: 156_729, adminAfter: 558_357,
+  participantAfter: 156_729, adminAfter: 558_745,
   participantUtilities: PHASE_11A.participantUtilities,
 });
 
