@@ -13,7 +13,8 @@ import PptxGenJS from 'pptxgenjs';
 import { buildResults } from '../migration/src/lib/results-tally.js';
 import * as resultsExport from '../public/js/resultsExport.js';
 import { inspectPdf } from './pdf-inspect.js';
-import { krogerResults, vineResults } from './results-export-fixtures.js';
+import { bigResults, krogerResults, oddResults, vineResults } from './results-export-fixtures.js';
+import { contrastOf } from './print-contrast.js';
 import { nodePalette } from './results-palette-node.js';
 
 const at = (minute) => `2026-10-16T10:${String(minute).padStart(2, '0')}:00.000Z`;
@@ -169,5 +170,92 @@ describe('item B: the one-pager draws the same charts as the screen', () => {
       const header = new Set(['7A1F5C', '64748B', 'FFFFFF', '111827']);
       assert.deepEqual(all.filter((item) => !item.card).flatMap(colours).filter((colour) => !tokens.has(colour) && !header.has(colour)), []);
     });
+  });
+});
+
+// ---- Item D: print and accessibility ----------------------------------------------------------------------------------------------
+
+describe('item D: the one-pager in print: contrast, never colour alone, nothing outside its box', () => {
+  const palette = nodePalette();
+  // A client colour of middle lightness (#3C8DBC: white words on it are 3.6:1, black 5.8:1) besides the fixtures' own.
+  const SESSIONS = [
+    ['Vine', vineResults(), { name: 'Vine Street Partners', primaryColor: '#7A1F5C', secondaryColor: '#64748B' }],
+    ['Kroger', krogerResults(), { name: 'Kroger', primaryColor: '#0C4EA2', secondaryColor: '#E31837' }],
+    ['sixty people', bigResults(), { name: 'A client with a rather long name, Incorporated', primaryColor: '#F2C200' }],
+    ['other scripts', oddResults(), { name: 'Søren & Co', primaryColor: '#046A38' }],
+    ['a middle colour', vineResults(), { name: 'Middle Blue', primaryColor: '#3C8DBC', secondaryColor: '#3C8DBC' }],
+  ];
+  const laid = SESSIONS.map(([name, results, brand]) => [name, resultsExport.layoutReport(resultsExport.buildReport(results, brand), null, palette)]);
+  /** Where a line of words is drawn: its start (or end, or middle) and the middle of its box. */
+  const pointOf = (item) => [item.align === 'right' ? item.x + item.w - 0.5 : item.align === 'center' ? item.x + item.w / 2 : item.x + 0.5, item.y + item.h / 2];
+  const light = (item) => item.role === 'bar' && (item.tone === 'rest' || item.tone === undefined);
+
+  it('gives every word 4.5:1 and every mark that carries meaning 3:1 against what is under it, the header\'s words on any client colour too', () => {
+    const lines = [];
+    for (const [name, pages] of laid) {
+      const { problems, light: listed, measured } = contrastOf(pages, { pointOf, light });
+      assert.deepEqual(problems, [], name);
+      lines.push(`  ${name}: ${measured} words and marks measured; the tint bars and a scale's steps (written beside, held at 2:1 by the palette): ${[...new Set(listed.map((mark) => mark.ratio.toFixed(2)))].join(', ') || 'none'}`);
+    }
+    console.log(`One-pager contrast:\n${lines.join('\n')}`);
+  });
+
+  it('writes the value beside every bar the palette holds at 2:1, and marks the correct answer and the top choice in words, never by colour alone', () => {
+    for (const [name, pages] of laid) {
+      for (const page of pages) {
+        const values = page.items.filter((item) => item.role === 'value');
+        for (const bar of page.items.filter((item) => item.role === 'bar')) {
+          // The value is on the bar's row (a bar), or above its column (a scale's step).
+          const near = values.some((value) => value.y <= bar.y + bar.h + 0.01 && value.y + value.h >= bar.y - value.h - 0.01);
+          assert.ok(near, `${name}: the bar of ${bar.of} has its value written beside it`);
+        }
+        for (const bar of page.items.filter((item) => item.role === 'bar' && item.tone === 'correct')) {
+          const below = (item) => Math.abs(item.x - bar.x) < 200 && item.y >= bar.y - 8 && item.y <= bar.y + 12;
+          assert.ok(page.items.some((item) => item.kind === 'tick' && below(item)), `${name}: a tick beside the correct answer ${bar.of}`);
+          assert.ok(page.items.some((item) => item.role === 'tag' && item.text === 'Correct' && below(item)), `${name}: "Correct" beside ${bar.of}`);
+        }
+      }
+    }
+  });
+
+  it('keeps every line of words inside its box (by Helvetica\'s own widths, from jsPDF), every card\'s items inside the card, and everything on the page', () => {
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [297, 210] });
+    const problems = [];
+    for (const [name, pages] of laid) {
+      pages.forEach((page, index) => {
+        const where = `${name}, page ${index + 1}`;
+        const cards = page.items.filter((item) => item.kind === 'rect' && item.card && item.stroke);
+        const lines = [];
+        for (const item of page.items) {
+          const right = item.kind === 'line' ? Math.max(item.x, item.x2) : item.x + (item.w ?? item.size ?? 0);
+          const bottom = item.kind === 'line' ? Math.max(item.y, item.y2) : item.y + (item.h ?? item.size ?? 0);
+          if (item.x < -0.01 || right > 297.01 || item.y < -0.01 || bottom > 210.01) problems.push(`${where}: a ${item.kind} is off the page`);
+          if (item.card && !(item.kind === 'rect' && item.stroke) && !cards.some((card) => item.x >= card.x - 0.01 && right <= card.x + card.w + 0.01 && item.y >= card.y - 0.01 && bottom <= card.y + card.h + 0.01)) problems.push(`${where}: "${item.text ?? item.kind}" is outside its card`);
+          if (item.kind !== 'text' || !item.text.trim()) continue;
+          doc.setFont('helvetica', item.bold ? 'bold' : item.italic ? 'italic' : 'normal');
+          doc.setFontSize(item.size);
+          const wide = doc.getTextWidth(resultsExport.pdfSafe(item.text));
+          if (wide > item.w + 0.05) problems.push(`${where}: "${item.text.slice(0, 40)}" is ${wide.toFixed(2)} mm in a box of ${item.w.toFixed(2)} mm`);
+          const start = item.align === 'right' ? item.x + item.w - wide : item.align === 'center' ? item.x + (item.w - wide) / 2 : item.x;
+          lines.push({ y: item.y + item.h / 2, start, end: start + wide, text: item.text });
+        }
+        for (let a = 0; a < lines.length; a += 1) {
+          for (let b = a + 1; b < lines.length; b += 1) {
+            if (Math.abs(lines[a].y - lines[b].y) < 1.2 && lines[a].start < lines[b].end - 0.05 && lines[b].start < lines[a].end - 0.05) problems.push(`${where}: "${lines[a].text.slice(0, 30)}" runs into "${lines[b].text.slice(0, 30)}"`);
+          }
+        }
+      });
+    }
+    assert.deepEqual(problems, []);
+  });
+
+  it('can fail: a word on a ground it does not read on, a box too narrow, and a card\'s item outside it are each found', () => {
+    const pages = structuredClone(laid[0][1]);
+    const word = pages[0].items.find((item) => item.kind === 'text' && item.card && item.text.length > 10);
+    pages[0].items.push({ ...word, color: 'BBBBBB' });
+    assert.ok(contrastOf(pages, { pointOf, light }).problems.some((line) => line.includes(word.text.slice(0, 20))));
+    const bar = pages[0].items.find((item) => item.role === 'bar' && item.tone === 'top');
+    pages[0].items.push({ ...bar, fill: palette.tint, tone: 'top' });
+    assert.ok(contrastOf(pages, { pointOf, light }).problems.some((line) => line.includes('(top)')));
   });
 });

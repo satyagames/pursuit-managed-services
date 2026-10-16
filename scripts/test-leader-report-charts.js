@@ -12,10 +12,11 @@ import assert from 'node:assert/strict';
 import { before, describe, it } from 'node:test';
 import * as leaderReport from '../migration/src/lib/leader-report.js';
 import { RANKING_CAPTION } from '../migration/src/lib/results-chart-model.js';
-import { harbourRecords } from './leader-report-fixtures.js';
+import { bigRecords, harbourRecords } from './leader-report-fixtures.js';
 import { makeReport } from './leader-report-node.js';
 import { inspectPdf, squash } from './pdf-inspect.js';
 import { nodePalette } from './results-palette-node.js';
+import { contrastOf } from './print-contrast.js';
 
 const RESULTS = 'Results by activity';
 const hex = (value) => String(value ?? '').replace('#', '').toUpperCase();
@@ -120,5 +121,45 @@ describe('Phase 11b: Results by activity on the chart model', () => {
     // It is not a counting rule of this report: the rules are as they were.
     assert.ok(!leaderReport.COUNTING_RULES.includes(leaderReport.LIVE_FILES_NOTE));
     assert.equal(leaderReport.COUNTING_RULES.length, 8);
+  });
+});
+
+describe('Phase 11b, item D: the leader report in print', () => {
+  const PT = 25.4 / 72;
+  /** Where a line of words is drawn: by its start (or end, or middle), a little above its baseline. */
+  const pointOf = (item) => [item.align === 'right' ? item.x + item.w - 0.5 : item.align === 'center' ? item.x + item.w / 2 : item.x + 0.5, item.y - item.size * PT * 0.35];
+  const light = (item) => item.role === 'bar' && (item.tone === 'rest' || item.tone === undefined);
+
+  it('gives every word on every page 4.5:1 and every mark that carries meaning 3:1 against what is under it, for a small session and for sixty people', async () => {
+    const big = await makeReport(bigRecords());
+    const lines = [];
+    for (const [name, pages] of [['Harbour', small.pages], ['sixty people', big.pages]]) {
+      const { problems, light: listed, measured } = contrastOf(pages, { pointOf, light });
+      assert.deepEqual(problems, [], name);
+      lines.push(`  ${name}: ${measured} words and marks on ${pages.length} pages; the tint bars and a scale's steps (written beside, held at 2:1 by the palette): ${[...new Set(listed.map((mark) => mark.ratio.toFixed(2)))].join(', ') || 'none'}`);
+    }
+    console.log(`Leader report contrast:\n${lines.join('\n')}`);
+  });
+
+  it('writes the value beside every bar, and marks a correct answer with a tick and "Correct" beside it: in greyscale the words still say it', () => {
+    small.pages.forEach((page, index) => {
+      const values = page.items.filter((item) => item.role === 'value');
+      for (const bar of page.items.filter((item) => item.role === 'bar')) {
+        // On a bar's row (its baseline within the bar's height and a line under it), or above a scale's column.
+        assert.ok(values.some((value) => value.y >= bar.y - 8 && value.y <= bar.y + bar.h + 6), `page ${index + 1}: the bar of ${bar.of} has its value written beside it`);
+      }
+      for (const bar of page.items.filter((item) => item.role === 'bar' && item.tone === 'correct')) {
+        const near = (item) => item.y >= bar.y - 6 && item.y <= bar.y + 12;
+        assert.ok(page.items.some((item) => item.kind === 'tick' && near(item)), `page ${index + 1}: a tick beside the correct answer ${bar.of}`);
+        assert.ok(page.items.some((item) => item.role === 'tag' && item.text === 'Correct' && near(item)), `page ${index + 1}: "Correct" beside ${bar.of}`);
+      }
+    });
+  });
+
+  it('can fail: words that do not read on their ground are found', () => {
+    const pages = structuredClone(small.pages);
+    const word = pages[1].items.find((item) => item.role === 'headline');
+    pages[1].items.push({ ...word, color: '#BBBBBB' });
+    assert.ok(contrastOf(pages, { pointOf, light }).problems.some((line) => line.includes(word.text.slice(0, 20))));
   });
 });

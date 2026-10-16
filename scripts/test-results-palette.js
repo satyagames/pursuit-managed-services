@@ -39,6 +39,9 @@ const PAIRS = [
   ['--viz-text-secondary', '--viz-band-shade', 4.5, 'the secondary words on a scale\'s shaded band'],
   ['--viz-text', '--viz-band-shade', 4.5, 'the main words on a scale\'s shaded band'],
   ['--viz-text-muted', '--viz-surface', 3, 'the muted words, at 18px or bold 14px and more only (4.44:1)'],
+  // Phase 11b: on paper (the leader report, the one-page PDF and PowerPoint) the same pairs, and these that only paper draws.
+  ['--viz-marker', '--viz-band-shade', 3, 'the scale\'s average line across a shaded band, on paper'],
+  ['--viz-correct', '--viz-band-shade', 3, 'a tick in Dark Green beside "Correct", should it sit on a shaded band'],
 ];
 
 const RAMPS = { 3: [1, 2, 3], 4: [1, 2, 3, 4], 5: [1, 2, 3, 4, 5] };

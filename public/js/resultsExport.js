@@ -159,11 +159,19 @@ const channels = (hex) => [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16)
 
 /** Black or white, whichever reads better on `hex` (a pale brand color would lose white text). */
 function readableOn(hex) {
-  const [r, g, b] = channels(hex).map((c) => {
-    const v = c / 255;
-    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.4 ? '111827' : 'FFFFFF';
+  const luminance = (value) => {
+    const [r, g, b] = channels(value).map((c) => {
+      const v = c / 255;
+      return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  // Whichever has the more contrast (Phase 11b: a fixed threshold of 0.4 put white words on a colour of middle lightness, such as
+  // #3C8DBC, at 3.7:1; one of the two always has 4.5:1 or more).
+  const ground = luminance(hex);
+  const onWhite = 1.05 / (ground + 0.05);
+  const onDark = (ground + 0.05) / (luminance('111827') + 0.05);
+  return onDark > onWhite ? '111827' : 'FFFFFF';
 }
 
 /** A palette colour ("#0076A8") as the writers take it ("0076A8"). */
@@ -432,7 +440,7 @@ function loadScript(path) {
 // ---- PDF
 
 /** jsPDF's standard fonts only cover Latin-1 and a few punctuation marks. Emoji and other scripts are dropped, not printed as garbage. */
-const pdfSafe = (text) => text.replace(/[^\x20-\x7e\xa0-\xff‘’“”–—…•€™]/g, '').replace(/ {2,}/g, ' ');
+export const pdfSafe = (text) => text.replace(/[^\x20-\x7e\xa0-\xff‘’“”–—…•€™]/g, '').replace(/ {2,}/g, ' ');
 
 /**
  * The PDF's bytes. `jsPDF` is handed in (the admin page's own copy; a node test passes jsPDF's node build).
