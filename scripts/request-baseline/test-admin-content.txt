@@ -1,0 +1,267 @@
+# Request baseline: scripts/test-admin-content.js on the mocked SharePoint REST (6 recordings).
+# Recorded at 2ad1520 (the local tag legacy-final), before Phase 10b changed anything.
+# Do not regenerate this file to make a comparison pass: a difference is a finding. See scripts/request-baseline.js.
+# One entry for each distinct request and how many times it was sent ("~": the count depends on timing). <uuid> and <time> are placeholders.
+# Amended (32 entries) for the tests matching /assigns the activities that have no client to one|copy, duplicate, assign, delete, bulk guests and bulk codes/: the old assign test removed (scripts/test-admin-assign.js covers it) and the cross-adapter run pointed at lib/admin-assign.js, which reads back what it wrote (Phase 10c-1, part D). Nothing else was changed (scripts/request-baseline.js, amendment()).
+# Amended (9 entries) for the tests matching /does not make a code for a guest who joined|a code made in bulk is the code provisionQrToken makes/: Phase 10c-2a part B: tests no longer use the seven exports that only tests called (set-up through beginVisit, openQrScan and the participant's own item; references written out). Nothing else was changed (scripts/request-baseline.js, amendment()).
+# Amended (11 entries) for the tests matching /bulk guests and bulk codes: SharePoint/, compared with the last commit's whole tree (its code and helpers, not only its suite): Phase 10c-2a part E: the live client is the one AppSettings names (never found through the session), an activity with no client is shown to nobody, and the assign tools are gone. Nothing else was changed (scripts/request-baseline.js, amendment()).
+# Amended (4 entries) for the tests matching /adds a pasted list: new names only, and adding it twice adds nobody|refuses a session that is not the live one|makes a code for every enabled guest without one, once; running it again, or after a failure, makes only what is missing|does not make a code for a guest who joined, and needs guest mode and a live, unended session/, compared with the last commit's whole tree (its code and helpers, not only its suite): Phase 10c-2a part F1: no request filters on the Yes/No column Used (a session's codes are read by SessionId, and VisitorId for one guest, and tested in the browser). Nothing else was changed (scripts/request-baseline.js, amendment()).
+# Amended (57 entries) for the tests matching /which pictures an answer still shows: read by question, never by a filter on the picture, the same on both adapters/, compared with the last commit's whole tree (its code and helpers, not only its suite): Phase 10c-2a, F2: the question editor no longer asks the Options list for the rows with one picture address; it reads the answers by their question. The test of the filter went (test-review-9a) and the test of the new rule came (test-admin-content).. Nothing else was changed (scripts/request-baseline.js, amendment()).
+# Translated in Phase 10c-2b from the 10c-2a recording above: each old list title to its PMS name, ClientLogos to PMSClientImages, Order to SortOrder (scripts/schema-baseline/translate-baselines.js), after a fresh recording of the new names equalled the translation exactly. Nothing else was changed.
+# Amended (9 entries) for the tests matching /a copy made for the live client joins the live session, so its results count it; another client's does not|deletes an activity with its questions and options, and takes it out of the live session|adds a pasted list: new names only, and adding it twice adds nobody|refuses a session that is not the live one|makes a code for every enabled guest without one, once; running it again, or after a failure, makes only what is missing|does not make a code for a guest who joined, and needs guest mode and a live, unended session|a code made in bulk is the code provisionQrToken makes: same fields, and it is scanned like any other|copy, duplicate, delete, bulk guests and bulk codes: SharePoint \(mocked\) and the local server agree/, compared with the last commit's whole tree (its code and helpers, not only its suite): Phase 10c-2b part E: a site is set up as Setup will make it, with the AppSettings item and its SchemaVersion, so a first Go live updates that item (a read and a MERGE) where it used to create it (a POST), and later items' ids shift by one. Nothing else was changed (scripts/request-baseline.js, amendment()).
+# Amended in Phase 10h, part A: every item read names its columns, so each entry that read items without naming them has `&$select=` and its list's columns at the end of its query (and a mock's `__next` link of such a read carries them before its `$fakeskip`), by scripts/schema-baseline/select-baselines.js, after a fresh recording equalled the translation exactly; the number and the order of the requests are as they were. Nothing else was changed.
+# Amended in Phase 10i, part B: schema version 3 renamed PMSGuestList.DisplayName to GuestName and PMSVisitLog.DisplayName to SignedInName (the real site would not return a column called DisplayName by name), so each read of those two lists names the new column in its `$select`, by scripts/schema-baseline/rename-baselines.js, after a fresh recording equalled the translation exactly; the number and the order of the requests are as they were. Nothing else was changed.
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items(102)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items(135)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items(76)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items(100)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items(101)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items(130)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items(131)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items(132)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items(133)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items(134)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items(70)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items(71)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items(72)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items(97)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items(98)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items(99)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(110)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(111)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(112)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(113)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(114)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(115)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(116)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(117)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(118)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(119)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(120)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(121)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(122)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(123)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(124)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(125)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(126)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(127)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(128)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(129)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(47)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(48)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(49)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(50)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(51)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(52)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(53)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(54)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(55)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(56)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(57)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(58)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(77)
+3 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(78)
+3 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(79)
+3 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(80)
+3 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(81)
+3 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(82)
+3 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(83)
+2 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(84)
+2 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(85)
+2 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(86)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(87)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(88)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(89)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(90)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(91)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(92)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(93)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(94)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(95)
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(96)
+24 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$filter=AppId eq '<uuid>'&$top=2&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$filter=AppId eq 'loose'&$top=2&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$filter=AppId eq 'nope'&$top=2&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$filter=AppId eq 'sec-dominos-history~c-acme'&$top=2&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+4 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$filter=AppId eq 'sec-dominos-innovation'&$top=2&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+4 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$filter=AppId eq 'sec-trivia'&$top=2&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$filter=AppId eq 'sec-trivia~c-acme'&$top=2&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+19 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$filter=(AppId eq 'sec-dominos-history')&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$filter=(AppId eq 'sec-trivia' or AppId eq 'sec-guess-the-brand' or AppId eq 'sec-dominos-history' or AppId eq 'sec-dominos-innovation')&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$filter=(AppId eq 'sec-trivia' or AppId eq 'sec-guess-the-brand' or AppId eq 'sec-dominos-history')&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+4 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$filter=(AppId eq 'sec-trivia' or AppId eq 'sec-guess-the-brand')&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+9 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$filter=(AppId eq 'sec-trivia')&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$filter=(AppId eq 'sec-trivia~c-acme')&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+22 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$filter=(ClientId eq 'c-acme')&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$filter=(ClientId eq 'c-dominos')&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+11 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$filter=(ClientId eq 'c-kroger')&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+24 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')?$select=ListItemEntityTypeFullName
+24 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/fields
+5 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$filter=AppId eq '<uuid>'&$top=2&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$filter=AppId eq 'q-dominos-history-1~c-acme'&$top=2&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$filter=AppId eq 'q-dominos-history-2~c-acme'&$top=2&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$filter=AppId eq 'q-dominos-history-3~c-acme'&$top=2&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$filter=AppId eq 'q-dominos-history-4~c-acme'&$top=2&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$filter=AppId eq 'q-dominos-history-5~c-acme'&$top=2&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$filter=AppId eq 'q-dominos-innovation-1'&$top=2&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$filter=AppId eq 'q-dominos-innovation-2'&$top=2&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$filter=AppId eq 'q-dominos-innovation-3'&$top=2&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+16 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$top=200&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+24 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')?$select=ListItemEntityTypeFullName
+26 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/fields
+20 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq '<uuid>'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-history-1-a~c-acme'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-history-1-b~c-acme'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-history-1-c~c-acme'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-history-1-d~c-acme'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-history-2-a~c-acme'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-history-2-b~c-acme'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-history-2-c~c-acme'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-history-2-d~c-acme'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-history-3-a~c-acme'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-history-3-b~c-acme'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-history-3-c~c-acme'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-history-3-d~c-acme'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-history-4-a~c-acme'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-history-4-b~c-acme'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-history-4-c~c-acme'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-history-4-d~c-acme'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-history-5-a~c-acme'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-history-5-b~c-acme'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-history-5-c~c-acme'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-history-5-d~c-acme'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-innovation-1-a'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-innovation-1-b'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-innovation-1-c'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-innovation-1-d'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-innovation-2-a'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-innovation-2-b'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-innovation-2-c'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-innovation-2-d'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-innovation-3-a'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-innovation-3-b'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-innovation-3-c'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-innovation-3-d'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-trivia-1-a'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-trivia-1-a~c-acme'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-trivia-1-b~c-acme'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-trivia-1-c~c-acme'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-trivia-1-d~c-acme'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-trivia-2-a~c-acme'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-trivia-2-b~c-acme'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-trivia-2-c~c-acme'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-trivia-3-a~c-acme'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-trivia-3-b~c-acme'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+16 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$top=200&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+26 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')?$select=ListItemEntityTypeFullName
+8 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/fields
+43 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$filter=AppId eq 'default'&$top=2&$select=Id,AppId,ActiveSessionId,ActiveClientId,ActivatedAt,SchemaVersion
+8 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')?$select=ListItemEntityTypeFullName
+10 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/fields
+10 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$filter=AppId eq 'dominos-2026-10-11'&$top=2&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow
+27 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$filter=AppId eq 'kroger-2026-10-11'&$top=2&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow
+10 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')?$select=ListItemEntityTypeFullName
+17 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/fields
+14 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$filter=AppId eq 'c-acme'&$top=2&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$filter=AppId eq 'c-dominos'&$top=2&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+20 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$filter=AppId eq 'c-kroger'&$top=2&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+16 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$top=200&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+17 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')?$select=ListItemEntityTypeFullName
+6 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/fields
+4 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/items?$filter=AppId eq '<uuid>'&$top=2&$select=Id,AppId,SessionId,GuestName,Enabled
+7 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/items?$top=200&$filter=(SessionId eq 'kroger-2026-10-11')&$select=Id,AppId,SessionId,GuestName,Enabled
+6 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')?$select=ListItemEntityTypeFullName
+6 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/fields
+4 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items?$filter=AppId eq '<uuid>'&$top=2&$select=Id,AppId,ClientId,SessionId,VisitorId,Used,CreatedAt,UsedAt,ExpiredAt,ClientTrackId
+4 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items?$top=200&$filter=(SessionId eq 'kroger-2026-10-11')&$select=Id,AppId,ClientId,SessionId,VisitorId,Used,CreatedAt,UsedAt,ExpiredAt,ClientTrackId
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items?$top=200&$filter=(VisitorId eq '<uuid>') and (SessionId eq 'kroger-2026-10-11')&$select=Id,AppId,ClientId,SessionId,VisitorId,Used,CreatedAt,UsedAt,ExpiredAt,ClientTrackId
+6 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')?$select=ListItemEntityTypeFullName
+1 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items(103)
+2 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(3)
+1 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items(78)
+8 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items(100000)
+1 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items(162)
+13 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items(77)
+1 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items(78)
+1 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/items(79)
+1 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items(79)
+1 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items(80)
+1 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items(82)
+1 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$top=200&$filter=(AppId%20eq%20%27<uuid>%27%20or%20AppId%20eq%20%27<uuid>%27%20or%20AppId%20eq%20%27<uuid>%27%20or%20AppId%20eq%20%27<uuid>%27%20or%20AppId%20eq%20%27<uuid>%27)&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$top=200&$filter=(QuestionId%20eq%20%27<uuid>%27%20or%20QuestionId%20eq%20%27<uuid>%27%20or%20QuestionId%20eq%20%27<uuid>%27%20or%20QuestionId%20eq%20%27<uuid>%27%20or%20QuestionId%20eq%20%27<uuid>%27)&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$top=200&$filter=(AppId%20eq%20%27q-brand-1~c-acme%27%20or%20AppId%20eq%20%27q-trivia-1~c-acme%27%20or%20AppId%20eq%20%27q-trivia-2~c-acme%27%20or%20AppId%20eq%20%27q-trivia-3~c-acme%27%20or%20AppId%20eq%20%27q-trivia-4~c-acme%27%20or%20AppId%20eq%20%27q-trivia-5~c-acme%27)&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$top=200&$filter=(QuestionId%20eq%20%27q-brand-1~c-acme%27%20or%20QuestionId%20eq%20%27q-trivia-1~c-acme%27%20or%20QuestionId%20eq%20%27q-trivia-2~c-acme%27%20or%20QuestionId%20eq%20%27q-trivia-3~c-acme%27%20or%20QuestionId%20eq%20%27q-trivia-4~c-acme%27%20or%20QuestionId%20eq%20%27q-trivia-5~c-acme%27)&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$top=200&$filter=(AppId%20eq%20%27q-brand-1~c-acme%27)&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$top=200&$filter=(QuestionId%20eq%20%27q-brand-1~c-acme%27)&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$top=200&$filter=(AppId%20eq%20%27q-dominos-history-1%27%20or%20AppId%20eq%20%27q-dominos-history-2%27%20or%20AppId%20eq%20%27q-dominos-history-3%27%20or%20AppId%20eq%20%27q-dominos-history-4%27%20or%20AppId%20eq%20%27q-dominos-history-5%27)&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$top=200&$filter=(QuestionId%20eq%20%27q-dominos-history-1%27%20or%20QuestionId%20eq%20%27q-dominos-history-2%27%20or%20QuestionId%20eq%20%27q-dominos-history-3%27%20or%20QuestionId%20eq%20%27q-dominos-history-4%27%20or%20QuestionId%20eq%20%27q-dominos-history-5%27)&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$top=200&$filter=(AppId%20eq%20%27q-dominos-history-1~c-acme%27%20or%20AppId%20eq%20%27q-dominos-history-2~c-acme%27%20or%20AppId%20eq%20%27q-dominos-history-3~c-acme%27%20or%20AppId%20eq%20%27q-dominos-history-4~c-acme%27%20or%20AppId%20eq%20%27q-dominos-history-5~c-acme%27)&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$top=200&$filter=(QuestionId%20eq%20%27q-dominos-history-1~c-acme%27%20or%20QuestionId%20eq%20%27q-dominos-history-2~c-acme%27%20or%20QuestionId%20eq%20%27q-dominos-history-3~c-acme%27%20or%20QuestionId%20eq%20%27q-dominos-history-4~c-acme%27%20or%20QuestionId%20eq%20%27q-dominos-history-5~c-acme%27)&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+2 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$top=200&$filter=(AppId%20eq%20%27q-dominos-innovation-1%27%20or%20AppId%20eq%20%27q-dominos-innovation-2%27%20or%20AppId%20eq%20%27q-dominos-innovation-3%27)&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$top=200&$filter=(QuestionId%20eq%20%27q-dominos-innovation-1%27%20or%20QuestionId%20eq%20%27q-dominos-innovation-2%27%20or%20QuestionId%20eq%20%27q-dominos-innovation-3%27)&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$top=200&$filter=(AppId%20eq%20%27q-trivia-1%27%20or%20AppId%20eq%20%27q-trivia-2%27%20or%20AppId%20eq%20%27q-trivia-3%27%20or%20AppId%20eq%20%27q-trivia-4%27%20or%20AppId%20eq%20%27q-trivia-5%27%20or%20AppId%20eq%20%27q-brand-1%27%20or%20AppId%20eq%20%27q-dominos-history-1%27%20or%20AppId%20eq%20%27q-dominos-history-2%27%20or%20AppId%20eq%20%27q-dominos-history-3%27%20or%20AppId%20eq%20%27q-dominos-history-4%27%20or%20AppId%20eq%20%27q-dominos-history-5%27%20or%20AppId%20eq%20%27q-dominos-innovation-1%27%20or%20AppId%20eq%20%27q-dominos-innovation-2%27%20or%20AppId%20eq%20%27q-dominos-innovation-3%27%20or%20AppId%20eq%20%27<uuid>%27%20or%20AppId%20eq%20%27<uuid>%27%20or%20AppId%20eq%20%27<uuid>%27%20or%20AppId%20eq%20%27<uuid>%27%20or%20AppId%20eq%20%27<uuid>%27)&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$top=200&$filter=(QuestionId%20eq%20%27q-trivia-1%27%20or%20QuestionId%20eq%20%27q-trivia-2%27%20or%20QuestionId%20eq%20%27q-trivia-3%27%20or%20QuestionId%20eq%20%27q-trivia-4%27%20or%20QuestionId%20eq%20%27q-trivia-5%27%20or%20QuestionId%20eq%20%27q-brand-1%27%20or%20QuestionId%20eq%20%27q-dominos-history-1%27%20or%20QuestionId%20eq%20%27q-dominos-history-2%27%20or%20QuestionId%20eq%20%27q-dominos-history-3%27%20or%20QuestionId%20eq%20%27q-dominos-history-4%27%20or%20QuestionId%20eq%20%27q-dominos-history-5%27%20or%20QuestionId%20eq%20%27q-dominos-innovation-1%27%20or%20QuestionId%20eq%20%27q-dominos-innovation-2%27%20or%20QuestionId%20eq%20%27q-dominos-innovation-3%27%20or%20QuestionId%20eq%20%27<uuid>%27%20or%20QuestionId%20eq%20%27<uuid>%27%20or%20QuestionId%20eq%20%27<uuid>%27%20or%20QuestionId%20eq%20%27<uuid>%27%20or%20QuestionId%20eq%20%27<uuid>%27)&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+3 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$top=200&$filter=(AppId%20eq%20%27q-trivia-1%27%20or%20AppId%20eq%20%27q-trivia-2%27%20or%20AppId%20eq%20%27q-trivia-3%27%20or%20AppId%20eq%20%27q-trivia-4%27%20or%20AppId%20eq%20%27q-trivia-5%27%20or%20AppId%20eq%20%27q-brand-1%27%20or%20AppId%20eq%20%27q-dominos-history-1%27%20or%20AppId%20eq%20%27q-dominos-history-2%27%20or%20AppId%20eq%20%27q-dominos-history-3%27%20or%20AppId%20eq%20%27q-dominos-history-4%27%20or%20AppId%20eq%20%27q-dominos-history-5%27%20or%20AppId%20eq%20%27q-dominos-innovation-1%27%20or%20AppId%20eq%20%27q-dominos-innovation-2%27%20or%20AppId%20eq%20%27q-dominos-innovation-3%27)&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$top=200&$filter=(QuestionId%20eq%20%27q-trivia-1%27%20or%20QuestionId%20eq%20%27q-trivia-2%27%20or%20QuestionId%20eq%20%27q-trivia-3%27%20or%20QuestionId%20eq%20%27q-trivia-4%27%20or%20QuestionId%20eq%20%27q-trivia-5%27%20or%20QuestionId%20eq%20%27q-brand-1%27%20or%20QuestionId%20eq%20%27q-dominos-history-1%27%20or%20QuestionId%20eq%20%27q-dominos-history-2%27%20or%20QuestionId%20eq%20%27q-dominos-history-3%27%20or%20QuestionId%20eq%20%27q-dominos-history-4%27%20or%20QuestionId%20eq%20%27q-dominos-history-5%27%20or%20QuestionId%20eq%20%27q-dominos-innovation-1%27%20or%20QuestionId%20eq%20%27q-dominos-innovation-2%27%20or%20QuestionId%20eq%20%27q-dominos-innovation-3%27)&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$top=200&$filter=(AppId%20eq%20%27q-trivia-1%27%20or%20AppId%20eq%20%27q-trivia-2%27%20or%20AppId%20eq%20%27q-trivia-3%27%20or%20AppId%20eq%20%27q-trivia-4%27%20or%20AppId%20eq%20%27q-trivia-5%27%20or%20AppId%20eq%20%27q-brand-1%27%20or%20AppId%20eq%20%27q-dominos-history-1%27%20or%20AppId%20eq%20%27q-dominos-history-2%27%20or%20AppId%20eq%20%27q-dominos-history-3%27%20or%20AppId%20eq%20%27q-dominos-history-4%27%20or%20AppId%20eq%20%27q-dominos-history-5%27)&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$top=200&$filter=(QuestionId%20eq%20%27q-trivia-1%27%20or%20QuestionId%20eq%20%27q-trivia-2%27%20or%20QuestionId%20eq%20%27q-trivia-3%27%20or%20QuestionId%20eq%20%27q-trivia-4%27%20or%20QuestionId%20eq%20%27q-trivia-5%27%20or%20QuestionId%20eq%20%27q-brand-1%27%20or%20QuestionId%20eq%20%27q-dominos-history-1%27%20or%20QuestionId%20eq%20%27q-dominos-history-2%27%20or%20QuestionId%20eq%20%27q-dominos-history-3%27%20or%20QuestionId%20eq%20%27q-dominos-history-4%27%20or%20QuestionId%20eq%20%27q-dominos-history-5%27)&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+5 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$top=200&$filter=(AppId%20eq%20%27q-trivia-1%27%20or%20AppId%20eq%20%27q-trivia-2%27%20or%20AppId%20eq%20%27q-trivia-3%27%20or%20AppId%20eq%20%27q-trivia-4%27%20or%20AppId%20eq%20%27q-trivia-5%27%20or%20AppId%20eq%20%27q-brand-1%27)&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$top=200&$filter=(QuestionId%20eq%20%27q-trivia-1%27%20or%20QuestionId%20eq%20%27q-trivia-2%27%20or%20QuestionId%20eq%20%27q-trivia-3%27%20or%20QuestionId%20eq%20%27q-trivia-4%27%20or%20QuestionId%20eq%20%27q-trivia-5%27%20or%20QuestionId%20eq%20%27q-brand-1%27)&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+11 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$top=200&$filter=(AppId%20eq%20%27q-trivia-1%27%20or%20AppId%20eq%20%27q-trivia-2%27%20or%20AppId%20eq%20%27q-trivia-3%27%20or%20AppId%20eq%20%27q-trivia-4%27%20or%20AppId%20eq%20%27q-trivia-5%27)&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$top=200&$filter=(QuestionId%20eq%20%27q-trivia-1%27%20or%20QuestionId%20eq%20%27q-trivia-2%27%20or%20QuestionId%20eq%20%27q-trivia-3%27%20or%20QuestionId%20eq%20%27q-trivia-4%27%20or%20QuestionId%20eq%20%27q-trivia-5%27)&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$top=200&$filter=(AppId%20eq%20%27q-trivia-1~c-acme%27%20or%20AppId%20eq%20%27q-trivia-2~c-acme%27%20or%20AppId%20eq%20%27q-trivia-3~c-acme%27%20or%20AppId%20eq%20%27q-trivia-4~c-acme%27%20or%20AppId%20eq%20%27q-trivia-5~c-acme%27%20or%20AppId%20eq%20%27q-brand-1~c-acme%27%20or%20AppId%20eq%20%27<uuid>%27%20or%20AppId%20eq%20%27<uuid>%27%20or%20AppId%20eq%20%27<uuid>%27%20or%20AppId%20eq%20%27<uuid>%27%20or%20AppId%20eq%20%27<uuid>%27)&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$top=200&$filter=(QuestionId%20eq%20%27q-trivia-1~c-acme%27%20or%20QuestionId%20eq%20%27q-trivia-2~c-acme%27%20or%20QuestionId%20eq%20%27q-trivia-3~c-acme%27%20or%20QuestionId%20eq%20%27q-trivia-4~c-acme%27%20or%20QuestionId%20eq%20%27q-trivia-5~c-acme%27%20or%20QuestionId%20eq%20%27q-brand-1~c-acme%27%20or%20QuestionId%20eq%20%27<uuid>%27%20or%20QuestionId%20eq%20%27<uuid>%27%20or%20QuestionId%20eq%20%27<uuid>%27%20or%20QuestionId%20eq%20%27<uuid>%27%20or%20QuestionId%20eq%20%27<uuid>%27)&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$top=200&$filter=(AppId%20eq%20%27q-trivia-1~c-acme%27%20or%20AppId%20eq%20%27q-trivia-2~c-acme%27%20or%20AppId%20eq%20%27q-trivia-3~c-acme%27%20or%20AppId%20eq%20%27q-trivia-4~c-acme%27%20or%20AppId%20eq%20%27q-trivia-5~c-acme%27%20or%20AppId%20eq%20%27q-brand-1~c-acme%27%20or%20AppId%20eq%20%27q-dominos-history-1~c-acme%27%20or%20AppId%20eq%20%27q-dominos-history-2~c-acme%27%20or%20AppId%20eq%20%27q-dominos-history-3~c-acme%27%20or%20AppId%20eq%20%27q-dominos-history-4~c-acme%27%20or%20AppId%20eq%20%27q-dominos-history-5~c-acme%27)&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$top=200&$filter=(QuestionId%20eq%20%27q-trivia-1~c-acme%27%20or%20QuestionId%20eq%20%27q-trivia-2~c-acme%27%20or%20QuestionId%20eq%20%27q-trivia-3~c-acme%27%20or%20QuestionId%20eq%20%27q-trivia-4~c-acme%27%20or%20QuestionId%20eq%20%27q-trivia-5~c-acme%27%20or%20QuestionId%20eq%20%27q-brand-1~c-acme%27%20or%20QuestionId%20eq%20%27q-dominos-history-1~c-acme%27%20or%20QuestionId%20eq%20%27q-dominos-history-2~c-acme%27%20or%20QuestionId%20eq%20%27q-dominos-history-3~c-acme%27%20or%20QuestionId%20eq%20%27q-dominos-history-4~c-acme%27%20or%20QuestionId%20eq%20%27q-dominos-history-5~c-acme%27)&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$top=200&$filter=(AppId%20eq%20%27q-trivia-1~c-acme%27%20or%20AppId%20eq%20%27q-trivia-2~c-acme%27%20or%20AppId%20eq%20%27q-trivia-3~c-acme%27%20or%20AppId%20eq%20%27q-trivia-4~c-acme%27%20or%20AppId%20eq%20%27q-trivia-5~c-acme%27%20or%20AppId%20eq%20%27q-brand-1~c-acme%27)&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$top=200&$filter=(QuestionId%20eq%20%27q-trivia-1~c-acme%27%20or%20QuestionId%20eq%20%27q-trivia-2~c-acme%27%20or%20QuestionId%20eq%20%27q-trivia-3~c-acme%27%20or%20QuestionId%20eq%20%27q-trivia-4~c-acme%27%20or%20QuestionId%20eq%20%27q-trivia-5~c-acme%27%20or%20QuestionId%20eq%20%27q-brand-1~c-acme%27)&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$top=200&$filter=(AppId%20eq%20%27q-trivia-1~c-acme%27%20or%20AppId%20eq%20%27q-trivia-2~c-acme%27%20or%20AppId%20eq%20%27q-trivia-3~c-acme%27%20or%20AppId%20eq%20%27q-trivia-4~c-acme%27%20or%20AppId%20eq%20%27q-trivia-5~c-acme%27)&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$top=200&$filter=(QuestionId%20eq%20%27q-trivia-1~c-acme%27%20or%20QuestionId%20eq%20%27q-trivia-2~c-acme%27%20or%20QuestionId%20eq%20%27q-trivia-3~c-acme%27%20or%20QuestionId%20eq%20%27q-trivia-4~c-acme%27%20or%20QuestionId%20eq%20%27q-trivia-5~c-acme%27)&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+15 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$top=200&$select=Id,AppId,ActiveSessionId,ActiveClientId,ActivatedAt,SchemaVersion
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$top=200&$filter=(AppId%20eq%20%27kroger-2026-10-11%27)&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow
+1 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$top=200&$select=Id,AppId,ActiveSessionId,ActiveClientId,ActivatedAt,SchemaVersion
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$top=200&$filter=(AppId%20eq%20%27nope%27)&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow
+1 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$top=200&$select=Id,AppId,ActiveSessionId,ActiveClientId,ActivatedAt,SchemaVersion
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$top=200&$filter=(AppId%20eq%20%27other%27)&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow
+2 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$filter=AppId%20eq%20%27kroger-2026-10-11%27&$top=2&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$filter=AppId%20eq%20%27c-kroger%27&$top=2&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$filter=(ClientId%20eq%20%27c-kroger%27)&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items?$top=20&$filter=(SessionId%20eq%20%27kroger-2026-10-11%27)%20and%20(QrTokenId%20eq%20%27<uuid>%27)&$select=Id,AppId,SessionId,ClientId,JoinedVia,QrTokenId,VisitorId,ParticipantName,SharePointUserId,CreatedAt,ResumeCount,LastResumedAt,RestartedAt,RestartSectionId
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/items?$filter=AppId%20eq%20%27<uuid>%27&$top=2&$select=Id,AppId,SessionId,GuestName,Enabled
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')?$select=ListItemEntityTypeFullName
+9 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/items?$top=200&$filter=(SessionId%20eq%20%27kroger-2026-10-11%27)&$select=Id,AppId,SessionId,GuestName,Enabled
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items?$top=200&$filter=(SessionId%20eq%20%27kroger-2026-10-11%27)&$select=Id,AppId,ClientId,SessionId,VisitorId,Used,CreatedAt,UsedAt,ExpiredAt,ClientTrackId
+1 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items?$top=200&$filter=(SessionId%20eq%20%27kroger-2026-10-11%27)&$select=Id,AppId,ClientId,SessionId,VisitorId,Used,CreatedAt,UsedAt,ExpiredAt,ClientTrackId
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/items?$top=200&$filter=(SessionId%20eq%20%27kroger-2026-10-11%27)&$select=Id,AppId,SessionId,GuestName,Enabled
+32 x POST /sites/cec/_api/contextinfo
+81 x POST /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items
+287 x POST /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items
+1171 x POST /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items
+9 x POST /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items
+40 x POST /sites/cec/_api/web/lists/getbytitle('PMSClients')/items
+27 x POST /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/items
+22 x POST /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items
+2 x POST /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items

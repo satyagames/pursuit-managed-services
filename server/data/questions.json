@@ -1,0 +1,232 @@
+[
+  {
+    "id": "q-straight-talk-objective",
+    "sectionId": "sec-straight-talk",
+    "type": "single-select",
+    "prompt": "Vote on your top business objective for transition",
+    "optionIds": [
+      "o-obj-cost",
+      "o-obj-tech",
+      "o-obj-process",
+      "o-obj-cx",
+      "o-obj-talent"
+    ],
+    "order": 1
+  },
+  {
+    "id": "q-confidence-delivery",
+    "sectionId": "sec-confidence",
+    "type": "confidence-continuum",
+    "prompt": "Rate your confidence in Deloitte's delivery capabilities",
+    "optionIds": [
+      "o-conf-1",
+      "o-conf-2",
+      "o-conf-3"
+    ],
+    "order": 1
+  },
+  {
+    "id": "q-trivia-1",
+    "sectionId": "sec-trivia",
+    "type": "single-select",
+    "prompt": "In 1883, Barney Kroger and his friend B.A. Branagan rented a storefront and started operations. What was the name of their first store?",
+    "optionIds": [
+      "o-trivia-1-a",
+      "o-trivia-1-b",
+      "o-trivia-1-c",
+      "o-trivia-1-d"
+    ],
+    "order": 1,
+    "layout": "text-list"
+  },
+  {
+    "id": "q-trivia-2",
+    "sectionId": "sec-trivia",
+    "type": "single-select",
+    "prompt": "Kroger's story began in 1883, when Barney Kroger invested his life savings of $372 to open a single grocery store. Where was it located?",
+    "optionIds": [
+      "o-trivia-2-a",
+      "o-trivia-2-b",
+      "o-trivia-2-c",
+      "o-trivia-2-d"
+    ],
+    "order": 2,
+    "layout": "text-list"
+  },
+  {
+    "id": "q-trivia-3",
+    "sectionId": "sec-trivia",
+    "type": "single-select",
+    "prompt": "In the early 1900s, grocers typically purchased bread from local bakeries, then resold it. In 1901, Kroger became the first grocer in the country to establish its own:",
+    "optionIds": [
+      "o-trivia-3-a",
+      "o-trivia-3-b",
+      "o-trivia-3-c",
+      "o-trivia-3-d"
+    ],
+    "order": 3,
+    "layout": "text-list"
+  },
+  {
+    "id": "q-trivia-4",
+    "sectionId": "sec-trivia",
+    "type": "single-select",
+    "prompt": "When farmers rolled into town with a harvest bounty of cabbage, Barney had an idea — his mother turned it into delicious sauerkraut. This marked the beginning of:",
+    "optionIds": [
+      "o-trivia-4-a",
+      "o-trivia-4-b",
+      "o-trivia-4-c",
+      "o-trivia-4-d"
+    ],
+    "order": 4,
+    "layout": "text-list"
+  },
+  {
+    "id": "q-trivia-5",
+    "sectionId": "sec-trivia",
+    "type": "single-select",
+    "prompt": "In his early days, Barney would saddle up his horse Dan to his wagon and deliver groceries around Greater Cincinnati. Which Kroger capability was this the precursor of?",
+    "optionIds": [
+      "o-trivia-5-a",
+      "o-trivia-5-b",
+      "o-trivia-5-c",
+      "o-trivia-5-d"
+    ],
+    "order": 5,
+    "layout": "text-list"
+  },
+  {
+    "id": "q-open-feedback",
+    "sectionId": "sec-open-feedback",
+    "type": "open-text-feedback",
+    "prompt": "Any other feedback you'd like to share?",
+    "optionIds": [],
+    "order": 1
+  },
+  {
+    "id": "q-brand-1",
+    "sectionId": "sec-guess-the-brand",
+    "type": "single-select",
+    "prompt": "When work runs long and plans go stray, Kroger helps home-cooked meals find their way.",
+    "optionIds": [
+      "o-brand-1-a",
+      "o-brand-1-b",
+      "o-brand-1-c",
+      "o-brand-1-d"
+    ],
+    "order": 1,
+    "layout": "image-grid"
+  },
+  {
+    "id": "q-dominos-history-1",
+    "sectionId": "sec-dominos-history",
+    "type": "single-select",
+    "prompt": "Domino's opened its first store in 1960. In which U.S. state was it?",
+    "optionIds": [
+      "o-dominos-history-1-a",
+      "o-dominos-history-1-b",
+      "o-dominos-history-1-c",
+      "o-dominos-history-1-d"
+    ],
+    "order": 1,
+    "layout": "text-list"
+  },
+  {
+    "id": "q-dominos-history-2",
+    "sectionId": "sec-dominos-history",
+    "type": "single-select",
+    "prompt": "In 1983 Domino's opened its first international store. Which city was it in?",
+    "optionIds": [
+      "o-dominos-history-2-a",
+      "o-dominos-history-2-b",
+      "o-dominos-history-2-c",
+      "o-dominos-history-2-d"
+    ],
+    "order": 2,
+    "layout": "text-list"
+  },
+  {
+    "id": "q-dominos-history-3",
+    "sectionId": "sec-dominos-history",
+    "type": "single-select",
+    "prompt": "In 2008 Domino's launched a way for customers to follow their order online. What is it called?",
+    "optionIds": [
+      "o-dominos-history-3-a",
+      "o-dominos-history-3-b",
+      "o-dominos-history-3-c",
+      "o-dominos-history-3-d"
+    ],
+    "order": 3,
+    "layout": "text-list"
+  },
+  {
+    "id": "q-dominos-history-4",
+    "sectionId": "sec-dominos-history",
+    "type": "single-select",
+    "prompt": "Domino's introduced online and mobile ordering in which year?",
+    "optionIds": [
+      "o-dominos-history-4-a",
+      "o-dominos-history-4-b",
+      "o-dominos-history-4-c",
+      "o-dominos-history-4-d"
+    ],
+    "order": 4,
+    "layout": "text-list"
+  },
+  {
+    "id": "q-dominos-history-5",
+    "sectionId": "sec-dominos-history",
+    "type": "single-select",
+    "prompt": "In 2015 Domino's launched the DXP. What is it?",
+    "optionIds": [
+      "o-dominos-history-5-a",
+      "o-dominos-history-5-b",
+      "o-dominos-history-5-c",
+      "o-dominos-history-5-d"
+    ],
+    "order": 5,
+    "layout": "text-list"
+  },
+  {
+    "id": "q-dominos-innovation-1",
+    "sectionId": "sec-dominos-innovation",
+    "type": "single-select",
+    "prompt": "Follow your order from the oven to your door, step by step.",
+    "optionIds": [
+      "o-dominos-innovation-1-a",
+      "o-dominos-innovation-1-b",
+      "o-dominos-innovation-1-c",
+      "o-dominos-innovation-1-d"
+    ],
+    "order": 1,
+    "layout": "image-grid"
+  },
+  {
+    "id": "q-dominos-innovation-2",
+    "sectionId": "sec-dominos-innovation",
+    "type": "single-select",
+    "prompt": "Pick up your order without leaving your car.",
+    "optionIds": [
+      "o-dominos-innovation-2-a",
+      "o-dominos-innovation-2-b",
+      "o-dominos-innovation-2-c",
+      "o-dominos-innovation-2-d"
+    ],
+    "order": 2,
+    "layout": "image-grid"
+  },
+  {
+    "id": "q-dominos-innovation-3",
+    "sectionId": "sec-dominos-innovation",
+    "type": "single-select",
+    "prompt": "A purpose-built vehicle designed for delivering pizza.",
+    "optionIds": [
+      "o-dominos-innovation-3-a",
+      "o-dominos-innovation-3-b",
+      "o-dominos-innovation-3-c",
+      "o-dominos-innovation-3-d"
+    ],
+    "order": 3,
+    "layout": "image-grid"
+  }
+]

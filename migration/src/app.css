@@ -1,0 +1,185 @@
+@import "tailwindcss";
+
+/* The bridge for the pages that still use the legacy class names: the startup error, the
+ * "page not found" placeholder, the banners and the facilitator's Master results screen. It
+ * restyles those classes with the tokens from styles/tokens.css so they sit on the gradient
+ * shell. It is loaded after public/css/app.css and vfx.css, which the legacy app also uses and
+ * which stay untouched; where a legacy rule has to be beaten this file matches its specificity
+ * and relies on coming later.
+ *
+ * The participant flow (Welcome, the Activities hub, the pager, the finale) is built from the
+ * components in ./components and ./pager and carries its own scoped CSS; none of it lives here.
+ */
+
+:root {
+  /* Names the legacy stylesheets read. On the dark gradient: light text, white outlines. */
+  --bg: var(--bg-mid);
+  --text-muted: var(--text-soft);
+  --border: rgb(255 255 255 / 0.45);
+  --radius: 1rem;
+}
+
+/* ---- Page frame ------------------------------------------------------------------------- */
+
+/* Legacy #app is a padded, centred flex column. The shell owns layout and safe areas now. */
+body #app {
+  display: block;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 0;
+}
+
+.screen {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  gap: clamp(1rem, 3vw, 1.5rem);
+}
+
+.loading {
+  text-align: center;
+}
+
+/* ---- Type ------------------------------------------------------------------------------- */
+
+h1,
+h2 {
+  margin: 0;
+  font-family: var(--font-sans);
+}
+
+/* Titles: ExtraBold Italic, uppercase. */
+.screen h1 {
+  font: italic var(--fw-extrabold) var(--fs-title) / 1.1 var(--font-sans);
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: var(--fs-small);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hint {
+  margin: 0;
+  color: var(--text);
+  font: normal var(--fw-light) var(--fs-body) / 1.5 var(--font-sans);
+  text-align: center;
+}
+
+/* ---- Buttons ---------------------------------------------------------------------------- */
+
+.btn,
+.button {
+  min-width: var(--target-min);
+  min-height: var(--target-min);
+  padding: 0.65rem 1.5rem;
+  color: var(--text);
+  font: normal var(--fw-semibold) clamp(1rem, 2.6vw, 1.25rem) / 1.2 var(--font-sans);
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+}
+
+.btn--primary,
+.button-primary {
+  color: var(--text);
+  background: var(--action);
+  border-color: var(--action-border);
+}
+
+.btn--secondary,
+.button-secondary {
+  color: var(--text);
+  background: var(--surface);
+}
+
+.btn--link {
+  align-self: flex-start;
+  padding: 0.5rem 0.25rem;
+  font-weight: var(--fw-semibold);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  background: none;
+  border-color: transparent;
+}
+
+.btn:disabled,
+.btn--primary:disabled,
+.button:disabled {
+  color: var(--on-disabled);
+  background: var(--disabled);
+  border-color: color-mix(in srgb, var(--on-disabled) 45%, transparent);
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+/* ---- Messages --------------------------------------------------------------------------- */
+
+/* Errors sit on a white panel, so their text is readable on any client colour. */
+.error,
+.error-detail {
+  padding: 0.75rem 1rem;
+  color: #8a0000;
+  font-weight: var(--fw-semibold);
+  background: #fff;
+  border-left: 6px solid var(--danger);
+  border-radius: 0.5rem;
+}
+
+.notice {
+  padding: 0.85rem 1.25rem;
+  color: var(--text);
+  font-size: var(--fs-body);
+  background: rgb(0 1 2 / 0.92);
+  border: 1px solid rgb(255 255 255 / 0.5);
+  border-left: 6px solid var(--focus);
+  border-radius: 0.75rem;
+}
+
+/* A transient banner (the facilitator restarted your activity) floats, as before, but under
+   the header so it never covers the wordmark or the sound switch. */
+.notice {
+  top: calc(max(1.25rem, env(safe-area-inset-top)) + var(--target-min) + 1rem);
+}
+
+/* A notice that belongs to a screen (the Welcome message about a session that was not found)
+   stays in that screen's flow. */
+.screen .notice {
+  position: static;
+  width: auto;
+  max-width: none;
+  text-align: left;
+  transform: none;
+  box-shadow: none;
+}
+
+.connection {
+  padding: 0.75rem 0.75rem 0.75rem 1.25rem;
+  color: var(--text);
+  font-size: var(--fs-body);
+  background: var(--danger);
+  border: 1px solid rgb(255 255 255 / 0.6);
+  border-radius: 0.75rem;
+}
+
+.connection button {
+  min-width: 5.5rem;
+  min-height: var(--target-min);
+  color: var(--danger);
+  font-weight: var(--fw-bold);
+  background: #fff;
+  border: 0;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+}
+
+.stage-placeholder h1 {
+  color: var(--text);
+}

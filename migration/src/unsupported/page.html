@@ -1,0 +1,19 @@
+<style>
+#pms-unsupported{display:none;position:fixed;inset:0;z-index:2147483647;overflow:auto;box-sizing:border-box;padding:max(2rem,env(safe-area-inset-top)) max(1.5rem,calc(50% - 17rem)) 2rem;color:#000;background:#fff;font:1.125rem/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+#pms-unsupported *{font-family:inherit;font-style:normal;text-transform:none;letter-spacing:normal;color:#000}
+#pms-unsupported p{margin-top:0;margin-bottom:.75rem;font-size:1.125rem;font-weight:400}
+#pms-unsupported .pms-mark{margin-top:0;margin-bottom:2.5rem;font-size:1.25rem}
+#pms-unsupported .pms-wordmark{font-weight:800;letter-spacing:-.03em}
+#pms-unsupported .pms-wordmark span{color:#86bc25}
+#pms-unsupported .pms-mark{font-weight:400}
+#pms-unsupported #pms-unsupported-title{margin-top:0;margin-bottom:.75rem;font-size:1.75rem;font-weight:700;line-height:1.2}
+</style>
+<noscript><style>#pms-unsupported{display:block!important}</style></noscript>
+<section id="pms-unsupported" aria-labelledby="pms-unsupported-title">
+  <p class="pms-mark"><span class="pms-wordmark">Deloitte<span>.</span></span> %APP_NAME%</p>
+  <p id="pms-unsupported-title" role="heading" aria-level="1">This page needs a recent browser.</p>
+  <p>Please open it in the latest Safari, Chrome, Edge or Firefox.</p>
+  <noscript><p>JavaScript is turned off in this browser. Please turn it on, then reload this page.</p></noscript>
+</section>
+<script nomodule>document.getElementById('pms-unsupported').style.display='block';</script>
+<script>%SUPPORT_CHECK%</script>

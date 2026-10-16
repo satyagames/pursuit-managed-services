@@ -1,0 +1,33 @@
+/* Colours for the admin page: light, calm and operational. The Phase 1 tokens (tokens.css) stay the
+ * source for type, targets, the green focus ring, --action and --danger; this file adds the light
+ * surfaces and the status tints the dark participant palette has no use for, and points the legacy
+ * admin sheet's own names (public/css/admin.css, which the old admin still uses) at them. Every text
+ * pair here is held to 4.5:1 by scripts/test-admin-today.js. */
+
+:root {
+  --adm-bg: #f3f6fb;
+  --adm-card: #ffffff;
+  --adm-line: #d3dce8;
+  --adm-ink: #0b1f3a; /* the same navy as --on-plate */
+  --adm-muted: #4a5b72;
+  --adm-primary: var(--action);
+  --adm-bar: #0b1f3a;
+  --adm-ok-bg: #e4f3e8;
+  --adm-ok-ink: #0b5a28;
+  --adm-warn-bg: #fff2d1;
+  --adm-warn-ink: #6a4200;
+  --adm-bad-bg: #fde7e4;
+  --adm-bad-ink: #8c1a10;
+  --adm-bad-line: #f1b9b2;
+  --adm-idle-bg: #e7ebf2;
+  --adm-idle-ink: #3a495e;
+
+  --ink: var(--adm-ink);
+  --muted: var(--adm-muted);
+  --line: var(--adm-line);
+  --bg: var(--adm-bg);
+  --card: var(--adm-card);
+  --accent: var(--action);
+  --ok: #1c7a3d;
+  --warn: #b45309;
+}

@@ -1,0 +1,100 @@
+/* Element-level base for the participant pages: type, focus ring, helpers. Loaded after
+ * tokens.css and the legacy public/css files, so it wins by source order. */
+
+html {
+  -webkit-text-size-adjust: 100%;
+  background: var(--bg-bottom);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-regular);
+  line-height: 1.45;
+  background: var(--bg-bottom);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation; /* no double-tap zoom; pinch zoom stays unless kiosk mode blocks it */
+}
+
+/* Before today's client is known, the page behind the shell is the client-neutral top colour too
+   (see AppShell). */
+:root[data-theme-pending],
+:root[data-theme-pending] body {
+  background: var(--bg-top);
+}
+
+/* Selection, the long-press callout and rubber-band scrolling are only switched off for the
+   kiosk (installed web app or ?kiosk=1, see lib/kiosk.ts). In a normal Safari tab people can
+   select and copy text and pull to refresh. */
+body {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
+html:not([data-kiosk]),
+html:not([data-kiosk]) body {
+  overscroll-behavior: auto;
+}
+
+:root[data-kiosk] body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+:root[data-kiosk] input,
+:root[data-kiosk] textarea,
+:root[data-kiosk] [contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Visible focus on every control: Deloitte green, with a dark band on EACH side of it, so that the ring has 3:1 against what it touches whatever the
+   page behind is (the lighter blue of a client's gradient, or a white plate). The green is the outline, 3px wide and 3px off the control; the shadow is
+   one band 3px wide that fills the gap between the control and the ring, and another that reaches 3px beyond the ring (the outline is painted over the
+   shadow, so the ring sits between the two). Phase 8: it used to be a 2px halo with a 1px gap, so the ring touched the page itself, 2.8:1 on the lighter part. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 3px var(--bg-top), 0 0 0 9px var(--bg-top);
+}
+
+/* A heading that script moved focus to (a new screen, the next question) is not a control. It
+   takes the ring only when the person is using the keyboard: lib/focus.ts marks it then. For a
+   tap or a click there is no outline and no halo, whatever :focus-visible makes of it. */
+:where(h1, h2, h3, h4, h5, h6)[tabindex='-1']:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* (A heading is not a control, but the ring a keyboard user sees on it is the same ring: a band of dark either side of the green.) */
+:where(h1, h2, h3, h4, h5, h6)[tabindex='-1'][data-keyboard-focus]:focus {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 3px var(--bg-top), 0 0 0 9px var(--bg-top);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Reduced motion: public/css/vfx.css already switches off the legacy animations and shortens
+   their transitions, element by element. Each component here does the same for itself. A
+   blanket `* { transition-duration: ... }` is avoided on purpose: it turns the default
+   `transition: all` on for every element, layout properties included, so a resize or rotation
+   paints one frame late. */

@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xattr -l node_modules/.bin/svelte-check)"
+    ]
+  }
+}

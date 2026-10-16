@@ -1,0 +1,31 @@
+/*!
+ * Open Sans for the admin page: Regular, SemiBold and Bold only (the three weights it uses), from
+ * the same subset the participant page inlines (assets/fonts, built by scripts/build-fonts.py).
+ * Copyright 2010-2011 Google Corporation; Apache License, Version 2.0
+ * (assets/fonts/LICENSE-OpenSans-Apache-2.0.txt). The Light, ExtraBold and ExtraBold Italic faces are
+ * left out on purpose: the admin page is operational, and each face is about 10 KB inlined.
+ */
+
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../assets/fonts/open-sans-400.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('../assets/fonts/open-sans-600.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../assets/fonts/open-sans-700.woff2') format('woff2');
+}

@@ -1,0 +1,110 @@
+[
+  {
+    "id": "c-kroger",
+    "name": "Kroger",
+    "logoUrl": "/assets/images/clients/kroger-logo-f14687c2a8.webp",
+    "primaryColor": "#0060A9",
+    "secondaryColor": "#E31837",
+    "createdAt": "2026-09-18T00:00:00.000Z",
+    "slug": "kroger",
+    "theme": {
+      "version": 1,
+      "primary": "#045BCC",
+      "accent": null,
+      "tokens": {
+        "--bg-top": "#000102",
+        "--bg-mid": "#045BCC",
+        "--bg-bottom": "#0444A8",
+        "--surface": "rgb(255 255 255 / 0.14)",
+        "--surface-border": "#FFFFFF",
+        "--action": "#296CD4",
+        "--action-border": "rgb(255 255 255 / 0.7)",
+        "--success": "#09FF53",
+        "--on-success": "#000000",
+        "--danger": "#E00000",
+        "--danger-tint": "#4F3982",
+        "--disabled": "#034CB5",
+        "--on-disabled": "#4D80D0",
+        "--focus": "#86BC25",
+        "--progress": "#86BC25",
+        "--accent-rule": "#FFFFFF",
+        "--accent-ring": "rgb(255 255 255 / 0)"
+      },
+      "assets": {
+        "hero": "/assets/images/clients/kroger-hero-c17035ae16.webp",
+        "logo": "/assets/images/clients/kroger-logo-f14687c2a8.webp",
+        "background": "/assets/images/clients/kroger-background-e3df73ce01.webp",
+        "backgroundFocus": {
+          "x": 50,
+          "y": 50
+        },
+        "tile": null
+      },
+      "copy": {
+        "eventTitle": "Kroger Trivia Night",
+        "eventSubtitle": "Celebrating 140+ years of Kroger's history and the people who built them.",
+        "welcomeLine": "Welcome to the Kroger experience.",
+        "logoText": "Kroger"
+      },
+      "sample": {
+        "source": "Seed sample clients"
+      }
+    },
+    "themeVersion": 1,
+    "status": "active"
+  },
+  {
+    "id": "c-dominos",
+    "name": "Domino's",
+    "logoUrl": "/assets/images/clients/dominos-logo-a336759dd8.webp",
+    "primaryColor": "#0B648F",
+    "secondaryColor": "#E21737",
+    "createdAt": "2026-10-11T00:00:00.000Z",
+    "slug": "dominos",
+    "theme": {
+      "version": 1,
+      "primary": "#0B648F",
+      "accent": "#E21737",
+      "tokens": {
+        "--bg-top": "#000102",
+        "--bg-mid": "#0B648F",
+        "--bg-bottom": "#0A4E76",
+        "--surface": "rgb(255 255 255 / 0.14)",
+        "--surface-border": "#FFFFFF",
+        "--action": "#256C96",
+        "--action-border": "rgb(255 255 255 / 0.7)",
+        "--success": "#09FF53",
+        "--on-success": "#000000",
+        "--danger": "#E00000",
+        "--danger-tint": "#4F3982",
+        "--disabled": "#09567F",
+        "--on-disabled": "#3378A0",
+        "--focus": "#86BC25",
+        "--progress": "#86BC25",
+        "--accent-rule": "#FFFFFF",
+        "--accent-ring": "#E21737"
+      },
+      "assets": {
+        "hero": "/assets/images/clients/dominos-hero-c2e5b9ab7e.webp",
+        "logo": "/assets/images/clients/dominos-logo-a336759dd8.webp",
+        "background": "/assets/images/clients/dominos-background-abf6eacaac.jpg",
+        "backgroundFocus": {
+          "x": 50,
+          "y": 50
+        },
+        "tile": null
+      },
+      "copy": {
+        "eventTitle": "Domino's Trivia Night",
+        "eventSubtitle": "Celebrating 65+ years of Domino's history and the people who built it.",
+        "welcomeLine": "Welcome to the Domino's experience.",
+        "logoText": "Domino's"
+      },
+      "sample": {
+        "source": "Seed sample clients"
+      }
+    },
+    "themeVersion": 1,
+    "status": "active"
+  }
+]

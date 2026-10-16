@@ -1,0 +1,101 @@
+[
+  {
+    "id": "sec-trivia",
+    "title": "Kroger's History",
+    "order": 1,
+    "enabled": true,
+    "industryTags": [
+      "retail"
+    ],
+    "questionIds": [
+      "q-trivia-1",
+      "q-trivia-2",
+      "q-trivia-3",
+      "q-trivia-4",
+      "q-trivia-5"
+    ],
+    "clientId": "c-kroger",
+    "description": "Celebrating 140+ years of Kroger's history and the people who built them."
+  },
+  {
+    "id": "sec-guess-the-brand",
+    "title": "Guess the Brand",
+    "order": 2,
+    "enabled": true,
+    "industryTags": [
+      "retail"
+    ],
+    "questionIds": [
+      "q-brand-1"
+    ],
+    "clientId": "c-kroger",
+    "description": "Solve the hints the best you can and spot the right Kroger brand!"
+  },
+  {
+    "id": "sec-confidence",
+    "title": "Confidence Continuum",
+    "order": 3,
+    "enabled": true,
+    "industryTags": [],
+    "questionIds": [
+      "q-confidence-delivery"
+    ],
+    "clientId": "c-kroger"
+  },
+  {
+    "id": "sec-open-feedback",
+    "title": "Open Feedback",
+    "order": 4,
+    "enabled": true,
+    "industryTags": [],
+    "questionIds": [
+      "q-open-feedback"
+    ],
+    "clientId": "c-kroger"
+  },
+  {
+    "id": "sec-straight-talk",
+    "title": "Straight Talk",
+    "order": 5,
+    "enabled": false,
+    "industryTags": [],
+    "questionIds": [
+      "q-straight-talk-objective"
+    ],
+    "clientId": "c-kroger"
+  },
+  {
+    "id": "sec-dominos-history",
+    "title": "Domino's History",
+    "order": 1,
+    "enabled": true,
+    "industryTags": [
+      "restaurants"
+    ],
+    "questionIds": [
+      "q-dominos-history-1",
+      "q-dominos-history-2",
+      "q-dominos-history-3",
+      "q-dominos-history-4",
+      "q-dominos-history-5"
+    ],
+    "clientId": "c-dominos",
+    "description": "How well do you know the Domino's story?"
+  },
+  {
+    "id": "sec-dominos-innovation",
+    "title": "Guess the Innovation",
+    "order": 2,
+    "enabled": true,
+    "industryTags": [
+      "restaurants"
+    ],
+    "questionIds": [
+      "q-dominos-innovation-1",
+      "q-dominos-innovation-2",
+      "q-dominos-innovation-3"
+    ],
+    "clientId": "c-dominos",
+    "description": "Read the clue and spot the right Domino's innovation!"
+  }
+]

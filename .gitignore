@@ -1,0 +1,15 @@
+node_modules/
+public/vendor/
+build/
+build-svelte/
+test-results/
+playwright-report/
+server/data/*.tmp
+.DS_Store
+.local/
+.env
+*.pem
+*.pfx
+*.key
+# A broken copy scripts/mutate-leader-report.js makes and removes; never commit one that a killed run left behind.
+migration/src/lib/.leader-report.mutant-*.js

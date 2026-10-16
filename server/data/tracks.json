@@ -1,0 +1,74 @@
+[
+  {
+    "id": "bf99fde5-978f-4c9d-b029-36cde0505997",
+    "sessionId": "s-kroger-kickoff",
+    "clientId": "c-kroger",
+    "joinedVia": "manual",
+    "qrTokenId": null,
+    "createdAt": "2026-09-21T09:27:28.480Z",
+    "resumeCount": 1,
+    "lastResumedAt": "2026-09-21T11:55:56.394Z",
+    "restartedAt": "2026-09-21T14:05:12.847Z",
+    "restartSectionId": null
+  },
+  {
+    "id": "5e25af0b-559d-4590-a38d-7241e6c49168",
+    "sessionId": "s-kroger-kickoff",
+    "clientId": "c-kroger",
+    "joinedVia": "manual",
+    "qrTokenId": null,
+    "createdAt": "2026-09-21T13:14:49.780Z",
+    "resumeCount": 2,
+    "lastResumedAt": "2026-09-21T13:52:20.917Z",
+    "restartedAt": null,
+    "restartSectionId": null
+  },
+  {
+    "id": "fd9c34df-aaec-47b5-9640-b3ad752d908c",
+    "sessionId": "s-kroger-kickoff",
+    "clientId": "c-kroger",
+    "joinedVia": "manual",
+    "qrTokenId": null,
+    "createdAt": "2026-09-21T13:55:09.283Z",
+    "resumeCount": 0,
+    "lastResumedAt": null,
+    "restartedAt": null,
+    "restartSectionId": null
+  },
+  {
+    "id": "ca0088c6-f0f1-4240-87d8-d935060ee0e1",
+    "sessionId": "s-kroger-kickoff",
+    "clientId": "c-kroger",
+    "joinedVia": "manual",
+    "qrTokenId": null,
+    "createdAt": "2026-09-21T13:56:00.133Z",
+    "resumeCount": 1,
+    "lastResumedAt": "2026-09-21T13:56:22.657Z",
+    "restartedAt": null,
+    "restartSectionId": null
+  },
+  {
+    "id": "924837c8-e642-4046-8c2c-e09205c641b8",
+    "sessionId": "s-kroger-kickoff",
+    "clientId": "c-kroger",
+    "joinedVia": "manual",
+    "qrTokenId": null,
+    "createdAt": "2026-09-21T14:21:42.306Z",
+    "resumeCount": 2,
+    "lastResumedAt": "2026-09-22T11:24:23.316Z",
+    "restartedAt": null,
+    "restartSectionId": null
+  },
+  {
+    "id": "0a2b2cee-2d60-4a0b-93d4-34efb57a49c2",
+    "sessionId": "s-kroger-kickoff",
+    "clientId": "c-kroger",
+    "joinedVia": "manual",
+    "qrTokenId": null,
+    "createdAt": "2026-09-23T14:48:12.234Z",
+    "resumeCount": 1,
+    "lastResumedAt": "2026-09-23T14:48:19.528Z",
+    "restartedAt": null,
+    "restartSectionId": null
+  }
+]

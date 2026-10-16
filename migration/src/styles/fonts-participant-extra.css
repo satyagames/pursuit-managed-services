@@ -1,0 +1,31 @@
+/*!
+ * The three Open Sans faces the participant page uses and the admin page does not (Light, ExtraBold and
+ * ExtraBold Italic), for Brand Studio's preview frame only. The admin page itself keeps its three
+ * (fonts-admin.css); the preview adds these to the frame when Brand Studio opens, so what the
+ * administrator sees is set in the same faces a participant's iPad gets.
+ * Copyright 2010-2011 Google Corporation; Apache License, Version 2.0 (assets/fonts/LICENSE-OpenSans-Apache-2.0.txt).
+ */
+
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('../assets/fonts/open-sans-300.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('../assets/fonts/open-sans-800.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Open Sans';
+  font-style: italic;
+  font-weight: 800;
+  font-display: swap;
+  src: url('../assets/fonts/open-sans-800-italic.woff2') format('woff2');
+}

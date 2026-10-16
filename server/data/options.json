@@ -1,0 +1,506 @@
+[
+  {
+    "id": "o-obj-cost",
+    "questionId": "q-straight-talk-objective",
+    "label": "Reduce cost",
+    "value": "reduce-cost",
+    "correct": null
+  },
+  {
+    "id": "o-obj-tech",
+    "questionId": "q-straight-talk-objective",
+    "label": "Modernize technology",
+    "value": "modernize-technology",
+    "correct": null
+  },
+  {
+    "id": "o-obj-process",
+    "questionId": "q-straight-talk-objective",
+    "label": "Transform process",
+    "value": "transform-process",
+    "correct": null
+  },
+  {
+    "id": "o-obj-cx",
+    "questionId": "q-straight-talk-objective",
+    "label": "Enhance customer experience",
+    "value": "enhance-customer-experience",
+    "correct": null
+  },
+  {
+    "id": "o-obj-talent",
+    "questionId": "q-straight-talk-objective",
+    "label": "Scale talent model",
+    "value": "scale-talent-model",
+    "correct": null
+  },
+  {
+    "id": "o-conf-1",
+    "questionId": "q-confidence-delivery",
+    "label": "Not confident",
+    "value": 1,
+    "correct": null
+  },
+  {
+    "id": "o-conf-2",
+    "questionId": "q-confidence-delivery",
+    "label": "Moderately confident",
+    "value": 2,
+    "correct": null
+  },
+  {
+    "id": "o-conf-3",
+    "questionId": "q-confidence-delivery",
+    "label": "Very confident",
+    "value": 3,
+    "correct": null
+  },
+  {
+    "id": "o-trivia-1-a",
+    "questionId": "q-trivia-1",
+    "label": "Kroger grocery and Baking co.",
+    "value": "kroger-grocery-and-baking-co",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-trivia-1-b",
+    "questionId": "q-trivia-1",
+    "label": "Great Western Tea co.",
+    "value": "great-western-tea-co",
+    "correct": true,
+    "imageUrl": null
+  },
+  {
+    "id": "o-trivia-1-c",
+    "questionId": "q-trivia-1",
+    "label": "Kroger's",
+    "value": "kroger-s",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-trivia-1-d",
+    "questionId": "q-trivia-1",
+    "label": "Kroger",
+    "value": "kroger",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-trivia-2-a",
+    "questionId": "q-trivia-2",
+    "label": "66 Pearl Street, Cincinnati",
+    "value": "66-pearl-street-cincinnati",
+    "correct": true,
+    "imageUrl": null
+  },
+  {
+    "id": "o-trivia-2-b",
+    "questionId": "q-trivia-2",
+    "label": "1014 Vine Street, Cincinnati",
+    "value": "1014-vine-street-cincinnati",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-trivia-2-c",
+    "questionId": "q-trivia-2",
+    "label": "719 W. Walnut Street, Arkansas",
+    "value": "719-w-walnut-street-arkansas",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-trivia-2-d",
+    "questionId": "q-trivia-2",
+    "label": "Fourth Avenue South, Seattle",
+    "value": "fourth-avenue-south-seattle",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-trivia-3-a",
+    "questionId": "q-trivia-3",
+    "label": "Pharmacy store",
+    "value": "pharmacy-store",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-trivia-3-b",
+    "questionId": "q-trivia-3",
+    "label": "Meat department",
+    "value": "meat-department",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-trivia-3-c",
+    "questionId": "q-trivia-3",
+    "label": "Bakery",
+    "value": "bakery",
+    "correct": true,
+    "imageUrl": null
+  },
+  {
+    "id": "o-trivia-3-d",
+    "questionId": "q-trivia-3",
+    "label": "Soda label",
+    "value": "soda-label",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-trivia-4-a",
+    "questionId": "q-trivia-4",
+    "label": "Food processing at Kroger",
+    "value": "food-processing-at-kroger",
+    "correct": true,
+    "imageUrl": null
+  },
+  {
+    "id": "o-trivia-4-b",
+    "questionId": "q-trivia-4",
+    "label": "Private Label Manufacturing",
+    "value": "private-label-manufacturing",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-trivia-4-c",
+    "questionId": "q-trivia-4",
+    "label": "Door to Door Deliveries",
+    "value": "door-to-door-deliveries",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-trivia-4-d",
+    "questionId": "q-trivia-4",
+    "label": "Condiments Manufacturing",
+    "value": "condiments-manufacturing",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-trivia-5-a",
+    "questionId": "q-trivia-5",
+    "label": "Food processing at Kroger",
+    "value": "food-processing-at-kroger",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-trivia-5-b",
+    "questionId": "q-trivia-5",
+    "label": "Meat processing",
+    "value": "meat-processing",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-trivia-5-c",
+    "questionId": "q-trivia-5",
+    "label": "Door to Door Deliveries",
+    "value": "door-to-door-deliveries",
+    "correct": true,
+    "imageUrl": null
+  },
+  {
+    "id": "o-trivia-5-d",
+    "questionId": "q-trivia-5",
+    "label": "Condiments Manufacturing",
+    "value": "condiments-manufacturing",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-brand-1-a",
+    "questionId": "q-brand-1",
+    "label": "Kroger",
+    "value": "kroger",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-brand-1-b",
+    "questionId": "q-brand-1",
+    "label": "Home Chef",
+    "value": "home-chef",
+    "correct": true,
+    "imageUrl": null
+  },
+  {
+    "id": "o-brand-1-c",
+    "questionId": "q-brand-1",
+    "label": "Bloom Haus",
+    "value": "bloom-haus",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-brand-1-d",
+    "questionId": "q-brand-1",
+    "label": "Smart Way",
+    "value": "smart-way",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-history-1-a",
+    "questionId": "q-dominos-history-1",
+    "label": "Ohio",
+    "value": "ohio",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-history-1-b",
+    "questionId": "q-dominos-history-1",
+    "label": "Michigan",
+    "value": "michigan",
+    "correct": true,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-history-1-c",
+    "questionId": "q-dominos-history-1",
+    "label": "Illinois",
+    "value": "illinois",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-history-1-d",
+    "questionId": "q-dominos-history-1",
+    "label": "New York",
+    "value": "new-york",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-history-2-a",
+    "questionId": "q-dominos-history-2",
+    "label": "Toronto, Canada",
+    "value": "toronto-canada",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-history-2-b",
+    "questionId": "q-dominos-history-2",
+    "label": "London, UK",
+    "value": "london-uk",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-history-2-c",
+    "questionId": "q-dominos-history-2",
+    "label": "Winnipeg, Canada",
+    "value": "winnipeg-canada",
+    "correct": true,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-history-2-d",
+    "questionId": "q-dominos-history-2",
+    "label": "Tokyo, Japan",
+    "value": "tokyo-japan",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-history-3-a",
+    "questionId": "q-dominos-history-3",
+    "label": "Domino's Tracker",
+    "value": "domino-s-tracker",
+    "correct": true,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-history-3-b",
+    "questionId": "q-dominos-history-3",
+    "label": "Pizza Radar",
+    "value": "pizza-radar",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-history-3-c",
+    "questionId": "q-dominos-history-3",
+    "label": "Order Compass",
+    "value": "order-compass",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-history-3-d",
+    "questionId": "q-dominos-history-3",
+    "label": "Delivery Map",
+    "value": "delivery-map",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-history-4-a",
+    "questionId": "q-dominos-history-4",
+    "label": "1999",
+    "value": "year-1999",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-history-4-b",
+    "questionId": "q-dominos-history-4",
+    "label": "2007",
+    "value": "year-2007",
+    "correct": true,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-history-4-c",
+    "questionId": "q-dominos-history-4",
+    "label": "2012",
+    "value": "year-2012",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-history-4-d",
+    "questionId": "q-dominos-history-4",
+    "label": "2016",
+    "value": "year-2016",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-history-5-a",
+    "questionId": "q-dominos-history-5",
+    "label": "A pizza oven",
+    "value": "a-pizza-oven",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-history-5-b",
+    "questionId": "q-dominos-history-5",
+    "label": "A loyalty programme",
+    "value": "a-loyalty-programme",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-history-5-c",
+    "questionId": "q-dominos-history-5",
+    "label": "A mobile app",
+    "value": "a-mobile-app",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-history-5-d",
+    "questionId": "q-dominos-history-5",
+    "label": "A purpose-built delivery vehicle",
+    "value": "a-purpose-built-delivery-vehicle",
+    "correct": true,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-innovation-1-a",
+    "questionId": "q-dominos-innovation-1",
+    "label": "Domino's Tracker",
+    "value": "domino-s-tracker",
+    "correct": true,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-innovation-1-b",
+    "questionId": "q-dominos-innovation-1",
+    "label": "Carside Delivery",
+    "value": "carside-delivery",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-innovation-1-c",
+    "questionId": "q-dominos-innovation-1",
+    "label": "DXP",
+    "value": "dxp",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-innovation-1-d",
+    "questionId": "q-dominos-innovation-1",
+    "label": "Pizza Profiles",
+    "value": "pizza-profiles",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-innovation-2-a",
+    "questionId": "q-dominos-innovation-2",
+    "label": "Domino's Tracker",
+    "value": "domino-s-tracker",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-innovation-2-b",
+    "questionId": "q-dominos-innovation-2",
+    "label": "Carside Delivery",
+    "value": "carside-delivery",
+    "correct": true,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-innovation-2-c",
+    "questionId": "q-dominos-innovation-2",
+    "label": "DXP",
+    "value": "dxp",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-innovation-2-d",
+    "questionId": "q-dominos-innovation-2",
+    "label": "Pizza Profiles",
+    "value": "pizza-profiles",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-innovation-3-a",
+    "questionId": "q-dominos-innovation-3",
+    "label": "Domino's Tracker",
+    "value": "domino-s-tracker",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-innovation-3-b",
+    "questionId": "q-dominos-innovation-3",
+    "label": "Carside Delivery",
+    "value": "carside-delivery",
+    "correct": false,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-innovation-3-c",
+    "questionId": "q-dominos-innovation-3",
+    "label": "DXP",
+    "value": "dxp",
+    "correct": true,
+    "imageUrl": null
+  },
+  {
+    "id": "o-dominos-innovation-3-d",
+    "questionId": "q-dominos-innovation-3",
+    "label": "Pizza Profiles",
+    "value": "pizza-profiles",
+    "correct": false,
+    "imageUrl": null
+  }
+]

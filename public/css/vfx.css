@@ -1,0 +1,384 @@
+/* Since Phase 10c-1 this file belongs to the new build alone (migration/): the legacy app that shared it is kept in the tag legacy-final. */
+/* Motion and the sound switch for the client screens. Loaded after app.js's stylesheet
+   (app.css); it only adds transitions and animation, never layout. Behaviour lives in
+   js/vfx.js and js/sfx.js. Colors come from the brand custom properties. */
+
+:root {
+  --vfx-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --vfx-spring: cubic-bezier(0.34, 1.4, 0.5, 1);
+}
+
+/* ---- Every screen: a short rise-in ------------------------------------------------ */
+
+.screen {
+  animation: vfx-screen-in 380ms var(--vfx-ease) backwards;
+}
+
+@keyframes vfx-screen-in {
+  from { opacity: 0; transform: translateY(14px); }
+}
+
+/* ---- Buttons and option tiles: lift on hover, press on tap ------------------------- */
+
+.btn,
+.option,
+.section-item__button {
+  transition: transform 160ms var(--vfx-ease), box-shadow 160ms var(--vfx-ease),
+    background-color 200ms ease, border-color 200ms ease, color 200ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (hover: hover) {
+  .btn:not(:disabled, .btn--link):hover,
+  .option:not(.option--ranked):hover,
+  .section-item__button:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.14);
+  }
+
+  .btn--link:hover {
+    opacity: 0.75;
+  }
+}
+
+.btn:not(:disabled, .btn--link):active,
+.option:not(.option--ranked):active,
+.section-item__button:active {
+  transform: scale(0.97);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.18);
+  transition-duration: 60ms;
+}
+
+.btn:focus-visible,
+.option:has(:focus-visible),
+.section-item__button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--brand-primary) 45%, transparent);
+  outline-offset: 2px;
+}
+
+/* ---- Agenda: rows rise in one after another ---------------------------------------- */
+
+.vfx-rise {
+  animation: vfx-rise 420ms var(--vfx-ease) backwards;
+  animation-delay: calc(var(--i, 0) * var(--step, 70ms));
+}
+
+@keyframes vfx-rise {
+  from { opacity: 0; transform: translateY(16px); }
+}
+
+/* ---- Chosen options (every question type that shows a tile) ------------------------ */
+
+.option.is-selected {
+  border-color: var(--brand-primary);
+  background: color-mix(in srgb, var(--brand-primary) 8%, var(--surface));
+}
+
+/* ---- Straight Talk: fan in, then lock in ------------------------------------------- */
+
+.vfx-fan:not(.vfx-in) > .option {
+  opacity: 0;
+}
+
+.vfx-fan.vfx-in:not(.vfx-done) > .option {
+  transform-origin: 0 0;
+  animation: vfx-fan-in 520ms var(--vfx-ease) backwards;
+  animation-delay: calc(var(--i) * 75ms + 80ms);
+}
+
+@keyframes vfx-fan-in {
+  from { opacity: 0; transform: translateY(-10px) rotate(-5deg) scale(0.96); }
+}
+
+[data-vfx='straight-talk'] .option.is-selected {
+  color: #fff;
+  background: var(--brand-primary);
+  border-color: var(--brand-primary);
+  font-weight: 600;
+}
+
+[data-vfx='straight-talk'] .option.is-selected input {
+  accent-color: #fff;
+}
+
+.option.vfx-lock,
+.vfx-fan.vfx-in > .option.vfx-lock {
+  animation: vfx-lock 520ms var(--vfx-spring);
+}
+
+@keyframes vfx-lock {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand-primary) 45%, transparent); }
+  35% { transform: scale(1.06); }
+  65% { transform: scale(0.98); }
+  100% { transform: scale(1); box-shadow: 0 0 0 16px transparent; }
+}
+
+/* ---- Standard poll / MCQ: options glance in turn, then settle ---------------------- */
+
+.vfx-glance.vfx-in > .option {
+  animation: vfx-glance 620ms ease-in-out backwards;
+  animation-delay: calc(var(--q, 0) * 120ms + var(--i) * 150ms + 250ms);
+}
+
+@keyframes vfx-glance {
+  40% {
+    transform: translateX(6px);
+    border-color: var(--brand-primary);
+    background: color-mix(in srgb, var(--brand-primary) 12%, var(--surface));
+  }
+}
+
+/* ---- True/False: a thumb slides between the two choices ---------------------------- */
+
+.option-list--tf {
+  position: relative;
+  flex-direction: row;
+  gap: 0;
+  padding: 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 4px);
+}
+
+.option-list--tf .option {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  justify-content: center;
+  font-weight: 600;
+  background: transparent;
+  border-color: transparent;
+}
+
+.option-list--tf .option:hover,
+.option-list--tf .option:active {
+  transform: none;
+  box-shadow: none;
+}
+
+.option-list--tf .option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.option-list--tf .option.is-selected {
+  color: #fff;
+  background: transparent;
+  border-color: transparent;
+}
+
+.tf-thumb {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc((100% - 8px) / 2);
+  border-radius: var(--radius);
+  background: var(--brand-primary);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
+  opacity: 0;
+  transform: translateX(calc(var(--pos, 0) * 100%));
+  transition: transform 420ms var(--vfx-spring), opacity 200ms ease;
+}
+
+.tf-thumb.is-on {
+  opacity: 1;
+}
+
+/* ---- Confidence Continuum: cool-to-warm scale that fills toward the choice --------- */
+
+.scale {
+  position: relative;
+  margin: 14px 6px 4px;
+}
+
+.scale__track {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--border);
+}
+
+/* The gradient always spans the whole track; the clip decides how much of it shows,
+   so the colour at the tip is the colour of that point on the scale. */
+.scale__fill {
+  height: 100%;
+  background: linear-gradient(90deg, hsl(210 85% 48%), hsl(120 55% 45%), hsl(25 90% 52%));
+  clip-path: inset(0 calc((1 - var(--p, 0)) * 100%) 0 0);
+  transition: clip-path 600ms var(--vfx-ease);
+}
+
+.scale__knob {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--p, 0) * 100%);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--scale-color, var(--brand-primary));
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.3);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.4);
+  transition: left 600ms var(--vfx-ease), opacity 200ms ease, transform 400ms var(--vfx-spring),
+    background-color 600ms ease;
+}
+
+.scale.is-set .scale__knob {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+[data-vfx='confidence'] .option.is-selected {
+  border-color: var(--scale-color);
+  background: color-mix(in srgb, var(--scale-color) 14%, var(--surface));
+}
+
+/* ---- Thank-you: confetti ----------------------------------------------------------- */
+
+.confetti {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.confetti i {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  width: 10px;
+  height: 16px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: vfx-confetti 1900ms var(--vfx-ease) var(--d, 0ms) forwards;
+}
+
+@keyframes vfx-confetti {
+  0% { opacity: 1; transform: translate(0, 0) rotate(0); }
+  100% { opacity: 0; transform: translate(var(--x), var(--y)) rotate(var(--r)); }
+}
+
+.thank-you-screen h1 {
+  animation: vfx-lock 700ms var(--vfx-spring) 200ms backwards;
+}
+
+/* ---- Sound switch (iPhone style), top-right corner --------------------------------- */
+
+.sound-toggle {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  right: max(16px, env(safe-area-inset-right));
+  z-index: 90;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px 6px 14px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sound-toggle[hidden] {
+  display: none;
+}
+
+.sound-toggle:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--brand-primary) 45%, transparent);
+  outline-offset: 2px;
+}
+
+.sound-toggle__track {
+  position: relative;
+  flex: none;
+  width: 51px;
+  height: 31px;
+  border-radius: 999px;
+  background: #d1d5db;
+  transition: background-color 250ms ease;
+}
+
+.sound-toggle__knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  transition: transform 250ms var(--vfx-spring), width 150ms ease;
+}
+
+.sound-toggle:active .sound-toggle__knob {
+  width: 32px;
+}
+
+.sound-toggle[aria-checked='true'] .sound-toggle__track {
+  background: #34c759;
+}
+
+.sound-toggle[aria-checked='true'] .sound-toggle__knob {
+  transform: translateX(20px);
+}
+
+.sound-toggle[aria-checked='true']:active .sound-toggle__knob {
+  transform: translateX(15px);
+}
+
+/* On a phone the switch would sit on the brand header, so leave it a row of its own. */
+@media (max-width: 640px) {
+  #app {
+    padding-top: 72px;
+  }
+}
+
+/* ---- Reduced motion: keep state changes, drop the movement ------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .screen,
+  .vfx-rise,
+  .vfx-fan.vfx-in:not(.vfx-done) > .option,
+  .vfx-glance.vfx-in > .option,
+  .option.vfx-lock,
+  .vfx-fan.vfx-in > .option.vfx-lock,
+  .thank-you-screen h1 {
+    animation: none;
+  }
+
+  .vfx-fan:not(.vfx-in) > .option {
+    opacity: 1;
+  }
+
+  .btn,
+  .option,
+  .section-item__button,
+  .tf-thumb,
+  .scale__fill,
+  .scale__knob,
+  .sound-toggle__track,
+  .sound-toggle__knob {
+    transition-duration: 1ms;
+  }
+
+  .btn:hover,
+  .option:hover,
+  .section-item__button:hover,
+  .btn:active,
+  .option:active,
+  .section-item__button:active {
+    transform: none;
+  }
+}

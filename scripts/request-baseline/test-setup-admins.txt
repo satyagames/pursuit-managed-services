@@ -1,0 +1,34 @@
+# Request baseline: scripts/test-setup-admins.js on the mocked SharePoint REST (5 recordings).
+# Recorded at the end of Phase 10c-3 part E (Add an admin; the import brings no admins), when the suite was first recorded.
+# Do not regenerate this file to make a comparison pass: a difference is a finding. See scripts/request-baseline.js.
+# One entry for each distinct request and how many times it was sent ("~": the count depends on timing). <uuid> and <time> are placeholders.
+# Amended in Phase 10h, part A: every item read names its columns, so each entry that read items without naming them has `&$select=` and its list's columns at the end of its query (and a mock's `__next` link of such a read carries them before its `$fakeskip`), by scripts/schema-baseline/select-baselines.js, after a fresh recording equalled the translation exactly; the number and the order of the requests are as they were. Nothing else was changed.
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')?$select=ListItemEntityTypeFullName
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')?$select=ListItemEntityTypeFullName
+4 x GET /sites/cec/_api/web/lists/getbytitle('PMSAdminUsers')/fields
+10 x GET /sites/cec/_api/web/lists/getbytitle('PMSAdminUsers')/items?$top=200&$select=Id,AppId,PinHash,Name
+4 x GET /sites/cec/_api/web/lists/getbytitle('PMSAdminUsers')?$select=ListItemEntityTypeFullName
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')?$select=ListItemEntityTypeFullName
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')?$select=ListItemEntityTypeFullName
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')?$select=ListItemEntityTypeFullName
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/fields
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$filter=AppId eq 'c-seeded'&$top=2&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')?$select=ListItemEntityTypeFullName
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')?$select=ListItemEntityTypeFullName
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')?$select=ListItemEntityTypeFullName
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipantAnswers')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipantAnswers')?$select=ListItemEntityTypeFullName
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')?$select=ListItemEntityTypeFullName
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSVisitLog')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSVisitLog')?$select=ListItemEntityTypeFullName
+3 x POST /sites/cec/_api/contextinfo
+3 x POST /sites/cec/_api/web/lists/getbytitle('PMSAdminUsers')/items
+1 x POST /sites/cec/_api/web/lists/getbytitle('PMSClients')/items

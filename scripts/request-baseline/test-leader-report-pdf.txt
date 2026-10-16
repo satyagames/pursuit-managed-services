@@ -1,0 +1,93 @@
+# Request baseline: scripts/test-leader-report-pdf.js on the mocked SharePoint REST (6 recordings).
+# Recorded at 2ad1520 (the local tag legacy-final), before Phase 10b changed anything.
+# Do not regenerate this file to make a comparison pass: a difference is a finding. See scripts/request-baseline.js.
+# One entry for each distinct request and how many times it was sent ("~": the count depends on timing). <uuid> and <time> are placeholders.
+# Amended (24 entries) for the tests matching /the same report, in 5 requests|a facilitator restart really removes the earlier answers/, compared with the last commit's whole tree (its code and helpers, not only its suite): Phase 10c-2a part B: tests no longer use the seven exports that only tests called (the shared fixture makes a staff visit with beginVisit and a guest's visit by scanning a code; the screen's rows are read through readSessionResults). Nothing else was changed (scripts/request-baseline.js, amendment()).
+# Amended (8 entries) for the tests matching /the same report, in 5 requests|a facilitator restart really removes the earlier answers/, compared with the last commit's whole tree (its code and helpers, not only its suite): Phase 10c-2a part C: nothing reads, clears or makes a session's shared answer item (a restart no longer looks for it, clears it or creates it empty, and reads the activity once; removing a visit no longer reads it). Nothing else was changed (scripts/request-baseline.js, amendment()).
+# Amended (2 entries) for the tests matching /SharePoint \(mock\): the same report, in 5 requests \(4 when no answer points at a question outside the session\)|a facilitator restart really removes the earlier answers: only what came after it is in the report \(both backends\)/, compared with the last commit's whole tree (its code and helpers, not only its suite): Phase 10c-2a part F1: no request filters on the Yes/No column Used (a session's codes are read by SessionId, and VisitorId for one guest, and tested in the browser). Nothing else was changed (scripts/request-baseline.js, amendment()).
+# Translated in Phase 10c-2b from the 10c-2a recording above: each old list title to its PMS name, ClientLogos to PMSClientImages, Order to SortOrder (scripts/schema-baseline/translate-baselines.js), after a fresh recording of the new names equalled the translation exactly. Nothing else was changed.
+# Amended (26 entries) for the tests matching /SharePoint \(mock\): the same report, in 5 requests \(4 when no answer points at a question outside the session\)|a facilitator restart really removes the earlier answers: only what came after it is in the report \(both backends\)/, compared with the last commit's whole tree (its code and helpers, not only its suite): Phase 10c-2b part E: a site is set up as Setup will make it, with the AppSettings item and its SchemaVersion, so a first Go live updates that item (a read and a MERGE) where it used to create it (a POST), and later items' ids shift by one. Nothing else was changed (scripts/request-baseline.js, amendment()).
+# Amended in Phase 10h, part A: every item read names its columns, so each entry that read items without naming them has `&$select=` and its list's columns at the end of its query (and a mock's `__next` link of such a read carries them before its `$fakeskip`), by scripts/schema-baseline/select-baselines.js, after a fresh recording equalled the translation exactly; the number and the order of the requests are as they were. Nothing else was changed.
+# Amended in Phase 10i, part B: schema version 3 renamed PMSGuestList.DisplayName to GuestName and PMSVisitLog.DisplayName to SignedInName (the real site would not return a column called DisplayName by name), so each read of those two lists names the new column in its `$select`, by scripts/schema-baseline/rename-baselines.js, after a fresh recording equalled the translation exactly; the number and the order of the requests are as they were. Nothing else was changed.
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/fields
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$filter=(ClientId eq 'c-harbour')&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')?$select=ListItemEntityTypeFullName
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/fields
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')?$select=ListItemEntityTypeFullName
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/fields
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')?$select=ListItemEntityTypeFullName
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/fields
+42 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$filter=AppId eq 'default'&$top=2&$select=Id,AppId,ActiveSessionId,ActiveClientId,ActivatedAt,SchemaVersion
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')?$select=ListItemEntityTypeFullName
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/fields
+57 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$filter=AppId eq 'harbour-2026-10-11'&$top=2&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')?$select=ListItemEntityTypeFullName
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/fields
+15 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$filter=AppId eq 'c-harbour'&$top=2&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')?$select=ListItemEntityTypeFullName
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/fields
+12 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/items?$filter=AppId eq '<uuid>'&$top=2&$select=Id,AppId,SessionId,GuestName,Enabled
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')?$select=ListItemEntityTypeFullName
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/fields
+12 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items?$filter=AppId eq '<uuid>'&$top=2&$select=Id,AppId,ClientId,SessionId,VisitorId,Used,CreatedAt,UsedAt,ExpiredAt,ClientTrackId
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items?$top=200&$filter=(SessionId eq 'harbour-2026-10-11')&$select=Id,AppId,ClientId,SessionId,VisitorId,Used,CreatedAt,UsedAt,ExpiredAt,ClientTrackId
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')?$select=ListItemEntityTypeFullName
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipantAnswers')/items?$filter=SessionId eq 'harbour-2026-10-11'&$select=Id,AppId,SessionId,ClientId,TrackId,ResponsesJson&$top=200
+6 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipantAnswers')/items?$filter=TrackId eq '<uuid>'&$select=Id,AppId,SessionId,ClientId,TrackId,ResponsesJson&$top=5
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipantAnswers')?$select=ListItemEntityTypeFullName
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/fields
+6 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items?$filter=AppId eq '<uuid>'&$top=2&$select=Id,AppId,SessionId,ClientId,JoinedVia,QrTokenId,VisitorId,ParticipantName,SharePointUserId,CreatedAt,ResumeCount,LastResumedAt,RestartedAt,RestartSectionId
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')?$select=ListItemEntityTypeFullName
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSVisitLog')/fields
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSVisitLog')?$select=ListItemEntityTypeFullName
+3 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items(100000)
+10 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items(41)
+20 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items(44)
+1 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items(43)
+2 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items(46)
+1 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items(47)
+2 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items(50)
+1 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items(54)
+2 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items(57)
+1 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items(59)
+2 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items(62)
+2 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSParticipantAnswers')/items(56)
+4 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSParticipantAnswers')/items(59)
+1 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items(55)
+2 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items(58)
+3 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$filter=(AppId%20eq%20%27a-history%27%20or%20AppId%20eq%20%27a-views%27%20or%20AppId%20eq%20%27a-paused%27%20or%20AppId%20eq%20%27a-never%27)&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$top=200&$filter=(AppId%20eq%20%27c-harbour%27)&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items?$top=200&$filter=(SessionId%20eq%20%27harbour-2026-10-11%27)&$select=Id,AppId,SessionId,ClientId,JoinedVia,QrTokenId,VisitorId,ParticipantName,SharePointUserId,CreatedAt,ResumeCount,LastResumedAt,RestartedAt,RestartSectionId
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSVisitLog')/items?$top=200&$filter=(SessionId%20eq%20%27harbour-2026-10-11%27)&$select=Id,AppId,SessionId,ClientId,Page,EntryMode,SharePointUserId,SignedInName,VisitorId,VisitorName,TrackId,VisitedAt
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/items?$top=200&$filter=(SessionId%20eq%20%27harbour-2026-10-11%27)&$select=Id,AppId,SessionId,GuestName,Enabled
+2 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$top=200&$filter=(AppId%20eq%20%27q-moved%27%20or%20AppId%20eq%20%27q-deleted%27)&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$top=200&$filter=(QuestionId%20eq%20%27q-moved%27%20or%20QuestionId%20eq%20%27q-deleted%27)&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+3 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$top=200&$filter=(AppId%20eq%20%27q1%27%20or%20AppId%20eq%20%27q2%27%20or%20AppId%20eq%20%27q3%27%20or%20AppId%20eq%20%27q4%27%20or%20AppId%20eq%20%27q5%27%20or%20AppId%20eq%20%27q6%27%20or%20AppId%20eq%20%27q7%27%20or%20AppId%20eq%20%27q8%27%20or%20AppId%20eq%20%27q9%27%20or%20AppId%20eq%20%27q10%27)&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$top=200&$filter=(QuestionId%20eq%20%27q1%27%20or%20QuestionId%20eq%20%27q2%27%20or%20QuestionId%20eq%20%27q3%27%20or%20QuestionId%20eq%20%27q4%27%20or%20QuestionId%20eq%20%27q5%27%20or%20QuestionId%20eq%20%27q6%27%20or%20QuestionId%20eq%20%27q7%27%20or%20QuestionId%20eq%20%27q8%27%20or%20QuestionId%20eq%20%27q9%27%20or%20QuestionId%20eq%20%27q10%27)&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+9 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$filter=AppId%20eq%20%27harbour-2026-10-11%27&$top=2&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$filter=AppId%20eq%20%27c-harbour%27&$top=2&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$filter=(ClientId%20eq%20%27c-harbour%27)&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items?$top=20&$filter=(SessionId%20eq%20%27harbour-2026-10-11%27)%20and%20(QrTokenId%20eq%20%27<uuid>%27)&$select=Id,AppId,SessionId,ClientId,JoinedVia,QrTokenId,VisitorId,ParticipantName,SharePointUserId,CreatedAt,ResumeCount,LastResumedAt,RestartedAt,RestartSectionId
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/items?$filter=AppId%20eq%20%27<uuid>%27&$top=2&$select=Id,AppId,SessionId,GuestName,Enabled
+3 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$filter=AppId%20eq%20%27harbour-2026-10-11%27&$top=2&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$filter=AppId%20eq%20%27c-harbour%27&$top=2&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$filter=(ClientId%20eq%20%27c-harbour%27)&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items?$top=20&$filter=(SessionId%20eq%20%27harbour-2026-10-11%27)%20and%20(QrTokenId%20eq%20%27<uuid>%27)&$select=Id,AppId,SessionId,ClientId,JoinedVia,QrTokenId,VisitorId,ParticipantName,SharePointUserId,CreatedAt,ResumeCount,LastResumedAt,RestartedAt,RestartSectionId
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/items?$filter=AppId%20eq%20%27<uuid>%27&$top=2&$select=Id,AppId,SessionId,GuestName,Enabled
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')?$select=ListItemEntityTypeFullName
+3 x POST /sites/cec/_api/contextinfo
+12 x POST /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items
+32 x POST /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items
+79 x POST /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items
+3 x POST /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items
+3 x POST /sites/cec/_api/web/lists/getbytitle('PMSClients')/items
+9 x POST /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/items
+12 x POST /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items
+21 x POST /sites/cec/_api/web/lists/getbytitle('PMSParticipantAnswers')/items
+21 x POST /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items
+3 x POST /sites/cec/_api/web/lists/getbytitle('PMSVisitLog')/items

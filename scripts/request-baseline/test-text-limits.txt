@@ -1,0 +1,15 @@
+# Request baseline: scripts/test-text-limits.js on the mocked SharePoint REST (5 recordings).
+# Recorded at the end of Phase 10c-3 part F (inputs respect the lists' text limits), when the suite was first recorded.
+# Do not regenerate this file to make a comparison pass: a difference is a finding. See scripts/request-baseline.js.
+# One entry for each distinct request and how many times it was sent ("~": the count depends on timing). <uuid> and <time> are placeholders.
+# Amended in Phase 10h, part A: every item read names its columns, so each entry that read items without naming them has `&$select=` and its list's columns at the end of its query (and a mock's `__next` link of such a read carries them before its `$fakeskip`), by scripts/schema-baseline/select-baselines.js, after a fresh recording equalled the translation exactly; the number and the order of the requests are as they were. Nothing else was changed.
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/fields
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')?$select=ListItemEntityTypeFullName
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/fields
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')?$select=ListItemEntityTypeFullName
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/fields
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')?$select=ListItemEntityTypeFullName
+2 x POST /sites/cec/_api/contextinfo
+1 x POST /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items
+1 x POST /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items
+1 x POST /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items

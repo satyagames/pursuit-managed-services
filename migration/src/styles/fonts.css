@@ -1,0 +1,57 @@
+/*!
+ * Open Sans, subset to Latin, Latin-1 Supplement and general punctuation by
+ * scripts/build-fonts.py. Copyright 2010-2011 Google Corporation; licensed under the
+ * Apache License, Version 2.0 (assets/fonts/LICENSE-OpenSans-Apache-2.0.txt).
+ *
+ * The files are inlined into the single-file build as data: URIs (assetsInlineLimit is
+ * Infinity), so the page makes no font requests and needs no CDN. font-display: swap shows
+ * the system stack at once and swaps when the face is decoded.
+ */
+
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('../assets/fonts/open-sans-300.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../assets/fonts/open-sans-400.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('../assets/fonts/open-sans-600.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../assets/fonts/open-sans-700.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('../assets/fonts/open-sans-800.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Open Sans';
+  font-style: italic;
+  font-weight: 800;
+  font-display: swap;
+  src: url('../assets/fonts/open-sans-800-italic.woff2') format('woff2');
+}

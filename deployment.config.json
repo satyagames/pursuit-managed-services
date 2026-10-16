@@ -1,0 +1,7 @@
+{
+  "sharePoint": {
+    "documentLibrary": "Shared Documents",
+    "productionFolder": "p_cec_01",
+    "stagingFolder": "p_cec_02"
+  }
+}

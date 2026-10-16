@@ -1,0 +1,101 @@
+# Request baseline: scripts/test-sharepoint.js on the mocked SharePoint REST (6 recordings).
+# Recorded at 2ad1520 (the local tag legacy-final), before Phase 10b changed anything.
+# Do not regenerate this file to make a comparison pass: a difference is a finding. See scripts/request-baseline.js.
+# One entry for each distinct request and how many times it was sent ("~": the count depends on timing). <uuid> and <time> are placeholders.
+# Amended (2 entries) for the tests matching /agenda progress uses a submitted track snapshot/: removed with the legacy agenda screen it tested (Phase 10c-1). Nothing else was changed (scripts/request-baseline.js, amendment()).
+# Amended (21 entries) for the tests matching /active session context resolves|switching active sessions expires|module submissions use one read|module first-write collisions|logo uploads resolve the library folder/: five tests of functions only the legacy pages called, removed with them (Phase 10c-1, part D). Nothing else was changed (scripts/request-baseline.js, amendment()).
+# Amended (30 entries) for the tests matching /SharePoint response JSON is decoded|configured active session blocks stale|visitor QR claims preserve the roster name|QR scan keeps the roster name|disabling a visitor permanently retires|response conflicts reread and merge|simultaneous first-answer creation|QR claims admit exactly one iPad|restart removes only the selected track/: Phase 10c-2a part B: tests no longer use the seven exports that only tests called (set-up through beginVisit, openQrScan and the participant's own item; references written out). Nothing else was changed (scripts/request-baseline.js, amendment()).
+# Amended (10 entries) for the tests matching /restart removes only the selected track/: Phase 10c-2a part C: the tests of a session's older shared answer item go, and set-up no longer puts an answer there (everyone answers in an item of their own). Nothing else was changed (scripts/request-baseline.js, amendment()).
+# Amended (8 entries) for the tests matching /route branding skips the theme read|theme creates one default row|seed import skips existing records|embedded starter logos render inline|brand is the session/, compared with the last commit's whole tree (its code and helpers, not only its suite): Phase 10c-2a part D: the ThemeConfig list is gone (twelve lists: the schema check reads twelve lists' columns, the seed import writes no theme, and the Live display's brand asks for the client and nothing else). Nothing else was changed (scripts/request-baseline.js, amendment()).
+# Amended (2 entries) for the tests matching /configured active session blocks stale/, compared with the last commit's whole tree (its code and helpers, not only its suite): Phase 10c-2a part E: the live client is the one AppSettings names (never found through the session), an activity with no client is shown to nobody, and the assign tools are gone. Nothing else was changed (scripts/request-baseline.js, amendment()).
+# Amended (4 entries) for the tests matching /disabling a visitor permanently retires their unused QR codes|switching a session to Staff mode retires all unclaimed visitor QR codes/, compared with the last commit's whole tree (its code and helpers, not only its suite): Phase 10c-2a part F1: no request filters on the Yes/No column Used (a session's codes are read by SessionId, and VisitorId for one guest, and tested in the browser). Nothing else was changed (scripts/request-baseline.js, amendment()).
+# Translated in Phase 10c-2b from the 10c-2a recording above: each old list title to its PMS name, ClientLogos to PMSClientImages, Order to SortOrder (scripts/schema-baseline/translate-baselines.js), after a fresh recording of the new names equalled the translation exactly. Nothing else was changed.
+# Amended (7 entries) for the tests matching /user setup stores the active session, visitor roster and idempotent visit events|a visitor's QR scan keeps the roster name and the code is single-use/, compared with the last commit's whole tree (its code and helpers, not only its suite): Phase 10c-2b part E: a site is set up as Setup will make it, with the AppSettings item and its SchemaVersion, so a first Go live updates that item (a read and a MERGE) where it used to create it (a POST), and later items' ids shift by one. Nothing else was changed (scripts/request-baseline.js, amendment()).
+# Amended (4 entries) for the tests matching /seed import skips existing records/, compared with the last commit's whole tree (its code and helpers, not only its suite): Phase 10c-3, E: the seed-file import brings no admins (and moved to the Setup-only migration/src/lib/setup-import.js, built on the data layer's own calls); its test now imports a second client where it imported an admin. Nothing else was changed (scripts/request-baseline.js, amendment()).
+# Amended in Phase 10h, part A: every item read names its columns, so each entry that read items without naming them has `&$select=` and its list's columns at the end of its query (and a mock's `__next` link of such a read carries them before its `$fakeskip`), by scripts/schema-baseline/select-baselines.js, after a fresh recording equalled the translation exactly; the number and the order of the requests are as they were. Nothing else was changed.
+# Amended in Phase 10i, part B: schema version 3 renamed PMSGuestList.DisplayName to GuestName and PMSVisitLog.DisplayName to SignedInName (the real site would not return a column called DisplayName by name), so each read of those two lists names the new column in its `$select`, by scripts/schema-baseline/rename-baselines.js, after a fresh recording equalled the translation exactly; the number and the order of the requests are as they were. Nothing else was changed.
+1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSClients')/items(1)
+1 x GET /sites/cec/_api/next
+5 x GET /sites/cec/_api/web/currentuser?$select=Id,Title
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/fields
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$filter=AppId eq 'empty'&$top=2&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$filter=AppId eq 'missing'&$top=2&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$filter=AppId eq 'section'&$top=2&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$filter=(ClientId eq 'client-a')&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')?$select=ListItemEntityTypeFullName
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$top=200&$filter=(AppId eq 'question-b' or AppId eq 'question-a')&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')?$select=ListItemEntityTypeFullName
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSAdminUsers')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAdminUsers')/items?$top=200&$select=Id,AppId,PinHash,Name
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSAdminUsers')?$select=ListItemEntityTypeFullName
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$top=200&$filter=(AppId eq 'option-b' or AppId eq 'option-a')&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')?$select=ListItemEntityTypeFullName
+4 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/fields
+13 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$filter=AppId eq 'default'&$top=2&$select=Id,AppId,ActiveSessionId,ActiveClientId,ActivatedAt,SchemaVersion
+4 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')?$select=ListItemEntityTypeFullName
+4 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/fields
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$filter=AppId eq 'no-such-session'&$top=2&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$filter=AppId eq 'session'&$top=2&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow
+8 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$filter=AppId eq 'session-a'&$top=2&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$filter=AppId eq 'session-b'&$top=2&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$top=200&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow
+5 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')?$select=ListItemEntityTypeFullName
+7 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/fields
+10 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$filter=AppId eq 'client'&$top=2&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+5 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$filter=AppId eq 'client''s%20%26%20team'&$top=2&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+6 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$filter=AppId eq 'client-a'&$top=2&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$filter=AppId eq 'client-two'&$top=2&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$filter=AppId eq 'missing'&$top=2&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$filter=AppId eq 'new-client'&$top=2&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+4 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$top=200&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+7 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')?$select=ListItemEntityTypeFullName
+5 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/fields
+7 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/items?$filter=AppId eq 'visitor-a'&$top=2&$select=Id,AppId,SessionId,GuestName,Enabled
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/items?$top=200&$filter=(SessionId eq 'session-b')&$select=Id,AppId,SessionId,GuestName,Enabled
+5 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')?$select=ListItemEntityTypeFullName
+6 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/fields
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items?$filter=AppId eq '<uuid>'&$top=2&$select=Id,AppId,ClientId,SessionId,VisitorId,Used,CreatedAt,UsedAt,ExpiredAt,ClientTrackId
+5 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items?$filter=AppId eq 'invite-a'&$top=2&$select=Id,AppId,ClientId,SessionId,VisitorId,Used,CreatedAt,UsedAt,ExpiredAt,ClientTrackId
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items?$filter=AppId eq 'token-old'&$top=2&$select=Id,AppId,ClientId,SessionId,VisitorId,Used,CreatedAt,UsedAt,ExpiredAt,ClientTrackId
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items?$top=200&$filter=(SessionId eq 'session-a')&$select=Id,AppId,ClientId,SessionId,VisitorId,Used,CreatedAt,UsedAt,ExpiredAt,ClientTrackId
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items?$top=200&$filter=(VisitorId eq 'visitor-a') and (SessionId eq 'session-a')&$select=Id,AppId,ClientId,SessionId,VisitorId,Used,CreatedAt,UsedAt,ExpiredAt,ClientTrackId
+6 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')?$select=ListItemEntityTypeFullName
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipantAnswers')/fields
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipantAnswers')?$select=ListItemEntityTypeFullName
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/fields
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items?$filter=AppId eq 'track-old'&$top=2&$select=Id,AppId,SessionId,ClientId,JoinedVia,QrTokenId,VisitorId,ParticipantName,SharePointUserId,CreatedAt,ResumeCount,LastResumedAt,RestartedAt,RestartSectionId
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items?$top=20&$filter=(SessionId eq 'session-a') and (QrTokenId eq '<uuid>')&$select=Id,AppId,SessionId,ClientId,JoinedVia,QrTokenId,VisitorId,ParticipantName,SharePointUserId,CreatedAt,ResumeCount,LastResumedAt,RestartedAt,RestartSectionId
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items?$top=20&$filter=(SessionId eq 'session-a') and (QrTokenId eq 'token-old')&$select=Id,AppId,SessionId,ClientId,JoinedVia,QrTokenId,VisitorId,ParticipantName,SharePointUserId,CreatedAt,ResumeCount,LastResumedAt,RestartedAt,RestartSectionId
+5 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')?$select=ListItemEntityTypeFullName
+4 x GET /sites/cec/_api/web/lists/getbytitle('PMSVisitLog')/fields
+4 x GET /sites/cec/_api/web/lists/getbytitle('PMSVisitLog')?$select=ListItemEntityTypeFullName
+2 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items(100000)
+1 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items(1)
+1 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items(2)
+4 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSClients')/items(1)
+2 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/items(2)
+1 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items(2)
+1 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items(3)
+1 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items(4)
+1 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$filter=AppId%20eq%20%27session-a%27&$top=2&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$filter=AppId%20eq%20%27client-a%27&$top=2&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$filter=(ClientId%20eq%20%27client-a%27)&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items?$top=20&$filter=(SessionId%20eq%20%27session-a%27)%20and%20(QrTokenId%20eq%20%27<uuid>%27)&$select=Id,AppId,SessionId,ClientId,JoinedVia,QrTokenId,VisitorId,ParticipantName,SharePointUserId,CreatedAt,ResumeCount,LastResumedAt,RestartedAt,RestartSectionId
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/items?$filter=AppId%20eq%20%27visitor-a%27&$top=2&$select=Id,AppId,SessionId,GuestName,Enabled
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')?$select=ListItemEntityTypeFullName
+1 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$filter=AppId%20eq%20%27session-a%27&$top=2&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$filter=AppId%20eq%20%27client-a%27&$top=2&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$filter=(ClientId%20eq%20%27client-a%27)&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items?$top=20&$filter=(SessionId%20eq%20%27session-a%27)%20and%20(QrTokenId%20eq%20%27token-old%27)&$select=Id,AppId,SessionId,ClientId,JoinedVia,QrTokenId,VisitorId,ParticipantName,SharePointUserId,CreatedAt,ResumeCount,LastResumedAt,RestartedAt,RestartSectionId
+    carries GET /sites/cec/_api/web/currentuser?$select=Id,Title
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')?$select=ListItemEntityTypeFullName
+11 x POST /sites/cec/_api/contextinfo
+6 x POST /sites/cec/_api/web/lists/getbytitle('PMSClients')/items
+1 x POST /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/items
+1 x POST /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items
+1 x POST /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items
+2 x POST /sites/cec/_api/web/lists/getbytitle('PMSVisitLog')/items

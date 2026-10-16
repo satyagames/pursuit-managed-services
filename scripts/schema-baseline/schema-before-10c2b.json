@@ -1,0 +1,2925 @@
+{
+  "about": "The lists and columns of the app as they were written by hand, in six places, before Phase 10c-2b gave them one file. A record: never regenerated. See scripts/schema-snapshot.js.",
+  "readFrom": "ec31ac9 (Phase 10c-2a: proof and report)",
+  "tables": {
+    "public/js/dataService.js": {
+      "spLists": {
+        "clients": [
+          "Clients",
+          {
+            "id": "AppId",
+            "name": "Name",
+            "logoUrl": "LogoUrl",
+            "primaryColor": "PrimaryColor",
+            "secondaryColor": "SecondaryColor",
+            "createdAt": "CreatedAt"
+          }
+        ],
+        "sessions": [
+          "Sessions",
+          {
+            "id": "AppId",
+            "clientId": "ClientId",
+            "date": "SessionDate",
+            "sectionIds": "SectionIds",
+            "activeSectionId": "ActiveSectionId",
+            "status": "Status",
+            "endedAt": "EndedAt",
+            "participationMode": "ParticipationMode"
+          }
+        ],
+        "sections": [
+          "Sections",
+          {
+            "id": "AppId",
+            "title": "Title",
+            "order": "Order",
+            "enabled": "Enabled",
+            "industryTags": "IndustryTags",
+            "questionIds": "QuestionIds"
+          }
+        ],
+        "questions": [
+          "Questions",
+          {
+            "id": "AppId",
+            "sectionId": "SectionId",
+            "type": "QuestionType",
+            "prompt": "Prompt",
+            "optionIds": "OptionIds",
+            "order": "Order"
+          }
+        ],
+        "options": [
+          "Options",
+          {
+            "id": "AppId",
+            "questionId": "QuestionId",
+            "label": "Label",
+            "value": "OptionValue",
+            "correct": "Correct"
+          }
+        ],
+        "tracks": [
+          "Tracks",
+          {
+            "id": "AppId",
+            "sessionId": "SessionId",
+            "clientId": "ClientId",
+            "joinedVia": "JoinedVia",
+            "qrTokenId": "QrTokenId",
+            "visitorId": "VisitorId",
+            "participantName": "ParticipantName",
+            "sharePointUserId": "SharePointUserId",
+            "createdAt": "CreatedAt",
+            "resumeCount": "ResumeCount",
+            "lastResumedAt": "LastResumedAt",
+            "restartedAt": "RestartedAt",
+            "restartSectionId": "RestartSectionId"
+          }
+        ],
+        "qrtokens": [
+          "QRTokens",
+          {
+            "id": "AppId",
+            "clientId": "ClientId",
+            "sessionId": "SessionId",
+            "visitorId": "VisitorId",
+            "used": "Used",
+            "createdAt": "CreatedAt",
+            "usedAt": "UsedAt",
+            "expiredAt": "ExpiredAt",
+            "clientTrackId": "ClientTrackId"
+          }
+        ],
+        "appsettings": [
+          "AppSettings",
+          {
+            "id": "AppId",
+            "activeSessionId": "ActiveSessionId"
+          }
+        ],
+        "visitorroster": [
+          "VisitorRoster",
+          {
+            "id": "AppId",
+            "sessionId": "SessionId",
+            "displayName": "DisplayName",
+            "enabled": "Enabled"
+          }
+        ],
+        "uservisitlogs": [
+          "UserVisitLogs",
+          {
+            "id": "AppId",
+            "sessionId": "SessionId",
+            "clientId": "ClientId",
+            "page": "Page",
+            "entryMode": "EntryMode",
+            "sharePointUserId": "SharePointUserId",
+            "displayName": "DisplayName",
+            "visitorId": "VisitorId",
+            "visitorName": "VisitorName",
+            "trackId": "TrackId",
+            "visitedAt": "VisitedAt"
+          }
+        ],
+        "adminusers": [
+          "AdminUsers",
+          {
+            "id": "AppId",
+            "pin": "PinHash",
+            "name": "Name"
+          }
+        ],
+        "responses": [
+          "Responses",
+          {
+            "sessionId": "SessionId",
+            "responses": "ResponsesJson"
+          }
+        ]
+      },
+      "spAdded": {
+        "clients": {
+          "slug": {
+            "column": "Slug",
+            "expect": "Text"
+          },
+          "theme": {
+            "column": "ThemeJson",
+            "expect": "Note"
+          },
+          "themeVersion": {
+            "column": "ThemeVersion",
+            "expect": "Number"
+          },
+          "status": {
+            "column": "Status",
+            "expect": "Choice",
+            "choices": [
+              "active",
+              "archived"
+            ]
+          }
+        },
+        "sections": {
+          "clientId": {
+            "column": "ClientId",
+            "expect": "Text",
+            "indexed": true
+          },
+          "description": {
+            "column": "Description",
+            "expect": "Note"
+          }
+        },
+        "questions": {
+          "layout": {
+            "column": "Layout",
+            "expect": "Choice",
+            "choices": [
+              "text-list",
+              "image-grid"
+            ]
+          }
+        },
+        "options": {
+          "imageUrl": {
+            "column": "ImageUrl",
+            "expect": "Text"
+          }
+        },
+        "sessions": {
+          "activityFlow": {
+            "column": "ActivityFlow",
+            "expect": "Choice",
+            "choices": [
+              "sequential",
+              "open"
+            ]
+          }
+        },
+        "appsettings": {
+          "activeClientId": {
+            "column": "ActiveClientId",
+            "expect": "Text"
+          },
+          "activatedAt": {
+            "column": "ActivatedAt",
+            "expect": "DateTime"
+          }
+        },
+        "responses": {
+          "trackId": {
+            "column": "TrackId",
+            "expect": "Text",
+            "indexed": true
+          },
+          "clientId": {
+            "column": "ClientId",
+            "expect": "Text"
+          }
+        }
+      },
+      "spArrays": [
+        "sectionIds",
+        "questionIds",
+        "optionIds",
+        "industryTags",
+        "responses"
+      ],
+      "spObjects": [
+        "theme"
+      ],
+      "spBooleans": [
+        "enabled",
+        "used",
+        "correct"
+      ],
+      "spDates": [
+        "date",
+        "createdAt",
+        "endedAt",
+        "lastResumedAt",
+        "restartedAt",
+        "usedAt",
+        "expiredAt",
+        "visitedAt",
+        "activatedAt"
+      ],
+      "spBaseTypes": {
+        "Note": [
+          "SectionIds",
+          "QuestionIds",
+          "OptionIds",
+          "IndustryTags",
+          "ResponsesJson",
+          "Prompt"
+        ],
+        "Number": [
+          "Order",
+          "ResumeCount"
+        ],
+        "Boolean": [
+          "Enabled",
+          "Used",
+          "Correct"
+        ],
+        "DateTime": [
+          "SessionDate",
+          "CreatedAt",
+          "EndedAt",
+          "LastResumedAt",
+          "RestartedAt",
+          "UsedAt",
+          "ExpiredAt",
+          "VisitedAt"
+        ]
+      },
+      "spBaseSpec": "const spBaseSpec = (list, column) => column === 'AppId' ? { column, expect: 'Text', indexed: true, unique: true, strict: true } : { column, expect: Object.keys(spBaseTypes).find((type) => spBaseTypes[type].includes(column)) ?? 'Text', strict: Object.entries(spLists[list][1]).some(([key, name]) => name === column && spArrays.has(key)), };",
+      "library": "ClientLogos"
+    },
+    "migration/src/lib/setup-checks.js": {
+      "PROVISIONED": {
+        "clients": "AppId:Text! Name:Text LogoUrl:Text PrimaryColor:Text SecondaryColor:Text CreatedAt:DateTime",
+        "sessions": "AppId:Text! ClientId:Text! SessionDate:DateTime ActiveSectionId:Text Status:Choice EndedAt:DateTime ParticipationMode:Choice",
+        "sections": "AppId:Text! Title:Text Order:Number Enabled:Boolean",
+        "questions": "AppId:Text! SectionId:Text! QuestionType:Choice Prompt:Note Order:Number",
+        "options": "AppId:Text! QuestionId:Text! Label:Text OptionValue:Text Correct:Boolean",
+        "tracks": "AppId:Text! SessionId:Text! ClientId:Text! JoinedVia:Choice QrTokenId:Text VisitorId:Text ParticipantName:Text SharePointUserId:Text CreatedAt:DateTime ResumeCount:Number LastResumedAt:DateTime RestartedAt:DateTime RestartSectionId:Text",
+        "qrtokens": "AppId:Text! ClientId:Text! SessionId:Text! Used:Boolean CreatedAt:DateTime UsedAt:DateTime ExpiredAt:DateTime ClientTrackId:Text VisitorId:Text!",
+        "adminusers": "AppId:Text! PinHash:Text Name:Text",
+        "responses": "AppId:Text! SessionId:Text!",
+        "appsettings": "AppId:Text! ActiveSessionId:Text",
+        "visitorroster": "AppId:Text! SessionId:Text! DisplayName:Text Enabled:Boolean",
+        "uservisitlogs": "AppId:Text! SessionId:Text! ClientId:Text Page:Text EntryMode:Choice SharePointUserId:Text DisplayName:Text VisitorId:Text VisitorName:Text TrackId:Text VisitedAt:DateTime"
+      },
+      "STRICT": [
+        "AppId",
+        "SectionIds",
+        "QuestionIds",
+        "OptionIds",
+        "IndustryTags",
+        "ResponsesJson"
+      ]
+    },
+    "scripts/sharepoint-fake.js": {
+      "SCHEMA": {
+        "Clients": "AppId:Text!! Name:Text LogoUrl:Text PrimaryColor:Text SecondaryColor:Text CreatedAt:DateTime Slug:Text ThemeJson:Note ThemeVersion:Number Status:Choice",
+        "Sessions": "AppId:Text!! ClientId:Text! SessionDate:DateTime SectionIds:Note ActiveSectionId:Text Status:Choice EndedAt:DateTime ParticipationMode:Choice ActivityFlow:Choice",
+        "Sections": "AppId:Text!! Title:Text Order:Number Enabled:Boolean IndustryTags:Note QuestionIds:Note ClientId:Text! Description:Note",
+        "Questions": "AppId:Text!! SectionId:Text! QuestionType:Choice Prompt:Note OptionIds:Note Order:Number Layout:Choice",
+        "Options": "AppId:Text!! QuestionId:Text! Label:Text OptionValue:Text Correct:Boolean ImageUrl:Text",
+        "Tracks": "AppId:Text!! SessionId:Text! ClientId:Text! JoinedVia:Choice QrTokenId:Text VisitorId:Text ParticipantName:Text SharePointUserId:Text CreatedAt:DateTime ResumeCount:Number LastResumedAt:DateTime RestartedAt:DateTime RestartSectionId:Text",
+        "QRTokens": "AppId:Text!! ClientId:Text! SessionId:Text! VisitorId:Text! Used:Boolean CreatedAt:DateTime UsedAt:DateTime ExpiredAt:DateTime ClientTrackId:Text",
+        "AdminUsers": "AppId:Text!! PinHash:Text Name:Text",
+        "Responses": "AppId:Text!! SessionId:Text! ResponsesJson:Note TrackId:Text! ClientId:Text",
+        "AppSettings": "AppId:Text!! ActiveSessionId:Text ActiveClientId:Text ActivatedAt:DateTime",
+        "VisitorRoster": "AppId:Text!! SessionId:Text! DisplayName:Text Enabled:Boolean",
+        "UserVisitLogs": "AppId:Text!! SessionId:Text! ClientId:Text Page:Text EntryMode:Choice SharePointUserId:Text DisplayName:Text VisitorId:Text VisitorName:Text TrackId:Text VisitedAt:DateTime"
+      },
+      "CHOICES": {
+        "Clients.Status": [
+          "active",
+          "archived"
+        ],
+        "Questions.Layout": [
+          "text-list",
+          "image-grid"
+        ],
+        "Sessions.ActivityFlow": [
+          "sequential",
+          "open"
+        ]
+      },
+      "ADDED_COLUMNS": [
+        "Clients.Slug",
+        "Clients.ThemeJson",
+        "Clients.ThemeVersion",
+        "Clients.Status",
+        "Sections.ClientId",
+        "Sections.Description",
+        "Questions.Layout",
+        "Options.ImageUrl",
+        "Sessions.ActivityFlow",
+        "AppSettings.ActiveClientId",
+        "AppSettings.ActivatedAt",
+        "Responses.TrackId",
+        "Responses.ClientId"
+      ],
+      "OTHER_PREFIX": "PMS3"
+    },
+    "server/api.js": {
+      "LISTS": [
+        "clients",
+        "sessions",
+        "sections",
+        "questions",
+        "options",
+        "qrtokens",
+        "adminusers",
+        "tracks",
+        "appsettings",
+        "visitorroster",
+        "uservisitlogs",
+        "participantresponses"
+      ]
+    },
+    "scripts/validate-data.js": {
+      "lists": [
+        "clients",
+        "sessions",
+        "sections",
+        "questions",
+        "options",
+        "qrtokens",
+        "adminusers",
+        "tracks",
+        "appsettings",
+        "visitorroster",
+        "uservisitlogs",
+        "participantresponses"
+      ],
+      "QUESTION_TYPES": [
+        "single-select",
+        "multi-select",
+        "true-false",
+        "confidence-continuum",
+        "ranked-voting",
+        "open-text-feedback"
+      ],
+      "enums": {
+        "client.status": [
+          "active",
+          "archived"
+        ],
+        "session.status": [
+          "not-started",
+          "in-progress",
+          "completed"
+        ],
+        "session.participationMode": [
+          "staff",
+          "client-visit"
+        ],
+        "session.activityFlow": [
+          "sequential",
+          "open"
+        ],
+        "question.layout": [
+          "text-list",
+          "image-grid"
+        ]
+      }
+    },
+    "PROVISIONING.md": {
+      "lists": {
+        "Clients": [
+          {
+            "column": "AppId",
+            "type": "Single line of text, indexed"
+          },
+          {
+            "column": "Name",
+            "type": "Single line of text"
+          },
+          {
+            "column": "LogoUrl",
+            "type": "Single line of text"
+          },
+          {
+            "column": "PrimaryColor",
+            "type": "Single line of text"
+          },
+          {
+            "column": "SecondaryColor",
+            "type": "Single line of text"
+          },
+          {
+            "column": "CreatedAt",
+            "type": "Date and Time"
+          }
+        ],
+        "Sessions": [
+          {
+            "column": "AppId",
+            "type": "Single line of text, indexed"
+          },
+          {
+            "column": "ClientId",
+            "type": "Single line of text, indexed"
+          },
+          {
+            "column": "SessionDate",
+            "type": "Date and Time (date only)"
+          },
+          {
+            "column": "SectionIds",
+            "type": "Multiple lines of text, plain"
+          },
+          {
+            "column": "ActiveSectionId",
+            "type": "Single line of text"
+          },
+          {
+            "column": "Status",
+            "type": "Choice: `not-started`, `in-progress`, `completed`"
+          },
+          {
+            "column": "EndedAt",
+            "type": "Date and Time"
+          },
+          {
+            "column": "ParticipationMode",
+            "type": "Choice: `staff`, `client-visit`"
+          }
+        ],
+        "Sections": [
+          {
+            "column": "AppId",
+            "type": "Single line of text, indexed"
+          },
+          {
+            "column": "Title",
+            "type": "Single line of text"
+          },
+          {
+            "column": "Order",
+            "type": "Number"
+          },
+          {
+            "column": "Enabled",
+            "type": "Yes/No"
+          },
+          {
+            "column": "IndustryTags",
+            "type": "Multiple lines of text, plain"
+          },
+          {
+            "column": "QuestionIds",
+            "type": "Multiple lines of text, plain"
+          }
+        ],
+        "Questions": [
+          {
+            "column": "AppId",
+            "type": "Single line of text, indexed"
+          },
+          {
+            "column": "SectionId",
+            "type": "Single line of text, indexed"
+          },
+          {
+            "column": "QuestionType",
+            "type": "Choice: `single-select`, `multi-select`, `true-false`, `confidence-continuum`, `ranked-voting`, `open-text-feedback`"
+          },
+          {
+            "column": "Prompt",
+            "type": "Multiple lines of text, plain"
+          },
+          {
+            "column": "OptionIds",
+            "type": "Multiple lines of text, plain"
+          },
+          {
+            "column": "Order",
+            "type": "Number"
+          }
+        ],
+        "Options": [
+          {
+            "column": "AppId",
+            "type": "Single line of text, indexed"
+          },
+          {
+            "column": "QuestionId",
+            "type": "Single line of text, indexed"
+          },
+          {
+            "column": "Label",
+            "type": "Single line of text"
+          },
+          {
+            "column": "OptionValue",
+            "type": "Single line of text"
+          },
+          {
+            "column": "Correct",
+            "type": "Yes/No"
+          }
+        ],
+        "Tracks": [
+          {
+            "column": "AppId",
+            "type": "Single line of text, indexed"
+          },
+          {
+            "column": "SessionId",
+            "type": "Single line of text, indexed"
+          },
+          {
+            "column": "ClientId",
+            "type": "Single line of text, indexed"
+          },
+          {
+            "column": "JoinedVia",
+            "type": "Choice: `qr`, `manual`"
+          },
+          {
+            "column": "QrTokenId",
+            "type": "Single line of text"
+          },
+          {
+            "column": "VisitorId",
+            "type": "Single line of text"
+          },
+          {
+            "column": "ParticipantName",
+            "type": "Single line of text"
+          },
+          {
+            "column": "SharePointUserId",
+            "type": "Single line of text"
+          },
+          {
+            "column": "CreatedAt",
+            "type": "Date and Time"
+          },
+          {
+            "column": "ResumeCount",
+            "type": "Number"
+          },
+          {
+            "column": "LastResumedAt",
+            "type": "Date and Time"
+          },
+          {
+            "column": "RestartedAt",
+            "type": "Date and Time"
+          },
+          {
+            "column": "RestartSectionId",
+            "type": "Single line of text"
+          }
+        ],
+        "QRTokens": [
+          {
+            "column": "AppId",
+            "type": "Single line of text, indexed, **must allow the exact characters used when tokens are generated**"
+          },
+          {
+            "column": "ClientId",
+            "type": "Single line of text, indexed"
+          },
+          {
+            "column": "SessionId",
+            "type": "Single line of text, indexed"
+          },
+          {
+            "column": "Used",
+            "type": "Yes/No"
+          },
+          {
+            "column": "CreatedAt",
+            "type": "Date and Time"
+          },
+          {
+            "column": "UsedAt",
+            "type": "Date and Time"
+          },
+          {
+            "column": "ExpiredAt",
+            "type": "Date and Time"
+          },
+          {
+            "column": "ClientTrackId",
+            "type": "Single line of text"
+          },
+          {
+            "column": "VisitorId",
+            "type": "Single line of text, indexed"
+          }
+        ],
+        "AdminUsers": [
+          {
+            "column": "AppId",
+            "type": "Single line of text, indexed"
+          },
+          {
+            "column": "PinHash",
+            "type": "Single line of text"
+          },
+          {
+            "column": "Name",
+            "type": "Single line of text"
+          }
+        ],
+        "Responses": [
+          {
+            "column": "AppId",
+            "type": "Single line of text, indexed"
+          },
+          {
+            "column": "SessionId",
+            "type": "Single line of text, indexed"
+          },
+          {
+            "column": "ResponsesJson",
+            "type": "Multiple lines of text, plain"
+          }
+        ],
+        "ThemeConfig": [
+          {
+            "column": "AppId",
+            "type": "Single line of text, indexed, unique, required"
+          },
+          {
+            "column": "ClientId",
+            "type": "Single line of text"
+          },
+          {
+            "column": "LogoUrl",
+            "type": "Single line of text"
+          },
+          {
+            "column": "PrimaryColor",
+            "type": "Single line of text"
+          },
+          {
+            "column": "SecondaryColor",
+            "type": "Single line of text"
+          },
+          {
+            "column": "FontFamily",
+            "type": "Single line of text"
+          }
+        ],
+        "AppSettings": [
+          {
+            "column": "AppId",
+            "type": "Single line of text, indexed, unique, required"
+          },
+          {
+            "column": "ActiveSessionId",
+            "type": "Single line of text"
+          }
+        ],
+        "VisitorRoster": [
+          {
+            "column": "AppId",
+            "type": "Single line of text, indexed, unique, required"
+          },
+          {
+            "column": "SessionId",
+            "type": "Single line of text, indexed"
+          },
+          {
+            "column": "DisplayName",
+            "type": "Single line of text"
+          },
+          {
+            "column": "Enabled",
+            "type": "Yes/No"
+          }
+        ],
+        "UserVisitLogs": [
+          {
+            "column": "AppId",
+            "type": "Single line of text, indexed, unique, required"
+          },
+          {
+            "column": "SessionId",
+            "type": "Single line of text, indexed"
+          },
+          {
+            "column": "ClientId",
+            "type": "Single line of text"
+          },
+          {
+            "column": "Page",
+            "type": "Single line of text"
+          },
+          {
+            "column": "EntryMode",
+            "type": "Choice: `staff`, `client-visit`"
+          },
+          {
+            "column": "SharePointUserId",
+            "type": "Single line of text"
+          },
+          {
+            "column": "DisplayName",
+            "type": "Single line of text"
+          },
+          {
+            "column": "VisitorId",
+            "type": "Single line of text"
+          },
+          {
+            "column": "VisitorName",
+            "type": "Single line of text"
+          },
+          {
+            "column": "TrackId",
+            "type": "Single line of text"
+          },
+          {
+            "column": "VisitedAt",
+            "type": "Date and Time"
+          }
+        ]
+      },
+      "added": [
+        {
+          "list": "Clients",
+          "column": "Slug",
+          "type": "Single line of text",
+          "indexed": false
+        },
+        {
+          "list": "Clients",
+          "column": "ThemeJson",
+          "type": "Multiple lines of text, **plain text**, append-only off",
+          "indexed": false
+        },
+        {
+          "list": "Clients",
+          "column": "ThemeVersion",
+          "type": "Number",
+          "indexed": false
+        },
+        {
+          "list": "Clients",
+          "column": "Status",
+          "type": "Choice: `active`, `archived`",
+          "indexed": false
+        },
+        {
+          "list": "Sections",
+          "column": "ClientId",
+          "type": "Single line of text",
+          "indexed": true
+        },
+        {
+          "list": "Sections",
+          "column": "Description",
+          "type": "Multiple lines of text, **plain text**, append-only off",
+          "indexed": false
+        },
+        {
+          "list": "Questions",
+          "column": "Layout",
+          "type": "Choice: `text-list`, `image-grid`",
+          "indexed": false
+        },
+        {
+          "list": "Options",
+          "column": "ImageUrl",
+          "type": "Single line of text",
+          "indexed": false
+        },
+        {
+          "list": "Sessions",
+          "column": "ActivityFlow",
+          "type": "Choice: `sequential`, `open`",
+          "indexed": false
+        },
+        {
+          "list": "AppSettings",
+          "column": "ActiveClientId",
+          "type": "Single line of text",
+          "indexed": false
+        },
+        {
+          "list": "AppSettings",
+          "column": "ActivatedAt",
+          "type": "Date and Time",
+          "indexed": false
+        },
+        {
+          "list": "Responses",
+          "column": "TrackId",
+          "type": "Single line of text",
+          "indexed": true
+        },
+        {
+          "list": "Responses",
+          "column": "ClientId",
+          "type": "Single line of text",
+          "indexed": false
+        }
+      ],
+      "library": "ClientLogos"
+    },
+    "scripts/test-sharepoint.js": {
+      "columns": {
+        "Clients": "AppId Name LogoUrl PrimaryColor SecondaryColor CreatedAt",
+        "Sessions": "AppId ClientId SessionDate SectionIds ActiveSectionId Status EndedAt ParticipationMode",
+        "Sections": "AppId Title Order Enabled IndustryTags QuestionIds",
+        "Questions": "AppId SectionId QuestionType Prompt OptionIds Order",
+        "Options": "AppId QuestionId Label OptionValue Correct",
+        "Tracks": "AppId SessionId ClientId JoinedVia QrTokenId VisitorId ParticipantName SharePointUserId CreatedAt ResumeCount LastResumedAt RestartedAt RestartSectionId",
+        "QRTokens": "AppId ClientId SessionId VisitorId Used CreatedAt UsedAt ExpiredAt ClientTrackId",
+        "AdminUsers": "AppId PinHash Name",
+        "Responses": "AppId SessionId ResponsesJson",
+        "AppSettings": "AppId ActiveSessionId",
+        "VisitorRoster": "AppId SessionId DisplayName Enabled",
+        "UserVisitLogs": "AppId SessionId ClientId Page EntryMode SharePointUserId DisplayName VisitorId VisitorName TrackId VisitedAt"
+      }
+    }
+  },
+  "schema": {
+    "library": "ClientLogos",
+    "otherPrefix": "PMS3",
+    "lists": {
+      "clients": {
+        "title": "Clients",
+        "local": "clients",
+        "columns": [
+          {
+            "column": "AppId",
+            "field": "id",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": true,
+              "indexed": true,
+              "unique": true,
+              "choices": null
+            },
+            "byEye": null,
+            "fake": {
+              "type": "Text",
+              "indexed": true,
+              "unique": true,
+              "choices": null
+            }
+          },
+          {
+            "column": "Name",
+            "field": "name",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "LogoUrl",
+            "field": "logoUrl",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "PrimaryColor",
+            "field": "primaryColor",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "SecondaryColor",
+            "field": "secondaryColor",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "CreatedAt",
+            "field": "createdAt",
+            "added": false,
+            "kind": "date",
+            "check": {
+              "expect": "DateTime",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "DateTime",
+              "indexed": false
+            },
+            "fake": {
+              "type": "DateTime",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "Slug",
+            "field": "slug",
+            "added": true,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": true,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": null,
+            "fake": {
+              "type": "Text",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "ThemeJson",
+            "field": "theme",
+            "added": true,
+            "kind": "object",
+            "check": {
+              "expect": "Note",
+              "compared": true,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": null,
+            "fake": {
+              "type": "Note",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "ThemeVersion",
+            "field": "themeVersion",
+            "added": true,
+            "kind": "plain",
+            "check": {
+              "expect": "Number",
+              "compared": true,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": null,
+            "fake": {
+              "type": "Number",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "Status",
+            "field": "status",
+            "added": true,
+            "kind": "plain",
+            "check": {
+              "expect": "Choice",
+              "compared": true,
+              "indexed": false,
+              "unique": false,
+              "choices": [
+                "active",
+                "archived"
+              ]
+            },
+            "byEye": null,
+            "fake": {
+              "type": "Choice",
+              "indexed": false,
+              "unique": false,
+              "choices": [
+                "active",
+                "archived"
+              ]
+            }
+          }
+        ]
+      },
+      "sessions": {
+        "title": "Sessions",
+        "local": "sessions",
+        "columns": [
+          {
+            "column": "AppId",
+            "field": "id",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": true,
+              "indexed": true,
+              "unique": true,
+              "choices": null
+            },
+            "byEye": null,
+            "fake": {
+              "type": "Text",
+              "indexed": true,
+              "unique": true,
+              "choices": null
+            }
+          },
+          {
+            "column": "ClientId",
+            "field": "clientId",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": true
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": true,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "SessionDate",
+            "field": "date",
+            "added": false,
+            "kind": "date",
+            "check": {
+              "expect": "DateTime",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "DateTime",
+              "indexed": false
+            },
+            "fake": {
+              "type": "DateTime",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "SectionIds",
+            "field": "sectionIds",
+            "added": false,
+            "kind": "array",
+            "check": {
+              "expect": "Note",
+              "compared": true,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": null,
+            "fake": {
+              "type": "Note",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "ActiveSectionId",
+            "field": "activeSectionId",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "Status",
+            "field": "status",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Choice",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Choice",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "EndedAt",
+            "field": "endedAt",
+            "added": false,
+            "kind": "date",
+            "check": {
+              "expect": "DateTime",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "DateTime",
+              "indexed": false
+            },
+            "fake": {
+              "type": "DateTime",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "ParticipationMode",
+            "field": "participationMode",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Choice",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Choice",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "ActivityFlow",
+            "field": "activityFlow",
+            "added": true,
+            "kind": "plain",
+            "check": {
+              "expect": "Choice",
+              "compared": true,
+              "indexed": false,
+              "unique": false,
+              "choices": [
+                "sequential",
+                "open"
+              ]
+            },
+            "byEye": null,
+            "fake": {
+              "type": "Choice",
+              "indexed": false,
+              "unique": false,
+              "choices": [
+                "sequential",
+                "open"
+              ]
+            }
+          }
+        ]
+      },
+      "sections": {
+        "title": "Sections",
+        "local": "sections",
+        "columns": [
+          {
+            "column": "AppId",
+            "field": "id",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": true,
+              "indexed": true,
+              "unique": true,
+              "choices": null
+            },
+            "byEye": null,
+            "fake": {
+              "type": "Text",
+              "indexed": true,
+              "unique": true,
+              "choices": null
+            }
+          },
+          {
+            "column": "Title",
+            "field": "title",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "Order",
+            "field": "order",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Number",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Number",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Number",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "Enabled",
+            "field": "enabled",
+            "added": false,
+            "kind": "yesno",
+            "check": {
+              "expect": "Boolean",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Boolean",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Boolean",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "IndustryTags",
+            "field": "industryTags",
+            "added": false,
+            "kind": "array",
+            "check": {
+              "expect": "Note",
+              "compared": true,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": null,
+            "fake": {
+              "type": "Note",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "QuestionIds",
+            "field": "questionIds",
+            "added": false,
+            "kind": "array",
+            "check": {
+              "expect": "Note",
+              "compared": true,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": null,
+            "fake": {
+              "type": "Note",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "ClientId",
+            "field": "clientId",
+            "added": true,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": true,
+              "indexed": true,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": null,
+            "fake": {
+              "type": "Text",
+              "indexed": true,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "Description",
+            "field": "description",
+            "added": true,
+            "kind": "plain",
+            "check": {
+              "expect": "Note",
+              "compared": true,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": null,
+            "fake": {
+              "type": "Note",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          }
+        ]
+      },
+      "questions": {
+        "title": "Questions",
+        "local": "questions",
+        "columns": [
+          {
+            "column": "AppId",
+            "field": "id",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": true,
+              "indexed": true,
+              "unique": true,
+              "choices": null
+            },
+            "byEye": null,
+            "fake": {
+              "type": "Text",
+              "indexed": true,
+              "unique": true,
+              "choices": null
+            }
+          },
+          {
+            "column": "SectionId",
+            "field": "sectionId",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": true
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": true,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "QuestionType",
+            "field": "type",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Choice",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Choice",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "Prompt",
+            "field": "prompt",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Note",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Note",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Note",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "OptionIds",
+            "field": "optionIds",
+            "added": false,
+            "kind": "array",
+            "check": {
+              "expect": "Note",
+              "compared": true,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": null,
+            "fake": {
+              "type": "Note",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "Order",
+            "field": "order",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Number",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Number",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Number",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "Layout",
+            "field": "layout",
+            "added": true,
+            "kind": "plain",
+            "check": {
+              "expect": "Choice",
+              "compared": true,
+              "indexed": false,
+              "unique": false,
+              "choices": [
+                "text-list",
+                "image-grid"
+              ]
+            },
+            "byEye": null,
+            "fake": {
+              "type": "Choice",
+              "indexed": false,
+              "unique": false,
+              "choices": [
+                "text-list",
+                "image-grid"
+              ]
+            }
+          }
+        ]
+      },
+      "options": {
+        "title": "Options",
+        "local": "options",
+        "columns": [
+          {
+            "column": "AppId",
+            "field": "id",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": true,
+              "indexed": true,
+              "unique": true,
+              "choices": null
+            },
+            "byEye": null,
+            "fake": {
+              "type": "Text",
+              "indexed": true,
+              "unique": true,
+              "choices": null
+            }
+          },
+          {
+            "column": "QuestionId",
+            "field": "questionId",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": true
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": true,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "Label",
+            "field": "label",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "OptionValue",
+            "field": "value",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "Correct",
+            "field": "correct",
+            "added": false,
+            "kind": "yesno",
+            "check": {
+              "expect": "Boolean",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Boolean",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Boolean",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "ImageUrl",
+            "field": "imageUrl",
+            "added": true,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": true,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": null,
+            "fake": {
+              "type": "Text",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          }
+        ]
+      },
+      "tracks": {
+        "title": "Tracks",
+        "local": "tracks",
+        "columns": [
+          {
+            "column": "AppId",
+            "field": "id",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": true,
+              "indexed": true,
+              "unique": true,
+              "choices": null
+            },
+            "byEye": null,
+            "fake": {
+              "type": "Text",
+              "indexed": true,
+              "unique": true,
+              "choices": null
+            }
+          },
+          {
+            "column": "SessionId",
+            "field": "sessionId",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": true
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": true,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "ClientId",
+            "field": "clientId",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": true
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": true,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "JoinedVia",
+            "field": "joinedVia",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Choice",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Choice",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "QrTokenId",
+            "field": "qrTokenId",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "VisitorId",
+            "field": "visitorId",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "ParticipantName",
+            "field": "participantName",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "SharePointUserId",
+            "field": "sharePointUserId",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "CreatedAt",
+            "field": "createdAt",
+            "added": false,
+            "kind": "date",
+            "check": {
+              "expect": "DateTime",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "DateTime",
+              "indexed": false
+            },
+            "fake": {
+              "type": "DateTime",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "ResumeCount",
+            "field": "resumeCount",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Number",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Number",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Number",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "LastResumedAt",
+            "field": "lastResumedAt",
+            "added": false,
+            "kind": "date",
+            "check": {
+              "expect": "DateTime",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "DateTime",
+              "indexed": false
+            },
+            "fake": {
+              "type": "DateTime",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "RestartedAt",
+            "field": "restartedAt",
+            "added": false,
+            "kind": "date",
+            "check": {
+              "expect": "DateTime",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "DateTime",
+              "indexed": false
+            },
+            "fake": {
+              "type": "DateTime",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "RestartSectionId",
+            "field": "restartSectionId",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          }
+        ]
+      },
+      "qrtokens": {
+        "title": "QRTokens",
+        "local": "qrtokens",
+        "columns": [
+          {
+            "column": "AppId",
+            "field": "id",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": true,
+              "indexed": true,
+              "unique": true,
+              "choices": null
+            },
+            "byEye": null,
+            "fake": {
+              "type": "Text",
+              "indexed": true,
+              "unique": true,
+              "choices": null
+            }
+          },
+          {
+            "column": "ClientId",
+            "field": "clientId",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": true
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": true,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "SessionId",
+            "field": "sessionId",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": true
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": true,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "VisitorId",
+            "field": "visitorId",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": true
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": true,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "Used",
+            "field": "used",
+            "added": false,
+            "kind": "yesno",
+            "check": {
+              "expect": "Boolean",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Boolean",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Boolean",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "CreatedAt",
+            "field": "createdAt",
+            "added": false,
+            "kind": "date",
+            "check": {
+              "expect": "DateTime",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "DateTime",
+              "indexed": false
+            },
+            "fake": {
+              "type": "DateTime",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "UsedAt",
+            "field": "usedAt",
+            "added": false,
+            "kind": "date",
+            "check": {
+              "expect": "DateTime",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "DateTime",
+              "indexed": false
+            },
+            "fake": {
+              "type": "DateTime",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "ExpiredAt",
+            "field": "expiredAt",
+            "added": false,
+            "kind": "date",
+            "check": {
+              "expect": "DateTime",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "DateTime",
+              "indexed": false
+            },
+            "fake": {
+              "type": "DateTime",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "ClientTrackId",
+            "field": "clientTrackId",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          }
+        ]
+      },
+      "appsettings": {
+        "title": "AppSettings",
+        "local": "appsettings",
+        "columns": [
+          {
+            "column": "AppId",
+            "field": "id",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": true,
+              "indexed": true,
+              "unique": true,
+              "choices": null
+            },
+            "byEye": null,
+            "fake": {
+              "type": "Text",
+              "indexed": true,
+              "unique": true,
+              "choices": null
+            }
+          },
+          {
+            "column": "ActiveSessionId",
+            "field": "activeSessionId",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "ActiveClientId",
+            "field": "activeClientId",
+            "added": true,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": true,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": null,
+            "fake": {
+              "type": "Text",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "ActivatedAt",
+            "field": "activatedAt",
+            "added": true,
+            "kind": "date",
+            "check": {
+              "expect": "DateTime",
+              "compared": true,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": null,
+            "fake": {
+              "type": "DateTime",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          }
+        ]
+      },
+      "visitorroster": {
+        "title": "VisitorRoster",
+        "local": "visitorroster",
+        "columns": [
+          {
+            "column": "AppId",
+            "field": "id",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": true,
+              "indexed": true,
+              "unique": true,
+              "choices": null
+            },
+            "byEye": null,
+            "fake": {
+              "type": "Text",
+              "indexed": true,
+              "unique": true,
+              "choices": null
+            }
+          },
+          {
+            "column": "SessionId",
+            "field": "sessionId",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": true
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": true,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "DisplayName",
+            "field": "displayName",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "Enabled",
+            "field": "enabled",
+            "added": false,
+            "kind": "yesno",
+            "check": {
+              "expect": "Boolean",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Boolean",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Boolean",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          }
+        ]
+      },
+      "uservisitlogs": {
+        "title": "UserVisitLogs",
+        "local": "uservisitlogs",
+        "columns": [
+          {
+            "column": "AppId",
+            "field": "id",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": true,
+              "indexed": true,
+              "unique": true,
+              "choices": null
+            },
+            "byEye": null,
+            "fake": {
+              "type": "Text",
+              "indexed": true,
+              "unique": true,
+              "choices": null
+            }
+          },
+          {
+            "column": "SessionId",
+            "field": "sessionId",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": true
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": true,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "ClientId",
+            "field": "clientId",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "Page",
+            "field": "page",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "EntryMode",
+            "field": "entryMode",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Choice",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Choice",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "SharePointUserId",
+            "field": "sharePointUserId",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "DisplayName",
+            "field": "displayName",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "VisitorId",
+            "field": "visitorId",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "VisitorName",
+            "field": "visitorName",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "TrackId",
+            "field": "trackId",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "VisitedAt",
+            "field": "visitedAt",
+            "added": false,
+            "kind": "date",
+            "check": {
+              "expect": "DateTime",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "DateTime",
+              "indexed": false
+            },
+            "fake": {
+              "type": "DateTime",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          }
+        ]
+      },
+      "adminusers": {
+        "title": "AdminUsers",
+        "local": "adminusers",
+        "columns": [
+          {
+            "column": "AppId",
+            "field": "id",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": true,
+              "indexed": true,
+              "unique": true,
+              "choices": null
+            },
+            "byEye": null,
+            "fake": {
+              "type": "Text",
+              "indexed": true,
+              "unique": true,
+              "choices": null
+            }
+          },
+          {
+            "column": "PinHash",
+            "field": "pin",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "Name",
+            "field": "name",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": false
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          }
+        ]
+      },
+      "responses": {
+        "title": "Responses",
+        "local": "participantresponses",
+        "columns": [
+          {
+            "column": "AppId",
+            "field": null,
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": true,
+              "indexed": true,
+              "unique": true,
+              "choices": null
+            },
+            "byEye": null,
+            "fake": {
+              "type": "Text",
+              "indexed": true,
+              "unique": true,
+              "choices": null
+            }
+          },
+          {
+            "column": "SessionId",
+            "field": "sessionId",
+            "added": false,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": false,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": {
+              "type": "Text",
+              "indexed": true
+            },
+            "fake": {
+              "type": "Text",
+              "indexed": true,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "ResponsesJson",
+            "field": "responses",
+            "added": false,
+            "kind": "array",
+            "check": {
+              "expect": "Note",
+              "compared": true,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": null,
+            "fake": {
+              "type": "Note",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "TrackId",
+            "field": "trackId",
+            "added": true,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": true,
+              "indexed": true,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": null,
+            "fake": {
+              "type": "Text",
+              "indexed": true,
+              "unique": false,
+              "choices": null
+            }
+          },
+          {
+            "column": "ClientId",
+            "field": "clientId",
+            "added": true,
+            "kind": "plain",
+            "check": {
+              "expect": "Text",
+              "compared": true,
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            },
+            "byEye": null,
+            "fake": {
+              "type": "Text",
+              "indexed": false,
+              "unique": false,
+              "choices": null
+            }
+          }
+        ]
+      }
+    }
+  }
+}

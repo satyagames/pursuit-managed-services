@@ -1,0 +1,780 @@
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import * as dataService from '../../../public/js/dataService.js';
+  import { embeddedAssetUrl } from '../../../public/js/assets.js';
+  import { effectiveSlug } from '../lib/admin-clients.js';
+  import { assetFileName, isOwnUpload } from '../lib/asset-names.js';
+  import { measureLogo, type Prepared } from '../lib/asset-image.js';
+  import { BRAND_SLOTS, slotSpec } from '../lib/asset-specs.js';
+  import type { Look } from '../lib/brand-look.js';
+  import { DEVICES, deviceById } from '../lib/brand-devices.js';
+  import { SCENES } from '../lib/brand-sample.js';
+  import {
+    OPEN_PAGES_NOTE, PRESETS, brandReport, changesForSave, cloneDraft, copyColoursFrom, draftFromClient, parseColour, resetColours, sameDraft,
+    type Draft, type LogoStats,
+  } from '../lib/brand-studio.js';
+  import { resolveClientTheme } from '../lib/client-theme.js';
+  import { DEFAULT_PRIMARY } from '../lib/theme.js';
+  import { copyText, participantPageUrl, qrImage } from '../lib/admin-links.js';
+  import { mayLeave, setLeaveGuard } from '../lib/unsaved.js';
+  import AssetUploader from './AssetUploader.svelte';
+  import BrandPreview from './BrandPreview.svelte';
+  import ConfirmDialog from './ConfirmDialog.svelte';
+  import CopyBrandDialog from './CopyBrandDialog.svelte';
+
+  type Client = {
+    id: string; name: string; slug?: string; status?: string; logoUrl?: string | null; primaryColor?: string; secondaryColor?: string;
+    theme?: unknown; themeVersion?: number;
+  };
+  type Slot = (typeof BRAND_SLOTS)[number];
+
+  let { client, clients, onClose, onSaved, onToast }: {
+    client: Client;
+    /** Every client, to copy a look from. */
+    clients: Client[];
+    onClose: () => void;
+    /** The record as saved, so the list behind can show it. */
+    onSaved: (record: Client) => void;
+    onToast: (message: string, kind?: 'info' | 'success' | 'error') => void;
+  } = $props();
+
+  // Read once, when Brand Studio opens for this client (the screen is made afresh for each).
+  function open() {
+    const base = draftFromClient(client);
+    return { record: { ...client } as Client, saved: base, draft: cloneDraft(base) };
+  }
+  const first = open();
+  let record = $state<Client>(first.record);
+  let saved = $state<Draft>(first.saved);
+  let draft = $state<Draft>(first.draft);
+  /** Pictures chosen and not saved yet: nothing is uploaded until Save. */
+  let pending = $state<Record<Slot, Prepared | null>>({ hero: null, logo: null, background: null });
+
+  let primaryTyped = $state<string | null>(null);
+  let accentTyped = $state<string | null>(null);
+  let sceneId = $state<Look['scene']>('welcome');
+  let deviceId = $state('phone');
+  let busy = $state(false);
+  let error = $state('');
+  let justSaved = $state(false);
+  let conflict = $state(false);
+  let copying = $state(false);
+  let leaving = $state<((ok: boolean) => void) | null>(null);
+  let logoStats = $state<LogoStats | null>(null);
+  /** The address that shows the SAVED look on a real device, before the client is live (`index.html?preview=<id>`). */
+  let deviceUrl = $state('');
+  let deviceQr = $state('');
+
+  const slug = $derived(effectiveSlug(dataService, record));
+  const dirty = $derived(!sameDraft(draft, saved) || BRAND_SLOTS.some((slot) => pending[slot] !== null));
+  const report = $derived(brandReport(draft, { logo: logoStats }));
+  const device = $derived(deviceById(deviceId));
+  const scene = $derived(SCENES.find((entry) => entry.id === sceneId) ?? SCENES[0]);
+  const gradient = $derived(`linear-gradient(to bottom, ${report.theme.tokens['--bg-top']} 0%, ${report.theme.tokens['--bg-mid']} 58%, ${report.theme.tokens['--bg-bottom']} 100%)`);
+  const display = (url: string | null) => (url ? embeddedAssetUrl(url) ?? url : null);
+
+  // The words are the client's own, as a participant's page resolves them.
+  const words = $derived(resolveClientTheme(record).copy);
+  const look = $state<Look>({
+    scene: 'welcome', clientName: '', eventTitle: '', eventSubtitle: '', welcomeLine: '', logoText: '', heroUrl: null, logoUrl: null,
+    plate: 'light', backgroundUrl: null, backgroundFocus: null,
+  });
+  $effect(() => {
+    look.scene = sceneId;
+    look.clientName = record.name;
+    look.eventTitle = words.eventTitle;
+    look.eventSubtitle = words.eventSubtitle;
+    look.welcomeLine = words.welcomeLine;
+    look.logoText = words.logoText;
+    look.heroUrl = display(draft.assets.hero);
+    look.logoUrl = display(draft.assets.logo);
+    look.plate = draft.plate;
+    look.backgroundUrl = display(draft.assets.background);
+    look.backgroundFocus = draft.assets.background ? draft.focus ?? { x: 50, y: 50 } : null;
+  });
+
+  // How light or dark the logo is, for the plate advice. Measured again when the logo changes.
+  $effect(() => {
+    const url = display(draft.assets.logo);
+    let current = true;
+    logoStats = null;
+    if (url) void measureLogo(url).then((stats) => { if (current) logoStats = stats; });
+    return () => { current = false; };
+  });
+
+  // ---- Leaving with unsaved changes -----------------------------------------------------------------
+
+  onMount(() => {
+    void participantPageUrl().then((base) => {
+      const url = new URL(base);
+      url.searchParams.set('preview', client.id);
+      deviceUrl = url.href;
+    });
+    const remove = setLeaveGuard(() => (dirty ? new Promise<boolean>((resolve) => { leaving = resolve; }) : true));
+    return () => {
+      remove();
+      for (const slot of BRAND_SLOTS) if (pending[slot]) URL.revokeObjectURL(pending[slot]!.url);
+    };
+  });
+  $effect(() => {
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  });
+
+  async function back() {
+    if (await mayLeave()) onClose();
+  }
+
+  // ---- Editing ---------------------------------------------------------------------------------------
+
+  const touched = () => { justSaved = false; error = ''; };
+
+  function setPrimary(hex: string) {
+    draft.primary = hex;
+    primaryTyped = null;
+    touched();
+  }
+
+  function typePrimary(value: string) {
+    primaryTyped = value;
+    const hex = parseColour(value);
+    if (hex) { draft.primary = hex; touched(); }
+  }
+
+  function setAccent(hex: string | null) {
+    draft.accent = hex;
+    accentTyped = null;
+    touched();
+  }
+
+  function typeAccent(value: string) {
+    accentTyped = value;
+    if (value.trim() === '') { draft.accent = null; touched(); return; }
+    const hex = parseColour(value);
+    if (hex) { draft.accent = hex; touched(); }
+  }
+
+  function release(slot: Slot) {
+    if (pending[slot]) URL.revokeObjectURL(pending[slot]!.url);
+    pending[slot] = null;
+  }
+
+  function pick(slot: Slot, prepared: Prepared) {
+    release(slot);
+    pending[slot] = prepared;
+    draft.assets[slot] = prepared.url;
+    if (slot === 'background' && !draft.focus) draft.focus = { x: 50, y: 50 };
+    touched();
+  }
+
+  function remove(slot: Slot) {
+    release(slot);
+    draft.assets[slot] = null;
+    if (slot === 'background') draft.focus = null;
+    touched();
+  }
+
+  function revert() {
+    for (const slot of BRAND_SLOTS) release(slot);
+    draft = cloneDraft(saved);
+    primaryTyped = null;
+    accentTyped = null;
+    touched();
+    onToast('Back to the saved look', 'info');
+  }
+
+  function resetToStandard() {
+    draft = { ...resetColours(draft) };
+    primaryTyped = null;
+    accentTyped = null;
+    touched();
+  }
+
+  function copyFrom(other: Client) {
+    copying = false;
+    draft = { ...copyColoursFrom(draft, other) };
+    primaryTyped = null;
+    accentTyped = null;
+    touched();
+    onToast(`Colours copied from ${other.name}. Save to keep them.`, 'info');
+  }
+
+  // ---- Save --------------------------------------------------------------------------------------------
+
+  /**
+   * The order matters. Newly chosen pictures are uploaded first (a picture that fails stops the save before anything
+   * changes); then the client is written once (theme, version + 1, the older colours, the logo address); only then are
+   * the pictures it replaced removed, so a participant is never pointed at a file that is gone. If the write fails the
+   * files just uploaded are removed again.
+   */
+  async function save(overwrite = false) {
+    if (busy || !dirty) return;
+    busy = true;
+    error = '';
+    justSaved = false;
+    const uploaded: string[] = [];
+    try {
+      const fresh = await dataService.getClient(record.id) as Client | null;
+      if (!fresh) throw new Error(`${record.name} no longer exists.`);
+      if (!overwrite && (fresh.themeVersion ?? 0) !== (record.themeVersion ?? 0)) { conflict = true; return; }
+      const next = cloneDraft(draft);
+      for (const slot of BRAND_SLOTS) {
+        const prepared = pending[slot];
+        if (!prepared) continue;
+        const name = assetFileName(slug, slot, new Uint8Array(await prepared.blob.arrayBuffer()), prepared.mime);
+        const stored = await (dataService.uploadClientAsset as (file: Blob, name: string) => Promise<{ url: string }>)(prepared.blob, name);
+        uploaded.push(stored.url);
+        next.assets[slot] = stored.url;
+      }
+      const changes = changesForSave(fresh, next, saved);
+      try {
+        await dataService.updateClient(record.id, changes);
+      } catch (cause) {
+        for (const url of uploaded) await (dataService.removeClientAsset as (url: string) => Promise<boolean>)(url);
+        throw cause;
+      }
+      // The pictures this save replaced, if they were ours.
+      let kept = 0;
+      for (const slot of BRAND_SLOTS) {
+        const old = saved.assets[slot];
+        if (old && old !== next.assets[slot] && isOwnUpload(old, slug)) {
+          if (!await (dataService.removeClientAsset as (url: string) => Promise<boolean>)(old)) kept += 1;
+        }
+      }
+      for (const slot of BRAND_SLOTS) release(slot);
+      record = { ...fresh, ...changes };
+      saved = cloneDraft(next);
+      draft = cloneDraft(next);
+      primaryTyped = null;
+      accentTyped = null;
+      justSaved = true;
+      onSaved(record);
+      onToast(kept > 0 ? `Saved. ${kept === 1 ? 'An old picture' : `${kept} old pictures`} could not be removed and can be deleted from the library by hand.` : 'Saved', kept > 0 ? 'info' : 'success');
+    } catch (cause) {
+      error = cause instanceof Error ? cause.message : 'Could not save this look.';
+    } finally {
+      busy = false;
+    }
+  }
+
+  async function showDeviceQr() {
+    try { deviceQr = await qrImage(deviceUrl); } catch (cause) { onToast(cause instanceof Error ? cause.message : 'Could not draw the QR code.', 'error'); }
+  }
+
+  const statusFor = (slot: Slot) => (pending[slot] ? 'Not saved yet' : draft.assets[slot] ? (saved.assets[slot] ? 'Saved' : 'Not saved yet') : 'Not set');
+  const FRAME = 'Preview of the';
+</script>
+
+<section class="brand" aria-labelledby="brand-title" aria-busy={busy}>
+  <header class="brand__head">
+    <div>
+      <button class="btn" type="button" onclick={() => void back()} disabled={busy}>← Clients</button>
+    </div>
+    <div class="brand__title">
+      <h2 id="brand-title">Brand Studio · {record.name}</h2>
+      <p class="muted">Colours, logo, hero art and background for what this client's participants see. The preview shows the real screens, from your unsaved changes.</p>
+    </div>
+    <span class="pill" class:pill--in-progress={dirty} class:pill--completed={!dirty} data-testid="brand-status">{dirty ? 'Unsaved changes' : 'All changes saved'}</span>
+  </header>
+
+  <div class="brand__grid">
+    <div class="brand__controls">
+      <!-- Colours -->
+      <section class="card brand__card" aria-labelledby="brand-colours">
+        <h3 id="brand-colours">Colours</h3>
+
+        <div class="field">
+          <label class="field__label" for="brand-primary">Primary</label>
+          <div class="brand__colour">
+            <input id="brand-primary" class="input mono" value={primaryTyped ?? draft.primary} oninput={(event) => typePrimary(event.currentTarget.value)} onblur={() => { primaryTyped = null; }} autocapitalize="off" autocorrect="off" spellcheck="false" aria-describedby="brand-primary-help" aria-invalid={primaryTyped !== null && parseColour(primaryTyped) === null} />
+            <input class="color" type="color" aria-label="Primary colour picker" value={draft.primary.toLowerCase()} oninput={(event) => setPrimary(parseColour(event.currentTarget.value) ?? draft.primary)} />
+          </div>
+          <span id="brand-primary-help" class="small" class:muted={primaryTyped === null || parseColour(primaryTyped) !== null} class:error={primaryTyped !== null && parseColour(primaryTyped) === null}>
+            {#if primaryTyped !== null && parseColour(primaryTyped) === null}Enter a colour like #045BCC.{:else}The page, the buttons, the pills and the tiles follow this colour.{/if}
+          </span>
+          <div class="brand__presets" role="group" aria-label="Preset colours">
+            {#each PRESETS as preset (preset.hex)}
+              <button class="brand__preset" type="button" style:background={preset.hex} aria-label="{preset.name} {preset.hex}" title="{preset.name} {preset.hex}" aria-pressed={draft.primary.toUpperCase() === preset.hex} onclick={() => setPrimary(preset.hex)}></button>
+            {/each}
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="brand-accent">Accent (optional)</label>
+          <div class="brand__colour">
+            <input id="brand-accent" class="input mono" value={accentTyped ?? draft.accent ?? ''} placeholder="None" oninput={(event) => typeAccent(event.currentTarget.value)} onblur={() => { accentTyped = null; }} autocapitalize="off" autocorrect="off" spellcheck="false" aria-describedby="brand-accent-help" aria-invalid={accentTyped !== null && accentTyped.trim() !== '' && parseColour(accentTyped) === null} />
+            <input class="color" type="color" aria-label="Accent colour picker" value={(draft.accent ?? '#ffffff').toLowerCase()} oninput={(event) => setAccent(parseColour(event.currentTarget.value))} />
+            <button class="btn" type="button" disabled={draft.accent === null} onclick={() => setAccent(null)}>No accent</button>
+          </div>
+          <span id="brand-accent-help" class="small muted">Decoration only: a thin rule under titles and a ring on the logo plate. It never colours a button, and it only shows where it stands out enough.</span>
+        </div>
+
+        <fieldset class="field brand__plate">
+          <legend class="field__label">Logo plate</legend>
+          <div class="brand__plates" role="radiogroup">
+            <label class="brand__radio"><input type="radio" name="plate" value="light" checked={draft.plate === 'light'} onchange={() => { draft.plate = 'light'; touched(); }} /> <span class="brand__chip brand__chip--light" aria-hidden="true"></span> Light plate</label>
+            <label class="brand__radio"><input type="radio" name="plate" value="dark" checked={draft.plate === 'dark'} onchange={() => { draft.plate = 'dark'; touched(); }} /> <span class="brand__chip brand__chip--dark" aria-hidden="true"></span> Dark plate</label>
+          </div>
+          <span class="small muted">The plate behind the logo (or the name in type) on Welcome. Many logos are white on a transparent background and need the dark one.</span>
+        </fieldset>
+
+        <!-- What the colours do -->
+        <div class="brand__strip" style:background={gradient} aria-label="The page gradient for this primary" role="img">
+          <span class="brand__strip-pill">Answer pill</span>
+          <span class="brand__strip-button" style:background={report.theme.tokens['--action']}>Button</span>
+          <span class="brand__strip-hex">{report.theme.tokens['--bg-top']} → {report.theme.tokens['--bg-mid']} → {report.theme.tokens['--bg-bottom']}</span>
+        </div>
+
+        {#if report.adjusted}
+          <div class="brand__adjusted" role="status" data-testid="adjusted">
+            <p><strong>Adjusted for readability.</strong> White words need a darker page than {report.adjusted.from}. Participants will see <span class="brand__swatch" style:background={report.adjusted.to} aria-hidden="true"></span><span class="mono">{report.adjusted.to}</span> instead of <span class="brand__swatch" style:background={report.adjusted.from} aria-hidden="true"></span><span class="mono">{report.adjusted.from}</span>.</p>
+            <button class="btn" type="button" onclick={() => setPrimary(report.adjusted!.to)}>Auto-fix: use {report.adjusted.to}</button>
+          </div>
+        {/if}
+
+        <table class="brand__contrast">
+          <caption class="small muted">Contrast of each pairing, as participants will see it. Words need 4.5:1; the accent needs 3:1 where it is drawn.</caption>
+          <thead><tr><th scope="col">Pairing</th><th scope="col">Contrast</th><th scope="col">Needs</th><th scope="col">Result</th></tr></thead>
+          <tbody>
+            {#each report.rows as row (row.id)}
+              <tr data-pass={row.pass}>
+                <th scope="row"><span class="brand__sample" style:background={row.background} aria-hidden="true"><span class="brand__sample-ink" style:background={row.foreground}></span></span>{row.label}</th>
+                <td>{row.ratio.toFixed(1)}:1</td>
+                <td>{row.need}:1</td>
+                <td>{row.pass ? '✓ Pass' : row.id.startsWith('accent') ? '✕ Not drawn' : '✕ Fails'}</td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+
+        {#if report.warnings.length > 0}
+          <ul class="brand__warnings" aria-label="Warnings">
+            {#each report.warnings as warning (warning.id)}<li data-warning={warning.id}><span aria-hidden="true">⚠</span> {warning.message}</li>{/each}
+          </ul>
+        {/if}
+      </section>
+
+      <!-- Pictures -->
+      <section class="brand__pictures" aria-labelledby="brand-pictures">
+        <h3 id="brand-pictures">Pictures</h3>
+        <p class="muted small">Welcome shows the hero badge if there is one; otherwise the logo on the plate; otherwise the name in type. The background sits behind every screen. Pictures are cropped and shrunk to the right size here, in your browser, and uploaded when you save.</p>
+        {#each BRAND_SLOTS as slot (slot)}
+          <AssetUploader
+            spec={slotSpec(slot)}
+            url={display(draft.assets[slot])}
+            status={statusFor(slot)}
+            disabled={busy}
+            focus={slot === 'background' ? draft.focus : null}
+            onpick={(prepared) => pick(slot, prepared)}
+            onremove={() => remove(slot)}
+            onfocus={slot === 'background' ? (point) => { draft.focus = point; touched(); } : undefined}
+          />
+        {/each}
+      </section>
+
+      <div class="brand__actions card" role="group" aria-label="Save">
+        <div class="brand__buttons">
+          <button class="btn btn--primary" type="button" onclick={() => void save()} disabled={busy || !dirty}>{busy ? 'Saving...' : 'Save'}</button>
+          <button class="btn" type="button" onclick={revert} disabled={busy || !dirty}>Revert to saved</button>
+          <button class="btn" type="button" onclick={resetToStandard} disabled={busy}>Reset to standard blue</button>
+          <button class="btn" type="button" onclick={() => { copying = true; }} disabled={busy}>Copy brand from another client...</button>
+        </div>
+        {#if error}<p class="error" role="alert">{error}</p>{/if}
+        {#if justSaved}<p class="notice" role="status" data-testid="saved-note">{OPEN_PAGES_NOTE}</p>{/if}
+        <p class="muted small">Standard blue is {DEFAULT_PRIMARY}. Resetting changes the colours and the plate, not the pictures.</p>
+      </div>
+    </div>
+
+    <aside class="brand__preview" aria-label="Preview">
+      <div class="brand__switch" role="group" aria-label="Device">
+        {#each DEVICES as entry (entry.id)}
+          <button class="btn brand__tab" type="button" aria-pressed={deviceId === entry.id} onclick={() => { deviceId = entry.id; }}>{entry.label}</button>
+        {/each}
+      </div>
+      <div class="brand__switch" role="group" aria-label="Screen">
+        {#each SCENES as entry (entry.id)}
+          <button class="btn brand__tab" type="button" aria-pressed={sceneId === entry.id} onclick={() => { sceneId = entry.id as Look['scene']; }}>{entry.label}</button>
+        {/each}
+      </div>
+      <BrandPreview {look} tokens={report.theme.tokens} {device} label="{FRAME} {scene.label} screen on {device.label}, {device.width} by {device.height} pixels" />
+      <p class="muted small brand__caption">{scene.label} on {device.label}: {device.width} × {device.height} px, the real screen with sample content. Read-only.</p>
+
+      <section class="card brand__device" aria-labelledby="brand-device">
+        <h3 id="brand-device">Check it on a real iPad</h3>
+        <p class="muted small">This address shows {record.name}'s <strong>saved</strong> look (not unsaved changes) on any device, even before the client is live: its Welcome and read-only activities, marked Preview, saving nothing. Save first.</p>
+        <div class="brand__colour">
+          <input id="brand-device-url" class="input mono" value={deviceUrl} readonly aria-label="Preview address for a device" />
+          <button class="btn" type="button" disabled={!deviceUrl} onclick={() => { void copyText(deviceUrl, document.querySelector<HTMLInputElement>('#brand-device-url')).then(() => onToast('Link copied', 'success')); }}>Copy</button>
+          <a class="btn" href={deviceUrl || undefined} target="_blank" rel="noopener">Open</a>
+          <button class="btn" type="button" disabled={!deviceUrl} onclick={() => void showDeviceQr()}>Show QR code</button>
+        </div>
+        {#if deviceQr}<img class="brand__qr" src={deviceQr} alt="QR code for the preview address" />{/if}
+      </section>
+    </aside>
+  </div>
+</section>
+
+{#if leaving}
+  <ConfirmDialog
+    title="Leave Brand Studio?"
+    lead="You have changes that are not saved."
+    points={['Leaving now discards them. Nothing has been uploaded or changed for participants.']}
+    confirmLabel="Leave without saving"
+    cancelLabel="Keep editing"
+    onConfirm={() => { const done = leaving; leaving = null; done?.(true); }}
+    onCancel={() => { const done = leaving; leaving = null; done?.(false); }}
+  />
+{/if}
+
+{#if conflict}
+  <ConfirmDialog
+    title="Someone else changed this look"
+    lead={`${record.name}'s look was saved by someone else after you opened it.`}
+    points={['Saving yours replaces theirs. Cancel to keep editing, then reload this screen from Clients to see theirs.']}
+    confirmLabel="Save mine anyway"
+    cancelLabel="Cancel"
+    onConfirm={() => { conflict = false; void save(true); }}
+    onCancel={() => { conflict = false; }}
+  />
+{/if}
+
+{#if copying}
+  <CopyBrandDialog clients={clients.filter((entry) => entry.id !== record.id)} onChoose={copyFrom} onCancel={() => { copying = false; }} />
+{/if}
+
+<style>
+  .brand {
+    display: grid;
+    gap: 1rem;
+    min-width: 0;
+  }
+
+  .brand__head {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: start;
+    gap: 0.75rem 1rem;
+  }
+
+  .brand__title h2,
+  .brand__title p {
+    margin: 0;
+  }
+
+  .brand__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  .brand__controls,
+  .brand__pictures {
+    display: grid;
+    gap: 1rem;
+    min-width: 0;
+  }
+
+  .brand__pictures > h3,
+  .brand__pictures > p {
+    margin: 0;
+  }
+
+  .brand__card {
+    display: grid;
+    gap: 1rem;
+    padding: 1rem;
+    min-width: 0;
+  }
+
+  .brand__card h3 {
+    margin: 0;
+  }
+
+  .brand__colour {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .brand__colour .input {
+    flex: 1 1 8rem;
+    min-width: 0;
+    min-height: var(--target-min);
+    padding: 0 0.75rem;
+  }
+
+  .brand__colour .color {
+    flex: none;
+    width: var(--target-min);
+    height: var(--target-min);
+    padding: 2px;
+  }
+
+  .brand__presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .brand__preset {
+    width: var(--target-min);
+    height: var(--target-min);
+    border: 2px solid var(--adm-line);
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  .brand__preset[aria-pressed='true'] {
+    border-color: var(--adm-ink);
+    box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--adm-ink);
+  }
+
+  .brand__plate {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+  }
+
+  .brand__plates {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.25rem;
+  }
+
+  .brand__radio {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: var(--target-min);
+  }
+
+  .brand__radio input {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .brand__chip {
+    display: inline-block;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 1px solid var(--adm-ink);
+    border-radius: 50%;
+  }
+
+  .brand__chip--light { background: #fff; }
+  .brand__chip--dark { background: #0b1f3a; }
+
+  .brand__strip {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 5rem;
+    padding: 1rem;
+    color: #fff;
+    border-radius: 0.65rem;
+  }
+
+  .brand__strip-pill {
+    padding: 0.5rem 1rem;
+    background: rgb(255 255 255 / 0.14);
+    border: 1px solid #fff;
+    border-radius: 999px;
+  }
+
+  .brand__strip-button {
+    padding: 0.5rem 1.25rem;
+    border: 1px solid rgb(255 255 255 / 0.7);
+    border-radius: 999px;
+    font-weight: var(--fw-semibold);
+  }
+
+  .brand__strip-hex {
+    margin-left: auto;
+    font: 0.8125rem/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+    text-shadow: 0 1px 2px rgb(0 0 0 / 0.6);
+  }
+
+  .brand__adjusted {
+    display: grid;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    color: var(--adm-warn-ink);
+    background: var(--adm-warn-bg);
+    border-radius: 0.65rem;
+  }
+
+  .brand__adjusted p {
+    margin: 0;
+  }
+
+  .brand__adjusted .btn {
+    justify-self: start;
+  }
+
+  .brand__swatch {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    margin: 0 0.25rem 0 0.15rem;
+    vertical-align: -0.15rem;
+    border: 1px solid var(--adm-ink);
+    border-radius: 3px;
+  }
+
+  .brand__contrast {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9375rem;
+  }
+
+  .brand__contrast caption {
+    padding-bottom: 0.4rem;
+    text-align: left;
+  }
+
+  .brand__contrast th,
+  .brand__contrast td {
+    padding: 0.4rem 0.5rem;
+    text-align: left;
+    border-top: 1px solid var(--adm-line);
+    vertical-align: middle;
+  }
+
+  .brand__contrast thead th {
+    border-top: 0;
+    color: var(--adm-muted);
+    font-size: 0.8125rem;
+  }
+
+  .brand__contrast tbody th {
+    font-weight: var(--fw-regular);
+  }
+
+  .brand__contrast tr[data-pass='false'] td:last-child {
+    color: var(--adm-bad-ink);
+    font-weight: var(--fw-semibold);
+  }
+
+  /* A swatch of the pairing: the words' colour as a bar on the background colour. It used to be the letters "Aa" in those colours, which for a pair that
+     fails is, by design, text nobody can read (axe rightly reports it): the ratio and the result are in words beside it, so the swatch is a picture only. */
+  .brand__sample {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.4rem;
+    height: 1.5rem;
+    margin-right: 0.5rem;
+    vertical-align: middle;
+    border: 1px solid var(--adm-line);
+    border-radius: 4px;
+  }
+
+  .brand__sample-ink {
+    width: 1.1rem;
+    height: 0.5rem;
+    border-radius: 0.25rem;
+  }
+
+  .brand__warnings {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .brand__warnings li {
+    padding: 0.5rem 0.75rem;
+    color: var(--adm-warn-ink);
+    background: var(--adm-warn-bg);
+    border-radius: 0.5rem;
+  }
+
+  .brand__actions {
+    display: grid;
+    gap: 0.6rem;
+    padding: 1rem;
+  }
+
+  .brand__actions p {
+    margin: 0;
+  }
+
+  .brand__buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .brand__preview {
+    position: sticky;
+    top: 0.5rem;
+    display: grid;
+    gap: 0.6rem;
+    min-width: 0;
+  }
+
+  .brand__switch {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .brand__tab[aria-pressed='true'] {
+    color: #fff;
+    background: var(--adm-ink);
+    border-color: var(--adm-ink);
+  }
+
+  .brand__caption {
+    margin: 0;
+  }
+
+  .brand__device {
+    display: grid;
+    gap: 0.6rem;
+    padding: 1rem;
+  }
+
+  .brand__device h3,
+  .brand__device p {
+    margin: 0;
+  }
+
+  .brand__qr {
+    width: 9rem;
+    height: 9rem;
+    background: #fff;
+  }
+
+  .mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  .error {
+    color: var(--adm-bad-ink);
+  }
+
+  /* The preview moves below the controls on a narrow window. */
+  @media (max-width: 820px) {
+    .brand__grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .brand__preview {
+      position: static;
+    }
+
+    .brand__head {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

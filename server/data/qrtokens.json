@@ -1,0 +1,22 @@
+[
+  {
+    "id": "03d998fb-5ce5-4348-8227-d87088475daa",
+    "clientId": "c-kroger",
+    "sessionId": "s-kroger-kickoff",
+    "used": true,
+    "createdAt": "2026-09-21T11:54:02.902Z",
+    "usedAt": null,
+    "clientTrackId": null,
+    "expiredAt": "2026-09-21T14:04:06.364Z"
+  },
+  {
+    "id": "1e1eb1f2-4344-4f4b-ab1c-db478b577951",
+    "clientId": "c-kroger",
+    "sessionId": "s-kroger-kickoff",
+    "used": true,
+    "createdAt": "2026-09-21T11:54:08.614Z",
+    "usedAt": null,
+    "clientTrackId": null,
+    "expiredAt": "2026-09-21T14:04:06.364Z"
+  }
+]

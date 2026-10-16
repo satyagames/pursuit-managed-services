@@ -1,0 +1,157 @@
+# Request baseline: scripts/test-named-reads.js on the mocked SharePoint REST (5 recordings).
+# Recorded at the end of Phase 10h part A (every item read names its columns), when the suite was first recorded.
+# Do not regenerate this file to make a comparison pass: a difference is a finding. See scripts/request-baseline.js.
+# One entry for each distinct request and how many times it was sent ("~": the count depends on timing). <uuid> and <time> are placeholders.
+# Amended in Phase 10i, part B: schema version 3 renamed PMSGuestList.DisplayName to GuestName and PMSVisitLog.DisplayName to SignedInName (the real site would not return a column called DisplayName by name), so each read of those two lists names the new column in its `$select`, by scripts/schema-baseline/rename-baselines.js, after a fresh recording equalled the translation exactly; the number and the order of the requests are as they were. Nothing else was changed.
+1 x GET /sites/PCOE/_api/web/lists/getbytitle('PMSActivities')/fields
+1 x GET /sites/PCOE/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+1 x GET /sites/PCOE/_api/web/lists/getbytitle('PMSActivities')?$select=ListItemEntityTypeFullName
+1 x GET /sites/PCOE/_api/web/lists/getbytitle('PMSActivityQuestions')/fields
+1 x GET /sites/PCOE/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$top=200&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+1 x GET /sites/PCOE/_api/web/lists/getbytitle('PMSActivityQuestions')?$select=ListItemEntityTypeFullName
+1 x GET /sites/PCOE/_api/web/lists/getbytitle('PMSAnswerOptions')/fields
+1 x GET /sites/PCOE/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$top=200&$filter=(QuestionId eq '<uuid>' or QuestionId eq '<uuid>' or QuestionId eq '<uuid>' or QuestionId eq '<uuid>' or QuestionId eq '<uuid>' or QuestionId eq '<uuid>' or QuestionId eq '<uuid>' or QuestionId eq '<uuid>' or QuestionId eq '<uuid>' or QuestionId eq '<uuid>' or QuestionId eq '<uuid>' or QuestionId eq '<uuid>' or QuestionId eq '<uuid>' or QuestionId eq '<uuid>' or QuestionId eq '<uuid>' or QuestionId eq '<uuid>' or QuestionId eq '<uuid>' or QuestionId eq '<uuid>' or QuestionId eq '<uuid>' or QuestionId eq '<uuid>')&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/PCOE/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$top=200&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x GET /sites/PCOE/_api/web/lists/getbytitle('PMSAnswerOptions')?$select=ListItemEntityTypeFullName
+1 x GET /sites/PCOE/_api/web/lists/getbytitle('PMSClients')/fields
+1 x GET /sites/PCOE/_api/web/lists/getbytitle('PMSClients')/items?$top=200&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+1 x GET /sites/PCOE/_api/web/lists/getbytitle('PMSClients')?$select=ListItemEntityTypeFullName
+1 x GET /sites/PCOE/_api/web/lists/getbytitle('PMSParticipants')/items?$top=200&$filter=(SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-10' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-11' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-12' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-13' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-14' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-15' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-16' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-17' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-18' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-19' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-20' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-21' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-22' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-23' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-24')&$select=Id,AppId,SessionId,ClientId,JoinedVia,QrTokenId,VisitorId,ParticipantName,SharePointUserId,CreatedAt,ResumeCount,LastResumedAt,RestartedAt,RestartSectionId
+1 x GET /sites/PCOE/_api/web/lists/getbytitle('PMSVisitLog')/items?$top=200&$filter=(SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-10' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-11' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-12' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-13' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-14' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-15' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-16' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-17' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-18' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-19' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-20' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-21' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-22' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-23' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-24' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-25' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-26' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-27' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-28' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-29')&$select=Id,AppId,SessionId,ClientId,Page,EntryMode,SharePointUserId,SignedInName,VisitorId,VisitorName,TrackId,VisitedAt
+15 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=1
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=1&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$filter=(AppId eq 'sec-trivia' or AppId eq 'sec-guess-the-brand')&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+5 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$filter=(ClientId eq 'c-kroger')&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+15 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+14 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')?$select=ListItemEntityTypeFullName
+15 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$top=1
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$top=1&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+14 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$top=200&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+14 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')?$select=ListItemEntityTypeFullName
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAdminUsers')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAdminUsers')/items?$top=1
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAdminUsers')/items?$top=200&$select=Id,AppId,PinHash,Name
+15 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$top=1
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$top=1&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+14 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$top=200&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+14 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')?$select=ListItemEntityTypeFullName
+5 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/fields
+27 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$filter=AppId eq 'default'&$top=2&$select=Id,AppId,ActiveSessionId,ActiveClientId,ActivatedAt,SchemaVersion
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$top=1
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$top=1&$select=Id,AppId,ActiveSessionId,ActiveClientId,ActivatedAt,SchemaVersion
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$top=200&$select=Id,AppId,ActiveSessionId,ActiveClientId,ActivatedAt,SchemaVersion
+4 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')?$select=ListItemEntityTypeFullName
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientImages')?$select=Id,BaseTemplate
+6 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/fields
+15 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$filter=AppId eq 'kroger-2026-10-15'&$top=2&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$top=1
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$top=1&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$top=200&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow
+5 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')?$select=ListItemEntityTypeFullName
+15 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/fields
+6 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$filter=AppId eq 'c-kroger'&$top=2&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$top=1
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$top=1&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+14 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$top=200&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+14 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')?$select=ListItemEntityTypeFullName
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/fields
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/items?$filter=AppId eq '<uuid>'&$top=2&$select=Id,AppId,SessionId,GuestName,Enabled
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/items?$top=1
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')?$select=ListItemEntityTypeFullName
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/fields
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items?$filter=AppId eq '<uuid>'&$top=2&$select=Id,AppId,ClientId,SessionId,VisitorId,Used,CreatedAt,UsedAt,ExpiredAt,ClientTrackId
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items?$top=1
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items?$top=200&$filter=(SessionId eq 'kroger-2026-10-15')&$select=Id,AppId,ClientId,SessionId,VisitorId,Used,CreatedAt,UsedAt,ExpiredAt,ClientTrackId
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')?$select=ListItemEntityTypeFullName
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipantAnswers')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipantAnswers')/items?$filter=SessionId eq 'kroger-2026-10-15'&$select=Id,AppId,SessionId,ClientId,TrackId,ResponsesJson&$top=200
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipantAnswers')/items?$filter=TrackId eq '<uuid>'&$select=Id,AppId,SessionId,ClientId,TrackId,ResponsesJson&$top=5
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipantAnswers')/items?$top=1
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipantAnswers')?$select=ListItemEntityTypeFullName
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/fields
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items?$filter=AppId eq '<uuid>'&$top=2&$select=Id,AppId,SessionId,ClientId,JoinedVia,QrTokenId,VisitorId,ParticipantName,SharePointUserId,CreatedAt,ResumeCount,LastResumedAt,RestartedAt,RestartSectionId
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items?$top=1
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items?$top=1&$select=Id,AppId,SessionId,ClientId,JoinedVia,QrTokenId,VisitorId,ParticipantName,SharePointUserId,CreatedAt,ResumeCount,LastResumedAt,RestartedAt,RestartSectionId
+3 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items?$top=200&$filter=(SessionId eq 'kroger-2026-10-15')&$select=Id,AppId,SessionId,ClientId,JoinedVia,QrTokenId,VisitorId,ParticipantName,SharePointUserId,CreatedAt,ResumeCount,LastResumedAt,RestartedAt,RestartSectionId
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')?$select=ListItemEntityTypeFullName
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSVisitLog')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSVisitLog')/items?$top=1
+5 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items(100000)
+5 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items(77)
+1 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items(79)
+1 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items(80)
+1 x POST /sites/PCOE/_api/contextinfo
+4 x POST /sites/PCOE/_api/web/lists/getbytitle('PMSActivities')/items
+14 x POST /sites/PCOE/_api/web/lists/getbytitle('PMSActivityQuestions')/items
+56 x POST /sites/PCOE/_api/web/lists/getbytitle('PMSAnswerOptions')/items
+2 x POST /sites/PCOE/_api/web/lists/getbytitle('PMSClients')/items
+1 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$top=200&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+1 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$top=200&$filter=(AppId%20eq%20%27q-dominos-history-1%27%20or%20AppId%20eq%20%27q-dominos-history-2%27%20or%20AppId%20eq%20%27q-dominos-history-3%27%20or%20AppId%20eq%20%27q-dominos-history-4%27%20or%20AppId%20eq%20%27q-dominos-history-5%27%20or%20AppId%20eq%20%27q-dominos-innovation-1%27%20or%20AppId%20eq%20%27q-dominos-innovation-2%27%20or%20AppId%20eq%20%27q-dominos-innovation-3%27)&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$top=200&$filter=(QuestionId%20eq%20%27q-dominos-history-1%27%20or%20QuestionId%20eq%20%27q-dominos-history-2%27%20or%20QuestionId%20eq%20%27q-dominos-history-3%27%20or%20QuestionId%20eq%20%27q-dominos-history-4%27%20or%20QuestionId%20eq%20%27q-dominos-history-5%27%20or%20QuestionId%20eq%20%27q-dominos-innovation-1%27%20or%20QuestionId%20eq%20%27q-dominos-innovation-2%27%20or%20QuestionId%20eq%20%27q-dominos-innovation-3%27)&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+4 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$top=200&$filter=(AppId%20eq%20%27q-trivia-1%27%20or%20AppId%20eq%20%27q-trivia-2%27%20or%20AppId%20eq%20%27q-trivia-3%27%20or%20AppId%20eq%20%27q-trivia-4%27%20or%20AppId%20eq%20%27q-trivia-5%27%20or%20AppId%20eq%20%27q-brand-1%27)&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$top=200&$filter=(QuestionId%20eq%20%27q-trivia-1%27%20or%20QuestionId%20eq%20%27q-trivia-2%27%20or%20QuestionId%20eq%20%27q-trivia-3%27%20or%20QuestionId%20eq%20%27q-trivia-4%27%20or%20QuestionId%20eq%20%27q-trivia-5%27%20or%20QuestionId%20eq%20%27q-brand-1%27)&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
+1 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$filter=AppId%20eq%20%27default%27&$top=2&$select=Id,AppId,ActiveSessionId,ActiveClientId,ActivatedAt,SchemaVersion
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$filter=AppId%20eq%20%27kroger-2026-10-15%27&$top=2&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items?$filter=AppId%20eq%20%27<uuid>%27&$top=2&$select=Id,AppId,SessionId,ClientId,JoinedVia,QrTokenId,VisitorId,ParticipantName,SharePointUserId,CreatedAt,ResumeCount,LastResumedAt,RestartedAt,RestartSectionId
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$filter=(ClientId%20eq%20%27c-kroger%27)&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+1 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$top=200&$select=Id,AppId,ActiveSessionId,ActiveClientId,ActivatedAt,SchemaVersion
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$top=200&$filter=(ClientId%20eq%20%27c-kroger%27)&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow
+2 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$top=200&$select=Id,AppId,ActiveSessionId,ActiveClientId,ActivatedAt,SchemaVersion
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$top=200&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$top=200&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+1 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$filter=AppId%20eq%20%27kroger-2026-10-15%27&$top=2&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$filter=AppId%20eq%20%27c-kroger%27&$top=2&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$filter=(ClientId%20eq%20%27c-kroger%27)&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items?$top=20&$filter=(SessionId%20eq%20%27kroger-2026-10-15%27)%20and%20(QrTokenId%20eq%20%27<uuid>%27)&$select=Id,AppId,SessionId,ClientId,JoinedVia,QrTokenId,VisitorId,ParticipantName,SharePointUserId,CreatedAt,ResumeCount,LastResumedAt,RestartedAt,RestartSectionId
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/items?$filter=AppId%20eq%20%27<uuid>%27&$top=2&$select=Id,AppId,SessionId,GuestName,Enabled
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')?$select=ListItemEntityTypeFullName
+1 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$filter=AppId%20eq%20%27kroger-2026-10-15%27&$top=2&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items?$top=200&$filter=(SessionId%20eq%20%27kroger-2026-10-15%27)&$select=Id,AppId,SessionId,ClientId,JoinedVia,QrTokenId,VisitorId,ParticipantName,SharePointUserId,CreatedAt,ResumeCount,LastResumedAt,RestartedAt,RestartSectionId
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSParticipantAnswers')/items?$filter=SessionId%20eq%20%27kroger-2026-10-15%27&$select=Id,AppId,SessionId,ClientId,TrackId,ResponsesJson&$top=200
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$filter=(AppId%20eq%20%27sec-trivia%27%20or%20AppId%20eq%20%27sec-guess-the-brand%27)&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+2 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$top=200&$filter=(AppId%20eq%20%27kroger-2026-10-15%27)&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items?$top=200&$filter=(SessionId%20eq%20%27kroger-2026-10-15%27)&$select=Id,AppId,SessionId,ClientId,JoinedVia,QrTokenId,VisitorId,ParticipantName,SharePointUserId,CreatedAt,ResumeCount,LastResumedAt,RestartedAt,RestartSectionId
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$top=200&$filter=(AppId%20eq%20%27c-kroger%27)&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+2 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/fields
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/fields
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/fields
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/fields
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/fields
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/fields
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/fields
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/fields
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/fields
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSVisitLog')/fields
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAdminUsers')/fields
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSParticipantAnswers')/fields
+1 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items?$top=200&$filter=(SessionId%20eq%20%27kroger-2026-10-15%27)&$select=Id,AppId,SessionId,ClientId,JoinedVia,QrTokenId,VisitorId,ParticipantName,SharePointUserId,CreatedAt,ResumeCount,LastResumedAt,RestartedAt,RestartSectionId
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items?$top=200&$filter=(SessionId%20eq%20%27kroger-2026-10-15%27)&$select=Id,AppId,ClientId,SessionId,VisitorId,Used,CreatedAt,UsedAt,ExpiredAt,ClientTrackId
+1 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSVisitLog')/items?$top=200&$filter=(SessionId%20eq%20%27kroger-2026-10-15%27)&$select=Id,AppId,SessionId,ClientId,Page,EntryMode,SharePointUserId,SignedInName,VisitorId,VisitorName,TrackId,VisitedAt
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/items?$top=200&$filter=(SessionId%20eq%20%27kroger-2026-10-15%27)&$select=Id,AppId,SessionId,GuestName,Enabled
+14 x POST /sites/cec/_api/contextinfo
+56 x POST /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items
+196 x POST /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items
+784 x POST /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items
+5 x POST /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items
+28 x POST /sites/cec/_api/web/lists/getbytitle('PMSClients')/items
+1 x POST /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/items
+1 x POST /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items
+1 x POST /sites/cec/_api/web/lists/getbytitle('PMSParticipantAnswers')/items
+3 x POST /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items

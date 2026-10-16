@@ -1,0 +1,75 @@
+/* Design tokens for the participant pages (PMS-IMPLEMENTATION-PLAN.md 2.2 and 2.3, in git history at 7347c72).
+ *
+ * Colours: the default theme is the mockup palette (Design-Docs/references/Operate_Experience_Prototype_Mockup.pdf, in git history at 7347c72). lib/theme.js `deriveTheme('#045BCC')`
+ * returns exactly these values, and `applyTheme()` writes a client's palette onto <html> as
+ * inline custom properties, which win over this file. Correct (--success), wrong (--danger,
+ * --danger-tint) and the Deloitte green (--focus, --progress) are fixed for every client.
+ * Every control follows the client's PRIMARY; an accent only colours --accent-rule and --accent-ring.
+ *
+ * Sizes use clamp() so one scale serves a phone, an iPad and a desktop window. Body and
+ * option text never go under 16px.
+ */
+
+:root {
+  /* ---- Colour -------------------------------------------------------------------------- */
+  --bg-top: #000102;
+  --bg-mid: #045bcc; /* the client's primary colour */
+  --bg-bottom: #0444a8;
+  --surface: rgb(255 255 255 / 0.14); /* pills and tiles: white at 14% keeps white text at 4.7:1 */
+  --surface-border: #ffffff;
+  --action: #296cd4; /* CTA, Next, Home, Retry */
+  --action-border: rgb(255 255 255 / 0.7);
+  --success: #09ff53; /* correct: black text on it is 15.4:1 */
+  --on-success: #000000;
+  --danger: #e00000; /* wrong: white text on it is 5.0:1 (the mockup's #FF0000 is 4.0:1) */
+  --danger-tint: #4f3982;
+  --disabled: #034cb5; /* locked pills: exempt from contrast rules, so they also carry an icon and a caption */
+  --on-disabled: #4d80d0;
+  --focus: #86bc25; /* Deloitte green */
+  --progress: #86bc25;
+  /* The only two places a client's accent colour shows, and only where it has 3:1 against what
+     it is drawn on (lib/theme.js). It never fills a button: --action comes from the primary. */
+  --accent-rule: #ffffff; /* the thin rule (Divider) */
+  --accent-ring: rgb(255 255 255 / 0); /* the ring on the logo plate (HeroPlate): none by default */
+  --text: #ffffff;
+  --text-soft: #d6e4fa; /* secondary text on the page background only, never on a pill (4.8:1 on --bg-mid) */
+  --plate: #ffffff; /* the white plate behind a client logo: logos are drawn for a light background */
+  --on-plate: #0b1f3a;
+  --plate-dark: #0b1f3a; /* the dark plate a white logo needs (Brand Studio's "Plate"); lib/theme.js PLATE_COLOURS.dark */
+  --on-plate-dark: #ffffff;
+
+  /* ---- Type ---------------------------------------------------------------------------- */
+  --font-sans: 'Open Sans', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --fw-light: 300;
+  --fw-regular: 400;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+  --fw-extrabold: 800;
+  /* Percentages are of the 768px-wide mockup page; the rem floor keeps phones legible. */
+  --fs-title: clamp(2rem, 7vw, 3.6rem); /* ExtraBold Italic, uppercase */
+  --fs-greeting: clamp(1.5rem, 4.9vw, 2.4rem); /* Bold */
+  --fs-description: clamp(1rem, 3.4vw, 1.75rem); /* Light */
+  --fs-question: clamp(1.125rem, 3.2vw, 1.65rem); /* Bold */
+  --fs-option: clamp(1rem, 2.6vw, 1.35rem); /* Regular */
+  --fs-button: clamp(1.0625rem, 3.2vw, 1.65rem); /* SemiBold */
+  --fs-body: clamp(1rem, 2.4vw, 1.25rem);
+  --fs-small: 1rem;
+
+  /* ---- Layout -------------------------------------------------------------------------- */
+  --target-min: 44px; /* smallest tap target */
+  --gutter: clamp(1.25rem, 9.5vw, 4.5rem);
+  --header-pad-x: clamp(1rem, 5vw, 2.5rem);
+  --stage-max: 800px;
+  --stage-wide-max: 1280px;
+  --wordmark-w: clamp(6rem, 15.5vw, 9.5rem);
+  --gap: clamp(1rem, 4vw, 2rem);
+  --pill-h: clamp(3.5rem, 9.2vw, 4.5rem); /* hub / activity pill */
+  --pill-radius: 1.25rem;
+  --option-h: clamp(2.75rem, 5.2vw, 3.5rem); /* answer pill */
+  --option-radius: calc(var(--option-h) / 2); /* a one-line answer is a full pill; a wrapped one a rounded block */
+  --cta-w: clamp(13.75rem, 37vw, 18.75rem);
+  --cta-h: clamp(3.25rem, 9.2vw, 4.5rem); /* CTA; the home button is a circle this tall */
+  --tile-h: clamp(5.5rem, 14vw, 8rem);
+  --tile-radius: 24px;
+  --radius-full: 999px;
+}

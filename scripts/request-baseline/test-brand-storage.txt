@@ -1,0 +1,17 @@
+# Request baseline: scripts/test-brand-storage.js on the mocked SharePoint REST (6 recordings).
+# Recorded at 2ad1520 (the local tag legacy-final), before Phase 10b changed anything.
+# Do not regenerate this file to make a comparison pass: a difference is a finding. See scripts/request-baseline.js.
+# One entry for each distinct request and how many times it was sent ("~": the count depends on timing). <uuid> and <time> are placeholders.
+# Translated in Phase 10c-2b from the 10c-2a recording above: each old list title to its PMS name, ClientLogos to PMSClientImages, Order to SortOrder (scripts/schema-baseline/translate-baselines.js), after a fresh recording of the new names equalled the translation exactly. Nothing else was changed.
+# Amended in Phase 10h, part A: every item read names its columns, so each entry that read items without naming them has `&$select=` and its list's columns at the end of its query (and a mock's `__next` link of such a read carries them before its `$fakeskip`), by scripts/schema-baseline/select-baselines.js, after a fresh recording equalled the translation exactly; the number and the order of the requests are as they were. Nothing else was changed.
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientImages')/RootFolder?$select=ServerRelativeUrl
+1 x GET /sites/cec/_api/web/lists/getbytitle('Missing%20Library')/RootFolder?$select=ServerRelativeUrl
+2 x POST /sites/cec/_api/contextinfo
+2 x POST /sites/cec/_api/web/GetFileByServerRelativeUrl('%2Fsites%2Fcec%2FPMSClientImages%2Facme-hero-220a7c19c5.png')/recycle()
+1 x POST /sites/cec/_api/web/GetFileByServerRelativeUrl('%2Fsites%2Fcec%2FPMSClientImages%2Facme-logo-cb00dd76f8.png')/recycle()
+1 x POST /sites/cec/_api/web/GetFolderByServerRelativeUrl('%2Fsites%2Fcec%2FPMSClientImages')/Files/add(url='acme-hero-220a7c19c5.png',overwrite=true)
+1 x POST /sites/cec/_api/web/GetFolderByServerRelativeUrl('%2Fsites%2Fcec%2FPMSClientImages')/Files/add(url='acme-logo-cb00dd76f8.png',overwrite=true)
+2 x POST /sites/cec/_api/web/GetFolderByServerRelativeUrl('%2Fsites%2Fcec%2FPMSClientImages')/Files/add(url='kroger-background-250ba33b2a.jpg',overwrite=true)
+1 x POST /sites/cec/_api/web/GetFolderByServerRelativeUrl('%2Fsites%2Fcec%2FPMSClientImages')/Files/add(url='kroger-hero-22e54f7647.webp',overwrite=true)
+1 x POST /sites/cec/_api/web/GetFolderByServerRelativeUrl('%2Fsites%2Fcec%2FPMSClientImages')/Files/add(url='kroger-hero-47e8bb6466.webp',overwrite=true)
+2 x POST /sites/cec/_api/web/GetFolderByServerRelativeUrl('%2Fsites%2Fcec%2FPMSClientImages')/Files/add(url='kroger-logo-9c9f9cdc20.png',overwrite=true)
