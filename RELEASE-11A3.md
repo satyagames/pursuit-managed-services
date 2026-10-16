@@ -121,3 +121,24 @@ passed in Chromium and WebKit (1 skipped); `check:svelte` 0 errors; `test:bundle
 | RELEASE-NOTES.md | 22,150 | | `2ade67e55f1171cea1ea678129d72a8a9ee3fb043f9d7abaf4f0cd1f311082f5` |
 | RUNBOOK.md | 29,662 | | `0f48a39982b2064d1506f647e653f4a2cbea54736b4fba56ad1a63fdd23dbe7a` |
 | **pms-70ad955.zip** | 1,533,064 | | `35c981b7102cee7b42b9ba1c62ba505db5d0234b894bdc1f57fb06c55547f4b2` |
+
+## 7. A ranking's places, and the package after it
+
+**Seen on PCOE with pms-70ad955** (16 Oct 2026, Satyadev's photograph): a ranking's places read "1=", "1=", "3.", "4.", "5.", and "1=" looked like a typo. Since
+`e2fbfb6` the place is its number alone, "1", "1", "3", "4", "5" (`rankLabel` in `results-chart-model.js`); two bars sharing a number, and the headline, say it is a tie.
+Test first (`scripts/test-results-chart-model.js`, failed on the old code). Gates: `npm test` 1,242 of 1,242; the charts and Live display specs 91 passed in Chromium and
+WebKit (1 skipped); `check:svelte` 0 errors; admin 554,263 B (+276 B in 11a-3), participant unchanged. The three device checks (164, 165, 166) are left for later, as asked.
+
+**`pms-e2fbfb6`**, from commit `e2fbfb6`: `SHA256SUMS.txt` passes in the folder (7 OK) and in a fresh unzip (7 OK); the release proofs pass. `index.html` is byte for byte
+the one in `pms-618b8fc` and `pms-70ad955`.
+
+| File | Bytes | gzip -9 | SHA-256 |
+|---|---:|---:|---|
+| index.html | 372,890 | 156,729 | `f7fbfd67f27fe80da8c81746bcb3f871b09586b82cdd7f309d7c98928df75ef8` |
+| admin.html | 1,523,817 | 554,263 | `43faa57994d86b4e73f734b28496bbed85efdf845217e93eb95f5051835e9898` |
+| setup.html | 1,172,119 | 788,832 | `8250659406a1d829bc0645dc7678e469dad11918410c41bd849e3e27630b5280` |
+| pms-config.txt | 54 | | `04426124f56abad3973d69fb4a8608e673d86745419bf1cc41c5a70441cc607f` |
+| THIRD-PARTY-NOTICES.txt | 40,835 | | `e4ecfa86a85da94926f3f25b9f2b99791c38cc3ea100c5454bb333e620ec1eb4` |
+| RELEASE-NOTES.md | 22,385 | | `c4ccf020120326aec8c6fa9b1d773b4c30744f5d67ede25abedff286193229ea` |
+| RUNBOOK.md | 29,662 | | `c18be44a04dd58b5f0e44f79ea71003492b8317ff5ca937754835082a70b7131` |
+| **pms-e2fbfb6.zip** | 1,533,139 | | `8b745b0559762f8f707297bb813f7e044c2e9dd67442da2e0c417cf34f666fdb` |
