@@ -26,6 +26,10 @@ import { SETTINGS, SETTINGS_TEXT, releaseNotes, runbook } from './release-docs.j
 import { builtSettings } from './site-override.js';
 
 const run = promisify(execFile);
+// (Phase 11a-3) On Windows: node_modules is linked as a junction (a directory symlink needs rights a user may not have), the zip is made by Windows'
+// own tar.exe (bsdtar; there is no zip there), and the checksums are checked with sha256sum, which reads the same SHA256SUMS.txt and says the same
+// "OK" lines (shasum is a Perl script there, which execFile cannot start). Elsewhere, exactly as before.
+const WINDOWS = process.platform === 'win32';
 const ROOT = path.join(import.meta.dirname, '..');
 const PACKAGES = path.join(ROOT, 'build-svelte', 'package');
 const PAGES = ['index.html', 'admin.html', 'setup.html'];
@@ -49,7 +53,7 @@ const checkout = path.join(scratch, 'checkout');
 await git('worktree', 'add', '--detach', checkout, 'HEAD');
 const environment = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('PMS_')));
 try {
-  await symlink(path.join(ROOT, 'node_modules'), path.join(checkout, 'node_modules'), 'dir');
+  await symlink(path.join(ROOT, 'node_modules'), path.join(checkout, 'node_modules'), WINDOWS ? 'junction' : 'dir');
   console.log(`Building ${name} in a fresh checkout of ${commit}...`);
   await run(process.execPath, ['scripts/build-svelte-release.js'], { cwd: checkout, env: environment, maxBuffer: 1 << 26 });
   await run(process.execPath, ['scripts/build-third-party-notices.js', path.join(scratch, 'THIRD-PARTY-NOTICES.txt')], { cwd: checkout, env: environment, maxBuffer: 1 << 24 });
@@ -90,14 +94,14 @@ await writeFile(path.join(folder, 'SHA256SUMS.txt'), checksumFile(files));
 
 // 5. The checks: in the folder, then in a fresh unzip of the zip.
 const check = async (where) => {
-  const { stdout } = await run('shasum', ['-a', '256', '-c', 'SHA256SUMS.txt'], { cwd: where });
+  const { stdout } = await (WINDOWS ? run('sha256sum', ['-c', 'SHA256SUMS.txt'], { cwd: where }) : run('shasum', ['-a', '256', '-c', 'SHA256SUMS.txt'], { cwd: where }));
   const mine = verifyChecksums(await readFile(path.join(where, 'SHA256SUMS.txt'), 'utf8'), (file) => {
     try { return readFileSync(path.join(where, file)); } catch { return null; }
   });
   return { stdout: stdout.trim(), mine };
 };
 const inFolder = await check(folder);
-await run('zip', ['-X', '-q', '-r', `${name}.zip`, name], { cwd: PACKAGES });
+await (WINDOWS ? run(path.join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'tar.exe'), ['-a', '-c', '-f', `${name}.zip`, name], { cwd: PACKAGES }) : run('zip', ['-X', '-q', '-r', `${name}.zip`, name], { cwd: PACKAGES }));
 const unzipped = await mkdtemp(path.join(os.tmpdir(), 'pms-unzip-'));
 await run('unzip', ['-q', zip, '-d', unzipped]);
 const fromZip = await check(path.join(unzipped, name));
