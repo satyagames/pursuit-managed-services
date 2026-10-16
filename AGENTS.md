@@ -14,7 +14,7 @@ this repository changes them. What went, what moved and what could not go yet is
 (`Operate_Experience_Prototype_Mockup.pdf`) and every phase report (`ARCHITECTURE-10.md`, `PMS-IMPLEMENTATION-PLAN.md`, `REVIEW-9A.md`,
 `CLEAN-BREAK-10C1.md`, `DROPS-10C2A.md`, `SCHEMA-10C2B.md`, `PROVISION-10C3.md` and the rest). Nothing reads them to build, test or ship.
 Each is in git history at `7347c72`: `git show 7347c72:Design-Docs/references/<name>`. A mention of one here or in a comment says so.
-The report of Phase 10f is [RELEASE-10F.md](RELEASE-10F.md), at the root; Phase 10g's is [RELEASE-10G.md](RELEASE-10G.md), Phase 10h's [RELEASE-10H.md](RELEASE-10H.md), Phase 10i's [RELEASE-10I.md](RELEASE-10I.md), Phase 10j's [RELEASE-10J.md](RELEASE-10J.md), Phase 11a's [RELEASE-11A.md](RELEASE-11A.md) and Phase 11a-2's [RELEASE-11A2.md](RELEASE-11A2.md).
+The report of Phase 10f is [RELEASE-10F.md](RELEASE-10F.md), at the root; Phase 10g's is [RELEASE-10G.md](RELEASE-10G.md), Phase 10h's [RELEASE-10H.md](RELEASE-10H.md), Phase 10i's [RELEASE-10I.md](RELEASE-10I.md), Phase 10j's [RELEASE-10J.md](RELEASE-10J.md), Phase 11a's [RELEASE-11A.md](RELEASE-11A.md), Phase 11a-2's [RELEASE-11A2.md](RELEASE-11A2.md) and Phase 11a-3's [RELEASE-11A3.md](RELEASE-11A3.md).
 
 Read `ARCHITECTURE-10.md` (in git history at `7347c72`) for the architecture.
 [ARCHITECTURE.md](ARCHITECTURE.md) describes the legacy app; its entity model and the local API (sections on
@@ -1323,6 +1323,32 @@ laptop, an iPad or a projector**: QA-TESTING.md items 157 to 160.
   until Phase 11b redesigns them; the leader report's "participants" are every visit on purpose. QA item 160.
 - **The participant page did not change**, byte for byte and in its Tailwind rules (`PHASE_11A`); words such as "grow", "absolute", "invisible" and "table" in a new file
   under `migration/` can still add a rule to it: run `npm run test:bundle`.
+
+## Rules from Phase 11a-3 (the polish batch after the 11a-2 real-site checks; keep them holding)
+
+On the real site (PCOE, `pms-283ad18`, 16 Oct 2026, photographed by Satyadev on the Windows laptop and an iPad) a chart's tooltip could lie over the question, the
+"got it right first time" line and the Show answer / View as table buttons, client heroes were squares and a locked activity's title was too faint. The work was done on
+Satyadev's Windows checkout of VJR's files, which has none of the earlier history: `pms-11a3` starts at `3a8b32b`, proven to build into `pms-283ad18`'s pages byte for byte.
+The report is [RELEASE-11A3.md](RELEASE-11A3.md). **These pages have not run on the real site, an iPad or a projector**: QA-TESTING.md items 161 to 166.
+
+- **A tooltip keeps clear of its card's words and buttons where there is room** (`placeTip(..., { avoid })` in `lib/tip-place.js`; ResultCard marks them `data-tip-avoid`):
+  above, or above moved along while it still spans its mark, then under, or under moved along; with no room on either side, the place covering the fewest of their pixels.
+  It is still always whole, inside the window and clear of its mark and the mark's own label. `tipProblems` fails a tooltip over the card's words when the place under its mark was clear.
+- **The full screen's type steps are `lib/present-fit.js`** (`nextFit`, `scaleOf`, `SMALLEST`): the fit factor's floor is the one that gives 0.75 (it was 0.5, which left a window
+  1,550 px wide or more stopped above 0.75, neither smaller nor spilling, and the card cut at its edge).
+- **`online` during a look asks for one more look as soon as it ends** (`lib/page-watch.ts`, `scripts/test-page-watch.js`; a `Retry-After` is still a floor). Dropping it was the
+  real cause of the `participant.spec.ts:91` flake.
+- **A locked activity's title is white** (`ActivityPill`), as its caption and lock are. **A comment inside a Svelte style block is kept in the built page**: explain CSS in the script block.
+- **VJR's decisions (16 Oct 2026):** names stay "Last, First" as the directory gives them; the wall page keeps the admin header, tabs, Lock and Export. **Heroes are squares when the
+  uploaded picture has no transparency** (the sample sources were JPEGs); `build:sample-pictures` takes `<client>-<slot>.png` before `.jpg`.
+- **`PHASE_11A3`** (`scripts/bundle-budget.js`): measured from the deployed `pms-283ad18` (participant 156,695 B, admin 553,987 B in that checkout), not from 11a, because 11a-2 grew
+  the admin page and recorded no figure; allowance 500 B each; it ended at +34 B and +238 B, and the participant page's Tailwind rules are 11a's exactly. The next phase starts from
+  `participantAfter`/`adminAfter`.
+- **On a Windows checkout:** run the suites with Node 22 directly (`npm` puts its own Node first on the PATH, and under Node 20 a top-level `before` does not run before a
+  `describe`'s tests); `node_modules` copied from a Mac lacks `@napi-rs/canvas-win32-x64-msvc`, which pdf.js needs (`npm install --no-save` at the lock file's version); set
+  `core.autocrlf input`, or the pages built differ from an LF build; WebKit's sound specs and three others fail there before and after 11a-3 alike, and Firefox may be refused by Windows
+  (`spawn UNKNOWN`). `test-named-reads.js` compares paths with `/` on every system.
+- **The release documents** name the branch `pms-11a3` (`BRANCH` in `scripts/release-docs.js`) and say what changed since pms-283ad18, newest first.
 
 ## Before finishing a change
 

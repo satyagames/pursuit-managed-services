@@ -166,10 +166,10 @@ export const PHASE_11A = Object.freeze({
  * held to the same allowance. It starts from the pages of pms-283ad18, the package on the real site when it began (commit 3a8b32b, measured in
  * Satyadev's checkout with Node 22: participant 156,695 B, admin 553,987 B). Phase 11a-2 grew the admin page by about 2,158 B and recorded no
  * figure here (11a's 552,083 B is the admin page before 11a-2), so 11a-3 is measured from the deployed pages, not from 11a's. `participantAfter`
- * and `adminAfter` are set when the phase ends.
+ * and `adminAfter` are the pages when the phase ended (+34 B and +238 B); the next phase starts from them.
  */
 export const PHASE_11A3 = Object.freeze({
-  participantBefore: 156_695, adminBefore: 553_987, allowance: 500, participantAfter: null, adminAfter: null,
+  participantBefore: 156_695, adminBefore: 553_987, allowance: 500, participantAfter: 156_729, adminAfter: 554_225,
   participantUtilities: PHASE_11A.participantUtilities,
 });
 

@@ -237,6 +237,8 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
     assert.equal(PHASE_11A3.participantBefore, 156_695);
     assert.equal(PHASE_11A3.adminBefore, 553_987);
     assert.ok(Math.abs(PHASE_11A3.participantBefore - PHASE_11A.participantAfter) < 100, 'the participant page did not change in 11a-2: the two figures differ only by where they were measured');
+    assert.ok(PHASE_11A3.participantAfter - PHASE_11A3.participantBefore <= PHASE_11A3.allowance, 'the participant page, as measured when 11a-3 ended');
+    assert.ok(PHASE_11A3.adminAfter - PHASE_11A3.adminBefore <= PHASE_11A3.allowance, 'the admin page, as measured when 11a-3 ended');
     assert.equal(PHASE_11A3.allowance, 500);
     const participant = built.participant.htmlGzip - PHASE_11A3.participantBefore;
     const admin = built.admin.htmlGzip - PHASE_11A3.adminBefore;
