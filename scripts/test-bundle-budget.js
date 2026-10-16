@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
 import { PAGES, ROOT, analyzePage } from './analyze-bundle.js';
-import { BUDGET, FORBIDDEN, PHASE_8, PHASE_9A, PHASE_9B, PHASE_10B, PHASE_10C1, PHASE_10C2A, PHASE_10C2B, PHASE_10C3, PHASE_10F, PHASE_10G, PHASE_10H, PHASE_10I, PHASE_10J, PHASE_11A, PHASE_11A3, checkBudgets, utilityClasses } from './bundle-budget.js';
+import { BUDGET, FORBIDDEN, PHASE_8, PHASE_9A, PHASE_9B, PHASE_10B, PHASE_10C1, PHASE_10C2A, PHASE_10C2B, PHASE_10C3, PHASE_10F, PHASE_10G, PHASE_10H, PHASE_10I, PHASE_10J, PHASE_11A, PHASE_11A3, PHASE_11B, checkBudgets, utilityClasses } from './bundle-budget.js';
 import { SAMPLE_PICTURE_NAMES } from '../migration/src/lib/sample-pictures.js';
 import { pageProblems } from './release-proofs.js';
 
@@ -232,7 +233,7 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
     // (This test compared the build in the tree with those figures until Phase 11a-3: the newest phase's test below holds the build now.)
   });
 
-  it('Phase 11a-3 (the polish batch) grows the participant page by at most 500 B gzip over the deployed pms-283ad18 (156,695 B), to the same Tailwind rules, and the admin page by the same (553,987 B)', (t) => {
+  it('Phase 11a-3 (the polish batch) grew the participant page by at most 500 B gzip over the deployed pms-283ad18 (156,695 B), to the same Tailwind rules, and the admin page by the same (553,987 B): as measured when it ended', () => {
     // (Measured from pms-283ad18, commit 3a8b32b: Phase 11a-2 grew the admin page after 11a recorded its figures, and recorded none of its own.)
     assert.equal(PHASE_11A3.participantBefore, 156_695);
     assert.equal(PHASE_11A3.adminBefore, 553_987);
@@ -240,22 +241,33 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
     assert.ok(PHASE_11A3.participantAfter - PHASE_11A3.participantBefore <= PHASE_11A3.allowance, 'the participant page, as measured when 11a-3 ended');
     assert.ok(PHASE_11A3.adminAfter - PHASE_11A3.adminBefore <= PHASE_11A3.allowance, 'the admin page, as measured when 11a-3 ended');
     assert.equal(PHASE_11A3.allowance, 500);
-    const participant = built.participant.htmlGzip - PHASE_11A3.participantBefore;
-    const admin = built.admin.htmlGzip - PHASE_11A3.adminBefore;
-    t.diagnostic(`participant ${participant >= 0 ? '+' : ''}${participant} B, admin ${admin >= 0 ? '+' : ''}${admin} B against pms-283ad18`);
-    console.log(`  Phase 11a-3: the participant page is ${participant >= 0 ? '+' : ''}${participant} B gzip and the admin page ${admin >= 0 ? '+' : ''}${admin} B against pms-283ad18 (allowance ${PHASE_11A3.allowance} B); now ${bytes(built.participant.htmlGzip)} and ${bytes(built.admin.htmlGzip)}`);
-    assert.ok(participant <= PHASE_11A3.allowance, `the participant page is ${participant} B larger than pms-283ad18's, in a phase whose allowance is ${PHASE_11A3.allowance}`);
-    assert.deepEqual(utilityClasses(built.participant.html), [...PHASE_11A3.participantUtilities], "the participant page's Tailwind rules are the ones it had");
-    assert.ok(admin <= PHASE_11A3.allowance, `the admin page is ${admin} B larger than pms-283ad18's`);
+    // (This test compared the build in the tree with those figures until Phase 11b: the newest phase's test below holds the build now.)
+  });
+
+  it('Phase 11b (the leader report and the one-pager on the chart model) leaves the participant page byte for byte as 11a-3 left it, and grows the admin page by at most 12,000 B gzip over 554,263 B', (t) => {
+    assert.equal(PHASE_11B.participantBefore, PHASE_11A3.participantAfter, 'Phase 11b is measured from where Phase 11a-3 ended');
+    assert.equal(PHASE_11B.adminBefore, PHASE_11A3.adminAfter);
+    assert.equal(PHASE_11B.participantAllowance, 0);
+    assert.equal(PHASE_11B.adminAllowance, 12_000);
+    const sha = createHash('sha256').update(built.participant.html).digest('hex');
+    const participant = built.participant.htmlGzip - PHASE_11B.participantBefore;
+    const admin = built.admin.htmlGzip - PHASE_11B.adminBefore;
+    t.diagnostic(`participant ${participant >= 0 ? '+' : ''}${participant} B (sha256 ${sha}), admin ${admin >= 0 ? '+' : ''}${admin} B against where 11a-3 ended`);
+    console.log(`  Phase 11b: the participant page is ${participant >= 0 ? '+' : ''}${participant} B gzip (index.html sha256 ${sha.slice(0, 12)}…) and the admin page ${admin >= 0 ? '+' : ''}${admin} B against where 11a-3 ended (allowance ${PHASE_11B.adminAllowance} B); now ${bytes(built.participant.htmlGzip)} and ${bytes(built.admin.htmlGzip)}`);
+    assert.equal(sha, PHASE_11B.participantSha256, 'the participant page is byte for byte the page 11a-3 left');
+    assert.ok(participant <= PHASE_11B.participantAllowance, `the participant page is ${participant} B larger than where 11a-3 left it`);
+    assert.deepEqual(utilityClasses(built.participant.html), [...PHASE_11B.participantUtilities], "the participant page's Tailwind rules are the ones it had");
+    assert.ok(admin <= PHASE_11B.adminAllowance, `the admin page is ${admin} B larger than where 11a-3 left it, over the phase's allowance of ${PHASE_11B.adminAllowance} B`);
+    assert.ok(built.admin.htmlGzip < BUDGET.admin, `the admin page is under its ${bytes(BUDGET.admin)} budget`);
   });
 
   it('the Tailwind rules check can fail: a rule added to the participant page, or one taken away, is found', () => {
     const html = built.participant.html;
     const added = html.replace('@layer utilities{', '@layer utilities{.table{display:table}');
     const removed = html.replace(/\.container\{[^}]*\}/g, ''); // (every rule of it, the ones inside the size queries too)
-    assert.notDeepEqual(utilityClasses(added), [...PHASE_11A3.participantUtilities]);
+    assert.notDeepEqual(utilityClasses(added), [...PHASE_11B.participantUtilities]);
     assert.ok(utilityClasses(added).includes('table'));
-    assert.notDeepEqual(utilityClasses(removed), [...PHASE_11A3.participantUtilities]);
+    assert.notDeepEqual(utilityClasses(removed), [...PHASE_11B.participantUtilities]);
     assert.equal(utilityClasses('<p>no styles</p>').length, 0);
   });
 

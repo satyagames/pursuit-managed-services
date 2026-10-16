@@ -13,28 +13,12 @@ import PptxGenJS from 'pptxgenjs';
 import { buildResults } from '../migration/src/lib/results-tally.js';
 import * as resultsExport from '../public/js/resultsExport.js';
 import { inspectPdf } from './pdf-inspect.js';
+import { krogerResults, vineResults } from './results-export-fixtures.js';
+import { nodePalette } from './results-palette-node.js';
 
 const at = (minute) => `2026-10-16T10:${String(minute).padStart(2, '0')}:00.000Z`;
 const answer = (track, questionId, value, minute) => ({ questionId, clientTrackId: track, answer: value, timestamp: at(minute) });
 const squash = (text) => text.replace(/\s+/g, ' ').trim();
-
-/**
- * Kroger on the real site, 16 Oct 2026: five visits, which answered 9, 8, 0, 8 and 9 of nine questions (9 + 8 + 0 + 8 + 9 = 34 answers), and a
- * sixth whose saved answers could not be read (so none of its answers is among them). The four visits that answered are the iPads that answered.
- */
-export function krogerResults() {
-  const tracks = ['k1', 'k2', 'k3', 'k4', 'k5', 'k6'].map((id, index) => ({ id, createdAt: at(index), participantName: `Guest ${index + 1}` }));
-  const answeredBy = { k1: 9, k2: 8, k3: 0, k4: 8, k5: 9 };
-  const questionIds = Array.from({ length: 9 }, (_, index) => `kq${index + 1}`);
-  const results = buildResults({
-    session: { id: 'kroger-2026-10-16', clientId: 'c-kroger', date: '2026-10-16', sectionIds: ['ks'] }, tracks,
-    sections: [{ id: 'ks', title: 'Kroger', enabled: true, questionIds }],
-    questions: questionIds.map((id) => ({ id, type: 'single-select', prompt: `Question ${id.slice(2)}`, optionIds: [`${id}-a`, `${id}-b`] })),
-    options: questionIds.flatMap((id) => [{ id: `${id}-a`, label: 'Yes' }, { id: `${id}-b`, label: 'No' }]),
-    answers: Object.entries(answeredBy).flatMap(([track, count]) => questionIds.slice(0, count).map((questionId, index) => answer(track, questionId, `${questionId}-a`, index))),
-  });
-  return { ...results, unreadable: [{ id: 'k6', reason: 'not-json' }] };
-}
 
 /** One iPad, which answered one question once. */
 function oneIPad() {
@@ -50,7 +34,7 @@ function oneIPad() {
 /** The PDF's text, page by page, read back with pdf.js. */
 async function pdfText(results, brand = {}) {
   const report = resultsExport.buildReport(results, brand);
-  const pages = resultsExport.layoutReport(report, null);
+  const pages = resultsExport.layoutReport(report, null, nodePalette());
   const bytes = await resultsExport.pdfBytes(pages, report, { jsPDF });
   return (await inspectPdf(new Uint8Array(bytes))).pages.map((page) => squash(page.text));
 }
@@ -58,7 +42,7 @@ async function pdfText(results, brand = {}) {
 /** The PowerPoint's text, slide by slide: every run of words in the slides' XML. */
 async function pptxText(results, brand = {}) {
   const report = resultsExport.buildReport(results, brand);
-  const pages = resultsExport.layoutReport(report, null);
+  const pages = resultsExport.layoutReport(report, null, nodePalette());
   const file = await resultsExport.pptxFile(pages, report, { PptxGenJS, outputType: 'nodebuffer' });
   const zip = await JSZip.loadAsync(file);
   const slides = Object.keys(zip.files).filter((name) => /^ppt\/slides\/slide\d+\.xml$/.test(name)).sort((a, b) => Number(a.match(/\d+/g).at(-1)) - Number(b.match(/\d+/g).at(-1)));
@@ -86,5 +70,104 @@ describe('item A: the one-pager counts the iPads that answered, as the Live disp
     const [pdf] = await pdfText(oneIPad());
     assert.ok(pdf.includes('1 answer from 1 iPad'), pdf.slice(0, 200));
     assert.ok(!pdf.includes('1 iPads') && !pdf.includes('1 answers'));
+  });
+});
+
+// ---- Item B: the one-pager draws the screen's charts ------------------------------------------------------------------------------
+
+const VINE_TEXT = {
+  // v1: first picks Vine, Vine, 5th Street, Main Street: 1, 2, 1, 0 of 4. Vine is 50%, not more than half, so "The top choice".
+  v1: ['The top choice (50%) was 1014 Vine Street, Cincinnati.', '2 of 4 got it right first time.', '2 · 50%', '1 · 25%', '0 · 0%'],
+  // v2: Email 3 of 4 (75%), Chat 2 (50%), Phone 2 (50%), Fax 0; each rounded alone.
+  v2: ['Most people (75%) chose Email.', 'People could pick several answers, so the bars add up to more than 100%.', '3 · 75%', '2 · 50%'],
+  // v3: first picks True, True, False, True: True 3 of 4 (75%), False 1 (25%).
+  v3: ['Most people (75%) said True.', '3 of 4 got it right first time.', '3 people · 75%', '1 person · 25%'],
+  // v4: two answers, both "Moderately confident" (2 of 3): average 2.0 of 3; the steps 0%, 100%, 0%.
+  v4: ['Average 2.0 of 3. Most people (100%) chose Moderately confident.', 'Average 2.0 of 3', '100%'],
+  // v5: points 15, 15, 13, 9, 8 over 4 rankers of 5 options: (p - 4) / 16 x 100 = 69, 69, 56, 31, 25; places 1, 1, 3, 4, 5.
+  v5: ['A tie between Faster checkout and Better pay (support score 69 each).', '100 means everyone ranked it first; 0 means everyone ranked it last.', 'Support 69', 'Support 56', 'Support 31', 'Support 25'],
+  // v6: "delivery" in three comments, "price" in three (prices folds into price), "high" in two.
+  v6: ['4 comments. The word that came up most is “delivery”, in 3 of them.', 'Words that came up most', 'delivery (3), price (3), high (2)'],
+};
+
+/** What PowerPoint's XML holds for a phrase: & < > are written as entities. */
+const inXml = (phrase) => phrase.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+describe('item B: the one-pager draws the same charts as the screen', () => {
+  const brand = { name: 'Vine Street Partners', primaryColor: '#7A1F5C', secondaryColor: '#64748B' };
+
+  it('prints each chart\'s headline, its "right first time" line, its caption and its values, in the PDF and in the PowerPoint', async () => {
+    const pdf = (await pdfText(vineResults(), brand)).join(' ');
+    const slides = (await pptxText(vineResults(), brand)).join(' ');
+    const missing = [];
+    for (const [question, phrases] of Object.entries(VINE_TEXT)) {
+      for (const phrase of phrases) {
+        if (!pdf.includes(phrase)) missing.push(`PDF ${question}: ${phrase}`);
+        if (!slides.includes(inXml(phrase))) missing.push(`PowerPoint ${question}: ${phrase}`);
+      }
+    }
+    assert.deepEqual(missing, []);
+  });
+
+  it('names nobody: no participant\'s name is in either file', async () => {
+    const pdf = (await pdfText(vineResults(), brand)).join(' ');
+    const slides = (await pptxText(vineResults(), brand)).join(' ');
+    for (const name of ['Mike A', 'José Álvarez', '=SUM(A1)', 'Unnamed participant']) {
+      assert.ok(!pdf.includes(name), `the PDF names ${name}`);
+      assert.ok(!slides.includes(inXml(name)), `the PowerPoint names ${name}`);
+    }
+  });
+
+  describe('the layout', () => {
+    const palette = nodePalette();
+    const pages = () => resultsExport.layoutReport(resultsExport.buildReport(vineResults(), brand), null, palette);
+    const items = () => pages().flatMap((page) => page.items);
+    const textOf = (list) => list.filter((item) => item.kind === 'text').map((item) => item.text);
+    const hex = (value) => String(value).replace('#', '').toUpperCase();
+
+    it('keeps to one page', () => assert.equal(pages().length, 1));
+
+    it('sorts the bars as the screen does, marks the correct answer with a tick and the word, and the top choice in words', () => {
+      const all = items();
+      const labels = textOf(all.filter((item) => item.role === 'label'));
+      // v1, highest first and a tie in the question's order: Vine (2), 5th Street (1), Main Street (1), Elm Street (0).
+      const v1 = ['1014 Vine Street, Cincinnati', '5th Street, Cincinnati', 'Main Street, Dayton', 'Elm Street, Columbus'].map((label) => labels.findIndex((line) => label.startsWith(line)));
+      assert.ok(v1.every((at, index) => at >= 0 && (index === 0 || at > v1[index - 1])), `v1 in order: ${v1}`);
+      const tags = textOf(all.filter((item) => item.role === 'tag'));
+      // Correct: v1's Vine and v3's True. Top choice: v1's Vine and v2's Email (a split bar and a scale's columns carry no "Top choice").
+      assert.equal(tags.filter((tag) => tag === 'Correct').length, 2);
+      assert.equal(tags.filter((tag) => tag === 'Top choice').length, 2);
+      assert.equal(all.filter((item) => item.kind === 'tick').length, 2, 'a tick beside each correct answer, never colour alone');
+    });
+
+    it('fills every bar from results-tokens.css: the correct answer Dark Green, the top choice the blue, the rest the tint, a scale in its ramp', () => {
+      const bars = items().filter((item) => item.role === 'bar');
+      assert.ok(bars.length > 0);
+      for (const bar of bars) {
+        if (bar.tone === 'correct') assert.equal(hex(bar.fill), hex(palette.correct));
+        else if (bar.tone === 'top') assert.equal(hex(bar.fill), hex(palette.primary));
+        else if (bar.tone === 'rest') assert.equal(hex(bar.fill), hex(palette.tint));
+        else assert.ok(palette.ramps[3].map(hex).includes(hex(bar.fill)), `a scale's column is in the 3-step ramp: ${bar.fill}`);
+      }
+      // v4's one column (Moderately confident, the middle of three steps) is the ramp's middle.
+      assert.ok(bars.some((bar) => bar.of === 'v4b' && hex(bar.fill) === hex(palette.ramps[3][1])));
+    });
+
+    it('marks the scale\'s average with a line in the marker colour, and draws the ranking\'s places', () => {
+      const all = items();
+      assert.equal(all.filter((item) => item.role === 'average' && hex(item.color) === hex(palette.marker)).length, 1);
+      assert.deepEqual(textOf(all.filter((item) => item.role === 'rank')), ['1', '1', '3', '4', '5']);
+    });
+
+    it('takes every colour of a card from the palette, and only the header wears the client\'s', () => {
+      const tokens = new Set([palette.primary, palette.tint, palette.correct, palette.marker, palette.brand, palette.text, palette.textSecondary, palette.textMuted, palette.grid, palette.surface, palette.bandShade, ...palette.ramps[3], ...palette.ramps[4], ...palette.ramps[5]].map(hex));
+      const colours = (item) => [item.fill, item.stroke, item.color].filter(Boolean).map(hex);
+      const all = items();
+      assert.ok(all.some((item) => item.card), 'the cards\' items are marked');
+      assert.deepEqual(all.filter((item) => item.card).flatMap(colours).filter((colour) => !tokens.has(colour)), []);
+      // Outside the cards: the header band in the client's colours, its words in white or near-black, and the footer in the palette.
+      const header = new Set(['7A1F5C', '64748B', 'FFFFFF', '111827']);
+      assert.deepEqual(all.filter((item) => !item.card).flatMap(colours).filter((colour) => !tokens.has(colour) && !header.has(colour)), []);
+    });
   });
 });

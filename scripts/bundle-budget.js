@@ -174,6 +174,20 @@ export const PHASE_11A3 = Object.freeze({
 });
 
 /**
+ * Phase 11b (the leader report and the Live display's one-page PDF and PowerPoint on the chart model and the Results palette) changes the admin page
+ * only: the participant page must be BYTE FOR BYTE what Phase 11a-3 left (`participantSha256`, the SHA-256 of index.html as the brief recorded it at
+ * e2fbfb6, and its Tailwind rules 11a's), and the admin page may grow by at most `adminAllowance` over where 11a-3 left it (554,263 B): the files'
+ * new drawing (lib/results-chart-figure.js, lib/results-palette.js and results-tokens.css as text) is the admin page's, and stays far under its
+ * 700,000 B budget. `participantAfter` and `adminAfter` are the pages when the phase ended; the next phase starts from them.
+ */
+export const PHASE_11B = Object.freeze({
+  participantBefore: PHASE_11A3.participantAfter, adminBefore: PHASE_11A3.adminAfter, participantAllowance: 0, adminAllowance: 12_000,
+  participantSha256: 'f7fbfd67f27fe80da8c81746bcb3f871b09586b82cdd7f309d7c98928df75ef8',
+  participantAfter: 156_729, adminAfter: 558_357,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
+
+/**
  * The class names of the Tailwind utility rules in a built page (its `@layer utilities` block), sorted, each once.
  * @param {string} html
  */

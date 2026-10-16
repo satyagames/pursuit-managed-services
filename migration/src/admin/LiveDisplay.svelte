@@ -17,6 +17,7 @@
   import { wallAddress } from '../lib/live-wall.js';
   import { nextFit, scaleOf } from '../lib/present-fit.js';
   import { answerCounts, answersFrom, answersOf, chartsOf, namesFor } from '../lib/results-chart-model.js';
+  import { RESULTS_PALETTE } from '../lib/results-palette-source.js';
   import ResultCard from './charts/ResultCard.svelte';
 
   // The facilitator's live results display (it was the participant page's Master screen until Phase 7): a live tally for each
@@ -442,7 +443,7 @@
           loadBrand({ state: { clientId: current.session.clientId }, sessionId: current.session.id }),
           loadLibraries(),
         ]);
-        const exportBrand = { ...(await withStoredColours(loaded)), appName: APP_NAME };
+        const exportBrand = { ...(await withStoredColours(loaded)), appName: APP_NAME, palette: RESULTS_PALETTE };
         if (!active) return;
         if (exportBrand.clientId !== current.session.clientId) throw new Error('Could not load the session client branding. Please try again.');
         fileName = kind === 'pdf' ? await downloadPdf(current, exportBrand) : await downloadPptx(current, exportBrand);

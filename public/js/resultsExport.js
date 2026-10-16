@@ -7,15 +7,17 @@
  *   PDF  downloadPdf(): a branded one-pager (jsPDF).
  *   PPT  downloadPptx(): the same one-pager as a slide (PptxGenJS).
  *
- * Nothing here fetches data. The numbers come straight from the aggregation in
- * dataService (count, percent, score), so every file agrees with what the Master
- * screen shows. The PDF and PPT are built from one layout (see "One-page report"), so
- * they match each other too. The caller passes the client's brand (branding.js's
- * currentBrand()); without one the report is unbranded.
+ * Nothing here fetches data. The CSV's numbers come straight from the tally (count,
+ * percent, score); the PDF and PPT show each question as the Live display's chart does,
+ * from the same chart model (Phase 11b), so every file agrees with what the screen shows.
+ * The PDF and PPT are built from one layout (see "One-page report"), so they match each
+ * other too. The caller passes the client's brand (branding.js's currentBrand()) and the
+ * Results palette; without a brand the report is unbranded.
  */
 
 import { embeddedAssetUrl } from './assets.js';
-import { answerCounts, answersFrom } from '../../migration/src/lib/results-chart-model.js';
+import { answerCounts, answersFrom, chartOf } from '../../migration/src/lib/results-chart-model.js';
+import { chartFigure } from '../../migration/src/lib/results-chart-figure.js';
 
 const COLUMNS = ['Activity', 'Question', 'Type', 'Option', 'Count', 'Percentage', 'Score', 'Respondents'];
 
@@ -99,31 +101,31 @@ export function downloadCsv(results) {
 
 
 // ---- One-page report (PDF and PPT) --------------------------------------------------------
-// A branded summary of the session: header band with the client's logo and colors, then a
-// card per live question with its option table and bars (comments for an open-text
-// question). It fits one page for a typical session and flows onto more pages otherwise.
+// A branded summary of the session: a header band with the client's logo and colors, then a
+// card per live question with the chart the Live display shows (Phase 11b): the same headline,
+// "N of M got it right first time", bars in the same order, the correct answer with a tick and
+// "Correct", the top choice, a scale's columns and average, a ranking's places and support
+// scores, the words that came up most, all from lib/results-chart-model.js and drawn by
+// lib/results-chart-figure.js in the colours of styles/results-tokens.css. Nobody is named: the
+// charts are made with no names. It fits one page for a typical session and flows onto more
+// pages otherwise.
 //
 // buildReport() turns the aggregated results into a plain model, layoutReport() places it
-// on A4-landscape pages as rectangles, text lines and images (all in millimetres), and
-// the PDF and PPT writers only draw those. So the two files can't drift apart, and the
-// writers hold no layout logic.
+// on A4-landscape pages as rectangles, lines, ticks, text lines and images (all in
+// millimetres), and the PDF and PPT writers only draw those. So the two files can't drift
+// apart, and the writers hold no layout logic.
 
 const PAGE = { width: 297, height: 210, margin: 12 };
 const FOOTER_HEIGHT = 8;
 const FONT = { pdf: 'helvetica', pptx: 'Arial' }; // metric-compatible, so one layout fits both
 
-/** The model both files are drawn from. Reuses the aggregated tree behind the CSV. */
+/** The model both files are drawn from: each live question's chart, with nobody's name in it. */
 export function buildReport(results, brand = {}) {
   const sections = liveSections(results);
   const questions = sections.flatMap((section) => section.questions.map((question) => ({
     section: section.title,
-    prompt: question.prompt,
     respondents: question.respondents,
-    comments: question.type === 'open-text-feedback' ? question.responses.map((r) => String(r.answer)) : null,
-    ranked: question.type === 'ranked-voting',
-    rows: (question.options ?? []).map((option) => ({
-      label: option.label, count: option.count, percent: option.percent, score: option.score,
-    })),
+    chart: chartOf(question, { names: null }),
   })));
   // "N answers from M iPads" as the Live display says it (Phase 11b): the iPads that answered, not every visit that began.
   const counts = answerCounts(sections.flatMap((section) => section.questions));
@@ -143,6 +145,8 @@ export function buildReport(results, brand = {}) {
 }
 
 // ---- Colors
+// The header band is the client's (its primary and secondary); everything in a card, and the
+// footer, is the Results palette (lib/results-palette.js, read from results-tokens.css), passed in.
 
 /** "#0060A9" / "#06a" / "0060a9" as "0060A9"; `fallback` when it isn't a color. */
 function hex6(value, fallback) {
@@ -153,10 +157,6 @@ function hex6(value, fallback) {
 
 const channels = (hex) => [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
 
-/** `hex` blended toward white: 0 is the color, 1 is white. */
-const tint = (hex, amount) => channels(hex)
-  .map((c) => Math.round(c + (255 - c) * amount).toString(16).padStart(2, '0')).join('').toUpperCase();
-
 /** Black or white, whichever reads better on `hex` (a pale brand color would lose white text). */
 function readableOn(hex) {
   const [r, g, b] = channels(hex).map((c) => {
@@ -166,18 +166,17 @@ function readableOn(hex) {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.4 ? '111827' : 'FFFFFF';
 }
 
-const INK = '0F172A';
-const MUTED = '64748B';
-const LINE = 'E2E8F0';
+/** A palette colour ("#0076A8") as the writers take it ("0076A8"). */
+const bare = (hex) => String(hex).replace(/^#/, '').toUpperCase();
 
 // ---- Text measuring
 // Both formats use Arial-metric fonts, so approximate Arial glyph widths (in em) are close
 // enough to wrap and truncate text. Rounded up a little, so a line that "fits" really does.
 const PT_MM = 25.4 / 72;
 function glyphWidth(char) {
-  if (/[ilj.,:;'|!()\[\]\u2019\u2018]/.test(char)) return 0.28;
-  if (/[frt\-\u201c\u201d"]/.test(char)) return 0.36;
-  if (/[mwMW\u2014]/.test(char)) return 0.86;
+  if (/[ilj.,:;'|!()\[\]’‘·]/.test(char)) return 0.28;
+  if (/[frt\-“”"]/.test(char)) return 0.36;
+  if (/[mwMW—%]/.test(char)) return 0.86;
   if (/[A-Z]/.test(char)) return 0.7;
   if (/[0-9]/.test(char)) return 0.56;
   return 0.54;
@@ -208,10 +207,22 @@ function wrap(text, width, size, { bold = false, maxLines = 1 } = {}) {
   return [...lines.slice(0, maxLines - 1), last];
 }
 
+const lineHeight = (size) => size * PT_MM * 1.32;
+
+/** The measure the chart figure lays its words out with (lib/results-chart-figure.js). */
+const MEASURE = {
+  wrap: (text, width, size, bold, max) => wrap(text, width, size, { bold, maxLines: max || 99 }),
+  width: (text, size, bold) => textWidth(text, size, bold),
+  lineHeight,
+};
+
 // ---- Layout
 // Primitives: { kind: 'rect', x, y, w, h, fill?, stroke?, radius? }
+//             { kind: 'line', x, y, x2, y2, color, width }                 (width in mm)
+//             { kind: 'tick', x, y, size, color }                           (the mark beside a correct answer)
 //             { kind: 'text', x, y, w, h, text, size, bold?, italic?, color, align? }  (one line, centred in h)
 //             { kind: 'image', x, y, w, h, data }
+// An item inside a question's card carries `card: true` (a test holds those to the palette).
 
 const rect = (x, y, w, h, style = {}) => ({ kind: 'rect', x, y, w, h, ...style });
 const label = (x, y, w, h, text, size, color, style = {}) => ({ kind: 'text', x, y, w, h, text, size, color, ...style });
@@ -250,64 +261,49 @@ function layoutHeader(report, logo, { first }) {
   return { items, height: height + 1.6 };
 }
 
-const CARD = { pad: 3.5, promptSize: 10.5, promptLine: 4.6, metaSize: 8, rowHeight: 5, rowSize: 8.5 };
+const CARD = { pad: 3.5, headlineSize: 9.5, promptSize: 8.8, metaSize: 7.6, chartSize: 7.8, captionSize: 7.2, rule: 1 };
 const MAX_COMMENTS = 3;
 
+/** The figure's neutral items as this file's primitives: a text line keeps its box, centred in it. */
+function fromFigure(item) {
+  if (item.kind === 'text') return { ...item, color: bare(item.color) };
+  if (item.kind === 'line' || item.kind === 'tick') return { ...item, color: bare(item.color) };
+  return { ...item, ...(item.fill && { fill: bare(item.fill) }), ...(item.stroke && { stroke: bare(item.stroke) }) };
+}
+
 /** One question's card at (x, y), `w` wide. Returns { items, height } (height without the row stretch). */
-function layoutCard(question, report, x, y, w) {
+function layoutCard(question, palette, x, y, w) {
   const { pad } = CARD;
+  const { chart } = question;
   const inner = w - pad * 2;
   const items = [];
-  let cursor = y + pad;
+  const ink = bare(palette.text);
+  const soft = bare(palette.textSecondary);
+  let cursor = y + CARD.rule + pad - 0.6;
+  const lines = (text, size, color, { bold = false, max = 2, after = 0 } = {}) => {
+    for (const line of wrap(text, inner, size, { bold, maxLines: max })) {
+      items.push(label(x + pad, cursor, inner, lineHeight(size), line, size, color, { bold }));
+      cursor += lineHeight(size);
+    }
+    cursor += after;
+  };
 
-  for (const line of wrap(question.prompt, inner, CARD.promptSize, { bold: true, maxLines: 2 })) {
-    items.push(label(x + pad, cursor, inner, CARD.promptLine, line, CARD.promptSize, INK, { bold: true }));
-    cursor += CARD.promptLine;
-  }
-  const answered = question.respondents === 1 ? '1 answer' : `${question.respondents} answers`;
-  items.push(label(x + pad, cursor, inner, 4, wrap(`${question.section}  ·  ${answered}`, inner, CARD.metaSize)[0], CARD.metaSize, MUTED));
-  cursor += 5.6;
+  // As the screen's card: the headline, the question, then how many answered and how many got it right first time.
+  lines(chart.headline, CARD.headlineSize, ink, { bold: true, max: 3, after: 0.4 });
+  lines(chart.prompt, CARD.promptSize, ink, { bold: true, max: 2, after: 0.4 });
+  lines(`${question.section}  ·  ${chart.answered} answered`, CARD.metaSize, soft, { max: 2, after: chart.gradedLine ? 0 : 1.6 });
+  if (chart.gradedLine) lines(chart.gradedLine, CARD.metaSize, soft, { bold: true, max: 2, after: 1.6 });
 
-  if (question.comments) {
-    if (question.comments.length === 0) {
-      items.push(label(x + pad, cursor, inner, 5, 'No comments yet', CARD.rowSize, MUTED, { italic: true }));
-      cursor += 5;
-    }
-    for (const comment of question.comments.slice(0, MAX_COMMENTS)) {
-      for (const line of wrap(`“${comment}”`, inner, CARD.rowSize, { maxLines: 2 })) {
-        items.push(label(x + pad, cursor, inner, 4, line, CARD.rowSize, INK, { italic: true }));
-        cursor += 4;
-      }
-      cursor += 1.4;
-    }
-    if (question.comments.length > MAX_COMMENTS) {
-      const more = question.comments.length - MAX_COMMENTS;
-      items.push(label(x + pad, cursor, inner, 4, `+ ${more} more comment${more === 1 ? '' : 's'}`, CARD.metaSize, MUTED));
-      cursor += 4;
-    }
-  } else {
-    const labelWidth = inner * 0.44;
-    const valueWidth = question.ranked ? 26 : 17;
-    const barX = x + pad + labelWidth + 2;
-    const barWidth = inner - labelWidth - valueWidth - 4;
-    for (const row of question.rows) {
-      const middle = cursor + CARD.rowHeight / 2;
-      items.push(label(x + pad, cursor, labelWidth, CARD.rowHeight, wrap(row.label, labelWidth, CARD.rowSize)[0], CARD.rowSize, INK));
-      items.push(rect(barX, middle - 1.6, barWidth, 3.2, { fill: tint(report.primary, 0.85), radius: 1.6 }));
-      const filled = Math.max(0, Math.min(1, row.percent / 100)) * barWidth;
-      if (filled > 0.1) items.push(rect(barX, middle - 1.6, Math.max(filled, 1.6), 3.2, { fill: report.primary, radius: 1.6 }));
-      const value = question.ranked
-        ? `${row.score} pts · ${Math.round(row.percent)}%`
-        : `${row.count} · ${Math.round(row.percent)}%`;
-      items.push(label(barX + barWidth + 2, cursor, valueWidth, CARD.rowHeight, value, CARD.rowSize, INK, { align: 'right', bold: true }));
-      cursor += CARD.rowHeight;
-    }
-  }
-  return { items, height: cursor + pad - y };
+  const figure = chartFigure(chart, { x: x + pad, width: inner, palette, measure: MEASURE, size: CARD.chartSize, maxLabelLines: 2, comments: MAX_COMMENTS, plot: 14, points: false });
+  for (const item of figure.items) items.push(fromFigure({ ...item, y: item.y + cursor, ...(item.y2 === undefined ? {} : { y2: item.y2 + cursor }) }));
+  cursor += figure.h;
+  if (chart.caption) { cursor += 0.6; lines(chart.caption, CARD.captionSize, soft, { max: 2 }); }
+  if (chart.removedLine) { cursor += 0.6; lines(chart.removedLine, CARD.captionSize, soft, { max: 2 }); }
+  return { items: items.map((item) => ({ ...item, card: true })), height: cursor + pad - y };
 }
 
 /** One layout attempt: cards `columns` across, and a row that doesn't fit below starts a new page. */
-function layoutInColumns(report, logo, columns) {
+function layoutInColumns(report, logo, palette, columns) {
   const { width, height, margin } = PAGE;
   const gap = 8;
   const cardWidth = (width - margin * 2 - gap * (columns - 1)) / columns;
@@ -327,13 +323,13 @@ function layoutInColumns(report, logo, columns) {
   startPage();
 
   if (report.questions.length === 0) {
-    page.items.push(label(margin, top, width - margin * 2, 8, 'No live questions in this session yet.', 12, MUTED));
+    page.items.push(label(margin, top, width - margin * 2, 8, 'No live questions in this session yet.', 12, bare(palette.textSecondary)));
   }
 
   for (let i = 0; i < report.questions.length; i += columns) {
     const row = report.questions.slice(i, i + columns);
     const cardX = (column) => margin + column * (cardWidth + gap);
-    const measured = row.map((question, column) => layoutCard(question, report, cardX(column), top, cardWidth));
+    const measured = row.map((question, column) => layoutCard(question, palette, cardX(column), top, cardWidth));
     const rowHeight = Math.max(...measured.map((card) => card.height));
     if (top + rowHeight > bottom && rowsOnPage > 0) {
       startPage(); // doesn't fit below: continue on a fresh page
@@ -341,8 +337,9 @@ function layoutInColumns(report, logo, columns) {
       continue;
     }
     row.forEach((_, column) => {
-      page.items.push(rect(cardX(column), top, cardWidth, rowHeight, { fill: 'FFFFFF', stroke: LINE, radius: 2 }));
-      page.items.push(rect(cardX(column), top + 1.5, 1.4, rowHeight - 3, { fill: report.secondary }));
+      // A white card with Deloitte Green along its top edge, as on the screen: the accent, never a bar.
+      page.items.push(rect(cardX(column), top, cardWidth, rowHeight, { fill: bare(palette.surface), stroke: bare(palette.grid), radius: 2, card: true }));
+      page.items.push(rect(cardX(column), top, cardWidth, CARD.rule, { fill: bare(palette.brand), card: true }));
       page.items.push(...measured[column].items);
     });
     top += rowHeight + 5;
@@ -354,20 +351,31 @@ function layoutInColumns(report, logo, columns) {
 /**
  * Places the report on pages: [{ items }]. It aims for one page, so it tries two and three
  * cards across and keeps the roomiest layout (fewest columns) that needs the fewest pages.
+ * `palette` is the Results palette (lib/results-palette.js).
  */
-export function layoutReport(report, logo = null) {
+export function layoutReport(report, logo = null, palette = null) {
+  if (!palette) throw new Error('layoutReport needs the Results palette (lib/results-palette.js).');
   const { width, height, margin } = PAGE;
   let pages = null;
   for (const columns of [2, 3]) {
-    const attempt = layoutInColumns(report, logo, columns);
+    const attempt = layoutInColumns(report, logo, palette, columns);
     if (!pages || attempt.length < pages.length) pages = attempt;
   }
   const stamp = new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+  const soft = bare(palette.textSecondary);
   pages.forEach((page, index) => {
-    page.items.push(label(margin, height - margin - 4, 150, 4, `Generated ${stamp}`, 7.5, MUTED));
-    page.items.push(label(width - margin - 40, height - margin - 4, 40, 4, `Page ${index + 1} of ${pages.length}`, 7.5, MUTED, { align: 'right' }));
+    page.items.push(label(margin, height - margin - 4, 150, 4, `Generated ${stamp}`, 7.5, soft));
+    page.items.push(label(width - margin - 40, height - margin - 4, 40, 4, `Page ${index + 1} of ${pages.length}`, 7.5, soft, { align: 'right' }));
   });
   return pages;
+}
+
+/** A tick as two strokes, as the leader report draws it (lib/leader-report-pdf.js): [[x1, y1, x2, y2], ...] and the stroke's width. */
+function tickStrokes({ x, y, size }) {
+  const start = [x + size * 0.08, y + size * 0.55];
+  const bend = [start[0] + size * 0.3, start[1] + size * 0.3];
+  const end = [bend[0] + size * 0.55, bend[1] - size * 0.68];
+  return { strokes: [[...start, ...bend], [...bend, ...end]], width: size * 0.17 };
 }
 
 // ---- Logo
@@ -426,8 +434,6 @@ function loadScript(path) {
 /** jsPDF's standard fonts only cover Latin-1 and a few punctuation marks. Emoji and other scripts are dropped, not printed as garbage. */
 const pdfSafe = (text) => text.replace(/[^\x20-\x7e\xa0-\xff‘’“”–—…•€™]/g, '').replace(/ {2,}/g, ' ');
 
-const rgb = (hex) => channels(hex);
-
 /**
  * The PDF's bytes. `jsPDF` is handed in (the admin page's own copy; a node test passes jsPDF's node build).
  * @returns {ArrayBuffer}
@@ -436,6 +442,7 @@ export function pdfBytes(pages, report, { jsPDF, producer = 'Pursuits CEC' }) {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [PAGE.width, PAGE.height] });
   doc.setProperties({ title: `${report.clientName || 'Session'} results`, creator: producer });
   doc.setLineWidth(0.25);
+  const rgb = (hex) => channels(hex);
 
   pages.forEach((page, index) => {
     if (index > 0) doc.addPage([PAGE.width, PAGE.height], 'landscape');
@@ -446,16 +453,26 @@ export function pdfBytes(pages, report, { jsPDF, producer = 'Pursuits CEC' }) {
         if (item.stroke) doc.setDrawColor(...rgb(item.stroke));
         if (item.radius) doc.roundedRect(item.x, item.y, item.w, item.h, item.radius, item.radius, style);
         else doc.rect(item.x, item.y, item.w, item.h, style);
+      } else if (item.kind === 'line') {
+        doc.setDrawColor(...rgb(item.color));
+        doc.setLineWidth(item.width ?? 0.25);
+        doc.line(item.x, item.y, item.x2, item.y2);
+      } else if (item.kind === 'tick') {
+        const { strokes, width } = tickStrokes(item);
+        doc.setDrawColor(...rgb(item.color));
+        doc.setLineWidth(width);
+        doc.setLineCap('round');
+        for (const [x1, y1, x2, y2] of strokes) doc.line(x1, y1, x2, y2);
+        doc.setLineCap('butt');
       } else if (item.kind === 'image') {
         doc.addImage(item.data, 'PNG', item.x, item.y, item.w, item.h, undefined, 'FAST'); // compressed, or the logo alone is over a megabyte
       } else {
         doc.setFont(FONT.pdf, item.bold ? 'bold' : item.italic ? 'italic' : 'normal');
         doc.setFontSize(item.size);
         doc.setTextColor(...rgb(item.color));
-        const right = item.align === 'right';
-        doc.text(pdfSafe(item.text), right ? item.x + item.w : item.x, item.y + item.h / 2, {
-          align: right ? 'right' : 'left', baseline: 'middle',
-        });
+        const align = item.align ?? 'left';
+        const at = align === 'right' ? item.x + item.w : align === 'center' ? item.x + item.w / 2 : item.x;
+        doc.text(pdfSafe(item.text), at, item.y + item.h / 2, { align, baseline: 'middle' });
       }
     }
   });
@@ -464,13 +481,14 @@ export function pdfBytes(pages, report, { jsPDF, producer = 'Pursuits CEC' }) {
 
 /**
  * Exports a one-page branded PDF of the session's results. Resolves to the file name.
- * `brand.appName`, when given, is written as the PDF's creator instead of the original product name.
+ * `brand.appName`, when given, is written as the PDF's creator instead of the original product name; `brand.palette` is the
+ * Results palette (lib/results-palette-source.ts RESULTS_PALETTE).
  */
 export async function downloadPdf(results, brand = {}) {
   const [, logo] = await Promise.all([loadScript('../vendor/jspdf/dist/jspdf.umd.min.js'), loadLogo(brand.logoUrl)]);
   const report = buildReport(results, brand);
   const fileName = exportFileName(results, 'pdf');
-  saveBlob(new Blob([pdfBytes(layoutReport(report, logo), report, { jsPDF: window.jspdf.jsPDF, producer: brand.appName })], { type: 'application/pdf' }), fileName);
+  saveBlob(new Blob([pdfBytes(layoutReport(report, logo, brand.palette), report, { jsPDF: window.jspdf.jsPDF, producer: brand.appName })], { type: 'application/pdf' }), fileName);
   return fileName;
 }
 
@@ -500,6 +518,15 @@ export async function pptxFile(pages, report, { PptxGenJS, producer = 'Pursuits 
           fill: item.fill ? { color: item.fill } : { type: 'none' },
           line: item.stroke ? { color: item.stroke, width: 0.75 } : { type: 'none' },
         });
+      } else if (item.kind === 'line' || item.kind === 'tick') {
+        const { strokes, width } = item.kind === 'tick' ? tickStrokes(item) : { strokes: [[item.x, item.y, item.x2, item.y2]], width: item.width ?? 0.25 };
+        for (const [x1, y1, x2, y2] of strokes) {
+          slide.addShape(pptx.ShapeType.line, {
+            x: inches(Math.min(x1, x2)), y: inches(Math.min(y1, y2)), w: inches(Math.abs(x2 - x1)), h: inches(Math.abs(y2 - y1)),
+            flipV: (x2 - x1) * (y2 - y1) < 0,
+            line: { color: item.color, width: (width * 72) / 25.4 },
+          });
+        }
       } else if (item.kind === 'image') {
         slide.addImage({ data: item.data, ...box });
       } else {
@@ -518,6 +545,6 @@ export async function downloadPptx(results, brand = {}) {
   const [, logo] = await Promise.all([loadScript('../vendor/pptxgenjs/dist/pptxgen.bundle.js'), loadLogo(brand.logoUrl)]);
   const report = buildReport(results, brand);
   const fileName = exportFileName(results, 'pptx');
-  saveBlob(await pptxFile(layoutReport(report, logo), report, { PptxGenJS: window.PptxGenJS, producer: brand.appName }), fileName);
+  saveBlob(await pptxFile(layoutReport(report, logo, brand.palette), report, { PptxGenJS: window.PptxGenJS, producer: brand.appName }), fileName);
   return fileName;
 }
