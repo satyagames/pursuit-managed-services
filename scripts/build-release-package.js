@@ -15,7 +15,7 @@
 // (scripts/release-proofs.js), and no file of the package is a .json (Phase 10g: the settings file is pms-config.txt); `shasum -a 256 -c SHA256SUMS.txt` passes in the folder and again in a fresh unzip of the zip, which holds exactly the
 // folder's files. What it found is printed and written to test-results/release/package.json.
 import { execFile } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, realpathSync } from 'node:fs';
 import { copyFile, mkdir, mkdtemp, readFile, readdir, rm, symlink, unlink, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -48,7 +48,9 @@ const folder = path.join(PACKAGES, name);
 const zip = path.join(PACKAGES, `${name}.zip`);
 
 // 1. A fresh checkout of the commit, and the build in it.
-const scratch = await mkdtemp(path.join(os.tmpdir(), 'pms-package-'));
+// (The temporary folder by its full name: on Windows it may be given by its short name, C:\Users\VENKAT~1\..., and Vite then sees the page outside
+// its own folder and refuses to build.)
+const scratch = await mkdtemp(path.join(realpathSync.native(os.tmpdir()), 'pms-package-'));
 const checkout = path.join(scratch, 'checkout');
 await git('worktree', 'add', '--detach', checkout, 'HEAD');
 const environment = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('PMS_')));
