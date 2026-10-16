@@ -1,7 +1,7 @@
 // The sample clients' pictures (Phase 10f), made by Brand Studio itself: `npm run build:sample-pictures`.
 //
 // VJR supplied six pictures for Kroger and Domino's (a logo, a hero and a background each). They are in the git-ignored folder
-// `.local/sample-images/` (`<client>-<slot>.jpg`), so only a machine that has them can run this. Nothing here decides how a picture is
+// `.local/sample-images/` (`<client>-<slot>.jpg`, or `.png`: Phase 11a-3, below), so only a machine that has them can run this. Nothing here decides how a picture is
 // cropped, sized, encoded or named: the BUILT admin page does, in Chromium, exactly as for an admin. For each client this opens Brand
 // Studio against a scratch local server whose sample clients have no pictures, chooses each file for its slot, accepts the crop as it
 // starts ("Use this picture"), and presses Save. What Brand Studio stored is then the result: the files it uploaded (cropped, drawn
@@ -40,9 +40,15 @@ const ORIGIN = 'http://pms.test';
 const CHECK = process.argv.includes('--check');
 const PIN = '1234'; // server/data/adminusers.json, the local server's mock PIN
 
+// A source may be a PNG (Phase 11a-3): a JPEG cannot be transparent, so the heroes VJR supplied as JPEGs are stored as opaque squares (Brand Studio
+// keeps a hero's transparency; it has none to keep). `<client>-<slot>.png` is used when it is there, else `<client>-<slot>.jpg`.
+const source = {};
 const missing = [];
 for (const { slug } of CLIENTS) for (const slot of SLOTS) {
-  try { await stat(path.join(SOURCES, `${slug}-${slot}.jpg`)); } catch { missing.push(`.local/sample-images/${slug}-${slot}.jpg`); }
+  for (const ext of ['png', 'jpg']) {
+    try { await stat(path.join(SOURCES, `${slug}-${slot}.${ext}`)); source[`${slug}-${slot}`] = `${slug}-${slot}.${ext}`; break; } catch { /* the next */ }
+  }
+  if (!source[`${slug}-${slot}`]) missing.push(`.local/sample-images/${slug}-${slot}.png or .jpg`);
 }
 if (missing.length) {
   console.error(`The sample pictures are made from VJR's six files, and these are missing:\n  ${missing.join('\n  ')}`);
@@ -94,7 +100,7 @@ try {
     const said = {};
     for (const slot of SLOTS) {
       const card = page.locator(`section.asset[data-slot="${slot}"]`);
-      await page.locator(`input[type="file"][data-slot="${slot}"]`).setInputFiles(path.join(SOURCES, `${client.slug}-${slot}.jpg`));
+      await page.locator(`input[type="file"][data-slot="${slot}"]`).setInputFiles(path.join(SOURCES, source[`${client.slug}-${slot}`]));
       const dialog = page.getByRole('dialog', { name: /Crop and fit/ });
       await dialog.waitFor();
       const warning = await dialog.locator('.crop__warn').textContent().catch(() => null);
@@ -105,7 +111,7 @@ try {
         card.locator('.asset__problem').waitFor({ timeout: 60_000 }),
       ]);
       const problem = await card.locator('.asset__problem').textContent({ timeout: 100 }).catch(() => null);
-      if (problem) throw new Error(`Brand Studio refused ${client.slug}-${slot}.jpg: ${problem}`);
+      if (problem) throw new Error(`Brand Studio refused ${source[`${client.slug}-${slot}`]}: ${problem}`);
       const notice = await card.locator('.asset__notice').textContent({ timeout: 100 }).catch(() => null);
       said[slot] = { warning: warning?.trim() || null, notice: notice?.trim() || null };
     }
