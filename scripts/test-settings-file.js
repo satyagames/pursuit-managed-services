@@ -186,9 +186,10 @@ describe('the data layer refuses to be asked before it has been set up, for a pa
     assert.equal(page.isSharePointMode(), false);
     assert.equal(await counting(() => page.listClients()), 1, 'the request goes to the local server, as before');
     // The modules the pages share from public/js do not opt in themselves: only an entry does (lib/start.ts). (Until Phase 10c-1 this
-    // loop also read the legacy screens, which never opted in; they left the branch with the legacy app.)
+    // loop also read the legacy screens, which never opted in; they left the branch with the legacy app. resultsRenderer.js, the Live display's
+    // Chart.js renderer, left in Phase 11a, when the Results charts were drawn by hand.)
     const shared = (await readdir(path.join(ROOT, 'public', 'js'), { recursive: true })).filter((name) => name.endsWith('.js') && !name.endsWith('dataService.js'));
-    assert.deepEqual(shared.map((name) => name.split(path.sep).join('/')).sort(), ['assets.js', 'branding.js', 'pms-schema-meta.js', 'pms-schema.js', 'resultsExport.js', 'resultsRenderer.js']);
+    assert.deepEqual(shared.map((name) => name.split(path.sep).join('/')).sort(), ['assets.js', 'branding.js', 'pms-schema-meta.js', 'pms-schema.js', 'resultsExport.js']);
     for (const file of shared) {
       assert.doesNotMatch(await source(path.join('public', 'js', file)), /requireConfiguration|sharePointListTitles/, `${file} must not opt in`);
     }

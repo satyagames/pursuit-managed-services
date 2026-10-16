@@ -5,13 +5,14 @@
  * clients on two days never share a title, a colour or an activity.
  *
  * Nothing here outlives the page. The activity list is refreshed from the server whenever the hub
- * asks; the only things passed along instead of fetched again are the two that the boot sequence
- * has just read: its activity list, for a hub that opens straight after it, and the first
- * activity's questions, for the pager to take once.
+ * asks; what the boot sequence has just read is passed along instead of fetched again: its activity
+ * list, for a hub that opens straight after it. The activities' questions and options are held for as
+ * long as the page is open (`activityContent`, lib/activity-content.js, Phase 10j).
  */
 import * as dataService from '../../../public/js/dataService.js';
 import { DEFAULT_BRAND, applyBrand } from '../../../public/js/branding.js';
 import { embeddedAssetUrl } from '../../../public/js/assets.js';
+import { createActivityContent } from './activity-content.js';
 import { APP_NAME } from './app-name.js';
 import { clientView } from './brand.svelte.js';
 import { resolveClientTheme } from './client-theme.js';
@@ -41,7 +42,6 @@ export type LiveExperience = {
 
 const getSessionActivities = dataService.getSessionActivities as unknown as (sessionId: string, clientId: string) => Promise<{ session: Session | null; sections: Activity[] }>;
 const getClientActivities = dataService.getClientActivities as unknown as (clientId: string, session: Session) => Promise<Activity[]>;
-const getSectionQuestions = dataService.getSectionQuestions as unknown as (section: Activity) => Promise<Question[]>;
 const assetUrl = embeddedAssetUrl as unknown as (url: string | null) => string | null;
 
 export const experience = $state({
@@ -90,9 +90,11 @@ let liveSession: Session | null = null;
 /** The boot sequence's own read of the activities, for the first reader only and only straight away. */
 let handoff: { session: Session; sections: Activity[]; at: number } | null = null;
 const HANDOFF_MS = 5000;
-/** The first activity's questions, read during boot, for the pager to take once. */
-let firstContent: { sectionId: string; questions: Question[]; at: number } | null = null;
-const FIRST_CONTENT_MS = 5 * 60_000;
+/**
+ * The questions and options of today's activities, held for as long as the page is open (Phase 10j): read for every enabled activity once the
+ * first screen is up (App.svelte), beside a QR code's claim (lib/boot.js), or when an activity is opened first.
+ */
+export const activityContent = createActivityContent({ api: dataService as unknown as Parameters<typeof createActivityContent>[0]['api'] });
 
 const root = () => document.documentElement;
 
@@ -106,7 +108,7 @@ export function showTheme() {
  * theme. Called before the first screen is drawn, so the first colours shown are the client's.
  * `themed: false` keeps the default look (the facilitator's results display).
  */
-export function adoptExperience(live: LiveExperience, { themed = true, content = null as { sectionId: string; questions: Question[] } | null } = {}) {
+export function adoptExperience(live: LiveExperience, { themed = true } = {}) {
   const isLive = live.status === 'live' && live.client !== null && live.session !== null;
   const theme = resolveClientTheme(isLive ? live.client : null);
   liveKey = keyOf(live.settings);
@@ -131,7 +133,6 @@ export function adoptExperience(live: LiveExperience, { themed = true, content =
   activities = isLive ? live.sections : [];
   liveSession = isLive ? live.session : null;
   handoff = isLive ? { session: live.session!, sections: live.sections, at: Date.now() } : null;
-  firstContent = isLive && content ? { ...content, at: Date.now() } : null;
 
   // The default look is styles/tokens.css itself; only a client's own palette is written onto the page.
   const own = themed && isLive && theme.source !== 'default';
@@ -208,9 +209,36 @@ export const knownActivity = (sectionId: string) => activities.find((section) =>
 export const knownActivities = (): Activity[] => activities;
 
 /**
+ * The hub, arriving (Phase 10j, part E): the client's activities and the enabled ones' questions and options read afresh, together (ONE
+ * request where the site can batch: activityContent.refreshWith), while the hub shows what the page holds. With `withContent: false` (every
+ * activity is done, so there is none left to open) the activities alone. The reader that arrives straight after the boot sequence (within
+ * HANDOFF_MS) takes what boot has just read and sends nothing. Resolves to whether the activities differ from what the page held; rejects as
+ * the read does, and then what the page holds is as it was.
+ */
+export async function refreshActivities({ withContent = true } = {}): Promise<boolean> {
+  if (handoff && Date.now() - handoff.at <= HANDOFF_MS) { handoff = null; return false; }
+  handoff = null;
+  if (!experience.sessionId || !experience.clientId || !liveSession) return false;
+  const fresh = await activityContent.refreshWith(experience.clientId, withContent ? activities : []) as Activity[];
+  const changed = JSON.stringify(fresh) !== JSON.stringify(activities);
+  activities = fresh;
+  return changed;
+}
+
+/** Does the page hold any activity (from boot, the hub's last read or the timer's)? The hub then draws at once. */
+export const holdsActivities = (): boolean => experience.status === 'live' && activities.length > 0;
+
+/**
+ * Reads, in the background, the questions and options of every enabled activity the page holds that are not held yet (Phase 10j): App.svelte
+ * calls it once the first screen is up. Never rejects.
+ */
+export const holdActivityContent = (): Promise<void> => (experience.status === 'live' ? activityContent.start(activities) : Promise.resolve());
+
+/**
  * One activity with its questions and their options. The section record comes from what the page
- * already holds (re-read if this activity is not in it); the questions and options are two
- * requests, or none for the activity the boot sequence fetched.
+ * already holds (re-read if this activity is not in it); the questions and options from what the page
+ * holds (Phase 10j), and read now only when they are not held: the activity is new, or no read has
+ * reached them (then every enabled activity's that is missing is read with them, once).
  */
 export async function loadActivity(sectionId: string): Promise<{ section: Activity; questions: Question[] } | null> {
   let section = knownActivity(sectionId);
@@ -219,7 +247,5 @@ export async function loadActivity(sectionId: string): Promise<{ section: Activi
     section = knownActivity(sectionId);
   }
   if (!section) return null;
-  const ready = firstContent && firstContent.sectionId === sectionId && Date.now() - firstContent.at <= FIRST_CONTENT_MS ? firstContent : null;
-  if (firstContent?.sectionId === sectionId) firstContent = null; // taken once
-  return { section, questions: ready ? ready.questions : await getSectionQuestions(section) };
+  return { section, questions: await activityContent.questionsOf(section, activities) as Question[] };
 }

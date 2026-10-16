@@ -15,7 +15,9 @@ const CHROMIUM_ONLY_FILES = [
   // axe-core is run once, in Chromium: it reads the DOM, which is the same in every engine.
   { why: 'axe-core reads the DOM, which is the same in every engine, so it runs once; the keyboard, aria and reflow specs run in all three', files: /a11y\.spec\.ts/ },
   // Pixel arithmetic on a screenshot.
-  { why: 'the contrast check is arithmetic on pixels; every engine paints the same colours (the screenshot decoder is a Chromium page)', files: /contrast\.spec\.ts/ },
+  { why: 'the contrast check is arithmetic on pixels; every engine paints the same colours (the screenshot decoder is a Chromium page)', files: /(?:contrast|results-charts-greyscale)\.spec\.ts/ },
+  // Phase 11a: a build inside a test.
+  { why: 'it builds a second admin page with Vite inside the test (the wall\'s rule taken out) to show the wall\'s check can fail; the check itself, on the real page, runs in all three engines (results-charts-names.spec.ts)', files: /results-charts-wall-mutation\.spec\.ts/ },
 ];
 
 /** Tests (by title) that do not run in WebKit, and why. */

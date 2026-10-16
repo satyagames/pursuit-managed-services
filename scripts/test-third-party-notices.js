@@ -15,13 +15,14 @@ const lock = JSON.parse(await readFile(path.join(root, 'package-lock.json'), 'ut
 const REVIEW_TABLE = [
   ['svelte', 'node_modules/svelte'], ['svelte-spa-router', 'node_modules/svelte-spa-router'], ['regexparam', 'node_modules/regexparam'],
   ['canvas-confetti', 'node_modules/canvas-confetti'], ['lean-qr', 'node_modules/lean-qr'],
-  ['chart.js', 'node_modules/chart.js'], ['@kurkle/color', 'node_modules/@kurkle/color'],
   ['jspdf', 'node_modules/jspdf'], ['fflate', 'node_modules/fflate'], ['fast-png', 'node_modules/fast-png'], ['iobuffer', 'node_modules/iobuffer'],
   ['pako', 'node_modules/pako'], ['@babel/runtime', 'node_modules/@babel/runtime'],
   ['pptxgenjs', 'node_modules/pptxgenjs'], ['jszip', 'node_modules/jszip'], ['lie', 'node_modules/lie'],
   ['pako', 'node_modules/jszip/node_modules/pako'], ['readable-stream', 'node_modules/readable-stream'], ['setimmediate', 'node_modules/setimmediate'],
   ['tailwindcss', 'node_modules/tailwindcss'],
 ];
+// (chart.js and @kurkle/color were in the review's table: the Live display drew its charts with them until Phase 11a, which draws them by hand. They
+// are in no page since, so the file must not name them: see the last test.)
 /** Tools that build or test the project and never enter a page (and are not in the review's table). Distinctive enough to look for in the licence texts too. */
 const DEV_ONLY = ['playwright', 'axe-core', 'pdfjs-dist', 'pdf.js', 'vite', 'esbuild', 'svelte-check', 'typescript', 'cheerio', 'rollup', 'rolldown'];
 /** The local server's packages: in no page. Words like "express" are in licence prose, so only the entry names are checked for these. */
@@ -136,4 +137,9 @@ test('it is an extra file: the three-file build does not know about it', async (
   const release = await readFile(path.join(root, 'scripts/build-svelte-release.js'), 'utf8');
   assert.ok(!/notice/i.test(release), 'build-svelte-release.js is not told about the notices');
   assert.match(release, /files\.length !== 3/, 'the release folder is still exactly three files');
+});
+
+test('names no chart library: the Results charts are drawn by hand since Phase 11a, and no page carries one', () => {
+  assert.ok(!RUNTIME_DEPENDENCIES.some((entry) => entry.name === 'chart.js' || entry.name === '@kurkle/color'));
+  assert.doesNotMatch(result.text, /^(?:chart\.js|@kurkle\/color) /m);
 });

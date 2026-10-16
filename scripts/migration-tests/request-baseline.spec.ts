@@ -16,6 +16,21 @@ import { newFake, onSite, pageUrl, seedAndGoLive, serveSharePoint, type Fake } f
 
 const choices = (page: Page) => page.locator('.pms-options button');
 
+/**
+ * Waits until the page has sent what it reads and fetches ahead once its first screen is up (Phase 10j): the questions and options of every
+ * enabled activity (part D: lib/activity-content.js; a QR scan reads them beside its claim), and once its visit is logged what its next writes
+ * will ask for (part C: lib/boot.js writesAhead): the answers list's item type always here, and, where a visit can begin from Welcome, the
+ * participants list's type and columns and, for a session not started yet, the sessions list's. So a recording does not depend on how soon the
+ * page is closed.
+ */
+async function fetchedAhead(fake: Fake, { canBegin }: { canBegin: boolean }) {
+  const type = (list: string) => fake.count((entry) => entry.list === list && entry.method === 'GET' && /ListItemEntityTypeFullName/.test(entry.url) && !entry.batched);
+  const columns = (list: string) => fake.count((entry) => entry.list === list && entry.method === 'GET' && /\/fields\?/.test(entry.url));
+  await expect.poll(() => [fake.count({ method: 'GET', list: 'questions' }), fake.count({ method: 'GET', list: 'options' })]).toEqual([1, 1]);
+  await expect.poll(() => type('responses')).toBe(1);
+  if (canBegin) for (const list of ['tracks', 'sessions']) await expect.poll(() => [type(list), columns(list)]).toEqual([1, 1]);
+}
+
 const visitorCode = (fake: Fake, sessionId: string, name: string) => onSite(fake, async (ds) => {
   await ds.setSessionParticipationMode(sessionId, 'client-visit');
   const visitor = await ds.createVisitor({ sessionId, displayName: name, enabled: true });
@@ -49,6 +64,7 @@ async function fourStarts(browser: Browser): Promise<string> {
     await expect(visit.page.getByRole('heading', { name: 'Hi Casey Example!' })).toBeVisible();
     await expect(visit.page.getByRole('button', { name: 'Click here to begin' })).toBeVisible();
     await expect.poll(() => fake.count({ method: 'POST', list: 'uservisitlogs' })).toBe(1);
+    await fetchedAhead(fake, { canBegin: true });
     await finish(fake, visit);
   }
 
@@ -65,6 +81,7 @@ async function fourStarts(browser: Browser): Promise<string> {
       await expect(visit.page.getByRole('heading', { name: `Hi ${name}!` })).toBeVisible();
       await expect(visit.page.getByRole('button', { name: 'Click here to begin' })).toBeVisible();
       await expect.poll(() => fake.count({ method: 'POST', list: 'uservisitlogs' })).toBe(1);
+      await fetchedAhead(fake, { canBegin: false });
       await finish(fake, visit);
     }
   }

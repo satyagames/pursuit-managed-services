@@ -46,6 +46,7 @@ let sharePoint = globalThis.CEC_SHAREPOINT ?? null;
 let digestPromise;
 const listMetadata = new Map();
 const listTypes = new Map(); // list -> its item entity type, learnt from any item read or asked for once
+const typeReads = new Map(); // list -> the request for its item type that prepareWrites() made, while it is on its way
 const listColumns = new Map(); // list -> the internal column names it has, once its fields were read
 let batchOff = false; // this page load found $batch unusable, so reads that would share a request go one by one
 let unfinishedScan = null; // a QR scan whose track is written but whose claim is not known to have landed (openQrScan); never stored
@@ -66,6 +67,7 @@ export function configure({ baseUrl: url, sharePoint: settings, onStop: stop } =
   digestPromise = undefined;
   listMetadata.clear();
   listTypes.clear();
+  typeReads.clear();
   listColumns.clear();
   batchOff = false;
   unfinishedScan = null;
@@ -258,13 +260,17 @@ function spEncode(list, record) {
   return fields;
 }
 
+// The properties of a column the check below reads, and only those (Phase 10j): a real list answers a read of its columns that names none
+// with every field it has, hidden ones too, each with all its properties and its whole definition.
+const FIELD_CHECK = '$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField';
+
 async function spMetadata(list) {
   if (!listMetadata.has(list)) {
     const pending = (async () => {
       const path = spListPath(list);
       const [{ data }, fields] = await Promise.all([
         spHttp('GET', `${path}?$select=ListItemEntityTypeFullName`),
-        spPages(`${path}/fields`),
+        spPages(`${path}/fields?${FIELD_CHECK}`),
       ]);
       const columns = new Map(fields.map((field) => [field.InternalName, field]));
       const required = Object.values(fieldsOf(list));
@@ -298,13 +304,32 @@ async function spMetadata(list) {
 const spTypeNames = { Text: 'Single line of text', Note: 'Multiple lines of text, plain text', Number: 'Number', DateTime: 'Date and Time', Boolean: 'Yes/No' };
 
 
-/** A list's item entity type (needed in every write body), with one small request the first time and none afterwards. */
+/**
+ * A list's item entity type (needed in every write body), with one small request the first time and none afterwards. A write that asks while
+ * prepareWrites() is fetching it waits for that request (Phase 10j), and asks itself if it failed.
+ */
 async function spEntityType(list) {
   if (!listTypes.has(list)) {
+    const ahead = typeReads.get(list);
+    if (ahead) { try { return await ahead; } catch { /* forgotten: asked for as always, below */ } }
     const { data } = await spHttp('GET', `${spListPath(list)}?$select=ListItemEntityTypeFullName`);
     listTypes.set(list, data.ListItemEntityTypeFullName);
   }
   return listTypes.get(list);
+}
+
+/** spEntityType() for prepareWrites(): the same request, held while it is on its way so that a write meanwhile waits for it. */
+function spEntityTypeAhead(list) {
+  if (listTypes.has(list)) return Promise.resolve(listTypes.get(list));
+  if (!typeReads.has(list)) {
+    const pending = spHttp('GET', `${spListPath(list)}?$select=ListItemEntityTypeFullName`).then(({ data }) => {
+      listTypes.set(list, data.ListItemEntityTypeFullName);
+      return data.ListItemEntityTypeFullName;
+    });
+    typeReads.set(list, pending);
+    pending.then(() => typeReads.delete(list), () => typeReads.delete(list));
+  }
+  return typeReads.get(list);
 }
 
 async function spFind(list, id) {
@@ -1883,15 +1908,23 @@ export async function openQrScan(tokenId) {
  *   - Moving the session to in-progress is tried, not required (as openQrScan() does it). A participant whose account may only
  *     read Sessions still gets in.
  *
- * Resolves to the track.
- * @param {string} trackId @param {string} sessionId @param {string} clientId @param {{ sharePointUserId?: string | null }} [options]
+ * Phase 10j: AppSettings and the session are read side by side (their checks, in the same order, with the same words), and the write that
+ * moves the session on uses the version the check read and is not waited for: a 412 means someone else moved it first. What the writes need
+ * (the write token, the participants list's type and columns) is fetched ahead by the page (prepareWrites); a press while that is on its way
+ * waits for it. With `waitForSession: false` (Welcome's "Click here to begin") it resolves as soon as the visit is written, and the session is
+ * moved on after; otherwise once that write is done too (or failed), which keeps the requests of a test's set-up in order. Resolves to the track.
+ * @param {string} trackId @param {string} sessionId @param {string} clientId @param {{ sharePointUserId?: string | null, waitForSession?: boolean }} [options]
  */
-export async function beginVisit(trackId, sessionId, clientId, { sharePointUserId = null } = {}) {
-  const settings = await getAppSettings();
+export async function beginVisit(trackId, sessionId, clientId, { sharePointUserId = null, waitForSession = true } = {}) {
+  const [settingsRead, sessionRead] = await Promise.allSettled([getAppSettings(), sharePoint ? spFind('sessions', sessionId) : getItemWithVersion('sessions', sessionId)]);
+  if (settingsRead.status === 'rejected') throw settingsRead.reason;
+  const settings = settingsRead.value;
   if (settings && settings.activeSessionId !== sessionId) {
     throw failure('session-not-active', 'Your facilitator changed the active session. Ask them for the current check-in link.');
   }
-  const session = await getItem('sessions', sessionId);
+  if (sessionRead.status === 'rejected') throw sessionRead.reason;
+  const read = sessionRead.value;
+  const session = read?.item ?? null;
   if (!session) throw failure('session-missing', 'That session no longer exists.');
   if (session.status === 'completed') throw failure('session-ended', 'This session has ended.');
   if ((session.participationMode ?? 'staff') === 'client-visit') throw failure('visitor-required', 'Scan the visitor QR code provided by your facilitator.');
@@ -1907,9 +1940,26 @@ export async function beginVisit(trackId, sessionId, clientId, { sharePointUserI
     if (!track || track.sessionId !== sessionId) throw error;
   }
   if (session.status === 'not-started') {
-    await updateItem('sessions', sessionId, { status: 'in-progress' }).catch((error) => { console.warn('Could not mark the session as in progress.', error); });
+    const changes = { status: 'in-progress' };
+    const moved = (sharePoint ? spMerge('sessions', read, changes) : updateItemIfUnchanged('sessions', sessionId, changes, read.etag)).catch((error) => {
+      if (error.status !== 412) console.warn('Could not mark the session as in progress.', error);
+    });
+    if (waitForSession) await moved;
   }
   return track;
+}
+
+/**
+ * Fetches ahead, in the background, what the participant page's writes will ask for (Phase 10j): the write token, the item type of each list
+ * in `types`, and the item type and column check of each list in `checked` (one written through the general create or update, which checks the
+ * list's columns first). They are the very requests those writes make, shared: a write meanwhile waits for them and never sends a second copy,
+ * and one that failed is forgotten, so the write asks for it as it always did. Never throws; nothing to do on the local server.
+ * @param {{ checked?: string[], types?: string[] } | null} [wanted]
+ */
+export async function prepareWrites(wanted) {
+  if (!sharePoint || !wanted) return;
+  const { checked = [], types = [] } = wanted;
+  await Promise.all([spDigest(), ...checked.map((list) => spMetadata(list)), ...types.map(spEntityTypeAhead)].map((pending) => pending.catch(() => {})));
 }
 
 // ============================================================================

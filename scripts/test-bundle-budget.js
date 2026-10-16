@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
 import { PAGES, ROOT, analyzePage } from './analyze-bundle.js';
-import { BUDGET, FORBIDDEN, PHASE_8, PHASE_9A, PHASE_9B, PHASE_10B, PHASE_10C1, PHASE_10C2A, PHASE_10C2B, PHASE_10C3, PHASE_10F, PHASE_10G, PHASE_10H, PHASE_10I, checkBudgets } from './bundle-budget.js';
+import { BUDGET, FORBIDDEN, PHASE_8, PHASE_9A, PHASE_9B, PHASE_10B, PHASE_10C1, PHASE_10C2A, PHASE_10C2B, PHASE_10C3, PHASE_10F, PHASE_10G, PHASE_10H, PHASE_10I, PHASE_10J, PHASE_11A, checkBudgets, utilityClasses } from './bundle-budget.js';
 import { SAMPLE_PICTURE_NAMES } from '../migration/src/lib/sample-pictures.js';
 import { pageProblems } from './release-proofs.js';
 
@@ -63,12 +63,15 @@ describe('the page budgets', () => {
     for (const { library, module } of FORBIDDEN) assert.equal(ids.some((id) => module.test(id)), false, `${library} is in the participant bundle`);
   });
 
-  it('does carry the exports on the admin page: PDF, PowerPoint and the charts, nothing dropped', () => {
+  it('does carry the exports on the admin page: PDF, PowerPoint and the Results charts, nothing dropped, and no chart library', () => {
     const ids = built.admin.modules.map((module) => module.id);
-    for (const part of ['node_modules/jspdf/', 'node_modules/pptxgenjs/', 'node_modules/chart.js/', 'public/js/resultsExport.js', 'public/js/resultsRenderer.js']) {
-      assert.ok(ids.some((id) => id.includes(part)), `${part} is on the admin page`);
+    for (const part of ['node_modules/jspdf/', 'node_modules/pptxgenjs/', 'public/js/resultsExport.js', 'migration/src/admin/charts/ResultCard.svelte', 'migration/src/lib/results-chart-model.js']) {
+      assert.ok(ids.some((id) => id.replaceAll('\\', '/').includes(part)), `${part} is on the admin page`);
     }
-    for (const marker of [/jsPDF/, /PptxGenJS/, /_chartjs/]) assert.match(built.admin.html, marker);
+    for (const marker of [/jsPDF/, /PptxGenJS/, /Words that came up most/]) assert.match(built.admin.html, marker);
+    // Phase 11a: the charts are drawn by hand (SVG and HTML); Chart.js, which the Live display drew with until then, is in no page.
+    assert.ok(!ids.some((id) => id.includes('node_modules/chart.js/')), 'Chart.js is not on the admin page');
+    assert.doesNotMatch(built.admin.html, /_chartjs|chartjs-/);
   });
 
   it('carries the leader report on the admin page, with its two faces, and none of it on the participant page', () => {
@@ -156,35 +159,25 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
     assert.ok(grown <= PHASE_10C1.allowance, `the participant page is ${grown} B larger than before the clean break, which only removes`);
   });
 
-  it('Phase 10c-2a (what the new project no longer has) added nothing to the participant page: it is no larger than where Phase 10c-1 left it (157,460 B), and ended 1,791 B smaller', (t) => {
+  it('Phase 10c-2a (what the new project no longer has) added nothing to the participant page: as measured when it ended, no larger than where Phase 10c-1 left it (157,460 B), and 1,791 B smaller', () => {
     assert.equal(PHASE_10C2A.participantBefore, PHASE_10C1.participantAfter, 'Phase 10c-2a is measured from where Phase 10c-1 ended');
     assert.equal(PHASE_10C2A.allowance, 0, 'a phase that only removes has no allowance');
     assert.equal(PHASE_10C2A.participantBefore - PHASE_10C2A.participantAfter, 1_791, 'as measured when 10c-2a ended: the next phase starts from the smaller page');
-    const grown = built.participant.htmlGzip - PHASE_10C2A.participantBefore;
-    const since = built.participant.htmlGzip - PHASE_10C2A.participantAfter;
-    t.diagnostic(`the participant page is ${bytes(built.participant.htmlGzip)}: ${grown >= 0 ? '+' : ''}${grown} B against where Phase 10c-1 ended, ${since >= 0 ? '+' : ''}${since} B against where Phase 10c-2a ended`);
-    console.log(`  Phase 10c-2a: the participant page is ${grown >= 0 ? '+' : ''}${grown} B gzip against where Phase 10c-1 ended (allowance ${PHASE_10C2A.allowance} B), and ${since >= 0 ? '+' : ''}${since} B against where 10c-2a ended (${bytes(PHASE_10C2A.participantAfter)}); now ${bytes(built.participant.htmlGzip)}`);
-    assert.ok(grown <= PHASE_10C2A.allowance, `the participant page is ${grown} B larger than where Phase 10c-1 left it, in a phase that only removes`);
+    // (This test compared the build in the tree with those figures until Phase 10j, whose allowance goes past them: the newest phase's test below holds the build now.)
   });
 
-  it('Phase 10c-2b (one schema file, the PMS names, schema v2 and its version check) grew the participant page by at most 600 B gzip net over where Phase 10c-2a left it (155,669 B)', (t) => {
+  it('Phase 10c-2b (one schema file, the PMS names, schema v2 and its version check) grew the participant page by at most 600 B gzip net over where Phase 10c-2a left it (155,669 B): as measured when it ended', () => {
     assert.equal(PHASE_10C2B.participantBefore, PHASE_10C2A.participantAfter, 'Phase 10c-2b is measured from where Phase 10c-2a ended');
     assert.equal(PHASE_10C2B.allowance, 600);
     assert.ok(PHASE_10C2B.participantAfter - PHASE_10C2B.participantBefore <= PHASE_10C2B.allowance, 'as measured when 10c-2b ended');
-    const grown = built.participant.htmlGzip - PHASE_10C2B.participantBefore;
-    t.diagnostic(`the participant page is ${bytes(built.participant.htmlGzip)}: ${grown >= 0 ? '+' : ''}${grown} B against where Phase 10c-2a ended`);
-    console.log(`  Phase 10c-2b: the participant page is ${grown >= 0 ? '+' : ''}${grown} B gzip against where Phase 10c-2a ended (allowance ${PHASE_10C2B.allowance} B net); now ${bytes(built.participant.htmlGzip)}`);
-    assert.ok(grown <= PHASE_10C2B.allowance, `the participant page is ${grown} B larger than where Phase 10c-2a left it, over the ${PHASE_10C2B.allowance} B allowance`);
+    // (This test compared the build in the tree with those figures until Phase 10j, whose allowance goes past them: the newest phase's test below holds the build now.)
   });
 
-  it('Phase 10c-3 (Setup prepares a new site) added nothing to the participant page: it is no larger than where Phase 10c-2b left it (155,574 B)', (t) => {
+  it('Phase 10c-3 (Setup prepares a new site) added nothing to the participant page: as measured when it ended, no larger than where Phase 10c-2b left it (155,574 B)', () => {
     assert.equal(PHASE_10C3.participantBefore, PHASE_10C2B.participantAfter, 'Phase 10c-3 is measured from where Phase 10c-2b ended');
     assert.equal(PHASE_10C3.allowance, 0, 'everything Setup does is Setup\'s alone');
     assert.ok(PHASE_10C3.participantAfter - PHASE_10C3.participantBefore <= PHASE_10C3.allowance, 'as measured when 10c-3 ended');
-    const grown = built.participant.htmlGzip - PHASE_10C3.participantBefore;
-    t.diagnostic(`the participant page is ${bytes(built.participant.htmlGzip)}: ${grown >= 0 ? '+' : ''}${grown} B against where Phase 10c-2b ended`);
-    console.log(`  Phase 10c-3: the participant page is ${grown >= 0 ? '+' : ''}${grown} B gzip against where Phase 10c-2b ended (allowance ${PHASE_10C3.allowance} B); now ${bytes(built.participant.htmlGzip)}`);
-    assert.ok(grown <= PHASE_10C3.allowance, `the participant page is ${grown} B larger than where Phase 10c-2b left it, in a phase whose allowance is 0`);
+    // (This test compared the build in the tree with those figures until Phase 10j, whose allowance goes past them: the newest phase's test below holds the build now.)
   });
 
   it('Phase 10f (the sample pictures) added nothing to the participant page or the admin page: as measured when it ended, no larger than where Phase 10c-3 left them', () => {
@@ -213,18 +206,46 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
     // (This test compared the build in the tree with those figures until Phase 10i: the newest phase's test below holds the build now.)
   });
 
-  it('Phase 10i (schema version 3: GuestName and SignedInName) grows the participant page by at most 100 B gzip over where Phase 10h left it (155,495 B), and the admin page by the same', (t) => {
+  it('Phase 10i (schema version 3: GuestName and SignedInName) grew the participant page by at most 100 B gzip over where Phase 10h left it (155,495 B), and the admin page by the same: as measured when it ended', () => {
     assert.equal(PHASE_10I.participantBefore, PHASE_10H.participantAfter, 'Phase 10i is measured from where Phase 10h ended');
     assert.equal(PHASE_10I.adminBefore, PHASE_10H.adminAfter);
     assert.equal(PHASE_10I.allowance, 100);
     assert.ok(PHASE_10I.participantAfter - PHASE_10I.participantBefore <= PHASE_10I.allowance, 'the participant page, as measured when 10i ended');
     assert.ok(PHASE_10I.adminAfter - PHASE_10I.adminBefore <= PHASE_10I.allowance, 'the admin page, as measured when 10i ended');
-    const participant = built.participant.htmlGzip - PHASE_10I.participantBefore;
-    const admin = built.admin.htmlGzip - PHASE_10I.adminBefore;
-    t.diagnostic(`participant ${participant >= 0 ? '+' : ''}${participant} B, admin ${admin >= 0 ? '+' : ''}${admin} B against where Phase 10h ended`);
-    console.log(`  Phase 10i: the participant page is ${participant >= 0 ? '+' : ''}${participant} B gzip and the admin page ${admin >= 0 ? '+' : ''}${admin} B against where Phase 10h ended (allowance ${PHASE_10I.allowance} B); now ${bytes(built.participant.htmlGzip)} and ${bytes(built.admin.htmlGzip)}`);
-    assert.ok(participant <= PHASE_10I.allowance, `the participant page is ${participant} B larger than where Phase 10h left it, in a phase whose allowance is ${PHASE_10I.allowance}`);
-    assert.ok(admin <= PHASE_10I.allowance, `the admin page is ${admin} B larger than where Phase 10h left it, in a phase whose allowance is ${PHASE_10I.allowance}`);
+    // (This test compared the build in the tree with those figures until Phase 10j: the newest phase's test below holds the build now.)
+  });
+
+  it('Phase 10j (fewer waits on the participant page) grew the participant page by at most 2,000 B gzip over where Phase 10i left it (155,503 B), and the admin page by the same', () => {
+    assert.equal(PHASE_10J.participantBefore, PHASE_10I.participantAfter, 'Phase 10j is measured from where Phase 10i ended');
+    assert.equal(PHASE_10J.adminBefore, PHASE_10I.adminAfter);
+    assert.equal(PHASE_10J.allowance, 2_000);
+    assert.ok(PHASE_10J.participantAfter - PHASE_10J.participantBefore <= PHASE_10J.allowance, 'the participant page, as measured when 10j ended');
+    assert.ok(PHASE_10J.adminAfter - PHASE_10J.adminBefore <= PHASE_10J.allowance, 'the admin page, as measured when 10j ended');
+  });
+
+  it('Phase 11a (the Results charts) leaves the participant page as it was, to its Tailwind rules, and the admin page no larger than Phase 10j left it', (t) => {
+    assert.equal(PHASE_11A.participantBefore, PHASE_10J.participantAfter, 'Phase 11a is measured from where Phase 10j ended');
+    assert.equal(PHASE_11A.adminBefore, PHASE_10J.adminAfter);
+    assert.equal(PHASE_11A.allowance, 0);
+    assert.ok(PHASE_11A.participantAfter <= PHASE_11A.participantBefore, 'the participant page, as measured when 11a ended');
+    assert.ok(PHASE_11A.adminAfter <= PHASE_11A.adminBefore, 'the admin page, as measured when 11a ended');
+    const participant = built.participant.htmlGzip - PHASE_11A.participantBefore;
+    const admin = built.admin.htmlGzip - PHASE_11A.adminBefore;
+    t.diagnostic(`participant ${participant >= 0 ? '+' : ''}${participant} B, admin ${admin >= 0 ? '+' : ''}${admin} B against where Phase 10j ended`);
+    console.log(`  Phase 11a: the participant page is ${participant >= 0 ? '+' : ''}${participant} B gzip and the admin page ${admin >= 0 ? '+' : ''}${admin} B against where Phase 10j ended (allowance ${PHASE_11A.allowance} B); now ${bytes(built.participant.htmlGzip)} and ${bytes(built.admin.htmlGzip)}`);
+    assert.ok(participant <= PHASE_11A.allowance, `the participant page is ${participant} B larger than where Phase 10j left it, in a phase whose allowance is ${PHASE_11A.allowance}`);
+    assert.deepEqual(utilityClasses(built.participant.html), [...PHASE_11A.participantUtilities], 'the participant page\'s Tailwind rules are the ones it had');
+    assert.ok(admin <= 0, `the admin page is ${admin} B larger than where Phase 10j left it`);
+  });
+
+  it('the Tailwind rules check can fail: a rule added to the participant page, or one taken away, is found', () => {
+    const html = built.participant.html;
+    const added = html.replace('@layer utilities{', '@layer utilities{.table{display:table}');
+    const removed = html.replace(/\.container\{[^}]*\}/g, ''); // (every rule of it, the ones inside the size queries too)
+    assert.notDeepEqual(utilityClasses(added), [...PHASE_11A.participantUtilities]);
+    assert.ok(utilityClasses(added).includes('table'));
+    assert.notDeepEqual(utilityClasses(removed), [...PHASE_11A.participantUtilities]);
+    assert.equal(utilityClasses('<p>no styles</p>').length, 0);
   });
 
   it('the six sample pictures are in the Setup page, whole, and in neither of the other two: not their bytes, their names, or the modules that seed them (Phase 10f)', async () => {
@@ -321,7 +342,7 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
 describe('negative controls: the check can fail', () => {
   it('fails when the admin page stands in for the participant page: every library is found, and the size is over the ceiling', () => {
     const broken = checkBudgets({ ...measured(), participantHtml: built.admin.html, participantGzip: built.admin.htmlGzip, participantModules: built.admin.modules.map((module) => module.id) });
-    for (const library of ['jsPDF', 'PptxGenJS', 'html2canvas', 'Chart.js']) assert.ok(broken.some((line) => line.includes(library)), `${library} is reported`);
+    for (const library of ['jsPDF', 'PptxGenJS', 'html2canvas', 'the Results charts']) assert.ok(broken.some((line) => line.includes(library)), `${library} is reported`);
     assert.ok(broken.some((line) => /ceiling/.test(line)), 'and its size');
     assert.ok(broken.length >= 5, broken.join('\n'));
   });
@@ -334,7 +355,7 @@ describe('negative controls: the check can fail', () => {
     assert.equal(checkBudgets({ ...base, adminGzip: BUDGET.admin + 1 }).length, 1);
   });
 
-  it('fails on a real participant build that imports the export libraries and the renderer', async () => {
+  it('fails on a real participant build that imports the export libraries, a chart library and the Results charts', async () => {
     const leak = {
       name: 'leak-exports-into-the-participant-page',
       transform(code, id) {
@@ -342,15 +363,16 @@ describe('negative controls: the check can fail', () => {
         return `${code}
 import { jsPDF } from 'jspdf';
 import PptxGenJS from 'pptxgenjs';
-import { renderResults } from '../../public/js/resultsRenderer.js';
+import Chart from 'chart.js/auto';
+import ResultCard from './admin/charts/ResultCard.svelte';
 import { downloadCsv } from '../../public/js/resultsExport.js';
-globalThis.__leak = [jsPDF, PptxGenJS, renderResults, downloadCsv];
+globalThis.__leak = [jsPDF, PptxGenJS, Chart, ResultCard, downloadCsv];
 `;
       },
     };
     const leaky = await analyzePage(page('participant'), { outRoot: path.join(outRoot, 'leak'), keepHtml: true, extraPlugins: [leak] });
     const broken = checkBudgets({ participantGzip: leaky.htmlGzip, adminGzip: built.admin.htmlGzip, participantHtml: leaky.html, participantModules: leaky.modules.map((module) => module.id) });
-    for (const library of ['jsPDF', 'PptxGenJS', 'Chart.js', 'resultsExport']) assert.ok(broken.some((line) => line.includes(library)), `${library} is reported: ${broken.join(' | ')}`);
+    for (const library of ['jsPDF', 'PptxGenJS', 'Chart.js', 'resultsExport', 'the Results charts']) assert.ok(broken.some((line) => line.includes(library)), `${library} is reported: ${broken.join(' | ')}`);
     assert.ok(leaky.htmlGzip > built.participant.htmlGzip + 150_000, 'and the leak is large');
   }, { timeout: 120_000 });
 

@@ -3,6 +3,7 @@
   import { focusHeading } from './lib/focus.js';
   import { login } from './lib/admin-pin.js';
   import { liveDisplayHash, liveDisplayOfHash } from './lib/admin-address.js';
+  import { wallHash, wallOfHash } from './lib/live-wall.js';
   import { APP_NAME } from './lib/app-name.js';
   import { deployment } from './lib/start.js';
   import { mayLeave } from './lib/unsaved.js';
@@ -45,6 +46,16 @@
   let printing = $state(false);
   /** The Live display is a view of Results (the tab stays Results; Back returns to its list). null: not showing; '': the session that is live now; else a session id. */
   let liveDisplay = $state<string | null>(null);
+  /** The Live display as the wall (Phase 11a: `#live-display/<id>/wall`, what "Open in a new tab" opens): the charts with no names in the page. */
+  let wallPage = $state(false);
+
+  /** The Live display a hash asks for, and whether it is the wall; null when the hash is not the Live display's. */
+  function liveOfHash(hash: string): { sessionId: string; wall: boolean } | null {
+    const wall = wallOfHash(hash);
+    if (wall !== null) return { sessionId: wall, wall: true };
+    const live = liveDisplayOfHash(hash);
+    return live === null ? null : { sessionId: live, wall: false };
+  }
 
   // An old address (#sections, the Activities tab) lands on Content, where its capabilities now are.
   const tabFromHash = (): Tab | null => (window.location.hash === '#sections' ? 'content' : tabs.find((tab) => `#${tab.id}` === window.location.hash)?.id ?? null);
@@ -63,7 +74,9 @@
       }
       admin = result as Admin;
       printing = window.location.hash === PRINT_HASH;
-      liveDisplay = liveDisplayOfHash(window.location.hash);
+      const view = liveOfHash(window.location.hash);
+      liveDisplay = view?.sessionId ?? null;
+      wallPage = view?.wall ?? false;
       activeTab = printing ? 'guests' : liveDisplay !== null ? 'results' : tabFromHash() ?? 'today';
       pin = '';
       void newScreen();
@@ -102,6 +115,7 @@
     admin = null;
     printing = false;
     liveDisplay = null;
+    wallPage = false;
     activeTab = 'today';
     // Back at the PIN screen: focus its heading, as the screen's first thing to be read.
     await tick();
@@ -109,16 +123,18 @@
   }
 
   /** Opens the Live display for a session ('' for whichever is live). It is a view of Results, so the address keeps it. */
-  async function openLiveDisplay(sessionId: string) {
+  async function openLiveDisplay(sessionId: string, wall = false) {
     if (activeTab !== 'results' && !(await mayLeave())) return;
     activeTab = 'results';
     liveDisplay = sessionId;
-    try { window.history.replaceState(window.history.state, '', liveDisplayHash(sessionId)); } catch { /* the view still opens */ }
+    wallPage = wall && sessionId !== '';
+    try { window.history.replaceState(window.history.state, '', wallPage ? wallHash(sessionId) : liveDisplayHash(sessionId)); } catch { /* the view still opens */ }
     window.scrollTo({ top: 0 });
   }
 
   function closeLiveDisplay() {
     liveDisplay = null;
+    wallPage = false;
     try { window.history.replaceState(window.history.state, '', '#results'); } catch { /* the list still shows */ }
   }
 
@@ -141,6 +157,7 @@
     if (next !== activeTab && !(await mayLeave())) return false;
     activeTab = next;
     liveDisplay = null;
+    wallPage = false;
     try { window.history.replaceState(window.history.state, '', `#${next}`); } catch { /* the tab still switches */ }
     await tick();
     document.getElementById(`admin-tab-${next}`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
@@ -150,8 +167,8 @@
   /** The address was changed by hand or by a link in this page while it is open (a pasted #live-display/<id>): follow it. */
   function onHashChange() {
     if (!admin || printing) return;
-    const live = liveDisplayOfHash(window.location.hash);
-    if (live !== null) { if (live !== liveDisplay) void openLiveDisplay(live); return; }
+    const view = liveOfHash(window.location.hash);
+    if (view !== null) { if (view.sessionId !== liveDisplay || view.wall !== wallPage) void openLiveDisplay(view.sessionId, view.wall); return; }
     const tab = tabFromHash();
     if (tab && (tab !== activeTab || liveDisplay !== null)) void open(tab);
   }
@@ -218,8 +235,8 @@
         <AdminGuests onToast={showToast} onNavigate={(tab) => void open(tab)} onPrint={openPrintSheet} />
       {:else if activeTab === 'results'}
         {#if liveDisplay !== null}
-          {#key liveDisplay}
-            <LiveDisplay sessionId={liveDisplay} onToast={showToast} onOpen={(sessionId) => void openLiveDisplay(sessionId)} onBack={closeLiveDisplay} />
+          {#key `${liveDisplay}|${wallPage}`}
+            <LiveDisplay sessionId={liveDisplay} {wallPage} onToast={showToast} onOpen={(sessionId) => void openLiveDisplay(sessionId)} onBack={closeLiveDisplay} />
           {/key}
         {:else}
           <AdminResults onToast={showToast} onLiveDisplay={(sessionId) => void openLiveDisplay(sessionId)} />

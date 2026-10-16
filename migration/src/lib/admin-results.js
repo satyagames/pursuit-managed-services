@@ -62,6 +62,20 @@ export async function readNameSources(sessionIds) {
   return held;
 }
 
+// What Admin → Results has read of each session's visit log and roster in this page, kept for the page's life (in memory, never stored). The Live
+// display names people with lib/participant-names.js too, and reads no visit log of its own (Phase 11a: no new request), so it takes them from here:
+// a guest's QR name is on the visit anyway, and a staff sign-in name is known when Results has read it in this tab.
+/** @type {Map<string, NameSources>} */
+const heldSources = new Map();
+
+/** Keeps what was read, session by session. @param {Map<string, NameSources>} sources */
+export function holdNameSources(sources) {
+  for (const [sessionId, found] of sources) heldSources.set(String(sessionId), found);
+}
+
+/** What Results read for this session in this page, or null. @param {string} sessionId @returns {NameSources | null} */
+export const heldNameSources = (sessionId) => heldSources.get(String(sessionId)) ?? null;
+
 /**
  * One row for each iPad of a session, in the order they joined: the track, the name the report would print, whether that name is
  * the "Unnamed participant N" it falls back on, and how many of the live questions it has answered.

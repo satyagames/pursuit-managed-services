@@ -1,4 +1,4 @@
-import { test, expect, type Browser, type Page } from '@playwright/test';
+import { test, expect, type Browser, type BrowserContext, type Page } from '@playwright/test';
 import { mkdir, readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -7,8 +7,9 @@ import { samplePack } from '../../migration/src/lib/sample-clients.js';
 import { SAMPLE_PICTURES } from '../../migration/src/lib/sample-pictures.js';
 import { seedSampleClients } from '../../migration/src/lib/sample-seed.js';
 import { sha256Hex } from '../../migration/src/lib/sha256.js';
-import { FOLDER_URL, SETTINGS_TEXT, SITE } from '../release-docs.js';
+import { FOLDER_URL, SETTINGS_TEXT, SITE, TIMING_CHECK } from '../release-docs.js';
 import { TITLE, createSharePointFake } from '../sharepoint-fake.js';
+import { emptyRoom, scrollProblems, tipProblems } from '../migration-tests/results-charts-support.js';
 
 // Phase 10f, part D: RUNBOOK.md rehearsed on the mocked SharePoint REST, with the pages OF THE RELEASE PACKAGE (not a dev build), served at the new
 // site's own addresses: ${SITE}/Shared%20Documents/PMS/. Steps 3 to 15, twice: on an empty site, and on a site built by hand with every list and
@@ -25,6 +26,21 @@ import { TITLE, createSharePointFake } from '../sharepoint-fake.js';
 // this version (the 10h note's case), and a fourth follows the runbook's note for the PCOE site as it is now: lists of version 2 with their DisplayName
 // columns, an admin, the samples, Domino's live and a staff visit logged under DisplayName, brought to version 3 by Setup; then a named guest and a code,
 // the self-test, Results (the earlier visit unnamed), and an iPad that checks in with the guest's code.
+//
+// Phase 10j: the fourth rehearsal is a site of version 2 (the 10i note's case, no longer in the runbook: the note's step 3 says what to do if the site
+// is still at version 2), and a fifth follows the runbook's note for the PCOE site as it is now: lists brought to version 3 (the old DisplayName columns
+// beside the new ones), an admin, the samples, Domino's live and a visit of before the upgrade; the three pages replaced, Setup as it is, the timing
+// check run in the participant page after a visit (it must print its table and its summary line), a named guest and a code, the self-test, Results, and
+// an iPad that checks in with the code and opens both activities with no read of their questions.
+//
+// Phase 11a: the fifth rehearsal is the 10j note's case (the timing check before and after), and a sixth follows the runbook's note as it is now: the site
+// as pms-0a1c701 left it (lists of version 3, an admin, the samples, Domino's live), the three pages replaced, Setup as it is, a named guest who checks in
+// by QR code on an iPad and answers an activity, their name on the bar of the answer they picked in the Live display (and the numbers view), and the wall
+// (full screen, and the page "Open in a new tab" opens) with no name in it and Show answer. Full screen runs with the display's own cover, as on an iPad.
+//
+// Phase 11a-2: the sixth rehearsal follows the note as it is now, which adds a step for the Windows laptop that showed the fault of pms-3fb312a (about
+// 1536 x 864): on the wall page and in full screen nothing scrolls inside a card, every tooltip is whole and clear of its label, no headline says "Most
+// people" for half or less or ends in two full stops, and cards side by side keep their own heights.
 //
 //   npm run package:release       (from a clean, committed tree)
 //   npm run test:rehearsal        (PMS_PACKAGE=<folder> to rehearse another package)
@@ -59,8 +75,9 @@ async function packageSettings(pkg: string) {
 type Fake = ReturnType<typeof createSharePointFake>;
 type Site = { fake: Fake; pkg: string; settings: string; unexpected: string[]; pictures: string[] };
 
-/** Serves the package's pages and its pms-config.txt at the folder's address, the site's REST API from the fake, and the library's files. */
-async function open(page: Page, site: Site) {
+/** Serves the package's pages and its pms-config.txt at the folder's address, the site's REST API from the fake, and the library's files (to one page, or to
+ *  every page of a context, so a tab the page opens is served too). */
+async function open(page: Page | BrowserContext, site: Site) {
   const origin = new URL(SITE).origin;
   const api = `${new URL(SITE).pathname.toLowerCase()}/_api/`;
   await page.route('**/*', async (route) => {
@@ -372,7 +389,9 @@ test('a site that already has its lists of this version, an admin and the sample
   await fromGoLiveToResults(page, browser, site, `pcoe-${browserName}`);
 });
 
-test('the runbook\'s note for the PCOE site of version 2: the plan, Create, raised to version 3, a guest and a code, the self-test, Results, and an iPad that checks in by QR', async ({ page, browser, browserName }) => {
+// (Until Phase 10j this was the runbook's note for the PCOE site. The note is now for that site's lists of version 3, below; its step 3 says what to do on a
+// site still at version 2, which is this.)
+test('a site of version 2 (the 10i note\'s case): the plan, Create, raised to version 3, a guest and a code, the self-test, Results, and an iPad that checks in by QR', async ({ page, browser, browserName }) => {
   // The site as it was on 15 Oct 2026: lists Setup made for version 2 (with their DisplayName columns), an admin, the sample clients with their pictures,
   // Domino's live and a member of staff's visit logged under DisplayName. The earlier pages' records are stood for by the data layer (the item said 3 while
   // they were written, and says 2 again before the note begins).
@@ -478,6 +497,272 @@ test('the runbook\'s note for the PCOE site of version 2: the plan, Create, rais
   await page.getByRole('button', { name: 'Refresh' }).click();
   await expect(titles).toHaveText(['Unnamed participant 1', 'Jordan Lee'], { timeout: 15_000 });
   await shoot(page, `pcoe-v2-${browserName}-note10-results`);
+  expect(site.unexpected).toEqual([]);
+  expect(fake.strays, 'nothing reached a list that is not this copy\'s').toEqual([]);
+  expect(unnamed(fake), 'every item read named its columns').toEqual([]);
+});
+
+test('the 10j note\'s case, the PCOE site of version 3: the pages replaced, Setup as it is, the timing check after a visit, a guest and a code, the self-test, Results, and an iPad whose activities open at once', async ({ page, browser, browserName }) => {
+  // The site as it is after pms-da9fc8d on 15 Oct 2026: lists Setup made for version 2 and brought to version 3 (the old DisplayName columns stay beside
+  // GuestName and SignedInName), an admin, the sample clients with their pictures, Domino's live, and a visit of before the upgrade whose sign-in name is
+  // in the old column. The earlier pages' records are stood for by the data layer.
+  const fake = tenant({ prefix: '', siteUrl: SITE, listsVersion: 2 });
+  for (const [key, name] of [['visitorroster', 'GuestName'], ['uservisitlogs', 'SignedInName']]) fake.fields.get(key)!.push({ ...fake.field(key, 'DisplayName')!, InternalName: name });
+  fake.item('appsettings', 'default')!.SchemaVersion = 3;
+  fake.add('adminusers', { AppId: 'admin-pcoe', Title: 'Asha Rao', Name: 'Asha Rao', PinHash: sha256Hex(PIN) });
+  const restore = fake.install();
+  let sessionId = '';
+  try {
+    dataService.configure({ sharePoint: fake.settings });
+    await seedSampleClients(dataService, { siteUrl: SITE, file: async (name: string, type: string) => new Blob([await readFile(path.join(PICTURES, name))], { type }) });
+    sessionId = (await dataService.activateClient('c-dominos', TODAY)).session.id;
+    const before = await dataService.beginVisit(crypto.randomUUID(), sessionId, 'c-dominos', { sharePointUserId: '17' });
+    fake.add('uservisitlogs', { AppId: 'visit-15-oct', Title: 'visit-15-oct', SessionId: sessionId, ClientId: 'c-dominos', Page: 'participant', EntryMode: 'staff', SharePointUserId: '17', DisplayName: 'Priya Shah', TrackId: before.id });
+  } finally {
+    restore();
+  }
+  const pkg = await packageFolder();
+  const site: Site = { fake, pkg, settings: await packageSettings(pkg), unexpected: [], pictures: [] };
+  await page.setViewportSize({ width: 1366, height: 900 });
+  await open(page, site);
+  fake.reset();
+  const pack = samplePack();
+  const activities = pack.sections.filter((section) => section.clientId === 'c-dominos');
+
+  // (1. The timing check with the pages there now: there are none of them here. 2. The three pages replaced: the package's are served.)
+  // 3. Setup shows the new build and says the lists are this app's version: nothing to press, nothing written.
+  await page.goto(`${FOLDER_URL}/setup.html`);
+  await expect(page.getByRole('region', { name: /This copy of the app/ })).toContainText(`${path.basename(site.pkg)} (built in)`);
+  await expect(page.getByTestId('lists-version')).toHaveText('The lists are the version this app needs.');
+  await shoot(page, `pcoe-v3-${browserName}-note3-setup`);
+  expect(fake.writes(), 'Setup wrote nothing').toEqual([]);
+
+  // 4. The timing check, with these pages: a fresh participant page, a visit begun, one activity to its end, back to the hub; the line in the console.
+  const said: { type: string; text: string }[] = [];
+  page.on('console', (message) => { said.push({ type: message.type(), text: message.text() }); });
+  await page.goto(`${FOLDER_URL}/index.html`);
+  await page.getByRole('button', { name: 'Click here to begin' }).click();
+  const [history, other] = activities;
+  await page.getByRole('button', { name: new RegExp(history.title) }).click();
+  for (const [index, questionId] of history.questionIds.entries()) {
+    const right = pack.options.find((option) => option.questionId === questionId && option.correct)!;
+    await page.locator('.pms-options button').filter({ hasText: right.label }).first().click();
+    await page.getByRole('button', { name: index === history.questionIds.length - 1 ? 'Submit' : 'Next', exact: true }).click();
+  }
+  await page.getByRole('button', { name: 'Back to activities' }).click();
+  await expect(page.locator('button.activity')).toHaveCount(activities.length);
+  await page.evaluate(TIMING_CHECK);
+  await expect.poll(() => said.filter((entry) => entry.type === 'table').length, 'the table').toBe(1);
+  const summary = said.find((entry) => entry.text.startsWith('page file '))?.text ?? '';
+  expect(summary).toMatch(/^page file \d+ ms, \d+ KB \| requests \d+, median \d+ ms, slowest \d+ ms \| fields reads: \d+ ms, \d+ KB$/);
+  await shoot(page, `pcoe-v3-${browserName}-note4-hub`);
+
+  // 5. The admin page: guests scan a personal QR; one named guest and their code.
+  await page.goto(`${FOLDER_URL}/admin.html`);
+  await page.getByRole('textbox', { name: 'PIN' }).fill(PIN);
+  await page.getByRole('button', { name: 'Unlock' }).click();
+  await page.getByRole('radio', { name: /Guests scan a personal QR/ }).check();
+  await expect.poll(() => fake.item('sessions', sessionId)?.ParticipationMode).toBe('client-visit');
+  await page.getByRole('tab', { name: 'Guests and QR', exact: true }).click();
+  await page.getByLabel('Paste names').fill('Jordan Lee');
+  await page.getByRole('button', { name: 'Add 1 guest' }).click();
+  await expect(page.getByTestId('guest-report')).toHaveText('Added 1 guest.');
+  await page.getByRole('button', { name: /^Generate all codes/ }).click();
+  await expect.poll(() => fake.lists.get('qrtokens')!.length).toBe(1);
+  const code = String(fake.lists.get('qrtokens')![0].AppId);
+  await shoot(page, `pcoe-v3-${browserName}-note5-guest`);
+
+  // 6. The self-test: the fourth probe names the two old DisplayName columns, and nothing of the app.
+  await page.goto(`${FOLDER_URL}/setup.html`);
+  await selfTest(page, `pcoe-v3-${browserName}`, browserName,
+    `Refused when named: ${TITLE.visitorroster}.DisplayName (no longer used since version 3; 400: Value does not fall within the expected range.); ${TITLE.uservisitlogs}.DisplayName (no longer used since version 3; 400: Value does not fall within the expected range.).`);
+
+  // 7. Results: the live session's card loads; the visit of before the upgrade is unnamed, the visit of step 4 named by its sign-in.
+  await page.goto(`${FOLDER_URL}/admin.html#results`);
+  await page.getByRole('textbox', { name: 'PIN' }).fill(PIN);
+  await page.getByRole('button', { name: 'Unlock' }).click();
+  const titles = page.locator(`[data-session="${sessionId}"] .row__title`);
+  await expect(titles).toHaveText(['Unnamed participant 1', 'Casey Example'], { timeout: 15_000 });
+  await shoot(page, `pcoe-v3-${browserName}-note7-results`);
+
+  // 8. An iPad checks in with the guest's code; one activity to its end, back to the hub, and the other opens at once: no read of its questions.
+  const context = await browser.newContext({ viewport: { width: 820, height: 1180 } });
+  const ipad = await context.newPage();
+  await open(ipad, site);
+  await ipad.goto(`${FOLDER_URL}/index.html?qr=${code}`);
+  await expect(ipad.getByRole('heading', { name: 'Hi Jordan Lee!' })).toBeVisible({ timeout: 15_000 });
+  await ipad.getByRole('button', { name: 'Click here to begin' }).click();
+  await ipad.getByRole('button', { name: new RegExp(history.title) }).click();
+  for (const [index, questionId] of history.questionIds.entries()) {
+    const right = pack.options.find((option) => option.questionId === questionId && option.correct)!;
+    await ipad.locator('.pms-options button').filter({ hasText: right.label }).first().click();
+    await ipad.getByRole('button', { name: index === history.questionIds.length - 1 ? 'Submit' : 'Next', exact: true }).click();
+  }
+  await expect(ipad.getByText(`${history.questionIds.length} of ${history.questionIds.length} right on the first try`)).toBeVisible({ timeout: 15_000 });
+  await ipad.getByRole('button', { name: 'Back to activities' }).click();
+  const mark = fake.requests.length;
+  await ipad.getByRole('button', { name: new RegExp(other.title) }).click();
+  await expect(ipad.locator('.pms-options button, .pms-grid button').first()).toBeVisible();
+  await expect(ipad.getByText('Loading activity...')).toHaveCount(0);
+  // (The hub reads every enabled activity's questions behind what it shows, alone or in a $batch, whenever it lands: never the other activity's alone.)
+  const read = fake.requests.slice(mark).flatMap((entry) => [entry, ...(entry.parts ?? [])]).filter((entry) => entry.list === 'questions');
+  expect(read.filter((entry) => !entry.query.includes(history.questionIds[0])), 'the other activity opened from what the page holds').toEqual([]);
+  await shoot(ipad, `pcoe-v3-${browserName}-note8-other`);
+  await context.close();
+  await page.getByRole('button', { name: 'Refresh' }).click();
+  await expect(titles).toHaveText(['Unnamed participant 1', 'Casey Example', 'Jordan Lee'], { timeout: 15_000 });
+  await shoot(page, `pcoe-v3-${browserName}-note8-results`);
+  expect(site.unexpected).toEqual([]);
+  expect(fake.strays, 'nothing reached a list that is not this copy\'s').toEqual([]);
+  expect(unnamed(fake), 'every item read named its columns').toEqual([]);
+});
+
+test('the runbook\'s note for the PCOE site (Phase 11a): the pages replaced, Setup as it is, a named guest by QR code on an iPad, their name on the bar they picked, the numbers, and the wall with no names and Show answer', async ({ browser, browserName }) => {
+  // The site as pms-0a1c701 left it on 15 Oct 2026: lists of version 3 (the old DisplayName columns beside the new ones), an admin, the sample clients
+  // with their pictures, and Domino's live. The earlier pages' records are stood for by the data layer.
+  const fake = tenant({ prefix: '', siteUrl: SITE, listsVersion: 2 });
+  for (const [key, name] of [['visitorroster', 'GuestName'], ['uservisitlogs', 'SignedInName']]) fake.fields.get(key)!.push({ ...fake.field(key, 'DisplayName')!, InternalName: name });
+  fake.item('appsettings', 'default')!.SchemaVersion = 3;
+  fake.add('adminusers', { AppId: 'admin-pcoe', Title: 'Asha Rao', Name: 'Asha Rao', PinHash: sha256Hex(PIN) });
+  const restore = fake.install();
+  let sessionId = '';
+  try {
+    dataService.configure({ sharePoint: fake.settings });
+    await seedSampleClients(dataService, { siteUrl: SITE, file: async (name: string, type: string) => new Blob([await readFile(path.join(PICTURES, name))], { type }) });
+    sessionId = (await dataService.activateClient('c-dominos', TODAY)).session.id;
+  } finally {
+    restore();
+  }
+  const pkg = await packageFolder();
+  const site: Site = { fake, pkg, settings: await packageSettings(pkg), unexpected: [], pictures: [] };
+  // (As on an iPad, where Safari does not put an element in its own full screen: the display's cover is the full screen. The tab opened from the page
+  // is served too: the routes are the context's.)
+  const context = await browser.newContext({ viewport: { width: 1366, height: 900 } });
+  await context.addInitScript(() => {
+    for (const name of ['requestFullscreen', 'webkitRequestFullscreen']) Object.defineProperty(Element.prototype, name, { value: undefined, configurable: true });
+  });
+  await open(context, site);
+  const page = await context.newPage();
+  fake.reset();
+  const pack = samplePack();
+  const [first] = pack.sections.filter((section) => section.clientId === 'c-dominos');
+  const names = () => page.evaluate(() => document.documentElement.outerHTML.includes('Mike A'));
+
+  // (1. The three pages replaced: the package's are served.) 2. Setup shows the new build and says the lists are this app's version: nothing written.
+  await page.goto(`${FOLDER_URL}/setup.html`);
+  await expect(page.getByRole('region', { name: /This copy of the app/ })).toContainText(`${path.basename(site.pkg)} (built in)`);
+  await expect(page.getByTestId('lists-version')).toHaveText('The lists are the version this app needs.');
+  await shoot(page, `pcoe-11a-${browserName}-note2-setup`);
+  expect(fake.writes(), 'Setup wrote nothing').toEqual([]);
+
+  // 3. A named guest and their code (the admin page), then an iPad that scans it and answers the first activity to its end.
+  await page.goto(`${FOLDER_URL}/admin.html`);
+  await page.getByRole('textbox', { name: 'PIN' }).fill(PIN);
+  await page.getByRole('button', { name: 'Unlock' }).click();
+  await page.getByRole('radio', { name: /Guests scan a personal QR/ }).check();
+  await expect.poll(() => fake.item('sessions', sessionId)?.ParticipationMode).toBe('client-visit');
+  await page.getByRole('tab', { name: 'Guests and QR', exact: true }).click();
+  await page.getByLabel('Paste names').fill('Mike A');
+  await page.getByRole('button', { name: 'Add 1 guest' }).click();
+  await expect(page.getByTestId('guest-report')).toHaveText('Added 1 guest.');
+  await page.getByRole('button', { name: /^Generate all codes/ }).click();
+  await expect.poll(() => fake.lists.get('qrtokens')!.length).toBe(1);
+  const code = String(fake.lists.get('qrtokens')![0].AppId);
+  const tablet = await browser.newContext({ viewport: { width: 820, height: 1180 } });
+  const ipad = await tablet.newPage();
+  await open(ipad, site);
+  await ipad.goto(`${FOLDER_URL}/index.html?qr=${code}`);
+  await expect(ipad.getByRole('heading', { name: 'Hi Mike A!' })).toBeVisible({ timeout: 15_000 });
+  await ipad.getByRole('button', { name: 'Click here to begin' }).click();
+  await ipad.getByRole('button', { name: new RegExp(first.title) }).click();
+  const picked: string[] = [];
+  for (const [index, questionId] of first.questionIds.entries()) {
+    const right = pack.options.find((option) => option.questionId === questionId && option.correct)!;
+    picked.push(right.id);
+    await ipad.locator('.pms-options button').filter({ hasText: right.label }).first().click();
+    await ipad.getByRole('button', { name: index === first.questionIds.length - 1 ? 'Submit' : 'Next', exact: true }).click();
+  }
+  await expect(ipad.getByText(`${first.questionIds.length} of ${first.questionIds.length} right on the first try`)).toBeVisible({ timeout: 15_000 });
+  await tablet.close();
+
+  // 4. Results, the session's Live display: the bar of the answer the guest picked names them, with the time; the numbers view has the same numbers.
+  await page.getByRole('tab', { name: 'Results', exact: true }).click();
+  await page.locator(`article[data-session="${sessionId}"]`).getByRole('button', { name: 'Live display' }).click();
+  const card = page.locator(`.result-card[data-question="${first.questionIds[0]}"]`);
+  await expect(card).toBeVisible({ timeout: 15_000 });
+  await card.locator(`[data-mark="${picked[0]}"]`).click();
+  const panel = card.getByTestId('names-panel');
+  await expect(panel.getByRole('heading')).toHaveText(/^Who picked: .+ \(1 person\)$/);
+  await expect(panel.locator('.names__name')).toHaveText(['Mike A']);
+  await shoot(page, `pcoe-11a-${browserName}-note4-names`);
+  await card.getByRole('button', { name: 'View as table' }).click();
+  const label = pack.options.find((option) => option.id === picked[0])!.label;
+  await expect(card.locator('tbody tr').filter({ hasText: label })).toContainText(/1\s*100%/);
+  await card.getByRole('button', { name: 'View as chart' }).click();
+
+  // 5. Full screen: every question, no name anywhere, and a quiz question's answer marked only after Show answer. Then the page "Open in a new tab" opens.
+  await page.getByRole('button', { name: 'Full screen' }).click();
+  await expect(page.locator('section.live')).toHaveAttribute('data-presenting', 'true');
+  const total = Number(/of (\d+)/.exec((await page.locator('.live__eyebrow').textContent()) ?? '')?.[1]);
+  for (let index = 0; index < total; index += 1) {
+    expect(await names(), `full screen, question ${index + 1}: no name`).toBe(false);
+    const shown = page.locator('.result-card');
+    if (await shown.getByRole('button', { name: 'Show answer' }).count()) {
+      await expect(shown.locator('.bars__bar--correct, .split__slice--correct')).toHaveCount(0);
+      await shown.getByRole('button', { name: 'Show answer' }).click();
+      await expect(shown.locator('.bars__bar--correct, .split__slice--correct')).toHaveCount(1);
+    }
+    await page.getByRole('button', { name: 'Next question' }).click();
+  }
+  await shoot(page, `pcoe-11a-${browserName}-note5-fullscreen`);
+  await page.keyboard.press('Escape');
+  const [tab] = await Promise.all([context.waitForEvent('page'), page.getByRole('link', { name: 'Open in a new tab' }).click()]);
+  await tab.getByRole('textbox', { name: 'PIN' }).fill(PIN);
+  await tab.getByRole('button', { name: 'Unlock' }).click();
+  await expect(tab.getByRole('heading', { name: 'Live results · Wall display' })).toBeVisible();
+  await expect(tab.locator('.result-card').first()).toBeVisible({ timeout: 15_000 });
+  await expect(tab.getByRole('switch', { name: /Names shown/ })).toHaveCount(0);
+  await tab.locator(`.result-card[data-question="${first.questionIds[0]}"] [data-mark="${picked[0]}"]`).click();
+  expect(await tab.evaluate(() => document.documentElement.outerHTML.includes('Mike A')), 'the wall page: no name').toBe(false);
+  await shoot(tab, `pcoe-11a-${browserName}-note5-wall`);
+
+  // 6. (Phase 11a-2) The Windows laptop that showed the fault, about 1536 x 864: on the wall page and in full screen nothing scrolls inside a card, every
+  // mark's tooltip is whole, seen at its corners and clear of its label, no headline says "Most people" for half or less or ends in two full stops, and
+  // the cards side by side keep their own heights.
+  const sentences = async (where: Page) => (await where.locator('.result-card__headline').allTextContents()).filter((text) => /Most people \((?:\d|[1-4]\d|50)%\)|[^.]\.\.$/.test(text));
+  const tips = async (where: Page) => {
+    const found: string[] = [];
+    for (const mark of await where.locator('section.live .result-card [data-mark]').all()) {
+      if (await mark.locator('xpath=ancestor::*[contains(@class, "words")]').count()) continue; // a written answer's word is a button with no tooltip
+      await mark.hover();
+      await where.waitForTimeout(80);
+      found.push(...await tipProblems(where, (await mark.getAttribute('data-mark')) ?? ''));
+    }
+    await where.mouse.move(1, 1);
+    return found;
+  };
+  await tab.setViewportSize({ width: 1536, height: 864 });
+  await tab.waitForTimeout(500);
+  expect(await scrollProblems(tab), 'the wall page at 1536 x 864: nothing scrolls inside a card').toEqual([]);
+  expect(await emptyRoom(tab), 'the wall page: each card keeps its own height').toEqual([]);
+  expect(await sentences(tab), 'the wall page: the headlines').toEqual([]);
+  expect(await tips(tab), 'the wall page: the tooltips').toEqual([]);
+  // (Firefox does not resize a page while another tab of its window is in front: the wall page's tab is closed, and the admin page brought forward.)
+  await tab.close();
+  await page.bringToFront();
+  await page.setViewportSize({ width: 1536, height: 864 });
+  await page.getByRole('button', { name: 'Full screen' }).click();
+  await expect(page.locator('section.live')).toHaveAttribute('data-presenting', 'true');
+  for (let index = 0; index < total; index += 1) {
+    await page.waitForTimeout(500);
+    expect(await scrollProblems(page), `full screen at 1536 x 864, question ${index + 1}: nothing scrolls inside the card`).toEqual([]);
+    expect(await sentences(page), `full screen, question ${index + 1}: the headline`).toEqual([]);
+    expect(await tips(page), `full screen, question ${index + 1}: the tooltips`).toEqual([]);
+    await page.getByRole('button', { name: 'Next question' }).click();
+  }
+  await shoot(page, `pcoe-11a2-${browserName}-note6-laptop`);
+  await page.keyboard.press('Escape');
+  await context.close();
   expect(site.unexpected).toEqual([]);
   expect(fake.strays, 'nothing reached a list that is not this copy\'s').toEqual([]);
   expect(unnamed(fake), 'every item read named its columns').toEqual([]);

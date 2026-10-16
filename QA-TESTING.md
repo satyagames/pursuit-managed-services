@@ -153,11 +153,17 @@ with a finger (44×44 pt minimum). Run the console audit in section 6 on each sc
 - [ ] `admin.html#live-display` opens the live session's display; with nothing live it lists sessions to choose from.
 - [ ] Charts and open-text comments match what was submitted; the counts ("N answers from M iPads") update within about 12 seconds on SharePoint
       (2 on the local server), with no reload.
-- [ ] The display is in the client's colours (the admin page around it is not).
+- [ ] Since Phase 11a each question is a chart of its own kind, in Deloitte's colours (Deloitte Blue bars, the tint for the rest, Dark Green with a tick for
+      a quiz's correct answer, a Deloitte Green rule on each card); the client's logo and name, and its colour under the heading, are in the header.
+- [ ] Each card's headline says the result in words ("Most people (75%) chose ..." only above half, "The top choice (50%) was ..." otherwise: Phase 11a-2),
+      **View as table** shows the same numbers, and on the facilitator's
+      view a bar opens **who picked it** under its card; **Names shown** hides every name. **Open in a new tab** opens the wall display
+      (`#live-display/<id>/wall`): no names anywhere, and **Show answer** on each quiz question.
 - [ ] Export CSV / PDF / PPT each produce a file that opens (on an iPad: Safari's download prompt).
 - [ ] **Full screen** (see "Projecting the Live display" in section 10): large type, no tabs or buttons, ONE question at a time with the whole card
       on the screen (nothing to scroll), **Previous / Next** and the left and right arrow keys, an **Auto-advance** switch (off by default), and a way
-      out and controls that fade together and return on touch.
+      out and controls that fade together and return on touch. No participant's name is on it, and a quiz question's answer is marked only after
+      **Show answer** on its card.
 - [ ] `#/master-results/<id>` on the participant page says "Results have moved to the admin page" and its link opens the display.
 
 ### Leader report and participant answers (admin → Results, under each session's heading)
@@ -1089,6 +1095,99 @@ automated tests):
     lists from version 2 to version 3."; Check Lists is all Ready; Results then loads the live session, with the visit of 15 Oct as "Unnamed participant 1" (its
     sign-in name is only in the old column, which the site will not return). Not known until then: that SharePoint makes the two columns as the mock does (each is
     read back; Create stops and says so if not), and that the MERGE of `SchemaVersion` lands (it is read back too).
+
+#### Phase 10j: fewer waits on the participant page
+
+**Reported on the real site, 15 Oct 2026** (the package `pms-da9fc8d` on the PCOE site, its lists of version 3; reported by VJR, not seen by the automated tests): the
+participant page "responds slowly (showing loading)". The live client has only a handful of activities, so the data is small. On the mocked SharePoint the page waited
+for 4 rounds of requests (requests that wait for each other, one after another) before Welcome, 7 or 8 when "Click here to begin" was pressed, 1 on every arrival on the
+hub and 1 on opening every activity but the first; since Phase 10j it waits for 2, 2 (4 if pressed at once), none and none (`scripts/test-participant-waits.js`,
+RELEASE-10J.md). How long one round takes on the site is what nobody has measured: the timing check measures it.
+
+**The timing check** (read-only, in Chrome, on `index.html`; RUNBOOK.md's note for the PCOE site, steps 1 and 4):
+
+1. Open the participant page fresh (Ctrl+F5).
+2. Begin a visit, open an activity, finish it, and go back to the hub.
+3. F12, Console, paste the line below, press Enter, and send the table and the summary line.
+
+```
+(()=>{const n=performance.getEntriesByType('navigation')[0];const e=performance.getEntriesByType('resource').filter(x=>/\/_api\/|pms-config/.test(x.name));const t=e.map(x=>({at:Math.round(x.startTime),ms:Math.round(x.duration),status:x.responseStatus??'',kb:Math.round(x.transferSize/1024),what:decodeURIComponent(x.name.split('/_api/')[1]||x.name.split('/').pop()).replace(/&?\$select=.*$/,'').slice(0,80)}));console.table(t);const d=t.map(x=>x.ms).sort((a,b)=>a-b);console.log(`page file ${Math.round(n.responseEnd-n.startTime)} ms, ${Math.round(n.transferSize/1024)} KB | requests ${d.length}, median ${d[d.length>>1]} ms, slowest ${d[d.length-1]} ms | fields reads: ${t.filter(x=>/\/fields/.test(x.what)).map(x=>x.ms+' ms, '+x.kb+' KB').join('; ')||'none'}`)})()
+```
+
+| Run | Page file | Requests | Median | Slowest | Reads of a list's columns | 429 or 503 |
+|---|---|---|---|---|---|---|
+| Before: `pms-da9fc8d`, PCOE | *(still to see)* | | | | | |
+| After: the Phase 10j package, PCOE | *(still to see)* | | | | | |
+
+146. **The timing check, before and after, on PCOE.** *(Still to see.)* RUNBOOK.md's note, step 1 with the pages there now (`pms-da9fc8d`) and step 4 with the Phase
+    10j pages, each in Chrome after the same visit (fresh load, begin, one activity to its end, back to the hub). **Expect** about as many requests after as before
+    (the mock says 30 for a whole visit of two activities where there were 33), started in fewer bunches one after another: in the table's `at` column, Welcome's reads in two
+    bunches, the press of "Click here to begin" in two, and no read of an activity's questions when it opens (they were read, all at once, once the first screen was up).
+    What one request costs there is the median; send both tables and both summary lines.
+147. **The size and time of a read of a list's columns on PCOE.** *(Still to see.)* The summary line's "fields reads:". Before Phase 10j the column check that comes
+    before a list's first write read `.../fields` with no `$select`, which a real list answers with every field it has, hidden ones too, each with its whole definition
+    (on the mock: 2,690 B named, 15,902 B not, for PMSParticipants' 13 fields; a real list has many more). With the Phase 10j pages each such read names eight
+    properties. **Expect** the "after" reads to be a fraction of the "before" ones in KB and in ms. (Setup's and the admin's schema checks still read every property:
+    not part of this check.)
+148. **Whether the site answers 429 or 503.** *(Still to see.)* The table's `status` column, before and after. A 429 or 503 means SharePoint asked the page to wait (the
+    page waits for as long as `Retry-After` asks before it asks again); the timer's looks are paced for that. **Expect** none for one person's visit.
+149. **An activity opens at once, with an edit made in Content.** *(Still to see.)* On the iPad of the note's step 8: after one activity, back on the hub, open the
+    other: no "Loading activity..." line. Then, with the iPad on the hub, change a question's words in Content (admin page), open another activity on the iPad, go back to
+    the hub, and open the activity whose question changed: it shows the new words. (The hub reads the activities and the enabled ones' questions and options behind
+    what it shows, on each arrival; an activity already open keeps what it opened with.)
+
+#### Phase 11a: the Results charts, names on the charts, Deloitte's colours
+
+**What VJR saw on the real site, 15 Oct 2026**: Admin → Results → Live results showed plain blue bars and totals only ("34 answers from 5 iPads"), and nothing showed
+what Mike A, a guest who joined by their own QR code and finished four activities, had picked. Phase 11a draws a chart of its own kind for each question in
+Deloitte's colours, with a headline in words, and on the facilitator's own view a bar opens the names of the people who picked it. All of it ran against the local
+server and the mocked SharePoint REST in Chromium, WebKit and Firefox (RELEASE-11A.md); none of it has met the real site, a projector or an iPad.
+
+150. **A named guest on the right bar.** *(Still to see.)* On PCOE, with a session live in "Guests scan a personal QR": a guest (say Mike A) scans their code and answers
+    one activity. Admin → Results → **Live display**: press the bar of the answer they picked. **Expect** `Who picked: <answer> (N people)` under that card, with
+    "Mike A" and the time they answered among the names, and as many names as the bar counts. Press the bar of an answer they did not pick: they are not there.
+151. **Full screen and the wall page show no names.** *(Still to see.)* On the same Live display press **Full screen**, then **Next** through every question: no
+    participant's name anywhere (the written answers have no names under them). Leave it, press **Open in a new tab**, enter the PIN in the new tab: its heading is
+    "Live results · Wall display", there is no **Names shown** switch, and no name anywhere, its full screen included. (The browser test reads the whole page for the
+    names; on the site, look.)
+152. **Show answer.** *(Still to see.)* On the wall (either), a quiz question (a single choice or true or false with a correct answer) marks no answer and says nothing
+    about who got it right until **Show answer** on its card; then the correct answer is Dark Green, with a tick and "Correct", and the line "N of M got it right
+    first time" appears. On the facilitator's own view it is always marked.
+153. **The table view.** *(Still to see.)* On each kind of question, **View as table**: the same numbers as the chart (people, share, a ranking's support score, points
+    and first places, a scale's average, the words and their counts), the numbers right-aligned; **View as chart** brings the chart back.
+154. **The charts on an iPad in Safari.** *(Still to see.)* The Live display on an iPad, upright and on its side: nothing scrolls sideways, every label is whole (long
+    answers wrap), a tap on a bar opens its names and the close button (×) closes them, the scale's average line does not run through a number, and full screen
+    shows one question whole. (Safari does not focus a tapped button; Esc on a keyboard closes the names opened last.)
+155. **A staff sign-in name on the Live display.** *(Only in staff mode; still to see.)* A member of staff's name is in the visit log, which Results reads and the Live
+    display does not (no request was added, VJR's choice of 16 Oct 2026). **Expect**: opened from Results, the Live display names them; opened straight from its
+    address in a new tab, the same person is "Unnamed participant N" there.
+156. **Deloitte's colours on a projector.** *(Still to see.)* On the room's projector, full screen: the top choice (Deloitte Blue) stands out from the other bars (the
+    tint) and the correct answer (Dark Green) from both, and the words read from the back of the room. (In greyscale the pairs measured 2.72:1 to 4.53:1 apart;
+    pictures in `test-results/charts/grey-*.png`.)
+
+#### Phase 11a-2: the charts fit their card, tooltips are never cut off, the headlines' words
+
+**What was seen on the real site, 16 Oct 2026** (`pms-3fb312a`, a colleague's Windows laptop in Chrome, photographed by VJR): in full screen a confidence question's chart
+had a scrollbar of its own, its tooltip ("2 people · 100%") was cut off at the chart's bottom edge and lay over the middle step's label, and the card had an empty white
+space under the chart; on the admin view a card stretched to the height of its neighbour whose names were open; confidence columns were thin; the scale's figures under
+the bars were not on their gridlines; a headline said "Most people (50%) chose ..." and another ended "... co.."; Kroger's header said "34 answers from 5 iPads" though one
+visit had answered nothing. Phase 11a-2 fixed them all (the last as VJR chose: the screens count the iPads that answered; the PDF and PowerPoint wait for 11b). All of it ran against the local server in Chromium,
+WebKit and Firefox at nine sizes and at a Windows laptop's scaling (1536x864 at 125% and 150%); none of it has met that laptop, a projector or an iPad.
+
+157. **A confidence question in full screen on the Windows laptop.** *(Still to see.)* On the laptop that showed the fault (Chrome, Windows' own display scaling as it
+    is), Admin → Results → **Live display** → **Full screen**, and **Next** to a confidence question. **Expect**: no scrollbar anywhere inside the white card; the columns
+    are wide (40% of their step, up to about 110 px on a screen 1536 wide); the plot reaches down to the step names, with no empty white space under them; pointing at a column
+    shows its tooltip whole ("2 people · 100%" and the step's name), above the column's number and clear of the step's name and of "Average ... of ...". Do the same on
+    a single choice and a ranking: the figures under the bars ("0%", "50%", "100%") sit centred on their gridlines.
+158. **The wall page.** *(Still to see.)* **Open in a new tab**, the PIN: on the same laptop and on the projector, nothing scrolls inside a card, every tooltip is whole,
+    and two cards side by side each keep their own height. On the facilitator's own view, open the names of a bar: the card beside it does not grow.
+159. **The headlines' words.** *(Still to see.)* A single choice whose top answer has exactly half ("2 of 4"): the headline says "The top choice (50%) was ...", never
+    "Most people". Above half: "Most people (75%) chose ...". An answer whose words end with a full stop (Kroger's "Kroger grocery and Baking co."): the headline ends
+    with that one full stop. A true-or-false question: "Most people (N%) said True." Ties, rankings and written answers say what they said before.
+160. **"N answers from M iPads" counts the iPads that answered.** *(Still to see.)* Kroger's session of 16 Oct (five visits, which answered 9, 8, 0, 8 and 9 times): the
+    Live display's header and its Results card's "Live results" both say "34 answers from 4 iPads" (they said 5). On a session that is live, begin a visit on an iPad and
+    answer nothing: the count of iPads does not change on the next refresh, and goes up by one once that iPad has answered. (VJR's choice of 16 Oct 2026: the Live
+    display's one-page PDF and PowerPoint still print every visit, "from 5 iPads", until Phase 11b redesigns them.)
 
 ### Phase 8 (browsers, devices, accessibility, performance, the unsupported-browser page): not verified on a real device, a real screen reader, or the real SharePoint site
 

@@ -24,7 +24,7 @@ async function sources() {
     }
   };
   await walk(path.join(ROOT, 'migration', 'src'));
-  for (const name of ['dataService.js', 'pms-schema.js', 'branding.js', 'resultsExport.js', 'resultsRenderer.js']) files.push(path.join(ROOT, 'public', 'js', name));
+  for (const name of ['dataService.js', 'pms-schema.js', 'branding.js', 'resultsExport.js']) files.push(path.join(ROOT, 'public', 'js', name));
   return files;
 }
 

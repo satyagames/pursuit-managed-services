@@ -302,8 +302,8 @@ test.describe('admin: text and the focus ring', () => {
     }
     for (const theme of THEME_KEYS) {
       await page.evaluate((hash) => { location.hash = hash; }, `#live-display/${sessions[theme].id}`);
-      await expect(page.locator('.live-question').first()).toBeVisible();
-      await page.waitForTimeout(900); // the charts finish drawing
+      await expect(page.locator('.result-card').first()).toBeVisible();
+      await page.waitForTimeout(600); // the bars finish drawing in
       await look(`Live display, ${theme}`);
     }
     const enabled = measured.filter((item) => !item.disabled && Number.isFinite(item.ratio));

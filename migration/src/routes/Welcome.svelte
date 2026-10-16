@@ -79,12 +79,12 @@
         return;
       }
       // A new visit is begun with an id the page chose (lib/visit-id.js): a press whose reply was lost, pressed again, finds the
-      // visit it already made instead of making a second one.
+      // visit it already made instead of making a second one. The press does not wait for the session to be moved on (Phase 10j).
       const live = participant.activeSession;
       const track = trackId
         ? await dataService.resumeClientTrack(trackId) as ParticipantTrack | null
         : live
-          ? await dataService.beginVisit(visitIdFor(live.id), live.id, live.clientId, { sharePointUserId: participant.sharePointUserId }) as ParticipantTrack
+          ? await dataService.beginVisit(visitIdFor(live.id), live.id, live.clientId, { sharePointUserId: participant.sharePointUserId, waitForSession: false }) as ParticipantTrack
           : null;
       if (!track) throw new Error('This visit is no longer available. Ask your facilitator for help.');
       if (!trackId && live) visitBegun(live.id);

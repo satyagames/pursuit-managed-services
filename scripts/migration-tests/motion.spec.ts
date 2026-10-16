@@ -67,7 +67,7 @@ test.describe('the Live display, Auto-advance, with reduced motion', () => {
     await page.clock.install({ time: new Date() });
     await openAdmin(page, local);
     await page.getByRole('button', { name: 'Live display' }).click();
-    const cards = page.locator('.live-question');
+    const cards = page.locator('.result-card');
     await expect(cards.first()).toBeVisible();
     await page.getByRole('button', { name: 'Full screen' }).click();
     await expect(page.locator('section.live')).toHaveAttribute('data-presenting', 'true');
@@ -79,7 +79,7 @@ test.describe('the Live display, Auto-advance, with reduced motion', () => {
     expect(await place(), 'it moved on by itself').toBe(2);
     // No transition or animation on the card, on the controls or on the way out, while it did.
     expect(await page.evaluate(() => document.getAnimations().filter((animation) => Number(animation.effect?.getComputedTiming().duration) > 20).length), 'nothing is animating').toBe(0);
-    const durations = await page.evaluate(() => ['.live-question', '.live__pager', '.live__eyebrow', 'section.live'].flatMap((selector) => [...document.querySelectorAll(selector)].map((element) => {
+    const durations = await page.evaluate(() => ['.result-card', '.result-card .bars__bar', '.live__pager', '.live__eyebrow', 'section.live'].flatMap((selector) => [...document.querySelectorAll(selector)].map((element) => {
       const style = getComputedStyle(element);
       return `${selector}: ${style.transitionDuration} ${style.animationDuration}`;
     })));
@@ -88,3 +88,4 @@ test.describe('the Live display, Auto-advance, with reduced motion', () => {
     expect(await place()).toBe(3);
   });
 });
+

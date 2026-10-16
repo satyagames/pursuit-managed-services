@@ -243,13 +243,15 @@ describe('a wait the server asks for is obeyed, within what a timer can hold (F-
 });
 
 describe('a read the first screen can do without does not stop it (F-11)', () => {
-  it('the look for a staff member’s earlier visit, and the first activity fetched ahead, may each fail: Welcome still comes up', async () => {
+  it('the look for a staff member’s earlier visit, and the activities read ahead, may each fail: Welcome still comes up', async () => {
     const { bootParticipant } = await import('../migration/src/lib/boot.js');
-    const live = { status: 'live', reason: null, settings: { activeSessionId: 's1' }, client: { id: 'c1' }, session: { id: 's1', clientId: 'c1', participationMode: 'staff' }, sections: [{ id: 'sec1', enabled: true, questionIds: ['q1'] }] };
+    const { createActivityContent } = await import('../migration/src/lib/activity-content.js');
+    const live = { status: 'live', reason: null, settings: { activeSessionId: 's1', activeClientId: 'c1' }, client: { id: 'c1' }, session: { id: 's1', clientId: 'c1', participationMode: 'staff' }, sections: [{ id: 'sec1', enabled: true, questionIds: ['q1'] }] };
+    const asked = [];
     const base = {
       getAppSettings: async () => live.settings, getCurrentUser: async () => ({ id: '42', displayName: 'Casey' }), getLiveExperience: async () => live,
       getClientTrack: async () => null, getParticipantResponses: async () => null,
-      listClientTracks: async () => [], getSectionQuestions: async () => [{ id: 'q1', options: [] }],
+      listClientTracks: async () => [], getSectionQuestions: async (section) => { asked.push(section.questionIds); return [{ id: 'q1', options: [] }]; },
     };
     const warn = console.warn;
     console.warn = () => {};
@@ -257,11 +259,13 @@ describe('a read the first screen can do without does not stop it (F-11)', () =>
       const noTracks = await bootParticipant({ ...base, listClientTracks: async () => { throw new TypeError('Load failed'); } }, { path: '/' });
       assert.equal(noTracks.experience.status, 'live');
       assert.equal(noTracks.accountChecked, false, 'Welcome looks for itself when it opens');
-      assert.equal(noTracks.content.sectionId, 'sec1');
-      const noAhead = await bootParticipant({ ...base, getSectionQuestions: async () => { throw new TypeError('Load failed'); } }, { path: '/' });
-      assert.equal(noAhead.experience.status, 'live');
-      assert.equal(noAhead.content, null, 'the pager reads the activity when it is opened');
-      assert.equal(noAhead.accountChecked, true);
+      // (Phase 10j: the boot reads no activity; the page reads them all once its first screen is up, lib/activity-content.js.)
+      const found = await bootParticipant(base, { path: '/' });
+      assert.equal(found.accountChecked, true);
+      assert.deepEqual(asked, [], 'no question is read before the first screen');
+      const content = createActivityContent({ api: { ...base, getSectionQuestions: async () => { throw new TypeError('Load failed'); } } });
+      await content.start(live.sections); // never rejects
+      await assert.rejects(content.questionsOf(live.sections[0], live.sections), TypeError, 'the pager reads the activity when it is opened, and says so if that fails');
     } finally { console.warn = warn; }
     // What the first screen cannot do without still stops it, with the error.
     await assert.rejects(bootParticipant({ ...base, getAppSettings: async () => { throw new TypeError('Load failed'); } }, { path: '/' }), TypeError);

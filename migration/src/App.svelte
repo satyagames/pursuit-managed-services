@@ -5,9 +5,9 @@
   import { wrap } from 'svelte-spa-router/wrap';
   import * as dataService from '../../public/js/dataService.js';
   import { APP_NAME } from './lib/app-name.js';
-  import { bootParticipant } from './lib/boot.js';
+  import { bootParticipant, writesAhead } from './lib/boot.js';
   import { initEffects } from './lib/effects.js';
-  import { adoptExperience, adoptWatch, experience, isStale, showTheme, type LiveExperience } from './lib/experience.svelte.js';
+  import { activityContent, adoptExperience, adoptWatch, experience, holdActivityContent, isStale, showTheme, type LiveExperience } from './lib/experience.svelte.js';
   import { greetingName, hiLine } from './lib/pager-logic.js';
   import { createPageWatcher, type PageWatcher } from './lib/page-watch.js';
   import { modeOf, sessionHasEnded, showsEndedNotice } from './lib/poll-schedule.js';
@@ -148,8 +148,8 @@
   // ---- Boot --------------------------------------------------------------------------------------
 
   /** Puts today's experience on the page: what the screens read, and the client's theme. */
-  function showExperience(live: LiveExperience, content: Boot['content'] = null) {
-    adoptExperience(live, { themed: true, content: content as never });
+  function showExperience(live: LiveExperience) {
+    adoptExperience(live, { themed: true });
     participant.activeSession = live.status === 'live' && live.session ? {
       id: live.session.id,
       clientId: live.session.clientId,
@@ -165,11 +165,12 @@
   });
 
   /**
-   * The work that must not hold the first screen up, started once that screen is drawn: who is
-   * signed in (a resumed staff visit only needs it for the header), the visit log, the resume stamp.
+   * The work that must not hold the first screen up, started once that screen is drawn: the activities' questions and options (Phase 10j),
+   * who is signed in (a resumed staff visit only needs it for the header), the visit log, what the next writes need, the resume stamp.
    */
   async function afterFirstScreen(boot: Boot) {
     await painted();
+    void holdActivityContent();
     let user = boot.user as User | null;
     if (boot.userDeferred) {
       try { user = await dataService.getCurrentUser() as User | null; }
@@ -178,6 +179,8 @@
       participant.sharePointDisplayName = user?.displayName ?? '';
     }
     if (experience.status === 'live' || boot.track) await logEntry(boot.track as ParticipantTrack | null, user);
+    // What the next writes will ask for, fetched now (Phase 10j): "Click here to begin" and a first save then wait for nothing but themselves.
+    void dataService.prepareWrites(writesAhead(boot));
     if (boot.track && !boot.claimed) {
       try { await dataService.noteTrackResumed(boot.track); }
       catch (cause) { console.warn('Could not note that this visit was resumed.', cause); }
@@ -222,10 +225,10 @@
     const requestedTrackId = currentTrackIdFromUrl();
     let boot: Boot | null = null;
     try {
-      boot = await bootParticipant(dataService, { trackId: requestedTrackId, qrToken, path: router.location || '/' });
+      boot = await bootParticipant(dataService, { trackId: requestedTrackId, qrToken, path: router.location || '/', content: activityContent });
       participant.sharePointUserId = boot.user?.id ?? null;
       participant.sharePointDisplayName = boot.user?.displayName ?? '';
-      showExperience(boot.experience as LiveExperience, boot.content);
+      showExperience(boot.experience as LiveExperience);
       if (qrToken) cleanQrQuery();
       if (boot.track) {
         setTrack(boot.track as ParticipantTrack);
@@ -268,6 +271,7 @@
     const hadVisit = Boolean(participant.clientTrackId);
     clearTrack();
     showExperience(live);
+    void holdActivityContent(); // today's other activities: read ahead, as after the first screen
     await logEntry(null, { id: participant.sharePointUserId, displayName: participant.sharePointDisplayName });
     participant.notice = hadVisit && track
       ? 'Your facilitator changed the active session. Scan the current visitor code or continue with the selected session.'

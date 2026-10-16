@@ -227,8 +227,7 @@ describe('every item read the data layer and Setup can send names its columns', 
       const lines = (await readFile(file, 'utf8')).split('\n');
       lines.forEach((line, at) => {
         if (/^\s*(\/\/|\*|\/\*\*)/.test(line) || !/\/items\?/.test(line)) return;
-        const relativeFile = path.relative(ROOT, file).split(path.sep).join('/');
-        found.push({ where: `${relativeFile}:${at + 1}`, line: line.trim() });
+        found.push({ where: `${path.relative(ROOT, file)}:${at + 1}`, line: line.trim() });
       });
     }
     // (A probe's query that names its own columns is sent as it is; one that names none is given the list's: probeSharePointRead.)

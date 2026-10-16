@@ -227,7 +227,7 @@ test.describe('admin', () => {
     for (const theme of THEME_KEYS) {
       await page.evaluate((hash) => { location.hash = hash; }, `#live-display/${sessions[theme].id}`);
       await expect(page.getByRole('heading', { name: 'Live results' })).toBeVisible();
-      await expect(page.locator('.live-question').first()).toBeVisible();
+      await expect(page.locator('.result-card').first()).toBeVisible();
       findings.push(...await check(page, `Live display, ${theme} look`));
       await page.getByRole('button', { name: 'Full screen' }).click();
       await expect(page.locator('section.live')).toHaveAttribute('data-presenting', 'true');

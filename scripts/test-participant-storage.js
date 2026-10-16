@@ -14,6 +14,7 @@ import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
 import * as ds from '../public/js/dataService.js';
 import { BACKOFF_MS, SaveFailedError, createAnswerStore } from '../migration/src/lib/answer-store.js';
+import { createActivityContent } from '../migration/src/lib/activity-content.js';
 import { bootParticipant } from '../migration/src/lib/boot.js';
 import { nextDelay } from '../migration/src/lib/poll-schedule.js';
 import {
@@ -53,6 +54,15 @@ function testStore({ storage = memoryStorage(), api = ds } = {}) {
   const sleeps = [];
   const store = createAnswerStore({ api, storage, sleep: async (ms) => { sleeps.push(ms); } });
   return { store, storage, sleeps };
+}
+
+/**
+ * The boot as the page runs it (App.svelte): with the page's holder of the activities' questions (Phase 10j, lib/activity-content.js), which a
+ * QR scan has read them beside the claim. Resolves to the boot's result, with that holder as `held`.
+ */
+async function pageBoot(api, request) {
+  const held = createActivityContent({ api });
+  return Object.assign(await bootParticipant(api, { ...request, content: held }), { held });
 }
 
 /** A visit begun at Welcome ("Click here to begin"): the page makes the id. `options` may name the signed-in account. */
@@ -131,27 +141,31 @@ function useLocal() {
 // ---- (b) Request budgets ---------------------------------------------------------------------------
 
 describe('boot: at most 8 requests to the first screen a participant can act on', () => {
-  it('a first visit (staff, opening the plain link): AppSettings, then Client + Session + Sections, then the first activity', async () => {
+  it('a first visit (staff, opening the plain link): AppSettings, then Client + Session + Sections + the session\'s visits; the activities once the screen is up', async () => {
     const { fake } = await liveSharePoint();
-    const boot = await bootParticipant(ds, { path: '/' });
+    const boot = await pageBoot(ds, { path: '/' });
     assert.equal(boot.experience.status, 'live');
     assert.equal(boot.experience.client.id, 'c-kroger');
-    assert.deepEqual(fake.requests.map(shape), [
-      'GET appsettings', 'GET /web/currentuser',
-      'GET clients', 'GET sessions', 'GET sections',
-      'GET tracks', // has this account visited today already?
-      'GET questions', 'GET options',
-    ]);
-    assert.equal(boot.content.sectionId, 'sec-trivia', 'the first activity in order is the one fetched ahead');
-    assert.equal(boot.content.questions.length, 5);
-    assert.equal(boot.content.questions[0].options.length, 4);
+    const sent = fake.requests.map(shape);
+    assert.deepEqual(sorted(sent.slice(0, 2)), ['GET /web/currentuser', 'GET appsettings']);
+    // (Phase 10j: the session's visits, "has this account visited today already?", in the same round as the rest.)
+    assert.deepEqual(sorted(sent.slice(2)), ['GET clients', 'GET sections', 'GET sessions', 'GET tracks']);
     assert.ok(fake.count() <= 8);
-    measured.push(['boot, first visit (staff): Welcome with the first activity ready', fake.count(), 8]);
+    measured.push(['boot, first visit (staff): Welcome', fake.count(), 8]);
+    // Once the screen is up (App.svelte): every enabled activity's questions and options, in one go, held for the pager.
+    fake.reset();
+    await boot.held.start(boot.experience.sections);
+    assert.deepEqual(fake.requests.map(shape), ['GET questions', 'GET options']);
+    const trivia = await boot.held.questionsOf(boot.experience.sections[0], boot.experience.sections);
+    assert.equal(trivia.length, 5);
+    assert.equal(trivia[0].options.length, 4);
+    assert.equal(fake.count(), 2, 'the first activity then opens with no request');
   });
 
-  it('nothing is written and nothing is read twice during boot', async () => {
+  it('nothing is written and nothing is read twice during boot, or by the read of the activities after it', async () => {
     const { fake } = await liveSharePoint();
-    await bootParticipant(ds, { path: '/' });
+    const boot = await pageBoot(ds, { path: '/' });
+    await boot.held.start(boot.experience.sections);
     assert.equal(fake.count((entry) => entry.method !== 'GET'), 0);
     assert.equal(new Set(fake.requests.map((entry) => entry.url)).size, fake.count());
   });
@@ -161,14 +175,14 @@ describe('boot: at most 8 requests to the first screen a participant can act on'
     const track = await newVisit(session.id);
     await ds.saveParticipantResponses({ trackId: track.id, sessionId: session.id, clientId: 'c-kroger', responses: [answer('q-trivia-1', 'o-trivia-1-b', { correct: true })] });
     fake.reset();
-    const boot = await bootParticipant(ds, { trackId: track.id, path: '/quiz/sec-trivia' });
+    const boot = await pageBoot(ds, { trackId: track.id, path: '/quiz/sec-trivia' });
     assert.equal(boot.track.id, track.id);
     assert.equal(boot.own.responses.length, 1, 'one indexed read restored the saved answer');
     assert.equal(boot.destination, null, 'it stays on the activity it was opened on');
     assert.deepEqual(fake.requests.map(shape), ['GET appsettings', 'GET tracks', 'GET responses', 'GET clients', 'GET sessions', 'GET sections']);
     assert.match(fake.select({ list: 'responses' })[0].query, /TrackId eq '/, 'the answers are read by the indexed TrackId');
-    // What the pager then needs to show the question: the activity's questions and options.
-    const questions = await ds.getSectionQuestions(boot.experience.sections.find((section) => section.id === 'sec-trivia'));
+    // What the pager then needs to show the question: the activity's questions and options, read (Phase 10j) with every other enabled activity's.
+    const questions = await boot.held.questionsOf(boot.experience.sections.find((section) => section.id === 'sec-trivia'), boot.experience.sections);
     assert.equal(questions.length, 5);
     assert.ok(fake.count() <= 8);
     measured.push(['boot, reload inside an activity (?t=): the question is answerable', fake.count(), 8]);
@@ -179,7 +193,7 @@ describe('boot: at most 8 requests to the first screen a participant can act on'
     const { fake, session } = await liveSharePoint();
     const track = await newVisit(session.id);
     fake.reset();
-    const boot = await bootParticipant(ds, { trackId: track.id, path: '/' });
+    const boot = await pageBoot(ds, { trackId: track.id, path: '/' });
     assert.equal(boot.destination, '/agenda');
     assert.equal(boot.own, null, 'no answers yet: the read says so, and nothing else asks again');
     assert.equal(fake.count(), 6);
@@ -191,10 +205,10 @@ describe('boot: at most 8 requests to the first screen a participant can act on'
     const earlier = await newVisit(session.id, 'c-kroger', { sharePointUserId: '42' });
     await ds.saveParticipantResponses({ trackId: earlier.id, sessionId: session.id, clientId: 'c-kroger', responses: [answer('q-trivia-1', 'o-trivia-1-a', { correct: false })] });
     fake.reset();
-    const boot = await bootParticipant(ds, { path: '/' });
+    const boot = await pageBoot(ds, { path: '/' });
     assert.equal(boot.accountTrack.id, earlier.id);
     assert.equal(boot.accountOwn.responses.length, 1);
-    assert.equal(boot.content, null, 'someone who has started is not handed the first activity again');
+    assert.equal(fake.count((entry) => ['questions', 'options'].includes(entry.list)), 0, 'and no activity is read before the first screen');
     assert.ok(fake.count() <= 8);
     measured.push(['boot, staff with an earlier visit today', fake.count(), 8]);
   });
@@ -203,7 +217,7 @@ describe('boot: at most 8 requests to the first screen a participant can act on'
     const fake = createSharePointFake();
     fake.install();
     ds.configure({ sharePoint: fake.settings });
-    const boot = await bootParticipant(ds, { path: '/agenda' });
+    const boot = await pageBoot(ds, { path: '/agenda' });
     assert.equal(boot.experience.status, 'not-live');
     assert.equal(boot.experience.reason, 'no-session');
     assert.equal(boot.destination, '/welcome');
@@ -215,10 +229,10 @@ describe('boot: at most 8 requests to the first screen a participant can act on'
     const { fake } = await liveSharePoint('c-dominos');
     await ds.updateClient('c-dominos', { status: 'archived' });
     fake.reset();
-    const boot = await bootParticipant(ds, { path: '/' });
+    const boot = await pageBoot(ds, { path: '/' });
     assert.equal(boot.experience.status, 'archived');
     assert.equal(boot.experience.client, null, 'nothing about the archived client reaches the page');
-    assert.equal(boot.content, null);
+    assert.deepEqual([boot.accountChecked, boot.accountTrack], [false, null], 'and nothing the boot read of its session is kept');
     await assert.rejects(ds.activateClient('c-dominos', DAY), { code: 'client-archived' });
   });
 
@@ -226,7 +240,7 @@ describe('boot: at most 8 requests to the first screen a participant can act on'
     const { session } = await liveSharePoint();
     const track = await newVisit(session.id);
     await ds.endSession(session.id);
-    const boot = await bootParticipant(ds, { trackId: track.id, path: '/agenda' });
+    const boot = await pageBoot(ds, { trackId: track.id, path: '/agenda' });
     assert.equal(boot.experience.reason, 'session-ended');
     assert.equal(boot.code, 'session-ended');
     assert.equal(boot.track, null);
@@ -237,7 +251,7 @@ describe('boot: at most 8 requests to the first screen a participant can act on'
     const { session } = await liveSharePoint();
     const track = await newVisit(session.id);
     await ds.activateClient('c-dominos', DAY);
-    const boot = await bootParticipant(ds, { trackId: track.id, path: '/agenda' });
+    const boot = await pageBoot(ds, { trackId: track.id, path: '/agenda' });
     assert.equal(boot.code, 'session-not-active');
     assert.equal(boot.track, null);
     assert.equal(boot.experience.client.id, 'c-dominos', "and the page is now today's client");
@@ -249,7 +263,7 @@ describe('a first QR scan: 8 requests to the first screen, and 9 for the device 
   async function scan(fake, token, settings = {}) {
     ds.configure({ sharePoint: { ...fake.settings, ...settings } }); // a fresh page: no write token, no list metadata
     fake.reset();
-    const boot = await bootParticipant(ds, { qrToken: token.id, path: '/' });
+    const boot = await pageBoot(ds, { qrToken: token.id, path: '/' });
     return { boot, sent: fake.requests.map(shape) };
   }
   const batched = (fake) => fake.requests.find((entry) => entry.parts).parts.map(shape);
@@ -281,15 +295,19 @@ describe('a first QR scan: 8 requests to the first screen, and 9 for the device 
     assert.deepEqual(sorted(sent.slice(4, 7)), ['GET options', 'GET questions', 'POST tracks'], 'round 3: the track, beside the first activity');
     assert.deepEqual(sent.slice(7), ['MERGE qrtokens'], 'round 4: the claim');
     assert.equal(sent.length, 8);
-    measured.push(['boot, first QR scan (a visitor code): Welcome with the first activity ready', sent.length, 8]);
+    measured.push(['boot, first QR scan (a visitor code): Welcome, with the activities read beside the track', sent.length, 8]);
 
     // What the page holds afterwards is what the 21-request path gave it.
     assert.equal(boot.experience.status, 'live');
     assert.equal(boot.experience.client.id, 'c-kroger');
     assert.deepEqual(boot.experience.sections.map((section) => section.id), ['sec-trivia', 'sec-guess-the-brand']);
-    assert.equal(boot.content.sectionId, 'sec-trivia');
-    assert.equal(boot.content.questions.length, 5);
-    assert.equal(boot.content.questions[0].options.length, 4);
+    // (Phase 10j: every enabled activity's questions and options, read beside the track and held; each opens with no request.)
+    const before = fake.count();
+    const trivia = await boot.held.questionsOf(boot.experience.sections[0], boot.experience.sections);
+    assert.equal(trivia.length, 5);
+    assert.equal(trivia[0].options.length, 4);
+    assert.equal((await boot.held.questionsOf(boot.experience.sections[1], boot.experience.sections)).length, 1);
+    assert.equal(fake.count(), before);
     assert.equal(boot.user, null, 'a named visitor is never asked who is signed in');
     assert.deepEqual([boot.track.participantName, boot.track.joinedVia, boot.track.qrTokenId, boot.track.sharePointUserId, boot.track.sessionId], ['Guest 2', 'qr', second.id, null, session.id]);
     assert.equal(boot.own, null);
@@ -327,7 +345,6 @@ describe('a first QR scan: 8 requests to the first screen, and 9 for the device 
     assert.deepEqual([boot.claimed, boot.code, boot.track], [false, 'token-used', null]);
     assert.match(boot.notice, /already been used/);
     assert.equal(boot.experience.status, 'live');
-    assert.equal(boot.content, null);
     assert.deepEqual(sorted(sent), ['GET /web/currentuser', 'GET appsettings', 'GET clients', 'GET qrtokens', 'GET sections', 'GET sessions', 'POST /contextinfo']);
     assert.equal(fake.count((entry) => entry.method !== 'GET' && !entry.path.endsWith('/contextinfo')), 0);
     assert.equal(fake.lists.get('tracks').length, 1);
@@ -348,7 +365,7 @@ describe('a first QR scan: 8 requests to the first screen, and 9 for the device 
 
     // The same page (nothing reset) scanning again: it remembers for as long as it is open.
     fake.reset();
-    const again = await bootParticipant(ds, { qrToken: third.id, path: '/' });
+    const again = await pageBoot(ds, { qrToken: third.id, path: '/' });
     assert.equal(again.claimed, true);
     assert.equal(fake.count((entry) => entry.path.endsWith('/$batch')), 0);
 
@@ -379,7 +396,7 @@ describe('a first QR scan: 8 requests to the first screen, and 9 for the device 
     // Being throttled is not being unsupported: the page asks for a batch the next time.
     const [fourth] = await visitorCodes(session, 1);
     fake.reset();
-    await bootParticipant(ds, { qrToken: fourth.id, path: '/' });
+    await pageBoot(ds, { qrToken: fourth.id, path: '/' });
     assert.equal(fake.count((entry) => entry.path.endsWith('/$batch')), 1);
   });
 
@@ -481,21 +498,20 @@ describe('saving: one cheap request per answer', () => {
     const idleCounts = [];
     async function device(token) {
       ds.configure({ sharePoint: fake.settings }); // a fresh page: every cache is empty
-      const boot = await bootParticipant(ds, { qrToken: token.id, path: '/' });
+      const boot = await pageBoot(ds, { qrToken: token.id, path: '/' });
       assert.equal(boot.claimed, true);
       const { store } = testStore();
       const visit = visitOf(boot.track);
       await store.restore(visit, boot.own);
       await ds.recordParticipantVisit({ visitKey: `visit-${token.id}`, sessionId: session.id, clientId: 'c-kroger', page: 'participant', entryMode: 'client-visit', visitorId: boot.track.visitorId, visitorName: boot.track.participantName, trackId: boot.track.id, visitedAt: new Date().toISOString() });
-      let content = boot.content;
       let answered = 0;
       // The hub, then each activity in turn until 15 questions are answered (the sample Kroger has
-      // 6, so the rest are extra answers to one activity: the count is what matters here).
+      // 6, so the rest are extra answers to one activity: the count is what matters here). Each activity opens from what the page holds
+      // (Phase 10j: the scan read every enabled activity's questions beside the track).
       const liveSession = boot.experience.session;
       const sections = (await ds.getClientActivities('c-kroger', liveSession)).filter((section) => section.enabled);
       for (const section of sections) {
-        const questions = content?.sectionId === section.id ? content.questions : await ds.getSectionQuestions(section);
-        content = null;
+        const questions = await boot.held.questionsOf(section, sections);
         for (const question of questions) {
           if (answered === 15) break;
           const wrongFirst = answered % 5 === 0 && question.options.some((option) => option.correct === false);
@@ -513,8 +529,8 @@ describe('saving: one cheap request per answer', () => {
         await store.flush(visit, section.id); // completion waits for pending saves
         await ds.getClientActivities('c-kroger', liveSession); // back on the hub
       }
-      // A third activity for the rest of the 15, opened like the others (its questions and options are two reads).
-      await ds.getSectionQuestions(sections[0]);
+      // A third activity for the rest of the 15, opened like the others (held: no read).
+      await boot.held.questionsOf(sections[0], sections);
       for (let extra = answered; extra < 15; extra += 1) {
         store.record(visit, 'sec-more', answer(`q-extra-${extra}`, 'option'));
         await settle();
@@ -716,7 +732,7 @@ describe('five devices scanning the same code at the same moment', () => {
   /** Five pages of their own, each booting with the same code, all at once. */
   async function race(openPage, tokenId) {
     const pages = await Promise.all(Array.from({ length: 5 }, openPage));
-    return Promise.all(pages.map((page) => bootParticipant(page, { qrToken: tokenId, path: '/' })));
+    return Promise.all(pages.map((page) => pageBoot(page, { qrToken: tokenId, path: '/' })));
   }
 
   /** Exactly one device has the visit; the other four are on Welcome with the existing "already used" words, and have left nothing behind. */
@@ -724,7 +740,7 @@ describe('five devices scanning the same code at the same moment', () => {
     const winners = boots.filter((boot) => boot.claimed);
     assert.equal(winners.length, 1, `${winners.length} devices were let in`);
     const losers = boots.filter((boot) => !boot.claimed);
-    assert.deepEqual(losers.map((boot) => [boot.code, boot.notice, boot.track, boot.destination, boot.content]), Array(4).fill(['token-used', USED, null, '/welcome', null]));
+    assert.deepEqual(losers.map((boot) => [boot.code, boot.notice, boot.track, boot.destination]), Array(4).fill(['token-used', USED, null, '/welcome']));
     assert.deepEqual(losers.map((boot) => boot.experience.status), Array(4).fill('live'), 'a device that lost still shows today\'s Welcome');
     assert.deepEqual(tracks, [winners[0].track.id], 'one track exists for the code: the winner\'s');
     assert.equal(tokenTrackId, winners[0].track.id);
@@ -801,7 +817,7 @@ describe('five devices scanning the same code at the same moment', () => {
       await send(); // SharePoint applied the write
       return new Response(JSON.stringify({ error: { message: { value: 'The server is busy.' } } }), { status: 503, headers: { 'Content-Type': 'application/json', 'Retry-After': '0' } });
     });
-    const boot = await bootParticipant(ds, { qrToken: token.id, path: '/' });
+    const boot = await pageBoot(ds, { qrToken: token.id, path: '/' });
     assert.equal(boot.claimed, true);
     assert.deepEqual(fake.select(claimWrite).map((entry) => entry.ifMatch === '*'), [false, false], 'sent again after the 503, at the same version: refused, as it must be');
     assert.equal(fake.item('qrtokens', token.id).ClientTrackId, boot.track.id);
@@ -819,10 +835,10 @@ describe('five devices scanning the same code at the same moment', () => {
         once(isCodeRead, dropped); // the device then asks the code whose it is, and that fails too
         return dropped();
       });
-      await assert.rejects(bootParticipant(ds, { qrToken: token.id, path: '/' }), (error) => error instanceof TypeError && !('code' in error), 'a connection error, not a refusal');
+      await assert.rejects(pageBoot(ds, { qrToken: token.id, path: '/' }), (error) => error instanceof TypeError && !('code' in error), 'a connection error, not a refusal');
       assert.equal(fake.lists.get('tracks').length, 1, 'the track it wrote is kept while the outcome is unknown');
 
-      const again = await bootParticipant(ds, { qrToken: token.id, path: '/' }); // "Try again", same page
+      const again = await pageBoot(ds, { qrToken: token.id, path: '/' }); // "Try again", same page
       assert.equal(again.claimed, true);
       assert.deepEqual(fake.lists.get('tracks').map((row) => row.AppId), [again.track.id]);
       assert.equal(fake.count({ method: 'POST', list: 'tracks' }), 1, 'no second track was written');
@@ -839,11 +855,11 @@ describe('five devices scanning the same code at the same moment', () => {
       once(isCodeRead, dropped);
       return dropped();
     });
-    await assert.rejects(bootParticipant(ds, { qrToken: token.id, path: '/' }), TypeError);
+    await assert.rejects(pageBoot(ds, { qrToken: token.id, path: '/' }), TypeError);
     assert.equal(fake.lists.get('tracks').length, 1);
-    const other = await bootParticipant(await freshPage({ sharePoint: fake.settings }), { qrToken: token.id, path: '/' });
+    const other = await pageBoot(await freshPage({ sharePoint: fake.settings }), { qrToken: token.id, path: '/' });
     assert.equal(other.claimed, true);
-    const again = await bootParticipant(ds, { qrToken: token.id, path: '/' });
+    const again = await pageBoot(ds, { qrToken: token.id, path: '/' });
     assert.deepEqual([again.claimed, again.code, again.notice], [false, 'token-used', USED]);
     assert.deepEqual(fake.lists.get('tracks').map((row) => row.AppId), [other.track.id]);
   });
@@ -1715,8 +1731,9 @@ describe('the boundaries this phase relies on', () => {
   // only the legacy pages, or nothing, called (GONE, the first three lines). Phase 10c-2a took out the seven that only tests called;
   // setCurrentTrack, which set a value only one of those seven read; and restartClientTrack, which cleared a session's shared answer
   // item and so had nothing left to do that its one caller, restartParticipantTrack, does not do; and getTheme and updateTheme, with the
-  // ThemeConfig list (the last line). The list is pinned whole, so an export cannot appear or disappear without this test being edited
-  // on purpose: all of this file is in the participant page.
+  // ThemeConfig list (the last line). Phase 10j added one, prepareWrites (what the participant page's writes will ask for, fetched ahead).
+  // The list is pinned whole, so an export cannot appear or disappear without this test being edited on purpose: all of this file is in the
+  // participant page.
   const EXPORTS = [
     'COPY_SEPARATOR', 'MAX_ANSWER_TEXT', 'MAX_RESPONSES_JSON', 'activateClient', 'activateSession', 'addAdminUser', 'addGuests', 'addSectionsToLiveSession',
     'beginVisit', 'checkSharePointLists', 'checkSharePointSchema', 'configure', 'copyActivities',
@@ -1727,7 +1744,7 @@ describe('the boundaries this phase relies on', () => {
     'getSectionQuestions', 'getSession', 'getSessionActivities', 'getVisitor',
     'guestNameKey', 'isSharePointMode', 'isUnreachable', 'listAdminUsers', 'listClientSections',
     'listClientTracks', 'listClients', 'listOptions', 'listQrTokens', 'listQuestions', 'listSections', 'listSessionParticipants', 'listSessions',
-    'mergeAnswerRecords', 'noteTrackResumed', 'openQrScan', 'planCopy', 'probeSharePointRead',
+    'mergeAnswerRecords', 'noteTrackResumed', 'openQrScan', 'planCopy', 'prepareWrites', 'probeSharePointRead',
     'provisionGuestCodes', 'provisionQrToken', 'qrTokenFromSearch', 'qrTokenStatus', 'qrUrl', 'readActivityContent', 'readLists', 'readLiveFeed',
     'readParticipantWatch', 'readSessionResponses', 'readSessionResponsesChecked', 'recordParticipantVisit', 'recordUserVisit', 'removeClientAsset',
     'removeEmptyVisit', 'reopenSession', 'requireConfiguration', 'responseOwner', 'restartParticipantTrack',
@@ -1754,8 +1771,8 @@ describe('the boundaries this phase relies on', () => {
   it('dataService exports exactly what is listed here; what only the legacy pages, only tests, or nothing called is gone', () => {
     assert.deepEqual(Object.keys(ds).sort(), EXPORTS);
     // (Phase 10c-3: sendToSharePoint, the Setup page's one way to write to the site itself, for lib/provision.js, and addAdminUser came; the seed-file
-    // import, Setup's alone, went to migration/src/lib/setup-import.js. Still 103.)
-    assert.equal(EXPORTS.length, 103);
+    // import, Setup's alone, went to migration/src/lib/setup-import.js. Still 103. Phase 10j: prepareWrites, 104.)
+    assert.equal(EXPORTS.length, 104);
     assert.equal(GONE.length, 30);
     for (const name of GONE) assert.ok(!(name in ds), `${name} is back`);
   });
@@ -1764,7 +1781,7 @@ describe('the boundaries this phase relies on', () => {
     // (A call on the data service, under any of the names a file gives it. The admin's own getSessionResults is lib/adminData.ts's, a
     // different function, and is called without a prefix.)
     const called = new RegExp(`\\b(?:dataService|api|ds|service|page|device)\\.(?:${SEVEN.join('|')})\\(`);
-    const shared = ['assets.js', 'branding.js', 'resultsExport.js', 'resultsRenderer.js', 'dataService.js'].map((name) => path.join('public', 'js', name));
+    const shared = ['assets.js', 'branding.js', 'resultsExport.js', 'dataService.js'].map((name) => path.join('public', 'js', name));
     const callers = [];
     for (const file of [...await sourceFiles(path.join('migration', 'src')), ...shared, ...await sourceFiles('scripts')]) {
       const code = (await source(file)).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');

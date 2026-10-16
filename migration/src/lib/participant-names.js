@@ -59,3 +59,4 @@ export function nameParticipants({ tracks = [], visits = [], roster = [], answer
     return { key, track, name, unnamed: isUnnamed };
   });
 }
+

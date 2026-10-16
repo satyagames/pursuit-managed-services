@@ -12,6 +12,8 @@ import { holdClock, setHidden } from './polling-support.js';
 // Phase 7: the facilitator's live results display moved from the participant page's #/master-results/<id> to the admin page (Results →
 // Live display, also from Today), with Full screen for projecting and the CSV, PDF and PowerPoint exports. The BUILT admin and
 // participant pages against the REAL local server on a scratch copy of server/data. Screenshots are in test-results/admin/live-*.png.
+// Since Phase 11a each question is a chart of its own kind (admin/charts/ResultCard.svelte, no chart library); the charts' own rules, the names
+// and the wall are scripts/migration-tests/results-charts*.spec.ts. What is held here is the display around them, as it was.
 
 let local: Local;
 test.beforeEach(async () => { local = await startLocal(); });
@@ -54,7 +56,9 @@ async function focusWithKeys(page: Page, target: ReturnType<Page['locator']>) {
   if (!(await target.evaluate((element) => element === document.activeElement))) throw new Error('the keyboard did not reach the control');
 }
 const meta = (page: Page) => page.locator('.live__meta');
-const cards = (page: Page) => page.locator('.live-question');
+const cards = (page: Page) => page.locator('.result-card');
+/** A card's chart, whatever its kind: bars, the true-or-false split, a scale's columns, or written answers. */
+const CHART = '.bars, .split, .scale, .words';
 const brandOf = (page: Page) => display(page).evaluate((element) => [element.style.getPropertyValue('--brand-primary'), element.style.getPropertyValue('--brand-secondary')]);
 const unlock = async (page: Page) => {
   await page.getByRole('textbox', { name: 'PIN' }).fill(PIN);
@@ -71,26 +75,26 @@ test('the Live display is reached from Today and from Results, and shows the tal
   await expect(page.getByRole('tab', { name: 'Results', exact: true })).toHaveAttribute('aria-selected', 'true');
   await expect(page).toHaveURL(new RegExp(`#live-display/${live.session.id}$`));
   await expect(meta(page)).toContainText(/7 answers from 3 iPads/);
-  // A card for every question of every live activity (the seed's own, and the two added here); a chart for each, comments for the written one.
+  // A card for every question of every live activity (the seed's own, and the two added here); a chart for each, the words and comments for the written one.
   const titles = await page.locator('.live-section__title').allTextContents();
   expect(titles.slice(0, 2)).toEqual(["Kroger's History", 'Guess the Brand']);
   expect(titles).toContain('Live extras');
   const inSession = await Promise.all(((await ds.getSession(live.session.id)) as { sectionIds: string[] }).sectionIds.map((id) => ds.getSection(id) as Promise<{ enabled: boolean }>));
   expect(titles.length, 'one block for each activity of the session that is on').toBe(inSession.filter((section) => section.enabled).length);
   const all = await cards(page).count();
-  const written = await page.locator('.live-question .results__comments').count();
+  const written = await page.locator('.result-card .words').count();
   expect(all).toBeGreaterThanOrEqual(5 + 1 + 2);
   expect(written, 'the seed has a written question, and so does the activity added here').toBeGreaterThanOrEqual(2);
-  await expect(page.locator('.live-question canvas')).toHaveCount(all - written);
+  await expect(page.locator(`.result-card :is(${CHART})`)).toHaveCount(all);
   const first = cards(page).first();
   await expect(first).toContainText('Barney Kroger');
   await expect(first).toContainText('3 answered');
-  await expect(first.locator('canvas')).toHaveAttribute('aria-label', /Great Western Tea co\. 2 · 67%/);
-  await expect(cards(page).filter({ hasText: 'What would you change?' }).locator('.results__comments li')).toHaveText(['Faster check-in']);
+  await expect(first.getByRole('button', { name: /^Great Western Tea co\.: 2 people, 67%/ })).toBeVisible();
+  await expect(cards(page).filter({ hasText: 'What would you change?' }).locator('.words__text')).toHaveText(['Faster check-in']);
   // The colours are the client's own: the stored theme's, as the Master screen has always taken them.
   expect(await brandOf(page)).toEqual(Object.values(legacyColours({ primary: '#045BCC' })));
   await expect(page.locator('.live__client')).toHaveText('Kroger');
-  await page.waitForTimeout(1000); // the charts' own 700 ms animation, so the picture shows them settled
+  await page.waitForTimeout(600); // the bars draw in once (400 ms), so the picture shows them settled
   await shoot(page, 'live-display-1440x900');
 
   // From Results: each session's card has the same button, and Back returns to the list.
@@ -109,13 +113,13 @@ test('it keeps up by itself: a new answer moves the bars and the counts without 
   const live = await liveKroger();
   await openAdmin(page, local);
   await page.getByRole('button', { name: 'Live display' }).click();
-  const chart = cards(page).first().locator('canvas');
-  await expect(chart).toHaveAttribute('aria-label', /Great Western Tea co\. 2 · 67%/);
+  const first = cards(page).first();
+  await expect(first.getByRole('button', { name: /^Great Western Tea co\.: 2 people, 67%/ })).toBeVisible();
   await ds.saveParticipantResponses({
     trackId: live.tracks[2].id, sessionId: live.session.id, clientId: 'c-kroger',
     responses: [{ questionId: 'q-trivia-1', answer: 'o-trivia-1-b', firstAnswer: 'o-trivia-1-b', attempts: 1, correct: true, answeredAt: new Date().toISOString() }],
   });
-  await expect(chart).toHaveAttribute('aria-label', /Great Western Tea co\. 3 · 100%/, { timeout: 10_000 });
+  await expect(first.getByRole('button', { name: /^Great Western Tea co\.: 3 people, 100%/ })).toBeVisible({ timeout: 10_000 });
   await expect(meta(page)).toContainText(/7 answers from 3 iPads/);
   // An activity switched off disappears from the display (the next refresh finds it in the feed), and back on, it returns.
   const extras = page.locator('.live-section__title', { hasText: 'Live extras' });
@@ -124,9 +128,20 @@ test('it keeps up by itself: a new answer moves the bars and the counts without 
   await expect(extras).toHaveCount(0, { timeout: 10_000 });
   await ds.updateSection(live.extraId, { enabled: true });
   await expect(extras).toHaveCount(1, { timeout: 10_000 });
-  // A fourth iPad joins: the count is the iPads' count.
-  await ds.beginVisit(crypto.randomUUID(), live.session.id, 'c-kroger');
-  await expect(meta(page)).toContainText(/from 4 iPads/, { timeout: 10_000 });
+  // A fourth iPad joins. Since Phase 11a-2 (VJR's choice, 16 Oct 2026) "M iPads" are the visits that answered: it is not counted through two refreshes
+  // that read it, and is counted once it has answered.
+  const fourth = await ds.beginVisit(crypto.randomUUID(), live.session.id, 'c-kroger');
+  const stamp = async () => /updated (.+)$/.exec((await meta(page).textContent()) ?? '')?.[1] ?? '';
+  for (let refresh = 0; refresh < 2; refresh += 1) {
+    const before = await stamp();
+    await expect.poll(stamp, { timeout: 10_000 }).not.toBe(before);
+  }
+  await expect(meta(page)).toContainText(/7 answers from 3 iPads/);
+  await ds.saveParticipantResponses({
+    trackId: fourth.id, sessionId: live.session.id, clientId: 'c-kroger',
+    responses: [{ questionId: 'q-trivia-1', answer: 'o-trivia-1-a', firstAnswer: 'o-trivia-1-a', attempts: 1, correct: true, answeredAt: new Date().toISOString() }],
+  });
+  await expect(meta(page)).toContainText(/8 answers from 4 iPads/, { timeout: 10_000 });
 });
 
 test('Full screen covers the page with large type, no navigation and a way out; Escape and the button both leave it', async ({ page }) => {
@@ -136,8 +151,8 @@ test('Full screen covers the page with large type, no navigation and a way out; 
   await page.getByRole('button', { name: 'Live display' }).click();
   await expect(cards(page).first()).toBeVisible();
   const sizes = () => page.evaluate(() => ({
-    prompt: parseFloat(getComputedStyle(document.querySelector('.live-question__prompt')!).fontSize),
-    chart: document.querySelector('.live-question canvas')!.getBoundingClientRect().height,
+    prompt: parseFloat(getComputedStyle(document.querySelector('.result-card__prompt')!).fontSize),
+    chart: document.querySelector('.result-card__body')!.getBoundingClientRect().height,
     title: parseFloat(getComputedStyle(document.querySelector('.live__title h2')!).fontSize),
   }));
   const normal = await sizes();
@@ -212,8 +227,7 @@ test('Full screen on a phone and a tablet: the cards fit, nothing scrolls sidewa
   await expect(cards(page).first()).toBeVisible();
   for (const viewport of viewports) {
     await page.setViewportSize(viewport);
-    await page.waitForTimeout(500); // the charts are drawn for the new width by their own resize observer
-    // (Firefox draws a chart a frame or two late after a resize, and for that moment the old canvas can reach past the window: wait for it to settle.)
+    await page.waitForTimeout(500); // the charts lay themselves out again for the new width
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), { message: `the page stops scrolling sideways at ${viewport.width}`, timeout: 5000 }).toBe(true);
     await expectFits(page, `Live display at ${viewport.width}`);
     await shoot(page, `live-display-${viewport.width}x${viewport.height}`, { full: false });
@@ -234,15 +248,15 @@ test('Full screen on a phone and a tablet: the cards fit, nothing scrolls sidewa
 const placed = (page: Page) => page.evaluate(() => {
   const box = (element: Element | null) => { const rect = element?.getBoundingClientRect(); return rect ? { x: rect.x, y: rect.y, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height } : null; };
   const live = document.querySelector('section.live') as HTMLElement;
-  const card = document.querySelector('.live-question') as HTMLElement;
+  const card = document.querySelector('.result-card') as HTMLElement;
   return {
-    cards: document.querySelectorAll('.live-question').length,
+    cards: document.querySelectorAll('.result-card').length,
     view: { width: window.innerWidth, height: window.innerHeight },
     card: box(card),
-    canvas: box(card.querySelector('canvas')),
-    count: box(card.querySelector('.live-question__count')),
-    prompt: box(card.querySelector('.live-question__prompt')),
-    comments: box(card.querySelector('.results__comments')),
+    chart: box(card.querySelector('.result-card__body')),
+    count: box(card.querySelector('.result-card__meta')),
+    prompt: box(card.querySelector('.result-card__prompt')),
+    comments: box(card.querySelector('.words__comments')),
     cut: card.scrollHeight - card.clientHeight,
     displayCut: live.scrollHeight - live.clientHeight,
     pager: box(document.querySelector('.live__pager')),
@@ -261,14 +275,14 @@ async function expectWholeCard(page: Page, label: string, { chartAtLeast = 140 }
   expect(at.card!.bottom, `${label}: bottom ${at.card!.bottom} against ${at.view.height}`).toBeLessThanOrEqual(at.view.height + 0.5);
   expect(at.cut, `${label}: the card's own contents run ${at.cut}px past its edge`).toBeLessThanOrEqual(1);
   expect(at.displayCut, `${label}: the display scrolls`).toBeLessThanOrEqual(1);
-  // The question, its count, and the chart (axis labels are drawn inside the canvas) are all within the card.
-  for (const [name, part] of [['prompt', at.prompt], ['count', at.count], ['chart', at.canvas], ['written answers', at.comments]] as const) {
+  // The question, its count, and the chart (its scale and labels too) are all within the card.
+  for (const [name, part] of [['prompt', at.prompt], ['count', at.count], ['chart', at.chart], ['written answers', at.comments]] as const) {
     if (!part) continue;
     expect(part.bottom, `${label}: the ${name} is within the card`).toBeLessThanOrEqual(at.card!.bottom + 1);
     expect(part.right, `${label}: the ${name} is within the card`).toBeLessThanOrEqual(at.card!.right + 1);
     expect(part.y, `${label}: the ${name} is within the card`).toBeGreaterThanOrEqual(at.card!.y - 1);
   }
-  if (at.canvas) expect(at.canvas.height, `${label}: a chart you can read`).toBeGreaterThan(chartAtLeast);
+  if (at.chart) expect(at.chart.height, `${label}: a chart you can read`).toBeGreaterThan(chartAtLeast);
   // The controls are on the screen too.
   expect(at.pager!.bottom, `${label}: the controls`).toBeLessThanOrEqual(at.view.height + 0.5);
   return at;
@@ -298,9 +312,9 @@ test('Full screen shows ONE question at a time, and the whole card fits: 1920x10
     await expect(cards(page)).toHaveCount(1);
     await expect(page.locator('.live__eyebrow')).toContainText(`Question 1 of ${total}`);
     for (let index = 0; index < total; index += 1) {
-      await page.waitForTimeout(900); // the chart's own 700 ms animation, so the picture shows it settled and the measure is of the finished card
+      await page.waitForTimeout(600); // the bars draw in once (400 ms), so the picture shows them settled and the measure is of the finished card
       const at = await expectWholeCard(page, `${size.name}, question ${index + 1} of ${total}`);
-      prompts.add((await page.locator('.live-question__prompt').textContent()) ?? '');
+      prompts.add((await page.locator('.result-card__prompt').textContent()) ?? '');
       if (index === 0) await shoot(page, `live-display-fit-${size.name}`, { full: false });
       if (index === 0) expect(at.eyebrow).toContain('Question 1 of');
       await page.keyboard.press('ArrowRight');
@@ -355,19 +369,19 @@ test('a question too long for the room is made smaller until the card is whole, 
     const seen = new Map<string, number>();
     const kind = async (heading: string) => (heading.startsWith('part 1 of') ? 'long' : heading.startsWith('Rank all eight') ? 'ranking'
       : heading.startsWith('Scale:') ? 'scale' : heading.startsWith('Pick any') ? 'multi' : heading.startsWith('True or false') ? 'truefalse'
-        : heading.startsWith('What would you change') && (await cards(page).locator('.results__comments li').count()) > 5 ? 'written' : '');
+        : heading.startsWith('What would you change') && (await cards(page).locator('.words__comment').count()) > 5 ? 'written' : '');
     for (let guard = 0; guard < 40 && seen.size < 6; guard += 1) {
-      const heading = (await cards(page).locator('.live-question__prompt').textContent()) ?? '';
+      const heading = (await cards(page).locator('.result-card__prompt').textContent()) ?? '';
       const which = await kind(heading);
       if (which && !seen.has(which)) {
-        await page.waitForTimeout(1400); // the chart is drawn again for each step the type is made smaller
+        await page.waitForTimeout(1400); // the card is laid out again for each step the type is made smaller
         await shoot(page, `live-display-fit-${which}-${size.width}x${size.height}`, { full: false });
         // (A question of 1,700 characters leaves the chart little room, but the card is whole: that is what the shrinking is for.)
         const at = await expectWholeCard(page, `${size.width}x${size.height}: ${which}`, { chartAtLeast: which === 'long' ? 60 : which === 'scale' ? 80 : 140 });
         seen.set(which, Number(at.scale));
         if (which === 'written') {
           // 40 answers cannot all be shown, and the card says how many it left out instead of cutting them off without a word.
-          await expect(cards(page).locator('.live-question__more')).toContainText(/\d+ more written answers are not shown/);
+          await expect(cards(page).locator('.words__more')).toContainText(/\d+ more written answers are not shown/);
         }
       }
       await page.keyboard.press('ArrowRight');
@@ -391,7 +405,7 @@ test('Previous and Next, and the left and right arrow keys, walk the questions a
   const total = await cards(page).count();
   await page.getByRole('button', { name: 'Full screen' }).click();
   await expect(display(page)).toHaveAttribute('data-presenting', 'true');
-  const prompt = () => page.locator('.live-question__prompt').textContent();
+  const prompt = () => page.locator('.result-card__prompt').textContent();
   const place = () => page.locator('.live__eyebrow').textContent();
   const first = await prompt();
   expect(await place()).toContain(`Question 1 of ${total}`);
@@ -698,17 +712,19 @@ test('the address #live-display opens whichever session is live, and a picker wh
   await expect(display(page)).toHaveCount(0);
 });
 
-test('"Open in a new tab" is a link to the same session on the admin page, and a tab opened from it shows the display after the PIN', async ({ page, context }) => {
+test('"Open in a new tab" is a link to the same session\'s wall display on the admin page, and a tab opened from it shows it after the PIN', async ({ page, context }) => {
   const live = await liveKroger();
   await openAdmin(page, local);
   await page.getByRole('button', { name: 'Live display' }).click();
   const link = page.getByRole('link', { name: 'Open in a new tab' });
   await expect(link).toHaveAttribute('target', '_blank');
-  expect(new URL((await link.getAttribute('href'))!).hash).toBe(`#live-display/${live.session.id}`);
+  // Phase 11a: the new tab is the wall (no names in it), told apart from the facilitator's own view by the end of its address.
+  expect(new URL((await link.getAttribute('href'))!).hash).toBe(`#live-display/${live.session.id}/wall`);
   const [tab] = await Promise.all([context.waitForEvent('page'), link.click()]);
   await useServer(tab, local);
   await unlock(tab);
-  await expect(tab.getByRole('heading', { name: 'Live results' })).toBeVisible();
+  await expect(tab.getByRole('heading', { name: 'Live results · Wall display' })).toBeVisible();
+  await expect(tab.getByRole('switch', { name: /Names shown/ })).toHaveCount(0);
   await expect(tab.locator('.live__meta')).toContainText(/7 answers from 3 iPads/);
 });
 
@@ -718,6 +734,6 @@ test('every capability the Master screen had is in the Live display: live tally,
   await page.getByRole('button', { name: 'Live display' }).click();
   await expect(meta(page)).toContainText(/\d+ answers from \d+ iPads · updated /);
   for (const name of ['Export CSV', 'Export PDF', 'Export PPT', 'Full screen']) await expect(page.getByRole('button', { name })).toBeEnabled();
-  await expect(display(page).locator('canvas').first()).toBeVisible();
+  await expect(display(page).locator(`.result-card :is(${CHART})`).first()).toBeVisible();
   expect((await brandOf(page))[0]).toMatch(/^#[0-9A-F]{6}$/);
 });

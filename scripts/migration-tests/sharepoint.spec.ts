@@ -38,7 +38,7 @@ const visitorCode = (fake: Fake, sessionId: string, clientId: string, name = 'Jo
 
 const choices = (page: Page) => page.locator('.pms-options button');
 
-test('a first visit reaches Welcome in 8 requests, all reads, and logs the visit only once the screen is up', async ({ page }) => {
+test('a first visit reaches Welcome in 6 requests, all reads, and reads the activities and logs the visit only once the screen is up', async ({ page }) => {
   const fake = newFake();
   await seedAndGoLive(fake, 'c-kroger');
   const served = await serveSharePoint(page, fake);
@@ -49,22 +49,30 @@ test('a first visit reaches Welcome in 8 requests, all reads, and logs the visit
   await expect(page.getByText('Welcome to the Kroger experience.', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Click here to begin' })).toBeVisible();
   await expect.poll(() => fake.count({ method: 'POST', list: 'uservisitlogs' })).toBe(1);
+  await expect.poll(() => fake.count((entry) => entry.list === 'responses' && /ListItemEntityTypeFullName/.test(entry.url))).toBe(1);
+  await expect.poll(() => fake.count({ method: 'GET', list: 'options' })).toBe(1);
 
   const { before, after } = split(fake, (await firstScreen())!);
-  expect([...before].sort()).toEqual([
-    'GET /web/currentuser', 'GET appsettings', 'GET clients', 'GET options', 'GET questions', 'GET sections', 'GET sessions', 'GET tracks',
-  ]);
+  // (Phase 10j: the session's visits in the second round, beside the client, the session and the activities; no question before Welcome.)
+  expect([...before].sort()).toEqual(['GET /web/currentuser', 'GET appsettings', 'GET clients', 'GET sections', 'GET sessions', 'GET tracks']);
   expect(before.indexOf('GET appsettings'), 'AppSettings comes first, before the client, session and activities').toBeLessThan(before.indexOf('GET clients'));
-  expect(before.indexOf('GET sections'), 'and the first activity last').toBeLessThan(before.indexOf('GET questions'));
   expect(before.length).toBeLessThanOrEqual(8);
-  // Once the screen is up: the visit log (its list's metadata, the write token, the row).
-  expect(after.filter((entry) => !entry.includes('appsettings'))).toEqual(['GET uservisitlogs', 'POST /contextinfo', 'POST uservisitlogs']);
+  // Once the screen is up: every enabled activity's questions and options (Phase 10j); the visit log (its list's metadata, the write token, the
+  // row), then what "Click here to begin" and the first save will ask for, fetched ahead: the participants list's type and columns, the sessions
+  // list's (the session has not started) and the answers list's type.
+  const later = after.filter((entry) => !entry.includes('appsettings'));
+  expect([...later].sort()).toEqual([
+    'GET options', 'GET questions', 'GET responses', 'GET sessions', 'GET sessions', 'GET tracks', 'GET tracks', 'GET uservisitlogs', 'POST /contextinfo', 'POST uservisitlogs',
+  ]);
+  expect(later.filter((entry) => !/questions|options/.test(entry))).toEqual([
+    'GET uservisitlogs', 'POST /contextinfo', 'POST uservisitlogs', 'GET tracks', 'GET tracks', 'GET sessions', 'GET sessions', 'GET responses',
+  ]);
   expect(served.unexpected).toEqual([]);
   expect(served.settingsFile, 'and, before all of them, one request for the settings file: 8 list requests plus 1 file').toBe(1);
   expect(fake.strays, 'every one of them to this copy\'s own lists').toEqual([]);
   measured.firstVisit = { toFirstScreen: before.length, settingsFile: served.settingsFile, requests: before, afterFirstScreen: after };
 
-  // The first activity opens with no request at all: boot brought its questions along.
+  // The first activity opens with no request at all: the page read every activity's questions once its first screen was up.
   await page.getByRole('button', { name: 'Click here to begin' }).click();
   await expect(page.locator('button.activity')).toHaveText([/Kroger's History/, /Guess the Brand/]);
   const settled = fake.count();
@@ -103,6 +111,7 @@ test('a first QR scan reaches Welcome in 8 requests (9 for the device that start
   await expect(next.getByText('Welcome to the Kroger experience.', { exact: true })).toBeVisible();
   await expect(next.getByRole('button', { name: 'Click here to begin' })).toBeVisible();
   await expect.poll(() => fake.count({ method: 'POST', list: 'uservisitlogs' })).toBe(1);
+  await expect.poll(() => fake.count((entry) => entry.list === 'responses' && /ListItemEntityTypeFullName/.test(entry.url))).toBe(1);
 
   const { before, after } = split(fake, (await firstScreen())!);
   expect([...before].sort()).toEqual([
@@ -118,8 +127,9 @@ test('a first QR scan reaches Welcome in 8 requests (9 for the device that start
   expect(before.indexOf('POST tracks'), 'and the claim comes last').toBeLessThan(before.indexOf('MERGE qrtokens'));
   expect(before, 'a named visitor is never asked who is signed in').not.toContain('GET /web/currentuser');
   expect(fake.select({ method: 'MERGE', list: 'qrtokens' })[0].ifMatch, 'the claim carries the version the code was read at').toMatch(/^"\d+"$/);
-  // Once the screen is up: the visit log (its list's item type, then the row; the write token is already held).
-  expect(after.filter((entry) => !/appsettings|GET tracks/.test(entry))).toEqual(['GET uservisitlogs', 'POST uservisitlogs']);
+  // Once the screen is up: the visit log (its list's item type, then the row; the write token is already held), then (Phase 10j) the answers
+  // list's type, fetched ahead for the first save.
+  expect(after.filter((entry) => !/appsettings|GET tracks/.test(entry))).toEqual(['GET uservisitlogs', 'POST uservisitlogs', 'GET responses']);
   expect(served.unexpected).toEqual([]);
   expect(fake.count((entry) => Boolean(entry.faulted))).toBe(0);
   expect(served.settingsFile, 'a first scan: 8 list requests plus 1 for the settings file').toBe(1);
@@ -418,3 +428,20 @@ test('nothing live: the page says so in the default look, asks SharePoint very l
   expect(await page.evaluate(() => document.documentElement.style.getPropertyValue('--bg-mid'))).toBe('#0B648F');
   await expect(page.getByRole('heading', { name: "Today's experience isn't live yet" })).toHaveCount(0);
 });
+
+test('the hub still reads, and comes up, when drawing what it holds needs a read of the answers that fails (Phase 10j)', async ({ page }) => {
+  const fake = newFake();
+  const session = await seedAndGoLive(fake, 'c-kroger');
+  await onSite(fake, (ds) => ds.beginVisit(crypto.randomUUID(), session.id, 'c-kroger', { sharePointUserId: '42' }));
+  await serveSharePoint(page, fake);
+  // The boot's look for this account's earlier visit fails, so Welcome looks for itself; the reads of that visit's answers fail twice: Welcome's,
+  // and the one the hub's first drawing needs (nothing on this page has read them). Before the fix the hub then stayed on its loading line.
+  fake.failNext({ status: 500, times: 1, when: (entry) => entry.method === 'GET' && entry.list === 'tracks' && /SessionId eq/.test(entry.query) && !/QrTokenId eq/.test(entry.query) });
+  fake.failNext({ status: 500, times: 2, when: (entry) => entry.method === 'GET' && entry.list === 'responses' && /TrackId eq/.test(entry.query) });
+  await page.goto(pageUrl('index.html'));
+  await expect(page.getByRole('button', { name: 'Start a new visit' }), 'Welcome found the earlier visit itself').toBeVisible();
+  await page.getByRole('button', { name: /^(Activities|Click here to begin)$/ }).click();
+  await expect(page.locator('button.activity')).toHaveCount(2, { timeout: 15_000 });
+  expect(fake.select((entry) => entry.list === 'responses' && entry.method === 'GET').filter((entry) => entry.faulted).length, 'both reads failed').toBe(2);
+});
+

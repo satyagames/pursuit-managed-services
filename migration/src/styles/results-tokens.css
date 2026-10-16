@@ -1,0 +1,56 @@
+/* The colours of the Results charts (Phase 11a), on the admin page only: Deloitte's, as VJR chose them on 15 Oct 2026 and as they were run
+ * through the dataviz validator that day (lightness band, chroma, colour-blind and normal-vision separation; the blue ramps monotone, with
+ * step gaps, a light end of 2:1 or more on white, one hue). scripts/test-results-palette.js reads THIS file and holds every pair below to the
+ * contrast it is stated to have; change a value and it says which pair broke.
+ *
+ * The rules the charts keep (migration/src/admin/charts/):
+ *   - One series is one colour, never coloured by its value. The top choice (every tied leader) is the full blue and says "Top choice" in
+ *     words; the others are the tint. Green means "correct" and nothing else, always with a tick and bold words.
+ *   - Words never wear a data colour: values and labels are the text colours. Words inside a fill are white or black as stated here.
+ *   - Deloitte Green is the accent only: a 4px rule on the top edge of each card. It is never a bar and never the only carrier of meaning
+ *     (it and the tint are nearly the same lightness, so nothing may depend on telling them apart in greyscale).
+ *   - A client's own colours do not recolour the data: the client's logo and name keep their place in the page's header.
+ *   - Every chart sits on a white card, on the admin page and on the wall's dark page alike, so these light-surface values are the only ones.
+ *
+ * Of these, only Deloitte Green and Dark Green are in the 2025 brand guide (public/assets/BrandGuidelines, page 42, whose blues are #005587 and
+ * #00A3E0, dark text #282728 and grey #E6E6E6); the blue, its tint and ramps, the teal and the three greys are not. VJR kept the validated set
+ * (16 Oct 2026). */
+
+:root {
+  /* Deloitte Blue: the bars, and the top choice at full strength. 5.05:1 on white; white words on it 5.05:1. */
+  --viz-primary: #0076a8;
+  /* The other bars. About 2.4:1 on white, so every bar has its value written beside it; 2.1:1 against the blue. */
+  --viz-primary-tint: #6cb1d1;
+  /* Deloitte Dark Green: the correct answer, with a tick and bold words. 6.72:1 on white; white words on it 6.72:1. */
+  --viz-correct: #046a38;
+  /* The average marker and thin lines. 6.72:1 on white. */
+  --viz-marker: #046a38;
+  /* Deloitte Green: the accent rule only. 2.3:1 on white, which is why it is an accent; black words on it 9.23:1. */
+  --viz-brand: #86bc25;
+  /* Deloitte Teal: a second series only (Phase 11c). Black words on it 6.0:1; white words 3.5:1, which fails, so never white on it. */
+  --viz-secondary: #0097a9;
+
+  /* The blue ramp of a confidence scale, low to high: three, four or five steps (a longer scale shares the five out in order). */
+  --viz-ramp-3-1: #6cb1d1;
+  --viz-ramp-3-2: #2e8db8;
+  --viz-ramp-3-3: #0076a8;
+  --viz-ramp-4-1: #7db9d6;
+  --viz-ramp-4-2: #3f9bc4;
+  --viz-ramp-4-3: #0076a8;
+  --viz-ramp-4-4: #00547a;
+  --viz-ramp-5-1: #7db9d6;
+  --viz-ramp-5-2: #4da3c8;
+  --viz-ramp-5-3: #2b8ab8;
+  --viz-ramp-5-4: #0076a8;
+  --viz-ramp-5-5: #00547a;
+
+  /* Words: the main text, the secondary (7.38:1) and the muted (4.44:1, so only at 18px and more, or bold at 14px and more). */
+  --viz-text: #000000;
+  --viz-text-secondary: #53565a;
+  --viz-text-muted: #75787b;
+  /* Gridlines and the axis: 1px, solid, never dashed. Decorative. */
+  --viz-grid: #d0d0ce;
+  /* The card, and the lighter of the two shades of a scale's bands (the other is the card itself). */
+  --viz-surface: #ffffff;
+  --viz-band-shade: #f4f4f3;
+}

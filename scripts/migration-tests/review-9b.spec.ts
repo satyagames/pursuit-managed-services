@@ -87,10 +87,13 @@ test('Results, the Live display, the exports and the leader report show the rest
   await expect(here.locator('.row').filter({ hasText: 'In progress' })).toHaveCount(2);
   await expect(here.locator('.row').filter({ hasText: 'Not started' })).toHaveCount(1);
   await expect(here.locator('.row').filter({ hasText: 'Answers unreadable' })).toHaveCount(1);
-  await expect(here.locator('summary')).toContainText('answers from 4 iPads');
-  // The two readable iPads (and nobody else) are counted: trivia question 1 has two answers, not three.
+  // (Since Phase 11a-2 "M iPads" are the visits whose answers are counted: the two readable ones that answered. The one that has not started answered
+  // nothing, and the damaged one's answers are not among them: the notice says so.)
+  await expect(here.locator('summary')).toContainText('answers from 2 iPads');
+  // The two readable iPads (and nobody else) are counted: trivia question 1 has two answers, not three. (Since Phase 11a the card's live results are the
+  // charts, whose cards say "N answered"; they said "N of M answered" before.)
   await here.locator('summary').click();
-  await expect(here.locator('.tally__head').first()).toContainText('2 of 4 answered');
+  await expect(here.locator('.result-card[data-question="q-trivia-1"] .result-card__meta')).toContainText('2 answered');
 
   // The leader report (PDF): the cover says it, in bold, with the session-status line; the person's block says why it is empty.
   const pdf = await download(page, 'Leader report (PDF)', here);
@@ -109,7 +112,7 @@ test('Results, the Live display, the exports and the leader report show the rest
   // The Live display: the notice is at the top; its own CSV export still works and holds the others' answers.
   await page.goto(`${pageUrl('admin.html')}#live-display/${session.id}`);
   await expect(page.getByTestId('unreadable-notice')).toHaveText(NOTICE);
-  await expect(page.locator('.live__meta')).toContainText('answers from 4 iPads');
+  await expect(page.locator('.live__meta')).toContainText('answers from 2 iPads');
   const live = await download(page, 'Export CSV');
   expect(live.bytes.toString('utf8')).toContain('Great Western Tea co.');
 
@@ -130,7 +133,8 @@ test('a session with nothing damaged shows none of it, anywhere', async ({ page 
   await expect(page.getByTestId('unreadable-notice')).toHaveCount(0);
   await expect(page.getByText('could not be read')).toHaveCount(0);
   await page.goto(`${pageUrl('admin.html')}#live-display/${session.id}`);
-  await expect(page.locator('.live__meta')).toContainText('answers from 4 iPads');
+  // (Its answers mended to none, the damaged visit answered nothing: still the two that answered.)
+  await expect(page.locator('.live__meta')).toContainText('answers from 2 iPads');
   await expect(page.getByTestId('unreadable-notice')).toHaveCount(0);
 });
 

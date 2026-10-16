@@ -15,7 +15,14 @@ export const SETTINGS = Object.freeze({ configVersion: 1, listPrefix: '', label:
 export const SETTINGS_TEXT = '{"configVersion": 1, "listPrefix": "", "label": "PMS"}';
 /** The four files that are uploaded; the rest of the package stays on the deployer's computer. */
 export const UPLOADED = Object.freeze(['index.html', 'admin.html', 'setup.html', 'pms-config.txt']);
-export const LAST_LINE = 'Steps 1 to 9 of this runbook have run on the real site (14 Oct 2026, pms-969bf16), and Go live, a participant\'s visit and the self-test (15 Oct 2026, pms-e250a36). Everything after them is new.';
+export const LAST_LINE = 'Steps 1 to 9 of this runbook have run on the real site (14 Oct 2026, pms-969bf16), and Go live, a participant\'s visit and the self-test (15 Oct 2026, pms-e250a36), and with pms-da9fc8d the lists of version 3 and a participant\'s visit (15 Oct 2026), and with pms-0a1c701 a named guest\'s visit by QR code and Results (15 Oct 2026), and with pms-3fb312a the Results charts, their names and full screen on a Windows laptop in Chrome (16 Oct 2026). Everything after them is new.';
+
+/**
+ * The timing check (Phase 10j): one line for Chrome's console on index.html, read-only. It lists the requests the page made to SharePoint's REST API and for its
+ * settings file, each with when it started, how long it took, its status and its size, and says how long the page file took, how many requests there were, their
+ * median and slowest time, and each read of a list's columns. RUNBOOK.md and QA-TESTING.md carry it exactly as it is here.
+ */
+export const TIMING_CHECK = "(()=>{const n=performance.getEntriesByType('navigation')[0];const e=performance.getEntriesByType('resource').filter(x=>/\\/_api\\/|pms-config/.test(x.name));const t=e.map(x=>({at:Math.round(x.startTime),ms:Math.round(x.duration),status:x.responseStatus??'',kb:Math.round(x.transferSize/1024),what:decodeURIComponent(x.name.split('/_api/')[1]||x.name.split('/').pop()).replace(/&?\\$select=.*$/,'').slice(0,80)}));console.table(t);const d=t.map(x=>x.ms).sort((a,b)=>a-b);console.log(`page file ${Math.round(n.responseEnd-n.startTime)} ms, ${Math.round(n.transferSize/1024)} KB | requests ${d.length}, median ${d[d.length>>1]} ms, slowest ${d[d.length-1]} ms | fields reads: ${t.filter(x=>/\\/fields/.test(x.what)).map(x=>x.ms+' ms, '+x.kb+' KB').join('; ')||'none'}`)})()";
 
 /**
  * Which QA-TESTING.md item each step answers (items 102 to 132, 138 to 142, and the earlier ones the same steps show). An item that no step answers is
@@ -36,13 +43,17 @@ export const QA_BY_STEP = Object.freeze({
   14: [134, 137],
   15: [137],
 });
-/** Which QA-TESTING.md item each step of the note for the PCOE site answers (Phase 10i: the site of version 2 brought to version 3). */
+/**
+ * Which QA-TESTING.md item each step of the note for the PCOE site answers (Phase 11a: the three pages replaced, the Results charts, the names, the wall;
+ * Phase 11a-2: the headlines' words, and the Windows laptop that showed the fault).
+ */
 export const QA_BY_NOTE = Object.freeze({
-  2: [145],
-  5: [145],
-  8: [143],
-  9: [145],
-  10: [144],
+  3: [144],
+  4: [150, 159, 160],
+  5: [151, 152, 153],
+  6: [157, 158],
+  7: [154, 156],
+  8: [146, 147, 148, 149],
 });
 export const LATER = Object.freeze([
   [102, 'no item for a session in the answers list: press Restart on Results for the iPad\'s visit of step 13'],
@@ -55,6 +66,8 @@ export const LATER = Object.freeze([
   [131, 'the 255-character limits: Content and Clients, once an admin is in'],
   [138, 'a missing pms-config.txt comes back as a 404 (Phase 10g): after the steps, rename pms-config.txt in the folder, open its address in a browser with the Network panel open, and reload setup.html; put the file back'],
   [141, 'a read that names a column the list lacks (Phase 10h): only on a site where a column was deleted by hand after Setup marked it ready; Check Lists names it'],
+  [145, 'the lists brought from version 2 to version 3 (Phase 10i): done on the PCOE site with pms-da9fc8d on 15 Oct 2026; the note\'s step 2 says what to do if Setup still says version 2'],
+  [155, 'a staff sign-in name on the Live display (Phase 11a): only in staff mode; open the Live display from Results, and then from its own address in a new tab'],
 ]);
 
 const code = (text) => `\`${text}\``;
@@ -168,20 +181,30 @@ export function runbook({ commit, folderName }) {
     'You need: to be a site owner (Setup creates lists and sets their settings), one iPad signed in with a participant account, and about an hour. Do the steps in order. Under each step is what to send back.',
     'The pages have no address built into them: each works out its site from where it is opened, and reads its settings from pms-config.txt beside it.',
     '',
-    '## The PCOE site has its lists of version 2: do this instead of steps 1 to 11',
+    '## The PCOE site has its lists of version 3: do this instead of steps 1 to 11',
     '',
-    `The package pms-969bf16 ran steps 1 to 9 on this site on 14 Oct 2026: it has its lists, their version (2), an admin, the sample clients, and ${code('PMSAdminUsers')} locked to the site owners. On 15 Oct 2026 the package pms-e250a36 ran there: the self-test passed (10 of 10), Content showed each client's activities, Domino's went live, and a participant's visit worked to its end in Chrome. Then **Results did not load**: "SharePoint (400): Value does not fall within the expected range." **This SharePoint will not return a column named ${code('DisplayName')}** (observed 15 Oct 2026: every read of ${code('PMSVisitLog')} that named it was refused, and every other column of every list came back; ${code('DisplayName')} is also a property SharePoint gives every list item). So these pages are for **version 3 of the lists**: the guest's name is ${code('PMSGuestList.GuestName')} and a staff sign-in's name ${code('PMSVisitLog.SignedInName')}. The old ${code('DisplayName')} columns stay where they are: nothing reads or writes them. Do only this, in order:`,
+    `The package pms-969bf16 ran steps 1 to 9 on this site on 14 Oct 2026: it has its lists, an admin, the sample clients, and ${code('PMSAdminUsers')} locked to the site owners. On 15 Oct 2026 the package pms-e250a36 ran there (the self-test, Content, Go live with Domino's, a participant's visit; Results did not load), and then pms-da9fc8d, whose lists are of **version 3** (${code('PMSGuestList.GuestName')} and ${code('PMSVisitLog.SignedInName')} in place of the two ${code('DisplayName')} columns, which this SharePoint will not return by name). With pms-da9fc8d **the participant page responded slowly, showing its loading lines** (reported by VJR, 15 Oct 2026), and pms-0a1c701 made it wait for fewer requests. With pms-0a1c701 **Results showed plain blue bars and totals only, and nothing showed who picked what** (reported by VJR, 15 Oct 2026: a named guest had joined by QR code and finished four activities). The package pms-3fb312a drew a chart of its own kind for each question, in Deloitte's colours, and on the facilitator's own view a bar opens the names of the people who picked it; the wall display has no names. With pms-3fb312a, **on a colleague's Windows laptop in Chrome, a confidence question in full screen had a scrollbar inside its chart and its tooltip cut off, over a step's name, with an empty space under the chart** (photographed by VJR, 16 Oct 2026), and two headlines read "Most people (50%) chose ..." and "... co..". These pages make every chart fit its card with nothing in it that scrolls, draw every tooltip whole and clear of its label, widen a confidence scale's columns, centre the figures under the bars on their gridlines, keep each card at its own height, and fix the two headlines (RELEASE-NOTES.md says what changed). **Replace the three pages; nothing else changes. The lists stay at version 3, and nothing in Setup changes.** The participant page is the same as pms-0a1c701's, byte for byte. Do only this, in order:`,
     '',
     `1. Replace ${code('index.html')}, ${code('admin.html')} and ${code('setup.html')} in the folder with the three from this package (upload them over the old ones). Keep ${code('pms-config.txt')} as it is: it has the right content (${code(SETTINGS_TEXT)}). Change nothing else. (Delete ${code('pms-config.json')} if it is still there: nothing reads it, and this site does not serve ${code('.json')} files.)`,
-    `2. Open ${FOLDER_URL}/setup.html: "1. This copy of the app" shows the build ${code(folderName)}, and under "2. Lists" it says in red that the lists are version 2 and this version of the app needs version 3 ("This site's lists need an update before this version of the app can use them. ... (PMS-LST-011, SchemaVersion 2, this build needs 3)"). Until step 5 the participant and admin pages stop with PMS-LST-011: that is expected. *Send back:* a screenshot of "2. Lists".`,
-    `3. Press **Show the plan**. Expect **"0 lists, 2 columns, 0 settings to create."**: ${code('GuestName')} on PMSGuestList and ${code('SignedInName')} on PMSVisitLog, and nothing else; under what Setup will not touch, the two old ${code('DisplayName')} columns, "no longer used since version 3", marked harmless (a site owner may delete them by hand later; there is no need). *Send back:* a screenshot of the plan.`,
-    '4. Press **Create** and confirm. Expect **"Created 0 lists, 2 columns and 0 settings in ... s (2 writes)."** It only adds. *Send back:* that line.',
-    '5. A clean Create then marks the site as ready by itself (what **Mark the site as ready** does): the line under that button says **"Raised the lists from version 2 to version 3."**; the line under "2. Lists" then says "The lists are the version this app needs." (Pressed again, the button says "The site was already marked ready (version 3). Nothing was written.") *Send back:* a screenshot of both lines.',
-    '6. Press **Check Lists**: every row **Ready** (the old `DisplayName` columns are not a problem). *Send back:* a screenshot of the table.',
-    `7. Open ${FOLDER_URL}/admin.html with your PIN. On **Today**, under Controls, choose **Guests scan a personal QR** for the live session (Domino's). Then on **Guests and QR** paste one name (yours will do), press **Add 1 guest**, then **Generate all codes (1)**: the guest list and the codes now have an item each. Keep that guest's code at hand (**Show QR**) for step 10. *Send back:* a screenshot of the guest's row.`,
-    '8. Back in Setup, run the self-test (step 10) and send back **the whole table**. Expect "Passed: 11 of 11 steps", and both probes report: "columns this site leaves out of a read that names no columns" (as on 15 Oct), and "columns this site will not return by name", which should name `PMSGuestList.DisplayName` and `PMSVisitLog.DisplayName` ("no longer used since version 3") and no column of the app; the lists it could not test, because they are empty, are named too.',
-    "9. In admin.html open **Results**: the live session's card loads (on 15 Oct it did not). The visit made on 15 Oct shows as **\"Unnamed participant 1\"**: its sign-in name was written to the old `DisplayName` column, which this site will not return, so it cannot be read back; everyone who visits from now on is named. *Send back:* a screenshot of the card.",
-    `10. Then step 14 on an iPad, **by scanning the guest's QR code of step 7**: Welcome says "Hi" and the guest's name; answer one activity to its end. Look at Results again (the guest is named, with the answers), and then step 16. (Step 11's permissions: nothing about them changed; ${code('PMSAdminUsers')} is locked already. Steps 12, 13 and 15 are not needed: Domino's is live.)`,
+    `2. Open ${FOLDER_URL}/setup.html: "1. This copy of the app" shows the build ${code(folderName)}, and the line under "2. Lists" says "The lists are the version this app needs." Press nothing else in Setup: nothing there changed. (If it says the lists are version 2, PMS-LST-011, the upgrade of 15 Oct was not done: press **Show the plan**, **Create** and **Mark the site as ready** first, and expect "Raised the lists from version 2 to version 3.") *Send back:* a screenshot of "1." and "2.".`,
+    `3. On an iPad, **scan a named guest's QR code** (if the live session has no guest with a code: open ${FOLDER_URL}/admin.html with your PIN; on **Today**, under Controls, choose **Guests scan a personal QR**; on **Guests and QR** paste one name, press **Add 1 guest**, then **Generate all codes (1)**, and **Show QR**). Welcome says "Hi" and the guest's name; open an activity and answer it to its end. *Send back:* which answers the guest picked.`,
+    `4. In ${FOLDER_URL}/admin.html, **Results**, the live session's **Live display**: each question is a chart with a sentence above it; press the bar of an answer the guest picked: \`Who picked: <answer> (N people)\` appears under its card with the guest's name and the time. **View as table** on one card shows the same numbers. The sentence above a chart says "Most people (N%) chose ..." only when more than half chose it ("The top choice (50%) was ..." at half), and an answer whose own words end with a full stop ends its sentence with that one. The line under "Live results" counts only the iPads that answered ("N answers from M iPads": a visit that answered nothing is not among the M). *Send back:* a screenshot with the names open.`,
+    '5. Press **Full screen** and **Next** through every question: no participant\'s name anywhere (the written answers have none under them), and a quiz question marks no answer until **Show answer** on its card. Leave full screen, press **Open in a new tab** and enter your PIN there: the heading says "Live results · Wall display", there is no **Names shown** switch, and there is no name anywhere. *Send back:* a screenshot of each.',
+    '6. On the Windows laptop that showed the fault (Chrome, its display scaling as it is): **Full screen** and **Next** to a confidence question (Kroger\'s, or any client\'s that has one): no scrollbar inside the white card, wide columns, the plot reaching down to the step names with no empty space under them, and pointing at a column shows its tooltip whole, above the column\'s number and clear of the step\'s name. On a single choice and a ranking the figures under the bars ("0%", "50%", "100%") sit centred on their gridlines. Then **Open in a new tab** on the same laptop: nothing scrolls inside a card, every tooltip is whole, and two cards side by side each keep their own height. *Send back:* a photo of the confidence question with its tooltip showing.',
+    '7. The Live display on the iPad, in Safari, upright and on its side: nothing scrolls sideways, a tap on a bar opens its names and × closes them. On the room\'s projector, full screen: the words read from the back of the room. *Send back:* a photo or a screenshot of each.',
+    '8. If the timing check with pms-0a1c701 (below) has not been sent yet, run it now with these pages: the participant page did not change. *Send back:* the table and the summary line.',
+    '',
+    '### The timing check',
+    '',
+    'Read-only, in Chrome, on index.html: it writes and changes nothing, and reads only the timings the browser keeps of the requests the page made.',
+    '',
+    '1. Open the participant page fresh: press Ctrl+F5 (on a Mac, Cmd+Shift+R).',
+    '2. Begin a visit ("Click here to begin"), open an activity, answer it to its end, and press **Back to activities**.',
+    '3. Press F12, open **Console**, paste the line below, and press Enter. Send back the table and the summary line under it (a screenshot, or select and copy them).',
+    '',
+    '```',
+    TIMING_CHECK,
+    '```',
     '',
     'On a new, empty site, follow the steps from step 1.',
     '',
@@ -204,7 +227,7 @@ export function runbook({ commit, folderName }) {
     '- **PMS-CFG-...** is the settings: pms-config.txt is missing, cannot be read, or has a mistake. The Details line says which setting.',
     `- **PMS-CFG-002** with \`page 200\` in the Details means the site sent a web page where pms-config.txt should be: its sign-in page, or an error page such as "File Not Found" when it will not hand the file out. Open ${FOLDER_URL}/pms-config.txt in the browser: it must show the text of the file, not a page.`,
     '- **PMS-LST-010** means **Mark the site as ready** (step 7) has not been done, or the settings item of PMSAppSettings is missing.',
-    '- **PMS-LST-011** means the lists are of an older version than these pages: in Setup press **Show the plan**, **Create** and **Mark the site as ready** (the note above, on the PCOE site). **PMS-LST-012** means they are of a newer version: upload the newer files. Never change the version by hand; send the screenshot.',
+    '- **PMS-LST-011** means the lists are of an older version than these pages: in Setup press **Show the plan**, **Create** and **Mark the site as ready**. **PMS-LST-012** means they are of a newer version: upload the newer files. Never change the version by hand; send the screenshot.',
     '',
     '## Printed QR codes',
     '',
@@ -217,11 +240,11 @@ export function runbook({ commit, folderName }) {
     ...Object.entries(QA_BY_STEP).map(([step, items]) => `| ${step} | ${items.join(', ')} |`),
     ...Object.entries(QA_BY_NOTE).map(([step, items]) => `| Note ${step} | ${items.join(', ')} |`),
     '',
-    'Items 102 to 145 that these steps do not reach, and what shows them later:',
+    'Items 102 to 160 that these steps do not reach, and what shows them later:',
     '',
     ...LATER.map(([item, what]) => `- **${item}**: ${what}.`),
     '',
-    'Items 133 to 137 are new in Phase 10f (the new site, the pictures in the library, the permissions, the folder address in QR codes). Item 138 is new in Phase 10g (the settings file is pms-config.txt). Items 139 to 142 are new in Phase 10h (what this site leaves out of an unnamed read, Content and Today after that fix, a column deleted by hand, and the site\'s error code for a duplicate). Items 143 to 145 are new in Phase 10i (which columns this site will not return by name, the QR check-in of a named guest, and the lists brought from version 2 to version 3).',
+    'Items 133 to 137 are new in Phase 10f (the new site, the pictures in the library, the permissions, the folder address in QR codes). Item 138 is new in Phase 10g (the settings file is pms-config.txt). Items 139 to 142 are new in Phase 10h (what this site leaves out of an unnamed read, Content and Today after that fix, a column deleted by hand, and the site\'s error code for a duplicate). Items 143 to 145 are new in Phase 10i (which columns this site will not return by name, the QR check-in of a named guest, and the lists brought from version 2 to version 3). Items 146 to 149 are new in Phase 10j (the timing check before and after, the size and time of a read of a list\'s columns, whether the site answers 429 or 503, and an activity that opens at once with an edit made in Content). Items 150 to 156 are new in Phase 11a (a named guest on the right bar, no names on the wall, Show answer, the table view, the charts on an iPad, a staff sign-in name on the Live display, and Deloitte\'s colours on a projector). Items 157 to 160 are new in Phase 11a-2 (a confidence question in full screen on the Windows laptop, the wall page, the headlines\' words, and "N iPads" counting the iPads that answered).',
     '',
     LAST_LINE,
     '',
@@ -247,7 +270,50 @@ export function releaseNotes({ commit, folderName, files }) {
     '|---|---:|---:|---|',
     ...files.map((file) => `| ${file.name} | ${file.bytes.toLocaleString('en-US')} | ${file.gzip ? file.gzip.toLocaleString('en-US') : ''} | ${code(file.sha256)} |`),
     '',
-    '## What changed since pms-e250a36 (15 Oct 2026: on the new site Go live, a visit and the self-test worked, and Results did not load)',
+    '## What changed since pms-3fb312a (16 Oct 2026: on a Windows laptop a confidence question in full screen had a scrollbar inside its chart and its tooltip cut off)',
+    '',
+    '- **Nothing inside a chart\'s card scrolls.** The confidence chart was a box that could scroll (and on Windows a fraction of a pixel is enough for a scrollbar with arrows); so was the numbers view. Neither is now, at any size.',
+    '- **A tooltip is always whole.** It is drawn over the page, next to the mark it is about, clear of the mark\'s own label (and of a scale\'s "Average ..."), above it or under it, and inside the window; it follows the mark when the page scrolls.',
+    '- **In full screen the chart fills its card**: a scale\'s plot is as tall as the card allows, the bars share out the height, and a true-or-false bar sits in the middle; no empty white space under the chart. A question too long for a screen held upright even at the smallest type now lets the screen scroll as one page, with "More below" and the controls in view, instead of being cut at the card\'s edge. Each refresh no longer puts the type back to full size for a moment.',
+    '- **Wider confidence columns** (40% of a step, 24 to 72 px on the admin page, larger in full screen) and **the figures under the bars centred on their gridlines** ("0%", "50%", "100%").',
+    '- **Each card keeps its own height**: opening the names of one card no longer stretches the card beside it.',
+    '- **The headlines\' words**: "Most people (N%) chose ..." only when more than half did; otherwise "The top choice (N%) was ...". A true-or-false question says "Most people (N%) said True." or "The top answer (N%) was True."; multiple choice says the same as single choice. An answer whose own words end with a full stop ends the sentence with that one stop.',
+    '- **"N answers from M iPads" counts the iPads that answered** (VJR\'s choice), on the Live display\'s header and on each Results card: Kroger\'s five visits of 16 Oct, which answered 9, 8, 0, 8 and 9 times, are "34 answers from 4 iPads" where they were "from 5 iPads". The Live display\'s one-page PDF and PowerPoint still print every visit, until Phase 11b redesigns them.',
+    '- **Nothing else changed:** not the exports, not what is counted or stored, not the lists (version 3), not Setup, not a request any page sends, and not the participant page (byte for byte as pms-0a1c701\'s). The admin page is 2,158 B larger than pms-3fb312a\'s (gzip).',
+    '',
+    '## What changed in pms-3fb312a (since pms-0a1c701, 15 Oct 2026: on the new site Results showed plain blue bars and totals only, and nothing showed who picked what)',
+    '',
+    '- **A chart of its own kind for each question, drawn by hand** (no chart library: Chart.js has left the admin page, which is about 54 kB smaller). Single and multiple choice: bars, highest first, the top choice in Deloitte Blue with the words "Top choice", the rest in a lighter blue, every bar with its count and share written at its end. True or false: one bar split, True on the left. A confidence scale: a column for each step in shades of blue, three light bands behind them, and the average at its true place ("Average 2.0 of 3"). A ranking: a support score from 0 to 100 (100 means everyone ranked it first), shared places shown as "1=". Written answers: the words that came up most (repeated words, counted by comment: not themes), each a button that shows only the comments that hold it, and the comments themselves.',
+    '- **A sentence above every chart** says the result in words, worked out from the data: "Most people (50%) chose ...", "A tie between X and Y (2 each).", "No answers yet.", and for a quiz "3 of 4 got it right first time." **View as table** swaps a chart for its numbers.',
+    '- **Names on the facilitator\'s own view.** Press a bar: `Who picked: <answer> (N people)` appears under its card, each name with the time it was given (the names Results and the leader report use). A **Names shown** switch hides them all. No request was added: a guest\'s name is on the visit; a staff sign-in name is known when Results has been opened in that tab (opened straight from its address, the Live display calls that person "Unnamed participant N").',
+    '- **The wall display has no names.** Full screen, and the page **Open in a new tab** opens (its address ends in `/wall`), show no participant\'s name anywhere, and a quiz question marks its answer only after **Show answer** on its card. The facilitator\'s own view always marks it.',
+    '- **Deloitte\'s colours** for the charts (Deloitte Blue, Dark Green for a correct answer with a tick and the word, Deloitte Green as a rule on each card); the client\'s logo, name and colour stay in the heading. Every pairing was measured: words 4.5:1 or more, and the marks still apart in greyscale.',
+    '- **Nothing else changed:** not the exports (CSV, PDF, PowerPoint, the leader report and the participant answers), not what is counted or stored, not the lists (version 3), not Setup, not a request any page sends, and not the participant page (byte for byte as pms-0a1c701\'s). The admin page is 54,058 B smaller (gzip); Setup is as it was.',
+    '',
+    '## What changed in pms-0a1c701 (since pms-da9fc8d, 15 Oct 2026: on the new site the participant page responded slowly, showing its loading lines)',
+    '',
+    'The data is small (a live client has a few activities); what cost was the number of requests the page waited for **one after another** (rounds), and the screens that waited on them. Counted on the mocked SharePoint by `scripts/test-participant-waits.js`, which holds every request and lets the waiting ones go together, in waves: a moment\'s rounds are the waves it needs (the settings file aside).',
+    '',
+    '| Moment | Rounds before | Rounds now |',
+    '|---|---:|---:|',
+    '| Page open on the staff link, up to Welcome | 4 | 2 |',
+    '| The same, someone with an earlier visit today | 4 | 3 |',
+    '| Page open by a first QR scan | 4 | 4 |',
+    '| "Click here to begin", once the page has fetched ahead | 7 | 2 |',
+    '| "Click here to begin", pressed at once | 8 | 4 |',
+    '| The Activities hub, arriving | 1 | 0 before it is drawn |',
+    '| Opening an activity | 1 | 0 |',
+    '| Next | 0 | 0 |',
+    '| Submit (the earlier answers saved) | 1 | 1 |',
+    '',
+    '- **The column check reads only what it checks.** Before a list\'s first write the pages read its columns; that read named no properties, and a real list answers it with every field it has, hidden ones too, each with its whole definition. It now names the eight the check uses (`$select=InternalName,TypeAsString,...`). The schema checks of Today and Setup still read every property.',
+    '- **"Click here to begin" waits for two rounds.** AppSettings and the session are read side by side (what AppSettings says still wins); the write token and the types and column checks the visit needs are fetched once the first screen is up; the session is moved to in progress with the version its check read, after the visit is written, and the press does not wait for it.',
+    '- **The first screen waits for two rounds.** The session\'s visits (has this account visited today?) are read beside the client, the session and the activities; what that read finds is used only for a live session of staff. The activities\' questions and options are read once the first screen is up, all of them in one go, and held for as long as the page is open.',
+    '- **The hub and the activities open from what the page holds.** The hub is drawn at once, then reads the activities and the enabled ones\' questions and options again behind it (one request where the site can batch), so **an edit made in Content reaches a participant at the next activity they open after visiting the hub**; an activity already open keeps what it opened with. A read behind the hub that fails leaves the activities on the screen. A loading line that is still needed appears only after 300 ms.',
+    '- **The requests:** a whole visit of the staff link (open, begin, both of Kroger\'s activities, finish) is 30 requests where it was 33 for the session\'s first device, and 27 where it was 29 after it. **On a site that cannot batch** (`"batch": false`) it is 34 and 31: each arrival on the hub reads three lists there. This site batches (its self-test passed the batch step).',
+    '- **Nothing else changed:** not what is saved, or how (Submit still waits until the answers are saved, and "Couldn\'t save, Retry" is as it was), not first tries, not single-use QR codes, not the page\'s timer, not the admin page or Setup, not the lists (version 3). The participant page is 1,207 B larger (gzip) and the admin page 933 B.',
+    '',
+    '## What changed in pms-da9fc8d (since pms-e250a36, 15 Oct 2026: on the new site Go live, a visit and the self-test worked, and Results did not load)',
     '',
     `- **Schema version 3: ${code('GuestName')} and ${code('SignedInName')} in place of ${code('DisplayName')}.** Why: Results did not load on the real site: "SharePoint (400): Value does not fall within the expected range." The failing request was the visit log's read of the names, which names its columns, ${code('DisplayName')} among them. Read one column at a time, every custom column of every list came back but ${code('PMSVisitLog.DisplayName')}: ${code('DisplayName')} is also a property SharePoint gives every list item, and a column of that name can be written and not read back. ${code('PMSGuestList.DisplayName')} only passed because the guest list was empty; once a guest existed, the QR check-in of a named guest, and Guests and QR, would have failed the same way. The record field is the same; only the two columns are renamed, and no column of these pages is named like such a property (a test lists them).`,
     '- **Setup brings a site of version 2 to version 3.** Show the plan names the two new columns and nothing else, and lists the old `DisplayName` columns under what it will not touch, as harmless (Setup never deletes a column). Create adds them. Mark the site as ready, once the check of version 3 is clean, raises the version and says "Raised the lists from version 2 to version 3."; it never lowers a higher version and writes nothing while a problem remains. Until then the participant and admin pages stop with PMS-LST-011, whose words in Setup now say what to press. RUNBOOK.md has the note for the PCOE site.',
@@ -282,7 +348,7 @@ export function releaseNotes({ commit, folderName, files }) {
     '',
     '## What is not proven',
     '',
-    '**Steps 1 to 9 of the runbook have run on the real site** (14 Oct 2026, pms-969bf16: Create made 13 lists, 89 columns and 47 settings; Check Lists all Ready; the site marked ready; an admin added; the samples seeded with their six pictures; PMSAdminUsers locked), **and with pms-e250a36** (15 Oct 2026) the self-test (10 of 10), Content, Go live with Domino\'s and a participant\'s visit in Chrome; Results did not load. **These pages have not run there yet, and nothing has run on an iPad.** They were tested against a local server and a mocked SharePoint REST API that answers as the real site did (it leaves `ClientId` out of an unnamed read and refuses a duplicate with 500), in Playwright\'s Chromium, WebKit and Firefox on a Mac, and the runbook (with the note for this site) was rehearsed on that mock with these very pages. Unproven until the site shows them: that Setup brings the site from version 2 to version 3 and Results then loads (QA-TESTING.md item 145); which columns the site will not return by name, with a guest and a code on it (item 143); the QR check-in of a named guest (item 144); what the site leaves out of an unnamed read besides `ClientId` (item 139); Content, Today, Go live and Results with these pages (item 140); the site\'s error code for a duplicate (item 142); that a missing pms-config.txt is a 404 (item 138); the participant accounts\' permissions; Go live, an iPad and Results at all. RUNBOOK.md says which QA-TESTING.md item each step answers.',
+    '**Steps 1 to 9 of the runbook have run on the real site** (14 Oct 2026, pms-969bf16: Create made 13 lists, 89 columns and 47 settings; Check Lists all Ready; the site marked ready; an admin added; the samples seeded with their six pictures; PMSAdminUsers locked), **with pms-e250a36** (15 Oct 2026) the self-test (10 of 10), Content, Go live with Domino\'s and a participant\'s visit in Chrome; Results did not load, **and with pms-da9fc8d** the lists of version 3 and a participant\'s visit, which was slow; **with pms-0a1c701** (15 Oct 2026) a named guest\'s visit by QR code, four activities, and Results\' plain bars; **with pms-3fb312a** (16 Oct 2026, a colleague\'s Windows laptop in Chrome) the Results charts, their names panel, Names shown, the ranking\'s figures, the correct answer\'s tick and the numbers view, and in full screen a confidence chart that scrolled and cut its tooltip off. **These pages have not run there yet, and nothing has run on an iPad or a projector.** Their charts, names and wall (QA-TESTING.md items 150 to 156) were tested on the local server and the mocked SharePoint REST in three engines: a named guest on the right bar, no name anywhere on the wall, Show answer, the numbers views, every chart at five sizes, axe, and the marks apart in greyscale; and how they fit their cards (items 157 to 159) at nine sizes and at a Windows laptop\'s 125% and 150% scaling, in full screen and on the wall page: nothing inside a card scrolls, every tooltip is whole, seen at its corners and clear of its label, and each chart fills its card. How long one request takes on that site, how large a read of a list\'s columns is there, and whether it answers 429 or 503, nobody has measured: the timing check of the note says (QA-TESTING.md items 146 to 148). They were tested against a local server and a mocked SharePoint REST API that answers as the real site did (it leaves `ClientId` out of an unnamed read and refuses a duplicate with 500), in Playwright\'s Chromium, WebKit and Firefox on a Mac, and the runbook (with the note for this site) was rehearsed on that mock with these very pages. Unproven until the site shows them: that Setup brings the site from version 2 to version 3 and Results then loads (QA-TESTING.md item 145); which columns the site will not return by name, with a guest and a code on it (item 143); the QR check-in of a named guest (item 144); what the site leaves out of an unnamed read besides `ClientId` (item 139); Content, Today, Go live and Results with these pages (item 140); the site\'s error code for a duplicate (item 142); that a missing pms-config.txt is a 404 (item 138); the participant accounts\' permissions; Go live, an iPad and Results at all. RUNBOOK.md says which QA-TESTING.md item each step answers.',
     '',
   ].join('\n');
 }

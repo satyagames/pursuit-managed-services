@@ -72,20 +72,41 @@ test('an expired sign-in shows its own banner with Reload, and a look that gets 
 
 test('the hub could not be loaded: plain words, and "Try again" reads it again without reloading the page (FH-4)', async ({ page }) => {
   const fixture = await mockApi(page);
+  // Since Phase 10j the hub is drawn at once from the activities the page holds, and a read behind it that fails leaves them on the screen: the
+  // hub has nothing to show, and says why, only when the page holds none. So the client has no activity when the page loads.
+  const activities = fixture.records.sections.splice(0);
   await page.goto(appPath('/index.html#/welcome?t=track-a'));
   const toHub = page.getByRole('button', { name: /^(Activities|Click here to begin)$/ });
   await expect(toHub).toBeVisible();
-  // The first arrival, straight after the page loaded, is drawn from what the boot read. Go there, come back, and arrive again:
+  // The first arrival, straight after the page loaded, is drawn from what the boot read: none. Go there, come back, and arrive again:
   // that arrival reads the activities, and this time the read is answered 503.
   await toHub.click();
-  await expect(page.locator('button.activity').first()).toBeVisible();
+  await expect(page.getByText('There are no activities available right now.')).toBeVisible();
   await page.getByRole('button', { name: 'Home' }).click();
   await expect(toHub).toBeVisible();
   await page.evaluate(() => { (window as unknown as { stayedHere?: boolean }).stayedHere = true; });
   fixture.failNextSectionsRead = true;
   await toHub.click();
   await expect(page.getByRole('alert').filter({ hasText: 'reach the server. Check the connection, then try again.' })).toBeVisible();
+  fixture.records.sections.push(...activities); // the facilitator's activities are there now
   await page.getByRole('button', { name: 'Try again' }).click();
   await expect(page.locator('button.activity').first()).toBeVisible();
   expect(await page.evaluate(() => (window as unknown as { stayedHere?: boolean }).stayedHere), 'the page was not reloaded').toBe(true);
+});
+
+test('with activities on the screen, a read behind the hub that fails leaves them there: no error, and they still open (Phase 10j)', async ({ page }) => {
+  const fixture = await mockApi(page);
+  await page.goto(appPath('/index.html#/welcome?t=track-a'));
+  const toHub = page.getByRole('button', { name: /^(Activities|Click here to begin)$/ });
+  await toHub.click();
+  await expect(page.locator('button.activity').first()).toBeVisible();
+  await page.getByRole('button', { name: 'Home' }).click();
+  fixture.failNextSectionsRead = true;
+  await toHub.click();
+  await expect(page.locator('button.activity')).toHaveCount(2);
+  await expect(page.getByText('Loading activities...')).toHaveCount(0);
+  await expect.poll(() => fixture.failNextSectionsRead, 'the read behind the hub was made, and failed').toBe(false);
+  await expect(page.getByRole('alert')).toHaveCount(0);
+  await page.locator('button.activity').nth(1).click();
+  await expect(page.getByRole('heading', { name: /Question B/ })).toBeVisible();
 });

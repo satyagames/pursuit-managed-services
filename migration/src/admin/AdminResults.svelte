@@ -7,14 +7,16 @@
   import { namesByVisit, unreadableNotice } from '../lib/unreadable.js';
   import { createPageWatcher, type PageWatcher } from '../lib/page-watch.js';
   import { adminDelay } from '../lib/poll-schedule.js';
-  import { REMOVE_VISIT_CONFIRM, canRemoveVisit, readNameSources, resultRows, rowsToLookForAgain, sessionsNeedingNames, type NameSources } from '../lib/admin-results.js';
+  import { REMOVE_VISIT_CONFIRM, canRemoveVisit, holdNameSources, readNameSources, resultRows, rowsToLookForAgain, sessionsNeedingNames, type NameSources } from '../lib/admin-results.js';
+  import { answerCounts, answersFrom, answersOf, chartsOf, namesFor } from '../lib/results-chart-model.js';
   import ReportExports from './ReportExports.svelte';
+  import ResultCard from './charts/ResultCard.svelte';
 
   type Session = { id: string; clientId: string; date?: string; sectionIds?: string[]; status?: string };
   type Client = { id: string; name: string };
   type Token = { id: string; sessionId: string; used?: boolean; expiredAt?: string | null };
   type TrackRow = { track: SessionTrack; name: string; unnamed: boolean; status: string; answered: number; total: number };
-  type SessionCard = { results: SessionResults; owner: string; codes: string[]; tracks: TrackRow[]; unreadable: string };
+  type SessionCard = { results: SessionResults; owner: string; codes: string[]; tracks: TrackRow[]; unreadable: string; charts: ReturnType<typeof chartsOf> };
 
   let { onToast, onLiveDisplay }: {
     onToast: (message: string, kind?: 'info' | 'success' | 'error') => void;
@@ -26,6 +28,8 @@
   let error = $state('');
   let updated = $state('');
   let openResults = $state<string[]>([]);
+  /** Each chart's open answer (its names) or chosen word, by session and question: a refresh keeps them. In memory only. */
+  let chosen = $state<Record<string, string | null>>({});
   let restartTrack = $state<TrackRow | null>(null);
   let restartSectionId = $state<string | null | undefined>(undefined);
   let busy = $state(false);
@@ -147,9 +151,12 @@
 
   /** One session's card, from its results: each iPad's row, its status, and the codes. */
   function cardOf(result: SessionResults): SessionCard {
-    const tracks = resultRows(result, sourcesHeld.get(result.session.id));
+    const sources = sourcesHeld.get(result.session.id);
+    const tracks = resultRows(result, sources);
+    // The charts of the session's live activities (Phase 11a), with each answer's names: the same rule as the rows, over what was read for them.
+    const charts = chartsOf({ sections: result.sections.filter((section) => section.enabled) }, { names: namesFor({ tracks: result.tracks, answers: answersOf(result), ...(sources ?? {}) }) });
     // What could not be read (Phase 9b, DI-6), said beside the export buttons, with each person's name the way their row has it.
-    return { results: result, owner: namesHeld.get(result.session.clientId) ?? result.session.clientId, codes: tokensHeld.filter((token) => token.sessionId === result.session.id).map((token) => token.expiredAt ? 'expired' : token.used ? 'used' : 'unused'), tracks, unreadable: unreadableNotice(result.unreadable, namesByVisit(tracks)) };
+    return { results: result, owner: namesHeld.get(result.session.clientId) ?? result.session.clientId, codes: tokensHeld.filter((token) => token.sessionId === result.session.id).map((token) => token.expiredAt ? 'expired' : token.used ? 'used' : 'unused'), tracks, unreadable: unreadableNotice(result.unreadable, namesByVisit(tracks)), charts };
   }
 
   /** Everything, from the start: every session in full. The live one is read the lean way, so the timer can carry on from it. */
@@ -181,6 +188,7 @@
     const sources = await readNameSources(needing);
     if (!active || version !== requestVersion) return;
     sourcesHeld = sources;
+    holdNameSources(sources);
     for (const result of results) if (needing.includes(result.session.id)) for (const track of result.tracks) if (!track.participantName?.trim()) lookedFor.set(track.id, Math.max(lookedFor.get(track.id) ?? 0, 1));
     liveHeld = held;
     cards = results.map(cardOf);
@@ -203,6 +211,7 @@
       const found = await readNameSources([id]);
       if (!active || version !== requestVersion) return;
       sourcesHeld = new Map(sourcesHeld).set(id, found.get(id) ?? { visits: [], roster: [] });
+      holdNameSources(new Map([[id, sourcesHeld.get(id) ?? { visits: [], roster: [] }]]));
       for (const row of waiting) lookedFor.set(row.track.id, (lookedFor.get(row.track.id) ?? 0) + 1);
     }
     cards = cards.map((card) => (card.results.session.id === id ? cardOf(read.results) : card));
@@ -210,9 +219,6 @@
     error = '';
   }
 
-  function resultQuestionLabel(question: SessionSection['questions'][number], tracks: number) {
-    return `${question.respondents} of ${tracks} answered`;
-  }
 </script>
 
 <section class="panel sessions-panel" aria-busy={loading || busy}>
@@ -246,24 +252,19 @@
         {/if}
         {#if card.codes.length}<p class="card__note muted small">QR codes: {counts(card.codes)}</p>{/if}
         <details class="tally" open={openResults.includes(session.id)} ontoggle={(event) => { const isOpen = (event.currentTarget as HTMLDetailsElement).open; openResults = isOpen ? [...new Set([...openResults, session.id])] : openResults.filter((id) => id !== session.id); }}>
-          <summary>Live results · {card.results.sections.flatMap((section) => section.questions).reduce((sum, question) => sum + question.respondents, 0)} answers from {card.results.tracks.length} iPads</summary>
-          {#each card.results.sections.filter((section) => section.enabled) as section (section.id)}
-            {#each section.questions as question (question.id)}
-              <div class="tally__question">
-                <div class="tally__head"><strong>{question.prompt}</strong><span class="muted small">{resultQuestionLabel(question, card.results.tracks.length)}</span></div>
-                {#if question.type === 'open-text-feedback'}
-                  <ul class="tally__comments">{#each question.responses as response, index (`${response.clientTrackId}-${index}`)}<li>{String(response.answer)}</li>{/each}</ul>
-                {:else}
-                  {@const maximum = Math.max(1, ...question.options.map((option) => option.count))}
-                  <ul class="tally__bars">
-                    {#each question.options as option (option.id)}
-                      <li class="tally__row"><span class="tally__label">{option.label}</span><span class="tally__bar"><span class="tally__fill" style={`width:${(option.count / maximum) * 100}%`}></span></span><span class="tally__count">{option.score === undefined ? option.count : `${option.count} · ${option.score} pts`}</span></li>
-                    {/each}
-                  </ul>
-                {/if}
-              </div>
-            {/each}
-          {/each}
+          <summary>Live results · {answersFrom(answerCounts(card.results.sections.flatMap((section) => section.questions)))}</summary>
+          {#if openResults.includes(session.id)}
+            <div class="tally__charts">
+              {#each card.charts as section (section.id)}
+                <h3 class="tally__section">{section.title}</h3>
+                <div class="tally__grid">
+                  {#each section.charts as chart (chart.id)}
+                    <ResultCard {chart} withNames marked selected={chosen[`${session.id}/${chart.id}`] ?? null} onSelect={(id) => { chosen = { ...chosen, [`${session.id}/${chart.id}`]: id }; }} level={4} />
+                  {/each}
+                </div>
+              {/each}
+            </div>
+          {/if}
         </details>
       </article>
     {/each}
@@ -284,3 +285,27 @@
     </section>
   {/if}
 </section>
+
+<style>
+  /* Each session card's "Live results" (Phase 11a): the charts of admin/charts/ResultCard.svelte, a grid of cards under each activity. Here and not in
+     src/admin.css, which the Setup page loads too. */
+  .tally__charts {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.5rem 1rem 1.25rem;
+  }
+
+  .tally__section {
+    margin: 0.5rem 0 0;
+    font-size: 1.1rem;
+  }
+
+  /* Each card keeps its own height, at the top of its row (Phase 11a-2: a card stretched to the height of its neighbour whose names were open). */
+  .tally__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
+    align-items: start;
+    gap: 1rem;
+  }
+</style>

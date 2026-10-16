@@ -4,25 +4,26 @@
 # One entry for each distinct request and how many times it was sent ("~": the count depends on timing). <uuid> and <time> are placeholders.
 # Translated in Phase 10c-2b from the 10c-2a recording above: each old list title to its PMS name, ClientLogos to PMSClientImages, Order to SortOrder (scripts/schema-baseline/translate-baselines.js), after a fresh recording of the new names equalled the translation exactly. Nothing else was changed.
 # Amended in Phase 10h, part A: every item read names its columns, so each entry that read items without naming them has `&$select=` and its list's columns at the end of its query (and a mock's `__next` link of such a read carries them before its `$fakeskip`), by scripts/schema-baseline/select-baselines.js, after a fresh recording equalled the translation exactly; the number and the order of the requests are as they were. Nothing else was changed.
+# Amended in Phase 10j, part B: the column check before a list's first write (dataService.js spMetadata) names the eight properties it checks, so each of its reads of a list's columns ends `/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField` where it ended `/fields`; which of a list's `/fields` reads were the check's was found by running the suite on the last commit's tree and on today's, request by request (scripts/schema-baseline/fields-baselines.js), and a fresh recording equalled the translation exactly; the number and the order of the requests are as they were, and the schema checks' own reads of a list's columns are unchanged. Nothing else was changed.
 1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items(69)
-6 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/fields
+6 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField
 2 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$filter=AppId eq 'c-dominos'&$top=2&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
 2 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$filter=AppId eq 'c-kroger'&$top=2&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
 12 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$top=200&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
 6 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')?$select=ListItemEntityTypeFullName
-6 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/fields
+6 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField
 2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-history-1-a'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
 2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-dominos-history-1-b'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
 1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$filter=AppId eq 'o-trivia-1-b'&$top=2&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
 12 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$top=200&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
 6 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')?$select=ListItemEntityTypeFullName
-6 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/fields
+6 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField
 3 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$filter=AppId eq 'q-dominos-history-1'&$top=2&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
 1 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$filter=AppId eq 'q-dominos-history-5'&$top=2&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
 2 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$filter=AppId eq 'q-trivia-1'&$top=2&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
 12 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$top=200&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
 6 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')?$select=ListItemEntityTypeFullName
-6 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/fields
+6 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField
 3 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$filter=AppId eq 'sec-dominos-history'&$top=2&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
 2 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$filter=AppId eq 'sec-trivia'&$top=2&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
 11 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description

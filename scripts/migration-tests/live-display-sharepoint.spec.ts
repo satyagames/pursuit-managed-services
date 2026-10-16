@@ -70,7 +70,7 @@ test('opening the Live display: the structure in 3 requests and the first feed i
   fake.reset();
   await page.getByRole('button', { name: 'Unlock' }).click();
   await expect(meta(page)).toContainText(/4 answers from 3 iPads/);
-  await expect(page.locator('.live-question').first()).toBeVisible();
+  await expect(page.locator('.result-card').first()).toBeVisible();
   const sent = fake.requests.map(shape);
   expect(sent.length, sent.join(' | ')).toBeLessThanOrEqual(7);
   // The PIN check, the write token the batches need, the session, then ONE batch each for the activities with the client, for the questions with the
@@ -128,7 +128,7 @@ test('a refresh that is answered 429 or 503 backs off for as long as Retry-After
   const next = (await calls(page)).filter((call) => call.url.endsWith('/$batch') && call.at > refusedAt)[0];
   expect(next.at - refusedAt, 'the next refresh came after the 70 seconds').toBeGreaterThanOrEqual(70_000);
   expect(next.at - refusedAt).toBeLessThanOrEqual(85_000);
-  await expect(page.locator('.live-question').first()).toBeVisible();
+  await expect(page.locator('.result-card').first()).toBeVisible();
   measured.liveDisplayBusy = { askedMs: 70_000, nextAfterMs: next.at - refusedAt };
 });
 

@@ -6,6 +6,7 @@ import '../../public/css/admin.css';
 import './styles/tokens.css';
 import './styles/fonts-admin.css';
 import './styles/admin-tokens.css';
+import './styles/results-tokens.css';
 import AdminApp from './AdminApp.svelte';
 import './admin.css';
 

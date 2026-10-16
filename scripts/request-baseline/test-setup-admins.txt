@@ -3,31 +3,32 @@
 # Do not regenerate this file to make a comparison pass: a difference is a finding. See scripts/request-baseline.js.
 # One entry for each distinct request and how many times it was sent ("~": the count depends on timing). <uuid> and <time> are placeholders.
 # Amended in Phase 10h, part A: every item read names its columns, so each entry that read items without naming them has `&$select=` and its list's columns at the end of its query (and a mock's `__next` link of such a read carries them before its `$fakeskip`), by scripts/schema-baseline/select-baselines.js, after a fresh recording equalled the translation exactly; the number and the order of the requests are as they were. Nothing else was changed.
-2 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/fields
+# Amended in Phase 10j, part B: the column check before a list's first write (dataService.js spMetadata) names the eight properties it checks, so each of its reads of a list's columns ends `/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField` where it ended `/fields`; which of a list's `/fields` reads were the check's was found by running the suite on the last commit's tree and on today's, request by request (scripts/schema-baseline/fields-baselines.js), and a fresh recording equalled the translation exactly; the number and the order of the requests are as they were, and the schema checks' own reads of a list's columns are unchanged. Nothing else was changed.
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField
 2 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')?$select=ListItemEntityTypeFullName
-2 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField
 2 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')?$select=ListItemEntityTypeFullName
-4 x GET /sites/cec/_api/web/lists/getbytitle('PMSAdminUsers')/fields
+4 x GET /sites/cec/_api/web/lists/getbytitle('PMSAdminUsers')/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField
 10 x GET /sites/cec/_api/web/lists/getbytitle('PMSAdminUsers')/items?$top=200&$select=Id,AppId,PinHash,Name
 4 x GET /sites/cec/_api/web/lists/getbytitle('PMSAdminUsers')?$select=ListItemEntityTypeFullName
-2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField
 2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')?$select=ListItemEntityTypeFullName
-2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField
 2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')?$select=ListItemEntityTypeFullName
-2 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField
 2 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')?$select=ListItemEntityTypeFullName
-2 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField
 1 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$filter=AppId eq 'c-seeded'&$top=2&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
 2 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')?$select=ListItemEntityTypeFullName
-2 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField
 2 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')?$select=ListItemEntityTypeFullName
-2 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField
 2 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')?$select=ListItemEntityTypeFullName
-2 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipantAnswers')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipantAnswers')/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField
 2 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipantAnswers')?$select=ListItemEntityTypeFullName
-2 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField
 2 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')?$select=ListItemEntityTypeFullName
-2 x GET /sites/cec/_api/web/lists/getbytitle('PMSVisitLog')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSVisitLog')/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField
 2 x GET /sites/cec/_api/web/lists/getbytitle('PMSVisitLog')?$select=ListItemEntityTypeFullName
 3 x POST /sites/cec/_api/contextinfo
 3 x POST /sites/cec/_api/web/lists/getbytitle('PMSAdminUsers')/items

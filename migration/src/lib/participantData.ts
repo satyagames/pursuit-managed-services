@@ -179,10 +179,12 @@ export async function getProgress(sessionId: string, clientTrackId: string, answ
 }
 
 /**
- * getProgress() with no read at all: the activities as the page's timer last found them (experience.adoptWatch) and this
- * visit's answers from the device. The hub redraws from this when the timer reports a change, so it never reads on its own.
+ * getProgress() with no read at all: the activities as the page holds them (boot, the hub's last read, or the timer: experience.adoptWatch)
+ * and this visit's answers from the device. The hub draws from this as it arrives (Phase 10j), and again when its read or the timer reports a
+ * change. `answeredQuestionIds` is what a screen that has just saved already knows (as getProgress takes it).
  */
-export async function getKnownProgress(sessionId: string, clientTrackId: string) {
+export async function getKnownProgress(sessionId: string, clientTrackId: string, answeredQuestionIds: string[] | null = null) {
+  if (Array.isArray(answeredQuestionIds)) return progressOf(knownActivities(), answeredQuestionIds);
   const visit = currentVisit();
   const own = visit && visit.trackId === clientTrackId ? visit : { trackId: clientTrackId, sessionId, clientId: participant.clientId, restartedAt: null };
   const saved = await store.saved(own) as AnswerRecord[];

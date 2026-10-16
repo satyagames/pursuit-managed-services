@@ -189,6 +189,35 @@ const fieldsFor = (key, version = VERSION) => columnsOf(key).map((column, index)
   RichText: false, AppendOnly: false, Required: column.required, ReadOnlyField: false, ...(column.type === 'DateTime' ? { DisplayFormat: 1 } : {}),
 }));
 
+/** What a field of a real list carries besides what the app reads (Phase 10j): every read of a list's columns that names none gets all of it. */
+const FIELD_EXTRAS = Object.freeze({
+  AutoIndexed: false, CanBeDeleted: true, ClientSideComponentId: '00000000-0000-0000-0000-000000000000', ClientSideComponentProperties: null,
+  ClientValidationFormula: null, ClientValidationMessage: null, CustomFormatter: null, DefaultFormula: null, Description: '', Direction: 'none',
+  Filterable: true, Group: 'Custom Columns', IndexStatus: 0, JSLink: 'clienttemplates.js', PinnedToFiltersPane: false, Scope: '/sites/cec/Lists',
+  Sealed: false, ShowInFiltersPane: 0, Sortable: true, TypeDisplayName: 'Single line of text', TypeShortDescription: 'Single line of text',
+  ValidationFormula: null, ValidationMessage: null,
+});
+/**
+ * A column as a read of a list's `/fields` returns it (Phase 10j): with `$select`, the properties named (and its `__metadata`), as SharePoint answers;
+ * without, every property, its SchemaXml (the column's whole definition) among them. A real list answers a read that names nothing with every field it
+ * has, hidden ones too, each like this: that read is what the data layer's column check made before every list's first write until Phase 10j.
+ */
+const fieldAsRead = (select) => (field) => {
+  if (select !== null) {
+    const named = select.split(',').map((name) => name.trim()).filter((name) => name in field);
+    return { __metadata: { type: 'SP.Field' }, ...Object.fromEntries(named.map((name) => [name, field[name]])) };
+  }
+  const xml = [`Type="${field.TypeAsString}"`, `DisplayName="${field.Title ?? field.InternalName}"`, `Required="${field.Required ? 'TRUE' : 'FALSE'}"`,
+    `EnforceUniqueValues="${field.EnforceUniqueValues ? 'TRUE' : 'FALSE'}"`, `Indexed="${field.Indexed ? 'TRUE' : 'FALSE'}"`,
+    `ID="{${field.Id ?? '00000000-0000-4000-8000-000000000000'}}"`, 'SourceID="{11111111-2222-4333-8444-555555555555}"',
+    `StaticName="${field.InternalName}"`, `Name="${field.InternalName}"`, 'ColName="nvarchar7"', 'RowOrdinal="0"', 'Version="1"',
+    ...(field.TypeAsString === 'Note' ? ['NumLines="6"', `RichText="${field.RichText ? 'TRUE' : 'FALSE'}"`, 'RichTextMode="Compatible"', 'IsolateStyles="FALSE"', `AppendOnly="${field.AppendOnly ? 'TRUE' : 'FALSE'}"`, 'UnlimitedLengthInDocumentLibrary="FALSE"'] : []),
+    ...(field.TypeAsString === 'DateTime' ? [`Format="${field.DisplayFormat === 1 ? 'DateTime' : 'DateOnly'}"`, 'FriendlyDisplayFormat="Disabled"'] : []),
+    ...(field.TypeAsString === 'Text' ? [`MaxLength="${field.MaxLength ?? 255}"`] : []),
+    'Customization=""', 'CustomFormatter=""'].join(' ');
+  return { __metadata: { type: 'SP.Field' }, ...FIELD_EXTRAS, ...field, SchemaXml: `<Field ${xml} />` };
+};
+
 /**
  * @param {{ without?: string[], user?: { Id: number, Title: string }, siteUrl?: string, prefix?: string, lists?: Record<string, string>, logoLibrary?: string }} [options]
  *   `without` drops columns (as `key.Column`) or whole lists (as `key`), to stand for a site
@@ -461,7 +490,7 @@ export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Ca
     if (!rows) return error(404, 'List does not exist');
     // (The other copy's list has the schema's columns even where the test's own list was left out: Phase 10c-3.)
     const columnsHere = fields.get(list) ?? fieldsFor(list);
-    if (path.endsWith('/fields')) return ok({ results: columnsHere });
+    if (path.endsWith('/fields')) return ok({ results: columnsHere.map(fieldAsRead(url.searchParams.get('$select'))) });
     // One column, its creation from a definition, and a change to its settings (Phase 10c-3). Never on the other set's lists.
     if (/\/fields\/(createfieldasxml|getbyid\('[^']*'\)|getbyinternalnameortitle\('(?:''|[^'])+'\))$/.test(path)) {
       if (entry.stray && method !== 'GET') return error(400, 'The mock does not change the columns of the other copy\'s lists.');

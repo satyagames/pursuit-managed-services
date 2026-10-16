@@ -20,8 +20,6 @@ export const RUNTIME_DEPENDENCIES = [
   { name: 'regexparam', where: 'participant page, with svelte-spa-router' },
   { name: 'canvas-confetti', where: 'participant page and admin page (confetti)' },
   { name: 'lean-qr', where: 'admin page (QR pictures)' },
-  { name: 'chart.js', where: 'admin page (Live display charts)' },
-  { name: '@kurkle/color', where: 'admin page, with chart.js' },
   { name: 'jspdf', where: 'admin page (PDF exports, loaded when first used)' },
   { name: 'fflate', where: 'admin page, with jspdf' },
   { name: 'fast-png', where: 'admin page, with jspdf' },

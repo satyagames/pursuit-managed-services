@@ -128,11 +128,13 @@ test('Kroger: the mockup. Its palette, its event title, its activities in order,
   // Welcome, in Kroger's look.
   await expect(page.getByText('Welcome to the Kroger experience.', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Click here to begin' })).toBeVisible();
-  // Six requests to the first screen on the local server, which has no signed-in user to ask about.
-  // The visit log follows once the screen is up.
+  // Four requests to the first screen on the local server, which has no signed-in user to ask about. Once the screen is up: the visit log,
+  // and (Phase 10j) every enabled activity's questions and options, read once and held.
+  await expect.poll(() => requests.filter((entry) => /questions|options/.test(entry)).sort()).toEqual(['GET options', 'GET questions']);
   const boot = requests.filter((entry) => entry !== 'POST uservisitlogs');
-  expect(boot).toEqual(['GET appsettings', 'GET clients', 'GET sessions', 'GET sections', 'GET questions', 'GET options']);
-  await writeFile(`${results}local-boot.json`, `${JSON.stringify({ toFirstScreen: boot.length, requests: boot }, null, 2)}\n`);
+  expect(boot.slice(0, 4)).toEqual(['GET appsettings', 'GET clients', 'GET sessions', 'GET sections']);
+  expect([...boot.slice(4)].sort()).toEqual(['GET options', 'GET questions']);
+  await writeFile(`${results}local-boot.json`, `${JSON.stringify({ toFirstScreen: 4, requests: boot.slice(0, 4), afterFirstScreen: boot.slice(4) }, null, 2)}\n`);
   expect(await theme(page)).toMatchObject({ client: 'c-kroger', source: 'stored', version: '1', mid: '#045BCC', bottom: '#0444A8', action: '#296CD4' });
   expect((await theme(page)).shell).toContain('rgb(4, 91, 204)');
   // Phase 9b (SAM-1): Kroger ships with no logo (the drawn stand-in is gone), so its name is on the plate in type, as Domino's has always been.

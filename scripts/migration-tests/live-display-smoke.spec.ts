@@ -29,18 +29,18 @@ test('smoke: the Live display shows the tally, goes full screen and leaves it, a
   await page.getByRole('button', { name: 'Live display' }).click();
   await expect(page.getByRole('heading', { name: 'Live results' })).toBeVisible();
   await expect(page.locator('.live__meta')).toContainText('3 answers from 1 iPads');
-  await expect(page.locator('.live-question canvas').first()).toBeVisible();
-  await expect(page.locator('.results__comments li')).toContainText(['Lovely day']);
+  await expect(page.locator('.result-card .bars').first()).toBeVisible();
+  await expect(page.locator('.words__text')).toContainText(['Lovely day']);
 
   // Full screen: the display covers the window and leaves again (the browser's own full screen is taken where it is offered, and not needed).
   await page.getByRole('button', { name: 'Full screen' }).click();
   await expect(page.locator('section.live')).toHaveAttribute('data-presenting', 'true');
   expect(await page.locator('section.live').evaluate((element) => getComputedStyle(element).position)).toBe('fixed');
   // One question at a time, and the whole card is on the screen (Phase 7c): the arrow keys move, and the card stays inside the window in this engine too.
-  await expect(page.locator('.live-question')).toHaveCount(1);
+  await expect(page.locator('.result-card')).toHaveCount(1);
   await expect(page.locator('.live__eyebrow')).toContainText(/Question 1 of \d+/);
   await page.waitForTimeout(900); // the chart's own animation
-  const whole = () => page.locator('.live-question').evaluate((card) => { const box = card.getBoundingClientRect(); return box.left >= 0 && box.top >= 0 && box.right <= window.innerWidth + 0.5 && box.bottom <= window.innerHeight + 0.5 && card.scrollHeight <= card.clientHeight + 1; });
+  const whole = () => page.locator('.result-card').evaluate((card) => { const box = card.getBoundingClientRect(); return box.left >= 0 && box.top >= 0 && box.right <= window.innerWidth + 0.5 && box.bottom <= window.innerHeight + 0.5 && card.scrollHeight <= card.clientHeight + 1; });
   expect(await whole(), 'the first question fits').toBe(true);
   await page.keyboard.press('ArrowRight');
   await expect(page.locator('.live__eyebrow')).toContainText(/Question 2 of \d+/);

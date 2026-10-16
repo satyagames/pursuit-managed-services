@@ -1539,6 +1539,106 @@ suite 1,120 passed, 26 skipped, 0 failed of 1,146 (Chromium 426, WebKit 329, Fir
 **Still to see on the real site:** QA-TESTING.md items 143 to 145 (the fourth probe's answer with a guest and a code on the site, the QR check-in of a named guest, the upgrade from
 version 2 to version 3 and Results after it), 138, 139 and 142, and everything after the note's steps.
 
+## Phase 10j (2026-10-15): fewer waits on the participant page
+
+**In plain words.** With `pms-da9fc8d` on the real site (PCOE, its lists of version 3) VJR said the participant page "responds slowly (showing loading)". The live client has a
+handful of activities: the data is small. What cost was the number of requests the page waited for one after another (**rounds**) and the screens that waited on them: 4 rounds
+before Welcome, 7 or 8 when "Click here to begin" was pressed, 1 on every arrival on the hub and 1 on opening every activity but the first. This phase made the page wait for 2, 2
+(4 if pressed at once), none and none, and changed nothing of what is saved or how. The report is [RELEASE-10J.md](RELEASE-10J.md). **These pages have not run on the real site
+yet**: the runbook's note has a timing check, before and after (QA-TESTING.md items 146 to 149).
+
+**What changed, part by part.** Each target of the phase was a node:test `todo` until the part that met it (asked at the start, the answer was "targets as todo": no red commit).
+
+- **A (`88a41e4`). A test that counts the waits.** `scripts/test-participant-waits.js` holds every request the data layer sends on the mock and lets the waiting ones go together, in
+  waves: a moment's rounds are the waves it needs, and what it leaves going is counted after it. Nothing is timed. It measured `c7848e5` (the table is in RELEASE-10J.md).
+- **B (`0b1522d`). The column check reads only what it checks.** `spMetadata` reads `/fields?$select=` the eight properties it uses (a real list answers a read naming none with
+  every field, hidden ones too, each with its SchemaXml). The mock honours `$select` on `/fields`. The schema checks, Setup's plan and its probe still read every property. Baselines:
+  translated by `scripts/schema-baseline/fields-baselines.js` (the order of 26,035 requests proved, 107 entries split, a fresh recording equal).
+- **C (`f1ef922`). Beginning a visit waits for two rounds.** AppSettings and the session side by side (what AppSettings says still wins, on every refusal path); the session moved on
+  with the version the check read, and not waited for by Welcome (`waitForSession: false`); `dataService.prepareWrites` and `lib/boot.js` `writesAhead` fetch the write token and the
+  types and column checks a visit's writes need once the first screen is up. Baselines: `scripts/schema-baseline/begin-baselines.js`, test by test (75 second reads of a session gone;
+  3 presses refused by AppSettings read the session too, as asked); the browsers' start-up by hand (the fetch-ahead). The full browser run at C found one spec that waited only for
+  the visit log (`settings-file.spec.ts:250`, three engines), fixed in E.
+- **D (`3dbe005`). The first screen waits for two rounds.** The boot reads the session's visits in round 2 (used only for a live session of staff, otherwise dropped; a failed read
+  still lets the first screen up); `lib/activity-content.js` holds every enabled activity's questions and options for the page's life, read once after the first screen, beside a
+  QR code's claim, or at an activity opened first. Baselines: `--amend --code` (7 entries) and the browsers by hand.
+- **E (`4d77be0`). The hub and activities open from what the page holds.** The hub is drawn at once and reads the activities and their content behind it, in one request where the site
+  can batch; an edit in Content reaches the next activity opened after the hub; loading lines after 300 ms. No baseline moved.
+- **F (`a02016b`). The package and its runbook.** RUNBOOK.md's note for PCOE is for its lists of version 3, with the timing check before and after; RELEASE-NOTES.md says what changed
+  since `pms-da9fc8d`; QA items 146 to 149; a fifth rehearsal. `pms-a02016b` passed every proof; the rehearsal passed 15 of 15.
+- **Fixes (`0a1c701`), from the final gates on F:** the hub's read behind it now runs even when drawing what is held failed (a staff member's earlier visit whose answers could
+  not be read stayed on "Loading activities..." with no Try again), and `clients.spec.ts` follows part D (the local boot's first screen in four requests). `pms-0a1c701` replaces
+  `pms-a02016b` (both passed every proof and the rehearsal, 15 of 15).
+- **G (this commit). The record:** this section, AGENTS.md ("Rules from Phase 10j", and the line on rounds), QA-TESTING.md (done in F), RELEASE-10J.md, `PHASE_10J`'s end sizes.
+
+**Numbers.** `npm test` 1,179 (1,129 before), `check:svelte` 412 files 0/0, `test:baseline` 37, `test:bundle` 32, mutations 34/34 and oracle 500 seeds 0 differences (unchanged), the whole
+browser suite 1,126 passed, 26 skipped, 0 failed of 1,152 (Chromium 428, WebKit 331, Firefox 367; 1,120 of 1,146 before), rehearsal 15 of 15. A whole visit on the mock: 30 requests where there were 33 (27 where 29); 34 and 31 on a site that cannot batch (a finding). Participant page
++1,207 B gzip (2,000 B allowed), admin +933 B, Setup +284 B (fresh checkout: +1,207, +932, +284). The browser's whole visit (a guest by QR, four activities, the finale): 25
+requests where there were 31.
+
+**Still to see on the real site:** QA-TESTING.md items 146 to 149 (the timing check before and after, the size and time of a read of a list's columns, 429 or 503, an activity opening
+at once with an edit made in Content), and the earlier ones the note names.
+
+## Phase 11a (2026-10-16): Results charts, names on the charts, Deloitte's colours
+
+**In plain words.** With `pms-0a1c701` on the real site (PCOE) VJR saw Admin → Results → Live results as plain blue bars and totals ("34 answers from 5 iPads"), and nothing
+showed what Mike A, a guest who had joined by QR code and finished four activities, had picked. This phase draws each question as a chart of its own kind, in Deloitte's
+colours, with a sentence that says the result in words; on the facilitator's own view a bar opens the names of the people who picked it; the wall display (full screen, and
+the page "Open in a new tab" opens) has no names and a Show answer for quiz questions. Nothing else changed: not the exports, not what is counted or stored, not the lists,
+Setup or the participant page (byte for byte). The report is [RELEASE-11A.md](RELEASE-11A.md). **These pages have not run on the real site, an iPad or a projector**
+(QA-TESTING.md items 150 to 156).
+
+**Decided by VJR during the phase (16 Oct 2026):** the wall is told apart by a hash flag (`#live-display/<id>/wall`); the palette is the brief's validated set, although the
+2025 brand guide names only Deloitte Green and Dark Green of it; a staff sign-in name on the Live display costs no new request (it is known when Results was opened first).
+
+- **A (`4ff4837`). One chart model.** `migration/src/lib/results-chart-model.js`: shares (largest remainder to 100 for one-answer kinds), headlines, names through
+  `lib/participant-names.js`, a scale's average, place and bands, a ranking's support score and shared ranks, the words that came up most. 19 tests worked out by hand from
+  VJR's figures; four mutations caught.
+- **B (`5a0613b`). Deloitte's palette.** `migration/src/styles/results-tokens.css`, and `scripts/test-results-palette.js`, which reads it and holds every pair to its contrast.
+- **C (`c37ee5f`). The six charts.** `migration/src/admin/charts/` (bars, the true-or-false split, a scale's columns, a ranking's scores, the words and comments, the numbers
+  view), wired into the Live display and each Results card (the wiring was done here so that D and E could test the real page). They replace `public/js/resultsRenderer.js`
+  (Chart.js) and `ResultQuestion.svelte`; `chart.js` became a dev dependency and left THIRD-PARTY-NOTICES. The specs that read the old canvases read the new cards.
+- **D (`8ce6398`). Names on the charts, admin only.** The names panel, the Names shown switch, the wall with none in its DOM (checked in every wall mode in three engines,
+  and shown able to fail on a page built without the rule).
+- **E (`33374d1`). Alignment, colour and readability.** At five sizes in three engines on VJR's run and a large session; axe in every state; greyscale. Seven things were
+  fixed after measuring and looking (RELEASE-11A.md lists them).
+- **F (this commit). Wired in, recorded and packaged.** The Results grid's rules moved into `AdminResults.svelte` (Setup loads `src/admin.css`); `PHASE_11A` holds the
+  participant page to its Tailwind rules; the runbook's note for the PCOE site (replace the three pages; nothing else changes; the lists stay at version 3), a sixth rehearsal;
+  QA-TESTING.md items 150 to 156; AGENTS.md ("Rules from Phase 11a"); this section; RELEASE-11A.md.
+
+**Numbers** are in RELEASE-11A.md, section 3 (the gates before and after) and section 4 (the sizes: participant 156,710 B unchanged, admin 552,083 B, 54,058 B smaller).
+
+## Phase 11a-2 (2026-10-16): the charts fit their card, tooltips are never cut off, the headlines' words
+
+**In plain words.** With `pms-3fb312a` on the real site a colleague's Windows laptop in Chrome showed, in full screen, a confidence question with a scrollbar inside its
+chart, its tooltip cut off and over a step's name, and an empty space under the chart; thin confidence columns; figures off their gridlines; "Most people (50%)" and
+"co.."; a card stretched beside one whose names were open; and "34 answers from 5 iPads" with one visit that answered nothing. This phase fixed them all; the last only after
+asking, since the Live display's PDF and PowerPoint print the same figure: VJR chose to count the iPads that answered on the two screens and leave those files for 11b. Nothing else changed: not the exports, what is counted or stored, the lists, Setup or the
+participant page (byte for byte), and no request was added. The report is [RELEASE-11A2.md](RELEASE-11A2.md). **These pages have not run on the real site, the laptop, an
+iPad or a projector** (QA-TESTING.md items 157 to 160).
+
+**The cause** (RELEASE-11A2.md, section 1): the scale's frame had `overflow-x: auto`, which makes a box scroll both ways; the tooltip was drawn inside it and always below a
+column, so it reached past the frame, which grew a scroll range and cut it off; a fraction of a pixel gave the frame a scroll range even with no pointer on it, and Windows
+draws one as a scrollbar with arrows. Playwright's Chromium hides scrollbars and macOS draws them only while scrolling, and no 11a test measured a tooltip or a box inside a
+card. The empty space: the full-screen card filled the screen and the plot kept a fixed height.
+
+- **A (`03a8781`). The headlines' words.** "Most people (N%)" only above half, as counted and as shown; "The top choice (N%) was X." otherwise; the same for multiple choice,
+  true or false and the scale's sentence; one stop at the end of an answer that ends with one. Tests written out by hand first; seven mutations caught.
+- **B (`21a832a`). The charts fit their card; tooltips are never cut off.** No box that scrolls inside a card; the tooltip in a layer fixed to the window, clear of its mark and
+  its label, inside the window (`lib/tip-place.js`); in full screen the chart fills its card, and a question too long even at the smallest type lets the screen scroll as
+  one page with "More below"; cards keep their own height; the full screen's effects follow the question by its id (each refresh used to put the type back to full size).
+  `results-charts-fit.spec.ts` (nine sizes, 125% and 150%, full screen and the wall page, three engines) failed on the 11a pages and passes.
+- **C (`7e5580f`). Confidence columns and the axis.** A column is 40% of its step, 24px to 72px times the size of type; every figure under the bars is centred on its gridline
+  (the gridlines are elements now). Checked in `chartProblems` at every size the layout spec measures.
+- **D (`6613d9c`). "N iPads" counted from the visits that answered.** The phase stopped and asked (an export prints the same figure); VJR chose option (a): the
+  Live display's header and each Results card count the visits their answers came from (`answerCounts`), Kroger's "34 answers from 4 iPads" by hand in the test; the
+  one-page PDF and PowerPoint still print every visit, until 11b. `live-display.spec.ts` and `review-9b.spec.ts` follow it.
+- **E (`d1e7b68`, and after D this commit). Recorded and packaged.** QA-TESTING.md items 157 to 160; AGENTS.md ("Rules from Phase 11a-2"); the runbook's note for the PCOE site (a step for the
+  laptop, and the headlines in step 4); the sixth rehearsal follows it; this section; RELEASE-11A2.md.
+
+**Numbers** are in RELEASE-11A2.md (the gates before and after, and the sizes: participant 156,710 B unchanged, byte for byte; admin 554,241 B in this checkout, 2,158 B more than 11a's
+552,083 B, under its 700,000 B budget).
+
 ## Non-Negotiable Constraints
 
 - Keep the approved SharePoint site, existing list titles/columns, indexed unique `AppId` contract, stored records, and `ClientLogos` library unchanged. The confirmed User Setup feature adds three lists (`AppSettings`, `VisitorRoster`, `UserVisitLogs`) and optional fields on Sessions, Tracks, and QRTokens; provision these additions explicitly without repurposing or rewriting existing data.
@@ -1558,7 +1658,7 @@ version 2 to version 3 and Results after it), 138, 139 and 142, and everything a
 | Migrated UI | Svelte 5, TypeScript, svelte-spa-router under `migration/` | Parallel implementation, not the default production build |
 | Styling | Tailwind 4 integration plus legacy and migration custom CSS | Visual parity and stylesheet interaction require device checks |
 | Data and auth | Shared JavaScript data service and existing PIN lookup | Adds current SharePoint user read, admin-selected session/mode, visitor roster, visitor-linked QR/track identity, idempotent visit events, and active-session guards; no new API server. TS wrappers assert existing shapes rather than validate runtime data |
-| Results | Shared Chart.js renderer and CSV/PDF/PPT report writers, in the admin page only since Phase 7 | The participant page no longer carries them (153 KB gzip against 585 KB); the admin page does (554 KB) |
+| Results | Hand-built charts (`migration/src/admin/charts/`, numbers from `lib/results-chart-model.js`, since Phase 11a; Chart.js before) and CSV/PDF/PPT report writers, in the admin page only since Phase 7 | The participant page carries none of them (157 KB gzip); the admin page does (554 KB since Phase 11a-2) |
 | Local backend | Express 5 with JSON store | Use a scratch data directory for workflow tests; not a production hosting dependency |
 | Candidate build | Three separate Vite single-file builds assembled by [scripts/build-svelte-release.js](scripts/build-svelte-release.js) | Emits `build-svelte/release/{index,admin,setup}.html`; portable to any document folder; local browser harness mounts under configured staging folder |
 

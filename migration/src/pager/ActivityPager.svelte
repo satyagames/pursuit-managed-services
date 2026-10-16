@@ -2,6 +2,7 @@
   import { onMount, tick } from 'svelte';
   import * as dataService from '../../../public/js/dataService.js';
   import { ActionBar, Divider, HomeButton, PillButton, ProgressBar } from '../components/index.js';
+  import { LOADING_DELAY_MS } from '../lib/activity-content.js';
   import { activityComplete, answerFeedback, pick } from '../lib/effects.js';
   import { loadActivity } from '../lib/experience.svelte.js';
   import { focusHeading } from '../lib/focus.js';
@@ -38,6 +39,8 @@
   type Phase = 'loading' | 'error' | 'empty' | 'question' | 'complete';
 
   let phase = $state<Phase>('loading');
+  /** The loading line waits LOADING_DELAY_MS (Phase 10j): an activity opening from what the page holds does not flash one. */
+  let slow = $state(false);
   let loadError = $state('');
   let title = $state('');
   let description = $state('');
@@ -180,11 +183,12 @@
 
   onMount(() => {
     active = true;
+    const timer = window.setTimeout(() => { slow = true; }, LOADING_DELAY_MS);
     start();
     // The device turned over mid-question: what the person chose, or what has focus, stays on the screen (the page's own, not the preview's).
     const stopKeeping = preview || demo ? () => {} : keepInView(() => pager?.querySelector('.pms-options [data-state="correct"], .pms-options [data-state="incorrect"], .pms-options [aria-pressed="true"]')
       ?? (pager?.contains(document.activeElement) && document.activeElement !== document.body ? document.activeElement : null));
-    return () => { active = false; stopKeeping(); };
+    return () => { active = false; stopKeeping(); window.clearTimeout(timer); };
   });
 
   async function focusQuestion() {
@@ -345,7 +349,7 @@
 
 <section class="pms-pager" aria-busy={phase === 'loading' || saving} bind:this={pager}>
   {#if phase === 'loading'}
-    <p class="pms-status" role="status">Loading activity...</p>
+    {#if slow}<p class="pms-status" role="status">Loading activity...</p>{/if}
   {:else if phase === 'error'}
     <p class="pms-alert" role="alert">{loadError}</p>
     <div class="pms-row"><PillButton onclick={() => start()}>Try again</PillButton></div>

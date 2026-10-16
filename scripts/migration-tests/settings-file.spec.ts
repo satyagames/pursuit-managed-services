@@ -254,8 +254,11 @@ test('"listPrefix": "PMS3": the page starts on the prefixed lists, and the lists
   await expect(page.getByRole('heading', { name: 'Hi Casey Example!' })).toBeVisible();
   await expect(page.getByText('Welcome to the Kroger experience.', { exact: true })).toBeVisible();
   await expect.poll(() => fake.count({ method: 'POST', list: 'uservisitlogs' })).toBe(1);
+  // (Phase 10j: once the first screen is up the page reads every activity's questions and options, and fetches ahead what its next writes
+  // ask for, the answers list's item type among them.)
+  await expect.poll(() => [fake.count({ method: 'GET', list: 'options' }), fake.count((entry) => entry.list === 'responses' && /ListItemEntityTypeFullName/.test(entry.url))]).toEqual([1, 1]);
   expect(fake.strays.map((entry) => `${entry.method} ${entry.title}`), 'no request reached a list without the prefix').toEqual([]);
-  expect(titlesAsked(fake)).toEqual([`PMS3${TITLE.appsettings}`, `PMS3${TITLE.clients}`, `PMS3${TITLE.options}`, `PMS3${TITLE.questions}`, `PMS3${TITLE.sections}`, `PMS3${TITLE.sessions}`, `PMS3${TITLE.tracks}`, `PMS3${TITLE.uservisitlogs}`].sort());
+  expect(titlesAsked(fake)).toEqual([`PMS3${TITLE.appsettings}`, `PMS3${TITLE.clients}`, `PMS3${TITLE.options}`, `PMS3${TITLE.questions}`, `PMS3${TITLE.responses}`, `PMS3${TITLE.sections}`, `PMS3${TITLE.sessions}`, `PMS3${TITLE.tracks}`, `PMS3${TITLE.uservisitlogs}`].sort());
   // (Each set starts with the AppSettings item Setup makes, Phase 10c-2b: untouched, it is nothing a request left there.)
   const untouched = (row: Record<string, unknown>) => row.AppId === 'default' && row.Id === 100_000 && !('ActiveSessionId' in row);
   for (const [title, rows] of fake.otherLists) expect(rows.filter((row: Record<string, unknown>) => !untouched(row)).length, `${title} holds nothing`).toBe(0);

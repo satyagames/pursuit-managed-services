@@ -139,6 +139,43 @@ export const PHASE_10H = Object.freeze({ participantBefore: 155_328, adminBefore
 export const PHASE_10I = Object.freeze({ participantBefore: 155_495, adminBefore: 605_202, allowance: 100, participantAfter: 155_503, adminAfter: 605_208 });
 
 /**
+ * Phase 10j (fewer waits on the participant page: the column check names its properties, a visit begins in two rounds, the first screen waits for
+ * two, and the hub and the activities open from what the page holds) may add at most 2,000 B gzip to the participant page, and the admin page is
+ * held to the same. It starts from where Phase 10i ended (participant 155,503 B, admin 605,208 B, in this checkout). `participantAfter` and
+ * `adminAfter` are the pages as measured when the phase ended; the next phase starts from them.
+ */
+export const PHASE_10J = Object.freeze({ participantBefore: 155_503, adminBefore: 605_208, allowance: 2_000, participantAfter: 156_710, adminAfter: 606_141 });
+
+/**
+ * Phase 11a (the Results charts, drawn by hand in Deloitte's colours, with names on the admin view) may not change the participant page at all:
+ * allowance 0, and the page's Tailwind utility rules are exactly the ones it had (`participantUtilities`). Tailwind reads every file under
+ * migration/ for class names, comments and words a page shows included, so a word in a new admin file could add a rule to the participant page, and
+ * removing a file could take one away (the Live display's old card held "container"): the list catches both, whatever the line endings of the
+ * checkout. The admin page may not grow past where Phase 10j left it: the charts replaced Chart.js, and it is about 54 kB smaller. It starts from
+ * where Phase 10j ended (participant 156,710 B, admin 606,141 B, in this checkout); `participantAfter` and `adminAfter` are the pages when 11a ended.
+ */
+export const PHASE_11A = Object.freeze({
+  participantBefore: 156_710, adminBefore: 606_141, allowance: 0, participantAfter: 156_710, adminAfter: 552_083,
+  participantUtilities: Object.freeze(['backdrop-filter', 'block', 'border', 'border-collapse', 'collapse', 'container', 'contents', 'filter', 'fixed', 'flex', 'flex-wrap', 'grid', 'hidden', 'inline', 'invert', 'italic', 'outline', 'relative', 'resize', 'ring', 'rounded', 'shadow', 'shrink', 'sr-only', 'static', 'sticky', 'text-wrap', 'transform', 'transition', 'visible']),
+});
+
+/**
+ * The class names of the Tailwind utility rules in a built page (its `@layer utilities` block), sorted, each once.
+ * @param {string} html
+ */
+export function utilityClasses(html) {
+  const start = html.indexOf('@layer utilities{');
+  if (start < 0) return [];
+  let depth = 0;
+  let end = start;
+  for (let at = start + '@layer utilities'.length; at < html.length; at += 1) {
+    if (html[at] === '{') depth += 1;
+    else if (html[at] === '}') { depth -= 1; if (depth === 0) { end = at; break; } }
+  }
+  return [...new Set([...html.slice(start, end + 1).matchAll(/\.((?:\\.|[A-Za-z0-9_-])+)(?=[{:,\s])/g)].map((match) => match[1]))].sort();
+}
+
+/**
  * What must not be anywhere in the participant page. Each library has the strings that survive minification: a class or property
  * name the library keeps (jsPDF, PptxGenJS, html2canvas, Chart.js's `_chartjs` key), and the module ids the bundler reports.
  */
@@ -148,8 +185,9 @@ export const FORBIDDEN = Object.freeze([
   { library: 'html2canvas', text: /html2canvas/, module: /node_modules\/html2canvas\// },
   { library: 'the vendored chart library (Chart.js)', text: /_chartjs|chartjs-/, module: /node_modules\/chart\.js\// },
   { library: 'the export writer (public/js/resultsExport.js)', text: null, module: /public\/js\/resultsExport\.js$/ },
-  { library: 'the chart renderer (public/js/resultsRenderer.js)', text: null, module: /public\/js\/resultsRenderer\.js$/ },
-  { library: 'the Live display question card (ResultQuestion)', text: null, module: /ResultQuestion\.svelte$/ },
+  // Phase 11a: the Results charts (drawn by hand: no chart library is in any page since then) and their model are the admin page's alone. They
+  // replaced public/js/resultsRenderer.js, which drew with Chart.js, and the Live display's question card that used it (ResultQuestion).
+  { library: 'the Results charts (admin/charts, lib/results-chart-model.js)', text: /Words that came up most/, module: /migration\/src\/admin\/charts\/|migration\/src\/lib\/results-chart-model\.js$/ },
   // Phase 7b: the leader report, its writer, and the TrueType faces it embeds (26 kB), are the admin page's alone.
   { library: 'the leader report (lib/leader-report*.js)', text: /How the numbers are counted/, module: /migration\/src\/lib\/leader-report[^/]*\.js$/ },
   { library: 'the leader report\'s embedded fonts (report-fonts)', text: /OpenSans-Regular/, module: /report-fonts(?:\.js|\/open-sans-report\.js)$/ },

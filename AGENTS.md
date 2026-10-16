@@ -14,24 +14,16 @@ this repository changes them. What went, what moved and what could not go yet is
 (`Operate_Experience_Prototype_Mockup.pdf`) and every phase report (`ARCHITECTURE-10.md`, `PMS-IMPLEMENTATION-PLAN.md`, `REVIEW-9A.md`,
 `CLEAN-BREAK-10C1.md`, `DROPS-10C2A.md`, `SCHEMA-10C2B.md`, `PROVISION-10C3.md` and the rest). Nothing reads them to build, test or ship.
 Each is in git history at `7347c72`: `git show 7347c72:Design-Docs/references/<name>`. A mention of one here or in a comment says so.
-The report of Phase 10f is [RELEASE-10F.md](RELEASE-10F.md), at the root; Phase 10g's is [RELEASE-10G.md](RELEASE-10G.md), Phase 10h's [RELEASE-10H.md](RELEASE-10H.md) and Phase 10i's [RELEASE-10I.md](RELEASE-10I.md).
+The report of Phase 10f is [RELEASE-10F.md](RELEASE-10F.md), at the root; Phase 10g's is [RELEASE-10G.md](RELEASE-10G.md), Phase 10h's [RELEASE-10H.md](RELEASE-10H.md), Phase 10i's [RELEASE-10I.md](RELEASE-10I.md), Phase 10j's [RELEASE-10J.md](RELEASE-10J.md), Phase 11a's [RELEASE-11A.md](RELEASE-11A.md) and Phase 11a-2's [RELEASE-11A2.md](RELEASE-11A2.md).
 
 Read `ARCHITECTURE-10.md` (in git history at `7347c72`) for the architecture.
 [ARCHITECTURE.md](ARCHITECTURE.md) describes the legacy app; its entity model and the local API (sections on
 `server/`) are still right, the rest is history until Phase 10e rewrites it. This file covers commands and code-level
 conventions. Only steps 1 to 9 of the release runbook have run on the real tenant (PCOE, `pms-969bf16`, 14 Oct 2026: see "Rules from Phase 10h"), and with
-`pms-e250a36` (15 Oct 2026) the self-test, Content, Go live and one participant's visit in Chrome; Results did not load there (see "Rules from Phase 10i"). The
-pages of Phase 10i, everything after those steps, and every real device, have not.
-
-## Agent entry points
-
-- Treat this file as the current source of truth for the app and its development commands. `README.md` and
-  `SHAREPOINT-DEPLOYMENT.md` retain legacy-era sections; follow their explicit current-build/new-site sections only.
-- For a SharePoint release, use `npm run package:release` from a clean committed tree and follow that package's
-  generated `RUNBOOK.md`. Do not use the removed legacy `npm run build` workflow.
-- For list and column details, use the generated [SHAREPOINT-LISTS.md](SHAREPOINT-LISTS.md); for manual tenant and
-  device verification, use [QA-TESTING.md](QA-TESTING.md). Phase reports at the root record what has and has not
-  been verified against the real tenant.
+`pms-e250a36` (15 Oct 2026) the self-test, Content, Go live and one participant's visit in Chrome; Results did not load there (see "Rules from Phase 10i"); and with
+`pms-da9fc8d` the lists of version 3 and a participant's visit, which was slow (see "Rules from Phase 10j"); and with `pms-0a1c701` a named guest's visit by QR code and
+Results' plain bars (see "Rules from Phase 11a"); and with `pms-3fb312a` the Results charts on a Windows laptop in Chrome, whose full screen scrolled inside a chart (see "Rules
+from Phase 11a-2"). The pages of Phase 11a-2, everything after those steps, and every real device and projector, have not.
 
 ## Commands
 
@@ -127,8 +119,8 @@ pages of Phase 10i, everything after those steps, and every real device, have no
   estimates scaled to add up to the page's exact gzip; the page totals are exact.
 - `npm run test:bundle` — [scripts/test-bundle-budget.js](scripts/test-bundle-budget.js) (also part of `npm test`): builds the real pages and holds
   them to the budgets in [scripts/bundle-budget.js](scripts/bundle-budget.js) (participant gzip ceiling 450,000 B with a 400,000 B target,
-  admin 700,000 B since Phase 7c, and prints each page's size and its headroom), checks that no export library (jsPDF, PptxGenJS, html2canvas, Chart.js, `resultsExport.js`, `resultsRenderer.js`,
-  `ResultQuestion`) is anywhere in the participant page (by the modules the bundler reports and by text), and has negative controls: the
+  admin 700,000 B since Phase 7c, and prints each page's size and its headroom), checks that no export library (jsPDF, PptxGenJS, html2canvas, Chart.js, `resultsExport.js`,
+  the Results charts of Phase 11a) is anywhere in the participant page (by the modules the bundler reports and by text), and has negative controls: the
   check is run against the admin page standing in for the participant page, at one byte over each limit, and against a real participant
   build into which the libraries are imported. Run it after touching `migration/src/main.ts`, `App.svelte`, an import in a participant
   route, `vite*.config.ts`, or `public/js/*` that the participant page imports.
@@ -208,6 +200,23 @@ pages of Phase 10i, everything after those steps, and every real device, have no
   after it, a version 4 never lowered). The guard on column names is in `scripts/test-schema.js`. The browser side is `schema-upgrade.spec.ts` (three engines), `schema-version.spec.ts`
   and `setup.spec.ts` (eleven self-test steps). [scripts/schema-baseline/rename-baselines.js](scripts/schema-baseline/rename-baselines.js) is how the request baselines followed the two
   renamed columns (`--check`, `--order <commit>`, `--to <dir>`, `--write`; see "Rules from Phase 10i").
+- **Phase 10j's suite** (part of `npm test`; not a recorded suite): [scripts/test-participant-waits.js](scripts/test-participant-waits.js) counts the **rounds** the participant waits
+  at each moment (page open, a first QR scan, "Click here to begin", the hub, an activity, Next, Submit): every request is held and the waiting ones are let go together, in
+  waves, and a moment's rounds are the waves it needs, so nothing is timed. It prints the table before (`c7848e5`) and now and holds the targets, and holds the column check's
+  `$select`, the fetch-ahead, the boot's second round, the activities' content held for the page's life and the hub's read. **The participant page never waits on a read for
+  something it already holds; `test-participant-waits.js` pins the rounds of each moment, and a change that adds a round must say why.** The request baselines followed by
+  [scripts/schema-baseline/fields-baselines.js](scripts/schema-baseline/fields-baselines.js) (part B: `--order`, `--check`, `--write`) and
+  [scripts/schema-baseline/begin-baselines.js](scripts/schema-baseline/begin-baselines.js) (part C, test by test), by `--amend --code` (part D) and by hand for the browsers'
+  start-up (parts C and D); see "Rules from Phase 10j".
+- **Phase 11a's suites** (the node ones part of `npm test`, and `npm run test:charts` alone; none is a recorded suite): [scripts/test-results-chart-model.js](scripts/test-results-chart-model.js)
+  (every number a chart shows, worked out by hand from VJR's run), [scripts/test-results-palette.js](scripts/test-results-palette.js) (reads `styles/results-tokens.css` and holds
+  every pair to its contrast) and [scripts/test-results-wall.js](scripts/test-results-wall.js) (the wall's address). The browser side, in `npm run test:migration`:
+  `results-charts-names.spec.ts` (the names, and no name anywhere on the wall, three engines), `results-charts-wall-mutation.spec.ts` (the wall's check can fail: Chromium),
+  `results-charts-layout.spec.ts` (alignment and readability at five sizes, three engines), `results-charts-a11y.spec.ts` (axe in every state) and
+  `results-charts-greyscale.spec.ts` (Chromium); the fixtures are [scripts/results-charts-fixtures.js](scripts/results-charts-fixtures.js), pictures go to `test-results/charts/`.
+  Phase 11a-2 added [scripts/test-results-chart-fit.js](scripts/test-results-chart-fit.js) (where a tooltip goes; part of `npm test` and `npm run test:charts`) and
+  `results-charts-fit.spec.ts` (nothing scrolls or is cut inside a card, every tooltip whole and clear of its label, the chart fills its card, the spill, cards that keep
+  their own height, a refresh that leaves full screen as it was: nine sizes and two scalings, full screen and the wall page, three engines; pictures `test-results/charts/fit-*.png`).
 - No linter/formatter is configured, and the shared code left in `public/` has no tsconfig — match the
   existing style by hand. (The Svelte app has `migration/tsconfig.json`.)
 
@@ -241,8 +250,8 @@ pages of Phase 10i, everything after those steps, and every real device, have no
 
 ## The shared code left in `public/`
 
-Five modules and three style sheets that the pages import are still in `public/` (`js/dataService.js`, `assets.js`,
-`branding.js`, `resultsExport.js`, `resultsRenderer.js`; `css/app.css`, `vfx.css`, `admin.css`), with the Open Sans
+Four modules and three style sheets that the pages import are still in `public/` (`js/dataService.js`, `assets.js`,
+`branding.js`, `resultsExport.js`; `css/app.css`, `vfx.css`, `admin.css`; `resultsRenderer.js`, the Live display's Chart.js renderer, left in Phase 11a), with the Open Sans
 TTFs the font generators read and the folder the local server stores uploads in. Since Phase 10c-1 they belong to the
 new build alone (each says so at its top); whether they move into `migration/` is decided with the README in Phase 10e.
 
@@ -255,7 +264,7 @@ new build alone (each says so at its top); whether they move into `migration/` i
   from the same file; they are gone, and so are the 16 exports that only they, or nothing, called (`requestCount`,
   `getActiveSessionContext`, `setActiveSession`, `saveResponses`, `uploadClientLogo`, `assignActivitiesToClient`,
   `assignUnownedSections` and nine one-line list calls), with the internals only those reached.
-  `scripts/test-participant-storage.js` pins the whole export list (103 names since Phase 10c-3; 102 after 10c-2b, 104 after 10c-2a, 115 when 10c-1 ended): an export cannot appear or disappear
+  `scripts/test-participant-storage.js` pins the whole export list (104 names since Phase 10j, which added `prepareWrites`; 103 after 10c-3, 102 after 10c-2b, 104 after 10c-2a, 115 when 10c-1 ended): an export cannot appear or disappear
   without that test being edited on purpose. **All of this file is in the participant page**, so whatever is added
   here is paid for there: logic that only the admin or Setup needs goes in a module under `migration/src/lib` that is
   handed the data service (`picturesStillShown` in `lib/admin-content.js` and `clientUsage` in `lib/admin-clients.js` are the pattern). Since Phase 10c-2b every list and column the
@@ -385,13 +394,12 @@ not by editing them, so that what the tests measure stays where it is.
     with `?debug=1`. The admin preview has no visit, so it cannot write.
 - **The participant page is small, and has no results code (Phase 7).** `index.html` is about 155 KB gzip (153.5 KB when Phase 7c ended; Phase 8 added 1,882 B: the unsupported-browser notice, about 900 B, and the
   accessibility fixes, within a 2,048 B allowance that `test:bundle` holds) against a 400 KB target and a 450 KB
-  ceiling (`scripts/test-bundle-budget.js` fails above the ceiling). It must not import `resultsExport.js`, `resultsRenderer.js`, Chart.js,
-  jsPDF, PptxGenJS, html2canvas or `ResultQuestion`; all of them are the admin page's now (the admin page is about 604 KB gzip against
-  a 700 KB budget since Phase 7c: see "Leader report" below). The leader report, its fonts and its buttons are on that list too. The old `#/master-results/<sessionId>` address is `routes/ResultsMoved.svelte`: a notice, no boot, no request, and a link to
+  ceiling (`scripts/test-bundle-budget.js` fails above the ceiling). It must not import `resultsExport.js`, Chart.js, jsPDF, PptxGenJS,
+  html2canvas or the Results charts (`admin/charts/`, `lib/results-chart-model.js`); all of them are the admin page's (Chart.js is in no page since
+  Phase 11a; the admin page is about 550 KB gzip against a 700 KB budget: see "Leader report" below). The leader report, its fonts and its buttons are on that list too. The old `#/master-results/<sessionId>` address is `routes/ResultsMoved.svelte`: a notice, no boot, no request, and a link to
   `admin.html#live-display/<sessionId>` built by `lib/admin-address.js` from the address it was opened at (the same folder, wherever it is
-  hosted; nothing of the participant's own address is carried over). `public/js/resultsExport.js` and `resultsRenderer.js` were shared with the
-  legacy app and are kept as they were; the one addition is an optional `--chart-scale` the renderer reads from the container (default 1, then
-  every size is what it always was) so the projector view can draw large type.
+  hosted; nothing of the participant's own address is carried over). `public/js/resultsExport.js` was shared with the legacy app and is kept as
+  it was. (`resultsRenderer.js`, the Chart.js renderer of the Live display, left in Phase 11a: the charts are drawn by hand, see "Rules from Phase 11a".)
 - **Polling (Phase 7): one timer, one request, the budgets in `lib/poll-schedule.js`.** An open participant page looks at what the
   facilitator did through `lib/page-watch.ts` (`createPageWatcher`, one `setTimeout` rescheduled after every look, never an interval) and
   `App.svelte`'s `checkServer()`, which makes ONE `readParticipantWatch` read. **While waiting (Welcome, the hub, the finale, "not live yet")
@@ -400,9 +408,10 @@ not by editing them, so that what the tests measure stays where it is.
   the network coming back looks at once.** A look that cost more than one request (a site that cannot batch) makes the next wait that many
   times longer, so the rate holds. A failure doubles the wait up to 5 minutes; a 429 or 503's `Retry-After` is a floor. The local server
   is looked at every 3 s, flat, with no jitter. A change of screen kind (`modeOf(router.location)`) calls `replan()`: leaving a question
-  looks within 5 s if a wait has passed. **The hub has no timer of its own:** it reads its activities once on arriving and then redraws
-  from `experience.activitiesVersion`, which the page watcher raises (`adoptWatch`) when the activities or the session's flow changed;
-  `getKnownProgress` makes no read. The facilitator's screens: Today every 10 s (one request), Content and Guests every 15 s, the Live
+  looks within 5 s if a wait has passed. **The hub has no timer of its own:** since Phase 10j it is drawn at once from what the page holds
+  (`getKnownProgress`, no read), reads its activities and the enabled ones' questions and options once behind that, on arriving
+  (`experience.refreshActivities`: one request where the site can batch), and then redraws from `experience.activitiesVersion`, which the
+  page watcher raises (`adoptWatch`) when the activities or the session's flow changed. The facilitator's screens: Today every 10 s (one request), Content and Guests every 15 s, the Live
   display every 12 s (one request, and the structure every 5 minutes: 3 requests), Results every 15 s for the live session only (the
   local server: everything every 2.5 s). Admin polls use the same watcher with `adminDelay`, no jitter. A new timer needs a number in
   the polling table (MIGRATION-PLAN.md, "Phase 7").
@@ -415,9 +424,9 @@ not by editing them, so that what the tests measure stays where it is.
   'session-ended'`), keeps looking at `experience.watchSessionId`, and starts again by itself when the session is reopened.
   The cost is one more read in the batch the page already sent and no more requests.
 - **Today's client decides everything a participant sees.** `lib/boot.js` (no DOM; only `App.svelte`
-  imports it) reads AppSettings, then the Client, Session and Sections(ClientId) side by side, then
-  the first activity's questions and options: **8 requests at most to the first screen**, measured
-  in `scripts/test-participant-storage.js` and, in a real browser, in
+  imports it) reads AppSettings (and who is signed in), then the Client, Session and Sections(ClientId) side by side with, on the plain
+  link, the session's Tracks (Phase 10j): **two rounds and 6 requests to the first screen on the staff link, 8 at most**, measured
+  in `scripts/test-participant-waits.js`, `scripts/test-participant-storage.js` and, in a real browser, in
   `scripts/migration-tests/sharepoint.spec.ts`. (Since Phase 10b a page on SharePoint asks for one thing before them: its settings
   file, a small static file in its own folder. **8 list requests plus 1 file**; no file on the local server.) The visit log, the resume stamp and (for a resumed
   staff visit) "who is signed in" are sent only after that screen is drawn. Keep to this: a new
@@ -430,8 +439,8 @@ not by editing them, so that what the tests measure stays where it is.
   page calls `openQrScan(tokenId)` (dataService, section 4), (`claimQrToken()`, the
   legacy pages' way in 14 requests, left in Phase 10c-2a). The rounds: the code and AppSettings
   beside the write token; ONE `$batch` request for Session, Client, Sections, the visitor (or the
-  signed-in user, for a staff code) and the Tracks item type; the new Track beside the first
-  activity's reads; then `claim()`. Rules that must keep holding:
+  signed-in user, for a staff code) and the Tracks item type; the new Track beside the read of every
+  enabled activity's questions and options (Phase 10j: held, not waited for); then `claim()`. Rules that must keep holding:
   - **Single use is one write**: a MERGE of the code with `If-Match` on the version it was read at.
     Never `*`, never inside a batch. `$batch` carries reads only, and every batched read falls back
     to a plain GET (a failed part alone; a refused batch altogether, once per page load, or never
@@ -657,10 +666,10 @@ not by editing them, so that what the tests measure stays where it is.
   refreshed, none for a session of guests with QR names**, and, on the live session's timer, one more look for someone who joined in the last two
   minutes and is still unnamed (their sign-in is written a moment after their first screen), twice at most for each person
   (`rowsToLookForAgain`). Status, "joined ... via ...", the QR counts and Restart are as they were.
-- **Live display** (`admin/LiveDisplay.svelte`, `ResultQuestion.svelte`; loading in `lib/live-session.js`, the tally in `lib/results-tally.js`,
-  both plain JS) is what the participant page's Master screen was, in the admin page: a live tally for each question of the session's
-  enabled activities, the answer count and the iPad count, the client's colours (`masterColours`, set on the display's own element and
-  not on the admin page), **Full screen**, and the CSV, PDF and PowerPoint exports (`adminData.getSessionResults`, which is `readSessionResults`, so `readSessionResponsesChecked`;
+- **Live display** (`admin/LiveDisplay.svelte`, the charts in `admin/charts/` since Phase 11a; loading in `lib/live-session.js`, the tally in `lib/results-tally.js`,
+  both plain JS) is what the participant page's Master screen was, in the admin page: a chart for each question of the session's
+  enabled activities, the answer count and the iPad count, the client's colours in its header (`masterColours`, set on the display's own element and
+  not on the admin page; since Phase 11a the charts themselves are in Deloitte's colours), **Full screen**, and the CSV, PDF and PowerPoint exports (`adminData.getSessionResults`, which is `readSessionResults`, so `readSessionResponsesChecked`;
   PDF and PowerPoint are loaded by `import()` when first used). Reached from Today's **Live display** button, from each Results card, by
   `#live-display[/<sessionId>]` (no id: the live session, or a picker when none is), and from the old participant address.
   - **Request budget on SharePoint**: opening is 3 requests for the structure (the session; the activities with the client; the
@@ -671,9 +680,9 @@ not by editing them, so that what the tests measure stays where it is.
     `lib/results-tally.js`, which Results' `readSessionResults` is built on too (`scripts/test-live-display.js` holds both to a tally worked out by hand, on both adapters).
   - **Full screen** covers the window (`position: fixed`, the admin bar and tabs `inert`) and **shows ONE question at a time, sized so the whole
     card is on the screen (Phase 7c)**: a projector has no scroll wheel and the pointer is hidden, and before 7c the 1920x1080 display scrolled
-    (the first card's axis labels ran past the bottom). Nothing scrolls now: the card (`ResultQuestion` `fit`) takes the height between the
-    heading and the controls, the chart takes what the prompt and the count leave (CSS: the renderer's own fixed box height is overridden, the
-    renderer itself is unchanged), and written answers show the rows that fit with "N more written answers are not shown". The type still scales
+    (the first card's axis labels ran past the bottom). Nothing scrolls now: the card (`ResultCard` `fit`, Phase 11a) takes the height between the
+    heading and the controls, the chart takes what the prompt and the count leave and never less than it needs (so a card too tall overflows where the fit can see it),
+    and written answers show the comments that fit with "N more written answers are not shown". The type still scales
     with the window (1.2 to 2.4 times, cards and chart text: `--chart-scale`); for a question that cannot fit even so (a very long prompt) it is
     made smaller a step at a time, down to 0.75 (the chart's own text is never drawn below 1), until the card is whole. **Previous and Next and
     the left and right arrow keys** (no modifier) move through the questions and go round at either end; **Auto-advance** (a switch, off by
@@ -1202,6 +1211,119 @@ items 143 to 145.
   new (`QA_BY_NOTE`). The rehearsal has four runs (the fourth is that note), twelve in three engines.
 - **Found, and left:** see RELEASE-10I.md, section "Found, and left".
 
+## Rules from Phase 10j (fewer waits on the participant page; keep them holding)
+
+On the real site (PCOE, `pms-da9fc8d`, its lists of version 3, 15 Oct 2026) VJR said the participant page "responds slowly (showing loading)". The live client has a handful of
+activities: the data is small, and what cost was the number of requests the page waited for one after another (rounds) and the screens that waited on them. This phase made the
+page wait for fewer of them, and changed nothing of what is saved or how. The report is [RELEASE-10J.md](RELEASE-10J.md). **These pages have not run on the real site yet**:
+QA-TESTING.md items 146 to 149 (the timing check before and after, among them).
+
+- **The participant page never waits on a read for something it already holds; `test-participant-waits.js` pins the rounds of each moment, and a change that adds a round must
+  say why.** The targets: page open on the staff link 2 rounds (3 with an earlier visit today: its answers), a first QR scan no more than 4, "Click here to begin" 2 once the page has
+  fetched ahead and 4 without, the hub drawn after 0, an activity opened from held content 0, Next 0, Submit (the earlier answers saved) 1.
+- **The column check reads only what it checks** (`spMetadata`): `/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField`.
+  A property the check reads must be in that list (a source check holds it). The schema checks (`checkSharePointSchema`: Today's, in one `$batch`, and Setup's), Setup's plan and
+  its self-test probe still read every property. The mock answers `/fields` with the properties named, or, with no `$select`, every property and a SchemaXml on each field.
+- **Beginning a visit** (`beginVisit`): AppSettings and the session are read side by side, and their checks keep their order and words (what AppSettings says wins over anything the
+  session read says; tested on every refusal path). The session is moved to in progress with the version the check read (If-Match), so it is not read again; a 412 says nothing. With
+  `waitForSession: false` (Welcome) the press does not wait for that write; the default waits, which keeps a test's set-up in order.
+- **Fetching ahead** (`dataService.prepareWrites`, `lib/boot.js` `writesAhead`; App.svelte after the visit log): the write token, the participants list's type and columns where a visit
+  can begin, the sessions list's where it would be the session's first, the answers list's type for a visit with no answer item. They are the requests the writes make, shared
+  (`spDigest`, `spMetadata`, and a type read prepareWrites started); a failed one is forgotten. Nothing is fetched that the page will not use (a later device does not fetch the
+  sessions list's check).
+- **The boot reads the session's visits in its second round**, beside the client, the session and the activities, before it knows the session is live and for staff: what that read
+  finds is used only if it is, and is otherwise dropped, never offered on Welcome. If it fails, the first screen still comes up and Welcome looks for itself.
+- **The activities' questions and options are held for the page's life** (`lib/activity-content.js`, `experience.activityContent`): read for every enabled activity in one go (the data
+  layer's `getSectionQuestions` handed every id: 20 to an address) once the first screen is up, beside a QR code's claim, or when an activity is opened before anything was read. An
+  activity opens from them; a read on its way is waited for, never sent twice; what is not held (a new activity, a question added, a read that failed) is read when it opens.
+  `FIRST_CONTENT_MS` and the boot's `content` are gone. Held by question id, in memory only: nothing of it is kept between page loads.
+- **The hub draws at once from what the page holds, then reads behind it** (`experience.refreshActivities`, `activityContent.refreshWith`: the client's activities and the enabled ones'
+  questions and options in one `readLists`, ONE `$batch` where the site can batch): an edit made in Content reaches a participant at the next activity they open after visiting the
+  hub, and an activity already open keeps what it opened with. Once every activity is done the read is of the activities alone. A read that fails leaves what is held on the
+  screen; the loading line and Try again are for a hub that holds no activity, and the read behind runs even when drawing what is held failed (it needs a read of the
+  answers only when this page never read them). The reader within `HANDOFF_MS` of boot still takes boot's own read.
+- **A wait that remains shows its loading line only after `LOADING_DELAY_MS` (300 ms)**, on the hub and in the pager.
+- **The request baselines followed five kinds of change and no other** (each file's header says so; every entry is listed in RELEASE-10J.md): 1. the column check's `$select`
+  (part B, by `fields-baselines.js`); 2. the boot's tracks read in round 2 (also sent, and dropped, where the session is not live: as asked during this phase); 3. the questions and
+  options of every enabled activity, read once (part D, `--amend --code`, and by hand for the browsers); 4. the fetch-ahead after the first screen (the browsers, by hand); 5. the
+  second read of the session gone, and the session read beside AppSettings even when AppSettings refuses (part C, `begin-baselines.js`, test by test). A fresh recording equalled each.
+- **The whole visit** (open, begin, Kroger's two activities, finish) is 30 requests where it was 33 for the session's first device, 27 where it was 29 after it; **on a site that
+  cannot batch it is 34 and 31** (each arrival on the hub reads three lists there): known, and left. PCOE batches.
+- **The participant page may grow by 2,000 B gzip in this phase and no more** (`PHASE_10J`: +1,207 B in this checkout, 156,710 B; the admin page 606,141 B, +933 B; Setup
+  +284 B in a fresh checkout, the data layer it carries). Phase 10c-2a's, 10c-2b's, 10c-3's and 10i's checks became recorded-numbers ones. The export list is 104 (`prepareWrites`).
+- **Found, and left:** see RELEASE-10J.md, section "Found, and left".
+
+## Rules from Phase 11a (the Results charts, names on the charts, Deloitte's colours; keep them holding)
+
+On the real site (PCOE, `pms-0a1c701`, 15 Oct 2026) VJR saw Results' Live results as plain blue bars and totals, and nothing showed what a named guest who had joined by QR
+code and finished four activities had picked. This phase changed how Results are drawn on the admin page and nothing else: not the exports, not what is counted or stored,
+not the lists, Setup or the participant page. The report is [RELEASE-11A.md](RELEASE-11A.md). **These pages have not run on the real site, an iPad or a projector**:
+QA-TESTING.md items 150 to 156.
+
+- **One chart model, no drawing in it** (`migration/src/lib/results-chart-model.js`, plain JS): every share, headline, average, band, support score, rank and word a chart
+  shows. Phase 11b's leader report builds on it; a number shown on the screen is worked out there and nowhere else. Its rules, each with a hand-worked test: shares are counts
+  over the people who answered; single choice, true or false and a scale are rounded by the largest remainder to exactly 100 (answers to an answer that has gone take their
+  share and are said under the chart); multiple choice is rounded alone; the support score is `(points - rankers) / (rankers x (options - 1)) x 100` (with every voter
+  ranking every option, the brief's formula); equal scores share a rank ("1="); a scale's three bands are by place (`bandOf`); the words that came up most are counted by
+  comment, a plural folded only into a singular someone wrote, from a reviewed list of stop words, and are never called themes.
+- **The charts are `migration/src/admin/charts/`, drawn by hand from HTML and SVG: no chart library** (Chart.js left the admin page with `public/js/resultsRenderer.js` and
+  `ResultQuestion.svelte`; it is a dev dependency now, for the bundle test's negative control alone). `ResultCard` is the card: the headline, the question, "N answered", a
+  4px Deloitte Green rule, the numbers view (the accessible twin of the chart), and on the wall Show answer. Bar rows and scale columns are 44px targets on the admin view
+  and 24px (`--mark-target`) in full screen, where a bar opens nothing.
+- **Names are on the admin view only.** The names a chart shows are `lib/participant-names.js`'s (as on the Results rows and in the report: "Name (2)", "Unnamed participant
+  N"), through `namesFor`. **The wall (full screen, and `#live-display/<id>/wall`, which "Open in a new tab" opens: `lib/live-wall.js`) is given a model with no names**, so
+  no name is in its DOM: `LiveDisplay.svelte`'s `withNames` is `!wall && namesShown`, and `results-charts-wall-mutation.spec.ts` builds a page without that and shows the check
+  finds names. `lib/admin-address.js` (carried by the participant page) is not where the wall's address is.
+- **No request was added for names.** A guest's QR name is on the visit; a staff sign-in name is in the visit log, which Results reads and the Live display does not: Results
+  keeps what it read for the page's life (`holdNameSources` in `lib/admin-results.js`), so a Live display opened from Results names staff, and one opened straight from its
+  address calls them "Unnamed participant N" (VJR's choice, 16 Oct 2026). The request baselines did not change.
+- **The colours are `styles/results-tokens.css`** (the admin page's alone), held by `scripts/test-results-palette.js`: one series is one colour (the top choice Deloitte Blue
+  with "Top choice", the rest the tint), Dark Green means correct and nothing else (with a tick and the word), Deloitte Green is the card's rule and never a bar, words never
+  wear a data colour, the client's colours stay in the heading and never recolour a mark. Every chart sits on a white card, so there are no dark values. Most of the palette
+  is not in the 2025 brand guide (`public/assets/BrandGuidelines`, page 42: only Deloitte Green and Dark Green are); VJR kept the validated set.
+- **The participant page may not change at all, to its Tailwind rules** (`PHASE_11A`: allowance 0, and `participantUtilities`, the class names of its `@layer utilities`, must
+  be exactly what they were). Tailwind reads every file under `migration/` for class names, words a page shows and comments included: "View as table" is spelt in two parts in
+  `admin/charts/chart-ui.ts`, no file there uses a size query (`@container` is a class to Tailwind), and `chart-ui.ts` keeps the word "container" on purpose (it was in the
+  removed card, and without it the participant page loses its `.container` rule). Check a new file under `migration/` with `npm run test:bundle`.
+- **The admin page may not grow past where Phase 10j left it** (606,141 B in this checkout; it is 552,083 B, 54,058 B smaller). Setup is byte for byte as it was (the Results
+  grid's rules are in `AdminResults.svelte`, not `src/admin.css`, which Setup loads too).
+- **Full screen's fit**: the card's chart never shrinks below what it needs (so a card too tall overflows where the fit loop sees it and makes the type smaller, instead of
+  drawing over its own words); written answers keep at least one comment's room. The wall specs run with the display's own cover (as on an iPad): Playwright's WebKit often
+  ends its own element full screen by itself in a headless window.
+- **Found, and left:** see RELEASE-11A.md, section "Found, and left".
+
+## Rules from Phase 11a-2 (the charts fit their card, tooltips are never cut off, the headlines' words; keep them holding)
+
+On the real site (PCOE, `pms-3fb312a`, 16 Oct 2026) a colleague's Windows laptop in Chrome showed a confidence question in full screen with a scrollbar inside its chart, its
+tooltip cut off and over a step's label, and an empty space under the chart; a card stretched beside one with its names open; thin columns; figures off their gridlines; and
+"Most people (50%)" and "co.."; and "34 answers from 5 iPads" with a visit that answered nothing. This phase fixed those and nothing else. The report is [RELEASE-11A2.md](RELEASE-11A2.md). **These pages have not run on the real site, the
+laptop, an iPad or a projector**: QA-TESTING.md items 157 to 160.
+
+- **Nothing inside a result card scrolls**: no `overflow: auto` or `scroll` on anything in `admin/charts/` (an `overflow-x: auto` makes a box scroll both ways, and a
+  fraction of a pixel is enough for Windows to draw a scrollbar with arrows; Playwright's Chromium hides scrollbars and macOS draws them only while scrolling, which is why
+  11a's tests never showed it). A scale of more steps than its card holds at 44px shares the width out. `results-charts-fit.spec.ts` fails on any such box, at nine sizes
+  and at 125% and 150% scaling, in three engines.
+- **A tooltip is drawn in a layer fixed to the window** (`ChartTip.svelte`, `lib/tip-place.js`, unit-tested by `scripts/test-results-chart-fit.js`): clear of its mark
+  and the mark's own label (`data-label-of`), above them or under them, moved along to stay in the window, following its mark on scroll; z-index 50, over the sticky bar.
+  A chart hands ChartTip the elements, never a place it worked out itself.
+- **In full screen the chart takes the room its card gives it** (`fit` on BarChart, ScaleChart and SplitBar): the bars share out the height, a scale's plot grows, a
+  true-or-false split sits in its middle. A question that cannot fit even at the smallest type **spills**: the card is as tall as it needs and the screen scrolls as one
+  page, with "More below" floating above the controls, which stay in view (`scroll-padding-bottom` keeps a scrolled-to mark clear of them).
+- **The full screen's effects follow the question by its id** (`currentId`), never `current?.id` read through the object: a refresh hands the page new objects for the
+  same question, and the effects took it for a new one (the type jumped back to full size at every refresh; a test records every change).
+- **Grids of result cards align their cards to the top** (`align-items: start` on the Live display's and Results' grids): a card never stretches to its neighbour.
+- **A confidence column is 40% of its step**, at least 24px and at most 72px, times the size of type, never wider than its step. **Every figure of a bar chart's scale is
+  centred on its gridline**, the ends too; the gridlines are elements (`.bars__gridline`, `data-at`) at `at x (100% - 1px)`, and `chartProblems` holds both to a pixel.
+- **Headlines** (`results-chart-model.js`): "Most people (N%) chose X." only when the top share is more than half as counted and as shown (`isMost`; 51 of 101 is shown
+  as 50%), else "The top choice (N%) was X."; true or false "Most people (N%) said X." / "The top answer (N%) was X."; multiple choice the same as single choice;
+  `sentence()` adds no stop to words that end with one. Phase 11b prints these sentences.
+- **"N answers from M iPads" counts the iPads that answered** (`answerCounts`/`answersFrom` in `results-chart-model.js`, VJR's choice after the phase stopped to ask):
+  the distinct visits (`ownerOf`) of the answers counted, over the same questions as the answers (the Live display's live activities; a Results card's all). A visit that
+  answered nothing is not counted, nor one whose answers could not be read. **The Live display's one-page PDF and PowerPoint (`resultsExport.js`) still print every visit**
+  until Phase 11b redesigns them; the leader report's "participants" are every visit on purpose. QA item 160.
+- **The participant page did not change**, byte for byte and in its Tailwind rules (`PHASE_11A`); words such as "grow", "absolute", "invisible" and "table" in a new file
+  under `migration/` can still add a rule to it: run `npm run test:bundle`.
+
 ## Before finishing a change
 
 - If you touched session/track/response flow: run `npm test`.
@@ -1209,8 +1331,11 @@ items 143 to 145.
   `npm run test:bundle`, `npm run test:baseline` and `npm run test:migration`. If you removed or changed a test on purpose, or changed on purpose what the code sends, see `--amend`, `--code` and `--explain` under `npm run test:baseline`.
 - If you touched how a page starts, its settings, a `PMS_` build value, or anything in `public/js/dataService.js` that builds an address or spells a list
   title: run `npm run test:settings`, `npm run test:namespace`, `npm run test:baseline` and `npm run test:bundle` (the participant page has no allowance of its own
-  to spend: it may not grow beyond where the newest phase left it, `PHASE_10I`), then `settings-file.spec.ts`, `setup-deployment.spec.ts` and `request-baseline.spec.ts` in
+  to spend: it may not grow beyond where the newest phase left it, `PHASE_10J`), then `settings-file.spec.ts`, `setup-deployment.spec.ts` and `request-baseline.spec.ts` in
   all three engines.
+- If you touched what the participant page reads or writes, when it reads it, or what a screen waits for (`lib/boot.js`, `lib/activity-content.js`, `experience.svelte.ts`,
+  `participantData.ts`, `answer-store.js`, `App.svelte`, `Welcome.svelte`, `Agenda.svelte`, `ActivityPager.svelte`, or a participant path of `public/js/dataService.js`): run
+  `node --test scripts/test-participant-waits.js` and read its table; a moment that takes another round needs a reason (see "Rules from Phase 10j").
 - If you added or changed an item read (in `public/js/dataService.js`, or anywhere under `migration/src`): it must name its columns, through `selectOf` (see "Rules from Phase 10h"); run
   `node --test scripts/test-named-reads.js`, `npm run test:baseline` and `npm run test:namespace`, and the strict mock will refuse it in every suite if it does not.
 - If you touched `spHttp`'s reading of a refusal, or a caller of 409: run `node --test scripts/test-duplicates.js` and `npm test`.
@@ -1219,6 +1344,8 @@ items 143 to 145.
   new recording (see "Rules from Phase 10i").
 - If you touched a sentence a page shows that names a list: take the title from `sharePointListTitles()` (or `listTitles()` on Setup), never spell it; run
   `node --test scripts/test-shown-names.js`.
+- If you touched `migration/src/lib/results-chart-model.js`, `admin/charts/`, `styles/results-tokens.css`, `LiveDisplay.svelte` or `AdminResults.svelte`: run `npm run test:charts`,
+  `npm run test:bundle` (the participant page's Tailwind rules) and the `results-charts-*` and `live-display*` specs in all three engines, and look at `test-results/charts/`.
 - If you touched any `server/data/*.json` by hand: run `npm run validate:data`.
 - If you touched Setup's plan, Create, Mark the site as ready, Add an admin, the seed-file import or the fake's site building: run `npm run test:provision`,
   `npm run test:baseline`, `npm run test:namespace` and `npm run test:bundle`, then `setup-provision.spec.ts` and `setup.spec.ts` in all three engines, and see
