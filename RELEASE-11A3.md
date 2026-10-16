@@ -1,7 +1,7 @@
 # Phase 11a-3: the polish batch after the 11a-2 real-site checks (draft, in progress)
 
 Branch `pms-11a3`, from `3a8b32b` ("pms-283ad18 as deployed (VJR's tree)"). **Status: development done for items A, D(1), D(3), E and F, and G investigated;
-B, C and the greeting of D(2) wait for VJR's decisions. None of the gates of the brief's section 5 has been run, no package has been made, and nothing has
+B, C and the greeting of D(2) need no change: VJR decided to keep "Last, First" and to leave the `/wall` page as it is (16 Oct 2026). None of the gates of the brief's section 5 has been run, no package has been made, and nothing has
 met the real site.** You asked to leave the heavy testing for one final round; this report says what that round must run.
 
 ## 0. Where this started
@@ -27,7 +27,8 @@ met the real site.** You asked to leave the heavy testing for one final round; t
 | E, long answers in full screen | `613c8c5` | The fit step is `lib/present-fit.js` (`nextFit`, `scaleOf`, `SMALLEST`). Its floor is the factor that gives type 0.75; it was 0.5, so on a window 1,550 px wide or more (type 1.6 to 2.4) the type stopped at 0.8 or above, neither smaller nor spilling, and the card was cut at its edge. At type 1.2 (iPad upright, phone) the steps are what they were. | `scripts/test-present-fit.js` with a stand-in of the old floor: "at 1.6 … scales 1.6, 1.45, 1.3, 1.1, 0.95, 0.8, 0.8, …". A browser test in `results-charts-fit.spec.ts` (1920x600, 1600x700, 768x1024, 1080x1920; not run). **Whether this is what the real site showed is not known**: the report did not say which screen. |
 | F, the flake | `73f0b1b` | The cause was the page: `lib/page-watch.ts` dropped an `online` event that came while a look was on its way (and that look could have read the track before the test stamped the restart), so the page waited for its next look. Now `online` during a look asks for one more look as soon as it ends (never two at once; a `Retry-After` is still a floor). The test and its timeout are unchanged. | `scripts/test-page-watch.js` drives the real `page-watch.ts` (via Vite's esbuild) with a stand-in window: failed ("a second look follows the first at once"). |
 | G, the 403 | none | Investigated only; section 3. | — |
-| B, C, D(2) greeting | none | **Skipped: VJR's decisions D1 ("Last, First") and D2 (`/wall` header) are not made.** | — |
+| B, D(2) greeting | none | **No change, by VJR's decision D1 (16 Oct 2026): names stay as the directory gives them, "Last, First" ("Satyadev, Vedala Venkata")**, in Results, the charts, the report, the CSV and the greeting. | — |
+| C, `/wall` header | none | **No change, by VJR's decision D2 (16 Oct 2026): the `/wall` page keeps the admin header, tabs, Lock and Export**; Full screen is the clean projector view. | — |
 
 **Seen in a browser (Chromium only, Playwright 1.64's own build, installed 16 Oct 2026):**
 

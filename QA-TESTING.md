@@ -1200,11 +1200,11 @@ were not installed on the machine the work was done on (see RELEASE-11A3.md).
     bar of a single choice, the first column of a confidence question and a side of a true-or-false question. **Expect** the tooltip whole and clear of the question, of
     "N answered · N of N got it right first time" and of **Show answer** / **View as table** (under its mark when there is no room above), and still clear of the mark's own
     label, the step names and "Average ... of ...". Only where the window has no room on either side may it lie over those words. The same on the iPad: a touch on a bar.
-162. **Names in the "Who picked" panel and the CSV.** *(Waits for VJR's decision on "Last, First": nothing changed in 11a-3.)*
-163. **The wall page's header.** *(Waits for VJR's decision on hiding the admin header, tabs, Lock and Export on `/wall`: nothing changed in 11a-3.)*
+162. **Names in the "Who picked" panel and the CSV.** *(No change: VJR decided on 16 Oct 2026 to keep names as the directory gives them, "Last, First".)* Nothing to check beyond items 150 and 155.
+163. **The wall page's header.** *(No change: VJR decided on 16 Oct 2026 to leave the admin header, tabs, Lock and Export on `/wall`; Full screen is the projector view.)*
 164. **The participant page's heroes and greeting on an iPad.** *(Still to see.)* The heroes are opaque squares because the pictures stored for them are: VJR's sources were
     JPEGs, which cannot be transparent (Brand Studio keeps a hero's transparency). To see a round hero: in Brand Studio upload a hero that is a PNG with a transparent
-    background, Save, reload the participant page. **Expect** the hero drawn with no square behind it. The greeting waits for VJR's decision on "Last, First". A locked
+    background, Save, reload the participant page. **Expect** the hero drawn with no square behind it. The greeting stays "Last, First" (VJR's decision, 16 Oct 2026). A locked
     activity on the hub: its title is white and readable (it was a pale blue on blue), with the lock and "Finish the previous activity".
 165. **Eight long answers in portrait full screen.** *(Still to see.)* The large session's question of eight answers of about 90 characters (or any question that long), in
     **Full screen** on the iPad held upright, on a screen 1,600 px wide or more (a projector, a large monitor) and on the laptop with the window made short. **Expect** the whole
