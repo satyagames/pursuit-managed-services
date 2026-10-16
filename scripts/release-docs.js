@@ -15,7 +15,10 @@ export const SETTINGS = Object.freeze({ configVersion: 1, listPrefix: '', label:
 export const SETTINGS_TEXT = '{"configVersion": 1, "listPrefix": "", "label": "PMS"}';
 /** The four files that are uploaded; the rest of the package stays on the deployer's computer. */
 export const UPLOADED = Object.freeze(['index.html', 'admin.html', 'setup.html', 'pms-config.txt']);
-export const LAST_LINE = 'Steps 1 to 9 of this runbook have run on the real site (14 Oct 2026, pms-969bf16), and Go live, a participant\'s visit and the self-test (15 Oct 2026, pms-e250a36), and with pms-da9fc8d the lists of version 3 and a participant\'s visit (15 Oct 2026), and with pms-0a1c701 a named guest\'s visit by QR code and Results (15 Oct 2026), and with pms-3fb312a the Results charts, their names and full screen on a Windows laptop in Chrome (16 Oct 2026). Everything after them is new.';
+/** The branch a package is made from (Phase 11a-3: pms-11a3, pushed to GitHub as a branch and never merged into main; until then pms-redesign, never pushed). */
+export const BRANCH = 'pms-11a3';
+
+export const LAST_LINE = 'Steps 1 to 9 of this runbook have run on the real site (14 Oct 2026, pms-969bf16), and Go live, a participant\'s visit and the self-test (15 Oct 2026, pms-e250a36), and with pms-da9fc8d the lists of version 3 and a participant\'s visit (15 Oct 2026), and with pms-0a1c701 a named guest\'s visit by QR code and Results (15 Oct 2026), and with pms-3fb312a the Results charts, their names and full screen on a Windows laptop in Chrome (16 Oct 2026), and with pms-283ad18 the charts\' fit, tooltips and headlines on that laptop and an iPad (16 Oct 2026). Everything after them is new.';
 
 /**
  * The timing check (Phase 10j): one line for Chrome's console on index.html, read-only. It lists the requests the page made to SharePoint's REST API and for its
@@ -45,13 +48,14 @@ export const QA_BY_STEP = Object.freeze({
 });
 /**
  * Which QA-TESTING.md item each step of the note for the PCOE site answers (Phase 11a: the three pages replaced, the Results charts, the names, the wall;
- * Phase 11a-2: the headlines' words, and the Windows laptop that showed the fault).
+ * Phase 11a-2: the headlines' words, and the Windows laptop that showed the fault; Phase 11a-3: the tooltips clear of the card's words, the long question in
+ * full screen, and a locked activity's title and the heroes on the iPad).
  */
 export const QA_BY_NOTE = Object.freeze({
-  3: [144],
+  3: [144, 164],
   4: [150, 159, 160],
   5: [151, 152, 153],
-  6: [157, 158],
+  6: [157, 158, 161, 165],
   7: [154, 156],
   8: [146, 147, 148, 149],
 });
@@ -68,6 +72,9 @@ export const LATER = Object.freeze([
   [141, 'a read that names a column the list lacks (Phase 10h): only on a site where a column was deleted by hand after Setup marked it ready; Check Lists names it'],
   [145, 'the lists brought from version 2 to version 3 (Phase 10i): done on the PCOE site with pms-da9fc8d on 15 Oct 2026; the note\'s step 2 says what to do if Setup still says version 2'],
   [155, 'a staff sign-in name on the Live display (Phase 11a): only in staff mode; open the Live display from Results, and then from its own address in a new tab'],
+  [162, 'names in the "Who picked" panel and the CSV (Phase 11a-3): no change, by VJR\'s decision of 16 Oct 2026 to keep "Last, First"'],
+  [163, 'the wall page\'s header (Phase 11a-3): no change, by VJR\'s decision of 16 Oct 2026 to leave it'],
+  [166, 'the network coming back during a look (Phase 11a-3): on an iPad with a question open, Wi-Fi off, the facilitator restarts that activity, Wi-Fi on'],
 ]);
 
 const code = (text) => `\`${text}\``;
@@ -170,7 +177,7 @@ export function runbook({ commit, folderName }) {
   const lines = [
     '# Runbook: Pursuit Managed Services on the new site',
     '',
-    `Package ${code(folderName)}, made from commit ${code(commit)} of the branch ${code('pms-redesign')}.`,
+    `Package ${code(folderName)}, made from commit ${code(commit)} of the branch ${code(BRANCH)}.`,
     '',
     `- **Site:** ${SITE}`,
     `- **Folder:** ${code(`${LIBRARY_FOLDER}/${FOLDER}`)}, which is ${FOLDER_URL}/`,
@@ -183,16 +190,16 @@ export function runbook({ commit, folderName }) {
     '',
     '## The PCOE site has its lists of version 3: do this instead of steps 1 to 11',
     '',
-    `The package pms-969bf16 ran steps 1 to 9 on this site on 14 Oct 2026: it has its lists, an admin, the sample clients, and ${code('PMSAdminUsers')} locked to the site owners. On 15 Oct 2026 the package pms-e250a36 ran there (the self-test, Content, Go live with Domino's, a participant's visit; Results did not load), and then pms-da9fc8d, whose lists are of **version 3** (${code('PMSGuestList.GuestName')} and ${code('PMSVisitLog.SignedInName')} in place of the two ${code('DisplayName')} columns, which this SharePoint will not return by name). With pms-da9fc8d **the participant page responded slowly, showing its loading lines** (reported by VJR, 15 Oct 2026), and pms-0a1c701 made it wait for fewer requests. With pms-0a1c701 **Results showed plain blue bars and totals only, and nothing showed who picked what** (reported by VJR, 15 Oct 2026: a named guest had joined by QR code and finished four activities). The package pms-3fb312a drew a chart of its own kind for each question, in Deloitte's colours, and on the facilitator's own view a bar opens the names of the people who picked it; the wall display has no names. With pms-3fb312a, **on a colleague's Windows laptop in Chrome, a confidence question in full screen had a scrollbar inside its chart and its tooltip cut off, over a step's name, with an empty space under the chart** (photographed by VJR, 16 Oct 2026), and two headlines read "Most people (50%) chose ..." and "... co..". These pages make every chart fit its card with nothing in it that scrolls, draw every tooltip whole and clear of its label, widen a confidence scale's columns, centre the figures under the bars on their gridlines, keep each card at its own height, and fix the two headlines (RELEASE-NOTES.md says what changed). **Replace the three pages; nothing else changes. The lists stay at version 3, and nothing in Setup changes.** The participant page is the same as pms-0a1c701's, byte for byte. Do only this, in order:`,
+    `The package pms-969bf16 ran steps 1 to 9 on this site on 14 Oct 2026: it has its lists, an admin, the sample clients, and ${code('PMSAdminUsers')} locked to the site owners. On 15 Oct 2026 the package pms-e250a36 ran there (the self-test, Content, Go live with Domino's, a participant's visit; Results did not load), and then pms-da9fc8d, whose lists are of **version 3** (${code('PMSGuestList.GuestName')} and ${code('PMSVisitLog.SignedInName')} in place of the two ${code('DisplayName')} columns, which this SharePoint will not return by name). With pms-da9fc8d **the participant page responded slowly, showing its loading lines** (reported by VJR, 15 Oct 2026), and pms-0a1c701 made it wait for fewer requests. With pms-0a1c701 **Results showed plain blue bars and totals only, and nothing showed who picked what** (reported by VJR, 15 Oct 2026: a named guest had joined by QR code and finished four activities). The package pms-3fb312a drew a chart of its own kind for each question, in Deloitte's colours, and on the facilitator's own view a bar opens the names of the people who picked it; the wall display has no names. With pms-3fb312a, **on a colleague's Windows laptop in Chrome, a confidence question in full screen had a scrollbar inside its chart and its tooltip cut off, over a step's name, with an empty space under the chart** (photographed by VJR, 16 Oct 2026), and two headlines read "Most people (50%) chose ..." and "... co..". The package pms-283ad18 made every chart fit its card with nothing in it that scrolls, drew every tooltip whole and clear of its label, widened a confidence scale's columns, centred the figures under the bars on their gridlines, kept each card at its own height, and fixed the two headlines. With pms-283ad18, **a chart's tooltip could lie over the question, the "got it right first time" line and the Show answer / View as table buttons above its mark, and a locked activity's title was too faint to read** (photographed by Satyadev, 16 Oct 2026). These pages keep a tooltip clear of its card's words and buttons wherever there is room, make a locked activity's title white, never leave a long question cut off in full screen, and look again at once when the network comes back during a look (RELEASE-NOTES.md says what changed). **Replace the three pages; nothing else changes. The lists stay at version 3, and nothing in Setup changes.** The participant page changed for the first time since pms-0a1c701: a locked activity's title, and when it looks again after the network comes back. Do only this, in order:`,
     '',
     `1. Replace ${code('index.html')}, ${code('admin.html')} and ${code('setup.html')} in the folder with the three from this package (upload them over the old ones). Keep ${code('pms-config.txt')} as it is: it has the right content (${code(SETTINGS_TEXT)}). Change nothing else. (Delete ${code('pms-config.json')} if it is still there: nothing reads it, and this site does not serve ${code('.json')} files.)`,
     `2. Open ${FOLDER_URL}/setup.html: "1. This copy of the app" shows the build ${code(folderName)}, and the line under "2. Lists" says "The lists are the version this app needs." Press nothing else in Setup: nothing there changed. (If it says the lists are version 2, PMS-LST-011, the upgrade of 15 Oct was not done: press **Show the plan**, **Create** and **Mark the site as ready** first, and expect "Raised the lists from version 2 to version 3.") *Send back:* a screenshot of "1." and "2.".`,
-    `3. On an iPad, **scan a named guest's QR code** (if the live session has no guest with a code: open ${FOLDER_URL}/admin.html with your PIN; on **Today**, under Controls, choose **Guests scan a personal QR**; on **Guests and QR** paste one name, press **Add 1 guest**, then **Generate all codes (1)**, and **Show QR**). Welcome says "Hi" and the guest's name; open an activity and answer it to its end. *Send back:* which answers the guest picked.`,
+    `3. On an iPad, **scan a named guest's QR code** (if the live session has no guest with a code: open ${FOLDER_URL}/admin.html with your PIN; on **Today**, under Controls, choose **Guests scan a personal QR**; on **Guests and QR** paste one name, press **Add 1 guest**, then **Generate all codes (1)**, and **Show QR**). Welcome says "Hi" and the guest's name; open an activity and answer it to its end. On the Activities hub, an activity that is still locked (when the session asks for one at a time) has its title in white, readable, beside the lock and "Finish the previous activity". (A client's hero is a square when the picture uploaded for it has no transparent background: the sample heroes were made from JPEGs.) *Send back:* which answers the guest picked, and a screenshot of the hub with a locked activity.`,
     `4. In ${FOLDER_URL}/admin.html, **Results**, the live session's **Live display**: each question is a chart with a sentence above it; press the bar of an answer the guest picked: \`Who picked: <answer> (N people)\` appears under its card with the guest's name and the time. **View as table** on one card shows the same numbers. The sentence above a chart says "Most people (N%) chose ..." only when more than half chose it ("The top choice (50%) was ..." at half), and an answer whose own words end with a full stop ends its sentence with that one. The line under "Live results" counts only the iPads that answered ("N answers from M iPads": a visit that answered nothing is not among the M). *Send back:* a screenshot with the names open.`,
     '5. Press **Full screen** and **Next** through every question: no participant\'s name anywhere (the written answers have none under them), and a quiz question marks no answer until **Show answer** on its card. Leave full screen, press **Open in a new tab** and enter your PIN there: the heading says "Live results · Wall display", there is no **Names shown** switch, and there is no name anywhere. *Send back:* a screenshot of each.',
-    '6. On the Windows laptop that showed the fault (Chrome, its display scaling as it is): **Full screen** and **Next** to a confidence question (Kroger\'s, or any client\'s that has one): no scrollbar inside the white card, wide columns, the plot reaching down to the step names with no empty space under them, and pointing at a column shows its tooltip whole, above the column\'s number and clear of the step\'s name. On a single choice and a ranking the figures under the bars ("0%", "50%", "100%") sit centred on their gridlines. Then **Open in a new tab** on the same laptop: nothing scrolls inside a card, every tooltip is whole, and two cards side by side each keep their own height. *Send back:* a photo of the confidence question with its tooltip showing.',
+    '6. On the Windows laptop that showed the fault (Chrome, its display scaling as it is): **Full screen** and **Next** to a confidence question (Kroger\'s, or any client\'s that has one): no scrollbar inside the white card, wide columns, the plot reaching down to the step names with no empty space under them, and pointing at a column shows its tooltip whole, above the column\'s number and clear of the step\'s name. On a single choice and a ranking the figures under the bars ("0%", "50%", "100%") sit centred on their gridlines. Then **Open in a new tab** on the same laptop: nothing scrolls inside a card, every tooltip is whole, and two cards side by side each keep their own height. On the admin view and in full screen, point at the top bar of a single choice: the tooltip stays clear of the question, of "N answered · N of N got it right first time" and of **Show answer** / **View as table** (under the bar when there is no room above). In full screen, a question with many long answers is whole on the screen, or the screen scrolls as one page with "More below": never cut at the card\'s edge. *Send back:* a photo of the confidence question with its tooltip showing, and one of the top bar\'s tooltip.',
     '7. The Live display on the iPad, in Safari, upright and on its side: nothing scrolls sideways, a tap on a bar opens its names and × closes them. On the room\'s projector, full screen: the words read from the back of the room. *Send back:* a photo or a screenshot of each.',
-    '8. If the timing check with pms-0a1c701 (below) has not been sent yet, run it now with these pages: the participant page did not change. *Send back:* the table and the summary line.',
+    '8. If the timing check with pms-0a1c701 (below) has not been sent yet, run it now with these pages: the participant page changed only in a locked activity\'s title and in when it looks again after the network comes back. *Send back:* the table and the summary line.',
     '',
     '### The timing check',
     '',
@@ -244,7 +251,7 @@ export function runbook({ commit, folderName }) {
     '',
     ...LATER.map(([item, what]) => `- **${item}**: ${what}.`),
     '',
-    'Items 133 to 137 are new in Phase 10f (the new site, the pictures in the library, the permissions, the folder address in QR codes). Item 138 is new in Phase 10g (the settings file is pms-config.txt). Items 139 to 142 are new in Phase 10h (what this site leaves out of an unnamed read, Content and Today after that fix, a column deleted by hand, and the site\'s error code for a duplicate). Items 143 to 145 are new in Phase 10i (which columns this site will not return by name, the QR check-in of a named guest, and the lists brought from version 2 to version 3). Items 146 to 149 are new in Phase 10j (the timing check before and after, the size and time of a read of a list\'s columns, whether the site answers 429 or 503, and an activity that opens at once with an edit made in Content). Items 150 to 156 are new in Phase 11a (a named guest on the right bar, no names on the wall, Show answer, the table view, the charts on an iPad, a staff sign-in name on the Live display, and Deloitte\'s colours on a projector). Items 157 to 160 are new in Phase 11a-2 (a confidence question in full screen on the Windows laptop, the wall page, the headlines\' words, and "N iPads" counting the iPads that answered).',
+    'Items 133 to 137 are new in Phase 10f (the new site, the pictures in the library, the permissions, the folder address in QR codes). Item 138 is new in Phase 10g (the settings file is pms-config.txt). Items 139 to 142 are new in Phase 10h (what this site leaves out of an unnamed read, Content and Today after that fix, a column deleted by hand, and the site\'s error code for a duplicate). Items 143 to 145 are new in Phase 10i (which columns this site will not return by name, the QR check-in of a named guest, and the lists brought from version 2 to version 3). Items 146 to 149 are new in Phase 10j (the timing check before and after, the size and time of a read of a list\'s columns, whether the site answers 429 or 503, and an activity that opens at once with an edit made in Content). Items 150 to 156 are new in Phase 11a (a named guest on the right bar, no names on the wall, Show answer, the table view, the charts on an iPad, a staff sign-in name on the Live display, and Deloitte\'s colours on a projector). Items 157 to 160 are new in Phase 11a-2 (a confidence question in full screen on the Windows laptop, the wall page, the headlines\' words, and "N iPads" counting the iPads that answered). Items 161 to 166 are new in Phase 11a-3 (a tooltip and the words above its mark, the names and the wall page as VJR decided, the heroes and a locked activity on an iPad, eight long answers in full screen, and the network coming back during a look).',
     '',
     LAST_LINE,
     '',
@@ -257,10 +264,18 @@ export function runbook({ commit, folderName }) {
  * @param {{ commit: string, folderName: string, files: { name: string, bytes: number, sha256: string, gzip?: number }[] }} build
  */
 export function releaseNotes({ commit, folderName, files }) {
+  // The pages' gzip sizes in pms-283ad18 (its RELEASE-NOTES.md), for what this package adds to each.
+  const before = { 'index.html': 156_699, 'admin.html': 554_231 };
+  const grew = (name) => {
+    const now = files.find((file) => file.name === name)?.gzip;
+    if (!now) return 'not measured';
+    const change = now - before[name];
+    return `${change >= 0 ? `${change.toLocaleString('en-US')} B larger` : `${(-change).toLocaleString('en-US')} B smaller`} than pms-283ad18's`;
+  };
   return [
     `# ${folderName}: release notes`,
     '',
-    `Pursuit Managed Services for the new site, ${SITE}, folder ${code(`${LIBRARY_FOLDER}/${FOLDER}`)}. Made from commit ${code(commit)} of the branch ${code('pms-redesign')} (never pushed) by ${code('npm run package:release')}, in a fresh checkout of that commit.`,
+    `Pursuit Managed Services for the new site, ${SITE}, folder ${code(`${LIBRARY_FOLDER}/${FOLDER}`)}. Made from commit ${code(commit)} of the branch ${code(BRANCH)} (a branch on GitHub, never merged into main) by ${code('npm run package:release')}, in a fresh checkout of that commit.`,
     '',
     '## What it is',
     '',
@@ -270,7 +285,16 @@ export function releaseNotes({ commit, folderName, files }) {
     '|---|---:|---:|---|',
     ...files.map((file) => `| ${file.name} | ${file.bytes.toLocaleString('en-US')} | ${file.gzip ? file.gzip.toLocaleString('en-US') : ''} | ${code(file.sha256)} |`),
     '',
-    '## What changed since pms-3fb312a (16 Oct 2026: on a Windows laptop a confidence question in full screen had a scrollbar inside its chart and its tooltip cut off)',
+    "## What changed since pms-283ad18 (16 Oct 2026: a chart's tooltip could lie over the words above its mark, and a locked activity's title was too faint to read)",
+    "",
+    "- **A tooltip keeps clear of its card's words and buttons** (the question, \"N answered · N of N got it right first time\", **Show answer**, **View as table**, a caption) wherever the window has room: above its mark, moved along, or under it. Where there is no room on either side it covers as little of them as it can. It is still always whole, inside the window and clear of the mark and its own label.",
+    "- **A locked activity's title is white**, as its caption and lock are; it was a pale blue on blue (about 2:1). The pill still reads as locked by its darker fill, the lock and \"Finish the previous activity\".",
+    "- **A question too long for full screen is never cut at the card's edge.** On a screen 1,550 px wide or more (a projector, a large monitor) the type stopped getting smaller before it reached its smallest, and the card was cut; now it gets smaller down to its smallest, and then the screen scrolls as one page with \"More below\". On an iPad or a phone nothing changed.",
+    "- **The participant page looks again at once when the network comes back during a look**, as soon as that look ends; before, it waited for its next look (up to a minute with a question on screen) to learn, for example, of a restart.",
+    "- **No change, by VJR's decisions of 16 Oct 2026:** names stay \"Last, First\" as the directory gives them, and the wall page keeps the admin header, tabs, Lock and Export. **Client heroes are squares** when the picture uploaded for them has no transparent background (the sample heroes were made from JPEGs): uploading a transparent PNG in Brand Studio makes a round one, with no new build.",
+    `- **Nothing else changed:** not the exports, not what is counted or stored, not the lists (version 3), not Setup, and not a request any page sends. The participant page is ${grew('index.html')} and the admin page ${grew('admin.html')} (gzip).`,
+    '',
+    '## What changed in pms-283ad18 (since pms-3fb312a, 16 Oct 2026: on a Windows laptop a confidence question in full screen had a scrollbar inside its chart and its tooltip cut off)',
     '',
     '- **Nothing inside a chart\'s card scrolls.** The confidence chart was a box that could scroll (and on Windows a fraction of a pixel is enough for a scrollbar with arrows); so was the numbers view. Neither is now, at any size.',
     '- **A tooltip is always whole.** It is drawn over the page, next to the mark it is about, clear of the mark\'s own label (and of a scale\'s "Average ..."), above it or under it, and inside the window; it follows the mark when the page scrolls.',

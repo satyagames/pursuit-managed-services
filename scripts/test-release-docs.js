@@ -138,7 +138,7 @@ describe('RUNBOOK.md', () => {
     assert.ok(book.includes(permissionsTable().split('\n')[2]), 'the table itself');
   });
 
-  it('what to send back, the codes, the printed QR codes, every QA item from 102 to 132 and 138 to 160, and the last line', () => {
+  it('what to send back, the codes, the printed QR codes, every QA item from 102 to 132 and 138 to 166, and the last line', () => {
     assert.match(book, /Screenshots at steps 3, 4, 6, 7, 13, 14 and 15, the lines of steps 1, 5, 8 and 9, the table of step 10, the permissions of step 11/);
     assert.match(book, /any page that shows a code\*\*, with its \*\*Details\*\* line\./);
     assert.match(book, /\*\*PMS-CFG-\.\.\.\*\* is the settings/);
@@ -147,10 +147,11 @@ describe('RUNBOOK.md', () => {
     assert.match(book, /\*\*PMS-LST-012\*\* means they are of a newer version: upload the newer files/);
     assert.match(book, /every printed code must be printed again/);
     const covered = new Set([...Object.values(QA_BY_STEP).flat(), ...Object.values(QA_BY_NOTE).flat(), ...LATER.map(([item]) => item)]);
-    for (const item of [...Array.from({ length: 31 }, (_, index) => 102 + index), ...Array.from({ length: 23 }, (_, index) => 138 + index)]) assert.ok(covered.has(item), `QA item ${item} is answered by a step or said to come later`);
+    for (const item of [...Array.from({ length: 31 }, (_, index) => 102 + index), ...Array.from({ length: 29 }, (_, index) => 138 + index)]) assert.ok(covered.has(item), `QA item ${item} is answered by a step or said to come later`);
     assert.match(book, /\| Note 4 \| 150, 159, 160 \|/, 'the note\'s items are in the table');
     assert.match(book, /\| Note 5 \| 151, 152, 153 \|/);
-    assert.match(book, /\| Note 6 \| 157, 158 \|/);
+    assert.match(book, /\| Note 3 \| 144, 164 \|/);
+    assert.match(book, /\| Note 6 \| 157, 158, 161, 165 \|/);
     assert.match(book, /\| Note 8 \| 146, 147, 148, 149 \|/);
     assert.equal(book.trimEnd().split('\n').at(-1), LAST_LINE);
     assert.match(LAST_LINE, /Steps 1 to 9 of this runbook have run on the real site \(14 Oct 2026, pms-969bf16\), and Go live, a participant's visit and the self-test \(15 Oct 2026, pms-e250a36\), and with pms-da9fc8d the lists of version 3 and a participant's visit \(15 Oct 2026\)/);
@@ -169,7 +170,9 @@ describe('RUNBOOK.md', () => {
     assert.match(note, /With pms-0a1c701 \*\*Results showed plain blue bars and totals only, and nothing showed who picked what\*\* \(reported by VJR, 15 Oct 2026/, 'what was reported');
     assert.match(note, /With pms-3fb312a, \*\*on a colleague's Windows laptop in Chrome, a confidence question in full screen had a scrollbar inside its chart and its tooltip cut off[^\n]*\(photographed by VJR, 16 Oct 2026\)/, 'and what was seen with 11a');
     assert.match(note, /\*\*Replace the three pages; nothing else changes\. The lists stay at version 3, and nothing in Setup changes\.\*\*/);
-    assert.match(note, /The participant page is the same as pms-0a1c701's, byte for byte\./);
+    // (Phase 11a-3) what was seen with pms-283ad18, and that the participant page changed this time.
+    assert.match(note, /With pms-283ad18, \*\*a chart's tooltip could lie over the question, the "got it right first time" line and the Show answer \/ View as table buttons above its mark, and a locked activity's title was too faint to read\*\* \(photographed by Satyadev, 16 Oct 2026\)/);
+    assert.match(note, /The participant page changed for the first time since pms-0a1c701: a locked activity's title, and when it looks again after the network comes back\./);
     const items = [...note.matchAll(/^(\d+)\. (.+)$/gm)].map((match) => [Number(match[1]), match[2]]);
     assert.deepEqual(items.map(([number]) => number), [1, 2, 3, 4, 5, 6, 7, 8]);
     const said = Object.fromEntries(items);
@@ -185,7 +188,9 @@ describe('RUNBOOK.md', () => {
     assert.match(said[5], /^Press \*\*Full screen\*\*[^\n]*no participant's name anywhere[^\n]*\*\*Show answer\*\*[^\n]*\*\*Open in a new tab\*\*[^\n]*"Live results · Wall display", there is no \*\*Names shown\*\* switch/);
     assert.match(said[6], /^On the Windows laptop that showed the fault \(Chrome, its display scaling as it is\)[^\n]*no scrollbar inside the white card[^\n]*tooltip whole[^\n]*centred on their gridlines[^\n]*\*\*Open in a new tab\*\*[^\n]*keep their own height/);
     assert.match(said[7], /^The Live display on the iPad, in Safari, upright and on its side[^\n]*projector/);
-    assert.match(said[8], /^If the timing check with pms-0a1c701 \(below\) has not been sent yet, run it now with these pages: the participant page did not change\./);
+    assert.match(said[3], /an activity that is still locked[^\n]*has its title in white/);
+    assert.match(said[6], /point at the top bar of a single choice: the tooltip stays clear of the question[^\n]*never cut at the card's edge/);
+    assert.match(said[8], /^If the timing check with pms-0a1c701 \(below\) has not been sent yet, run it now with these pages: the participant page changed only in a locked activity's title and in when it looks again after the network comes back\./);
     // The timing check: three steps, and the line in a block with no language, exactly as it was given.
     assert.match(timing, /\n1\. Open the participant page fresh: press Ctrl\+F5/);
     assert.match(timing, /\n2\. Begin a visit \("Click here to begin"\), open an activity, answer it to its end, and press \*\*Back to activities\*\*\./);
@@ -238,7 +243,17 @@ describe('RELEASE-NOTES.md', () => {
     // (Phase 10i) what changed since pms-e250a36, and why: the two columns renamed, Setup raising a site of version 2, the fourth probe, the visit of before.
     // (Phase 11a-2) what changed since pms-3fb312a, and why: nothing in a card scrolls, whole tooltips, the chart filling its card, the columns and the axis,
     // cards at their own height, the headlines' words, and "N iPads" counting the iPads that answered (VJR's choice; the PDF and PowerPoint left for 11b).
-    assert.match(notes, /## What changed since pms-3fb312a \(16 Oct 2026: on a Windows laptop a confidence question in full screen had a scrollbar inside its chart and its tooltip cut off\)/);
+    // (Phase 11a-3) what changed since pms-283ad18, and why, newest first; and the branch the package is made from.
+    assert.match(notes, /## What changed since pms-283ad18 \(16 Oct 2026: a chart's tooltip could lie over the words above its mark, and a locked activity's title was too faint to read\)/);
+    assert.match(notes, /\*\*A tooltip keeps clear of its card's words and buttons\*\*/);
+    assert.match(notes, /\*\*A locked activity's title is white\*\*/);
+    assert.match(notes, /\*\*A question too long for full screen is never cut at the card's edge\.\*\*/);
+    assert.match(notes, /\*\*No change, by VJR's decisions of 16 Oct 2026:\*\* names stay "Last, First"/);
+    assert.match(notes, /The participant page is (not measured|[\d,]+ B (larger|smaller) than pms-283ad18's) and the admin page/);
+    assert.ok(notes.indexOf('since pms-283ad18') < notes.indexOf('in pms-283ad18'), 'the newest change first');
+    assert.match(notes, /of the branch `pms-11a3` \(a branch on GitHub, never merged into main\)/);
+    // (Phase 11a-2, since 11a-3 the section "in pms-283ad18") what changed since pms-3fb312a.
+    assert.match(notes, /## What changed in pms-283ad18 \(since pms-3fb312a, 16 Oct 2026: on a Windows laptop a confidence question in full screen had a scrollbar inside its chart and its tooltip cut off\)/);
     assert.match(notes, /\*\*Nothing inside a chart's card scrolls\.\*\*/);
     assert.match(notes, /\*\*A tooltip is always whole\.\*\*/);
     assert.match(notes, /\*\*The headlines' words\*\*: "Most people \(N%\) chose \.\.\." only when more than half did/);
