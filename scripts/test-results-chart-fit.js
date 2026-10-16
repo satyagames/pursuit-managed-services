@@ -96,3 +96,54 @@ describe('a tooltip and the words of its card', () => {
     assert.equal(overlaps(at, ROW), false);
   });
 });
+
+// Phase 11a-3, after the photographs of pms-618b8fc (16 Oct 2026): in full screen the tooltip of a ranking's last bar ("Reduce cost") could not go under
+// it (the caption "100 means everyone ranked it first" is there, one of the card's words) and went above, over the figures of the two bars above it ("56"
+// cut, Scale talent model's hidden). `soft` is the other marks' figures and labels: kept clear of where there is room, after the card's words (covering a
+// word costs far more than covering a figure). And the tooltip may move along its mark's whole track (`span`), not only so far that it still covers `x`.
+describe("a tooltip and the other bars' figures", () => {
+  // The photograph, in its own pixels: a window 1600x900, a tooltip 410x100. The last bar's row 150..1350 across and 666..712 down, its track (where the
+  // bars are drawn) 705..1350, centred on 1028. "56", the figure of the third bar, 1070..1105 and 540..565; the fourth bar's figure 895..935 and
+  // 602..632; the caption 150..1350 and 770..795.
+  const BIG = { width: 410, height: 100 };
+  const VIEW = { width: 1600, height: 900 };
+  const LAST = { left: 150, top: 666, right: 1350, bottom: 712 };
+  const TRACK = { left: 705, right: 1350 };
+  const FIFTY_SIX = { left: 1070, top: 540, right: 1105, bottom: 565 };
+  const FOURTH = { left: 895, top: 602, right: 935, bottom: 632 };
+  const CAPTION = { left: 150, top: 770, right: 1350, bottom: 795 };
+  const covers = (at, box) => Math.min(at.left + BIG.width, box.right) > Math.max(at.left, box.left) && Math.min(at.top + BIG.height, box.bottom) > Math.max(at.top, box.top);
+
+  it('without them, lies over both figures (the photograph)', () => {
+    // Under: 712 + 6 = 718, over the caption. Above: 666 - 6 - 100 = 560, centred on 1028: 823..1233, over "56" and the fourth figure.
+    const at = placeTip(BIG, LAST, 1028, VIEW, { avoid: [CAPTION] });
+    assert.deepEqual(at, { left: 823, top: 560, below: false });
+    assert.ok(covers(at, FIFTY_SIX) && covers(at, FOURTH));
+  });
+
+  it('with them, moves along its track until it covers neither, still above and clear of the caption', () => {
+    // Moved to end 6 short of "56": 1070 - 6 - 410 = 654..1064, still over the fourth figure. To start 6 past it: 1111..1521, which covers neither, is
+    // inside the window and still over the track (705..1350): taken. (It no longer covers 1028, the track's middle: `span` allows that.)
+    const at = placeTip(BIG, LAST, 1028, VIEW, { avoid: [CAPTION], soft: [FIFTY_SIX, FOURTH], span: TRACK });
+    assert.deepEqual(at, { left: 1111, top: 560, below: false });
+    for (const box of [FIFTY_SIX, FOURTH, CAPTION, LAST]) assert.equal(covers(at, box), false);
+  });
+
+  it('covers a figure rather than a word when it must cover one', () => {
+    // No room to move along (the track is only the mark's own width) and a figure right above: above covers the figure, under covers the caption.
+    // Above is taken: a word outweighs a figure.
+    const narrow = { left: 1000, right: 1056 };
+    const figure = { left: 1000, top: 600, right: 1056, bottom: 640 };
+    const at = placeTip(BIG, LAST, 1028, VIEW, { avoid: [CAPTION], soft: [figure], span: narrow });
+    assert.equal(at.below, false);
+    assert.ok(covers(at, figure));
+  });
+
+  it('with no span, moves along only so far that it still covers x, as before', () => {
+    // The same as above without `span`: 1111..1521 does not cover 1028, so it is not a place. Those that are: centred, 823..1233, over both figures;
+    // 654..1064, over the fourth figure (40 x 30 = 1,200 pixels); 941..1351 (6 past the fourth figure), over the bottom 5 rows of "56" (35 x 5 = 175).
+    // The one covering least is taken: 941.
+    const at = placeTip(BIG, LAST, 1028, VIEW, { avoid: [CAPTION], soft: [FIFTY_SIX, FOURTH] });
+    assert.deepEqual(at, { left: 941, top: 560, below: false });
+  });
+});

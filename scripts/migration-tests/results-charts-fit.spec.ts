@@ -274,3 +274,34 @@ test('eight answers of 90 characters in full screen are never cut off: upright s
   }
   expect(problems).toEqual([]);
 });
+
+test("in full screen a ranking's tooltips cover no other bar's figure, where there is room (the photograph of pms-618b8fc)", async ({ browser }) => {
+  test.setTimeout(240_000);
+  // Phase 11a-3: the last bar's tooltip could not go under it (the caption is there) and went above, over the figures of the two bars above it. Now it
+  // moves along its own track to a place clear of them. Each bar's tooltip, at the photograph's laptop (1536x864) and at 1920x1080.
+  const problems: string[] = [];
+  for (const size of [{ width: 1536, height: 864, scale: 1 }, { width: 1920, height: 1080, scale: 1 }]) {
+    const page = await pageAt(browser, size as unknown as Size);
+    await openDisplay(page, sessions.vine);
+    await fullScreenAt(page, 'v5');
+    const marks = page.locator('.result-card[data-question="v5"] [data-mark]');
+    for (let index = 0; index < await marks.count(); index += 1) {
+      const mark = marks.nth(index);
+      await mark.hover();
+      await expect(mark).toHaveAttribute('aria-describedby', /tip/);
+      await page.waitForTimeout(80);
+      const covered = await mark.evaluate((element) => {
+        const tip = document.getElementById(element.getAttribute('aria-describedby') ?? '')!.getBoundingClientRect();
+        return [...document.querySelectorAll<HTMLElement>('.result-card .bars__value')].filter((value) => !element.contains(value)).filter((value) => {
+          const box = value.getBoundingClientRect();
+          // (A figure's box is its line, a little taller than its digits: an edge within 4px of it is not over it.)
+          return Math.min(tip.right, box.right) - Math.max(tip.left, box.left) > 4 && Math.min(tip.bottom, box.bottom) - Math.max(tip.top, box.top) > 4;
+        }).map((value) => (value.textContent ?? '').trim());
+      });
+      if (covered.length) problems.push(`${size.width}x${size.height}, bar ${index + 1}: the tooltip lies over ${covered.join(', ')}`);
+      problems.push(...(await tipProblems(page, (await mark.getAttribute('data-mark')) ?? '')).map((problem) => `${size.width}x${size.height}: ${problem}`));
+    }
+    await page.context().close();
+  }
+  expect(problems).toEqual([]);
+});

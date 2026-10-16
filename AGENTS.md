@@ -1342,7 +1342,7 @@ The report is [RELEASE-11A3.md](RELEASE-11A3.md). **These pages have not run on 
 - **VJR's decisions (16 Oct 2026):** names stay "Last, First" as the directory gives them; the wall page keeps the admin header, tabs, Lock and Export. **Heroes are squares when the
   uploaded picture has no transparency** (the sample sources were JPEGs); `build:sample-pictures` takes `<client>-<slot>.png` before `.jpg`.
 - **`PHASE_11A3`** (`scripts/bundle-budget.js`): measured from the deployed `pms-283ad18` (participant 156,695 B, admin 553,987 B in that checkout), not from 11a, because 11a-2 grew
-  the admin page and recorded no figure; allowance 500 B each; it ended at +34 B and +238 B, and the participant page's Tailwind rules are 11a's exactly. The next phase starts from
+  the admin page and recorded no figure; allowance 500 B each; it ended at +34 B and +277 B, and the participant page's Tailwind rules are 11a's exactly. The next phase starts from
   `participantAfter`/`adminAfter`.
 - **On a Windows checkout:** run the suites with Node 22 directly (`npm` puts its own Node first on the PATH, and under Node 20 a top-level `before` does not run before a
   `describe`'s tests); `node_modules` copied from a Mac lacks `@napi-rs/canvas-win32-x64-msvc`, which pdf.js needs (`npm install --no-save` at the lock file's version); set

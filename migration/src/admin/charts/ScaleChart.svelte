@@ -86,7 +86,7 @@
         onblur={() => hide(step)}
         onclick={(event) => { show(step, event.currentTarget); if (withNames) onSelect?.(selected === step.id ? null : step.id); }}
       >
-        <span class="scale__count">{step.count}</span>
+        <span class="scale__count" data-tip-soft>{step.count}</span>
         <span class="scale__fill"></span>
       </button>
     {/each}
@@ -95,7 +95,7 @@
     {#if at !== null}<span class="scale__pointer" style:--at={at}></span>{/if}
   </div>
   <div class="scale__steps" aria-hidden="true">
-    {#each steps as step (step.id)}<span class="scale__step" data-label-of={step.id}>{step.label}</span>{/each}
+    {#each steps as step (step.id)}<span class="scale__step" data-label-of={step.id} data-tip-soft>{step.label}</span>{/each}
   </div>
   {#if steps.length > 3}
     <div class="scale__bands" aria-hidden="true">

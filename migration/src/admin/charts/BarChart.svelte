@@ -96,14 +96,14 @@
           >
             {#if ranked}<span class="bars__rank">{row.rank}</span>{/if}
             <span class="bars__label" data-label-of={row.id}>
-              <span class="bars__text">{row.label}</span>
+              <span class="bars__text" data-tip-soft>{row.label}</span>
               {#each row.tags as tag (tag.text)}
                 <span class="bars__tag">{#if tag.tick}<svg class="bars__tick" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M2.5 8.5l3.5 3.5 7.5-8" /></svg>{/if}{tag.text}</span>
               {/each}
             </span>
             <span class="bars__track">
               <span class="bars__bar bars__bar--{row.tone}"></span>
-              <span class="bars__value">{row.value}</span>
+              <span class="bars__value" data-tip-soft>{row.value}</span>
             </span>
           </button>
         </li>
