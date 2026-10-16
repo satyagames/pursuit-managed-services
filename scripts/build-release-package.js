@@ -16,7 +16,7 @@
 // folder's files. What it found is printed and written to test-results/release/package.json.
 import { execFile } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { copyFile, mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, mkdtemp, readFile, readdir, rm, symlink, unlink, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
@@ -66,6 +66,9 @@ try {
   await copyFile(path.join(scratch, 'THIRD-PARTY-NOTICES.txt'), path.join(folder, 'THIRD-PARTY-NOTICES.txt'));
   await writeFile(path.join(folder, 'pms-config.txt'), SETTINGS_TEXT);
 } finally {
+  // The link first, by itself: on Windows `git worktree remove --force` follows a junction and deletes what is inside it, the real node_modules
+  // (Phase 11a-3: it did).
+  await unlink(path.join(checkout, 'node_modules')).catch(() => {});
   await git('worktree', 'remove', '--force', checkout);
 }
 
