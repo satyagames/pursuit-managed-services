@@ -10,7 +10,7 @@
     tone: 'top' | 'rest' | 'correct';
     /** Words beside the label: "Top choice", and "Correct" with a tick. */
     tags: { text: string; tick?: boolean }[];
-    /** A ranking's place, "1." or "1=". */
+    /** A ranking's place, "1" (a shared place is the same number on two bars). */
     rank?: string;
     /** What a screen reader says for the bar. */
     name: string;

@@ -14,7 +14,7 @@
 //   - who picked what: the names come from lib/participant-names.js, the rule Admin → Results and the leader report name people by, so
 //     a person is called the same thing everywhere. On the wall display there are no names at all: chartOf() is given none.
 //   - a confidence scale's average, where it sits between the steps, and three bands by position.
-//   - a ranking's support score (see supportScore) and its shared ranks ("1=").
+//   - a ranking's support score (see supportScore) and its places (a shared place is the same number on two bars).
 //   - for written answers, the words that came up most: repeated words, counted by comment, never a summary or a theme.
 
 import { isGraded } from './pager-logic.js';
@@ -373,7 +373,8 @@ function rankingChart(options, responses, names, answered) {
   const ranked = sorted.map((item) => {
     const rank = 1 + sorted.filter((other) => other.score > item.score).length;
     const tied = sorted.filter((other) => other.score === item.score).length > 1;
-    return { ...item, rank, tied, rankLabel: tied ? `${rank}=` : `${rank}.` };
+    // The place is its number alone, shared or not (Phase 11a-3: "1=" read as a typo on the real site, beside "3.").
+    return { ...item, rank, tied, rankLabel: String(rank) };
   });
   const leaders = ranked.filter((item) => item.rank === 1);
   let headline = NO_ANSWERS;

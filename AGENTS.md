@@ -1264,7 +1264,7 @@ QA-TESTING.md items 150 to 156.
   shows. Phase 11b's leader report builds on it; a number shown on the screen is worked out there and nowhere else. Its rules, each with a hand-worked test: shares are counts
   over the people who answered; single choice, true or false and a scale are rounded by the largest remainder to exactly 100 (answers to an answer that has gone take their
   share and are said under the chart); multiple choice is rounded alone; the support score is `(points - rankers) / (rankers x (options - 1)) x 100` (with every voter
-  ranking every option, the brief's formula); equal scores share a rank ("1="); a scale's three bands are by place (`bandOf`); the words that came up most are counted by
+  ranking every option, the brief's formula); equal scores share a place, shown as the same number on both bars ("1", "1", "3": since Phase 11a-3, "1=" before); a scale's three bands are by place (`bandOf`); the words that came up most are counted by
   comment, a plural folded only into a singular someone wrote, from a reviewed list of stop words, and are never called themes.
 - **The charts are `migration/src/admin/charts/`, drawn by hand from HTML and SVG: no chart library** (Chart.js left the admin page with `public/js/resultsRenderer.js` and
   `ResultQuestion.svelte`; it is a dev dependency now, for the bundle test's negative control alone). `ResultCard` is the card: the headline, the question, "N answered", a
@@ -1338,11 +1338,13 @@ The report is [RELEASE-11A3.md](RELEASE-11A3.md). **These pages have not run on 
   1,550 px wide or more stopped above 0.75, neither smaller nor spilling, and the card cut at its edge).
 - **`online` during a look asks for one more look as soon as it ends** (`lib/page-watch.ts`, `scripts/test-page-watch.js`; a `Retry-After` is still a floor). Dropping it was the
   real cause of the `participant.spec.ts:91` flake.
+- **A ranking's place is its number alone** ("1", "1", "3", "4", "5"; `rankLabel` in `results-chart-model.js`): "1=" for a shared place read as a typo on the
+  real site, beside "3.".
 - **A locked activity's title is white** (`ActivityPill`), as its caption and lock are. **A comment inside a Svelte style block is kept in the built page**: explain CSS in the script block.
 - **VJR's decisions (16 Oct 2026):** names stay "Last, First" as the directory gives them; the wall page keeps the admin header, tabs, Lock and Export. **Heroes are squares when the
   uploaded picture has no transparency** (the sample sources were JPEGs); `build:sample-pictures` takes `<client>-<slot>.png` before `.jpg`.
 - **`PHASE_11A3`** (`scripts/bundle-budget.js`): measured from the deployed `pms-283ad18` (participant 156,695 B, admin 553,987 B in that checkout), not from 11a, because 11a-2 grew
-  the admin page and recorded no figure; allowance 500 B each; it ended at +34 B and +277 B, and the participant page's Tailwind rules are 11a's exactly. The next phase starts from
+  the admin page and recorded no figure; allowance 500 B each; it ended at +34 B and +276 B, and the participant page's Tailwind rules are 11a's exactly. The next phase starts from
   `participantAfter`/`adminAfter`.
 - **On a Windows checkout:** run the suites with Node 22 directly (`npm` puts its own Node first on the PATH, and under Node 20 a top-level `before` does not run before a
   `describe`'s tests); `node_modules` copied from a Mac lacks `@napi-rs/canvas-win32-x64-msvc`, which pdf.js needs (`npm install --no-save` at the lock file's version); set

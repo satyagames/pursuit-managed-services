@@ -279,13 +279,15 @@ describe('a confidence scale', () => {
 });
 
 describe('a ranking', () => {
-  it('4 voters, 5 options, points 15, 15, 13, 9, 8: support scores 69, 69, 56, 31, 25 and ranks 1=, 1=, 3, 4, 5', () => {
+  it('4 voters, 5 options, points 15, 15, 13, 9, 8: support scores 69, 69, 56, 31, 25 and places 1, 1, 3, 4, 5', () => {
     const chart = chartOf(rankingQuestion(), { names });
     assert.equal(chart.kind, 'ranking');
     assert.deepEqual(chart.options.map((item) => [item.label, item.points, item.score, item.rank, item.tied]), [
       [RANK.A, 15, 69, 1, true], [RANK.B, 15, 69, 1, true], [RANK.C, 13, 56, 3, false], [RANK.D, 9, 31, 4, false], [RANK.E, 8, 25, 5, false],
     ]);
-    assert.deepEqual(chart.options.map((item) => item.rankLabel), ['1=', '1=', '3.', '4.', '5.']);
+    // A place is its number alone (Phase 11a-3: "1=" for a shared place read as a typo on the real site, beside "3."); two bars sharing a number, and the
+    // headline, say it is a tie.
+    assert.deepEqual(chart.options.map((item) => item.rankLabel), ['1', '1', '3', '4', '5']);
     assert.deepEqual(chart.options.map((item) => item.firsts), [2, 1, 0, 0, 1]);
     assert.equal(chart.options.reduce((sum, item) => sum + item.points, 0), 60);
     assert.equal(chart.caption, RANKING_CAPTION);
