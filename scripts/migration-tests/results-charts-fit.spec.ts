@@ -248,3 +248,29 @@ test('a refresh leaves full screen as it was: the type does not jump back to ful
   expect(await page.locator('section.live').evaluate((element) => ({ scale: getComputedStyle(element).getPropertyValue('--chart-scale'), top: element.scrollTop })), 'the same type and the same place').toEqual(before);
   await page.context().close();
 });
+
+test('eight answers of 90 characters in full screen are never cut off: upright screens, and wide screens too short for them, fit whole or scroll as one page', async ({ browser }) => {
+  test.setTimeout(300_000);
+  // Phase 11a-3, item E. The type is made smaller a step at a time while the card does not fit, down to 0.75, and past that the screen scrolls as one
+  // page. Until 11a-3 each step's fit factor stopped at 0.5, so a window 1,550 px wide or more (type 1.6 to 2.4) stopped at type 0.8 or above, neither
+  // smaller nor spilling, and the card was cut at its edge: 1920x600 and 1600x700 are such windows. 768x1024 and 1080x1920 are screens held upright.
+  const problems: string[] = [];
+  for (const size of [{ width: 1920, height: 600, scale: 1 }, { width: 1600, height: 700, scale: 1 }, { width: 768, height: 1024, scale: 1 }, { width: 1080, height: 1920, scale: 1 }]) {
+    const page = await pageAt(browser, size as unknown as Size);
+    await openDisplay(page, sessions.big);
+    await fullScreenAt(page, 'w1');
+    const where = `${size.width}x${size.height}, full screen, w1`;
+    const state = await screenState(page);
+    if (!state.spills) {
+      expect(state, `${where}: it fits, with nothing to scroll`).toEqual({ spills: false, scrolls: false, more: false });
+      problems.push(...(await fitProblems(page)).map((problem) => `${where}: ${problem}`));
+    } else {
+      expect(state, `${where}: the screen scrolls as one page and says "More below"`).toEqual({ spills: true, scrolls: true, more: true });
+      expect(await page.locator('section.live').evaluate((element) => getComputedStyle(element).getPropertyValue('--chart-scale').trim()), `${where}: it spills only at the smallest type`).toBe('0.75');
+      problems.push(...(await chartProblems(page)).map((problem) => `${where}: ${problem}`));
+    }
+    problems.push(...(await scrollProblems(page)).map((problem) => `${where}: ${problem}`));
+    await page.context().close();
+  }
+  expect(problems).toEqual([]);
+});

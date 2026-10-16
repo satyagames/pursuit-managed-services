@@ -15,6 +15,7 @@
   import { adminDelay } from '../lib/poll-schedule.js';
   import { heldNameSources } from '../lib/admin-results.js';
   import { wallAddress } from '../lib/live-wall.js';
+  import { nextFit, scaleOf } from '../lib/present-fit.js';
   import { answerCounts, answersFrom, answersOf, chartsOf, namesFor } from '../lib/results-chart-model.js';
   import ResultCard from './charts/ResultCard.svelte';
 
@@ -135,10 +136,9 @@
   const currentId = $derived(current?.id ?? '');
   const currentChart = $derived(current ? charts.get(current.id) ?? null : null);
   const currentTitle = $derived(sections.find((section) => section.questions.some((question) => question.id === current?.id))?.title ?? '');
-  // The type is never made smaller than this, whatever the question: past it a card that still does not fit is cut at its edge (the chart's own text
-  // is not drawn smaller than 1 whatever it is told: the renderer clamps it).
-  const SMALLEST = 0.75;
-  const scale = $derived(presenting ? Math.max(SMALLEST, Math.round(presentScale * fitFactor * 20) / 20) : 1);
+  // The type, and the steps that make it smaller for a card that does not fit, are lib/present-fit.js (Phase 11a-3): never below SMALLEST, and past
+  // it the card spills.
+  const scale = $derived(presenting ? scaleOf(presentScale, fitFactor) : 1);
 
   // ---- Opening ----------------------------------------------------------------------------------------------------
 
@@ -372,11 +372,12 @@
           await tick();
           const card = stage?.querySelector<HTMLElement>('.result-card');
           if (stale || !card || spill || card.scrollHeight <= card.clientHeight + 1) return;
-          if (scale <= SMALLEST) {
+          const next = nextFit(presentScale, fitFactor);
+          if (next === null) {
             spill = true;
             return;
           }
-          fitFactor = Math.max(0.5, Math.round((fitFactor - 0.1) * 100) / 100);
+          fitFactor = next;
         }
       } finally {
         running = false;
