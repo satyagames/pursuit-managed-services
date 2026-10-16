@@ -567,11 +567,11 @@ test.describe('capabilities that moved', () => {
     // The card's Live display (it was the Master screen link, opening the participant page) opens in this page, and Back returns here.
     await card.getByRole('button', { name: 'Live display' }).click();
     await expect(page.getByRole('heading', { name: 'Live results' })).toBeVisible();
-    await expect(page.locator('.live__meta')).toContainText('1 answers from 1 iPads');
+    await expect(page.locator('.live__meta')).toContainText('1 answer from 1 iPad');
     await page.getByRole('button', { name: '← Results' }).click();
     await expect(card).toContainText('1 of');
     await card.locator('summary').click();
-    await expect(card.getByText(/1 answers from 1 iPads/)).toBeVisible();
+    await expect(card.getByText(/1 answer from 1 iPad\b/)).toBeVisible();
     await expect(card.getByRole('button', { name: 'End session' }), 'ending a session is on Today').toHaveCount(0);
     await card.getByRole('button', { name: 'Restart...' }).click();
     await page.getByText('The very beginning').click();

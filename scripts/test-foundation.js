@@ -64,8 +64,9 @@ test('the Svelte app shows the product name from one constant and no longer show
 test('the shared export code still defaults to the old product name, and the Live display passes its own', async () => {
   // The Live display (admin) passes brand.appName. The default was for the legacy callers, which left in Phase 10c-1; it is not changed here.
   const source = await read('public/js/resultsExport.js');
-  assert.match(source, /function writePdf\(pages, report, producer = 'Pursuits CEC'\)/);
-  assert.match(source, /async function writePptx\(pages, report, producer = 'Pursuits CEC'\)/);
+  // (Phase 11b: the writers take their library as an argument, so a node test can run them; the default is where it was.)
+  assert.match(source, /export function pdfBytes\(pages, report, \{ jsPDF, producer = 'Pursuits CEC' \}\)/);
+  assert.match(source, /export async function pptxFile\(pages, report, \{ PptxGenJS, producer = 'Pursuits CEC', outputType = 'blob' \}\)/);
   assert.match(source, /creator: producer/);
   assert.match(source, /pptx\.company = producer;/);
   assert.match(await read('migration/src/admin/LiveDisplay.svelte'), /appName: APP_NAME/);

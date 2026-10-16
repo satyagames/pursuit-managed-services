@@ -94,8 +94,8 @@ function whoOf(answer, names) {
  * "N answers from M iPads" over `questions` (Phase 11a-2, part D, VJR's choice of 16 Oct 2026): N is the answers to them (each question's `respondents`),
  * and M the visits those answers came from (ownerOf), each once. A visit that answered nothing is not counted (on the real site Kroger's header said "34
  * answers from 5 iPads" with one visit that had answered nothing: it says 4 now), nor one whose answers could not be read (they are not among the answers,
- * and the notice above them says so). Only the Live display's header and each Results card's summary say it this way: the Live display's one-page PDF and
- * PowerPoint still print every visit, until Phase 11b redesigns them.
+ * and the notice above them says so). The Live display's header, each Results card's summary and (since Phase 11b) the Live display's one-page PDF and PowerPoint
+ * say it this way; the leader report's "participants" are every visit, on purpose.
  * @param {TallyQuestion[]} questions
  */
 export function answerCounts(questions) {
@@ -111,8 +111,8 @@ export function answerCounts(questions) {
   return { answers, visits: visits.size };
 }
 
-/** "34 answers from 4 iPads" (the words the Live display has always used). @param {{ answers: number, visits: number }} counts */
-export const answersFrom = ({ answers, visits }) => `${answers} answers from ${visits} iPads`;
+/** "34 answers from 4 iPads", and in the singular "1 answer from 1 iPad" (Phase 11b: it said "1 answers from 1 iPads"). @param {{ answers: number, visits: number }} counts */
+export const answersFrom = ({ answers, visits }) => `${answers} ${answers === 1 ? 'answer' : 'answers'} from ${visits} ${visits === 1 ? 'iPad' : 'iPads'}`;
 
 // ---- Shares -----------------------------------------------------------------------------------------------------------------------------
 

@@ -429,6 +429,13 @@ describe('"N answers from M iPads" (Phase 11a-2, part D)', () => {
     assert.deepEqual(answerCounts(questions.slice(8)), { answers: 2, visits: 2 });
   });
 
+  it('says one answer and one iPad in the singular (Phase 11b), and every other number in the plural', () => {
+    assert.equal(answersFrom({ answers: 1, visits: 1 }), '1 answer from 1 iPad');
+    assert.equal(answersFrom({ answers: 3, visits: 1 }), '3 answers from 1 iPad');
+    assert.equal(answersFrom({ answers: 0, visits: 0 }), '0 answers from 0 iPads');
+    assert.equal(answersFrom({ answers: 34, visits: 4 }), '34 answers from 4 iPads');
+  });
+
   it('an answer whose visit record has gone still came from an iPad; one with no visit at all from none', () => {
     const question = { id: 'q', type: 'single-select', prompt: 'p', respondents: 3, options: [], responses: [answer('k1', 'q', 'a', 1), answer('gone', 'q', 'a', 2), { questionId: 'q', answer: 'a', clientTrackId: null, timestamp: at(3) }] };
     assert.deepEqual(answerCounts([question]), { answers: 3, visits: 2 });

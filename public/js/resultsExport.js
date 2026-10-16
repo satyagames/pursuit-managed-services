@@ -15,6 +15,7 @@
  */
 
 import { embeddedAssetUrl } from './assets.js';
+import { answerCounts, answersFrom } from '../../migration/src/lib/results-chart-model.js';
 
 const COLUMNS = ['Activity', 'Question', 'Type', 'Option', 'Count', 'Percentage', 'Score', 'Respondents'];
 
@@ -124,7 +125,8 @@ export function buildReport(results, brand = {}) {
       label: option.label, count: option.count, percent: option.percent, score: option.score,
     })),
   })));
-  const iPads = results.tracks.length;
+  // "N answers from M iPads" as the Live display says it (Phase 11b): the iPads that answered, not every visit that began.
+  const counts = answerCounts(sections.flatMap((section) => section.questions));
   const date = results.session.date ? new Date(`${results.session.date}T12:00:00`) : null;
   return {
     clientName: brand.name ?? '',
@@ -134,8 +136,8 @@ export function buildReport(results, brand = {}) {
     sessionDate: date && !Number.isNaN(date.getTime())
       ? date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
       : '',
-    iPads,
-    answers: questions.reduce((sum, question) => sum + question.respondents, 0),
+    iPads: counts.visits,
+    answers: counts.answers,
     questions,
   };
 }
@@ -239,7 +241,7 @@ function layoutHeader(report, logo, { first }) {
     items.push(label(x, 4.5, textWidthAvail, 9, 'Session results', 22, ink, { bold: true }));
     const details = [
       report.clientName, report.sessionDate,
-      `${report.answers} answer${report.answers === 1 ? '' : 's'} from ${report.iPads} iPad${report.iPads === 1 ? '' : 's'}`,
+      answersFrom({ answers: report.answers, visits: report.iPads }),
     ].filter(Boolean).join('  ·  ');
     items.push(label(x, 15, textWidthAvail, 6, details, 11, ink));
   } else {
@@ -426,8 +428,11 @@ const pdfSafe = (text) => text.replace(/[^\x20-\x7e\xa0-\xff‘’“”–—�
 
 const rgb = (hex) => channels(hex);
 
-function writePdf(pages, report, producer = 'Pursuits CEC') {
-  const { jsPDF } = window.jspdf;
+/**
+ * The PDF's bytes. `jsPDF` is handed in (the admin page's own copy; a node test passes jsPDF's node build).
+ * @returns {ArrayBuffer}
+ */
+export function pdfBytes(pages, report, { jsPDF, producer = 'Pursuits CEC' }) {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [PAGE.width, PAGE.height] });
   doc.setProperties({ title: `${report.clientName || 'Session'} results`, creator: producer });
   doc.setLineWidth(0.25);
@@ -454,7 +459,7 @@ function writePdf(pages, report, producer = 'Pursuits CEC') {
       }
     }
   });
-  return doc.output('blob');
+  return doc.output('arraybuffer');
 }
 
 /**
@@ -465,7 +470,7 @@ export async function downloadPdf(results, brand = {}) {
   const [, logo] = await Promise.all([loadScript('../vendor/jspdf/dist/jspdf.umd.min.js'), loadLogo(brand.logoUrl)]);
   const report = buildReport(results, brand);
   const fileName = exportFileName(results, 'pdf');
-  saveBlob(writePdf(layoutReport(report, logo), report, brand.appName), fileName);
+  saveBlob(new Blob([pdfBytes(layoutReport(report, logo), report, { jsPDF: window.jspdf.jsPDF, producer: brand.appName })], { type: 'application/pdf' }), fileName);
   return fileName;
 }
 
@@ -473,8 +478,11 @@ export async function downloadPdf(results, brand = {}) {
 
 const inches = (mm) => mm / 25.4;
 
-async function writePptx(pages, report, producer = 'Pursuits CEC') {
-  const pptx = new window.PptxGenJS();
+/**
+ * The PowerPoint file: a Blob, or with `outputType: 'nodebuffer'` (a node test) a Buffer. `PptxGenJS` is handed in, as `jsPDF` is.
+ */
+export async function pptxFile(pages, report, { PptxGenJS, producer = 'Pursuits CEC', outputType = 'blob' }) {
+  const pptx = new PptxGenJS();
   pptx.defineLayout({ name: 'A4_LANDSCAPE', width: inches(PAGE.width), height: inches(PAGE.height) });
   pptx.layout = 'A4_LANDSCAPE';
   pptx.title = `${report.clientName || 'Session'} results`;
@@ -502,7 +510,7 @@ async function writePptx(pages, report, producer = 'Pursuits CEC') {
       }
     }
   }
-  return pptx.write({ outputType: 'blob' });
+  return pptx.write({ outputType });
 }
 
 /** Exports the same one-pager as a PowerPoint slide (company = `brand.appName` when given). Resolves to the file name. */
@@ -510,6 +518,6 @@ export async function downloadPptx(results, brand = {}) {
   const [, logo] = await Promise.all([loadScript('../vendor/pptxgenjs/dist/pptxgen.bundle.js'), loadLogo(brand.logoUrl)]);
   const report = buildReport(results, brand);
   const fileName = exportFileName(results, 'pptx');
-  saveBlob(await writePptx(layoutReport(report, logo), report, brand.appName), fileName);
+  saveBlob(await pptxFile(layoutReport(report, logo), report, { PptxGenJS: window.PptxGenJS, producer: brand.appName }), fileName);
   return fileName;
 }
