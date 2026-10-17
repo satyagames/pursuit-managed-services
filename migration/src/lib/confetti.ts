@@ -26,6 +26,8 @@ interface Overlay {
   failsafe: ReturnType<typeof setTimeout> | undefined;
 }
 let overlay: Overlay | null = null;
+/** Raised by clearConfetti(): a burst planned before it is not fired. */
+let generation = 0;
 
 function closeOverlay(target: Overlay): void {
   if (target.failsafe !== undefined) clearTimeout(target.failsafe);
@@ -55,6 +57,12 @@ function paletteFromPage(): string[] {
   return buildPalette({ success: read('--success'), action: read('--action'), primary: read('--brand-primary') || read('--bg-mid') });
 }
 
+/** Takes every burst off the screen at once, and drops the ones not fired yet (Phase 12, F-20: a new activity opens on a clear page). */
+export function clearConfetti(): void {
+  generation += 1;
+  if (overlay) closeOverlay(overlay);
+}
+
 /**
  * Throws a burst of the given size. `anchor` is the element the small burst comes from (the pill that
  * says Correct). Does nothing under reduced motion, and never throws: confetti is never worth an error.
@@ -65,7 +73,9 @@ export async function celebrate(size: ConfettiSize, anchor?: Element | null): Pr
     const plan = confettiPlan(size, { width: window.innerWidth, reducedMotion: prefersReducedMotion(), origin });
     if (!plan) return;
 
+    const born = generation;
     const lib = await loadLibrary();
+    if (born !== generation) return;
     const colors = paletteFromPage();
     const active = openOverlay(lib);
     active.pending += plan.length;
@@ -74,6 +84,7 @@ export async function celebrate(size: ConfettiSize, anchor?: Element | null): Pr
     active.failsafe = setTimeout(() => closeOverlay(active), active.deadline - Date.now());
 
     const fireBurst = (burst: Burst) => {
+      if (born !== generation) return;
       const options: Options = {
         particleCount: burst.count,
         angle: burst.angle,

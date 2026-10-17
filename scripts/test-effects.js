@@ -444,7 +444,7 @@ test('effects.ts exposes the semantic API the screens and Phase 5 rely on, and t
     /export function unlockAudio\(\): void/, /export function initEffects\(\): void/, /export function soundState\(\)/, /export function onSoundChange\(/,
   ]) assert.match(effects, signature);
   const pager = await readFile(path.join(root, 'migration/src/pager/ActivityPager.svelte'), 'utf8');
-  assert.match(pager, /import \{ activityComplete, answerFeedback, pick \} from '\.\.\/lib\/effects\.js';/);
+  assert.match(pager, /import \{ activityComplete, answerFeedback, clearEffects, pick \} from '\.\.\/lib\/effects\.js';/);
   assert.match(await readFile(path.join(root, 'migration/src/routes/ThankYou.svelte'), 'utf8'), /\bfinale\(\);/);
   assert.match(await readFile(path.join(root, 'migration/src/routes/Welcome.svelte'), 'utf8'), /\bunlockAudio\(\)/);
   assert.match(await readFile(path.join(root, 'migration/src/components/SoundToggle.svelte'), 'utf8'), /onclick=\{\(\) => setSound\(!on\)\}/);

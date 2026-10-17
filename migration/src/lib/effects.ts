@@ -13,7 +13,7 @@
  * Next, Back, Home and "Click here to begin" make no sound.
  */
 import { CONFETTI_SIZES, type ConfettiSize } from './confetti-plan.js';
-import { celebrate } from './confetti.js';
+import { celebrate, clearConfetti } from './confetti.js';
 import { EFFECTS, UNAVAILABLE_TITLE, answerEffect, readChoice, soundIsOn, writeChoice, type Effect } from './effect-plan.js';
 import { CUES, CUE_NAMES, type CueName } from './sound-cues.js';
 import * as engine from './sound-engine.js';
@@ -145,6 +145,11 @@ export function answerFeedback(outcome: { correct: boolean; firstTry: boolean; r
 /** The activity's answers are saved and its result screen is showing. */
 export function activityComplete(): void {
   run(EFFECTS.activityComplete);
+}
+
+/** A new activity opens: whatever confetti is still falling goes. */
+export function clearEffects(): void {
+  clearConfetti();
 }
 
 /** Every activity is finished. */

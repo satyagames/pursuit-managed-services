@@ -147,3 +147,13 @@ describe('F-17: a switched-off Next or Submit can still be seen over a backgroun
     assert.match(disabled, /box-shadow:\s*inset 0 0 0 1px color-mix\(in srgb, var\(--on-disabled\) 70%, transparent\)/, 'a 2px edge, without changing the size');
   });
 });
+
+describe('F-20: confetti from a completed activity does not fall on the next activity', () => {
+  it('opening an activity clears any burst still on screen, through effects.ts', async () => {
+    const { readFileSync } = await import('node:fs');
+    const read = (file) => readFileSync(new URL(`../migration/src/${file}`, import.meta.url), 'utf8');
+    assert.match(read('lib/confetti.ts'), /export function clearConfetti\(\)/);
+    assert.match(read('lib/effects.ts'), /export function clearEffects\(\)[^}]*clearConfetti\(\)/s);
+    assert.match(read('pager/ActivityPager.svelte'), /clearEffects\(\)/);
+  });
+});

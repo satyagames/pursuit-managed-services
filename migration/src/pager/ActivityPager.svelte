@@ -3,7 +3,7 @@
   import * as dataService from '../../../public/js/dataService.js';
   import { ActionBar, Divider, HomeButton, PillButton, ProgressBar } from '../components/index.js';
   import { LOADING_DELAY_MS } from '../lib/activity-content.js';
-  import { activityComplete, answerFeedback, pick } from '../lib/effects.js';
+  import { activityComplete, answerFeedback, clearEffects, pick } from '../lib/effects.js';
   import { loadActivity } from '../lib/experience.svelte.js';
   import { focusHeading } from '../lib/focus.js';
   import { keepInView } from '../lib/keep-in-view.js';
@@ -183,6 +183,7 @@
 
   onMount(() => {
     active = true;
+    if (!preview && !demo) clearEffects();
     const timer = window.setTimeout(() => { slow = true; }, LOADING_DELAY_MS);
     start();
     // The device turned over mid-question: what the person chose, or what has focus, stays on the screen (the page's own, not the preview's).
