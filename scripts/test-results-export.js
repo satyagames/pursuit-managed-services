@@ -6,10 +6,11 @@
 // (scripts/pdf-inspect.js), the PowerPoint as the XML of its slides. Every expected figure is worked out by hand in the comments beside it.
 
 import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { before, describe, it } from 'node:test';
 import { jsPDF } from 'jspdf';
 import JSZip from 'jszip';
 import PptxGenJS from 'pptxgenjs';
+import { createMeasure, loadReportFonts } from '../migration/src/lib/report-fonts.js';
 import { buildResults } from '../migration/src/lib/results-tally.js';
 import * as resultsExport from '../public/js/resultsExport.js';
 import { inspectPdf } from './pdf-inspect.js';
@@ -20,6 +21,15 @@ import { nodePalette } from './results-palette-node.js';
 const at = (minute) => `2026-10-16T10:${String(minute).padStart(2, '0')}:00.000Z`;
 const answer = (track, questionId, value, minute) => ({ questionId, clientTrackId: track, answer: value, timestamp: at(minute) });
 const squash = (text) => text.replace(/\s+/g, ' ').trim();
+
+// Since Phase 13 the pack is laid out in the embedded Open Sans's widths and the PDF embeds it (scripts/test-results-pack.js holds the pages).
+let fonts;
+let measure;
+before(async () => {
+  fonts = await loadReportFonts();
+  measure = createMeasure(fonts);
+});
+const lay = (results, brand = {}) => resultsExport.layoutReport(resultsExport.buildReport(results, brand), null, nodePalette(), measure);
 
 /** One iPad, which answered one question once. */
 function oneIPad() {
@@ -35,15 +45,15 @@ function oneIPad() {
 /** The PDF's text, page by page, read back with pdf.js. */
 async function pdfText(results, brand = {}) {
   const report = resultsExport.buildReport(results, brand);
-  const pages = resultsExport.layoutReport(report, null, nodePalette());
-  const bytes = await resultsExport.pdfBytes(pages, report, { jsPDF });
+  const pages = resultsExport.layoutReport(report, null, nodePalette(), measure);
+  const bytes = await resultsExport.pdfBytes(pages, report, { jsPDF, fonts });
   return (await inspectPdf(new Uint8Array(bytes))).pages.map((page) => squash(page.text));
 }
 
 /** The PowerPoint's text, slide by slide: every run of words in the slides' XML. */
 async function pptxText(results, brand = {}) {
   const report = resultsExport.buildReport(results, brand);
-  const pages = resultsExport.layoutReport(report, null, nodePalette());
+  const pages = resultsExport.layoutReport(report, null, nodePalette(), measure);
   const file = await resultsExport.pptxFile(pages, report, { PptxGenJS, outputType: 'nodebuffer' });
   const zip = await JSZip.loadAsync(file);
   const slides = Object.keys(zip.files).filter((name) => /^ppt\/slides\/slide\d+\.xml$/.test(name)).sort((a, b) => Number(a.match(/\d+/g).at(-1)) - Number(b.match(/\d+/g).at(-1)));
@@ -121,12 +131,12 @@ describe('item B: the one-pager draws the same charts as the screen', () => {
 
   describe('the layout', () => {
     const palette = nodePalette();
-    const pages = () => resultsExport.layoutReport(resultsExport.buildReport(vineResults(), brand), null, palette);
+    const pages = () => lay(vineResults(), brand);
     const items = () => pages().flatMap((page) => page.items);
     const textOf = (list) => list.filter((item) => item.kind === 'text').map((item) => item.text);
     const hex = (value) => String(value).replace('#', '').toUpperCase();
 
-    it('keeps to one page', () => assert.equal(pages().length, 1));
+    // ("keeps to one page" left in Phase 13: the pack is a summary page and a page or more per activity, held in scripts/test-results-pack.js.)
 
     it('sorts the bars as the screen does, marks the correct answer with a tick and the word, and the top choice in words', () => {
       const all = items();
@@ -166,8 +176,8 @@ describe('item B: the one-pager draws the same charts as the screen', () => {
       const all = items();
       assert.ok(all.some((item) => item.card), 'the cards\' items are marked');
       assert.deepEqual(all.filter((item) => item.card).flatMap(colours).filter((colour) => !tokens.has(colour)), []);
-      // Outside the cards: the header band in the client's colours, its words in white or near-black, and the footer in the palette.
-      const header = new Set(['7A1F5C', '64748B', 'FFFFFF', '111827']);
+      // Outside the cards: the header band and the activity pages' strip in the client's colour, its words in white or near-black, and the rest in the palette.
+      const header = new Set(['7A1F5C', 'FFFFFF', '111827']);
       assert.deepEqual(all.filter((item) => !item.card).flatMap(colours).filter((colour) => !tokens.has(colour) && !header.has(colour)), []);
     });
   });
@@ -185,14 +195,15 @@ describe('item D: the one-pager in print: contrast, never colour alone, nothing 
     ['other scripts', oddResults(), { name: 'Søren & Co', primaryColor: '#046A38' }],
     ['a middle colour', vineResults(), { name: 'Middle Blue', primaryColor: '#3C8DBC', secondaryColor: '#3C8DBC' }],
   ];
-  const laid = SESSIONS.map(([name, results, brand]) => [name, resultsExport.layoutReport(resultsExport.buildReport(results, brand), null, palette)]);
+  let held = null;
+  const laid = () => (held ??= SESSIONS.map(([name, results, brand]) => [name, lay(results, brand)]));
   /** Where a line of words is drawn: its start (or end, or middle) and the middle of its box. */
   const pointOf = (item) => [item.align === 'right' ? item.x + item.w - 0.5 : item.align === 'center' ? item.x + item.w / 2 : item.x + 0.5, item.y + item.h / 2];
   const light = (item) => item.role === 'bar' && (item.tone === 'rest' || item.tone === undefined);
 
   it('gives every word 4.5:1 and every mark that carries meaning 3:1 against what is under it, the header\'s words on any client colour too', () => {
     const lines = [];
-    for (const [name, pages] of laid) {
+    for (const [name, pages] of laid()) {
       const { problems, light: listed, measured } = contrastOf(pages, { pointOf, light });
       assert.deepEqual(problems, [], name);
       lines.push(`  ${name}: ${measured} words and marks measured; the tint bars and a scale's steps (written beside, held at 2:1 by the palette): ${[...new Set(listed.map((mark) => mark.ratio.toFixed(2)))].join(', ') || 'none'}`);
@@ -201,12 +212,13 @@ describe('item D: the one-pager in print: contrast, never colour alone, nothing 
   });
 
   it('writes the value beside every bar the palette holds at 2:1, and marks the correct answer and the top choice in words, never by colour alone', () => {
-    for (const [name, pages] of laid) {
+    for (const [name, pages] of laid()) {
       for (const page of pages) {
         const values = page.items.filter((item) => item.role === 'value');
         for (const bar of page.items.filter((item) => item.role === 'bar')) {
           // The value is on the bar's row (a bar), or above its column (a scale's step).
-          const near = values.some((value) => value.y <= bar.y + bar.h + 0.01 && value.y + value.h >= bar.y - value.h - 0.01);
+          // (A true-or-false split has its "Correct" tag line between its values and its bar: at the pack's 13.7 pt that is a line and a half.)
+          const near = values.some((value) => value.y <= bar.y + bar.h + 0.01 && value.y + value.h >= bar.y - value.h * 1.5 - 0.01);
           assert.ok(near, `${name}: the bar of ${bar.of} has its value written beside it`);
         }
         for (const bar of page.items.filter((item) => item.role === 'bar' && item.tone === 'correct')) {
@@ -218,10 +230,10 @@ describe('item D: the one-pager in print: contrast, never colour alone, nothing 
     }
   });
 
-  it('keeps every line of words inside its box (by Helvetica\'s own widths, from jsPDF), every card\'s items inside the card, and everything on the page', () => {
-    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [297, 210] });
+  it('keeps every line of words inside its box (by the embedded Open Sans\'s own widths), every card\'s items inside the card, and everything on the page', () => {
+    const { width: pageWidth, height: pageHeight } = resultsExport.PACK_PAGE;
     const problems = [];
-    for (const [name, pages] of laid) {
+    for (const [name, pages] of laid()) {
       pages.forEach((page, index) => {
         const where = `${name}, page ${index + 1}`;
         const cards = page.items.filter((item) => item.kind === 'rect' && item.card && item.stroke);
@@ -229,12 +241,10 @@ describe('item D: the one-pager in print: contrast, never colour alone, nothing 
         for (const item of page.items) {
           const right = item.kind === 'line' ? Math.max(item.x, item.x2) : item.x + (item.w ?? item.size ?? 0);
           const bottom = item.kind === 'line' ? Math.max(item.y, item.y2) : item.y + (item.h ?? item.size ?? 0);
-          if (item.x < -0.01 || right > 297.01 || item.y < -0.01 || bottom > 210.01) problems.push(`${where}: a ${item.kind} is off the page`);
+          if (item.x < -0.01 || right > pageWidth + 0.01 || item.y < -0.01 || bottom > pageHeight + 0.01) problems.push(`${where}: a ${item.kind} is off the page`);
           if (item.card && !(item.kind === 'rect' && item.stroke) && !cards.some((card) => item.x >= card.x - 0.01 && right <= card.x + card.w + 0.01 && item.y >= card.y - 0.01 && bottom <= card.y + card.h + 0.01)) problems.push(`${where}: "${item.text ?? item.kind}" is outside its card`);
           if (item.kind !== 'text' || !item.text.trim()) continue;
-          doc.setFont('helvetica', item.bold ? 'bold' : item.italic ? 'italic' : 'normal');
-          doc.setFontSize(item.size);
-          const wide = doc.getTextWidth(resultsExport.pdfSafe(item.text));
+          const wide = measure.width(measure.clean(item.text), item.size, item.bold);
           if (wide > item.w + 0.05) problems.push(`${where}: "${item.text.slice(0, 40)}" is ${wide.toFixed(2)} mm in a box of ${item.w.toFixed(2)} mm`);
           const start = item.align === 'right' ? item.x + item.w - wide : item.align === 'center' ? item.x + (item.w - wide) / 2 : item.x;
           lines.push({ y: item.y + item.h / 2, start, end: start + wide, text: item.text });
@@ -250,12 +260,13 @@ describe('item D: the one-pager in print: contrast, never colour alone, nothing 
   });
 
   it('can fail: a word on a ground it does not read on, a box too narrow, and a card\'s item outside it are each found', () => {
-    const pages = structuredClone(laid[0][1]);
-    const word = pages[0].items.find((item) => item.kind === 'text' && item.card && item.text.length > 10);
-    pages[0].items.push({ ...word, color: 'BBBBBB' });
+    const pages = structuredClone(laid()[0][1]);
+    const page = pages.findIndex((each) => each.items.some((item) => item.role === 'bar' && item.tone === 'top'));
+    const word = pages[page].items.find((item) => item.kind === 'text' && item.card && item.text.length > 10);
+    pages[page].items.push({ ...word, color: 'BBBBBB' });
     assert.ok(contrastOf(pages, { pointOf, light }).problems.some((line) => line.includes(word.text.slice(0, 20))));
-    const bar = pages[0].items.find((item) => item.role === 'bar' && item.tone === 'top');
-    pages[0].items.push({ ...bar, fill: palette.tint, tone: 'top' });
+    const bar = pages[page].items.find((item) => item.role === 'bar' && item.tone === 'top');
+    pages[page].items.push({ ...bar, fill: palette.tint, tone: 'top' });
     assert.ok(contrastOf(pages, { pointOf, light }).problems.some((line) => line.includes('(top)')));
   });
 });

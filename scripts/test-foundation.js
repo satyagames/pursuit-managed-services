@@ -65,7 +65,8 @@ test('the shared export code still defaults to the old product name, and the Liv
   // The Live display (admin) passes brand.appName. The default was for the legacy callers, which left in Phase 10c-1; it is not changed here.
   const source = await read('public/js/resultsExport.js');
   // (Phase 11b: the writers take their library as an argument, so a node test can run them; the default is where it was.)
-  assert.match(source, /export function pdfBytes\(pages, report, \{ jsPDF, producer = 'Pursuits CEC' \}\)/);
+  // (Phase 13: the PDF writer also takes the embedded fonts.)
+  assert.match(source, /export function pdfBytes\(pages, report, \{ jsPDF, fonts, producer = 'Pursuits CEC' \}\)/);
   assert.match(source, /export async function pptxFile\(pages, report, \{ PptxGenJS, producer = 'Pursuits CEC', outputType = 'blob' \}\)/);
   assert.match(source, /creator: producer/);
   assert.match(source, /pptx\.company = producer;/);

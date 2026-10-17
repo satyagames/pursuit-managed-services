@@ -4,6 +4,7 @@ import JSZip from 'jszip';
 import { legacyColours } from '../../migration/src/lib/brand-studio.js';
 import { resultsToCsv } from '../../public/js/resultsExport.js';
 import { readSessionResults } from '../../migration/src/lib/session-results.js';
+import { inspectPdf, squash } from '../pdf-inspect.js';
 import {
   PIN, adminUrl, addActivity, another, ds, expectFits, openAdmin, participantUrl, shoot, startLocal, stopLocal, today, useServer, viewports, type Local,
 } from './admin-local.js';
@@ -601,8 +602,12 @@ test('Export PDF and Export PPT download real files from the admin page, branded
   expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
   const pdfText = pdf.toString('latin1');
   expect(pdfText).toContain('/Creator (Pursuit Managed Services)');
-  expect(pdfText).toContain('Kroger');
-  expect(pdfText).toContain("Kroger's History");
+  // (Since Phase 13 the pack embeds Open Sans and its pages are compressed: the words are read as a reader gets them.)
+  const read = await inspectPdf(pdf);
+  const words = squash(read.pages.map((each) => each.text).join(' '));
+  expect(words).toContain('Kroger');
+  expect(words).toContain(squash("Kroger's History"));
+  expect(squash(read.pages[0].text)).toContain(squash('What each activity found'));
   expect(pdf.length).toBeGreaterThan(5000);
 
   const pptDownload = page.waitForEvent('download');
