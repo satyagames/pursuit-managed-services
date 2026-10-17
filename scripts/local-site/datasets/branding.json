@@ -1,5 +1,5 @@
 {
-  "about": "Which of VJR's pictures (scripts/local-site/datasets/images/, git-ignored) each client of the local site wears, and its colours and words. The assignment is the Phase 12 brief's proposal (section 3B) as read from the files; VJR corrects it here, in this one file. Colours: Kroger and Domino's are the sample pack's; the Template has the default look. The words (eventTitle, eventSubtitle, welcomeLine) are invented placeholders for the review: the pack gives none.",
+  "about": "Which of VJR's pictures (scripts/local-site/datasets/images/, git-ignored) each client of the local site wears, and its colours and words. The assignment is the Phase 12 brief's proposal (section 3B) as read from the files, with one change asked for on 17 Oct 2026: Kroger wears the dark-blue stripes, not the red and white gingham (which no slot can hold: see UX-REVIEW.md). VJR corrects it here, in this one file. Colours: Kroger and Domino's are the sample pack's; the Template has the default look. The words (eventTitle, eventSubtitle, welcomeLine) are invented placeholders for the review: the pack gives none.",
   "clients": {
     "template": {
       "id": "c-template", "slug": "template", "primary": "#045BCC", "accent": null, "plate": "light",
@@ -10,7 +10,7 @@
     "kroger": {
       "id": "c-kroger", "slug": "kroger", "primary": "#045BCC", "accent": null, "plate": "light",
       "copy": { "eventTitle": "Kroger and Deloitte", "eventSubtitle": "Five short activities. Your answers shape the conversation.", "welcomeLine": "Welcome to the Kroger session.", "logoText": "Kroger" },
-      "pictures": { "logo": "logo-kroger.webp", "hero": "hero-fresh-sticker.webp", "background": "bg-red-white-gingham.webp" },
+      "pictures": { "logo": "logo-kroger.webp", "hero": "hero-fresh-sticker.webp", "background": "bg-dark-blue-stripes.webp" },
       "backgroundFocus": { "x": 50, "y": 50 }
     },
     "dominos": {

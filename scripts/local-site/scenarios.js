@@ -239,6 +239,8 @@ async function eventDay(fake, ds, r) {
   await ds.updateQuestion('q-kroger-mcq-3', { optionIds: third.optionIds.filter((id) => id !== 'o-kroger-mcq-3-c') });
   await ds.deleteOption('o-kroger-mcq-3-c');
   await ds.setSessionParticipationMode(session.id, 'client-visit');
+  // (The first visit's Click here to begin moves a session on; the rows above were written without it.)
+  await ds.updateSession(session.id, { status: 'in-progress' });
   // (setSessionParticipationMode retires unscanned codes of the session's guests only when it changes away from guests: these stay.)
   return { session, unscanned };
 }
@@ -328,6 +330,7 @@ async function pcoe16Oct(fake, ds) {
   const pick = (questionId) => ({ questionId, answer: `o-${questionId.slice(2)}-a`, firstAnswer: `o-${questionId.slice(2)}-a`, attempts: 1, correct: false, answeredAt: '2026-10-15T11:05:00.000Z' });
   rows.answers('t-pcoe-d1', dominos.id, 'c-dominos', history.map(pick));
   rows.answers('t-pcoe-d2', dominos.id, 'c-dominos', [pick(history[0])]);
+  await ds.updateSession(session.id, { status: 'in-progress' });
   await ds.activateClient('c-kroger', EVENT_DATE);
   return { notes: [
     'The ninth question of Kroger\'s session is not in the photographs: "q-pcoe-unknown", an open question, stands in for it.',
