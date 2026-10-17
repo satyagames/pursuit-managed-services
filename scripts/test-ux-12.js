@@ -126,3 +126,14 @@ describe('F-14: "Correct" and "Top choice" beside a bar sit on the text\'s basel
     assert.match(source, /\.bars__tag \+ \.bars__tag::before\s*\{[^}]*content:\s*'·'/);
   });
 });
+
+describe('F-13: the phone\'s sticky Next/Submit bar lets a background picture show through', () => {
+  it('ActionBar: a translucent, blurred band, not 96% of the page colour', async () => {
+    const { readFileSync } = await import('node:fs');
+    const source = readFileSync(new URL('../migration/src/components/ActionBar.svelte', import.meta.url), 'utf8');
+    const sticky = /\.pms-actions\[data-sticky='true'\]\s*\{([^}]*)\}/.exec(source)?.[1] ?? '';
+    assert.doesNotMatch(sticky, /96%/);
+    assert.match(sticky, /-webkit-backdrop-filter:\s*blur\(/, 'Safari needs the prefix');
+    assert.match(sticky, /backdrop-filter:\s*blur\(/);
+  });
+});

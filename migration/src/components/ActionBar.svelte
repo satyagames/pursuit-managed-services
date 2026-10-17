@@ -24,7 +24,7 @@
     padding-top: clamp(1.25rem, 4vw, 2rem);
   }
 
-  /* Phones: pinned to the bottom, over a fade of the page colour, clear of the home indicator. */
+  /* Phones: pinned to the bottom, over a light blurred fade of the page colour (so a background picture shows through: Phase 12, F-13), clear of the home indicator. */
   @media (max-width: 599px) {
     .pms-actions[data-sticky='true'] {
       position: sticky;
@@ -32,7 +32,9 @@
       z-index: 5;
       margin-inline: calc(-1 * var(--gutter));
       padding: 0.75rem var(--gutter) calc(0.75rem + env(safe-area-inset-bottom));
-      background: linear-gradient(to top, color-mix(in srgb, var(--bg-bottom) 96%, transparent) 70%, transparent);
+      background: linear-gradient(to top, color-mix(in srgb, var(--bg-bottom) 55%, transparent) 60%, transparent);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
     }
   }
 </style>
