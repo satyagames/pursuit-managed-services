@@ -116,7 +116,7 @@ npm run ux:shoot
 Writes `ux-review/<date>/` (git-ignored): a PNG of every screen and state on the review's devices, `index.html` (the contact sheet), `shots.json`, and
 `ux-review.zip`. `--only participant,admin,setup`, `--devices laptop-1366,ipad-portrait`, `--font-variant <folder>` (the font experiment). WebKit stands in for
 the iPad; Chromium for the Windows laptops and the projector; Firefox once for the main flows (Windows may refuse to start it: `spawn UNKNOWN`, as
-AGENTS.md says; the harness records that and goes on).
+[TESTING.md](TESTING.md) says; the harness records that and goes on).
 
 `node scripts/local-site/measure.js` writes `ux-review/<date>/perf.json`: LCP, CLS, long tasks, input delay, scripting time and requests, in Chromium with
 the CPU four times slower, at PCOE's latency and the slow profile, on `event-day` and `stress`.

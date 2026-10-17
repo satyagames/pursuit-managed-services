@@ -41,6 +41,7 @@ export const GONE = new Map(Object.entries({
   'public/vendor/': 'a leftover of the legacy build that nothing reads', 'build/': 'a leftover of the legacy build that nothing reads',
   'Design-Docs/': 'left the branch in Phase 10f, in git history at 7347c72', 'migration/src/results': 'never committed',
   'NOTES.txt': 'a file of a scratch package of Phase 10b, never committed',
+  'auth.js': 'the legacy admin PIN check, now lib/admin/admin-pin.js (Phase 10c-1)',
 }));
 
 /** npm scripts the documents name because they are gone (each sentence says so). */
@@ -101,7 +102,7 @@ export function checkDocs({ files } = {}) {
   const packageScripts = JSON.parse(readFileSync(path.join(ROOT, 'package.json'), 'utf8')).scripts;
   const { LISTS, LIBRARY } = schema;
   const titles = new Set([...Object.values(LISTS).map((list) => list.title), LIBRARY]);
-  const documents = files ?? tracked.filter((file) => file.endsWith('.md'));
+  const documents = files ?? tracked.filter((file) => file.endsWith('.md') || file === 'llms.txt');
   const problems = [];
   for (const file of documents) {
     if (RECORDS.some((pattern) => pattern.test(file))) continue;
@@ -119,7 +120,7 @@ export function checkDocs({ files } = {}) {
         if (where && !exists(resolved)) { problems.push(`${at}: the link ${target} points at nothing`); continue; }
         if (anchor && resolved.endsWith('.md') && !anchorsOf(resolved).has(anchor)) problems.push(`${at}: the link ${target} names no heading of ${resolved}`);
       }
-      for (const match of line.matchAll(/npm run ([\w:.-]+)/g)) {
+      for (const match of line.matchAll(/npm run ([\w:.-]*[\w])/g)) {
         if (!packageScripts[match[1]] && !GONE_SCRIPTS.has(match[1])) problems.push(`${at}: npm run ${match[1]} is not a script of package.json`);
       }
       if (fenced) return;

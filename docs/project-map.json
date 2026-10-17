@@ -1,0 +1,331 @@
+{
+  "name": "Pursuit Managed Services",
+  "package": "pursuits-cec",
+  "purpose": "An interactive session app for Deloitte client visits: participants answer short activities on iPads, a facilitator runs the day and shows live results, leaders get a report. Three single-file HTML pages that run from a SharePoint document folder and keep their data in SharePoint lists, through the browser's own sign-in; no server, no CDN.",
+  "node": ">=22.12",
+  "runtime": "three static HTML pages in one SharePoint document folder; same-origin SharePoint REST (/_api) with the signed-in user; settings in pms-config.txt beside the pages",
+  "pages": [
+    {
+      "page": "index.html",
+      "who": "participants (iPads)",
+      "shell": "migration/index.html",
+      "entry": "migration/src/main.ts",
+      "app": "migration/src/App.svelte",
+      "vite": "migration/vite.config.ts"
+    },
+    {
+      "page": "admin.html",
+      "who": "facilitators and admins (PIN)",
+      "shell": "migration/admin.html",
+      "entry": "migration/src/admin-main.ts",
+      "app": "migration/src/AdminApp.svelte",
+      "vite": "migration/vite.admin.config.ts"
+    },
+    {
+      "page": "setup.html",
+      "who": "the site owner",
+      "shell": "migration/setup.html",
+      "entry": "migration/src/setup-main.ts",
+      "app": "migration/src/SetupApp.svelte",
+      "vite": "migration/vite.setup.config.ts"
+    }
+  ],
+  "stack": [
+    {
+      "name": "canvas-confetti",
+      "version": "1.9.4",
+      "dev": false,
+      "role": "confetti, behind lib/effects/effects.ts"
+    },
+    {
+      "name": "cors",
+      "version": "^2.8.6",
+      "dev": false,
+      "role": "the local server"
+    },
+    {
+      "name": "express",
+      "version": "^5.2.1",
+      "dev": false,
+      "role": "the local stand-in for SharePoint (server/), development and tests only"
+    },
+    {
+      "name": "jspdf",
+      "version": "^4.2.1",
+      "dev": false,
+      "role": "PDF writer: the leader report and the summary pack (admin page only)"
+    },
+    {
+      "name": "lean-qr",
+      "version": "^2.7.4",
+      "dev": false,
+      "role": "QR codes on the admin page"
+    },
+    {
+      "name": "pptxgenjs",
+      "version": "^4.0.1",
+      "dev": false,
+      "role": "PowerPoint writer: the summary pack (admin page only)"
+    },
+    {
+      "name": "svelte",
+      "version": "^5.57.2",
+      "dev": false,
+      "role": "UI framework (Svelte 5, runes) of the three pages"
+    },
+    {
+      "name": "svelte-spa-router",
+      "version": "^5.1.1",
+      "dev": false,
+      "role": "hash routes of the participant page"
+    },
+    {
+      "name": "@axe-core/playwright",
+      "version": "4.13.0",
+      "dev": true,
+      "role": "accessibility checks in the browser tests (in no page)"
+    },
+    {
+      "name": "@playwright/test",
+      "version": "^1.64.0",
+      "dev": true,
+      "role": "browser tests in Chromium, WebKit and Firefox"
+    },
+    {
+      "name": "@sveltejs/vite-plugin-svelte",
+      "version": "^7.3.1",
+      "dev": true,
+      "role": "Svelte in Vite"
+    },
+    {
+      "name": "@tailwindcss/vite",
+      "version": "^4.3.3",
+      "dev": true,
+      "role": "Tailwind in Vite"
+    },
+    {
+      "name": "chart.js",
+      "version": "^4.5.1",
+      "dev": true,
+      "role": "only the bundle test's deliberately leaky build: no page uses it"
+    },
+    {
+      "name": "cheerio",
+      "version": "^1.1.2",
+      "dev": true,
+      "role": "reads built HTML in the build tests and the bundle analysis"
+    },
+    {
+      "name": "esbuild",
+      "version": "^0.28.0",
+      "dev": true,
+      "role": "bundles the audio analysis for a browser test"
+    },
+    {
+      "name": "pdfjs-dist",
+      "version": "5.4.624",
+      "dev": true,
+      "role": "reads back the PDFs the tests make (in no page)"
+    },
+    {
+      "name": "svelte-check",
+      "version": "^4.7.6",
+      "dev": true,
+      "role": "npm run check:svelte"
+    },
+    {
+      "name": "tailwindcss",
+      "version": "^4.3.3",
+      "dev": true,
+      "role": "utility CSS (Tailwind 4)"
+    },
+    {
+      "name": "typescript",
+      "version": "^5.9.3",
+      "dev": true,
+      "role": "types of the .ts and .svelte files"
+    },
+    {
+      "name": "vite",
+      "version": "^8.3.4",
+      "dev": true,
+      "role": "build and dev server"
+    },
+    {
+      "name": "vite-plugin-singlefile",
+      "version": "^2.3.3",
+      "dev": true,
+      "role": "inlines everything so each page is one HTML file"
+    }
+  ],
+  "sharePoint": {
+    "schemaVersion": 3,
+    "lists": [
+      {
+        "key": "clients",
+        "title": "PMSClients",
+        "purpose": "One item for each client: its name, its slug and its look."
+      },
+      {
+        "key": "sessions",
+        "title": "PMSClientSessions",
+        "purpose": "One item for each client and day: the session participants join when it is live."
+      },
+      {
+        "key": "sections",
+        "title": "PMSActivities",
+        "purpose": "The activities: each belongs to one client and holds its questions in order."
+      },
+      {
+        "key": "questions",
+        "title": "PMSActivityQuestions",
+        "purpose": "The questions of every activity."
+      },
+      {
+        "key": "options",
+        "title": "PMSAnswerOptions",
+        "purpose": "The answers a question offers, including which one is right."
+      },
+      {
+        "key": "tracks",
+        "title": "PMSParticipants",
+        "purpose": "One item for each visit: one person on one device in one session."
+      },
+      {
+        "key": "qrtokens",
+        "title": "PMSGuestQRCodes",
+        "purpose": "One item for each single-use QR code."
+      },
+      {
+        "key": "appsettings",
+        "title": "PMSAppSettings",
+        "purpose": "One item, `default`: which session and client are live, and the version of the lists. Every page reads it first. Setup writes it when it makes the lists; nobody makes it by hand."
+      },
+      {
+        "key": "visitorroster",
+        "title": "PMSGuestList",
+        "purpose": "The guest list: one item for each named guest of a session."
+      },
+      {
+        "key": "uservisitlogs",
+        "title": "PMSVisitLog",
+        "purpose": "The visit log: one row for each browser tab that opened the participant page. Results read it for names."
+      },
+      {
+        "key": "adminusers",
+        "title": "PMSAdminUsers",
+        "purpose": "The facilitators who may unlock the admin page: a name and a hash of a PIN each."
+      },
+      {
+        "key": "responses",
+        "title": "PMSParticipantAnswers",
+        "purpose": "The answers: one item for each visit, holding all of that person's answers."
+      }
+    ],
+    "library": "PMSClientImages",
+    "schemaFiles": [
+      "migration/src/lib/schema/pms-schema.js",
+      "migration/src/lib/schema/pms-schema-meta.js"
+    ],
+    "reference": "SHAREPOINT-LISTS.md"
+  },
+  "questionTypes": [
+    {
+      "type": "single-select",
+      "chart": "choice"
+    },
+    {
+      "type": "multi-select",
+      "chart": "multi"
+    },
+    {
+      "type": "true-false",
+      "chart": "truefalse"
+    },
+    {
+      "type": "confidence-continuum",
+      "chart": "scale"
+    },
+    {
+      "type": "ranked-voting",
+      "chart": "ranking"
+    },
+    {
+      "type": "open-text-feedback",
+      "chart": "text"
+    }
+  ],
+  "commands": {
+    "npm install": "install the dependencies",
+    "npm run dev": "the local server (API and pictures, no page) on port 3000",
+    "npm run dev:svelte": "the participant page from Vite (5173); dev:svelte:admin 5175, dev:svelte:setup 5176",
+    "npm run build:svelte:release": "build the three pages into build-svelte/release/",
+    "npm run check:svelte": "type and accessibility diagnostics",
+    "npm test": "every node suite (about 20 s)",
+    "npm run test:migration": "build and run the browser specs (Chromium, WebKit, Firefox)",
+    "npm run test:report": "the leader report, CSVs and summary pack, read back",
+    "npm run test:report:mutations": "the report tests catch deliberate breakages",
+    "npm run oracle -- --seeds 500": "recount 500 random sessions with independent rules",
+    "npm run test:charts": "the Results charts' numbers and palette",
+    "npm run test:bundle": "page sizes and what the participant page must not carry",
+    "npm run local:site -- --open": "the local PCOE stand-in, serving the newest release package",
+    "npm run package:release": "the release package (clean committed tree only)",
+    "npm run docs:check": "the documents name only what is there"
+  },
+  "gates": [
+    "npm run check:svelte",
+    "npm test",
+    "npm run test:baseline",
+    "npm run test:bundle",
+    "npm run test:report",
+    "npm run test:report:mutations",
+    "npm run oracle -- --seeds 500",
+    "npm run test:charts",
+    "npm run test:local-site",
+    "npm run test:migration"
+  ],
+  "folders": {
+    "migration/src": "The three entries (`main.ts`, `admin-main.ts`, `setup-main.ts`), the three apps (`App.svelte`, `AdminApp.svelte`, `SetupApp.svelte`) and their page-wide CSS. The HTML shells are `migration/index.html`, `admin.html` and `setup.html`.",
+    "migration/src/admin": "The admin page's screens (Svelte): the five tabs, Brand Studio, dialogs, the Live display, the print sheet, the report buttons.",
+    "migration/src/admin/charts": "The Results charts, drawn by hand in HTML and SVG (no chart library): the card, bars, the scale, the split bar, words, names, the table view, the tooltip.",
+    "migration/src/assets": "Inlined assets: Open Sans as WOFF2, the report's TrueType subset, the six sample pictures.",
+    "migration/src/assets/report-fonts": "The Open Sans subset of the leader report (generated by `npm run build:report-fonts`, with its licence).",
+    "migration/src/components": "The participant page's building blocks (Svelte): the shell, pills, buttons, the hero plate, tiles, the progress bar, the sound switch.",
+    "migration/src/dev": "The styleguide, `#/styleguide` on the dev server only (absent from builds).",
+    "migration/src/lib/admin": "The admin page's rules and data: Today, Clients, Content, Guests and QR, Results, the Live display's session, the PIN check.",
+    "migration/src/lib/brand": "A client's look: deriving a readable theme from a colour, the stored theme, Brand Studio's rules, picture slots, cropping, compressing and naming.",
+    "migration/src/lib/common": "Shared by the pages: the product name, the heading focus rule, kiosk lock-down, the polling schedule and its one timer, the admin page's address.",
+    "migration/src/lib/data": "The data layer: the one module that talks to SharePoint REST (or, on the local server, its JSON API), and grouping of long id lists into short reads. Every page carries it.",
+    "migration/src/lib/effects": "Sounds and confetti, behind one door (`effects.ts`): which moment makes which effect, the cues as data, Web Audio, canvas-confetti.",
+    "migration/src/lib/exports": "The files a leader gets: the leader report (data, counting, layout, PDF writer, fonts) and the Live display's summary pack (PDF, PowerPoint) and summary CSV.",
+    "migration/src/lib/participant": "The participant page: the boot sequence, the visit, the activities held for the page's life, the pager's rules, saving answers, screen moves.",
+    "migration/src/lib/results": "Results counted and shown: the tally, the chart model (every number a chart shows), the palette, the figure on paper, names, the takeaways, where a tooltip goes.",
+    "migration/src/lib/schema": "The lists and columns: `pms-schema.js`, the names every page carries, and `pms-schema-meta.js`, everything else about them (Setup, the tests and the generators only).",
+    "migration/src/lib/settings": "How a page starts: the browser check, where its settings come from (`pms-config.txt`, the build, its address), which site and lists are its own, and the stop screen.",
+    "migration/src/lib/setup": "The Setup page's own modules: the plan and Create, Mark the site as ready, the admins, the seed-file import, the sample clients and their pictures, the self-test's probes.",
+    "migration/src/pager": "The pager: one question per screen, its answers, and an activity's completion screen.",
+    "migration/src/routes": "The participant page's screens: Welcome, the Activities hub, the quiz route, the finale, \"not live\", the preview, and the old addresses that redirect.",
+    "migration/src/setup": "Setup's pieces (Svelte): the copy panel, where the lists are, the plan view, and the sample pictures as data.",
+    "migration/src/styles": "Tokens (colour, type), the focus ring, the fonts (inlined Open Sans and the metric-matched fallback), the Results palette, and `legacy/`, the old sheets the pages still load.",
+    "migration/src/unsupported": "The \"needs a recent browser\" notice: a page and an ES5 check, put into each HTML shell at build time.",
+    "scripts": "Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager.",
+    "scripts/local-site": "The local PCOE stand-in (`npm run local:site`), its scenarios and VJR's dummy dataset, the screenshot harness and the measurements.",
+    "scripts/migration-tests": "The Playwright specs of `npm run test:migration`, and their harnesses (`admin-local.ts`, `polling-support.ts`, `fixtures.ts`).",
+    "scripts/rehearsal-tests": "The rehearsal of RUNBOOK.md on the mock with a package's own pages (`npm run test:rehearsal`).",
+    "scripts/request-baseline": "Every SharePoint request each recorded suite sends, as recorded at `legacy-final` and amended only on purpose (`npm run test:baseline`).",
+    "scripts/schema-baseline": "The schema as it was before Phase 10c-2b, and the scripts that translated the request baselines (each baseline names the one that touched it).",
+    "scripts/styleguide-tests": "The styleguide's audit (`npm run test:styleguide`).",
+    "server": "The local stand-in for SharePoint: an Express API over JSON files (`server/data/`, committed seed data), with ETag concurrency and picture uploads. Development and tests only."
+  },
+  "documents": {
+    "CLAUDE.md": "start here",
+    "docs/MODULES.md": "module map",
+    "docs/DATA-FLOW.md": "data flow",
+    "docs/SHAREPOINT.md": "SharePoint and deployment",
+    "docs/DECISIONS.md": "binding decisions",
+    "docs/RULES.md": "rule book",
+    "docs/TESTING.md": "gates",
+    "docs/HISTORY.md": "phases",
+    "QA-TESTING.md": "manual checks"
+  }
+}

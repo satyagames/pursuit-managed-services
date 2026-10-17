@@ -1,0 +1,15 @@
+# Pursuit Managed Services
+
+> Three single-file HTML pages (participant, admin, setup), built with Svelte 5, that run from a SharePoint document folder and keep their data in SharePoint lists. No server.
+
+- [CLAUDE.md](CLAUDE.md): start here: commands, folder map, rules, how to make a common change
+- [docs/project-map.json](docs/project-map.json): the project in one machine-readable file (stack, pages, lists, question types, commands, gates, folders)
+- [docs/MODULES.md](docs/MODULES.md): the module map, generated from the code
+- [docs/DATA-FLOW.md](docs/DATA-FLOW.md): from a tap to a list item to a chart to a file
+- [docs/SHAREPOINT.md](docs/SHAREPOINT.md): the lists, pms-config.txt, Setup, what SharePoint does, deployment
+- [SHAREPOINT-LISTS.md](SHAREPOINT-LISTS.md): every list and column, generated from the schema
+- [docs/DECISIONS.md](docs/DECISIONS.md): what still binds, and what enforces it
+- [docs/RULES.md](docs/RULES.md): the rule book, by part and phase
+- [docs/TESTING.md](docs/TESTING.md): what each gate proves
+- [docs/HISTORY.md](docs/HISTORY.md): the phases and their reports
+- [README.md](README.md): for people

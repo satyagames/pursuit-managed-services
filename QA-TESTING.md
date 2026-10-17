@@ -1,6 +1,25 @@
 # QA testing checklist
 
-> **Parts of this checklist describe the old site and the legacy screens.** The legacy app left this branch in Phase 10c-1 and is kept only in the local tag `legacy-final`; the old site keeps running the files already uploaded there. The checklist is reorganised with the README in Phase 10e (its lists part follows Phase 10c-3). Until then: the per-screen lists that say they describe the legacy screens are history, the numbered items of the later sections are the ones that apply to the new pages, and only the steps that would now fail are corrected here.
+## Open now (read this first)
+
+**Open, in this order:**
+
+1. Items **171 to 176** (Phase 13: the summary pack, PowerPoint on a projector, the summary CSV in Excel, the leader report in Edge, Acrobat and black
+   and white, one iPad and a switched-off activity, a reader who was not in the room). For Satyadev.
+2. Items **177 to 181** (Phase 14: the restructured build on a test folder, then production). Below item 176.
+3. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
+   160, 161, 164, 165, 166, 167, 168, 169, 170.
+
+**Decided, no change:** 162 (names stay "Last, First") and 163 (the wall page keeps the admin header), VJR, 16 Oct 2026.
+
+**Seen on the real site:** the runbook's steps 1 to 9 ran on PCOE with `pms-969bf16` (14 Oct 2026), which answer items 88, 93, 100, 107, 110 to 116,
+118 to 130, 132 and 133 as the runbook maps them (the package's RUNBOOK.md, "Which QA-TESTING.md items each step answers"), and Setup's
+self-test passed 11 of 11 there (16 Oct 2026). Later packages each ran a few steps: [docs/HISTORY.md](docs/HISTORY.md#what-has-met-the-real-site).
+
+**The rest** (items 1 to 137 not named above) carry no record here of having been run against the real site or a real device; they describe what to
+check, and parts of them describe the old site (the note below). Treat them as open until someone runs them and marks them.
+
+> **Parts of this checklist describe the old site and the legacy screens.** The legacy app left this branch in Phase 10c-1 and is kept only in the local tag `legacy-final`; the old site keeps running the files already uploaded there. Until then: the per-screen lists that say they describe the legacy screens are history, the numbered items of the later sections are the ones that apply to the new pages, and only the steps that would now fail are corrected here.
 
 Manual pass to run before a session, on a real iPad (iPadOS 16.4+, Safari) in the same
 Wi-Fi as the server. Tick each box; write down anything that differs from "Expect".
@@ -1263,6 +1282,27 @@ display's three exports were pressed in Chromium by the browser specs. Items 167
     holds answers, marked "switched off").
 176. **A reader who was not in the room.** *(Still to see.)* Give page 1 of Kroger's leader report (or page 1 of the pack) to someone who was not in the session and ask what
     happened. **Expect** them to say it in two minutes; if they cannot, send the file back with what they said.
+
+
+### Phase 14 (the code restructured, the documents rewritten): not verified on the real site, an iPad or a projector
+
+The pages of this build do what the last build's did: the change is in the structure of the code and the documents, and the three pages were proved
+equal to the earlier build by the tests (RELEASE-14.md says what was byte for byte and what was not). Only the real site can show that nothing else
+changed. Use a test folder first, never production.
+
+177. **The new package in a test folder.** *(Still to see.)* Upload the new package's `index.html`, `admin.html`, `setup.html` and
+    `pms-config.txt` to a test folder (not `Shared Documents/PMS`), and open `setup.html` there. **Expect** "1. This copy of the app" to show the new
+    build name and the lists of this site, "The lists are the version this app needs", and **Run self-test**: "Passed: 11 of 11 steps".
+178. **A participant, every question type.** *(Still to see.)* On an iPad, join by a guest's QR code and a name on the guest list, and answer at least one
+    question of each type (single choice, multiple choice, true or false, a confidence scale, a ranking, a written answer). **Expect** each saved
+    (Results shows them) and the activity's completion screen.
+179. **The facilitator's screens and every file.** *(Still to see.)* In `admin.html`: Today, Results, the Live display and the wall (Open in a new
+    tab); then the **Leader report (PDF)**, the Live display's **Export PDF** and **Export PPT**, **Summary by activity (CSV)** and **All answers (CSV)**.
+    **Expect** each to open, with the same numbers as the screen and no name on the wall or in the Live display's files.
+180. **The build name.** *(Still to see.)* On Setup, "1. This copy of the app", the **Build** row. **Expect** the package's name (`pms-<commit>`).
+    (Only Setup shows the build; the participant and admin pages do not.)
+181. **Then production, and the push.** *(Still to see.)* If 177 to 180 pass, replace the three pages in `Shared Documents/PMS` and push the branch
+    `pms-14`. **Expect** nothing to differ from the earlier build; if anything does, send the screenshot and the text of the browser's console.
 
 ### Phase 8 (browsers, devices, accessibility, performance, the unsupported-browser page): not verified on a real device, a real screen reader, or the real SharePoint site
 
