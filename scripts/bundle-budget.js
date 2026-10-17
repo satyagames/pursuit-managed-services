@@ -201,6 +201,20 @@ export const PHASE_12 = Object.freeze({
 });
 
 /**
+ * Phase 13 (the Results exports redesigned for leadership, EXPORT-DESIGN.md) changes the admin page alone: the leader report's "At a glance" and activity
+ * pages, the summary pack (lib/export-summary.js, the pack's layout and its two writers in public/js/resultsExport.js) and the summary CSV. The participant
+ * page does not change, byte for byte (its SHA-256 is the deployed pms-d19bd14 page's), with 11a's Tailwind rules; the admin page may grow by at most
+ * its allowance over where 12 left it, and stays under its 700,000 B budget. `adminAfter` is the page when the phase ended (this checkout); the next phase
+ * starts from it.
+ */
+export const PHASE_13 = Object.freeze({
+  participantBefore: PHASE_12.participantAfter, adminBefore: PHASE_12.adminAfter, participantAllowance: 0, adminAllowance: 12_000,
+  participantSha256: '9cae99e5bf091d27acabc75a4a469c6a5bc7995d6ef28237594daa5c1bca3557',
+  participantAfter: PHASE_12.participantAfter, adminAfter: null,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
+
+/**
  * The class names of the Tailwind utility rules in a built page (its `@layer utilities` block), sorted, each once.
  * @param {string} html
  */

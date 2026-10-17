@@ -14,13 +14,19 @@
 //
 // Each question's chart in "Results by activity" (Phase 11b) is the Live display's: lib/results-chart-figure.js draws the chart model's bars, split,
 // scale or words in the Results palette (lib/results-palette.js, from styles/results-tokens.css), with its headline and "N of M got it right first
-// time" above it. The client's colour stays in the report's own structure: the title band, the section rules, the tiles and the completion bars.
+// time" above it.
+//
+// Phase 13 (EXPORT-DESIGN.md): page 1 is "At a glance" (four tiles, one takeaway per activity from lib/export-summary.js, the hardest and easiest
+// question, how to read the report) and never needs a second page; each activity then starts a page of its own under a band with its title, its
+// three numbers and its takeaway, and each question is one framed card that is never split. The client's colour is the cover's title band and
+// nothing else; rules and marks are the Results palette's (Deloitte Green, brand guide p. 42), words its black and grey (p. 37).
 //
 // Plain JS with JSDoc and no DOM.
 
 import { LIVE_FILES_NOTE, NO_ANSWERS, STRAY_TITLE, UNREADABLE_PERSON, answeredLine, scoreLine, wholePercent } from './leader-report.js';
 import { MISSING } from './report-fonts.js';
 import { chartFigure } from './results-chart-figure.js';
+import { fewAnswersLine, numberWords } from './results-chart-model.js';
 
 /** @typedef {import('./leader-report.js').LeaderReport} LeaderReport */
 /** @typedef {{ kind: string, x: number, y: number, [key: string]: any }} Item */
@@ -38,12 +44,13 @@ const WIDTH = PAGE.width - PAGE.left - PAGE.right;
 const BOTTOM = PAGE.height - PAGE.bottom;
 const HEADER = 10; // the running head of every page but the cover
 const PT = 25.4 / 72;
-const INK = '#111827';
-const MUTED = '#4B5563';
-const RULE = '#C5CAD3';
-const TINT = '#F1F3F5';
-const TRACK = '#E2E5EA';
 const PLATE = '#0B1F3A';
+/** "How to read this report" on page 1: three lines. */
+export const HOW_TO_READ = Object.freeze([
+  'Each activity has its own pages: its takeaway first, then every question with its chart.',
+  'For a question with a correct answer the bars count first answers; the correct one has a tick and the word “Correct”.',
+  'A figure that rests on fewer than five answers says so; how everything is counted is on the last page.',
+]);
 
 const leading = (size) => size * PT * 1.36;
 const baseline = (size) => size * PT * 1.02;
@@ -69,6 +76,12 @@ export function layoutLeaderReport(report, measure, { logo = null, palette } = /
 function compose(report, measure, logo, noteMissing, palette) {
   const { accent, ink } = report.brand;
   const joined = report.summary.joined;
+  // The words and rules of every page are the Results palette's: black and its secondary grey (brand guide p. 37), its gridline grey and shade.
+  const INK = palette.text;
+  const MUTED = palette.textSecondary;
+  const RULE = palette.grid;
+  const TINT = palette.bandShade;
+  const GREEN = palette.brand;
 
   // ---- Text -------------------------------------------------------------------------------------------------------------------------
 
@@ -124,11 +137,6 @@ function compose(report, measure, logo, noteMissing, palette) {
     ], glue || index < lines.length - 1 && lines.length <= 3));
   }
 
-  const barItems = (x, y, w, percent) => [
-    { kind: 'rect', x, y, w, h: 3.2, fill: TRACK, radius: 1.2 },
-    ...(percent > 0 ? [{ kind: 'rect', x, y, w: Math.max(1.2, Math.min(1, percent / 100) * w), h: 3.2, fill: accent, radius: 1.2 }] : []),
-  ];
-
   /** The measure the chart figure lays its words out with: the embedded fonts', and fit() where a line may be cut. */
   const figureMeasure = {
     wrap: (value, width, size, bold, max) => (max ? fit(value, width, size, bold, max) : wrap(value, width, size, bold)),
@@ -168,8 +176,9 @@ function compose(report, measure, logo, noteMissing, palette) {
   let y = 0;
   let top = 0;
   let section = '';
+  let head = '';
   const newPage = () => {
-    page = { items: [], section };
+    page = { items: [], section, head };
     pages.push(page);
     top = pages.length === 1 ? PAGE.top : PAGE.top + HEADER;
     y = top;
@@ -196,12 +205,13 @@ function compose(report, measure, logo, noteMissing, palette) {
   }
   function startSection(title, intro) {
     section = title;
+    head = title;
     newPage();
     block([
       row(leading(16) + 1, [text(LEFT, 0, WIDTH, fit(title, WIDTH, 16, true)[0], 16, { bold: true })], true),
-      row(1.4, [{ kind: 'rect', x: LEFT, y: 0, w: 22, h: 0.9, fill: accent }], true),
+      row(1.4, [{ kind: 'rect', x: LEFT, y: 0, w: 22, h: 0.9, fill: GREEN }], true),
       gap(2.5),
-      ...paragraph(intro, { size: 8.8, color: MUTED }),
+      ...marked(paragraph(intro, { size: 8.8, color: MUTED }), 'section-intro'),
       gap(4),
     ], { keep: false });
   }
@@ -226,7 +236,7 @@ function compose(report, measure, logo, noteMissing, palette) {
   page.items.push({ kind: 'wordmark', x: PAGE.width - PAGE.right - markWidth, y: y + (headHeight - markHeight) / 2, w: markWidth });
   y += headHeight + 7;
 
-  // The title band, in the client's colour.
+  // The title band, in the client's colour: the one place the report wears it.
   const inner = WIDTH - 16;
   const band = [
     { size: 9, bold: true, lines: ['LEADER REPORT'], after: 1.5 },
@@ -235,60 +245,55 @@ function compose(report, measure, logo, noteMissing, palette) {
     { size: 11, bold: false, lines: fit(report.meta.dateText || 'No date recorded', inner, 11), after: 0 },
   ];
   const bandHeight = 14 + sum(band.map((part) => part.lines.length * leading(part.size) + part.after));
-  page.items.push({ kind: 'rect', x: LEFT, y, w: WIDTH, h: bandHeight, fill: accent, radius: 2 });
+  page.items.push({ kind: 'rect', x: LEFT, y, w: WIDTH, h: bandHeight, fill: accent, radius: 2, role: 'title-band' });
   let cursor = y + 7;
   for (const part of band) {
     for (const line of part.lines) {
-      page.items.push({ ...text(LEFT + 8, cursor, inner, line, part.size, { bold: part.bold, color: ink }) });
+      page.items.push({ ...text(LEFT + 8, cursor, inner, line, part.size, { bold: part.bold, color: ink, role: 'title-band' }) });
       cursor += leading(part.size);
     }
     cursor += part.after;
   }
   y += bandHeight + 7;
 
-  // The summary: three figures, completion by activity, the hardest and the easiest question.
+  // At a glance: four tiles, what each activity found, the hardest and easiest question, how to read the report, and when it was made. It is
+  // laid out with as many activities as leave room for the rest, so page 1 never needs a second page; any left over are counted in one line.
   const { summary } = report;
-  const tileWidth = (WIDTH - 10) / 3;
+  const questionCount = report.activities.reduce((total, activity) => total + activity.questions.length, 0);
+  const tileWidth = (WIDTH - 15) / 4;
   const tiles = [
-    { figure: String(summary.joined), label: joined === 1 ? 'Participant joined' : 'Participants joined', detail: summary.answeredNothing > 0 ? `${summary.answeredNothing} answered nothing` : '' },
+    { figure: summary.joined.toLocaleString('en-US'), label: 'People who joined', detail: 'Everyone who opened it' },
+    { figure: summary.answeredSomething.toLocaleString('en-US'), label: 'People who answered', detail: summary.answeredNothing > 0 ? `${summary.answeredNothing} answered nothing` : '' },
+    { figure: summary.answers.toLocaleString('en-US'), label: summary.answers === 1 ? 'Answer' : 'Answers', detail: `Across ${numberWords(questionCount)} ${questionCount === 1 ? 'question' : 'questions'}` },
     { figure: `${summary.finishedAll} of ${summary.joined}`, label: 'Finished every activity', detail: summary.joined > 0 ? `${wholePercent((summary.finishedAll / summary.joined) * 100)} of those who joined` : '' },
-    summary.averageScore === null
-      ? { figure: '–', label: 'Average first-try score', detail: 'No graded question was answered' }
-      : { figure: wholePercent(summary.averageScore), label: 'Average first-try score', detail: `Over ${plural(summary.scored, 'participant')}` },
   ];
+  const tileHeight = 33;
   const tileItems = tiles.flatMap((tile, index) => {
     const x = LEFT + index * (tileWidth + 5);
+    const label = fit(tile.label, tileWidth - 9, 8.8, true, 2);
     return [
-      { kind: 'rect', x, y: 0, w: tileWidth, h: 25, stroke: RULE, radius: 2 },
-      { kind: 'rect', x: x + 3, y: 4.5, w: 1.1, h: 16, fill: accent },
-      text(x + 7, 3.2, tileWidth - 10, fit(tile.figure, tileWidth - 10, 21, true)[0], 21, { bold: true }),
-      text(x + 7, 13.2, tileWidth - 10, fit(tile.label, tileWidth - 10, 8.8, true)[0], 8.8, { bold: true }),
-      ...(tile.detail ? [text(x + 7, 17.6, tileWidth - 10, fit(tile.detail, tileWidth - 10, 8, false)[0], 8, { color: MUTED })] : []),
+      { kind: 'rect', x, y: 0, w: tileWidth, h: tileHeight, stroke: RULE, radius: 2 },
+      { kind: 'rect', x: x + 3, y: 4.5, w: 1.1, h: tileHeight - 9, fill: GREEN },
+      text(x + 6.5, 3.2, tileWidth - 9, fit(tile.figure, tileWidth - 9, 20, true)[0], 20, { bold: true }),
+      ...label.map((line, at) => text(x + 6.5, 12.6 + at * leading(8.8), tileWidth - 9, line, 8.8, { bold: true })),
+      ...fit(tile.detail, tileWidth - 9, 8, false, 2).filter(Boolean).map((line, at) => text(x + 6.5, 12.6 + label.length * leading(8.8) + 0.4 + at * leading(8), tileWidth - 9, line, 8, { color: MUTED })),
     ];
   });
-  block([
-    row(leading(14) + 1.5, [text(LEFT, 0, WIDTH, 'Summary', 14, { bold: true })], true),
-    row(25, tileItems),
-    gap(7),
-  ]);
+  const heading = (title, size = 11) => row(leading(size) + 1.5, [text(LEFT, 0, WIDTH, title, size, { bold: true })], true);
 
-  const completion = [row(leading(11) + 1.5, [text(LEFT, 0, WIDTH, 'Completion by activity', 11, { bold: true })], true)];
-  if (summary.activities.length === 0) completion.push(...paragraph('This session has no activity that is switched on.', { color: MUTED }));
-  for (const activity of summary.activities) {
-    const lines = fit(`${activity.title}${activity.off ? ' (switched off)' : ''}`, 62, 9.2, true, 2);
-    const detail = fit(`${activity.finished} of ${joined} finished${activity.started ? `, ${activity.started} started` : ''}${activity.notStarted ? `, ${activity.notStarted} not started` : ''}`, 56, 8.4, false, 2);
-    const h = Math.max(lines.length * leading(9.2), detail.length * leading(8.4), 6) + 1.6;
-    completion.push(row(h, [
-      ...lines.map((line, index) => text(LEFT, index * leading(9.2), 62, line, 9.2, { bold: true })),
-      ...barItems(LEFT + 66, 1.1, 52, joined > 0 ? (activity.finished / joined) * 100 : 0),
-      ...detail.map((line, index) => text(LEFT + 122, index * leading(8.4) + 0.2, 56, line, 8.4, { color: MUTED })),
-    ]));
-  }
-  completion.push(gap(6));
-  // Row by row, never moved whole: the completion list stays on the cover whatever its length allows.
-  block(completion, { keep: false });
+  const takeaways = report.activities.map((activity) => {
+    const title = fit(`${activity.title}${activity.off ? ' (switched off)' : ''}`, 46, 9.2, true, 2);
+    const said = fit(activity.summary.takeaway, WIDTH - 54, 8.8, false, 3);
+    const h = Math.max(title.length * leading(9.2), said.length * leading(8.8)) + 2.2;
+    return row(h, [
+      { kind: 'rect', x: LEFT, y: 0.3, w: 0.9, h: h - 2, fill: GREEN },
+      ...title.map((line, at) => text(LEFT + 3.5, at * leading(9.2), 46, line, 9.2, { bold: true })),
+      ...said.map((line, at) => text(LEFT + 54, at * leading(8.8) + 0.2, WIDTH - 54, line, 8.8, { role: 'takeaway' })),
+    ]);
+  });
 
-  const highlights = [row(leading(11) + 1.5, [text(LEFT, 0, WIDTH, 'Hardest and easiest question', 11, { bold: true })], true)];
+  const highlights = [heading('Hardest and easiest question')];
+  highlights.push(...paragraph(summary.averageScore === null ? 'No graded question was answered, so there is no first-try score.' : `Average first-try score: ${wholePercent(summary.averageScore)}, over ${plural(summary.scored, 'participant')}.`, { size: 8.8, color: MUTED }), gap(1.6));
   if (summary.hardest && summary.easiest) {
     const boxWidth = (WIDTH - 6) / 2;
     const boxes = [['Hardest (fewest right first time)', summary.hardest], ['Easiest (most right first time)', summary.easiest]].map(([label, question], index) => {
@@ -309,56 +314,114 @@ function compose(report, measure, logo, noteMissing, palette) {
       ? `Only one graded question was answered (${wholePercent(summary.flat.percent)} right first time), so there is nothing to compare.`
       : `All ${summary.flat.questions} graded questions had the same share right first time (${wholePercent(summary.flat.percent)}), so none stands out.`, { color: MUTED }));
   } else highlights.push(...paragraph('No graded question was answered, so there is no hardest or easiest question.', { color: MUTED }));
-  // Then one line: when it was made, and where the counting rules are, and (Phase 8) one more: whether the session had ended. A leader who
-  // reads only page 1 of a report made during the event must learn that answers are still arriving, so a session that had not ended says
-  // so in dark, bold type; one that had ended says it in the same quiet type as the line above. The full "Session: ..." line is still on the
-  // last page. They stay with the block above: if they do not fit what is left of the cover they go to the top of the next page together,
-  // whole, and a page is never just those lines.
-  block([
-    ...highlights, gap(3),
+
+  // How to read this report: a tinted box of three lines, each a bullet.
+  const readLines = HOW_TO_READ.flatMap((line) => wrap(line, WIDTH - 16, 8.4).map((part, at) => ({ part, first: at === 0 })));
+  const readHeight = 6.5 + leading(9.5) + 1 + readLines.length * leading(8.4);
+  const howToRead = row(readHeight, [
+    { kind: 'rect', x: LEFT, y: 0, w: WIDTH, h: readHeight, fill: TINT, stroke: RULE, radius: 2, role: 'how-to-read' },
+    text(LEFT + 5, 3.2, WIDTH - 10, 'How to read this report', 9.5, { bold: true, role: 'how-to-read' }),
+    ...readLines.flatMap(({ part, first }, at) => {
+      const top = 3.2 + leading(9.5) + 1 + at * leading(8.4);
+      return [...(first ? [text(LEFT + 5, top, 3, '•', 8.4, { color: MUTED, role: 'how-to-read' })] : []), text(LEFT + 9, top, WIDTH - 14, part, 8.4, { role: 'how-to-read', bullet: first })];
+    }),
+  ]);
+
+  // Then one line: when it was made, and where the counting rules are; and (Phase 8) whether the session had ended: a leader who reads only page 1
+  // of a report made during the event must learn that answers are still arriving, so a session that had not ended says so in bold. A sample client's
+  // content not yet confirmed (Phase 9b, SAM-2) and answers that could not be read (DI-6) are said here too, in bold.
+  const closing = [
     ...paragraph(`Made on ${report.meta.generated} from the answers saved for this session. How the numbers are counted is on the last page.`, { size: 8.8, color: MUTED }),
     gap(1.6),
     ...paragraph(report.meta.ended ? SESSION_ENDED : SESSION_NOT_ENDED, report.meta.ended ? { size: 8.8, color: MUTED } : { size: 9.2, bold: true }),
-    // Phase 9b (SAM-2): a client whose content has not been confirmed with the client team says so, in one line, until it has.
     ...(report.meta.sampleNotice ? [gap(1.6), ...paragraph(report.meta.sampleNotice, { size: 9.2, bold: true })] : []),
-    // Phase 9b (DI-6): answer items that could not be read are said so here, in bold, with the status line, because a leader who reads only
-    // this page must know that somebody's answers are not in these figures.
     ...(report.meta.unreadableNotice ? [gap(1.6), ...paragraph(report.meta.unreadableNotice, { size: 9.2, bold: true })] : []),
-  ]);
+  ];
 
-  // ---- 2. Results by activity -------------------------------------------------------------------------------------------------------
-
-  startSection('Results by activity', 'Every question, as the Live display shows it, with how many people chose each answer. For a question with a correct answer the bars count first answers only; the correct answer is in bold, with a tick and the word “Correct”.');
-  if (report.activities.length === 0) block(paragraph('This session has no activity that is switched on, so there are no results.', { color: MUTED }));
-  const indent = LEFT + 10;
-  for (const activity of report.activities) {
-    let lead = [
-      row(leading(12.5) + 0.6, [
-        text(LEFT, 0, WIDTH - 52, fit(activity.title, WIDTH - 52, 12.5, true)[0], 12.5, { bold: true }),
-        text(LEFT + WIDTH - 50, 1.2, 50, `${activity.finished} of ${joined} finished`, 8.8, { color: MUTED, align: 'right' }),
-      ], true),
-      ...(activity.off ? paragraph('Switched off when this report was made.', { size: 8.4, color: MUTED, glue: true }) : []),
-      ...paragraph(activity.description, { size: 8.8, color: MUTED, max: 3, glue: true }).filter((box) => box.items[0].text),
-      row(2.6, [{ kind: 'line', x: LEFT, y: 1, x2: LEFT + WIDTH, y2: 1, color: RULE }], true),
+  const coverRows = (shown) => {
+    const hidden = takeaways.length - shown;
+    return [
+      row(leading(14) + 1.5, [text(LEFT, 0, WIDTH, 'At a glance', 14, { bold: true })], true),
+      row(1.4, [{ kind: 'rect', x: LEFT, y: 0, w: 22, h: 0.9, fill: GREEN }], true),
+      gap(2.5),
+      row(tileHeight, tileItems),
+      gap(6),
+      heading('What each activity found'),
+      ...(takeaways.length === 0 ? paragraph('This session has no activity that is switched on.', { color: MUTED }) : takeaways.slice(0, shown)),
+      ...(hidden > 0 ? paragraph(`And ${numberWords(hidden)} more ${hidden === 1 ? 'activity' : 'activities'}, each on its own pages.`, { size: 8.8, color: MUTED }) : []),
+      gap(5),
+      ...highlights,
+      gap(5),
+      howToRead,
+      gap(4),
+      ...closing,
     ];
-    if (activity.questions.length === 0) { block([...lead, ...paragraph('This activity has no questions.', { color: MUTED }), gap(5)]); continue; }
-    for (const question of activity.questions) {
-      const rows = [...lead];
-      lead = [];
-      const prompt = wrap(question.prompt, WIDTH - 10, 10.4, true);
-      prompt.forEach((line, index) => rows.push(row(leading(10.4), [
-        ...(index === 0 ? [text(LEFT, 0, 10, `Q${question.number}`, 10.4, { bold: true, color: MUTED })] : []),
-        text(indent, 0, WIDTH - 10, line, 10.4, { bold: true }),
-      ], true)));
-      rows.push(row(leading(8.2) + 1.4, [text(indent, 0, WIDTH - 10, fit(`${question.kindLabel}. Answered by ${question.respondents} of ${joined}.`, WIDTH - 10, 8.2)[0], 8.2, { color: MUTED })], true));
+  };
+  const room = BOTTOM - y;
+  let shown = takeaways.length;
+  while (shown > 0 && sum(coverRows(shown).map((box) => box.h)) > room) shown -= 1;
+  for (const box of coverRows(shown)) put(box);
+
+  // ---- 2. Results by activity: each activity on pages of its own ---------------------------------------------------------------------
+
+  startSection('Results by activity', 'Each activity starts a new page with what it found, then every question as the Live display shows it. For a question with a correct answer the bars count first answers only; the correct answer is in bold, with a tick and the word “Correct”.');
+  if (report.activities.length === 0) block(paragraph('This session has no activity that is switched on, so there are no results.', { color: MUTED }));
+  const indent = LEFT + 12;
+  const cardWidth = WIDTH - 16;
+  /** Rows stacked into one, so they can only be placed together (and framed). */
+  const stack = (rows) => {
+    let top = 0;
+    const items = [];
+    for (const box of rows) {
+      for (const item of box.items) items.push({ ...item, y: item.y + top, ...(item.y2 === undefined ? {} : { y2: item.y2 + top }) });
+      top += box.h;
+    }
+    return { h: top, items };
+  };
+  report.activities.forEach((activity, order) => {
+    head = activity.title;
+    if (order > 0) newPage();
+    else page.head = head;
+    const { summary: found } = activity;
+    const answers = activity.questions.reduce((total, question) => total + question.respondents, 0);
+    // The band: the activity's title, whether it is switched off, its purpose line, its three numbers and its takeaway.
+    const parts = [
+      ...fit(activity.title, WIDTH - 10, 13, true, 2).map((line) => ({ line, size: 13, bold: true, role: 'activity-title' })),
+      ...(activity.off ? [{ line: 'Switched off when this report was made.', size: 8.4, color: MUTED }] : []),
+      ...(activity.description ? fit(activity.description, WIDTH - 10, 8.8, false, 2).map((line) => ({ line, size: 8.8, color: MUTED })) : []),
+      { line: `${plural(activity.questions.length, 'question')} · ${plural(answers, 'answer')} · ${activity.finished} of ${joined} finished`, size: 9, color: MUTED, after: 1.4 },
+      ...wrap(found.takeaway, WIDTH - 10, 9.6, true).map((line) => ({ line, size: 9.6, bold: true, role: 'takeaway' })),
+    ];
+    const bandH = parts.reduce((total, part) => total + leading(part.size) + (part.after ?? 0), 0) + 8;
+    let top = 4;
+    const bandItems = [
+      { kind: 'rect', x: LEFT, y: 0, w: WIDTH, h: bandH, fill: TINT, radius: 2, role: 'activity-band' },
+      { kind: 'rect', x: LEFT, y: 0, w: 1.4, h: bandH, fill: GREEN },
+    ];
+    for (const part of parts) {
+      bandItems.push(text(LEFT + 6, top, WIDTH - 10, part.line, part.size, { bold: part.bold, color: part.color ?? INK, ...(part.role ? { role: part.role } : {}) }));
+      top += leading(part.size) + (part.after ?? 0);
+    }
+    const lead = [row(bandH, bandItems, true), gap(4)];
+    if (activity.questions.length === 0) { block([...lead, ...paragraph('This activity has no questions.', { color: MUTED }), gap(5)]); return; }
+    activity.questions.forEach((question, index) => {
+      const rows = [gap(3.4)];
+      const prompt = wrap(question.prompt, cardWidth - 8, 10.4, true);
+      prompt.forEach((line, at) => rows.push(row(leading(10.4), [
+        ...(at === 0 ? [text(LEFT + 4, 0, 8, `Q${question.number}`, 10.4, { bold: true, color: MUTED })] : []),
+        text(indent, 0, cardWidth - 8, line, 10.4, { bold: true }),
+      ])));
+      const meta = [`${question.kindLabel}. Answered by ${question.respondents} of ${joined}.`, fewAnswersLine(question.respondents)].filter(Boolean).join(' ');
+      for (const line of wrap(meta, cardWidth - 8, 8.2)) rows.push(row(leading(8.2), [text(indent, 0, cardWidth - 8, line, 8.2, { color: MUTED })]));
+      rows.push(gap(1.4));
       // As the Live display's card: the headline, then for a graded question "N of M got it right first time", then the chart (Phase 11b).
       const { chart } = question;
-      rows.push(...marked(paragraph(chart.headline, { x: indent, size: 9.6, bold: true, color: palette.text, glue: true }), 'headline'));
-      if (chart.gradedLine) rows.push(...marked(paragraph(chart.gradedLine, { x: indent, size: 8.8, bold: true, color: palette.textSecondary, glue: true }), 'graded-line'));
+      rows.push(...marked(paragraph(chart.headline, { x: indent, w: cardWidth - 8, size: 9.6, bold: true, color: palette.text }), 'headline'));
+      if (chart.gradedLine) rows.push(...marked(paragraph(chart.gradedLine, { x: indent, w: cardWidth - 8, size: 8.8, bold: true, color: palette.textSecondary }), 'graded-line'));
       rows.push(gap(1.6));
-      rows.push(...figureRows(chart, indent, WIDTH - 10));
+      rows.push(...figureRows(chart, indent, cardWidth - 8));
       // A ranking's caption says what its score means. (A multiple choice's is in the notes below, and so are answers to an option that has gone.)
-      if (question.kind === 'ranking' && chart.caption) rows.push(...marked(paragraph(chart.caption, { x: indent, size: 8.2, color: palette.textSecondary }), 'caption'));
+      if (question.kind === 'ranking' && chart.caption) rows.push(...marked(paragraph(chart.caption, { x: indent, w: cardWidth - 8, size: 8.2, color: palette.textSecondary }), 'caption'));
       const facts = [];
       if (question.kind === 'text') facts.push([`${plural(question.respondents, 'written answer')}. ${question.respondents > 0 ? 'Each is in “What participants said”, word for word.' : ''}`, false]);
       else if (question.respondents === 0) facts.push(['Nobody answered this question.', false]);
@@ -366,8 +429,8 @@ function compose(report, measure, logo, noteMissing, palette) {
         facts.push([`Right first time: ${question.firstTry.right} of ${question.firstTry.answered} (${wholePercent(question.firstTry.percent)})`, true]);
         facts.push([question.commonWrong ? `Most common wrong first answer: ${question.commonWrong.label} (${question.commonWrong.count} of ${question.respondents})` : 'Nobody gave a wrong first answer.', false]);
         if (question.retries) {
-          const { later, shown, open } = question.retries;
-          facts.push([`After a wrong first answer: ${[later ? `${later} got it right on the second try` : '', shown ? `${shown} ${shown === 1 ? 'was' : 'were'} shown the answer` : '', open ? `${open} did not try again` : ''].filter(Boolean).join(', ')}.`, false]);
+          const { later, shown: told, open } = question.retries;
+          facts.push([`After a wrong first answer: ${[later ? `${later} got it right on the second try` : '', told ? `${told} ${told === 1 ? 'was' : 'were'} shown the answer` : '', open ? `${open} did not try again` : ''].filter(Boolean).join(', ')}.`, false]);
         }
       }
       if (question.average) facts.push([`Average: ${question.average.value.toFixed(1)} on a scale of ${question.average.min} to ${question.average.max} (${plural(question.average.answers, 'answer')})`, true]);
@@ -376,12 +439,25 @@ function compose(report, measure, logo, noteMissing, palette) {
         facts.push([`Average place: ${question.ranking.map((option) => `${option.label} ${option.averagePlace === null ? '–' : option.averagePlace.toFixed(1)}`).join('; ')}`, false]);
       }
       rows.push(gap(0.8));
-      for (const [fact, bold] of facts) rows.push(...paragraph(fact, { x: indent, size: 9, bold }));
-      for (const note of question.notes) rows.push(...paragraph(note, { x: indent, size: 8.2, color: MUTED }));
-      rows.push(gap(5.5));
-      block(rows);
-    }
-  }
+      for (const [fact, bold] of facts) rows.push(...paragraph(fact, { x: indent, w: cardWidth - 8, size: 9, bold }));
+      for (const note of question.notes) rows.push(...paragraph(note, { x: indent, w: cardWidth - 8, size: 8.2, color: MUTED }));
+      rows.push(gap(3));
+      const whole = stack(rows);
+      const before = index === 0 ? lead : [];
+      // A card that fits a page is one row in a frame, so it is never split; one longer than a page (some forty answer options) breaks between two bars.
+      if (whole.h <= BOTTOM - (PAGE.top + HEADER)) {
+        const card = row(whole.h, [
+          { kind: 'rect', x: LEFT, y: 0, w: WIDTH, h: whole.h, stroke: RULE, radius: 2, role: 'card', of: question.id },
+          { kind: 'rect', x: LEFT, y: 0, w: WIDTH, h: 1, fill: GREEN, role: 'card-rule' },
+          ...whole.items.map((item) => ({ ...item, card: question.id })),
+        ]);
+        block([...before, card, gap(4)]);
+      } else block([...before, ...rows, gap(4)]);
+    });
+    // A graded activity ends with its scoreboard: the average share right first time, and the question most often missed.
+    if (found.scoreboard) block([...marked(paragraph(found.scoreboard.line, { x: LEFT + 4, w: WIDTH - 4, size: 9.2, bold: true, bar: GREEN }), 'scoreboard'), gap(5)]);
+  });
+  head = '';
 
   // ---- 3. What participants said ----------------------------------------------------------------------------------------------------
 
@@ -395,8 +471,8 @@ function compose(report, measure, logo, noteMissing, palette) {
     ]);
     for (const entry of question.entries) {
       block([
-        ...fit(entry.name, WIDTH - 4, 9, true, 2).map((line) => row(leading(9), [{ kind: 'rect', x: LEFT, y: 0, w: 0.7, h: leading(9), fill: accent }, text(LEFT + 4, 0, WIDTH - 4, line, 9, { bold: true })], true)),
-        ...paragraph(entry.text, { x: LEFT + 4, size: 9.5, keepBreaks: true, bar: accent }),
+        ...fit(entry.name, WIDTH - 4, 9, true, 2).map((line) => row(leading(9), [{ kind: 'rect', x: LEFT, y: 0, w: 0.7, h: leading(9), fill: GREEN }, text(LEFT + 4, 0, WIDTH - 4, line, 9, { bold: true })], true)),
+        ...paragraph(entry.text, { x: LEFT + 4, size: 9.5, keepBreaks: true, bar: GREEN }),
         gap(3),
       ]);
     }
@@ -507,7 +583,7 @@ function compose(report, measure, logo, noteMissing, palette) {
     if (index > 0) {
       sheet.items.push(
         text(LEFT, PAGE.top - 0.6, 110, fit(`${report.meta.clientName}, leader report`, 110, 7.8)[0], 7.8, { color: MUTED }),
-        text(LEFT + WIDTH - 64, PAGE.top - 0.6, 64, fit(sheet.section, 64, 7.8)[0], 7.8, { color: MUTED, align: 'right' }),
+        text(LEFT + WIDTH - 64, PAGE.top - 0.6, 64, fit(sheet.head || sheet.section, 64, 7.8)[0], 7.8, { color: MUTED, align: 'right' }),
         { kind: 'line', x: LEFT, y: PAGE.top + 4.6, x2: LEFT + WIDTH, y2: PAGE.top + 4.6, color: RULE },
       );
     }

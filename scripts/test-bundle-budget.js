@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
 import { PAGES, ROOT, analyzePage } from './analyze-bundle.js';
-import { BUDGET, FORBIDDEN, PHASE_8, PHASE_9A, PHASE_9B, PHASE_10B, PHASE_10C1, PHASE_10C2A, PHASE_10C2B, PHASE_10C3, PHASE_10F, PHASE_10G, PHASE_10H, PHASE_10I, PHASE_10J, PHASE_11A, PHASE_11A3, PHASE_11B, PHASE_12, checkBudgets, utilityClasses } from './bundle-budget.js';
+import { BUDGET, FORBIDDEN, PHASE_8, PHASE_9A, PHASE_9B, PHASE_10B, PHASE_10C1, PHASE_10C2A, PHASE_10C2B, PHASE_10C3, PHASE_10F, PHASE_10G, PHASE_10H, PHASE_10I, PHASE_10J, PHASE_11A, PHASE_11A3, PHASE_11B, PHASE_12, PHASE_13, checkBudgets, utilityClasses } from './bundle-budget.js';
 import { SAMPLE_PICTURE_NAMES } from '../migration/src/lib/sample-pictures.js';
 import { pageProblems } from './release-proofs.js';
 
@@ -254,16 +255,25 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
     void t;
   });
 
-  it('Phase 12 (the fixes approved from UX-REVIEW.md) grows the participant page by at most 600 B gzip and the admin page by at most 1,000 B over where 11b left them, with the Tailwind rules of 11a', (t) => {
+  it('Phase 12 (the fixes approved from UX-REVIEW.md) grew the participant page by at most 600 B gzip and the admin page by at most 1,000 B over where 11b left them', () => {
     assert.equal(PHASE_12.participantBefore, PHASE_11B.participantAfter, 'Phase 12 is measured from where Phase 11b ended');
     assert.equal(PHASE_12.adminBefore, PHASE_11B.adminAfter);
-    const participant = built.participant.htmlGzip - PHASE_12.participantBefore;
-    const admin = built.admin.htmlGzip - PHASE_12.adminBefore;
-    t.diagnostic(`participant ${participant >= 0 ? '+' : ''}${participant} B, admin ${admin >= 0 ? '+' : ''}${admin} B against where 11b ended`);
-    console.log(`  Phase 12: the participant page is ${participant >= 0 ? '+' : ''}${participant} B gzip and the admin page ${admin >= 0 ? '+' : ''}${admin} B against where 11b ended (allowances ${PHASE_12.participantAllowance} B and ${PHASE_12.adminAllowance} B); now ${bytes(built.participant.htmlGzip)} and ${bytes(built.admin.htmlGzip)}`);
-    assert.ok(participant <= PHASE_12.participantAllowance, `the participant page is ${participant} B larger than where 11b left it`);
-    assert.deepEqual(utilityClasses(built.participant.html), [...PHASE_12.participantUtilities], "the participant page's Tailwind rules are the ones it had");
-    assert.ok(admin <= PHASE_12.adminAllowance, `the admin page is ${admin} B larger than where 11b left it`);
+    assert.ok(PHASE_12.participantAfter - PHASE_12.participantBefore <= PHASE_12.participantAllowance, 'the participant page, as measured when 12 ended');
+    assert.ok(PHASE_12.adminAfter - PHASE_12.adminBefore <= PHASE_12.adminAllowance, 'the admin page, as measured when 12 ended');
+    // (This test compared the build in the tree with those figures until Phase 13: the newest phase's test below holds the build now.)
+  });
+
+  it('Phase 13 (the Results exports for leadership) leaves the participant page byte for byte as 12 left it, and grows the admin page by at most 12,000 B gzip over where 12 left it', (t) => {
+    assert.equal(PHASE_13.participantBefore, PHASE_12.participantAfter, 'Phase 13 is measured from where Phase 12 ended');
+    assert.equal(PHASE_13.adminBefore, PHASE_12.adminAfter);
+    assert.equal(PHASE_13.participantAllowance, 0);
+    const sha = createHash('sha256').update(built.participant.html).digest('hex');
+    const admin = built.admin.htmlGzip - PHASE_13.adminBefore;
+    t.diagnostic(`participant ${sha.slice(0, 8)}, admin ${admin >= 0 ? '+' : ''}${admin} B against where 12 ended`);
+    console.log(`  Phase 13: the participant page is ${sha === PHASE_13.participantSha256 ? 'byte for byte' : 'NOT'} the page 12 left (${bytes(built.participant.htmlGzip)}); the admin page is ${admin >= 0 ? '+' : ''}${admin} B gzip against where 12 ended (allowance ${PHASE_13.adminAllowance} B), now ${bytes(built.admin.htmlGzip)} of its ${bytes(BUDGET.admin)} budget`);
+    assert.equal(sha, PHASE_13.participantSha256, 'the participant page is the one Phase 12 left, byte for byte');
+    assert.deepEqual(utilityClasses(built.participant.html), [...PHASE_13.participantUtilities], "the participant page's Tailwind rules are the ones it had");
+    assert.ok(admin <= PHASE_13.adminAllowance, `the admin page is ${admin} B larger than where 12 left it`);
     assert.ok(built.admin.htmlGzip < BUDGET.admin, `the admin page is under its ${bytes(BUDGET.admin)} budget`);
   });
 

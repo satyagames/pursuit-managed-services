@@ -59,8 +59,9 @@ test('both buttons download: the leader report as a PDF with embedded fonts and 
     'Søren says: more time for questions, please. And coffee.', '=SUM(A1:A9) "quoted", with a comma', 'Great day — thank you!',
     'No answers recorded.', 'Restarted by the facilitator at', 'Questions no longer in the activity', 'It was fine',
   ]) expect(text, phrase).toContain(squash(phrase));
-  // The answer first: the summary is on the cover, and the counting rules are the last page.
-  expect(read.pages[0].text).toContain('Participants joined');
+  // The answer first: page 1 is At a glance (Phase 13), and the counting rules are the last page.
+  expect(read.pages[0].text).toContain('People who joined');
+  expect(read.pages[0].text).toContain('What each activity found');
   expect(read.pages[0].text).not.toContain('About this report');
   expect(read.pages.at(-1)!.text).toContain('How the numbers are counted');
   expect(read.pages.at(-1)!.text).toContain('About this report');

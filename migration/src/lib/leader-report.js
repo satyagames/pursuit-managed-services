@@ -20,6 +20,7 @@ import { resolveClientTheme } from './client-theme.js';
 import { masterColours } from './legacy-colours.js';
 import { isGraded, isRecordSettled, MAX_WRONG_TRIES } from './pager-logic.js';
 import { nameParticipants, ownerOf } from './participant-names.js';
+import { summarizeActivity } from './export-summary.js';
 import { chartOf } from './results-chart-model.js';
 import { SAMPLE_REPORT_LINE, needsConfirmation } from './sample-notice.js';
 import { unreadableNotice } from './unreadable.js';
@@ -389,6 +390,9 @@ export function buildLeaderReport(records, { generatedAt = new Date(), timeZone,
     };
   });
 
+  // Each activity's takeaway and scoreboard (Phase 13), from the charts above: the sentences the Live display's files print for the same counts.
+  for (const activity of results) activity.summary = summarizeActivity({ id: activity.id, title: activity.title, description: activity.description, off: activity.off, charts: activity.questions.map((question) => question.chart) });
+
   // Answers to questions that are in none of those activities: listed, and counted nowhere.
   const strayIndex = byId(strayQuestions);
   const strayOptionIndex = byId(strayOptions);
@@ -441,7 +445,9 @@ export function buildLeaderReport(records, { generatedAt = new Date(), timeZone,
     rules: COUNTING_RULES, notes,
     summary: {
       // (Somebody whose saved answers could not be read has not "answered nothing": nobody knows what they answered.)
-      joined: participants.length, finishedAll: participants.filter((person) => person.finishedAll).length, answeredNothing: participants.filter((person) => person.answered === 0 && person.strays === 0 && !person.unreadable).length,
+      joined: participants.length, answeredSomething: participants.filter((person) => person.answered > 0 || person.strays > 0).length,
+      answers: results.reduce((sum, activity) => sum + activity.questions.reduce((all, question) => all + question.respondents, 0), 0),
+      finishedAll: participants.filter((person) => person.finishedAll).length, answeredNothing: participants.filter((person) => person.answered === 0 && person.strays === 0 && !person.unreadable).length,
       scored: scored.length, averageScore: scored.length > 0 ? scored.reduce((sum, person) => sum + /** @type {number} */ (person.scorePercent), 0) / scored.length : null,
       questionCount: allQuestions.length, gradedCount: allQuestions.filter((question) => question.kind === 'graded').length, commentCount: comments.reduce((sum, question) => sum + question.entries.length, 0),
       activities: results.map((activity) => ({ title: activity.title, off: activity.off, questions: activity.questions.length, finished: activity.finished, started: activity.started, notStarted: participants.length - activity.finished - activity.started })),

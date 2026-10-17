@@ -87,6 +87,8 @@ function drawWordmark(doc, wordmark, x, y, width) {
 export async function writeLeaderReportPdf({ jsPDF, pages, fonts, wordmark = null, properties, onProgress = () => {}, signal = null, pause = () => new Promise((resolve) => { setTimeout(resolve, 0); }) }) {
   const doc = new jsPDF({ unit: 'mm', format: [PAGE.width, PAGE.height], orientation: 'portrait', compress: true, putOnlyUsedFonts: true });
   doc.setProperties(properties);
+  // The document's language (Phase 13), so a screen reader reads it as English.
+  doc.setLanguage('en-US');
   for (const face of [fonts.regular, fonts.bold]) {
     doc.addFileToVFS(face.file, binaryString(face.bytes));
     doc.addFont(face.file, face.name, 'normal');

@@ -301,16 +301,18 @@ describe('the finished PDF, read back with pdf.js', () => {
     }
   });
 
-  it('opens with the answer: the title band, then the summary, then one line on when it was made; the counting rules are the last section', () => {
+  // Phase 13: page 1 is "At a glance" (scripts/test-leader-report-glance.js holds its tiles, takeaways and length); the completion bars it had are each
+  // activity's own "N of M finished" now, on the activity's band.
+  it('opens with the answer: the title band, then at a glance, then one line on when it was made; the counting rules are the last section', () => {
     const cover = small.read.pages[0];
-    for (const phrase of ['LEADER REPORT', 'Harbour & Søn', 'Harbour Discovery Day', 'October 11, 2026', 'Summary', 'Participants joined', 'Finished every activity', '2 of 7', 'Average first-try score', '47%', 'Over 6 participants', 'Completion by activity', '4 of 7 finished, 2 started, 1 not started', 'Bonus Round (switched off)',
+    for (const phrase of ['LEADER REPORT', 'Harbour & Søn', 'Harbour Discovery Day', 'October 11, 2026', 'At a glance', 'People who joined', 'Finished every activity', '2 of 7', 'Average first-try score', '47%', 'over 6 participants', 'What each activity found', 'Bonus Round (switched off)',
       'Hardest and easiest question', 'Hardest (fewest right first time)', 'Question 3, Harbour History', 'Who designed the lighthouse?', '1 of 4 right first time (25%)', 'Easiest (most right first time)', '3 of 4 right first time (75%)',
       'Made on October 12, 2026 at 9:30 AM UTC from the answers saved for this session. How the numbers are counted is on the last page.']) {
       assert.ok(squash(cover.text).includes(squash(phrase)), phrase);
     }
     // In this order, down the page: the title band, the summary, completion, hardest and easiest, and then the line on when it was made.
     const at = (text) => cover.items.find((item) => squash(item.text).startsWith(squash(text))).y;
-    const order = ['LEADER REPORT', 'Summary', 'Participants joined', 'Completion by activity', 'Hardest and easiest question', 'Made on October 12, 2026'].map(at);
+    const order = ['LEADER REPORT', 'At a glance', 'People who joined', 'What each activity found', 'Hardest and easiest question', 'Made on October 12, 2026'].map(at);
     assert.deepEqual([...order].sort((a, b) => a - b), order, `down the page: ${order.map((y) => y.toFixed(0))}`);
     // Nothing of the counting rules is on the cover any more, and nothing of the session's own status line.
     assert.doesNotMatch(cover.text, /About this report|Session: |Participants are everyone who opened the session/);
@@ -347,7 +349,9 @@ describe('the finished PDF, read back with pdf.js', () => {
       assert.ok(!squash(made.read.pages.slice(0, 1).map((page) => page.text).join('')).includes(squash(other)), 'and not the other wording');
       // Right under the line on when the report was made (which may wrap to a second line), on the same page, and nothing between them.
       const first = cover.items.find((item) => squash(item.text).startsWith(squash(said.slice(0, 24))));
-      const madeOnEnd = cover.items.find((item) => squash(item.text).endsWith(squash('the last page.')));
+      // (Phase 13: "How to read this report", above it, also ends a line with "the last page.": the Made on sentence is the one from "Made on".)
+      const madeOnStart = cover.items.find((item) => item.text.startsWith('Made on '));
+      const madeOnEnd = cover.items.find((item) => item.y >= madeOnStart.y && squash(item.text).endsWith(squash('the last page.')));
       assert.ok(madeOnEnd, 'the Made on sentence ends with where the rules are');
       assert.ok(first.y > madeOnEnd.y && first.y - madeOnEnd.y < 9, `"${said.slice(0, 30)}" follows the Made on line (${madeOnEnd.y.toFixed(1)} then ${first.y.toFixed(1)} mm)`);
       assert.deepEqual(cover.items.filter((item) => item.y > madeOnEnd.y + 0.01 && item.y < first.y - 0.01), [], 'nothing between them');
@@ -371,37 +375,8 @@ describe('the finished PDF, read back with pdf.js', () => {
     }
   });
 
-  it('keeps the tiles and completion on page 1, and puts the hardest and easiest at the top of page 2 when they do not fit', () => {
-    // Many activities fill the cover: completion has a row for each.
-    const make = (count) => ({ ...small.report, summary: { ...small.report.summary, activities: Array.from({ length: count }, (_unused, index) => ({ title: `Activity number ${index + 1} of the day`, off: false, questions: 3, finished: 4, started: 2, notStarted: 1 })) } });
-    const lay = (report) => layoutLeaderReport(report, small.measure, { palette: nodePalette() }).pages;
-    const texts = (page) => page.items.filter((item) => item.kind === 'text').map((item) => item.text);
-    const few = lay(make(3));
-    assert.ok(texts(few[0]).includes('Hardest and easiest question'), 'three activities: it all fits');
-    assert.ok(texts(few[0]).some((line) => line.startsWith('Made on ')));
-    let spilled = null;
-    for (let count = 1; count <= 30; count += 1) {
-      const pages = lay(make(count));
-      // However many activities there are, the line on when it was made is on the page of the block above it, never alone.
-      assert.equal(texts(pages[0]).includes('Hardest and easiest question'), texts(pages[0]).some((line) => line.startsWith('Made on ')), `${count} activities`);
-      assert.ok(texts(pages[1]).some((line) => line === 'Results by activity') || texts(pages[1]).includes('Hardest and easiest question'), `${count} activities: page 2 is never just a line`);
-      if (!spilled && !texts(pages[0]).includes('Hardest and easiest question')) spilled = { count, pages };
-    }
-    assert.ok(spilled, 'enough activities push the hardest and easiest off the cover');
-    measured.push(['activities from which the hardest and easiest question moves to page 2', spilled.count]);
-    const [first, second] = spilled.pages;
-    assert.ok(texts(first).includes('Summary') && texts(first).includes('Completion by activity'), 'the tiles and completion stay on page 1');
-    assert.equal(texts(first).filter((line) => /^Activity number \d+ of the day$/.test(line)).length, spilled.count, 'every activity is on page 1');
-    assert.ok(texts(first).includes('Participants joined') && texts(first).includes('Finished every activity') && texts(first).includes('Average first-try score'), 'and so are the three tiles');
-    // Page 2 begins with them, at the top, then the line on when it was made; the first section is page 3.
-    const heading = second.items.find((item) => item.kind === 'text' && item.text === 'Hardest and easiest question');
-    assert.ok(heading && heading.y < PAGE.top + HEADER_ALLOWANCE, `at the top of page 2 (${heading?.y})`);
-    assert.ok(texts(second).some((line) => line.startsWith('Hardest (fewest right first time)')) && texts(second).some((line) => line.startsWith('Made on ')));
-    assert.ok(!texts(first).some((line) => line.startsWith('Made on ')), 'the line follows the summary it closes');
-    assert.equal(spilled.pages[2].items.find((item) => item.kind === 'text' && item.size === 16)?.text, 'Results by activity');
-    // The layout guard holds for that cover too: nothing off the page, nothing too wide.
-    for (const page of spilled.pages) for (const item of page.items) if (item.kind === 'text') assert.ok(small.measure.width(item.text, item.size, item.bold) <= item.w + 0.01, item.text);
-  });
+  // (Phase 13: "keeps the tiles and completion on page 1, and puts the hardest and easiest at the top of page 2 when they do not fit" is gone with
+  // that behaviour: page 1 never needs a second page now, and scripts/test-leader-report-glance.js holds that for 1 to 40 activities.)
 
   it('prints names with accents, on the participant pages and beside comments', () => {
     const text = allText(small.read);
