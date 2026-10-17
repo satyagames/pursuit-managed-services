@@ -236,21 +236,7 @@
         </header>
         <ReportExports sessionId={session.id} {onToast} />
         {#if card.unreadable}<p class="notice card__unreadable" role="status" data-testid="unreadable-notice"><strong>{card.unreadable}</strong></p>{/if}
-        {#if card.tracks.length === 0}<p class="card__note muted">No iPads have joined yet.</p>
-        {:else}
-          <ul class="rows rows--flat">
-            {#each card.tracks as row (row.track.id)}
-              {@const notes = `${row.answered} of ${row.total} questions answered · joined ${row.track.createdAt ? new Date(row.track.createdAt).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}) : ''} via ${row.track.joinedVia === 'qr' ? 'QR code' : 'manual select'}${row.track.resumeCount ? ` · resumed ${row.track.resumeCount}×` : ''}${row.track.restartedAt ? ` · restarted ${new Date(row.track.restartedAt).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}` : ''}`}
-              <li class="row">
-                <div class="row__main"><span class="row__title">{row.name}</span><span class="muted">{notes}</span></div>
-                <span class={statusClass(row.status)}>{statusText(row.status)}</span>
-                {#if canRemoveVisit(row, session)}<button class="btn btn--small" type="button" onclick={() => void removeVisit(row)} disabled={busy}>Remove...</button>{/if}
-                <button class="btn btn--small" type="button" onclick={() => openRestart(row)} disabled={busy || row.status === 'unreadable'} title={row.status === 'unreadable' ? `Its saved answers cannot be read, so they cannot be restarted. Correct or delete the damaged item in the ${dataService.sharePointListTitles().responses} list.` : undefined}>Restart...</button>
-              </li>
-            {/each}
-          </ul>
-        {/if}
-        {#if card.codes.length}<p class="card__note muted small">QR codes: {counts(card.codes)}</p>{/if}
+        <!-- (Phase 12, F-08: the charts first; with sixty people the list ran 5,000 px above them.) -->
         <details class="tally" open={openResults.includes(session.id)} ontoggle={(event) => { const isOpen = (event.currentTarget as HTMLDetailsElement).open; openResults = isOpen ? [...new Set([...openResults, session.id])] : openResults.filter((id) => id !== session.id); }}>
           <summary>Live results · {answersFrom(answerCounts(card.results.sections.flatMap((section) => section.questions)))}</summary>
           {#if openResults.includes(session.id)}
@@ -266,6 +252,21 @@
             </div>
           {/if}
         </details>
+        {#if card.tracks.length === 0}<p class="card__note muted">No iPads have joined yet.</p>
+        {:else}
+          <ul class="rows rows--flat">
+            {#each card.tracks as row (row.track.id)}
+              {@const notes = `${row.answered} of ${row.total} questions answered · joined ${row.track.createdAt ? new Date(row.track.createdAt).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}) : ''} via ${row.track.joinedVia === 'qr' ? 'QR code' : 'manual select'}${row.track.resumeCount ? ` · resumed ${row.track.resumeCount}×` : ''}${row.track.restartedAt ? ` · restarted ${new Date(row.track.restartedAt).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}` : ''}`}
+              <li class="row">
+                <div class="row__main"><span class="row__title">{row.name}</span><span class="muted">{notes}</span></div>
+                <span class={statusClass(row.status)}>{statusText(row.status)}</span>
+                {#if canRemoveVisit(row, session)}<button class="btn btn--small" type="button" onclick={() => void removeVisit(row)} disabled={busy}>Remove...</button>{/if}
+                <button class="btn btn--small" type="button" onclick={() => openRestart(row)} disabled={busy || row.status === 'unreadable'} title={row.status === 'unreadable' ? `Its saved answers cannot be read, so they cannot be restarted. Correct or delete the damaged item in the ${dataService.sharePointListTitles().responses} list.` : undefined}>Restart...</button>
+              </li>
+            {/each}
+          </ul>
+        {/if}
+        {#if card.codes.length}<p class="card__note muted small">QR codes: {counts(card.codes)}</p>{/if}
       </article>
     {/each}
   {/if}

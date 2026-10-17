@@ -52,3 +52,13 @@ describe('F-05: a tile picture sits on the logo plate, whatever is behind the ti
     assert.match(rule, /border-radius:/);
   });
 });
+
+describe('F-08: a Results card shows its Live results before the list of people', () => {
+  it('the tally comes before the rows in each session card', async () => {
+    const { readFileSync } = await import('node:fs');
+    const source = readFileSync(new URL('../migration/src/admin/AdminResults.svelte', import.meta.url), 'utf8');
+    const card = source.slice(source.indexOf('<article class="card"'), source.indexOf('</article>'));
+    assert.ok(card.indexOf('<details class="tally"') > 0, 'the card has its Live results');
+    assert.ok(card.indexOf('<details class="tally"') < card.indexOf('<ul class="rows'), 'Live results come before the people');
+  });
+});
