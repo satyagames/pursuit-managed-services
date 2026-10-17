@@ -166,3 +166,14 @@ describe('F-15: Content: an activity\'s buttons fit one line on a laptop, Delete
     assert.match(css, /\.activity__actions \.btn--danger\s*\{\s*margin-left:\s*auto;/);
   });
 });
+
+describe('F-24: the pages\' heads: no search indexing, and no request for /favicon.ico', () => {
+  it('every shell declares an empty inline icon; the participant page also says noindex', async () => {
+    const { readFileSync } = await import('node:fs');
+    for (const shell of ['index.html', 'admin.html', 'setup.html']) {
+      const html = readFileSync(new URL(`../migration/${shell}`, import.meta.url), 'utf8');
+      assert.match(html, /<link rel="icon" href="data:," \/>/, shell);
+      assert.match(html, /<meta name="robots" content="noindex" \/>/, shell);
+    }
+  });
+});
