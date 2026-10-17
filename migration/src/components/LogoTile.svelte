@@ -98,9 +98,13 @@
 
   .logo {
     display: block;
+    box-sizing: border-box;
     max-width: 100%;
     max-height: calc(var(--tile-h) - 2rem);
+    padding: 0.5rem 0.75rem;
     object-fit: contain;
+    background: var(--plate);
+    border-radius: calc(var(--tile-radius) * 0.6);
   }
 
   .text,

@@ -41,3 +41,14 @@ describe('F-04: the wall says no more than a count when answers could not be rea
     assert.ok(unreadableNotice([{ id: 'v-1' }]).endsWith(UNREADABLE_FIX), 'the admin view still says what to do');
   });
 });
+
+describe('F-05: a tile picture sits on the logo plate, whatever is behind the tile', () => {
+  it('LogoTile draws the picture on var(--plate), with room around it', async () => {
+    const { readFileSync } = await import('node:fs');
+    const source = readFileSync(new URL('../migration/src/components/LogoTile.svelte', import.meta.url), 'utf8');
+    const rule = /\.logo\s*\{([^}]*)\}/.exec(source)?.[1] ?? '';
+    assert.match(rule, /background:\s*var\(--plate\)/, 'the picture has the plate behind it');
+    assert.match(rule, /padding:/, 'and room around it on the plate');
+    assert.match(rule, /border-radius:/);
+  });
+});
