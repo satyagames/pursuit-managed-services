@@ -107,6 +107,11 @@
     border-radius: calc(var(--tile-radius) * 0.6);
   }
 
+  .tile[data-state='correct'] .logo,
+  .tile[data-state='incorrect'] .logo {
+    transform: translateY(-0.9rem) scale(0.8);
+  }
+
   .text,
   .tile-words {
     overflow-wrap: anywhere;

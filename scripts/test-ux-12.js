@@ -177,3 +177,11 @@ describe('F-24: the pages\' heads: no search indexing, and no request for /favic
     }
   });
 });
+
+describe('F-05 follow-up: the verdict on a picture tile does not cover the picture', () => {
+  it('a right or wrong tile makes room for its verdict under the picture', async () => {
+    const { readFileSync } = await import('node:fs');
+    const source = readFileSync(new URL('../migration/src/components/LogoTile.svelte', import.meta.url), 'utf8');
+    assert.match(source, /\.tile\[data-state='correct'\] \.logo,\s*\.tile\[data-state='incorrect'\] \.logo\s*\{[^}]*transform:\s*translateY\(-0\.9rem\) scale\(0\.8\)/, 'moved up and smaller, without changing any size: no tile moves');
+  });
+});
