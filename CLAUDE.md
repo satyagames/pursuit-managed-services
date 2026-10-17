@@ -93,6 +93,6 @@ On the Windows checkout the system Node is 20: run Node 22 from `.local/node22/n
 - `npm test` red after a move or rename: a test that reads source by path (`scripts/test-*.js`), a request baseline, or a document
   (`npm run docs:check`). `node --test scripts/<file>.js` runs one suite.
 - A page "cannot start": `PMS-CFG-*` is the settings file, `PMS-LST-*` the lists' version ([docs/SHAREPOINT.md](docs/SHAREPOINT.md)).
-- A browser spec fails: check the known Windows faults and the "slugs" flake in [docs/TESTING.md](docs/TESTING.md) first; Firefox does not start here.
+- A browser spec fails: check the known Windows faults and the two known flakes in [docs/TESTING.md](docs/TESTING.md) first; Firefox does not start here.
 - A bundle budget fails: `npm run analyze:bundle` lists what each page carries, by folder.
 - A count looks wrong: `npm run oracle -- --seeds 500` recounts with independent rules; `lib/results/results-tally.js` is the shared tally.
