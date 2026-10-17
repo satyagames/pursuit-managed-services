@@ -276,6 +276,7 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
     assert.deepEqual(utilityClasses(built.participant.html), [...PHASE_13.participantUtilities], "the participant page's Tailwind rules are the ones it had");
     assert.ok(admin <= PHASE_13.adminAllowance, `the admin page is ${admin} B larger than where 12 left it`);
     assert.ok(built.admin.htmlGzip < BUDGET.admin, `the admin page is under its ${bytes(BUDGET.admin)} budget`);
+    assert.ok(PHASE_13.adminAfter - PHASE_13.adminBefore <= PHASE_13.adminAllowance, 'the admin page, as measured when 13 ended (562,606 B in this checkout)');
   });
 
   it('the Tailwind rules check can fail: a rule added to the participant page, or one taken away, is found', () => {
