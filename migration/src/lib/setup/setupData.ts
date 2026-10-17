@@ -1,3 +1,6 @@
+// The Setup page's door to the data layer and to the Setup-only modules (the plan and Create, Mark the site as ready, the admins,
+// the seed-file import, the sample clients and the self-test). SetupApp.svelte (and the dev-only styleguide) call these and nothing else. Setup is the only page
+// that creates lists or columns on SharePoint, and only ever adds (lib/setup/provision.js).
 import * as dataService from '../data/dataService.js';
 import { SAMPLE_PICTURE_DATA } from '../../setup/sample-picture-data.js';
 import { seedSampleClients as seedWithPictures } from './sample-seed.js';

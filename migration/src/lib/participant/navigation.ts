@@ -1,3 +1,7 @@
+// The participant page's moves between screens (Welcome, the hub, an activity, the finale), through svelte-spa-router's hash routes.
+// It holds, for the next screen only, what the screen before already knows (the visit, its questions and saved answers), so the next
+// screen need not read it again. Reads and writes nothing on the server and nothing in browser storage. Screens call navigateTo()
+// and never change location.hash themselves.
 import { push, replace } from 'svelte-spa-router';
 import { participant } from './session.svelte.js';
 

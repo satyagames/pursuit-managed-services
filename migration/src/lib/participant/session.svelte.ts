@@ -1,3 +1,6 @@
+// Who this participant page is for: the visit (track) and session it holds, as Svelte state the screens read. setTrack() is called
+// by App.svelte with what the boot sequence found and by Welcome.svelte when a visit begins or a QR code is claimed; clearTrack() when
+// a visit ends or is removed. It keeps nothing between page loads and sends no request: reading and saving are participantData.ts's.
 export type ParticipantTrack = {
   id: string;
   sessionId: string;

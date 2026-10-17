@@ -1,4 +1,5 @@
-// Since Phase 10c-1 this file belongs to the new build alone (migration/): the legacy app that shared it is kept in the tag legacy-final.
+// Where a picture's address points: relative to the page's own folder, or to a copy the page carries inline (globalThis.CEC_ASSETS).
+// Reads and writes nothing. It was public/js/assets.js until Phase 14.
 const documentBase = () => globalThis.document?.baseURI ?? globalThis.location?.href ?? 'https://cec.invalid/';
 
 export const assetLocation = (path) => new URL(path, new URL('./', documentBase())).href;

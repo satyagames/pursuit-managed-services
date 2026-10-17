@@ -1,4 +1,4 @@
-/* Since Phase 10c-1 this file belongs to the new build alone (migration/): the legacy app that shared it is kept in the tag legacy-final. */
+/* The motion sheet of the legacy app (public/css/vfx.css until Phase 14), kept as it was: restyle by overriding it, not here. */
 /* Motion and the sound switch for the client screens. Loaded after app.js's stylesheet
    (app.css); it only adds transitions and animation, never layout. Behaviour lives in
    js/vfx.js and js/sfx.js. Colors come from the brand custom properties. */

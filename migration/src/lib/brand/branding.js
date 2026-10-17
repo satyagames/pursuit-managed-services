@@ -1,7 +1,6 @@
-// Since Phase 10c-1 this file belongs to the new build alone (migration/): the legacy app that shared it is kept in the tag legacy-final.
 // Per-client branding, applied once at the page root so no screen has to do it.
 //
-// app.js calls loadBrand() + applyBrand() whenever a route renders. That sets these
+// The participant page (lib/participant/experience.svelte.ts) calls applyBrand(), and the Live display loadBrand(). That sets these
 // custom properties on <html>:
 //
 //   --brand-primary, --brand-secondary   colors
@@ -15,7 +14,7 @@
 // The client's record is what the admin edits, and it is the whole answer for that
 // client: a logo the admin cleared stays cleared. When there is no such client the
 // built-in default brand below is used. (Until Phase 10c-2a a missing client fell back to
-// the legacy look's one item, the ThemeConfig list; nothing reads that list now.)
+// the legacy look's one item, the ThemeConfig list; nothing reads that list now.) It was public/js/branding.js until Phase 14.
 import * as dataService from '../data/dataService.js';
 import { embeddedAssetUrl } from './assets.js';
 

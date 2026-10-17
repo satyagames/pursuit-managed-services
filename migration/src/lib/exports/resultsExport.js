@@ -1,4 +1,5 @@
-// Since Phase 10c-1 this file belongs to the new build alone (migration/): the legacy app that shared it is kept in the tag legacy-final.
+// The Live display's files (the summary pack as PDF and PowerPoint, and Summary by activity as CSV). The admin page's alone: the bundle test
+// keeps it out of the participant page. It was public/js/resultsExport.js until Phase 14.
 /**
  * resultsExport.js: turns a session's aggregated results (the tree that
  * migration/src/lib/results/session-results.js readSessionResults() returns) into files for the facilitator.

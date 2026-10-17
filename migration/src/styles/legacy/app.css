@@ -1,6 +1,6 @@
-/* Since Phase 10c-1 this file belongs to the new build alone (migration/): the legacy app that shared it is kept in the tag legacy-final. */
+/* The participant sheet of the legacy app (public/css/app.css until Phase 14), kept as it was: restyle by overriding it in src/app.css, not here. */
 /* Functional styling only: layout, touch-sized controls, brand colors via
-   custom properties that js/branding.js sets per client. */
+   custom properties that lib/brand/branding.js sets per client. */
 
 :root {
   --brand-primary: #0f172a;
