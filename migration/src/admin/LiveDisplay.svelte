@@ -8,7 +8,7 @@
   import { getSessionResults, type SessionResults } from '../lib/adminData.js';
   import { masterColours } from '../lib/legacy-colours.js';
   import { withoutRetiredLogo } from '../lib/retired-logos.js';
-  import { UNREADABLE_FIX, namesByVisit, unreadableNotice } from '../lib/unreadable.js';
+  import { namesByVisit, unreadableNotice, wallUnreadableNotice } from '../lib/unreadable.js';
   import { loadLiveStructure, readLive, type LiveRead, type LiveStructure } from '../lib/live-session.js';
   import { withStoredColours } from '../lib/master-brand.js';
   import { createPageWatcher, type PageWatcher } from '../lib/page-watch.js';
@@ -121,10 +121,7 @@
   // Who, if some saved answers could not be read: by the name on their visit, else the visit id. On the wall, how many and nothing else.
   const unreadableText = $derived.by(() => {
     if (!results || !(results.unreadable ?? []).length) return '';
-    if (wall) {
-      const count = results.unreadable?.length ?? 0;
-      return `${count} ${count === 1 ? "participant's" : "participants'"} answers could not be read and are not counted. ${UNREADABLE_FIX}`;
-    }
+    if (wall) return wallUnreadableNotice(results.unreadable?.length ?? 0);
     return unreadableNotice(results.unreadable, namesByVisit(results.tracks.map((track) => ({ id: track.id, name: track.participantName ?? '' }))));
   });
   const at = $derived.by(() => {
@@ -515,7 +512,7 @@
 
   {#if phase === 'display'}
     {#if message}<p class="live__status" role="status">{message}</p>{/if}
-    {#if unreadableText}<p class="notice live__unreadable" role="status" data-testid="unreadable-notice"><strong>{unreadableText}</strong></p>{/if}
+    {#if unreadableText}<p class="notice live__unreadable" class:live__unreadable--wall={wall} role="status" data-testid="unreadable-notice"><strong>{unreadableText}</strong></p>{/if}
     {#if exportMessage && !presenting}<p class="live__status" role="status">{exportMessage}</p>{/if}
     {#if !wall}
       <div class="live__names">
@@ -707,6 +704,15 @@
   }
 
   /* ---- Full screen: the display covers the window; the type is large; ONE question at a time, sized to fit ----------------------- */
+
+  .live__unreadable--wall {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font-size: 0.875em;
+  }
 
   .live--present {
     --live-gap: calc(0.9rem * var(--chart-scale, 1));

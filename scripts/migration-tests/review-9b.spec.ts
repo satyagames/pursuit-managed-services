@@ -115,6 +115,10 @@ test('Results, the Live display, the exports and the leader report show the rest
   await expect(page.locator('.live__meta')).toContainText('answers from 2 iPads');
   const live = await download(page, 'Export CSV');
   expect(live.bytes.toString('utf8')).toContain('Great Western Tea co.');
+  // The wall (a projector, in front of the client) says how many, and nothing for the admin to do (Phase 12, F-04).
+  await page.goto(`${pageUrl('admin.html')}#live-display/${session.id}/wall`);
+  await expect(page.getByTestId('unreadable-notice')).toHaveText("1 participant's answers could not be counted.");
+  await page.goto(`${pageUrl('admin.html')}#live-display/${session.id}`);
 
   // Mended in the Responses list: Refresh, and the notice is gone and the person is back.
   damage(JSON.stringify([{ questionId: 'q-trivia-1', answer: 'o-trivia-1-a', firstAnswer: 'o-trivia-1-a', attempts: 1, correct: null, answeredAt: '2026-10-11T12:00:00.000Z' }]));

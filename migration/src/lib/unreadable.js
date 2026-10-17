@@ -38,3 +38,10 @@ export function namesByVisit(people) {
     return id && person.name ? [[String(id), person.name]] : [];
   }));
 }
+
+/**
+ * What the wall says instead (Phase 12, F-04): how many, and nothing for the admin to do. The wall is on a projector in front of the client:
+ * the list's title and "correct or delete the damaged item" are for the facilitator's own screen (unreadableNotice).
+ * @param {number} count
+ */
+export const wallUnreadableNotice = (count) => `${count} ${count === 1 ? "participant's" : "participants'"} answers could not be counted.`;

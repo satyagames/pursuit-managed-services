@@ -29,3 +29,15 @@ describe('F-02: the PIN screen says why it cannot unlock', () => {
     assert.match(unlockFailureText(Object.assign(new Error('SharePoint (500): boom'), { status: 500 }), { isUnreachable: unreachable, adminsList: 'PMSAdminUsers' }), /could not check the PIN: SharePoint \(500\): boom/);
   });
 });
+
+describe('F-04: the wall says no more than a count when answers could not be read', () => {
+  it('no instruction for the admin and no list title on the projector; the admin view keeps both', async () => {
+    const { wallUnreadableNotice, unreadableNotice, UNREADABLE_FIX } = await import('../migration/src/lib/unreadable.js');
+    assert.equal(wallUnreadableNotice(1), "1 participant's answers could not be counted.");
+    assert.equal(wallUnreadableNotice(3), "3 participants' answers could not be counted.");
+    for (const count of [1, 3]) {
+      assert.doesNotMatch(wallUnreadableNotice(count), /PMS|list|delete|reload/i);
+    }
+    assert.ok(unreadableNotice([{ id: 'v-1' }]).endsWith(UNREADABLE_FIX), 'the admin view still says what to do');
+  });
+});
