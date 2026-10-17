@@ -352,7 +352,7 @@ test("the client's theme is on the page before any colour is painted, and the de
     requestAnimationFrame(look);
   });
   await page.goto(pageUrl('index.html'));
-  await expect(page.getByText('Restoring your session...')).toBeVisible();
+  await expect(page.getByText('Loading...', { exact: true })).toBeVisible();
   const waiting = await page.evaluate(() => {
     const shell = getComputedStyle(document.querySelector('.shell')!);
     return { pending: document.documentElement.hasAttribute('data-theme-pending'), image: shell.backgroundImage, colour: shell.backgroundColor, body: getComputedStyle(document.body).backgroundColor };

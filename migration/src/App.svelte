@@ -436,7 +436,7 @@
       <button class="button button-primary" type="button" onclick={() => void restoreParticipant()}>Try again</button>
     </section>
   {:else if !initialized}
-    <p class="loading" role="status">Restoring your session...</p>
+    <p class="loading" role="status">Loading...</p>
   {:else if previewId}
     <PreviewRoot />
   {:else if needsLive && experience.status !== 'live'}

@@ -95,3 +95,12 @@ describe('Fonts: Open Sans stays embedded, and a measured fallback takes its roo
     }
   });
 });
+
+describe('F-10: the participant page says "Loading..." while it starts, not "Restoring your session..."', () => {
+  it('a first visit has nothing to restore', async () => {
+    const { readFileSync } = await import('node:fs');
+    const app = readFileSync(new URL('../migration/src/App.svelte', import.meta.url), 'utf8');
+    assert.match(app, /<p class="loading" role="status">Loading\.\.\.<\/p>/);
+    assert.doesNotMatch(app, /Restoring your session/);
+  });
+});
