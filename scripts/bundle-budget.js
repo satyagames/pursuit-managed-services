@@ -268,3 +268,15 @@ export function checkBudgets({ participantGzip, adminGzip, participantHtml, part
   }
   return broken;
 }
+
+/**
+ * Phase 14 changed the structure of the code and the documents, and no page: the participant and the admin page are byte for byte the pages
+ * Phase 13 left (pms-757be5c's, as the baseline package pms-1ab63bd measured them), and neither may grow in this phase. The next phase starts
+ * from participantAfter and adminAfter.
+ */
+export const PHASE_14 = Object.freeze({
+  participantBefore: PHASE_13.participantAfter, adminBefore: PHASE_13.adminAfter, participantAllowance: 0, adminAllowance: 0,
+  participantSha256: PHASE_13.participantSha256,
+  adminSha256: '04e64562f598981d3ee6dc1eb846395e1cbf0432c9df69c0cd755023fb230c1b',
+  participantAfter: PHASE_13.participantAfter, adminAfter: PHASE_13.adminAfter,
+});

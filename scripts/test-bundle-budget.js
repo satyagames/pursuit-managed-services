@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
 import { PAGES, ROOT, analyzePage } from './analyze-bundle.js';
-import { BUDGET, FORBIDDEN, PHASE_8, PHASE_9A, PHASE_9B, PHASE_10B, PHASE_10C1, PHASE_10C2A, PHASE_10C2B, PHASE_10C3, PHASE_10F, PHASE_10G, PHASE_10H, PHASE_10I, PHASE_10J, PHASE_11A, PHASE_11A3, PHASE_11B, PHASE_12, PHASE_13, checkBudgets, utilityClasses } from './bundle-budget.js';
+import { BUDGET, FORBIDDEN, PHASE_8, PHASE_9A, PHASE_9B, PHASE_10B, PHASE_10C1, PHASE_10C2A, PHASE_10C2B, PHASE_10C3, PHASE_10F, PHASE_10G, PHASE_10H, PHASE_10I, PHASE_10J, PHASE_11A, PHASE_11A3, PHASE_11B, PHASE_12, PHASE_13, PHASE_14, checkBudgets, utilityClasses } from './bundle-budget.js';
 import { SAMPLE_PICTURE_NAMES } from '../migration/src/lib/setup/sample-pictures.js';
 import { pageProblems } from './release-proofs.js';
 
@@ -277,6 +277,21 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
     assert.ok(admin <= PHASE_13.adminAllowance, `the admin page is ${admin} B larger than where 12 left it`);
     assert.ok(built.admin.htmlGzip < BUDGET.admin, `the admin page is under its ${bytes(BUDGET.admin)} budget`);
     assert.ok(PHASE_13.adminAfter - PHASE_13.adminBefore <= PHASE_13.adminAllowance, 'the admin page, as measured when 13 ended (562,606 B in this checkout)');
+  });
+
+  it('Phase 14 (structure and documents only) left the participant and the admin page byte for byte as Phase 13 left them', (t) => {
+    assert.equal(PHASE_14.participantBefore, PHASE_13.participantAfter, 'Phase 14 is measured from where Phase 13 ended');
+    assert.equal(PHASE_14.adminBefore, PHASE_13.adminAfter);
+    assert.equal(PHASE_14.participantAllowance, 0);
+    assert.equal(PHASE_14.adminAllowance, 0);
+    const participant = createHash('sha256').update(built.participant.html).digest('hex');
+    const admin = createHash('sha256').update(built.admin.html).digest('hex');
+    t.diagnostic(`participant ${participant.slice(0, 8)}, admin ${admin.slice(0, 8)}`);
+    console.log(`  Phase 14: the participant page is ${participant === PHASE_14.participantSha256 ? 'byte for byte' : 'NOT'} the page 13 left; the admin page is ${admin === PHASE_14.adminSha256 ? 'byte for byte' : 'NOT'} the page 13 left`);
+    assert.equal(participant, PHASE_14.participantSha256, 'the participant page is the one Phase 13 left, byte for byte');
+    assert.equal(admin, PHASE_14.adminSha256, 'the admin page is the one Phase 13 left, byte for byte');
+    assert.equal(PHASE_14.participantAfter, PHASE_13.participantAfter);
+    assert.equal(PHASE_14.adminAfter, PHASE_13.adminAfter);
   });
 
   it('the Tailwind rules check can fail: a rule added to the participant page, or one taken away, is found', () => {
