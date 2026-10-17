@@ -188,6 +188,19 @@ export const PHASE_11B = Object.freeze({
 });
 
 /**
+ * Phase 12, Part 2 (the fixes approved from UX-REVIEW.md) changes both pages a little: the participant page gets the measured fallback face for Open Sans
+ * (Open Sans stays embedded), a chosen answer's ring and badge, a plate behind tile pictures, the phone's bar, a switched-off button's edge, "Loading...",
+ * clearing confetti when an activity opens and two lines in its head; the admin page the PIN screen's words, the wall's notice, Results' order, the chart
+ * tags and Content's columns. Each page may grow by at most its allowance over where 11b left it, and the participant page keeps 11a's Tailwind rules.
+ * `participantAfter` and `adminAfter` are the pages when the phase ended (this checkout, gzip -9); the next phase starts from them.
+ */
+export const PHASE_12 = Object.freeze({
+  participantBefore: PHASE_11B.participantAfter, adminBefore: PHASE_11B.adminAfter, participantAllowance: 600, adminAllowance: 1_000,
+  participantAfter: 156_998, adminAfter: 559_085,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
+
+/**
  * The class names of the Tailwind utility rules in a built page (its `@layer utilities` block), sorted, each once.
  * @param {string} html
  */
