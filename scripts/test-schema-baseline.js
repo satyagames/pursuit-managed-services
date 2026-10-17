@@ -21,7 +21,7 @@ describe('the snapshot is the schema the tree holds, written by hand in six plac
   // reads them again out of the commit the snapshot names, and scripts/test-schema.js holds the schema file to the snapshot.)
   it('was read from the tree of the last commit before Phase 10c-2b, and the PROVISIONING.md part of it is still the document', async () => {
     assert.match(snapshot.readFrom, /^ec31ac9 /);
-    assert.deepEqual(provisioningTables(await readFile(path.join(import.meta.dirname, '..', 'PROVISIONING.md'), 'utf8').then((text) => text.replace(/\r\n/g, '\n'))), snapshot.tables['PROVISIONING.md']);
+    assert.deepEqual(provisioningTables(await readFile(path.join(import.meta.dirname, '..', 'docs', 'history', 'PROVISIONING.md'), 'utf8').then((text) => text.replace(/\r\n/g, '\n'))), snapshot.tables['PROVISIONING.md']);
   });
 
   it('its one description is made from those tables and from nothing else', () => {

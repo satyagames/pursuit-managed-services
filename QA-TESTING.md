@@ -323,7 +323,7 @@ The login is a mock check against `adminusers.json`. Sign-in is by PIN only (no 
 - [ ] Lock returns to the PIN screen; the browser Back button doesn't reveal the admin.
 - [ ] **Lockout: there is none.** Enter a wrong PIN 10+ times, then the right one. **Expect (current
       behaviour):** it still signs in; there is no attempt counter, delay or lockout, and no server-side check
-      (`auth.js` says so on purpose: the mock login is not a security boundary). If the room needs
+      (`lib/admin/admin-pin.js`, once `auth.js`, says so on purpose: the mock login is not a security boundary). If the room needs
       lockout, that comes with the Azure AD sign-in at the CEC deployment; if this test ever *does* lock
       you out, the behaviour changed and this section needs updating.
 - [ ] Reload `/admin.html`: **Expect** the PIN screen again (the sign-in isn't remembered).
