@@ -56,7 +56,8 @@
   .pill-button:disabled {
     color: var(--on-disabled);
     background: var(--disabled);
-    border-color: color-mix(in srgb, var(--on-disabled) 45%, transparent);
+    border-color: color-mix(in srgb, var(--on-disabled) 70%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--on-disabled) 70%, transparent);
     cursor: not-allowed;
   }
 

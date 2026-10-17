@@ -137,3 +137,13 @@ describe('F-13: the phone\'s sticky Next/Submit bar lets a background picture sh
     assert.match(sticky, /backdrop-filter:\s*blur\(/);
   });
 });
+
+describe('F-17: a switched-off Next or Submit can still be seen over a background picture', () => {
+  it('PillButton: a 2px edge (its border and an inset line) at 70% of its words colour', async () => {
+    const { readFileSync } = await import('node:fs');
+    const source = readFileSync(new URL('../migration/src/components/PillButton.svelte', import.meta.url), 'utf8');
+    const disabled = /\.pill-button:disabled\s*\{([^}]*)\}/.exec(source)?.[1] ?? '';
+    assert.match(disabled, /border-color:\s*color-mix\(in srgb, var\(--on-disabled\) 70%, transparent\)/);
+    assert.match(disabled, /box-shadow:\s*inset 0 0 0 1px color-mix\(in srgb, var\(--on-disabled\) 70%, transparent\)/, 'a 2px edge, without changing the size');
+  });
+});

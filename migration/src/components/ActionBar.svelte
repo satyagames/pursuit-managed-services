@@ -24,7 +24,7 @@
     padding-top: clamp(1.25rem, 4vw, 2rem);
   }
 
-  /* Phones: pinned to the bottom, over a light blurred fade of the page colour (so a background picture shows through: Phase 12, F-13), clear of the home indicator. */
+  /* Phones: pinned to the bottom, over a fade of the page colour, clear of the home indicator. */
   @media (max-width: 599px) {
     .pms-actions[data-sticky='true'] {
       position: sticky;
