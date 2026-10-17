@@ -1236,6 +1236,34 @@ the real site, printed, or saved by a browser on the admin page (see RELEASE-11B
 170. **A session with one iPad.** *(Still to see.)* A session where one iPad answered one question. **Expect** "1 answer from 1 iPad" on the Live display's header, on its Results
     card and in the header of Export PDF and Export PPT (it said "1 answers from 1 iPads").
 
+### Phase 13 (the Results files redesigned for leadership, EXPORT-DESIGN.md): not verified on the real site, in PowerPoint, in Excel, on a projector or on paper
+
+Everything below was made in node with the same model, layout and writers the admin page uses, read back with pdf.js (the PDFs), from the slides' and notes' XML (the
+PowerPoint) and with a CSV reader (the summary file), and rendered with pdf.js in Playwright's Chromium (`npm run look:exports`); the Results card's buttons and the Live
+display's three exports were pressed in Chromium by the browser specs. Items 167 to 170 still stand, with the words of these items where they differ.
+
+171. **The summary pack from Kroger's session.** *(Still to see.)* Kroger's session of 16 Oct: Results → **Live display** → **Export PDF** and **Export PPT**. **Expect** page 1
+    to say "34 answers from 4 iPads" and one sentence for each activity, and to read in two minutes; then each activity's page (or pages), its sentence under its title, a card
+    for each question with its sentence first; a correct answer with a tick and "Correct"; **no participant's name anywhere**; "1 participant's answers could not be counted."
+    on page 1 if an answer item cannot be read. Nothing smaller than 12 point. In the PDF a word in another script prints as one replacement mark (the PowerPoint keeps it).
+172. **The pack in PowerPoint and on a projector.** *(Still to see.)* Open the .pptx in PowerPoint (not a viewer). **Expect** 16:9 slides; every word in a text box that can be
+    edited (no picture of a page); nothing running off a slide, in Open Sans or, on a machine without it, Arial; speaker notes on every slide (each question, its sentence, how
+    many answered and how it was counted). Show it in slide show mode on the room's projector: the words read from the back of the room.
+173. **Summary by activity (CSV) in Excel.** *(Still to see.)* On a Results card, **Summary by activity (CSV)** (and the Live display's **Export CSV**, the same file). Open it
+    in Excel. **Expect** the columns in reading order (Client, Session date, Activity, Question number, Question, Question type, Option, Answers, Share of answers (%), Rank or
+    score, Correct option, Top choice, Answers to this question, Takeaway), accents right, Answers and the share as numbers (right-aligned, no % sign), the date as a date; a
+    PivotTable with Activity in rows and the sum of Answers works; the comments in a last block with no names; a comment that begins with "=" shows as text. **All answers
+    (CSV)** is the old participant file with the same columns.
+174. **The leader report in Edge, Acrobat and black and white.** *(Still to see.)* **Leader report (PDF)** for Kroger and Domino's. **Expect** page 1 "At a glance": the four
+    tiles, one sentence per activity, the hardest and easiest question, "How to read this report", all on page 1; each activity on a page of its own under a grey band with its
+    numbers and sentence; each question one card; "Only four answers." where fewer than five answered; the client's colour on the title band only. Print it in black and white:
+    every chart still reads by its words and ticks.
+175. **One iPad, and an activity switched off.** *(Still to see.)* A session where one iPad answered one question, and a session with an activity switched off that holds no
+    answers. **Expect** "1 answer from 1 iPad" and "Only one answer." in the pack; the switched-off activity in none of the Live display's files (the leader report shows one that
+    holds answers, marked "switched off").
+176. **A reader who was not in the room.** *(Still to see.)* Give page 1 of Kroger's leader report (or page 1 of the pack) to someone who was not in the session and ask what
+    happened. **Expect** them to say it in two minutes; if they cannot, send the file back with what they said.
+
 ### Phase 8 (browsers, devices, accessibility, performance, the unsupported-browser page): not verified on a real device, a real screen reader, or the real SharePoint site
 
 A printable sheet for the real devices, one page each for iPad Safari, iPhone Safari, Safari on a Mac, Chrome, Edge and Firefox, built from these items and from

@@ -14,7 +14,8 @@ this repository changes them. What went, what moved and what could not go yet is
 (`Operate_Experience_Prototype_Mockup.pdf`) and every phase report (`ARCHITECTURE-10.md`, `PMS-IMPLEMENTATION-PLAN.md`, `REVIEW-9A.md`,
 `CLEAN-BREAK-10C1.md`, `DROPS-10C2A.md`, `SCHEMA-10C2B.md`, `PROVISION-10C3.md` and the rest). Nothing reads them to build, test or ship.
 Each is in git history at `7347c72`: `git show 7347c72:Design-Docs/references/<name>`. A mention of one here or in a comment says so.
-The report of Phase 10f is [RELEASE-10F.md](RELEASE-10F.md), at the root; Phase 10g's is [RELEASE-10G.md](RELEASE-10G.md), Phase 10h's [RELEASE-10H.md](RELEASE-10H.md), Phase 10i's [RELEASE-10I.md](RELEASE-10I.md), Phase 10j's [RELEASE-10J.md](RELEASE-10J.md), Phase 11a's [RELEASE-11A.md](RELEASE-11A.md), Phase 11a-2's [RELEASE-11A2.md](RELEASE-11A2.md), Phase 11a-3's [RELEASE-11A3.md](RELEASE-11A3.md) and Phase 11b's [RELEASE-11B.md](RELEASE-11B.md).
+The report of Phase 10f is [RELEASE-10F.md](RELEASE-10F.md), at the root; Phase 10g's is [RELEASE-10G.md](RELEASE-10G.md), Phase 10h's [RELEASE-10H.md](RELEASE-10H.md), Phase 10i's [RELEASE-10I.md](RELEASE-10I.md), Phase 10j's [RELEASE-10J.md](RELEASE-10J.md), Phase 11a's [RELEASE-11A.md](RELEASE-11A.md), Phase 11a-2's [RELEASE-11A2.md](RELEASE-11A2.md), Phase 11a-3's [RELEASE-11A3.md](RELEASE-11A3.md), Phase 11b's [RELEASE-11B.md](RELEASE-11B.md), Phase 12's [RELEASE-12.md](RELEASE-12.md) and Phase 13's [RELEASE-13.md](RELEASE-13.md)
+(the design brief of Phase 13 is [EXPORT-DESIGN.md](EXPORT-DESIGN.md)).
 
 Read `ARCHITECTURE-10.md` (in git history at `7347c72`) for the architecture.
 [ARCHITECTURE.md](ARCHITECTURE.md) describes the legacy app; its entity model and the local API (sections on
@@ -223,6 +224,11 @@ from Phase 11a-2"). The pages of Phase 11a-2, everything after those steps, and 
   chart model and the palette, worked by hand from Harbour, the last page's sentence, contrast on every page). Their fixtures are
   [scripts/results-export-fixtures.js](scripts/results-export-fixtures.js); the palette in node is `scripts/results-palette-node.js`; the contrast of a laid-out page is
   `scripts/print-contrast.js`. `npm run test:report:mutations` has 49 mutations since 11b, 15 of them of the drawing and the words (`scripts/mutation-redirect.mjs`).
+- **Phase 13's suites** (all part of `npm test` and `npm run test:report`; none is a recorded suite): [scripts/test-export-summary.js](scripts/test-export-summary.js) (each
+  activity's takeaway and scoreboard, and "Only N answers.", worked by hand from Vine, Harbour and Kroger), [scripts/test-leader-report-glance.js](scripts/test-leader-report-glance.js)
+  (the leader report's At a glance and activity pages), [scripts/test-results-pack.js](scripts/test-results-pack.js) (the Live display's summary pack, both files read back) and
+  [scripts/test-results-csv.js](scripts/test-results-csv.js) (Summary by activity (CSV)). `npm run look:exports [label]` ([scripts/look-exports.js](scripts/look-exports.js)) writes every
+  export for the fixtures to `test-results/exports/<label>/`, each PDF page as a PNG and a greyscale copy. `npm run test:report:mutations` has 64 mutations since Phase 13.
 - No linter/formatter is configured, and the shared code left in `public/` has no tsconfig — match the
   existing style by hand. (The Svelte app has `migration/tsconfig.json`.)
 
@@ -1409,6 +1415,33 @@ first (`scripts/test-ux-12.js`, part of `npm test`). **Nothing of Part 2 has met
 - **`PHASE_12`** (`scripts/bundle-budget.js`): participant +269 B, admin +340 B gzip over 11b (allowances 600 and 1,000); the next phase starts from its `*After`.
 - F-16 (the staff-mode warning twice) is kept on purpose (Phase 9b, DI-1).
 
+## Rules from Phase 13 (the Results files redesigned for leadership; keep them holding)
+
+The brief is [EXPORT-DESIGN.md](EXPORT-DESIGN.md) (the brand and language guides' rules by page, the page maps, D3 to D5); the report is [RELEASE-13.md](RELEASE-13.md). **None of it
+has been saved from the real site, opened in PowerPoint or Excel from there, projected or printed**: QA-TESTING.md items 171 to 176.
+
+- **Every file opens with the answer, from one model.** `lib/export-summary.js` (`summarizeActivity`, `summarizeSession`, `scoreboardOf`) is each activity's takeaway, made of
+  the chart model's own words and numbers by a rule (the average right first time and the most missed graded question; else the clearest single leader; else a tie, a
+  ranking, the comments), with "Only N answers." under `FEW_ANSWERS` (5, in `results-chart-model.js` with `numberWords`: one to nine in words). It counts nothing; a test holds
+  every number in a takeaway to the question it names. The leader report, the pack and the summary CSV print the same sentences.
+- **The leader report's page 1 is "At a glance" and never needs a second page** (four tiles, one takeaway per activity, the hardest and easiest question, "How to read this
+  report"; a list too long ends "And N more activities, each on its own pages."). Each activity starts a page under a band (title, purpose, "N questions · N answers · N of M
+  finished", takeaway); each question is ONE framed card (`role: 'card'`) that is never split unless it is longer than a page; a graded activity ends with its scoreboard. The
+  client's colour is the title band only (`role: 'title-band'`); rules and marks are the palette's (Deloitte Green), words black and `#53565A`. "Answered by N of M." stays
+  on every card: the oracle reads it. The PDF's language is set.
+- **The Live display's Export PDF and Export PPT are the summary pack** (`public/js/resultsExport.js`): one layout of 16:9 pages (`PACK_PAGE`, 297 x 167 mm) measured in the
+  embedded Open Sans (`layoutReport(report, logo, palette, measure)`), drawn by two writers: the PDF puts each page in the middle of an A4 landscape sheet and embeds Open Sans
+  (`pdfBytes(..., { jsPDF, fonts })`), the PowerPoint is 16:9 native text and shapes with speaker notes (`page.notes`). Page 1 is the summary only; then each live activity.
+  **No word under 12 pt; titles 28, takeaways and headlines 18.** Four cards a page is the MOST (at these sizes taller charts fit two); a row that does not fit goes to the next
+  page; a card too tall for an empty page is laid out compact; nothing but the footer goes below `PACK_BODY_BOTTOM`. No name anywhere; the wall's unreadable notice on page 1.
+- **Summary by activity (CSV)** (`summaryRows`, `resultsToCsv`, `summaryCsvFile`, `downloadCsv(results, { name })`) replaced the eight-column Live display CSV: `SUMMARY_COLUMNS` in
+  reading order, numbers as numbers (whole shares, the screen's), ISO date, the headline once per question, comments last with no name, cells by `csvCell`. The Live display's
+  Export CSV and the Results card's button save the same file. **All answers (CSV)** is the old "Participant answers (CSV)", its `CSV_COLUMNS` unchanged.
+- **`PHASE_13`** (`scripts/bundle-budget.js`): the participant page byte for byte (`participantSha256`, the deployed pms-d19bd14 page's), the admin page at most 12,000 B
+  over 12's. The next phase starts from its `*After`.
+- **On this Windows checkout, write JavaScript with backslashes or newline escapes through a file or the editor**, never through `node -e` or a heredoc: the escapes arrive
+  changed (Phase 9a already said so of `\uXXXX`); `node --check` the file after.
+
 ## Before finishing a change
 
 - If you touched session/track/response flow: run `npm test`.
@@ -1447,7 +1480,7 @@ first (`scripts/test-ux-12.js`, part of `npm test`). **Nothing of Part 2 has met
   `npm run test:bundle` and `npm run test:migration`, and look at the pictures in `test-results/report/`.
 - If you touched `public/js/resultsExport.js`, `lib/results-chart-figure.js`, `lib/results-palette*.{js,ts}` or the report's results section: run `npm run test:report` (it holds the
   one-pager and the report's charts), `npm run test:report:mutations`, `npm run test:charts`, `npm run oracle -- --seeds 500` and `npm run test:bundle`, and LOOK at the pages
-  (`.local/look/` scripts are git-ignored scratch; `scripts/render-pdf-pages.js` renders any PDF), in greyscale too (see "Rules from Phase 11b").
+  (`npm run look:exports` renders every export, in greyscale too; `scripts/render-pdf-pages.js` renders any PDF; see "Rules from Phase 11b" and "Rules from Phase 13").
 - If you touched any markup or CSS a person sees, a focus rule, a heading, a colour or a screen change in `migration/`: run `npm run test:a11y` (axe must find
   nothing: fix it, do not waive it) and `npm run test:devices`, and look at `test-results/a11y/reflow/` and `test-results/devices/`. If you touched an HTML shell,
   `src/unsupported/`, an entry's imports or the Vite configs: run `npm run test:unsupported`, `npm run test:bundle` and look at `test-results/unsupported/`.

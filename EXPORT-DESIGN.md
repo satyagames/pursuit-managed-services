@@ -152,3 +152,17 @@ two names for one column in one header would read worse than one clear name.
   subset has no Light, so headlines are Bold, not the Light p. 36 names; adding Light would put a third embedded face in the admin page and is left
   for VJR. The PowerPoint names Open Sans; a machine without it shows Arial, which is narrower, so the text that fits in Open Sans fits in Arial.
 - **Decision 6 (new, VJR's):** the screen's own sentences that begin with a numeral (difference 4).
+
+## 5. What building it changed (added after items B to F)
+
+- **Four cards a slide is a maximum, not a promise.** At the sizes a projected slide needs (headline 18 pt, nothing under 12 pt), four cards fit a 16:9 page only when their
+  charts are short (Kroger's yes-or-no questions: 2, 4, 3 over three slides, under the activity's title, takeaway and numbers); Vine's four-answer charts fit two a slide. So
+  "one slide per activity, two when it has more than four questions" became "as many slides as the activity needs, four cards on one at most". A card too tall for an empty
+  slide is laid out compact (two lines of headline, one of question, one line a label, one comment; the full words are in the notes and the CSV). An activity whose first
+  card does not fit under its takeaway has a first slide of its title, takeaway and numbers alone: a divider slide.
+- **Under five answers a card says only "Only four answers."** ("4 answered. Only four answers." read twice); at five or more, "12 answered.".
+- **The pack's page 1 says when answers could not be counted**, in the wall's words with no name ("1 participant's answers could not be counted."): without it Kroger's
+  pack would have read as if every answer were there.
+- **The leader report's cover tiles are four, the average first-try score moved** into the hardest-and-easiest block ("Average first-try score: 47%, over 6 participants.").
+- The before and after pictures: `npm run look:exports before` on `8492ce8` (with the scratch scripts it replaced), `npm run look:exports after` on this branch, in
+  `test-results/exports/` (git-ignored).
