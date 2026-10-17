@@ -271,8 +271,8 @@ More in [docs/SHAREPOINT.md](docs/SHAREPOINT.md) and the package's RUNBOOK.md.
 ## Licence and notices
 
 The repository is private (`"private": true`) and carries no licence file: it is for internal Deloitte use. The open-source libraries in the pages are
-listed with their licences in `THIRD-PARTY-NOTICES.txt` of each release package (`npm run build:notices`); Open Sans is under the SIL Open Font
-Licence. Deloitte's brand guidelines and logos in `public/assets/` are Deloitte's, under its brand terms; client logos are supplied for this internal
+listed with their licences in `THIRD-PARTY-NOTICES.txt` of each release package (`npm run build:notices`); Open Sans is under the Apache License 2.0
+(its text is beside the inlined fonts, in `migration/src/assets/fonts/`). Deloitte's brand files and logos in `public/assets/` are Deloitte's, under its brand terms; client logos are supplied for this internal
 app only and must not be redrawn or reused; the dummy pictures of the local site are never committed.
 
 ## Contributing
