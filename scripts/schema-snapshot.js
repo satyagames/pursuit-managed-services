@@ -6,8 +6,8 @@
 //   node scripts/schema-snapshot.js --verify   read the tables again out of the commit the snapshot names, and compare
 //
 // Until Phase 10c-2b the lists and their columns were written out in six places that had to agree (and a seventh, a test's own stub): the data layer's maps
-// (migration/src/lib/data/dataService.js: spLists, spAdded, the four sets of field kinds, spBaseTypes and the strict check built on them), Setup's
-// "check by eye" table (migration/src/lib/setup/setup-checks.js: PROVISIONED), the mocked SharePoint (scripts/sharepoint-fake.js: SCHEMA,
+// (public/js/dataService.js: spLists, spAdded, the four sets of field kinds, spBaseTypes and the strict check built on them), Setup's
+// "check by eye" table (migration/src/lib/setup-checks.js: PROVISIONED), the mocked SharePoint (scripts/sharepoint-fake.js: SCHEMA,
 // CHOICES, ADDED_COLUMNS), the local server's list of files (server/api.js: LISTS), the seed checker (scripts/validate-data.js) and the
 // document a site owner created the lists from (PROVISIONING.md). Part A read every one of them out of the tree, as it stood at the
 // commit named in the snapshot, into scripts/schema-baseline/schema-before-10c2b.json.
@@ -32,7 +32,13 @@ export const SNAPSHOT_FILE = path.join(import.meta.dirname, 'schema-baseline', '
 /** The commit whose tree the snapshot was read from: the last one before Phase 10c-2b changed anything. */
 export const SNAPSHOT_COMMIT = 'ec31ac9 (Phase 10c-2a: proof and report)';
 
-const source = (file, root = ROOT) => readFile(path.join(root, file), 'utf8').then((text) => text.replace(/\r\n/g, '\n'));
+// The snapshot names each file where it was at that commit; Phase 14 moved three of them. A tree that has a file only at its new place is
+// read there (this checkout); an export of the snapshot's commit still has the old place.
+const MOVED_IN_14 = { 'public/js/dataService.js': 'migration/src/lib/data/dataService.js', 'migration/src/lib/setup-checks.js': 'migration/src/lib/setup/setup-checks.js',
+  'PROVISIONING.md': 'docs/history/PROVISIONING.md' };
+const source = (file, root = ROOT) => readFile(path.join(root, file), 'utf8')
+  .catch((error) => (error.code === 'ENOENT' && MOVED_IN_14[file] ? readFile(path.join(root, MOVED_IN_14[file]), 'utf8') : Promise.reject(error)))
+  .then((text) => text.replace(/\r\n/g, '\n'));
 
 /**
  * The value a file gives a `const NAME = <literal>;` declaration, read from the file's text and evaluated on its own (the tables are
@@ -95,7 +101,7 @@ export function provisioningTables(text) {
 /** Every hand-kept table, read from the tree at `root` (this checkout, or an export of a commit). Fails where a table is not there. */
 export async function readTables(root = ROOT) {
   const [service, checks, fake, server, validate, provisioning, stub] = await Promise.all([
-    source('migration/src/lib/data/dataService.js', root), source('migration/src/lib/setup/setup-checks.js', root), source('scripts/sharepoint-fake.js', root),
+    source('public/js/dataService.js', root), source('migration/src/lib/setup-checks.js', root), source('scripts/sharepoint-fake.js', root),
     source('server/api.js', root), source('scripts/validate-data.js', root), source('PROVISIONING.md', root), source('scripts/test-sharepoint.js', root),
   ]);
   const enums = {};
@@ -103,7 +109,7 @@ export async function readTables(root = ROOT) {
     enums[`${record}.${field}`] = values.split(', ').map((value) => value.slice(1, -1));
   }
   return {
-    'migration/src/lib/data/dataService.js': {
+    'public/js/dataService.js': {
       spLists: declared(service, 'spLists'),
       spAdded: declared(service, 'spAdded'),
       spArrays: declared(service, 'spArrays'),
@@ -115,7 +121,7 @@ export async function readTables(root = ROOT) {
       spBaseSpec: /const spBaseSpec = [\s\S]*?\n {2}\};\n/.exec(service)?.[0].replace(/\s+/g, ' ').trim() ?? null,
       library: /const spLibraryIn = .*\$\{settings\?\.listPrefix \?\? ''\}(\w+)`;/.exec(service)?.[1] ?? null,
     },
-    'migration/src/lib/setup/setup-checks.js': { PROVISIONED: declared(checks, 'PROVISIONED'), STRICT: declared(checks, 'STRICT') },
+    'migration/src/lib/setup-checks.js': { PROVISIONED: declared(checks, 'PROVISIONED'), STRICT: declared(checks, 'STRICT') },
     'scripts/sharepoint-fake.js': {
       SCHEMA: declared(fake, 'SCHEMA'), CHOICES: declared(fake, 'CHOICES'), ADDED_COLUMNS: declared(fake, 'ADDED_COLUMNS'),
       OTHER_PREFIX: declared(fake, 'OTHER_PREFIX'),
@@ -150,13 +156,13 @@ const marked = (text) => Object.fromEntries(text.split(' ').filter(Boolean).map(
  * Pure: `tables` is readTables()'s answer.
  */
 export function normalise(tables) {
-  const service = tables['migration/src/lib/data/dataService.js'];
+  const service = tables['public/js/dataService.js'];
   const kindOf = (field) => KIND_OF_SET.find(([set]) => service[set].includes(field))?.[1] ?? 'plain';
   const baseType = (column) => Object.keys(service.spBaseTypes).find((type) => service.spBaseTypes[type].includes(column)) ?? 'Text';
-  const strictColumns = new Set(tables['migration/src/lib/setup/setup-checks.js'].STRICT);
+  const strictColumns = new Set(tables['migration/src/lib/setup-checks.js'].STRICT);
   const lists = {};
   for (const [key, [title, fields]] of Object.entries(service.spLists)) {
-    const byEye = marked(tables['migration/src/lib/setup/setup-checks.js'].PROVISIONED[key] ?? '');
+    const byEye = marked(tables['migration/src/lib/setup-checks.js'].PROVISIONED[key] ?? '');
     const fake = marked(tables['scripts/sharepoint-fake.js'].SCHEMA[title] ?? '');
     const choices = (column) => tables['scripts/sharepoint-fake.js'].CHOICES[`${title}.${column}`] ?? null;
     const columns = [];

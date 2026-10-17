@@ -186,7 +186,7 @@ describe('the comparison can fail', () => {
   const changed = (change) => { const tables = structuredClone(snapshot.tables); change(tables); return tables; };
 
   it('a column renamed in one copy only is a difference', () => {
-    const tables = changed((each) => { each['migration/src/lib/data/dataService.js'].spLists.sections[1].order = 'SortOrder'; });
+    const tables = changed((each) => { each['public/js/dataService.js'].spLists.sections[1].order = 'SortOrder'; });
     assert.notDeepEqual(normalise(tables), snapshot.schema);
     const column = normalise(tables).lists.sections.columns.find((each) => each.field === 'order');
     assert.deepEqual([column.column, column.fake, column.byEye], ['SortOrder', null, null], 'the mock and Setup\'s table do not have it under that name');
@@ -194,12 +194,12 @@ describe('the comparison can fail', () => {
 
   it('a list retitled, a kind changed, an index dropped and a word added are each a difference', () => {
     for (const change of [
-      (each) => { each['migration/src/lib/data/dataService.js'].spLists.tracks[0] = 'Participants'; },
-      (each) => { each['migration/src/lib/data/dataService.js'].spBooleans.push('status'); },
+      (each) => { each['public/js/dataService.js'].spLists.tracks[0] = 'Participants'; },
+      (each) => { each['public/js/dataService.js'].spBooleans.push('status'); },
       (each) => { each['scripts/sharepoint-fake.js'].SCHEMA.Tracks = each['scripts/sharepoint-fake.js'].SCHEMA.Tracks.replace('SessionId:Text!', 'SessionId:Text'); },
       (each) => { each['scripts/sharepoint-fake.js'].CHOICES['Clients.Status'].push('paused'); },
-      (each) => { delete each['migration/src/lib/data/dataService.js'].spAdded.options; },
-      (each) => { each['migration/src/lib/setup/setup-checks.js'].PROVISIONED.options += ' ImageUrl:Text'; },
+      (each) => { delete each['public/js/dataService.js'].spAdded.options; },
+      (each) => { each['migration/src/lib/setup-checks.js'].PROVISIONED.options += ' ImageUrl:Text'; },
     ]) assert.notDeepEqual(normalise(changed(change)), snapshot.schema);
   });
 });
