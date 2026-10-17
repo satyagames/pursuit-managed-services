@@ -172,7 +172,7 @@ test('five iPads scanning the same code at the same moment: one gets in, four se
 
   const outcomes = await Promise.all(pages.map(async (page) => {
     const begin = page.getByRole('button', { name: 'Click here to begin' });
-    const used = page.getByText('This QR code has already been used. Ask your facilitator for a new one, or select your client below.');
+    const used = page.getByText('This QR code has already been used. Ask your facilitator for a new code.');
     await expect(begin.or(used)).toBeVisible();
     return (await begin.isVisible()) ? 'in' : 'used';
   }));

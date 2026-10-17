@@ -727,7 +727,7 @@ describe('races', () => {
 
 describe('five devices scanning the same code at the same moment', () => {
   const claimWrite = (entry) => entry.method === 'MERGE' && entry.list === 'qrtokens';
-  const USED = 'This QR code has already been used. Ask your facilitator for a new one, or select your client below.';
+  const USED = 'This QR code has already been used. Ask your facilitator for a new code.';
 
   /** Five pages of their own, each booting with the same code, all at once. */
   async function race(openPage, tokenId) {
@@ -1192,7 +1192,7 @@ describe('the local adapter and the SharePoint adapter behave the same', () => {
 describe('openQrScan refuses with these codes and these words, and a claim writes this visit, on both adapters', () => {
   const REFUSALS = {
     unknown: ['token-unknown', "This QR code isn't recognized. Ask your facilitator for a new one."],
-    used: ['token-used', 'This QR code has already been used. Ask your facilitator for a new one, or select your client below.'],
+    used: ['token-used', 'This QR code has already been used. Ask your facilitator for a new code.'],
     'no-visitor': ['visitor-token-required', 'This code is not assigned to a visitor. Ask your facilitator for a visitor-specific code.'],
     'visitor-off': ['visitor-missing', 'This visitor code is no longer enabled. Ask your facilitator for help.'],
     'stray-visitor': ['unexpected-visitor', 'This visitor code is not valid for the active session mode.'],

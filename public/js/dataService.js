@@ -1775,7 +1775,7 @@ const localScan = {
 // What a guest reads when a code cannot be used (scripts/test-participant-storage.js writes these out, case by case, on both adapters).
 const scanRefusal = {
   unknown: () => failure('token-unknown', "This QR code isn't recognized. Ask your facilitator for a new one."),
-  used: () => failure('token-used', 'This QR code has already been used. Ask your facilitator for a new one, or select your client below.'),
+  used: () => failure('token-used', 'This QR code has already been used. Ask your facilitator for a new code.'),
   expired: () => failure('token-expired', 'This QR code has expired because the session has ended.'),
   otherSession: () => failure('session-not-active', 'This code is for a different session. Ask your facilitator for the current check-in code.'),
   noVisitor: () => failure('visitor-token-required', 'This code is not assigned to a visitor. Ask your facilitator for a visitor-specific code.'),
