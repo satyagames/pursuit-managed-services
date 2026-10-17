@@ -554,7 +554,7 @@ not by editing them, so that what the tests measure stays where it is.
     `scripts/test-admin-today.js` reads `poll-schedule.js`, `page-watch.ts` and `App.svelte`, so changing the participant page's behaviour fails
     the test until the words are changed too.
   - **Readiness** (`evaluateReadiness()`): blockers are an archived client, no live activity, a question with no answer
-    options (open text has none by design), a single-answer question flagged right/wrong with none right, a session for that date
+    options (open text has none by design; a poll with no answer marked right is never one, Phase 12), a session for that date
     that has ended (Reopen beside it), and a SharePoint list or column that is missing or mis-typed; warnings are no logo or
     hero image, guest mode with no guests, one live activity, a live activity with no questions, another client's session the
     same date, a date that is not today, a missing index, and a schema check that could not run. Go live is disabled while any

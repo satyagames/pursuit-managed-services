@@ -193,12 +193,17 @@ describe('readiness', () => {
     assert.equal(open['no-options'], undefined);
   });
 
-  it('blocks: a graded question with no correct answer', () => {
-    const none = byId(evaluateReadiness(goodInput({ options: [option('o-1', { correct: false }), option('o-2', { correct: false })] })));
-    assert.equal(none['no-correct'].level, 'blocker');
-    assert.match(none['no-correct'].fix, /mark the right answer/);
-    // A poll (no flags at all) and a multi-select are not graded: nothing to fix.
-    assert.equal(byId(evaluateReadiness(goodInput({ options: [option('o-1'), option('o-2')] })))['no-correct'], undefined);
+  it('a poll is never a blocker: a single choice or true-or-false with no answer marked right, whether stored as null (locally) or No (SharePoint) (Phase 12, F-01)', () => {
+    // SharePoint keeps a Yes/No column as No when the app writes null (spEncode: value === true), so a poll Content saved with no answer
+    // marked right reads back with every answer `correct: false`. Content allows that for both types ("Leave Correct off for a poll";
+    // "Optionally mark the correct answer"), and the pager runs it as a poll (isGraded), so there is nothing to fix.
+    for (const type of ['single-select', 'true-false']) {
+      for (const flag of [null, false]) {
+        const checks = byId(evaluateReadiness(goodInput({ questions: [question({ type })], options: [option('o-1', { correct: flag }), option('o-2', { correct: flag })] })));
+        assert.equal(checks['no-correct'], undefined, `${type} with every answer ${flag}`);
+        assert.equal(checks.questions.level, 'pass', `${type} with every answer ${flag}`);
+      }
+    }
     assert.equal(byId(evaluateReadiness(goodInput({ questions: [question({ type: 'multi-select' })], options: [option('o-1', { correct: false }), option('o-2', { correct: false })] })))['no-correct'], undefined);
   });
 

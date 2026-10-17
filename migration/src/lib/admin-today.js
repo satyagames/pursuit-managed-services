@@ -350,17 +350,10 @@ export function evaluateReadiness({ client, date, today, sections, questions, op
       detail: `${list(bare.map((question) => `${quoted(question.prompt)} (${sectionOf(question)})`), 2)} ${bare.length === 1 ? 'has' : 'have'} no answer options.`,
       fix: 'Open the question under Content and add its answers.', go: { label: 'Open Content', tab: 'content' } });
   }
-  // A single-answer question whose options were flagged right or wrong but none right: the pager runs
-  // it as a poll, so nobody can ever get it right.
-  const ungradable = questions.filter((question) => ['single-select', 'true-false'].includes(question.type)
-    && optionsOf(question).some((option) => option.correct === false)
-    && !optionsOf(question).some((option) => option.correct === true));
-  if (ungradable.length > 0) {
-    add({ id: 'no-correct', level: 'blocker', title: 'Correct answers',
-      detail: `${list(ungradable.map((question) => `${quoted(question.prompt)} (${sectionOf(question)})`), 2)} ${ungradable.length === 1 ? 'is' : 'are'} marked as graded but no answer is marked correct.`,
-      fix: 'Open the question under Content and mark the right answer.', go: { label: 'Open Content', tab: 'content' } });
-  }
-  if (questions.length > 0 && bare.length === 0 && ungradable.length === 0) {
+  // (Until Phase 12 a single choice or true-or-false whose answers were all "not correct" was a blocker, "marked as graded but no answer
+  // is marked correct". That is a poll: Content allows it for both types, the pager runs it as one, and on SharePoint every poll reads
+  // back that way, because a Yes/No column keeps No for the null Content writes. So the rule could only ever stop Go live for a poll.)
+  if (questions.length > 0 && bare.length === 0) {
     add({ id: 'questions', level: 'pass', title: 'Questions', detail: `${questions.length} question${questions.length === 1 ? '' : 's'} in the live activities, each with answers and a correct answer where it is graded.` });
   }
 

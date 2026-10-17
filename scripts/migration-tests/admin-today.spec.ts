@@ -304,10 +304,10 @@ test('each readiness blocker disables Go live and says why; each warning shows a
   await expect(check(page, 'no-options')).toContainText('"A question with no answers" (Basics) has no answer options.');
   await expect(page.getByTestId('go-live-why')).toContainText('Fix this first: Answer options.');
 
+  // A single choice with no answer marked right is a poll, and never a blocker (Phase 12, F-01: SharePoint stores it as every answer "No").
   await pickClient(page, 'No Correct Co');
-  await expect(go).toBeDisabled();
-  await expect(check(page, 'no-correct')).toHaveAttribute('data-level', 'blocker');
-  await expect(check(page, 'no-correct')).toContainText('is marked as graded but no answer is marked correct');
+  await expect(check(page, 'no-correct')).toHaveCount(0);
+  await expect(check(page, 'questions')).toHaveAttribute('data-level', 'pass');
 
   // A warning shows, and does not stop Go live.
   await pickClient(page, 'Warn Co');
