@@ -7,6 +7,7 @@ import '../../public/css/admin.css';
 // token read nothing, and the real site's deployer met buttons that could not be seen).
 import './styles/tokens.css';
 import './styles/fonts-admin.css';
+import './styles/fonts-fallback.css';
 import './styles/admin-tokens.css';
 import { mount } from 'svelte';
 import SetupApp from './SetupApp.svelte';

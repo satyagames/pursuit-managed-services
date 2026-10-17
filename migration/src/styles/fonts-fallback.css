@@ -1,0 +1,40 @@
+/*!
+ * A stand-in for Open Sans while its embedded faces are decoded (Phase 12). Open Sans stays embedded in every page (fonts.css,
+ * fonts-admin.css): it is the brand font, and stock iPadOS and Windows do not have it. For the moment before it is ready
+ * (font-display: swap), this face draws Arial at the size and line height Open Sans takes, so nothing moves when Open Sans
+ * arrives. The figures are measured from the TrueType files over the app's own words (scripts/local-site/font-metrics.js),
+ * not guessed; scripts/test-ux-12.js holds them. Nothing is downloaded for it: local() only.
+ */
+
+@font-face {
+  font-family: 'Open Sans Fallback';
+  font-style: normal;
+  font-weight: 100 549;
+  src: local('Arial'), local('ArialMT');
+  size-adjust: 104.46%;
+  ascent-override: 102.32%;
+  descent-override: 28.05%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: 'Open Sans Fallback';
+  font-style: normal;
+  font-weight: 550 900;
+  src: local('Arial Bold'), local('Arial-BoldMT');
+  size-adjust: 104.46%;
+  ascent-override: 102.32%;
+  descent-override: 28.05%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: 'Open Sans Fallback';
+  font-style: italic;
+  font-weight: 550 900;
+  src: local('Arial Bold Italic'), local('Arial-BoldItalicMT');
+  size-adjust: 104.46%;
+  ascent-override: 102.32%;
+  descent-override: 28.05%;
+  line-gap-override: 0%;
+}

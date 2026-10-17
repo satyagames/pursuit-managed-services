@@ -5,6 +5,7 @@ import { mounted } from './lib/support.js';
 import '../../public/css/admin.css';
 import './styles/tokens.css';
 import './styles/fonts-admin.css';
+import './styles/fonts-fallback.css';
 import './styles/admin-tokens.css';
 import './styles/results-tokens.css';
 import AdminApp from './AdminApp.svelte';

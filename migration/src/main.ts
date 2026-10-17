@@ -6,6 +6,7 @@ import '../../public/css/app.css';
 import '../../public/css/vfx.css';
 import App from './App.svelte';
 import './styles/fonts.css';
+import './styles/fonts-fallback.css';
 import './styles/tokens.css';
 import './styles/base.css';
 import './app.css';

@@ -62,3 +62,36 @@ describe('F-08: a Results card shows its Live results before the list of people'
     assert.ok(card.indexOf('<details class="tally"') < card.indexOf('<ul class="rows'), 'Live results come before the people');
   });
 });
+
+describe('Fonts: Open Sans stays embedded, and a measured fallback takes its room until it is decoded', () => {
+  it('every page loads the fallback sheet; the stack is Open Sans, then the fallback; the six embedded faces are unchanged', async () => {
+    const { readFileSync } = await import('node:fs');
+    const read = (file) => readFileSync(new URL(`../migration/src/${file}`, import.meta.url), 'utf8');
+    for (const entry of ['main.ts', 'admin-main.ts', 'setup-main.ts']) assert.match(read(entry), /import '\.\/styles\/fonts-fallback\.css';/, entry);
+    assert.match(read('styles/tokens.css'), /--font-sans:\s*'Open Sans',\s*'Open Sans Fallback',[^;]*sans-serif;/);
+    assert.equal((read('styles/fonts.css').match(/@font-face/g) ?? []).length, 6, 'Open Sans is still embedded, six faces');
+  });
+
+  it('the fallback face is Arial with the overrides measured from the TrueType files (scripts/local-site/font-metrics.js)', async () => {
+    const { existsSync, readFileSync } = await import('node:fs');
+    const css = readFileSync(new URL('../migration/src/styles/fonts-fallback.css', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const faces = css.match(/@font-face\s*\{[^}]*\}/g) ?? [];
+    assert.ok(faces.length >= 2, 'a regular and a bold face');
+    for (const face of faces) {
+      assert.match(face, /font-family:\s*'Open Sans Fallback'/);
+      assert.match(face, /src:\s*local\('Arial/);
+      assert.doesNotMatch(face, /url\(/, 'nothing is downloaded for it');
+    }
+    const arial = ['C:/Windows/Fonts/arial.ttf', '/System/Library/Fonts/Supplemental/Arial.ttf', '/Library/Fonts/Arial.ttf'].find((file) => existsSync(file));
+    const expected = { size: '104.46%', ascent: '102.32%', descent: '28.05%', gap: '0.00%' };
+    if (arial) {
+      const { fallbackFace, readFont } = await import('./local-site/font-metrics.js');
+      const measured = fallbackFace(readFont(new URL('../public/assets/Font/open-sans/OpenSans-Regular.ttf', import.meta.url)), readFont(arial));
+      assert.deepEqual({ size: measured.sizeAdjust, ascent: measured.ascentOverride, descent: measured.descentOverride, gap: measured.lineGapOverride }, expected, 'the recorded figures are still what the files give');
+    }
+    for (const face of faces) {
+      for (const [property, value] of [['size-adjust', expected.size], ['ascent-override', expected.ascent], ['descent-override', expected.descent]]) assert.ok(face.includes(`${property}: ${value};`), `${property}: ${value}`);
+      assert.match(face, /line-gap-override:\s*0%/);
+    }
+  });
+});
