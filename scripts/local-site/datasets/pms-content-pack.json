@@ -1,0 +1,175 @@
+{
+  "about": "VJR's dummy content pack and session flow (17 Oct 2026), word for word from the Phase 12 brief, Appendix A. DUMMY DATA for the local site: the facts and riddles are the author's and must be checked before any real session. Purposes are facilitator guidance and are stored nowhere. 'reveal' is a line the pack wants shown after the answer: no list has a column for it (see UX-REVIEW.md). 'descriptionGiven: false' marks an activity whose description the pack left out; the Template's is used and the review lists it.",
+  "sessionFlow": [
+    { "order": 1, "activity": "Straight talk", "purpose": "Surface top priorities" },
+    { "order": 2, "activity": "Confidence continuum", "purpose": "Gauge confidence in Deloitte" },
+    { "order": 3, "activity": "Open feedback", "purpose": "Capture what matters in the client’s own words" },
+    { "order": 4, "activity": "MCQ", "purpose": "Warm up with a quick quiz" },
+    { "order": 5, "activity": "Guess the brand", "purpose": "Close on a light note" }
+  ],
+  "clients": [
+    {
+      "key": "template",
+      "name": "Template",
+      "activities": [
+        {
+          "key": "straight-talk", "title": "Straight talk", "type": "ranked-voting",
+          "description": "Vote on your top business objectives for transformation",
+          "questions": [
+            { "prompt": "Which objectives are top of mind for you?", "options": ["Reduce cost", "Modernize technology", "Transform process", "Enhance customer experience", "Scale talent model"] }
+          ]
+        },
+        {
+          "key": "confidence", "title": "Confidence continuum", "type": "confidence-continuum",
+          "description": "Rate your confidence in Deloitte’s delivery capabilities",
+          "questions": [
+            { "prompt": "How confident are you that Deloitte has the capabilities to deliver this solution?", "options": ["Not confident", "Moderately confident", "Very confident"] }
+          ]
+        },
+        {
+          "key": "open-feedback", "title": "Open feedback", "type": "open-text-feedback",
+          "description": "Tell us what would make this partnership a success",
+          "questions": [
+            { "prompt": "What is the one thing we must get right for this program to succeed in your eyes?" },
+            { "prompt": "What has held back earlier transformation efforts in your organization?", "followUp": true },
+            { "prompt": "What would you want to see in the first 90 days to feel confident?", "followUp": true },
+            { "prompt": "Where do you want us to challenge your thinking?", "followUp": true }
+          ]
+        },
+        {
+          "key": "mcq", "title": "MCQ", "type": "single-select",
+          "description": "Quick quiz to warm up the room",
+          "questions": [
+            { "prompt": "Where was Deloitte founded?", "options": ["New York", "London", "Chicago", "Toronto"], "correct": "London", "fact": "1845" },
+            { "prompt": "Which delivery approach builds value in small, frequent increments?", "options": ["Waterfall", "Big bang", "Agile", "Fishbone"], "correct": "Agile" },
+            { "prompt": "Which line is part of Deloitte’s brand platform?", "options": ["Progress through precision", "Ideas that move business", "Together makes progress", "Built for tomorrow"], "correct": "Together makes progress" }
+          ]
+        },
+        {
+          "key": "guess-the-brand", "title": "Guess the brand", "type": "single-select",
+          "description": "Name the brand behind the riddle",
+          "questions": [
+            { "prompt": "“When work runs long and plans go astray, ______ helps home-cooked meals find their way.”", "options": ["Kroger", "Safeway", "Publix", "Trader Joe’s"], "correct": "Kroger",
+              "reveal": "“Kroger helps busy households get fresh meals on the table, in store or online.”" }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "kroger",
+      "name": "Kroger",
+      "activities": [
+        {
+          "key": "straight-talk", "title": "Straight talk", "type": "ranked-voting",
+          "description": "Vote on the business objectives that matter most for Kroger’s next phase of transformation",
+          "questions": [
+            { "prompt": "Which objectives are top of mind for you?", "options": [
+              "Reduce cost (supply chain and store operations)",
+              "Modernize technology (data, cloud, and commerce platforms)",
+              "Transform process (fulfillment, merchandising, and forecasting)",
+              "Enhance customer experience (personalization, digital, and in-store)",
+              "Scale talent model (associate productivity and skills)"
+            ] }
+          ]
+        },
+        {
+          "key": "confidence", "title": "Confidence continuum", "type": "confidence-continuum",
+          "description": "Rate your confidence in Deloitte’s ability to deliver for Kroger",
+          "questions": [
+            { "prompt": "How confident are you that Deloitte can deliver a solution that works across stores, digital, and supply chain?", "options": ["Not confident", "Moderately confident", "Very confident"] }
+          ]
+        },
+        {
+          "key": "open-feedback", "title": "Open feedback", "type": "open-text-feedback",
+          "descriptionGiven": false,
+          "questions": [
+            { "prompt": "Where does the gap between the customer experience you want and what you deliver today show up most?" },
+            { "prompt": "What would make an associate say, “this change made my shift easier”?" },
+            { "prompt": "Which past initiative should we learn from, good or bad?" }
+          ]
+        },
+        {
+          "key": "mcq", "title": "MCQ", "type": "single-select",
+          "description": "How well do you know Kroger? Play along with the team.",
+          "questions": [
+            { "prompt": "Where is Kroger headquartered?", "options": ["Columbus, Ohio", "Cincinnati, Ohio", "Cleveland, Ohio", "Chicago, Illinois"], "correct": "Cincinnati, Ohio" },
+            { "prompt": "Which data science and analytics subsidiary is part of Kroger?", "options": ["98.60°", "72.15°", "84.51°", "36.50°"], "correct": "84.51°" },
+            { "prompt": "Which of these is Kroger’s private-label natural and organic brand?", "options": ["Great Value", "Kirkland Signature", "Good & Gather", "Simple Truth"], "correct": "Simple Truth" }
+          ]
+        },
+        {
+          "key": "guess-the-brand", "title": "Guess the brand", "type": "single-select",
+          "descriptionGiven": false,
+          "questions": [
+            { "prompt": "“When work runs long and plans go astray, ______ helps home-cooked meals find their way.”", "options": ["Kroger", "Safeway", "Publix", "Trader Joe’s"], "correct": "Kroger",
+              "reveal": "“Fresh, convenient, and easy for the busy household. That’s the experience we want to help scale.”" }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "dominos",
+      "name": "Domino’s",
+      "activities": [
+        {
+          "key": "straight-talk", "title": "Straight talk", "type": "ranked-voting",
+          "description": "Vote on the business objectives that matter most for Domino’s next phase of growth",
+          "questions": [
+            { "prompt": "Which objectives are top of mind for you?", "options": [
+              "Reduce cost (store economics and supply chain)",
+              "Modernize technology (digital ordering and data platforms)",
+              "Transform process (order-to-delivery speed and accuracy)",
+              "Enhance customer experience (ordering, tracking, and loyalty)",
+              "Scale talent model (franchisee and store team capability)"
+            ] }
+          ]
+        },
+        {
+          "key": "confidence", "title": "Confidence continuum", "type": "confidence-continuum",
+          "description": "Rate your confidence in Deloitte’s ability to deliver for Domino’s",
+          "questions": [
+            { "prompt": "How confident are you that Deloitte can deliver a solution that works for corporate teams and franchisees?", "options": ["Not confident", "Moderately confident", "Very confident"] }
+          ]
+        },
+        {
+          "key": "open-feedback", "title": "Open feedback", "type": "open-text-feedback",
+          "descriptionGiven": false,
+          "questions": [
+            { "prompt": "What would a perfect order look like from tap to doorstep, and where does it break today?" },
+            { "prompt": "What do franchisees need most from a transformation program?" },
+            { "prompt": "Where would you want us to challenge your current approach?" }
+          ]
+        },
+        {
+          "key": "mcq", "title": "MCQ", "type": "single-select",
+          "description": "How well do you know Domino’s? Play along with the team.",
+          "questions": [
+            { "prompt": "Which feature lets customers follow an order from prep to delivery?", "options": ["Order Radar", "Dough Watch", "Pizza Tracker", "Slice Scout"], "correct": "Pizza Tracker" },
+            { "prompt": "Where is Domino’s headquartered?", "options": ["Detroit, Michigan", "Ann Arbor, Michigan", "Chicago, Illinois", "Columbus, Ohio"], "correct": "Ann Arbor, Michigan" },
+            { "prompt": "What is the name of Domino’s loyalty program?", "options": ["Slice Club", "Dough Points", "Crust Rewards", "Piece of the Pie Rewards"], "correct": "Piece of the Pie Rewards" }
+          ]
+        },
+        {
+          "key": "guess-the-brand", "title": "Guess the brand", "type": "single-select",
+          "descriptionGiven": false,
+          "questions": [
+            { "prompt": "“When the game runs late and the fridge is bare, ______ brings a hot pizza right to your chair.”", "options": ["Domino’s", "Pizza Hut", "Papa John’s", "Little Caesars"], "correct": "Domino’s",
+              "reveal": "“Fast, hot, and tracked from tap to doorstep. That’s the order journey we want to help you keep improving.”" }
+          ]
+        }
+      ]
+    }
+  ],
+  "testOnly": {
+    "about": "Not VJR's content: a test-only sixth Kroger activity for the 'tiles' scenario, so the picture-tile layout is seen with VJR's four tile pictures. The hint is plainly dummy.",
+    "client": "kroger",
+    "activity": {
+      "key": "picture-tiles", "title": "Guess the brand: picture tiles", "type": "single-select", "layout": "image-grid",
+      "description": "TEST CONTENT: picture tiles with four Kroger-family brands.",
+      "questions": [
+        { "prompt": "Which of these brands sells meal kits?", "options": ["Home Chef", "Murray’s", "Bloom Haus", "Smart Way"], "correct": "Home Chef",
+          "tiles": { "Home Chef": "tile-home-chef.webp", "Murray’s": "tile-murrays.webp", "Bloom Haus": "tile-bloom-haus.webp", "Smart Way": "tile-smart-way.webp" } }
+      ]
+    }
+  }
+}

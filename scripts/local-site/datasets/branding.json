@@ -1,0 +1,27 @@
+{
+  "about": "Which of VJR's pictures (scripts/local-site/datasets/images/, git-ignored) each client of the local site wears, and its colours and words. The assignment is the Phase 12 brief's proposal (section 3B) as read from the files; VJR corrects it here, in this one file. Colours: Kroger and Domino's are the sample pack's; the Template has the default look. The words (eventTitle, eventSubtitle, welcomeLine) are invented placeholders for the review: the pack gives none.",
+  "clients": {
+    "template": {
+      "id": "c-template", "slug": "template", "primary": "#045BCC", "accent": null, "plate": "light",
+      "copy": { "eventTitle": "Client session", "eventSubtitle": "Five short activities. Your answers shape the conversation.", "welcomeLine": "Welcome.", "logoText": "Template" },
+      "pictures": { "logo": null, "hero": null, "background": "bg-dark-blue-stripes.webp" },
+      "backgroundFocus": { "x": 50, "y": 50 }
+    },
+    "kroger": {
+      "id": "c-kroger", "slug": "kroger", "primary": "#045BCC", "accent": null, "plate": "light",
+      "copy": { "eventTitle": "Kroger and Deloitte", "eventSubtitle": "Five short activities. Your answers shape the conversation.", "welcomeLine": "Welcome to the Kroger session.", "logoText": "Kroger" },
+      "pictures": { "logo": "logo-kroger.webp", "hero": "hero-fresh-sticker.webp", "background": "bg-red-white-gingham.webp" },
+      "backgroundFocus": { "x": 50, "y": 50 }
+    },
+    "dominos": {
+      "id": "c-dominos", "slug": "dominos", "primary": "#0B648F", "accent": "#E21737", "plate": "light",
+      "copy": { "eventTitle": "Domino’s and Deloitte", "eventSubtitle": "Five short activities. Your answers shape the conversation.", "welcomeLine": "Welcome to the Domino’s session.", "logoText": "Domino’s" },
+      "pictures": { "logo": "logo-dominos.webp", "hero": "hero-red-blue-ball.webp", "background": "bg-light-blue-grain.webp" },
+      "backgroundFocus": { "x": 50, "y": 50 }
+    }
+  },
+  "files": [
+    "bg-red-white-gingham.webp", "bg-light-blue-grain.webp", "bg-dark-blue-stripes.webp", "hero-red-blue-ball.webp", "hero-fresh-sticker.webp",
+    "tile-home-chef.webp", "tile-murrays.webp", "tile-bloom-haus.webp", "tile-smart-way.webp", "logo-dominos.webp", "logo-kroger.webp"
+  ]
+}
