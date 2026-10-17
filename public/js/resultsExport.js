@@ -20,6 +20,7 @@ import { chartFigure } from '../../migration/src/lib/results-chart-figure.js';
 import { summarizeSession } from '../../migration/src/lib/export-summary.js';
 import { binaryString, createMeasure, loadReportFonts } from '../../migration/src/lib/report-fonts.js';
 import { csvCell } from '../../migration/src/lib/leader-report.js';
+import { wallUnreadableNotice } from '../../migration/src/lib/unreadable.js';
 
 /** The summary CSV's columns, in reading order (Phase 13, EXPORT-DESIGN.md 3.3). */
 export const SUMMARY_COLUMNS = Object.freeze(['Client', 'Session date', 'Activity', 'Question number', 'Question', 'Question type', 'Option', 'Answers', 'Share of answers (%)', 'Rank or score', 'Correct option', 'Top choice', 'Answers to this question', 'Takeaway']);
@@ -150,6 +151,8 @@ export function buildReport(results, brand = {}) {
     sessionDay: /^\d{4}-\d{2}-\d{2}$/.test(String(results.session.date ?? '')) ? results.session.date : '',
     iPads: counts.visits,
     answers: counts.answers,
+    // Answer items that could not be read (Phase 9b, DI-6): not counted, and said on the summary in the wall's words, with no name.
+    unreadable: (results.unreadable ?? []).length,
     activities,
     questions,
     summary: summarizeSession(activities),
@@ -326,6 +329,13 @@ export function layoutReport(report, logo = null, palette = null, measure = null
       page.items.push(label(x, 6, room, lineHeight(SIZE.title), text.wrap('Session results', room, SIZE.title, { bold: true, maxLines: 1 })[0], SIZE.title, onBand, { bold: true, role: 'page-title' }));
       text.wrap([session, iPadsLine].filter(Boolean).join(' · '), room, SIZE.details, { maxLines: 2 }).forEach((line, at) => page.items.push(label(x, 20 + at * lineHeight(SIZE.details), room, lineHeight(SIZE.details), line, SIZE.details, onBand, { role: 'details' })));
       page.top = bandH + 7;
+      if (report.unreadable > 0) {
+        for (const line of text.wrap(wallUnreadableNotice(report.unreadable), W - M * 2, SIZE.details, { bold: true })) {
+          page.items.push(label(M, page.top, W - M * 2, lineHeight(SIZE.details), line, SIZE.details, ink, { bold: true, role: 'notice' }));
+          page.top += lineHeight(SIZE.details);
+        }
+        page.top += 3;
+      }
     } else {
       page.items.push(rect(0, 0, W, 4, { fill: report.primary, role: 'band' }));
       page.top = 10;
@@ -336,7 +346,7 @@ export function layoutReport(report, logo = null, palette = null, measure = null
     return page;
   };
   let page = summaryPage(true);
-  const notes = [`Session results${report.clientName ? ` for ${report.clientName}` : ''}${report.sessionDate ? `, ${report.sessionDate}` : ''}. ${iPadsLine}; a visit that answered nothing is not counted.`];
+  const notes = [`Session results${report.clientName ? ` for ${report.clientName}` : ''}${report.sessionDate ? `, ${report.sessionDate}` : ''}. ${iPadsLine}; a visit that answered nothing is not counted.${report.unreadable > 0 ? ` ${wallUnreadableNotice(report.unreadable)}` : ''}`];
   if (report.summary.activities.length === 0) {
     page.items.push(label(M, page.top, W - M * 2, lineHeight(SIZE.takeaway), 'No live activities in this session yet.', SIZE.takeaway, soft));
   }

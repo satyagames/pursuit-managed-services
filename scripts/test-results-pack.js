@@ -21,8 +21,10 @@ import { nodePalette } from './results-palette-node.js';
 
 const VINE_BRAND = { name: 'Vine Street Partners', primaryColor: '#7A1F5C', secondaryColor: '#64748B' };
 const VINE_TAKEAWAY = 'Across two graded questions, an average of 63% of first answers were right; the most missed was “Where is the head office?” (2 of 4 right first time). Only four answers.';
-const xml = (phrase) => phrase.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const inSlide = (text) => squash([...text.matchAll(/<a:t>([^<]*)<\/a:t>/g)].map((match) => match[1]).join(' '));
+// A slide's words as a reader gets them: the XML's entities decoded (PptxGenJS writes & < > ' " as entities). `xml` is then the phrase itself.
+const xml = (phrase) => phrase;
+const ENTITIES = { amp: '&', lt: '<', gt: '>', apos: '\'', quot: '"' };
+const inSlide = (text) => squash([...text.matchAll(/<a:t>([^<]*)<\/a:t>/g)].map((match) => match[1].replace(/&(amp|lt|gt|apos|quot);/g, (_, name) => ENTITIES[name])).join(' '));
 
 let fonts;
 let measure;
@@ -201,6 +203,14 @@ describe('the two files', () => {
       assert.ok(pdf.includes(squash(question.chart.headline)), question.chart.headline);
       assert.ok(slides.includes(squash(xml(question.chart.headline))), question.chart.headline);
     }
+  });
+
+  it('says on the summary, as the wall does and with no name, when some answers could not be read (Kroger\'s sixth visit)', () => {
+    const notice = '1 participant\'s answers could not be counted.';
+    assert.ok(squash(kroger.read.pages[0].text).includes(squash(notice)), 'the PDF');
+    assert.ok(inSlide(kroger.slides[0]).includes(squash(xml(notice))), 'the slide');
+    assert.ok(inSlide(kroger.notes[0]).includes(squash(xml(notice))), 'the notes');
+    assert.ok(!squash(vine.read.pages[0].text).includes(squash('could not be counted')), 'and nothing when every answer was read');
   });
 
   it('Kroger: "34 answers from 4 iPads" on the summary of both files, and nobody named', () => {
