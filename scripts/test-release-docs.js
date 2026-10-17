@@ -193,7 +193,8 @@ describe('RUNBOOK.md', () => {
     assert.match(said[6], /point at the top bar of a single choice: the tooltip stays clear of the question[^\n]*never cut at the card's edge/);
     // (Phase 11b) the files: the one-pager's header as the screen's, the charts, no names, PowerPoint, the leader report and its last page, black and white, one iPad.
     assert.match(note, /\*\*This package \(Phase 11b\) also redraws the files the facilitator saves\*\*[^\n]*\*\*Export PDF\*\* and \*\*Export PPT\*\*[^\n]*Kroger's said 5 iPads where the screen said 4[^\n]*\*\*Leader report \(PDF\)\*\*/);
-    assert.match(note, /byte for byte the participant page of the 11a-3 packages, pms-618b8fc to pms-e2fbfb6/);
+    assert.match(note, /pms-21462b6's was byte for byte the participant page of the 11a-3 packages, pms-618b8fc to pms-e2fbfb6/);
+    assert.match(note, /\*\*This package \(Phase 12\) fixes what a review of every screen on a local copy of the site found\*\*[^\n]*a single-choice poll no longer blocks Go live[^\n]*Open Sans stays embedded\./);
     assert.match(said[9], /^The files \(Phase 11b\)\.[^\n]*\*\*Export PDF\*\* and \*\*Export PPT\*\*[^\n]*"34 answers from 4 iPads"[^\n]*a tick and the word "Correct", and no participant's name anywhere\. Open the PowerPoint in PowerPoint\.[^\n]*\*\*Leader report \(PDF\)\*\* for Kroger and for Domino's[^\n]*Print one leader report in black and white[^\n]*"1 answer from 1 iPad"/);
     assert.match(said[8], /^If the timing check with pms-0a1c701 \(below\) has not been sent yet, run it now with these pages: the participant page changed only in a locked activity's title and in when it looks again after the network comes back\./);
     // The timing check: three steps, and the line in a block with no language, exactly as it was given.
@@ -250,12 +251,17 @@ describe('RELEASE-NOTES.md', () => {
     // cards at their own height, the headlines' words, and "N iPads" counting the iPads that answered (VJR's choice; the PDF and PowerPoint left for 11b).
     // (Phase 11a-3) what changed since pms-283ad18, and why, newest first; and the branch the package is made from.
     // (Phase 11b) what changed since pms-e2fbfb6, newest first; the 11a-3 section is now "in pms-e2fbfb6".
-    assert.match(notes, /## What changed since pms-e2fbfb6 \(17 Oct 2026: the Live display's one-page PDF and PowerPoint drew plain bars and counted every visit as an iPad[^\n]*\)/);
+    // (Phase 12) what changed since pms-21462b6, newest first; the 11b section is now "in pms-21462b6".
+    assert.match(notes, /## What changed since pms-21462b6 \(17 Oct 2026: a review of every screen on a local copy of the site, UX-REVIEW\.md, found a poll that blocked Go live and words that misled\)/);
+    assert.match(notes, /\*\*A poll never blocks Go live\.\*\*/);
+    assert.match(notes, /\*\*Open Sans stays embedded\*\*/);
+    assert.match(notes, /The participant page is (not measured|[\d,]+ B (larger|smaller) than pms-21462b6's) and the admin page/);
+    assert.ok(notes.indexOf('since pms-21462b6') < notes.indexOf('in pms-21462b6'), 'the newest change first');
+    assert.match(notes, /## What changed in pms-21462b6 \(since pms-e2fbfb6, 17 Oct 2026: the Live display's one-page PDF and PowerPoint drew plain bars and counted every visit as an iPad[^\n]*\)/);
     assert.match(notes, /\*\*The Live display's Export PDF and Export PPT draw the Live display's charts\.\*\*/);
     assert.match(notes, /\*\*The header of both says "N answers from M iPads" as the Live display does\*\*[^\n]*"34 answers from 4 iPads" where it said 5[^\n]*"1 answer from 1 iPad"/);
     assert.match(notes, /\*\*The leader report's "Results by activity" uses the same words and colours\*\*[^\n]*every number it printed before is still printed/);
-    assert.match(notes, /The participant page is (not measured|[\d,]+ B (larger|smaller) than pms-e2fbfb6's) \(byte for byte the same\) and the admin page/);
-    assert.ok(notes.indexOf('since pms-e2fbfb6') < notes.indexOf('in pms-e2fbfb6'), 'the newest change first');
+    assert.match(notes, /The participant page was byte for byte the same as pms-e2fbfb6's, and the admin page 4,482 B larger \(gzip\)\./);
     assert.match(notes, /## What changed in pms-e2fbfb6 \(since pms-283ad18, 16 Oct 2026: a chart's tooltip could lie over the words above its mark, and a locked activity's title was too faint to read\)/);
     assert.match(notes, /\*\*A tooltip keeps clear of its card's words and buttons\*\*/);
     assert.match(notes, /\*\*A locked activity's title is white\*\*/);
@@ -263,7 +269,7 @@ describe('RELEASE-NOTES.md', () => {
     assert.match(notes, /\*\*No change, by VJR's decisions of 16 Oct 2026:\*\* names stay "Last, First"/);
     assert.match(notes, /The participant page is 30 B larger than pms-283ad18's and the admin page 32 B larger than pms-283ad18's \(gzip\)\./);
     assert.ok(notes.indexOf('since pms-283ad18') < notes.indexOf('in pms-283ad18'), 'the newest change first');
-    assert.match(notes, /of the branch `pms-11b` \(a branch on GitHub, never merged into main\)/);
+    assert.match(notes, /of the branch `pms-12-fixes` \(a branch on GitHub, never merged into main\)/);
     // (Phase 11a-2, since 11a-3 the section "in pms-283ad18") what changed since pms-3fb312a.
     assert.match(notes, /## What changed in pms-283ad18 \(since pms-3fb312a, 16 Oct 2026: on a Windows laptop a confidence question in full screen had a scrollbar inside its chart and its tooltip cut off\)/);
     assert.match(notes, /\*\*Nothing inside a chart's card scrolls\.\*\*/);
