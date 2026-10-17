@@ -1,7 +1,9 @@
 <script lang="ts">
   import { tick } from 'svelte';
   import { focusHeading } from './lib/focus.js';
+  import * as dataService from '../../public/js/dataService.js';
   import { login } from './lib/admin-pin.js';
+  import { unlockFailureText } from './lib/admin-unlock.js';
   import { liveDisplayHash, liveDisplayOfHash } from './lib/admin-address.js';
   import { wallHash, wallOfHash } from './lib/live-wall.js';
   import { APP_NAME } from './lib/app-name.js';
@@ -81,7 +83,8 @@
       pin = '';
       void newScreen();
     } catch (cause) {
-      error = `Couldn't reach the server: ${cause instanceof Error ? cause.message : 'Please try again.'}`;
+      const support = deployment()?.settings?.support as { name?: string; contact?: string } | undefined;
+      error = unlockFailureText(cause, { isUnreachable: dataService.isUnreachable, adminsList: dataService.sharePointListTitles().adminusers, support });
     } finally {
       busy = false;
       // The field was disabled while the PIN was checked, and a disabled field drops focus: after a wrong PIN, put the person back in it.
