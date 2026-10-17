@@ -59,9 +59,9 @@ async function browser(engine) {
 }
 
 /** Passes a request for pms-local.test to the local site and returns its answer (WebKit and Firefox). */
-async function forward(request) {
-  // (allHeaders: headers() leaves out the cookie, which carries the persona.)
-  const headers = { ...(await request.allHeaders()), host: HOST };
+async function forward(request, persona) {
+  // (The persona is set here: a route sees no cookie of the page in Playwright's WebKit on Windows.)
+  const headers = { ...(await request.allHeaders()), host: HOST, cookie: `pms-local-persona=${persona}` };
   return new Promise((resolve, reject) => {
     const url = new URL(request.url());
     delete headers['accept-encoding'];
@@ -90,7 +90,7 @@ export async function open(deviceKey, persona = 'admin', { reducedMotion = 'no-p
   await context.addCookies([{ name: 'pms-local-persona', value: persona, domain: HOST, path: '/', secure: true }]);
   if (device.engine !== 'chromium') {
     await context.route(`${ORIGIN}/**`, async (route) => {
-      try { await route.fulfill(await forward(route.request())); } catch { await route.abort('connectionfailed'); }
+      try { await route.fulfill(await forward(route.request(), persona)); } catch { await route.abort('connectionfailed'); }
     });
   }
   const page = await context.newPage();
