@@ -8,7 +8,7 @@ waits for approval (Part 2).**
 The pictures are in `ux-review/2026-10-17/` (git-ignored): `index.html` is the contact sheet, `ux-review.zip` the whole folder to share, `shots.json` each
 picture's device, state and request count, `perf.json` the measurements. A picture is named `<flow>/<id>--<device>.png`; the register cites them that way.
 
-Devices: iPad (10th gen) portrait and landscape, iPad Pro 11 and iPhone 15 in WebKit; Windows laptops 1366x768, 1536x864 at 125% and 1280x720 at 150% in
+**430 pictures.** Devices: iPad (10th gen) portrait and landscape, iPad Pro 11 and iPhone 15 in WebKit; Windows laptops 1366x768, 1536x864 at 125% and 1280x720 at 150% in
 Chromium; a 1920x1080 projector in Chromium. **Firefox could not be started on this Windows machine** (`spawn UNKNOWN`, the known issue in AGENTS.md), so it
 is missing. WebKit here is Playwright's WebKit on Windows: it uses Windows fonts and is not Safari on an iPad.
 
@@ -175,7 +175,7 @@ PptxGenJS 16.1%, admin screens 14.7%); Setup **788,842 B** (sample pictures 82.4
 **Measured:** the participant and admin pages each carry six base64 WOFF2 faces, **63.6 KB gzip** of the participant page (41%) and 63.5 KB of the admin
 page; Setup carries three (32.9 KB). A variant with no embedded font (built in a scratch worktree, never committed) is 93,135 B gzip for the participant page.
 
-**Pictures (a)/(b)/(c)** are `fonts/0{1..5}-*--{a-embedded,b-variant-installed,c-variant-absent}--*`: the hub, the ranking, Results, the QR sheet and the Live
+**Pictures (a)/(b)/(c)** (all five screens on the laptop and the projector; the hub and the ranking only on the iPad, where the harness keeps one persona per page) are `fonts/0{1..5}-*--{a-embedded,b-variant-installed,c-variant-absent}--*`: the hub, the ranking, Results, the QR sheet and the Live
 display's full screen, on the laptop, the projector and the iPad. With a fallback measured from the TrueType files (`scripts/local-site/font-metrics.js`:
 Arial `size-adjust: 104.46%`, `ascent-override: 102.32%`, `descent-override: 28.05%`), (c) breaks every line where (a) does and nothing overflows; what
 changes is the look: Arial has no Light weight (the descriptions get heavier) and no ExtraBold (the titles get lighter).
