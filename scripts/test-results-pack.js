@@ -13,6 +13,7 @@ import { jsPDF } from 'jspdf';
 import JSZip from 'jszip';
 import PptxGenJS from 'pptxgenjs';
 import { createMeasure, loadReportFonts } from '../migration/src/lib/report-fonts.js';
+import { buildResults } from '../migration/src/lib/results-tally.js';
 import * as resultsExport from '../public/js/resultsExport.js';
 import { inspectPdf, squash } from './pdf-inspect.js';
 import { bigResults, krogerResults, oddResults, vineResults } from './results-export-fixtures.js';
@@ -87,6 +88,27 @@ describe('the pages', () => {
       assert.equal(new Set(ids).size, ids.length, `${name}: each question is one card, on one page`);
     }
     assert.equal(big.pages.filter((page) => page.kind === 'activity').length >= 4, true);
+  });
+
+  it('puts four cards on a page at most, even when more would fit: ten questions nobody has answered yet', async () => {
+    // Each card is "No answers yet.", its question and "0 answered.": short enough for three rows of two on a page, so the limit is what stops it.
+    // (A card with even one bar is too tall for a third row at these sizes.)
+    const at = (minute) => `2026-10-16T10:${String(minute).padStart(2, '0')}:00.000Z`;
+    const ids = Array.from({ length: 10 }, (_, index) => `s${index + 1}`);
+    const results = buildResults({
+      session: { id: 'short', clientId: 'c', date: '2026-10-16', sectionIds: ['a'] }, tracks: [{ id: 't', createdAt: at(0) }],
+      sections: [{ id: 'a', title: 'Short', enabled: true, questionIds: ids }],
+      questions: ids.map((id) => ({ id, type: 'single-select', prompt: `${id}?`, optionIds: [`${id}a`] })),
+      options: ids.map((id) => ({ id: `${id}a`, label: 'Yes' })),
+      answers: [],
+    });
+    const pages = resultsExport.layoutReport(resultsExport.buildReport(results, {}), null, nodePalette(), measure).filter((page) => page.kind === 'activity');
+    const cards = pages.map((page) => page.items.filter((item) => item.role === 'card').length);
+    assert.deepEqual(cards, [4, 4, 2]);
+    // Room for more: the third row of a full page would have fitted above the footer.
+    const second = pages[1].items.filter((item) => item.role === 'card');
+    const rowHeight = second[0].h + 5;
+    assert.ok(Math.max(...second.map((card) => card.y + card.h)) + rowHeight <= resultsExport.PACK_BODY_BOTTOM, 'a third row would fit: four is the limit, not the room');
   });
 
   it('heads each activity page with the activity and its takeaway, and footers every page with the client, the date and "Page N of M"', () => {

@@ -65,6 +65,23 @@ describe('an activity\'s takeaway (lib/export-summary.js)', () => {
     assert.equal(activity.source, 'kq1');
   });
 
+  it('polls: the clearest single leader wins, not the first question; a tie for the top only when nothing has one leader', () => {
+    const poll = (id, prompt, answered, percents) => ({
+      id, kind: 'choice', graded: false, answered, prompt, headline: `Headline of ${id}.`,
+      options: percents.map((percent, index) => ({ id: `${id}${index}`, percent, count: percent, isTop: percent === Math.max(...percents) })),
+    });
+    // p1: 60 / 40 (one leader at 60%). p2: 90 / 10 (one leader at 90%). p3: a tie at 50 / 50. p2 is the clearest, though p1 comes first.
+    const clearest = summary.summarizeActivity({ id: 'a', title: 'A', charts: [poll('p1', 'First?', 10, [60, 40]), poll('p2', 'Second?', 10, [90, 10]), poll('p3', 'Third?', 10, [50, 50])] });
+    assert.equal(clearest.source, 'p2');
+    assert.equal(clearest.takeaway, '“Second?” Headline of p2.');
+    // Two with the same top share: the one more people answered (p5, 12), then the earlier.
+    const tied = summary.summarizeActivity({ id: 'a', title: 'A', charts: [poll('p4', 'Four?', 8, [75, 25]), poll('p5', 'Five?', 12, [75, 25])] });
+    assert.equal(tied.source, 'p5');
+    // Only ties for the top: the highest of those.
+    const ties = summary.summarizeActivity({ id: 'a', title: 'A', charts: [poll('p6', 'Six?', 10, [50, 50]), poll('p7', 'Seven?', 10, [40, 40, 20])] });
+    assert.equal(ties.source, 'p6');
+  });
+
   it('one graded question; every graded question right; written answers only; nothing answered', () => {
     const graded = (id, right, answered, prompt = 'Q?') => ({ id, kind: 'choice', graded: true, right, answered, prompt, headline: 'x', options: [] });
     const one = summary.summarizeActivity({ id: 'a', title: 'A', charts: [graded('g', 7, 9, 'Which year?')] });
