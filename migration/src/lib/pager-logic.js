@@ -188,9 +188,6 @@ export function ungradedRecord(question, answer, earlier = null) {
 
 // ---- Ungraded questions: validation and the saved shape --------------------------------------
 
-/** Ranked and multi answers are lists; open text and the rest are one string. @param {Question} question */
-export const answerIsList = (question) => question.type === 'multi-select' || question.type === 'ranked-voting';
-
 /**
  * Whether the draft may be submitted. Kept from the old Quiz: every option ranked exactly once,
  * at least one box ticked, an option chosen, some text typed.

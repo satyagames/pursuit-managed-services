@@ -14,11 +14,3 @@ export function embeddedAssetUrl(url) {
   return resolved.href.startsWith(base.href)
     ? globalThis.CEC_ASSETS[resolved.href.slice(base.href.length)] ?? url : url;
 }
-
-export async function loadAssetText(path) {
-  const embedded = globalThis.CEC_TEXT_ASSETS?.[path];
-  if (embedded !== undefined) return embedded;
-  const response = await fetch(assetUrl(path), { signal: AbortSignal.timeout(10_000) });
-  if (!response.ok) throw Object.assign(new Error(`Could not load ${path} (${response.status})`), { status: response.status });
-  return response.text();
-}

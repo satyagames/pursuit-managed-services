@@ -204,9 +204,6 @@ export function resumeIfNeeded(): void {
   if (ctx && needsResume(ctx)) void resume(ctx);
 }
 
-/** Does a context exist yet? (It does not until the first unlock.) */
-export const hasContext = (): boolean => ctx !== null;
-
 /**
  * Plays a cue now. It never creates the context (only `unlock()` does); with no running context the
  * cue waits briefly for a resume and is dropped if that does not happen, so a backlog of stale sounds

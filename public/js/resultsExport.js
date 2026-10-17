@@ -503,12 +503,6 @@ function loadScript(path) {
 // ---- PDF
 
 /**
- * jsPDF's standard fonts only cover Latin-1 and a few punctuation marks: emoji and other scripts are dropped, not printed as garbage. (Since
- * Phase 13 the pack embeds Open Sans, whose measure prints one replacement mark for what it lacks; this is kept for the files that still use them.)
- */
-export const pdfSafe = (text) => text.replace(/[^\x20-\x7e\xa0-\xff‘’“”–—…•€™]/g, '').replace(/ {2,}/g, ' ');
-
-/**
  * The PDF's bytes: each 16:9 page in the middle of an A4 landscape sheet, its words in the embedded Open Sans (`fonts`, lib/report-fonts.js
  * loadReportFonts), with the document's title and language. `jsPDF` is handed in (the admin page's own copy; a node test passes jsPDF's node build).
  * @returns {ArrayBuffer}

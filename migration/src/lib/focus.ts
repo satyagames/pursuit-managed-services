@@ -28,9 +28,6 @@ if (typeof window !== 'undefined') {
   }
 }
 
-/** True when the last thing the person did was press a key. */
-export const usingKeyboard = () => keyboard;
-
 /** Moves focus to `heading` (which needs tabindex="-1") without scrolling. The ring shows only for a keyboard user. */
 export function focusHeading(heading: HTMLElement | null | undefined) {
   if (!heading) return;

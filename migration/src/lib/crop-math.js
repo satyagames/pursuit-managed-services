@@ -138,6 +138,3 @@ export function keyboardView(key, shift, view, source, frame, range) {
     default: return null;
   }
 }
-
-/** The shape a size has, as a width over height. @param {Size} size */
-export const aspectOf = (size) => size.width / size.height;

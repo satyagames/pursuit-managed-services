@@ -43,6 +43,3 @@ export const SCENES = Object.freeze([
   Object.freeze({ id: 'correct', label: 'Correct answer' }),
   Object.freeze({ id: 'finale', label: 'Finale' }),
 ]);
-
-/** @param {string} id */
-export const sceneById = (id) => SCENES.find((scene) => scene.id === id) ?? SCENES[0];
