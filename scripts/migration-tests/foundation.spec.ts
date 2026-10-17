@@ -46,7 +46,14 @@ test('the participant page renders in Open Sans from inlined fonts, with no font
       sources: [...document.styleSheets]
         .flatMap((sheet) => [...sheet.cssRules])
         .filter((rule): rule is CSSFontFaceRule => rule instanceof CSSFontFaceRule)
+        .filter((rule) => rule.style.getPropertyValue('font-family').replace(/["']/g, '') === 'Open Sans')
         .map((rule) => rule.style.getPropertyValue('src').slice(0, 34)),
+      // (Phase 12: the measured stand-in that takes Open Sans's room while it decodes; local() only, nothing downloaded.)
+      fallback: [...document.styleSheets]
+        .flatMap((sheet) => [...sheet.cssRules])
+        .filter((rule): rule is CSSFontFaceRule => rule instanceof CSSFontFaceRule)
+        .filter((rule) => rule.style.getPropertyValue('font-family').replace(/["']/g, '') === 'Open Sans Fallback')
+        .map((rule) => rule.style.getPropertyValue('src')),
       bodyFamily: getComputedStyle(document.body).fontFamily,
     };
   });
@@ -55,6 +62,11 @@ test('the participant page renders in Open Sans from inlined fonts, with no font
   expect(report.faces).toEqual(['300/normal/loaded', '400/normal/loaded', '600/normal/loaded', '700/normal/loaded', '800/italic/loaded', '800/normal/loaded']);
   expect(report.sources).toHaveLength(6);
   for (const source of report.sources) expect(source).toContain('url("data:font/woff2;base64,');
+  expect(report.fallback).toHaveLength(3);
+  for (const source of report.fallback) {
+    expect(source).toMatch(/^local\(/);
+    expect(source).not.toContain('url(');
+  }
   expect(report.bodyFamily).toMatch(/^"?Open Sans"?,/);
   expect(report.bodyFamily).toMatch(/sans-serif$/);
 
