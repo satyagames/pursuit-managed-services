@@ -44,7 +44,10 @@ Straight talk as a ranking (questions for VJR, UX-REVIEW.md section 9).
 | `test:local-site` | 26 of 26 on pms-d19bd14 (Setup's self-test 11 of 11) |
 | Browser specs edited this phase (`admin-today`, `review-9b`, `sharepoint`), Chromium | 58 of 59; the one is `admin-today.spec.ts:421` "slugs", the known flake (AGENTS.md), 1 in 3 alone |
 | `test:rehearsal`, Chromium, on pms-d19bd14 | 6 of 6 |
-| **Not run** | `test:migration` in full and in WebKit; Firefox (Windows refuses to start it: `spawn UNKNOWN`); `test:report:mutations`; `oracle -- --seeds 500` (no counting rule changed) |
+| `test:report:mutations` | **49 of 49** caught |
+| `oracle -- --seeds 500` | 500 sessions, 5,620 participants, four time zones: **0 differences** |
+| `test:migration`, Chromium and WebKit (after pushing) | 785 passed, 13 skipped, 21 failed. **20 are WebKit on this Windows machine**, the list RELEASE-11A3.md and RELEASE-11B.md record before and after (the 18 sound specs, `brand-smoke`, `flow.spec.ts:456`, `keyboard.spec.ts:314`). **One was this phase's**: `foundation.spec.ts:28` counted six `@font-face` rules and met the fallback's three more; it now holds the six embedded faces and the three `local()` ones apart, and passes in both engines (13 of 13) |
+| **Not run** | Firefox (Windows refuses to start it: `spawn UNKNOWN`); the WebKit specs above need a Mac |
 
 ## 4. The package
 
