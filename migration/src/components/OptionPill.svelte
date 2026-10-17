@@ -97,7 +97,17 @@
 
   .pill[data-state='selected'] {
     background: var(--action);
-    box-shadow: inset 0 0 0 1px var(--surface-border);
+    box-shadow: inset 0 0 0 2px var(--text);
+  }
+
+  .pill[data-state='selected'] .letter {
+    min-width: 1.6em;
+    color: var(--action);
+    font-weight: var(--fw-bold);
+    line-height: 1.6;
+    text-align: center;
+    background: var(--text);
+    border-radius: var(--radius-full);
   }
 
   .pill[data-state='correct'] {

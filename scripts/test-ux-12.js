@@ -104,3 +104,15 @@ describe('F-10: the participant page says "Loading..." while it starts, not "Res
     assert.doesNotMatch(app, /Restoring your session/);
   });
 });
+
+describe('F-11: a chosen answer (a rank, a poll, multi-select) does not look like one that is not', () => {
+  it('OptionPill: a 2px ring in the words colour, and the number or letter in a badge', async () => {
+    const { readFileSync } = await import('node:fs');
+    const source = readFileSync(new URL('../migration/src/components/OptionPill.svelte', import.meta.url), 'utf8');
+    const selected = /\.pill\[data-state='selected'\]\s*\{([^}]*)\}/.exec(source)?.[1] ?? '';
+    assert.match(selected, /box-shadow:\s*inset 0 0 0 2px var\(--text\)/);
+    const badge = /\.pill\[data-state='selected'\] \.letter\s*\{([^}]*)\}/.exec(source)?.[1] ?? '';
+    assert.match(badge, /background:\s*var\(--text\)/);
+    assert.match(badge, /color:\s*var\(--action\)/, 'the number in the button colour on white (4.9:1)');
+  });
+});
