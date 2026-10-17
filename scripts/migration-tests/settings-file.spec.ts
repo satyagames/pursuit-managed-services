@@ -2,7 +2,7 @@ import { test, expect, type Page, type Route } from '@playwright/test';
 import { rm } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { build } from 'vite';
-import { sha256Hex } from '../../migration/src/lib/sha256.js';
+import { sha256Hex } from '../../migration/src/lib/admin/sha256.js';
 import { sharePointFolderPath } from '../deployment-config.js';
 import { builtDefine } from '../site-override.js';
 import { axeCheck, describeFindings } from './a11y-support.js';

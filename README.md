@@ -61,7 +61,7 @@ The diagrams describe the implemented architecture, not a proposed Azure or SPFx
 - `svelte-spa-router` `^5.1.1` for hash-based screen routing
 - Tailwind CSS `^4.3.3` through `@tailwindcss/vite` `^4.3.3`, alongside scoped application styles
 - Vite `^8.3.4`, `@sveltejs/vite-plugin-svelte` `^7.3.1`, and `vite-plugin-singlefile` `^2.3.3`
-- Reuses `public/js/dataService.js` through typed wrappers; it does not add an API server, SharePoint list, column, or alternate response store
+- Reuses `migration/src/lib/data/dataService.js` through typed wrappers; it does not add an API server, SharePoint list, column, or alternate response store
 - Kept under `migration/`; source preview and standalone candidate are separate from the production legacy build
 
 ### Shared and local runtime dependencies
@@ -123,7 +123,7 @@ flowchart TB
    Hosted -->|Existing browser sign-in| REST
 ```
 
-[public/js/dataService.js](public/js/dataService.js) is the backend boundary for both frontends. Its public functions return ordinary domain objects with string IDs in both modes. The legacy source app loads HTML fragments from the local static server and caches pristine templates in memory. Each standalone build embeds its scripts, styles, templates, and supported static assets into the three HTML pages. Live SharePoint list data is still fetched at runtime. The migration wrappers add TypeScript shapes; they are not a second backend implementation or runtime schema validator.
+[migration/src/lib/data/dataService.js](migration/src/lib/data/dataService.js) is the backend boundary for both frontends. Its public functions return ordinary domain objects with string IDs in both modes. The legacy source app loads HTML fragments from the local static server and caches pristine templates in memory. Each standalone build embeds its scripts, styles, templates, and supported static assets into the three HTML pages. Live SharePoint list data is still fetched at runtime. The migration wrappers add TypeScript shapes; they are not a second backend implementation or runtime schema validator.
 
 ### Component responsibilities
 
@@ -132,10 +132,10 @@ flowchart TB
 | [public/config.js](public/config.js) | For the legacy pages only: select the backend from the page origin and configure the site/library. The Svelte pages do not read it (Phase 10b): they find their site and lists as they start, from `pms-config.txt` beside them (SHAREPOINT-DEPLOYMENT.md, "Which site and which lists") | Credentials or participant progress |
 | [public/js/app.js](public/js/app.js) | Hash routing, in-memory session context, URL-based resume and track polling | Persistent storage |
 | [public/js/screens/_shared.js](public/js/screens/_shared.js) | Template loading, saved-answer helpers and derived progress | Direct list access |
-| [public/js/dataService.js](public/js/dataService.js) | CRUD, record joins, QR lifecycle, response writes, REST mapping, digests and conflict handling | Screen markup |
+| [migration/src/lib/data/dataService.js](migration/src/lib/data/dataService.js) | CRUD, record joins, QR lifecycle, response writes, REST mapping, digests and conflict handling | Screen markup |
 | [public/js/screens/admin/auth.js](public/js/screens/admin/auth.js) | Compare the entered PIN hash with admin records | SharePoint authorization |
 | [public/js/resultsRenderer.js](public/js/resultsRenderer.js) | Render result charts | Saving answers or calculating independent persisted totals |
-| [public/js/resultsExport.js](public/js/resultsExport.js) | Generate CSV, PDF and PowerPoint exports | A separate results database |
+| [migration/src/lib/exports/resultsExport.js](migration/src/lib/exports/resultsExport.js) | Generate CSV, PDF and PowerPoint exports | A separate results database |
 | [public/js/sharepointSetup.js](public/js/sharepointSetup.js) | Schema-check and explicit import interactions | Automatic provisioning or permission changes |
 | [migration/src/lib](migration/src/lib) | Typed wrappers and migration navigation/session state over shared legacy data services | A second REST adapter or production authorization system |
 | [server/api.js](server/api.js) and [server/store.js](server/store.js) | Local API, per-file serialization and atomic writes | Deployed SharePoint requests |
@@ -631,7 +631,7 @@ SharePoint logo uploads accept PNG, JPEG, GIF and WebP up to 1 MB with type/sign
 | [public/js/screens](public/js/screens) | Participant modules exporting `async render(container, context)` with optional cleanup |
 | [public/js/screens/admin](public/js/screens/admin) | Panels exporting `async mount(container, ctx)` and returning a `destroy()` handle |
 | [public/css](public/css) | Participant, admin and visual-effect styles |
-| [public/js/branding.js](public/js/branding.js), [public/js/sfx.js](public/js/sfx.js), [public/js/vfx.js](public/js/vfx.js) | Shared theme, sound and motion helpers |
+| [migration/src/lib/brand/branding.js](migration/src/lib/brand/branding.js), [public/js/sfx.js](public/js/sfx.js), [public/js/vfx.js](public/js/vfx.js) | Shared theme, sound and motion helpers |
 | [public/assets](public/assets) and [public/vendor](public/vendor) | Static media and locally copied browser dependencies |
 | [server](server) | Development server and local datastore |
 | [scripts](scripts) | Build, dependency copying, data validation, private seed export and automated tests |

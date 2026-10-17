@@ -3,10 +3,10 @@
 
 import { readFile } from 'node:fs/promises';
 import { jsPDF } from 'jspdf';
-import { buildLeaderReport } from '../migration/src/lib/leader-report.js';
-import { layoutLeaderReport } from '../migration/src/lib/leader-report-layout.js';
-import { writeLeaderReportPdf } from '../migration/src/lib/leader-report-pdf.js';
-import { createMeasure, loadReportFonts } from '../migration/src/lib/report-fonts.js';
+import { buildLeaderReport } from '../migration/src/lib/exports/leader-report.js';
+import { layoutLeaderReport } from '../migration/src/lib/exports/leader-report-layout.js';
+import { writeLeaderReportPdf } from '../migration/src/lib/exports/leader-report-pdf.js';
+import { createMeasure, loadReportFonts } from '../migration/src/lib/exports/report-fonts.js';
 import { nodePalette } from './results-palette-node.js';
 
 /**
@@ -25,7 +25,7 @@ export async function wordmarkFromComponent() {
 
 /**
  * Records to a finished PDF. Resolves to the report (data), the pages (layout), the bytes, and how long each step took.
- * @param {import('../migration/src/lib/leader-report.js').ReportRecords} records
+ * @param {import('../migration/src/lib/exports/leader-report.js').ReportRecords} records
  * @param {{ generatedAt?: string, timeZone?: string, logo?: { data: string, width: number, height: number } | null, onProgress?: (progress: { page: number, pages: number }) => void, signal?: AbortSignal | null, pause?: () => Promise<void> }} [options]
  */
 export async function makeReport(records, { generatedAt = '2026-10-12T09:30:00.000Z', timeZone = 'UTC', logo = null, onProgress, signal = null, pause = async () => {} } = {}) {

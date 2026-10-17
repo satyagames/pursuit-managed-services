@@ -1,11 +1,11 @@
 <script lang="ts">
   import { mount, onMount, unmount } from 'svelte';
-  import * as dataService from '../../../public/js/dataService.js';
+  import * as dataService from '../lib/data/dataService.js';
   import tokensCss from '../styles/tokens.css?inline';
   import baseCss from '../styles/base.css?inline';
   import Quiz from '../routes/Quiz.svelte';
-  import { resolveClientTheme } from '../lib/client-theme.js';
-  import { applyTheme } from '../lib/theme.js';
+  import { resolveClientTheme } from '../lib/brand/client-theme.js';
+  import { applyTheme } from '../lib/brand/theme.js';
 
   type Section = { id: string; title: string; enabled: boolean; questionIds?: string[] };
   type PreviewClient = { id: string; name?: string; theme?: unknown; themeVersion?: number | null; logoUrl?: string | null };

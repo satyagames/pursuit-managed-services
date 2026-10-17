@@ -9,11 +9,11 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { hashPin } from '../../migration/src/lib/admin-pin.js';
-import { samplePack } from '../../migration/src/lib/sample-clients.js';
-import { SAMPLE_PICTURES } from '../../migration/src/lib/sample-pictures.js';
-import { seedSampleClients } from '../../migration/src/lib/sample-seed.js';
-import { seedPack } from '../../migration/src/lib/seed.js';
+import { hashPin } from '../../migration/src/lib/admin/admin-pin.js';
+import { samplePack } from '../../migration/src/lib/setup/sample-clients.js';
+import { SAMPLE_PICTURES } from '../../migration/src/lib/setup/sample-pictures.js';
+import { seedSampleClients } from '../../migration/src/lib/setup/sample-seed.js';
+import { seedPack } from '../../migration/src/lib/setup/seed.js';
 import { random } from '../oracle-results.js';
 import { packRecords, pictureFiles, storedName } from './dataset.js';
 import { ADMIN, makeFake, NOW, SITE_URL } from './site-shape.js';
@@ -48,7 +48,7 @@ async function atFixedTime(work) {
 /** A fresh mocked site and a fresh copy of the data layer pointed at it (one module is one page: scripts/test-participant-storage.js freshPage). */
 async function freshSite(options) {
   const fake = makeFake(options);
-  const ds = await import(`../../public/js/dataService.js?local-site=${builds += 1}`);
+  const ds = await import(`../../migration/src/lib/data/dataService.js?local-site=${builds += 1}`);
   ds.configure({ sharePoint: fake.settings });
   return { fake, ds };
 }

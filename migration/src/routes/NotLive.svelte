@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { PillButton } from '../components/index.js';
-  import { APP_NAME } from '../lib/app-name.js';
-  import { focusHeading } from '../lib/focus.js';
+  import { APP_NAME } from '../lib/common/app-name.js';
+  import { focusHeading } from '../lib/common/focus.js';
 
   // Shown instead of every participant screen while no client is live: nothing has been started
   // today, the client was archived, or today's session has ended. It names no client and wears

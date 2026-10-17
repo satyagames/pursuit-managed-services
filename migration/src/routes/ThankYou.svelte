@@ -1,13 +1,13 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import { CheckBadge, HomeButton, PillButton } from '../components/index.js';
-  import { finale } from '../lib/effects.js';
-  import { focusHeading } from '../lib/focus.js';
-  import { consumeNavigationData, navigateTo } from '../lib/navigation.js';
-  import { greetingName } from '../lib/pager-logic.js';
-  import { discardPendingAnswers, firstTrySummary, getProgress } from '../lib/participantData.js';
-  import { clearTrack, participant } from '../lib/session.svelte.js';
-  import { APP_NAME } from '../lib/app-name.js';
+  import { finale } from '../lib/effects/effects.js';
+  import { focusHeading } from '../lib/common/focus.js';
+  import { consumeNavigationData, navigateTo } from '../lib/participant/navigation.js';
+  import { greetingName } from '../lib/participant/pager-logic.js';
+  import { discardPendingAnswers, firstTrySummary, getProgress } from '../lib/participant/participantData.js';
+  import { clearTrack, participant } from '../lib/participant/session.svelte.js';
+  import { APP_NAME } from '../lib/common/app-name.js';
 
   // The finale: every activity is finished. Re-checked against the server (a bookmark or a back
   // button must not show it early), unless the pager just handed over what it saved.

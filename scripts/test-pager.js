@@ -4,7 +4,7 @@ import {
   MAX_TEXT_LENGTH, MAX_WRONG_TRIES, activityStates, chooseGraded, correctOptionIds, firstTryScore, firstUnansweredIndex, gradedAnnouncement,
   gradedOptionState, gradedRecord, gradedStateFromRecord, greetingName, hiLine, isAnswerComplete, isGraded, isGradedResolved,
   isRecordSettled, letterFor, normalizeAnswer, questionLayout, retryGraded, showsLetters, startGraded, toggleChoice, toggleRank, ungradedRecord, usesTiles,
-} from '../migration/src/lib/pager-logic.js';
+} from '../migration/src/lib/participant/pager-logic.js';
 
 // The rules the participant pager follows, with no browser: graded feedback and Retry, validation
 // of each question type, resume, the first-try score, the hub's sequential lock, the greeting.
@@ -248,7 +248,7 @@ test('an answer to a question that is not graded is one try, nothing right or wr
 });
 
 test('a wrong first try on a question that then lost its key is settled by the next answer, not left open for ever', async () => {
-  const { createAnswerStore } = await import('../migration/src/lib/answer-store.js');
+  const { createAnswerStore } = await import('../migration/src/lib/participant/answer-store.js');
   const api = { getParticipantResponses: async () => null, saveParticipantResponses: async (input) => ({ ref: 1, responses: input.responses }), mergeAnswerRecords: (_held, incoming) => incoming, isUnreachable: () => false };
   const store = createAnswerStore({ api });
   const visit = { trackId: 't', sessionId: 's', clientId: 'c', restartedAt: null };

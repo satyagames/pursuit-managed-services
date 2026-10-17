@@ -7,7 +7,7 @@
 //
 // It talks to the running server through the data service, exactly as the pages do, and never
 // touches the JSON files itself. It is a local convenience only: it cannot reach SharePoint.
-import * as dataService from '../public/js/dataService.js';
+import * as dataService from '../migration/src/lib/data/dataService.js';
 
 const [clientId, day] = process.argv.slice(2);
 const base = (process.env.API ?? `http://localhost:${process.env.PORT ?? 3000}`).replace(/\/+$/, '');

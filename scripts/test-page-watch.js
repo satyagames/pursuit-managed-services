@@ -3,10 +3,10 @@
 //
 // participant.spec.ts:91 failed now and then in Chromium: the facilitator restarts an activity, the test says the network came back ('online'), and
 // "Question A" was not on the screen within 5 seconds. On the local server the page looks every 3 seconds; when one of those looks was already on its
-// way (and had read the track before the restart was stamped), lib/page-watch.ts dropped the 'online' as "a check already running is not doubled",
+// way (and had read the track before the restart was stamped), lib/common/page-watch.ts dropped the 'online' as "a check already running is not doubled",
 // and the page learned of the restart only at the next look. On a real iPad the same: a network that comes back while a look is waiting (likely to
 // fail, and then to back off) was ignored. Now a look that the network coming back asks for while another is on its way is made as soon as that one
-// ends. This drives the real lib/page-watch.ts (made plain JS by Vite's esbuild) with a stand-in window and its own timers.
+// ends. This drives the real lib/common/page-watch.ts (made plain JS by Vite's esbuild) with a stand-in window and its own timers.
 
 import assert from 'node:assert/strict';
 import { readFile, writeFile, mkdtemp, rm } from 'node:fs/promises';
@@ -48,9 +48,9 @@ const settle = () => new Promise((resolve) => setImmediate(resolve));
 describe('the page watcher and the network coming back', () => {
   // (Inside the describe: with Node 20 a hook at the top of the file does not run before a describe's tests.)
   before(async () => {
-    const source = await readFile(path.join(ROOT, 'migration/src/lib/page-watch.ts'), 'utf8');
+    const source = await readFile(path.join(ROOT, 'migration/src/lib/common/page-watch.ts'), 'utf8');
     const { code } = await transformWithEsbuild(source, 'page-watch.ts', { loader: 'ts', format: 'esm' });
-    const schedule = pathToFileURL(path.join(ROOT, 'migration/src/lib/poll-schedule.js')).href;
+    const schedule = pathToFileURL(path.join(ROOT, 'migration/src/lib/common/poll-schedule.js')).href;
     folder = await mkdtemp(path.join(os.tmpdir(), 'pms-page-watch-'));
     const file = path.join(folder, 'page-watch.mjs');
     await writeFile(file, code.replace(/from ['"]\.\/poll-schedule\.js['"]/, `from '${schedule}'`));

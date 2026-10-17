@@ -600,7 +600,7 @@ export async function compare(fixture, truth, app, { zone = 'UTC', pdf = false, 
   });
 
   // The Results screen's rows and the Live display's tally.
-  // (As lib/adminData.ts reads them for the Results screen and the exports; scripts/test-oracle.js holds that file to this line.)
+  // (As lib/admin/adminData.ts reads them for the Results screen and the exports; scripts/test-oracle.js holds that file to this line.)
   const results = await app.readSessionResults(sessionId);
   differ('unreadable items: the Results screen', idsOf(results.unreadable), wantUnreadable);
   const sources = (await app.readNameSources([sessionId])).get(sessionId);
@@ -661,8 +661,8 @@ export async function compare(fixture, truth, app, { zone = 'UTC', pdf = false, 
 /** The app modules the comparison drives. Loaded here, away from the oracle, so that the oracle above cannot reach them. */
 export async function loadApp() {
   const [ds, report, data, names, live, fake, node, inspect, results] = await Promise.all([
-    import('../public/js/dataService.js'), import('../migration/src/lib/leader-report.js'), import('../migration/src/lib/leader-report-data.js'),
-    import('../migration/src/lib/admin-results.js'), import('../migration/src/lib/live-session.js'), import('./sharepoint-fake.js'), import('./leader-report-node.js'), import('./pdf-inspect.js'), import('../migration/src/lib/session-results.js'),
+    import('../migration/src/lib/data/dataService.js'), import('../migration/src/lib/exports/leader-report.js'), import('../migration/src/lib/exports/leader-report-data.js'),
+    import('../migration/src/lib/admin/admin-results.js'), import('../migration/src/lib/admin/live-session.js'), import('./sharepoint-fake.js'), import('./leader-report-node.js'), import('./pdf-inspect.js'), import('../migration/src/lib/results/session-results.js'),
   ]);
   return { ds, buildLeaderReport: report.buildLeaderReport, participantAnswersCsv: report.participantAnswersCsv, readLeaderReportRecords: data.readLeaderReportRecords,
     readNameSources: names.readNameSources, resultRows: names.resultRows, loadLiveStructure: live.loadLiveStructure, readLive: live.readLive, readSessionResults: results.readSessionResults,

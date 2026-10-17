@@ -9,9 +9,9 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { describe, it } from 'node:test';
-import { CSV_COLUMNS } from '../migration/src/lib/leader-report.js';
-import { buildResults } from '../migration/src/lib/results-tally.js';
-import * as resultsExport from '../public/js/resultsExport.js';
+import { CSV_COLUMNS } from '../migration/src/lib/exports/leader-report.js';
+import { buildResults } from '../migration/src/lib/results/results-tally.js';
+import * as resultsExport from '../migration/src/lib/exports/resultsExport.js';
 import { parseCsv } from './oracle-results.js';
 import { krogerResults, vineResults } from './results-export-fixtures.js';
 

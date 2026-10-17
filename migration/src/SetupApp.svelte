@@ -1,22 +1,22 @@
 <script lang="ts">
   import { untrack } from 'svelte';
-  import { isLocalAddress } from './lib/address-check.js';
-  import { APP_NAME } from './lib/app-name.js';
-  import { BUILD } from './lib/built-settings.js';
+  import { isLocalAddress } from './lib/settings/address-check.js';
+  import { APP_NAME } from './lib/common/app-name.js';
+  import { BUILD } from './lib/settings/built-settings.js';
   import {
     addAnAdmin, adminsInSeed, checkSharePointSchema, createFromPlan, importSharePointSeed, listAdminNames, listTitles, markSiteReady, planSite, readListsVersion,
     readResource, replan, runParticipantSelfTest, seedSampleClients, type CreateResult, type ReadyResult, type SchemaList, type SelfTestStep, type SetupImportResult, type SiteRead, type SitePlan,
-  } from './lib/setupData.js';
-  import { BUSY_LISTS } from './lib/provision.js';
-  import { problem } from './lib/deploy-problems.js';
-  import { spelledOut } from './lib/deploy-rules.js';
-  import { copyRows, listRows, readListAddresses, sameListByAddress, waysToFix } from './lib/setup-deployment.js';
-  import { settingsRead, type Deployment } from './lib/start.js';
+  } from './lib/setup/setupData.js';
+  import { BUSY_LISTS } from './lib/setup/provision.js';
+  import { problem } from './lib/settings/deploy-problems.js';
+  import { spelledOut } from './lib/settings/deploy-rules.js';
+  import { copyRows, listRows, readListAddresses, sameListByAddress, waysToFix } from './lib/setup/setup-deployment.js';
+  import { settingsRead, type Deployment } from './lib/settings/start.js';
   import CopyPanel from './setup/CopyPanel.svelte';
   import ListAddresses from './setup/ListAddresses.svelte';
   import PlanView from './setup/PlanView.svelte';
 
-  // What this page worked out about itself as it started (lib/start.ts): which site and lists are its own, or why it cannot tell.
+  // What this page worked out about itself as it started (lib/settings/start.ts): which site and lists are its own, or why it cannot tell.
   // It is worked out once, as the page loads, and does not change while the page is open: everything below is read from it once.
   let { deployment }: { deployment: Deployment } = $props();
   const found = untrack(() => deployment);

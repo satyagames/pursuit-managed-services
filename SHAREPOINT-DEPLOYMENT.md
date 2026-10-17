@@ -459,7 +459,7 @@ holds that identity's credential:
 iPad (Safari)  ── same /api/* calls as today ──▶  server  ── Graph, app-only, cert ──▶  SharePoint lists
 ```
 
-- `public/js/dataService.js` needs **no changes** to its public API, and probably none to
+- `migration/src/lib/data/dataService.js` needs **no changes** to its public API, and probably none to
   its adapter either — it already only knows about `/api/*` over HTTP+JSON. At most,
   `configure({ baseUrl })` points at wherever the server ends up running.
 - `server/store.js` and `server/api.js` are what actually get rewritten: same routes,

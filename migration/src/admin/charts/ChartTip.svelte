@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { around, placeTip } from '../../lib/tip-place.js';
+  import { around, placeTip } from '../../lib/results/tip-place.js';
   import type { Tip } from './chart-ui.js';
 
   // The tooltip of a chart's mark: its value first, its label second. Since Phase 11a-2 it is drawn in a layer fixed to the window, so nothing can cut it
   // off: not its card, not its chart, not a box that scrolls (on the real site a confidence question's tooltip was cut in half by its own chart). It sits
   // next to its mark, clear of the mark and of the mark's own label (above them, or under them when there is no room above), moved along so that it stays
-  // inside the window (lib/tip-place.js), clear of its card's words and buttons, and then of the other marks' figures, where there is room (Phase 11a-3), and follows its mark when the page scrolls or the window changes size. Everything it says is also in the chart
+  // inside the window (lib/results/tip-place.js), clear of its card's words and buttons, and then of the other marks' figures, where there is room (Phase 11a-3), and follows its mark when the page scrolls or the window changes size. Everything it says is also in the chart
   // (the value is written beside each mark) and in the numbers view, so nobody needs to hover to read it.
   let { tip }: { tip: Tip | null } = $props();
 

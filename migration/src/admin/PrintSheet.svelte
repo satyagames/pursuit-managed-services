@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import * as dataService from '../../../public/js/dataService.js';
-  import { loadGuestState } from '../lib/adminData.js';
-  import { participantPageUrl, qrImage } from '../lib/admin-links.js';
-  import { CARDS_PER_PAGE, completedTrackIds, guestRows, paginate, printCards } from '../lib/admin-content.js';
+  import * as dataService from '../lib/data/dataService.js';
+  import { loadGuestState } from '../lib/admin/adminData.js';
+  import { participantPageUrl, qrImage } from '../lib/admin/admin-links.js';
+  import { CARDS_PER_PAGE, completedTrackIds, guestRows, paginate, printCards } from '../lib/admin/admin-content.js';
 
   // The guest QR sheet: a card for each guest who holds a code nobody has scanned, 3 columns by 4
   // rows to a page, the same size on A4 and on US Letter. It is the page itself, with the print

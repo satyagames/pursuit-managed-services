@@ -6,8 +6,8 @@
 // Test lists must match with the prefix taken off) and are not recorded in a request baseline.
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { LISTS } from '../public/js/pms-schema.js';
-import { create, showPlan, siteApi } from '../migration/src/lib/provision.js';
+import { LISTS } from '../migration/src/lib/schema/pms-schema.js';
+import { create, showPlan, siteApi } from '../migration/src/lib/setup/provision.js';
 import { STRAYS, TITLE, createSharePointFake } from './sharepoint-fake.js';
 
 const KEYS = Object.keys(LISTS);
@@ -16,7 +16,7 @@ let pages = 0;
 async function siteWith(options) {
   const fake = createSharePointFake({ schemaVersion: null, prefix: 'Test', ...options });
   fake.install();
-  const ds = await import(`../public/js/dataService.js?provision-prefix=${pages += 1}`);
+  const ds = await import(`../migration/src/lib/data/dataService.js?provision-prefix=${pages += 1}`);
   ds.configure({ sharePoint: fake.settings });
   return { fake, api: siteApi(ds), titles: ds.sharePointListTitles() };
 }

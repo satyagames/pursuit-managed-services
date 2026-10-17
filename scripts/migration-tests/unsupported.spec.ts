@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { sharePointFolderPath } from '../deployment-config.js';
-import { APP_NAME } from '../../migration/src/lib/app-name.ts';
+import { APP_NAME } from '../../migration/src/lib/common/app-name.ts';
 import { mockApi } from './fixtures.js';
 
 // Phase 8, part D: a browser that cannot run the app sees a short plain page, never a blank one. All three built pages, in all three engines.

@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { sha256Hex } from '../../migration/src/lib/sha256.js';
-import { localDate } from '../../migration/src/lib/admin-today.js';
-import { samplePack } from '../../migration/src/lib/sample-clients.js';
-import { seedPack } from '../../migration/src/lib/seed.js';
+import { sha256Hex } from '../../migration/src/lib/admin/sha256.js';
+import { localDate } from '../../migration/src/lib/admin/admin-today.js';
+import { samplePack } from '../../migration/src/lib/setup/sample-clients.js';
+import { seedPack } from '../../migration/src/lib/setup/seed.js';
 import { newFake, onSite, pageUrl, serveSharePoint } from './sharepoint.js';
 
 // A short pass over the built admin page, run on Chromium and on WebKit (the engine of every iPad

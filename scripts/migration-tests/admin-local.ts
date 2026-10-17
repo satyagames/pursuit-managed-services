@@ -6,9 +6,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { freePort } from '../free-port.js';
-import * as ds from '../../public/js/dataService.js';
-import { localDate } from '../../migration/src/lib/admin-today.js';
-import { SAMPLE_PICTURE_NAMES } from '../../migration/src/lib/sample-pictures.js';
+import * as ds from '../../migration/src/lib/data/dataService.js';
+import { localDate } from '../../migration/src/lib/admin/admin-today.js';
+import { SAMPLE_PICTURE_NAMES } from '../../migration/src/lib/setup/sample-pictures.js';
 import { sharePointFolderPath } from '../deployment-config.js';
 
 // What the Phase 5b specs share: the BUILT admin and participant pages against the REAL local server

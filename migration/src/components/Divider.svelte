@@ -1,5 +1,5 @@
 <!-- The thin rule between an activity's heading and its questions: white, or the client's accent
-     where that stands out from the whole page gradient (--accent-rule, lib/theme.js). -->
+     where that stands out from the whole page gradient (--accent-rule, lib/brand/theme.js). -->
 <hr class="pms-divider" />
 
 <style>

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
-import { sha256Hex } from '../../migration/src/lib/sha256.js';
+import { sha256Hex } from '../../migration/src/lib/admin/sha256.js';
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { inspectPdf, squash } from '../pdf-inspect.js';

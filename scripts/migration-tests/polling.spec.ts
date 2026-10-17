@@ -5,7 +5,7 @@ import { advance, calls, freezeClock, gaps, holdClock, liveSite, lookTimes, look
 
 // Phase 7, polling: the BUILT participant page in SharePoint mode against the mocked REST (scripts/sharepoint-fake.js), with Playwright's
 // clock in control of time, so five idle minutes take a moment and every request is counted and timed. The rules are in
-// migration/src/lib/poll-schedule.js (scripts/test-polling.js holds the numbers); this holds the page to them. Not the real tenant.
+// migration/src/lib/common/poll-schedule.js (scripts/test-polling.js holds the numbers); this holds the page to them. Not the real tenant.
 
 const results = fileURLToPath(new URL('../../test-results/budget/', import.meta.url));
 const measured: Record<string, unknown> = {};

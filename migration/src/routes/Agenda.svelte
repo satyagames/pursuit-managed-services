@@ -2,14 +2,14 @@
   import { onMount, untrack } from 'svelte';
   import { ActionBar, ActivityPill, Divider, HomeButton, PillButton } from '../components/index.js';
   import type { ActivityState } from '../components/index.js';
-  import { LOADING_DELAY_MS } from '../lib/activity-content.js';
-  import { experience, holdsActivities, refreshActivities } from '../lib/experience.svelte.js';
-  import { focusHeading } from '../lib/focus.js';
-  import { consumeNavigationData, navigateTo } from '../lib/navigation.js';
-  import { activityStates } from '../lib/pager-logic.js';
-  import { getKnownProgress, loadFailure } from '../lib/participantData.js';
-  import { participant } from '../lib/session.svelte.js';
-  import { APP_NAME } from '../lib/app-name.js';
+  import { LOADING_DELAY_MS } from '../lib/participant/activity-content.js';
+  import { experience, holdsActivities, refreshActivities } from '../lib/participant/experience.svelte.js';
+  import { focusHeading } from '../lib/common/focus.js';
+  import { consumeNavigationData, navigateTo } from '../lib/participant/navigation.js';
+  import { activityStates } from '../lib/participant/pager-logic.js';
+  import { getKnownProgress, loadFailure } from '../lib/participant/participantData.js';
+  import { participant } from '../lib/participant/session.svelte.js';
+  import { APP_NAME } from '../lib/common/app-name.js';
 
   // The route is #/agenda; the screen is the Activities hub.
   type Pill = { id: string; title: string; state: ActivityState };

@@ -1,16 +1,16 @@
 // REST endpoints over the JSON files. The front-end reaches these only through
-// public/js/dataService.js, which is the part that gets swapped for SharePoint.
+// migration/src/lib/data/dataService.js, which is the part that gets swapped for SharePoint.
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import express, { Router } from 'express';
-import { LISTS } from '../public/js/pms-schema.js';
-import { LOCAL_FILE } from '../public/js/pms-schema-meta.js';
+import { LISTS } from '../migration/src/lib/schema/pms-schema.js';
+import { LOCAL_FILE } from '../migration/src/lib/schema/pms-schema-meta.js';
 import { read, update } from './store.js';
 
 export const api = Router();
 
-// Lists served by the generic endpoints below: one for each list of the schema (public/js/pms-schema.js), each file an array of
+// Lists served by the generic endpoints below: one for each list of the schema (migration/src/lib/schema/pms-schema.js), each file an array of
 // records with a string `id`, named by the list's key except the answers (LOCAL_FILE).
 // participantresponses holds one item per participant (id = their track id):
 // { id, trackId, sessionId, clientId, responses: [{ questionId, answer, firstAnswer, attempts, correct, answeredAt }] }.
@@ -68,7 +68,7 @@ const LOGO_TYPES = {
 };
 
 // Brand Studio (Phase 6) sends its finished pictures here with ?name=<slug>-<slot>-<10 hex>.<ext>, the flat
-// name SharePoint's ClientLogos library gets (migration/src/lib/asset-names.js). A named upload is a PNG,
+// name SharePoint's ClientLogos library gets (migration/src/lib/brand/asset-names.js). A named upload is a PNG,
 // JPEG or WebP only, whose extension matches what it really is, and a name that is not that shape is
 // refused. Without ?name= the endpoint is exactly what it was: a generated name, any type above.
 export const ASSET_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*-(?:hero|logo|background|tile)-[0-9a-f]{10}\.(png|webp|jpg)$/;

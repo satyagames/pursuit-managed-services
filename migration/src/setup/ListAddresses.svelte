@@ -1,7 +1,7 @@
 <script lang="ts">
   // "Where the lists are" (Phase 10b): one read-only row for each list and for the picture library, with the title this copy asks
   // by and, once asked of SharePoint, the address and the id it reports; and the answer of the one probe that asks for a list by its
-  // address as well (lib/setup-deployment.js). Nothing here changes anything. Only Setup loads this.
+  // address as well (lib/setup/setup-deployment.js). Nothing here changes anything. Only Setup loads this.
   type Row = { key: string; title: string; library: boolean; asked: boolean; found: boolean; address: string; id: string; note: string };
   let { rows, probe = '', status = '', busy = false, blocked = false, onread }: {
     rows: Row[];

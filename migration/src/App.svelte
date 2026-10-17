@@ -3,19 +3,19 @@
   import Router, { replace, router } from 'svelte-spa-router';
   import type { RouteDefinition } from 'svelte-spa-router';
   import { wrap } from 'svelte-spa-router/wrap';
-  import * as dataService from '../../public/js/dataService.js';
-  import { APP_NAME } from './lib/app-name.js';
-  import { bootParticipant, writesAhead } from './lib/boot.js';
-  import { initEffects } from './lib/effects.js';
-  import { activityContent, adoptExperience, adoptWatch, experience, holdActivityContent, isStale, showTheme, type LiveExperience } from './lib/experience.svelte.js';
-  import { greetingName, hiLine } from './lib/pager-logic.js';
-  import { createPageWatcher, type PageWatcher } from './lib/page-watch.js';
-  import { modeOf, sessionHasEnded, showsEndedNotice } from './lib/poll-schedule.js';
-  import { applyRestart, restoreAnswers, resumePendingSaves } from './lib/participantData.js';
-  import { visitGoneNotice } from './lib/visit-notice.js';
-  import { clearTrack, offerEarlierVisit, participant, setTrack, type ParticipantTrack } from './lib/session.svelte.js';
-  import { isSignedOut } from './lib/sign-in.js';
-  import { navigateTo } from './lib/navigation.js';
+  import * as dataService from './lib/data/dataService.js';
+  import { APP_NAME } from './lib/common/app-name.js';
+  import { bootParticipant, writesAhead } from './lib/participant/boot.js';
+  import { initEffects } from './lib/effects/effects.js';
+  import { activityContent, adoptExperience, adoptWatch, experience, holdActivityContent, isStale, showTheme, type LiveExperience } from './lib/participant/experience.svelte.js';
+  import { greetingName, hiLine } from './lib/participant/pager-logic.js';
+  import { createPageWatcher, type PageWatcher } from './lib/common/page-watch.js';
+  import { modeOf, sessionHasEnded, showsEndedNotice } from './lib/common/poll-schedule.js';
+  import { applyRestart, restoreAnswers, resumePendingSaves } from './lib/participant/participantData.js';
+  import { visitGoneNotice } from './lib/participant/visit-notice.js';
+  import { clearTrack, offerEarlierVisit, participant, setTrack, type ParticipantTrack } from './lib/participant/session.svelte.js';
+  import { isSignedOut } from './lib/participant/sign-in.js';
+  import { navigateTo } from './lib/participant/navigation.js';
   import Agenda from './routes/Agenda.svelte';
   import Quiz from './routes/Quiz.svelte';
   import Feedback from './routes/Feedback.svelte';
@@ -280,7 +280,7 @@
   }
 
   /**
-   * One look at what the facilitator did, sent on the page's timer (lib/page-watch.ts decides when): ONE request on SharePoint, a
+   * One look at what the facilitator did, sent on the page's timer (lib/common/page-watch.ts decides when): ONE request on SharePoint, a
    * $batch of AppSettings, the session, this page's own track and, on the hub, the client's activities (dataService.readParticipantWatch).
    * What it can find: something else is live now, the track was removed or restarted, the session ended (or was reopened),
    * and the hub's activities or flow changed. It throws when it cannot reach the server, and the timer backs off.

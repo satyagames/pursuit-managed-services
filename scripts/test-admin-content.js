@@ -1,6 +1,6 @@
 // Phase 5b: the admin's Content and Guests screens, below the browser. The rules (grouping, order,
 // pasted names, guest status, CSV, the print sheet, what a copy is) are plain functions; copying,
-// duplicating, assigning, deleting and the bulk guest work (public/js/dataService.js, section 6) run
+// duplicating, assigning, deleting and the bulk guest work (migration/src/lib/data/dataService.js, section 6) run
 // against the mocked SharePoint REST (scripts/sharepoint-fake.js), which counts every request and can
 // be told to fail one, and against the real local server on a scratch copy of server/data, and the two
 // must leave the same records. Run: npm run test:content (also part of npm test).
@@ -14,14 +14,14 @@ import { cp, mkdtemp, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
-import * as ds from '../public/js/dataService.js';
+import * as ds from '../migration/src/lib/data/dataService.js';
 import {
   activitiesOfClient, CARDS_PER_PAGE, MAX_GUEST_NAME, completedTrackIds, copyOutcome, copyTotalsText, csvCell, csvFileName, defaultClientId, guestKey, guestRows,
   guestsCsv, imageUrlProblem, lastClientId, layoutApplies, nextOrder, orderedContent, paginate, parseGuestNames, pasteSummary,
   picturesStillShown, printCards, reorderActivities, rememberClient, statusCounts, titleProblem,
-} from '../migration/src/lib/admin-content.js';
-import { samplePack } from '../migration/src/lib/sample-clients.js';
-import { seedPack } from '../migration/src/lib/seed.js';
+} from '../migration/src/lib/admin/admin-content.js';
+import { samplePack } from '../migration/src/lib/setup/sample-clients.js';
+import { seedPack } from '../migration/src/lib/setup/seed.js';
 import { STRAYS, TITLE, UNINDEXED, createSharePointFake } from './sharepoint-fake.js';
 
 const ROOT = path.join(import.meta.dirname, '..');
@@ -34,7 +34,7 @@ const writesOf = (fake, list) => fake.requests.filter((entry) => entry.method ==
 /** A page of its own: the data service as a separate module, so no write token or list metadata is shared between "admins". */
 let pages = 0;
 async function freshPage(settings) {
-  const page = await import(`../public/js/dataService.js?content-page=${pages += 1}`);
+  const page = await import(`../migration/src/lib/data/dataService.js?content-page=${pages += 1}`);
   page.configure(settings);
   return page;
 }

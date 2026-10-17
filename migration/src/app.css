@@ -3,7 +3,7 @@
 /* The bridge for the pages that still use the legacy class names: the startup error, the
  * "page not found" placeholder, the banners and the facilitator's Master results screen. It
  * restyles those classes with the tokens from styles/tokens.css so they sit on the gradient
- * shell. It is loaded after public/css/app.css and vfx.css, which the legacy app also uses and
+ * shell. It is loaded after migration/src/styles/legacy/app.css and vfx.css, which the legacy app also uses and
  * which stay untouched; where a legacy rule has to be beaten this file matches its specificity
  * and relies on coming later.
  *

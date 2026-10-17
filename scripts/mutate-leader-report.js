@@ -1,10 +1,10 @@
-// A mutation check of the leader report's counting. Each entry below breaks ONE rule of migration/src/lib/leader-report.js (or, for the
-// rule that names a participant, of lib/participant-names.js, which the report and Admin → Results share) on purpose, in a copy beside it,
+// A mutation check of the leader report's counting. Each entry below breaks ONE rule of migration/src/lib/exports/leader-report.js (or, for the
+// rule that names a participant, of lib/results/participant-names.js, which the report and Admin → Results share) on purpose, in a copy beside it,
 // never the file itself; scripts/test-leader-report.js is then run against the broken copy and MUST fail.
 // Since Phase 11b the list ends with mutations of the drawing and the words of the files on the chart model (the leader report's results,
 // the Live display's one-page PDF and PowerPoint, the figure, the palette, the iPads line): each names its file and the suites that hold it,
 // and the broken copy is swapped in by a resolve hook (scripts/mutation-redirect.mjs) while those suites run. Phase 13 added 15 more: the takeaways
-// (lib/export-summary.js), the leader report's At a glance and activity pages, the summary pack and the summary CSV (64 in all).
+// (lib/results/export-summary.js), the leader report's At a glance and activity pages, the summary pack and the summary CSV (64 in all).
 // A mutation the tests do not notice ("survived") is a rule nothing is holding, and this script exits 1.
 //
 //   node scripts/mutate-leader-report.js            (npm run test:report:mutations)
@@ -18,9 +18,9 @@ import { pathToFileURL } from 'node:url';
 
 const ROOT = path.join(import.meta.dirname, '..');
 const LIB = path.join(ROOT, 'migration', 'src', 'lib');
-const SOURCE = path.join(LIB, 'leader-report.js');
+const SOURCE = path.join(LIB, 'exports', 'leader-report.js');
 // The rule that names a participant moved to its own file in Phase 7c. A mutation's text is found in exactly one of these two files.
-const NAMES = path.join(LIB, 'participant-names.js');
+const NAMES = path.join(LIB, 'results', 'participant-names.js');
 const TESTS = path.join(ROOT, 'scripts', 'test-leader-report.js');
 
 /** [what is broken, the exact text to find (once), what to put in its place, and (Phase 11b) { file, tests } when it is not the counting's] */
@@ -133,124 +133,124 @@ const MUTATIONS = [
   ["The leader report's chart counts the LAST answer of a graded question",
     "answer: graded ? record.first : record.counted }))",
     "answer: graded ? record.final : record.counted }))",
-    { file: "migration/src/lib/leader-report.js", tests: ["scripts/test-leader-report-charts.js"] }],
+    { file: "migration/src/lib/exports/leader-report.js", tests: ["scripts/test-leader-report-charts.js"] }],
   ["The leader report prints no headline above a chart",
     "rows.push(...marked(paragraph(chart.headline,",
     "rows.push(...marked(paragraph('',",
-    { file: "migration/src/lib/leader-report-layout.js", tests: ["scripts/test-leader-report-charts.js"] }],
+    { file: "migration/src/lib/exports/leader-report-layout.js", tests: ["scripts/test-leader-report-charts.js"] }],
   ["The leader report prints no \"N of M got it right first time\"",
     "if (chart.gradedLine) rows.push(",
     "if (false) rows.push(",
-    { file: "migration/src/lib/leader-report-layout.js", tests: ["scripts/test-leader-report-charts.js"] }],
+    { file: "migration/src/lib/exports/leader-report-layout.js", tests: ["scripts/test-leader-report-charts.js"] }],
   ["The leader report draws its bars in the client's colour",
     "chartFigure(chart, { x, width, palette, measure: figureMeasure,",
     "chartFigure(chart, { x, width, palette: { ...palette, primary: accent, tint: accent, correct: accent }, measure: figureMeasure,",
-    { file: "migration/src/lib/leader-report-layout.js", tests: ["scripts/test-leader-report-charts.js"] }],
+    { file: "migration/src/lib/exports/leader-report-layout.js", tests: ["scripts/test-leader-report-charts.js"] }],
   ["The last page does not say what the Live display's files count",
     "const notes = [...report.rules, LIVE_FILES_NOTE, ...report.notes,",
     "const notes = [...report.rules, ...report.notes,",
-    { file: "migration/src/lib/leader-report-layout.js", tests: ["scripts/test-leader-report-charts.js"] }],
+    { file: "migration/src/lib/exports/leader-report-layout.js", tests: ["scripts/test-leader-report-charts.js"] }],
   ["A correct answer is drawn without its tick",
     "items.push({ kind: 'tick', x: tagX,",
     "if (false) items.push({ kind: 'tick', x: tagX,",
-    { file: "migration/src/lib/results-chart-figure.js", tests: ["scripts/test-leader-report-charts.js","scripts/test-results-export.js"] }],
+    { file: "migration/src/lib/results/results-chart-figure.js", tests: ["scripts/test-leader-report-charts.js","scripts/test-results-export.js"] }],
   ["A correct answer's words are not bold",
     "lh, text, size, palette.text, { bold: row.strong, role: 'label' })",
     "lh, text, size, palette.text, { bold: false, role: 'label' })",
-    { file: "migration/src/lib/results-chart-figure.js", tests: ["scripts/test-leader-report-charts.js"] }],
+    { file: "migration/src/lib/results/results-chart-figure.js", tests: ["scripts/test-leader-report-charts.js"] }],
   ["A ranking's places are left out",
     "if (row.rank) items.push(",
     "if (false) items.push(",
-    { file: "migration/src/lib/results-chart-figure.js", tests: ["scripts/test-leader-report-charts.js","scripts/test-results-export.js"] }],
+    { file: "migration/src/lib/results/results-chart-figure.js", tests: ["scripts/test-leader-report-charts.js","scripts/test-results-export.js"] }],
   ["A scale's average is not marked",
     "items.push({ kind: 'line', x: at, y: plotTop,",
     "if (false) items.push({ kind: 'line', x: at, y: plotTop,",
-    { file: "migration/src/lib/results-chart-figure.js", tests: ["scripts/test-results-export.js"] }],
+    { file: "migration/src/lib/results/results-chart-figure.js", tests: ["scripts/test-results-export.js"] }],
   ["The top choice is drawn in the tint",
     "tone === 'top' ? palette.primary : palette.tint",
     "tone === 'top' ? palette.tint : palette.tint",
-    { file: "migration/src/lib/results-palette.js", tests: ["scripts/test-leader-report-charts.js","scripts/test-results-export.js"] }],
+    { file: "migration/src/lib/results/results-palette.js", tests: ["scripts/test-leader-report-charts.js","scripts/test-results-export.js"] }],
   ["A scale's columns are all one blue",
     "export function rampFill(palette, tone, tones) {\n",
     "export function rampFill(palette, tone, tones) {\n  return palette.primary;\n",
-    { file: "migration/src/lib/results-palette.js", tests: ["scripts/test-results-export.js"] }],
+    { file: "migration/src/lib/results/results-palette.js", tests: ["scripts/test-results-export.js"] }],
   ["The one-pager counts every visit as an iPad",
     "iPads: counts.visits,",
     "iPads: results.tracks.length,",
-    { file: "public/js/resultsExport.js", tests: ["scripts/test-results-export.js"] }],
+    { file: "migration/src/lib/exports/resultsExport.js", tests: ["scripts/test-results-export.js"] }],
   ["The one-pager prints no headline",
     "lines(chart.headline, SIZE.headline, ink,",
     "lines('', SIZE.headline, ink,",
-    { file: "public/js/resultsExport.js", tests: ["scripts/test-results-export.js"] }],
+    { file: "migration/src/lib/exports/resultsExport.js", tests: ["scripts/test-results-export.js"] }],
   ["The one-pager's words take a colour of their own",
     "const ink = bare(palette.text);\n  const soft = bare(palette.textSecondary);\n  let cursor",
     "const ink = '111827';\n  const soft = bare(palette.textSecondary);\n  let cursor",
-    { file: "public/js/resultsExport.js", tests: ["scripts/test-results-export.js"] }],
+    { file: "migration/src/lib/exports/resultsExport.js", tests: ["scripts/test-results-export.js"] }],
   ["\"1 answer from 1 iPad\" is in the plural",
     "${visits === 1 ? 'iPad' : 'iPads'}",
     "${'iPads'}",
-    { file: "migration/src/lib/results-chart-model.js", tests: ["scripts/test-results-export.js","scripts/test-results-chart-model.js"] }],
+    { file: "migration/src/lib/results/results-chart-model.js", tests: ["scripts/test-results-export.js","scripts/test-results-chart-model.js"] }],
   // Phase 13: the takeaways, the leader report's At a glance and activity pages, the summary pack and the summary CSV.
   ["A takeaway resting on few answers does not say so",
     "    const few = fewAnswersLine(mostMissed.answered);\n    if (few) takeaway += ` ${few}`;",
     "    const few = '';\n    if (few) takeaway += ` ${few}`;",
-    { file: "migration/src/lib/export-summary.js", tests: ["scripts/test-export-summary.js"] }],
+    { file: "migration/src/lib/results/export-summary.js", tests: ["scripts/test-export-summary.js"] }],
   ["The most missed question is the one most people got right",
     ".sort((a, b) => a.share - b.share || b.chart.answered - a.chart.answered || a.order - b.order)[0].chart;",
     ".sort((a, b) => b.share - a.share || b.chart.answered - a.chart.answered || a.order - b.order)[0].chart;",
-    { file: "migration/src/lib/export-summary.js", tests: ["scripts/test-export-summary.js"] }],
+    { file: "migration/src/lib/results/export-summary.js", tests: ["scripts/test-export-summary.js"] }],
   ["A poll's takeaway is its first question, not its clearest",
     "const chart = best(shared.filter((each) => lead(each).single), (each) => lead(each).percent)",
     "const chart = best(shared.filter((each) => lead(each).single), () => 0)",
-    { file: "migration/src/lib/export-summary.js", tests: ["scripts/test-export-summary.js"] }],
+    { file: "migration/src/lib/results/export-summary.js", tests: ["scripts/test-export-summary.js"] }],
   ["\"Only N answers.\" is said at five answers too",
     "export const FEW_ANSWERS = 5;",
     "export const FEW_ANSWERS = 6;",
-    { file: "migration/src/lib/results-chart-model.js", tests: ["scripts/test-export-summary.js"] }],
+    { file: "migration/src/lib/results/results-chart-model.js", tests: ["scripts/test-export-summary.js"] }],
   ["Page 1 of the leader report lists every activity, however many, and runs onto a second page",
     "while (shown > 0 && sum(coverRows(shown).map((box) => box.h)) > room) shown -= 1;",
     "while (false) shown -= 1;",
-    { file: "migration/src/lib/leader-report-layout.js", tests: ["scripts/test-leader-report-glance.js"] }],
+    { file: "migration/src/lib/exports/leader-report-layout.js", tests: ["scripts/test-leader-report-glance.js"] }],
   ["A question of the leader report is not framed as one card",
     "      if (whole.h <= BOTTOM - (PAGE.top + HEADER)) {",
     "      if (false) {",
-    { file: "migration/src/lib/leader-report-layout.js", tests: ["scripts/test-leader-report-glance.js"] }],
+    { file: "migration/src/lib/exports/leader-report-layout.js", tests: ["scripts/test-leader-report-glance.js"] }],
   ["The leader report's rules wear the client's colour again",
     "  const GREEN = palette.brand;",
     "  const GREEN = accent;",
-    { file: "migration/src/lib/leader-report-layout.js", tests: ["scripts/test-leader-report-glance.js"] }],
+    { file: "migration/src/lib/exports/leader-report-layout.js", tests: ["scripts/test-leader-report-glance.js"] }],
   ["A graded activity of the leader report has no scoreboard",
     "    if (found.scoreboard) block(",
     "    if (false) block(",
-    { file: "migration/src/lib/leader-report-layout.js", tests: ["scripts/test-leader-report-glance.js"] }],
+    { file: "migration/src/lib/exports/leader-report-layout.js", tests: ["scripts/test-leader-report-glance.js"] }],
   ["The pack puts more than four cards on a page",
     "const CARDS_A_PAGE = 4;",
     "const CARDS_A_PAGE = 99;",
-    { file: "public/js/resultsExport.js", tests: ["scripts/test-results-pack.js"] }],
+    { file: "migration/src/lib/exports/resultsExport.js", tests: ["scripts/test-results-pack.js"] }],
   ["The pack's slides have no speaker notes",
     "    if (page.notes) slide.addNotes(page.notes);",
     "    if (false) slide.addNotes(page.notes);",
-    { file: "public/js/resultsExport.js", tests: ["scripts/test-results-pack.js"] }],
+    { file: "migration/src/lib/exports/resultsExport.js", tests: ["scripts/test-results-pack.js"] }],
   ["The pack writes its small words at 11 pt",
     "question: 14, details: 14, small: 12, chart: 13.7",
     "question: 14, details: 14, small: 11, chart: 13.7",
-    { file: "public/js/resultsExport.js", tests: ["scripts/test-results-pack.js"] }],
+    { file: "migration/src/lib/exports/resultsExport.js", tests: ["scripts/test-results-pack.js"] }],
   ["The pack's PDF says nothing of its language",
     "  doc.setLanguage('en-US');\n  for (const face of [fonts.regular, fonts.bold]) {",
     "  for (const face of [fonts.regular, fonts.bold]) {",
-    { file: "public/js/resultsExport.js", tests: ["scripts/test-results-pack.js"] }],
+    { file: "migration/src/lib/exports/resultsExport.js", tests: ["scripts/test-results-pack.js"] }],
   ["The summary CSV prints the takeaway on every row",
     "own.forEach((cells, index) => rows.push([...base, ...cells, chart.answered, index === 0 ? chart.headline : '']));",
     "own.forEach((cells) => rows.push([...base, ...cells, chart.answered, chart.headline]));",
-    { file: "public/js/resultsExport.js", tests: ["scripts/test-results-csv.js"] }],
+    { file: "migration/src/lib/exports/resultsExport.js", tests: ["scripts/test-results-csv.js"] }],
   ["The summary CSV writes a share as text with a % sign",
     "own.push([option.label, option.count, option.percent, place, yes(option.isCorrect), yes(option.isTop)]);",
     "own.push([option.label, option.count, `${option.percent}%`, place, yes(option.isCorrect), yes(option.isTop)]);",
-    { file: "public/js/resultsExport.js", tests: ["scripts/test-results-csv.js"] }],
+    { file: "migration/src/lib/exports/resultsExport.js", tests: ["scripts/test-results-csv.js"] }],
   ["The pack's cards run down into the footer",
     "  const bottom = PACK_BODY_BOTTOM;",
     "  const bottom = PACK_PAGE.height - 2;",
-    { file: "public/js/resultsExport.js", tests: ["scripts/test-results-pack.js"] }],
+    { file: "migration/src/lib/exports/resultsExport.js", tests: ["scripts/test-results-pack.js"] }],
 ];
 
 const run = (modulePath) => spawnSync(process.execPath, ['--test', TESTS], {
@@ -305,13 +305,13 @@ for (const [what, find, replace, where] of MUTATIONS) {
     console.error(`Mutation ${number} no longer applies (its text is in the files ${inReport + inNames} times, not once): ${what}`);
     process.exit(1);
   }
-  const mutant = path.join(LIB, `.leader-report.mutant-${number}.js`);
-  const mutantNames = path.join(LIB, `.participant-names.mutant-${number}.js`);
+  const mutant = path.join(LIB, 'exports', `.leader-report.mutant-${number}.js`);
+  const mutantNames = path.join(LIB, 'results', `.participant-names.mutant-${number}.js`);
   if (inReport === 1) await writeFile(mutant, source.replace(find, replace));
   else {
     // The broken naming rule is wired in by a copy of the report that imports it from the copy.
     await writeFile(mutantNames, names.replace(find, replace));
-    await writeFile(mutant, source.split('./participant-names.js').join(`./.participant-names.mutant-${number}.js`));
+    await writeFile(mutant, source.split('../results/participant-names.js').join(`../results/.participant-names.mutant-${number}.js`));
   }
   let result;
   try { result = run(mutant); } finally { await rm(mutant, { force: true }); await rm(mutantNames, { force: true }); }

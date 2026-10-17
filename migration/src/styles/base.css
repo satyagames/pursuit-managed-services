@@ -1,5 +1,5 @@
 /* Element-level base for the participant pages: type, focus ring, helpers. Loaded after
- * tokens.css and the legacy public/css files, so it wins by source order. */
+ * tokens.css and the legacy sheets in styles/legacy/, so it wins by source order. */
 
 html {
   -webkit-text-size-adjust: 100%;
@@ -30,7 +30,7 @@ body {
 }
 
 /* Selection, the long-press callout and rubber-band scrolling are only switched off for the
-   kiosk (installed web app or ?kiosk=1, see lib/kiosk.ts). In a normal Safari tab people can
+   kiosk (installed web app or ?kiosk=1, see lib/common/kiosk.ts). In a normal Safari tab people can
    select and copy text and pull to refresh. */
 body {
   -webkit-user-select: text;
@@ -67,7 +67,7 @@ html:not([data-kiosk]) body {
 }
 
 /* A heading that script moved focus to (a new screen, the next question) is not a control. It
-   takes the ring only when the person is using the keyboard: lib/focus.ts marks it then. For a
+   takes the ring only when the person is using the keyboard: lib/common/focus.ts marks it then. For a
    tap or a click there is no outline and no halo, whatever :focus-visible makes of it. */
 :where(h1, h2, h3, h4, h5, h6)[tabindex='-1']:focus {
   outline: none;
@@ -93,7 +93,7 @@ html:not([data-kiosk]) body {
   border: 0;
 }
 
-/* Reduced motion: public/css/vfx.css already switches off the legacy animations and shortens
+/* Reduced motion: migration/src/styles/legacy/vfx.css already switches off the legacy animations and shortens
    their transitions, element by element. Each component here does the same for itself. A
    blanket `* { transition-duration: ... }` is avoided on purpose: it turns the default
    `transition: all` on for every element, layout properties included, so a resize or rotation

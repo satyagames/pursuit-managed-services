@@ -4,8 +4,8 @@ import { addFlowContent, makeVisitor, mockApi, type Fixture } from './fixtures.j
 import {
   confettiCanvas, installAudioStub, installConfettiSpy, readAudio, readConfetti, resetConfetti, type StubOptions,
 } from './effects-support.js';
-import { CUES, toneSignature, type CueName } from '../../migration/src/lib/sound-cues.js';
-import { buildPalette, confettiPlan, isRedish, parseColor, type ConfettiSize } from '../../migration/src/lib/confetti-plan.js';
+import { CUES, toneSignature, type CueName } from '../../migration/src/lib/effects/sound-cues.js';
+import { buildPalette, confettiPlan, isRedish, parseColor, type ConfettiSize } from '../../migration/src/lib/effects/confetti-plan.js';
 
 // Phase 3: sound and confetti against the built release page with a synthetic API.
 //

@@ -1,8 +1,8 @@
 // Phase 10f, part B: the sample clients have VJR's pictures. Run: node --test scripts/test-sample-pictures.js (part of `npm test`).
 //
 // The six files are what Brand Studio stored when VJR's pictures were chosen for their slots and saved (scripts/build-sample-pictures.js
-// drives the built admin page to make them). This holds the committed files to their list (migration/src/lib/sample-pictures.js) and to the
-// slots' rules, and holds "Seed sample clients" (migration/src/lib/sample-seed.js) to what it must do, on the mocked SharePoint REST and on the
+// drives the built admin page to make them). This holds the committed files to their list (migration/src/lib/setup/sample-pictures.js) and to the
+// slots' rules, and holds "Seed sample clients" (migration/src/lib/setup/sample-seed.js) to what it must do, on the mocked SharePoint REST and on the
 // real local server: put a client's three pictures in the picture library BEFORE the client that points at them, never send a file that is
 // there already, write the two themes (and LogoUrl) with the files' addresses, and send nothing at all on a second run. A recorded suite: it
 // is run a second time on `Test` lists by scripts/test-list-namespace.js, so it names no prefix itself.
@@ -13,15 +13,15 @@ import { cp, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os';
 import path from 'node:path';
 import { after, describe, it } from 'node:test';
-import { SLOTS, extensionOf } from '../migration/src/lib/asset-specs.js';
-import { evaluateReadiness } from '../migration/src/lib/admin-today.js';
-import { draftFromClient } from '../migration/src/lib/brand-studio.js';
-import { resolveClientTheme } from '../migration/src/lib/client-theme.js';
-import { inspectFile } from '../migration/src/lib/image-sniff.js';
-import { samplePack } from '../migration/src/lib/sample-clients.js';
-import { SAMPLE_PICTURES, SAMPLE_PICTURE_NAMES } from '../migration/src/lib/sample-pictures.js';
-import { ALREADY_THERE, LOCAL_PICTURES, UPLOADED, localSamplePack, pictureAddresses, seedSampleClients } from '../migration/src/lib/sample-seed.js';
-import { seedPack } from '../migration/src/lib/seed.js';
+import { SLOTS, extensionOf } from '../migration/src/lib/brand/asset-specs.js';
+import { evaluateReadiness } from '../migration/src/lib/admin/admin-today.js';
+import { draftFromClient } from '../migration/src/lib/brand/brand-studio.js';
+import { resolveClientTheme } from '../migration/src/lib/brand/client-theme.js';
+import { inspectFile } from '../migration/src/lib/brand/image-sniff.js';
+import { samplePack } from '../migration/src/lib/setup/sample-clients.js';
+import { SAMPLE_PICTURES, SAMPLE_PICTURE_NAMES } from '../migration/src/lib/setup/sample-pictures.js';
+import { ALREADY_THERE, LOCAL_PICTURES, UPLOADED, localSamplePack, pictureAddresses, seedSampleClients } from '../migration/src/lib/setup/sample-seed.js';
+import { seedPack } from '../migration/src/lib/setup/seed.js';
 import { freePort } from './free-port.js';
 import { STRAYS, UNINDEXED, createSharePointFake } from './sharepoint-fake.js';
 
@@ -37,7 +37,7 @@ const file = async (name, type) => new Blob([await readFile(path.join(PICTURES, 
 
 let pages = 0;
 const freshPage = async (settings) => {
-  const ds = await import(`../public/js/dataService.js?sample-pictures=${pages += 1}`);
+  const ds = await import(`../migration/src/lib/data/dataService.js?sample-pictures=${pages += 1}`);
   ds.configure(settings);
   return ds;
 };

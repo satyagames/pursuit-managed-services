@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { sha256Hex } from '../../migration/src/lib/sha256.js';
+import { sha256Hex } from '../../migration/src/lib/admin/sha256.js';
 import { sharePointFolderPath } from '../deployment-config.js';
 import { axeCheck, describeFindings } from './a11y-support.js';
 import { mockApi } from './fixtures.js';

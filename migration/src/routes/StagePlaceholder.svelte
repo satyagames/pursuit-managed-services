@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { router } from 'svelte-spa-router';
-  import { APP_NAME } from '../lib/app-name.js';
-  import { navigateTo } from '../lib/navigation.js';
-  import { participant } from '../lib/session.svelte.js';
+  import { APP_NAME } from '../lib/common/app-name.js';
+  import { navigateTo } from '../lib/participant/navigation.js';
+  import { participant } from '../lib/participant/session.svelte.js';
 
   let path = $derived(router.location);
   let title = $derived(path.startsWith('/quiz/') ? 'Activity' : path.startsWith('/feedback/') ? 'Feedback' : path === '/thank-you' ? 'Thank you' : path === '/agenda' ? 'Agenda' : 'Page not found');

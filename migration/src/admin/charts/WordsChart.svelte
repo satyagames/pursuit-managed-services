@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { FIRST_COMMENTS, WORDS_HEADING, segmentsOf } from '../../lib/results-chart-model.js';
+  import { FIRST_COMMENTS, WORDS_HEADING, segmentsOf } from '../../lib/results/results-chart-model.js';
   import { timeOf, type Chart } from './chart-ui.js';
 
   // Written answers: on the left, the words that came up most (repeated words, counted by comment: never "themes", and nothing made up), each a

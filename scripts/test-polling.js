@@ -1,15 +1,15 @@
-// Phase 7: how often a page that stays open looks at the server, as numbers. The rules are in migration/src/lib/poll-schedule.js (no DOM),
+// Phase 7: how often a page that stays open looks at the server, as numbers. The rules are in migration/src/lib/common/poll-schedule.js (no DOM),
 // so every one of them is held here; the Playwright polling specs then count the real requests of the built page against the SharePoint fake.
 //   Run: npm run test:polling
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, it } from 'node:test';
-import { adminAddress, liveDisplayHash, liveDisplayOfHash } from '../migration/src/lib/admin-address.js';
+import { adminAddress, liveDisplayHash, liveDisplayOfHash } from '../migration/src/lib/common/admin-address.js';
 import {
   ENDED_NOTICE_ROUTES, LIVE_DISPLAY, POLL, adminDelay, modeOf, nextDelay, sessionHasEnded, showsEndedNotice,
-} from '../migration/src/lib/poll-schedule.js';
-import { STRUCTURE_MAX_AGE_MS, structureChanged } from '../migration/src/lib/results-tally.js';
+} from '../migration/src/lib/common/poll-schedule.js';
+import { STRUCTURE_MAX_AGE_MS, structureChanged } from '../migration/src/lib/results/results-tally.js';
 
 const ROOT = path.join(import.meta.dirname, '..');
 /** A repeatable sequence in [0, 1): a small linear congruential generator, so a "random" test is the same every run. */
@@ -184,7 +184,7 @@ describe('the participant page keeps to those rules (read from its source, not g
     assert.doesNotMatch(app, /setInterval/, 'App.svelte has no interval');
     const agenda = await readFile(path.join(ROOT, 'migration/src/routes/Agenda.svelte'), 'utf8');
     assert.doesNotMatch(agenda, /setInterval|dataService/, 'the hub reads on arriving and then follows the page watcher');
-    const watcher = await readFile(path.join(ROOT, 'migration/src/lib/page-watch.ts'), 'utf8');
+    const watcher = await readFile(path.join(ROOT, 'migration/src/lib/common/page-watch.ts'), 'utf8');
     assert.doesNotMatch(watcher, /setInterval/, 'the watcher reschedules after each check, so every wait has its own jitter');
     assert.match(watcher, /window\.setTimeout/);
   });

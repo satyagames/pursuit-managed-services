@@ -22,7 +22,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
-import { LISTS, selectOf } from '../../public/js/pms-schema.js';
+import { LISTS, selectOf } from '../../migration/src/lib/schema/pms-schema.js';
 import { BASELINE_DIR, NODE_SUITES, differences, exportLastCommit, normalise, parse, recordSuite } from '../request-baseline.js';
 
 export const SELECT_NOTE = '# Amended in Phase 10h, part A: every item read names its columns, so each entry that read items without naming them has `&$select=` and its list\'s columns at the end of its query (and a mock\'s `__next` link of such a read carries them before its `$fakeskip`), by scripts/schema-baseline/select-baselines.js, after a fresh recording equalled the translation exactly; the number and the order of the requests are as they were. Nothing else was changed.';

@@ -1,4 +1,4 @@
-/* The admin page, over the legacy admin sheet (public/css/admin.css, which the old admin still uses
+/* The admin page, over the legacy admin sheet (migration/src/styles/legacy/admin.css, which the old admin still uses
  * and which this file never edits): Open Sans, the Phase 1 tokens, light surfaces, a navy bar with the
  * Deloitte wordmark, and a tab row that scrolls sideways on a phone. */
 
@@ -52,7 +52,7 @@ html {
   box-shadow: 0 0 0 3px var(--adm-ink), 0 0 0 9px var(--adm-ink);
 }
 
-/* A heading that script moved focus to (a new screen) shows the ring only to someone on the keyboard (lib/focus.ts marks it), as on the participant page. */
+/* A heading that script moved focus to (a new screen) shows the ring only to someone on the keyboard (lib/common/focus.ts marks it), as on the participant page. */
 :where(h1, h2, h3, h4, h5, h6)[tabindex='-1']:focus {
   outline: none;
   box-shadow: none;

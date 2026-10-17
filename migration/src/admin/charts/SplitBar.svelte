@@ -16,7 +16,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import ChartTip from './ChartTip.svelte';
-  import { people } from '../../lib/results-chart-model.js';
+  import { people } from '../../lib/results/results-chart-model.js';
   import { uid, type Tip } from './chart-ui.js';
 
   // True or false: ONE bar split in two, True from the left and False from the right, each labelled directly ("True 72%") above its own end. The labels

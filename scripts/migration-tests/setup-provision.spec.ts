@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { sha256Hex } from '../../migration/src/lib/sha256.js';
+import { sha256Hex } from '../../migration/src/lib/admin/sha256.js';
 import { newFake, pageUrl, serveSharePoint, type Fake } from './sharepoint.js';
 
 // Phase 10c-3: the built Setup page prepares a site, against the mocked SharePoint REST (scripts/sharepoint-fake.js). Nothing reaches a real

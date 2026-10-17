@@ -7,7 +7,7 @@ import { appName } from './vite-plugin-app-name.ts';
 import { builtSettings } from './vite-plugin-built-settings.ts';
 import { unsupportedPage } from './vite-plugin-unsupported.ts';
 
-const stubs = fileURLToPath(new URL('./src/lib/export-stubs-unavailable.js', import.meta.url));
+const stubs = fileURLToPath(new URL('./src/lib/exports/export-stubs-unavailable.js', import.meta.url));
 const apiTarget = process.env.CEC_DEV_API_TARGET ?? 'http://localhost:3000';
 const devPort = Number(process.env.VITE_ADMIN_PORT) || 5175;
 

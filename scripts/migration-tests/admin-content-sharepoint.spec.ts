@@ -1,12 +1,12 @@
 import { test, expect, type Page } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { sha256Hex } from '../../migration/src/lib/sha256.js';
-import { localDate } from '../../migration/src/lib/admin-today.js';
-import { qrImage } from '../../migration/src/lib/admin-links.js';
+import { sha256Hex } from '../../migration/src/lib/admin/sha256.js';
+import { localDate } from '../../migration/src/lib/admin/admin-today.js';
+import { qrImage } from '../../migration/src/lib/admin/admin-links.js';
 import { newFake, onSite, pageUrl, seedAndGoLive, serveSharePoint, shape, type Fake } from './sharepoint.js';
-import { samplePack } from '../../migration/src/lib/sample-clients.js';
-import { seedPack } from '../../migration/src/lib/seed.js';
+import { samplePack } from '../../migration/src/lib/setup/sample-clients.js';
+import { seedPack } from '../../migration/src/lib/setup/seed.js';
 
 // Phase 5b on SharePoint: the BUILT admin page served at the approved host's address, against the mocked
 // SharePoint REST (scripts/sharepoint-fake.js), which counts every request. These are the request budgets

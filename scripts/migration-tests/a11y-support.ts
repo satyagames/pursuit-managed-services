@@ -1,8 +1,8 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page } from '@playwright/test';
-import { buildClientTheme } from '../../migration/src/lib/client-theme.js';
-import { samplePack } from '../../migration/src/lib/sample-clients.js';
-import { seedPack } from '../../migration/src/lib/seed.js';
+import { buildClientTheme } from '../../migration/src/lib/brand/client-theme.js';
+import { samplePack } from '../../migration/src/lib/setup/sample-clients.js';
+import { seedPack } from '../../migration/src/lib/setup/seed.js';
 import { newFake, onSite, pageUrl, serveSharePoint, type Fake } from './sharepoint.js';
 
 // What the Phase 8 accessibility, keyboard, contrast, zoom and device specs share: four client looks, a participant walker that stops at every

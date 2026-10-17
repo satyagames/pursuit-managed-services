@@ -1,11 +1,11 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
-  import * as dataService from '../../../public/js/dataService.js';
-  import { answersToQuestions, confirmSampleClient, orphanNote } from '../lib/adminData.js';
-  import { activitiesOfClient, defaultClientId, lastClientId, nextOrder, rememberClient, reorderActivities } from '../lib/admin-content.js';
+  import * as dataService from '../lib/data/dataService.js';
+  import { answersToQuestions, confirmSampleClient, orphanNote } from '../lib/admin/adminData.js';
+  import { activitiesOfClient, defaultClientId, lastClientId, nextOrder, rememberClient, reorderActivities } from '../lib/admin/admin-content.js';
   import ActivityFormDialog from './ActivityFormDialog.svelte';
   import ActivityPreview from './ActivityPreview.svelte';
-  import { effectiveSlug } from '../lib/admin-clients.js';
+  import { effectiveSlug } from '../lib/admin/admin-clients.js';
   import ContentQuestions from './ContentQuestions.svelte';
   import SampleNotice from './SampleNotice.svelte';
   import CopyActivitiesDialog from './CopyActivitiesDialog.svelte';

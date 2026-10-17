@@ -1,8 +1,8 @@
 // Phase 10c-3, part E: Setup adds the first admin, and the seed-file import brings no admins. Run: node --test scripts/test-setup-admins.js (part of
 // `npm test`).
 //
-// "Add an admin" (migration/src/lib/setup-admins.js) takes a name and a PIN typed twice (digits only, 6 to 12: the admin page's PIN field takes 12),
-// and writes PMSAdminUsers with the hash migration/src/lib/admin-pin.js compares: the same function, exported, with `login` unchanged. The PIN itself is
+// "Add an admin" (migration/src/lib/setup/setup-admins.js) takes a name and a PIN typed twice (digits only, 6 to 12: the admin page's PIN field takes 12),
+// and writes PMSAdminUsers with the hash migration/src/lib/admin/admin-pin.js compares: the same function, exported, with `login` unchanged. The PIN itself is
 // never stored, sent, logged or shown, and the page lists the admins by name only. The import of a seed file leaves its admins out, so the demo PIN
 // 1234 cannot reach a new site that way. On the mocked SharePoint REST and the real local server, which must leave the same record. How a PIN is
 // hashed and compared is decision 10's and does not change.
@@ -12,12 +12,12 @@ import { cp, mkdtemp, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { after, describe, it } from 'node:test';
-import { ID } from '../public/js/pms-schema.js';
-import { sha256Hex } from '../migration/src/lib/sha256.js';
-import { hashPin, login } from '../migration/src/lib/admin-pin.js';
-import * as pageService from '../public/js/dataService.js';
-import { ADMIN_PIN, addAdmin, adminNames, newAdminProblem } from '../migration/src/lib/setup-admins.js';
-import { adminsInSeed, importSeed } from '../migration/src/lib/setup-import.js';
+import { ID } from '../migration/src/lib/schema/pms-schema.js';
+import { sha256Hex } from '../migration/src/lib/admin/sha256.js';
+import { hashPin, login } from '../migration/src/lib/admin/admin-pin.js';
+import * as pageService from '../migration/src/lib/data/dataService.js';
+import { ADMIN_PIN, addAdmin, adminNames, newAdminProblem } from '../migration/src/lib/setup/setup-admins.js';
+import { adminsInSeed, importSeed } from '../migration/src/lib/setup/setup-import.js';
 import { freePort } from './free-port.js';
 import { STRAYS, UNINDEXED, createSharePointFake } from './sharepoint-fake.js';
 
@@ -37,7 +37,7 @@ function siteWith(options = {}) {
 }
 let pages = 0;
 const freshPage = async (settings) => {
-  const ds = await import(`../public/js/dataService.js?setup-admins=${pages += 1}`);
+  const ds = await import(`../migration/src/lib/data/dataService.js?setup-admins=${pages += 1}`);
   ds.configure(settings);
   return ds;
 };
@@ -66,7 +66,7 @@ describe('the rules of a new admin', () => {
   });
 
   it('login is exactly what it was: admin-pin.js changed by one word, `export` before hashPin', async () => {
-    const source = (await readFile(path.join(ROOT, 'migration/src/lib/admin-pin.js'), 'utf8')).replace(/\r\n/g, '\n');
+    const source = (await readFile(path.join(ROOT, 'migration/src/lib/admin/admin-pin.js'), 'utf8')).replace(/\r\n/g, '\n');
     assert.ok(source.includes(`/** Resolves to the matching admin user (without its PIN hash), or null. */
 export async function login(pin) {
   const [hash, users] = await Promise.all([hashPin(pin), dataService.listAdminUsers()]);

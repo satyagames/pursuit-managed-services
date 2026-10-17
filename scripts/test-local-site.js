@@ -20,9 +20,9 @@ import { packRecords, readBranding, readDataset } from './local-site/dataset.js'
 import { buildScenario } from './local-site/scenarios.js';
 import { DIGEST_EXPIRED, FILE_NOT_FOUND_PAGE, QUERY_TOO_LONG, findPages, startLocalSite } from './local-site/server.js';
 import { ADMIN, HOST, makeFake, pageUrl } from './local-site/site-shape.js';
-import { MAX_ACTIVITY_TITLE, MAX_OPTION_TEXT, optionTextProblem } from '../migration/src/lib/admin-content.js';
-import { MAX_CLIENT_NAME, SLUG_MAX } from '../migration/src/lib/admin-clients.js';
-import { isAnswerComplete, isGraded, correctOptionIds } from '../migration/src/lib/pager-logic.js';
+import { MAX_ACTIVITY_TITLE, MAX_OPTION_TEXT, optionTextProblem } from '../migration/src/lib/admin/admin-content.js';
+import { MAX_CLIENT_NAME, SLUG_MAX } from '../migration/src/lib/admin/admin-clients.js';
+import { isAnswerComplete, isGraded, correctOptionIds } from '../migration/src/lib/participant/pager-logic.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const FOLDER = '/sites/PCOE/Shared%20Documents/PMS/';
@@ -270,7 +270,7 @@ describe('VJR\'s dataset', () => {
     fake.importState(state);
     const restore = fake.install();
     try {
-      const ds = await import('../public/js/dataService.js?local-site-test=1');
+      const ds = await import('../migration/src/lib/data/dataService.js?local-site-test=1');
       ds.configure({ sharePoint: fake.settings });
       for (const client of records.clients) {
         const sections = await ds.listClientSections(client.id);
@@ -294,7 +294,7 @@ describe('VJR\'s dataset', () => {
     fake.importState(state);
     const restore = fake.install();
     try {
-      const ds = await import('../public/js/dataService.js?local-site-test=2');
+      const ds = await import('../migration/src/lib/data/dataService.js?local-site-test=2');
       ds.configure({ sharePoint: fake.settings });
       await ds.createClient({ id: 'c-newco', name: 'NewCo', slug: 'newco', status: 'active', themeVersion: 1, theme: null, logoUrl: null, primaryColor: null, secondaryColor: null, createdAt: null });
       const before = JSON.stringify(fake.lists.get('sections').filter((row) => row.ClientId === 'c-template'));

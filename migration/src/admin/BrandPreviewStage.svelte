@@ -2,9 +2,9 @@
   import AppShell from '../components/AppShell.svelte';
   import HeaderGreeting from '../components/HeaderGreeting.svelte';
   import SoundToggle from '../components/SoundToggle.svelte';
-  import type { Look } from '../lib/brand-look.js';
-  import { hiLine } from '../lib/pager-logic.js';
-  import { SAMPLE_ACTIVITY, SAMPLE_FINALE, SAMPLE_NAME, SAMPLE_PILLS } from '../lib/brand-sample.js';
+  import type { Look } from '../lib/brand/brand-look.js';
+  import { hiLine } from '../lib/participant/pager-logic.js';
+  import { SAMPLE_ACTIVITY, SAMPLE_FINALE, SAMPLE_NAME, SAMPLE_PILLS } from '../lib/brand/brand-sample.js';
   import ActivityPager from '../pager/ActivityPager.svelte';
   import Agenda from '../routes/Agenda.svelte';
   import ThankYou from '../routes/ThankYou.svelte';

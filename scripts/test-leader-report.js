@@ -23,7 +23,7 @@ import { describe, it } from 'node:test';
 import { BIG, DAY, bigComment, bigName, bigRecords, harbourRecords } from './leader-report-fixtures.js';
 import { TITLE } from './sharepoint-fake.js';
 
-const lib = await import(process.env.LEADER_REPORT_MODULE ?? '../migration/src/lib/leader-report.js');
+const lib = await import(process.env.LEADER_REPORT_MODULE ?? '../migration/src/lib/exports/leader-report.js');
 const { COUNTING_RULES, CSV_COLUMNS, NO_ANSWERS, STRAY_TITLE, answeredLine, buildLeaderReport, csvCell, kindOf, participantAnswersCsv, participantAnswersRows, printColours, reportFileName, reportParticipants, scoreLine, wholePercent } = lib;
 
 const OPTIONS = { generatedAt: '2026-10-12T09:30:00.000Z', timeZone: 'UTC' };

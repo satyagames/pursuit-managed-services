@@ -2,16 +2,16 @@
 // (also part of npm test and npm run test:report)
 //
 // The report is made in node by the model, layout and writer the admin page uses (scripts/leader-report-node.js) and read back with pdf.js. What
-// is held here: each question carries the Live display's headline and "N of M got it right first time" (lib/results-chart-model.js), its bars are
-// drawn by lib/results-chart-figure.js in the colours of styles/results-tokens.css (the client's colour stays in the report's own structure: the
+// is held here: each question carries the Live display's headline and "N of M got it right first time" (lib/results/results-chart-model.js), its bars are
+// drawn by lib/results/results-chart-figure.js in the colours of styles/results-tokens.css (the client's colour stays in the report's own structure: the
 // title band, the rules, the completion bars), the correct answer has a tick and the word "Correct", and every number the report printed before
 // this phase is still printed. Every expected sentence is worked out BY HAND from the Harbour fixture (scripts/leader-report-fixtures.js) in the
 // comments beside it.
 
 import assert from 'node:assert/strict';
 import { before, describe, it } from 'node:test';
-import * as leaderReport from '../migration/src/lib/leader-report.js';
-import { RANKING_CAPTION } from '../migration/src/lib/results-chart-model.js';
+import * as leaderReport from '../migration/src/lib/exports/leader-report.js';
+import { RANKING_CAPTION } from '../migration/src/lib/results/results-chart-model.js';
 import { bigRecords, harbourRecords } from './leader-report-fixtures.js';
 import { makeReport } from './leader-report-node.js';
 import { inspectPdf, squash } from './pdf-inspect.js';

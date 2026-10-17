@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { Problem } from '../lib/deploy-problems.js';
+  import type { Problem } from '../lib/settings/deploy-problems.js';
 
-  // "This copy of the app": the first thing on Setup, read-only (Phase 10b). The rows are lib/setup-deployment.js copyRows(), made
+  // "This copy of the app": the first thing on Setup, read-only (Phase 10b). The rows are lib/setup/setup-deployment.js copyRows(), made
   // from what the page really worked out as it started, each with where it came from. When the page could not tell which lists are
   // its own, the problem is here in full, with the two ways to put it right. Only Setup loads this.
   let { rows, trouble = null, ways = [] }: {

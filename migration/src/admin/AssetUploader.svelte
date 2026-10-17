@@ -1,10 +1,10 @@
 <script lang="ts">
   import { tick } from 'svelte';
-  import { PictureError, decodeImage, hasTransparency, prepareAsset, type Decoded, type Prepared } from '../lib/asset-image.js';
-  import { ACCEPT, MAX_INPUT_BYTES, checkDimensions, describeSpec, formatBytes, type SlotSpec } from '../lib/asset-specs.js';
-  import { safeArea } from '../lib/brand-devices.js';
-  import type { View } from '../lib/crop-math.js';
-  import { inspectFile } from '../lib/image-sniff.js';
+  import { PictureError, decodeImage, hasTransparency, prepareAsset, type Decoded, type Prepared } from '../lib/brand/asset-image.js';
+  import { ACCEPT, MAX_INPUT_BYTES, checkDimensions, describeSpec, formatBytes, type SlotSpec } from '../lib/brand/asset-specs.js';
+  import { safeArea } from '../lib/brand/brand-devices.js';
+  import type { View } from '../lib/brand/crop-math.js';
+  import { inspectFile } from '../lib/brand/image-sniff.js';
   import CropDialog from './CropDialog.svelte';
 
   /**

@@ -8,24 +8,24 @@
 // It never lowers a higher version. Against the mocked SharePoint REST in its PCOE modes; the real site is QA-TESTING.md's to see.
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import * as admin from '../public/js/dataService.js';
-import { LISTS, VERSION } from '../public/js/pms-schema.js';
-import { RETIRED } from '../public/js/pms-schema-meta.js';
-import { readNameSources, resultRows, sessionsNeedingNames } from '../migration/src/lib/admin-results.js';
-import { problem } from '../migration/src/lib/deploy-problems.js';
-import { create, markReady, planLines, showPlan, siteApi } from '../migration/src/lib/provision.js';
-import { samplePack } from '../migration/src/lib/sample-clients.js';
-import { seedPack } from '../migration/src/lib/seed.js';
-import { readSessionResults } from '../migration/src/lib/session-results.js';
-import { schemaSpecs } from '../migration/src/lib/setup-checks.js';
+import * as admin from '../migration/src/lib/data/dataService.js';
+import { LISTS, VERSION } from '../migration/src/lib/schema/pms-schema.js';
+import { RETIRED } from '../migration/src/lib/schema/pms-schema-meta.js';
+import { readNameSources, resultRows, sessionsNeedingNames } from '../migration/src/lib/admin/admin-results.js';
+import { problem } from '../migration/src/lib/settings/deploy-problems.js';
+import { create, markReady, planLines, showPlan, siteApi } from '../migration/src/lib/setup/provision.js';
+import { samplePack } from '../migration/src/lib/setup/sample-clients.js';
+import { seedPack } from '../migration/src/lib/setup/seed.js';
+import { readSessionResults } from '../migration/src/lib/results/session-results.js';
+import { schemaSpecs } from '../migration/src/lib/setup/setup-checks.js';
 import { REFUSED_BY_NAME, STRAYS, UNINDEXED, UNNAMED, createSharePointFake } from './sharepoint-fake.js';
 
 const DAY = '2026-10-15';
 const SESSION = `dominos-${DAY}`;
 let pages = 0;
-/** A data layer of its own (one module is one page), pointed at `fake`, with a stop handler that notes what it is handed (as lib/start.ts's does). */
+/** A data layer of its own (one module is one page), pointed at `fake`, with a stop handler that notes what it is handed (as lib/settings/start.ts's does). */
 async function pageOn(fake) {
-  const ds = await import(`../public/js/dataService.js?schema-upgrade=${pages += 1}`);
+  const ds = await import(`../migration/src/lib/data/dataService.js?schema-upgrade=${pages += 1}`);
   const stops = [];
   ds.configure({ sharePoint: fake.settings, onStop: (code) => stops.push(code) });
   return { ds, stops };

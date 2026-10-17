@@ -1,4 +1,4 @@
-// An in-memory stand-in for the SharePoint REST API that public/js/dataService.js talks to.
+// An in-memory stand-in for the SharePoint REST API that migration/src/lib/data/dataService.js talks to.
 //
 // It exists because the real tenant cannot be reached from here: it counts every request, enforces
 // the two rules the response storage leans on (a unique AppId, and If-Match versions), and can be
@@ -70,8 +70,8 @@
 // what SharePoint is documented to say). `duplicateCode: true` adds SharePoint's error code for it, DUPLICATE_CODE, which is ASSUMED: the
 // tenant's own `error.code` was not captured (QA-TESTING.md item 142).
 
-import { LIBRARY, LISTS, VERSION } from '../public/js/pms-schema.js';
-import { columnNamesAt, columnsOf } from '../public/js/pms-schema-meta.js';
+import { LIBRARY, LISTS, VERSION } from '../migration/src/lib/schema/pms-schema.js';
+import { columnNamesAt, columnsOf } from '../migration/src/lib/schema/pms-schema-meta.js';
 
 export const SITE_URL = 'https://tenant.example/sites/cec';
 
@@ -129,7 +129,7 @@ export function plainTitles(value, prefix = SUITE_PREFIX) {
   return value;
 }
 
-// The lists and their columns are the schema file's (public/js/pms-schema.js and pms-schema-meta.js, Phase 10c-2b): this mock has no
+// The lists and their columns are the schema file's (migration/src/lib/schema/pms-schema.js and pms-schema-meta.js, Phase 10c-2b): this mock has no
 // table of its own. Each list holds the columns META describes, with SharePoint's type, index and uniqueness for each.
 
 /** The key the data layer has for each list title before any prefix: how a test names a list. */

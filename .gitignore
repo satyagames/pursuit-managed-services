@@ -12,7 +12,7 @@ server/data/*.tmp
 *.pfx
 *.key
 # A broken copy scripts/mutate-leader-report.js makes and removes; never commit one that a killed run left behind.
-migration/src/lib/.leader-report.mutant-*.js
+migration/src/lib/exports/.leader-report.mutant-*.js
 # The local PCOE site (Phase 12): its data, its certificate, and VJR's dummy-data pictures (third-party artwork: never committed, never packaged).
 scripts/local-site/data/
 scripts/local-site/.cert/

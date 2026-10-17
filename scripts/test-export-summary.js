@@ -1,4 +1,4 @@
-// Phase 13, item B: the summary every export opens with (lib/export-summary.js), and the "only N answers" line of the chart model.
+// Phase 13, item B: the summary every export opens with (lib/results/export-summary.js), and the "only N answers" line of the chart model.
 // Run: node --test scripts/test-export-summary.js (also part of npm test and npm run test:report)
 //
 // Every sentence below is worked out BY HAND from the fixtures' answers, in the comments beside it; nothing is compared with itself. The
@@ -7,10 +7,10 @@
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { buildLeaderReport } from '../migration/src/lib/leader-report.js';
-import { chartOf, fewAnswersLine, numberWords } from '../migration/src/lib/results-chart-model.js';
-import * as summary from '../migration/src/lib/export-summary.js';
-import { liveSections } from '../public/js/resultsExport.js';
+import { buildLeaderReport } from '../migration/src/lib/exports/leader-report.js';
+import { chartOf, fewAnswersLine, numberWords } from '../migration/src/lib/results/results-chart-model.js';
+import * as summary from '../migration/src/lib/results/export-summary.js';
+import { liveSections } from '../migration/src/lib/exports/resultsExport.js';
 import { harbourRecords } from './leader-report-fixtures.js';
 import { krogerResults, vineResults } from './results-export-fixtures.js';
 
@@ -32,7 +32,7 @@ describe('the chart model says when a figure rests on few answers', () => {
   });
 });
 
-describe('an activity\'s takeaway (lib/export-summary.js)', () => {
+describe('an activity\'s takeaway (lib/results/export-summary.js)', () => {
   it('Vine, graded: the average share right first time over its graded questions, and the one most missed', () => {
     // v1: first picks Vine, Vine, 5th Street, Main Street: 2 of 4 right (50%). v3: True, True, False, True: 3 of 4 (75%).
     // The average of 50% and 75% is 62.5%, shown as 63%. The most missed is v1. Four people answered it: "Only four answers."

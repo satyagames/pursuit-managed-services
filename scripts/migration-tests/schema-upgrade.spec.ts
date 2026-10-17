@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { sha256Hex } from '../../migration/src/lib/sha256.js';
+import { sha256Hex } from '../../migration/src/lib/admin/sha256.js';
 import { newFake, onSite, pageUrl, seedAndGoLive, serveSharePoint, type Fake } from './sharepoint.js';
 
 // Phase 10i, part C, in the BUILT pages, against the mocked SharePoint REST in the real site's modes (`strict: false`: ClientId and DisplayName left out of a

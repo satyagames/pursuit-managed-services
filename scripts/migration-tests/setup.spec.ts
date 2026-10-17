@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { PHASE_4_COLUMNS, TITLE } from '../sharepoint-fake.js';
 import { newFake, onSite, pageUrl, serveSharePoint, type Fake } from './sharepoint.js';
-import { SAMPLE_PICTURES } from '../../migration/src/lib/sample-pictures.js';
+import { SAMPLE_PICTURES } from '../../migration/src/lib/setup/sample-pictures.js';
 
 // The built Setup page at the approved host's address, against the mocked SharePoint REST. Every
 // request is answered by the fake; nothing reaches the real tenant.

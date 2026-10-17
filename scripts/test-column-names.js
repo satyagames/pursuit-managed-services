@@ -15,15 +15,15 @@
 // Run: node --test scripts/test-column-names.js (also part of npm test).
 import assert from 'node:assert/strict';
 import { after, describe, it } from 'node:test';
-import * as ds from '../public/js/dataService.js';
-import { selectOf } from '../public/js/pms-schema.js';
-import { readNameSources, resultRows, sessionsNeedingNames } from '../migration/src/lib/admin-results.js';
-import { readLeaderReportRecords } from '../migration/src/lib/leader-report-data.js';
-import { nameParticipants } from '../migration/src/lib/participant-names.js';
-import { samplePack } from '../migration/src/lib/sample-clients.js';
-import { readSessionResults } from '../migration/src/lib/session-results.js';
-import { seedPack } from '../migration/src/lib/seed.js';
-import * as checks from '../migration/src/lib/setup-checks.js';
+import * as ds from '../migration/src/lib/data/dataService.js';
+import { selectOf } from '../migration/src/lib/schema/pms-schema.js';
+import { readNameSources, resultRows, sessionsNeedingNames } from '../migration/src/lib/admin/admin-results.js';
+import { readLeaderReportRecords } from '../migration/src/lib/exports/leader-report-data.js';
+import { nameParticipants } from '../migration/src/lib/results/participant-names.js';
+import { samplePack } from '../migration/src/lib/setup/sample-clients.js';
+import { readSessionResults } from '../migration/src/lib/results/session-results.js';
+import { seedPack } from '../migration/src/lib/setup/seed.js';
+import * as checks from '../migration/src/lib/setup/setup-checks.js';
 import {
   REFUSED_BY_NAME, REFUSED_WORDS, STRAYS, TENANT_LEAVES_OUT, TENANT_REFUSES_BY_NAME, TITLE, UNINDEXED, UNNAMED, createSharePointFake, plainTitles,
 } from './sharepoint-fake.js';

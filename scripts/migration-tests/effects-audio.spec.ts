@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import {
   activeLevelDbA, audibleSeconds, brightness, dominantOf, edgeLevel, hasInvalid, peakDb, rmsDb, wavBytes,
 } from '../audio-analysis.js';
-import { CUES, CUE_NAMES, cueEnd, noteEnd, type CueName } from '../../migration/src/lib/sound-cues.js';
+import { CUES, CUE_NAMES, cueEnd, noteEnd, type CueName } from '../../migration/src/lib/effects/sound-cues.js';
 
 // The audio render guard. Nobody can listen to a test run, so every cue is rendered through a real
 // OfflineAudioContext (the same sound-engine.ts the app ships, bundled for the browser under test) and
@@ -35,7 +35,7 @@ const LIMITS = {
 
 let bundle: Promise<string> | null = null;
 const engineBundle = () => (bundle ??= build({
-  entryPoints: [fileURLToPath(new URL('../../migration/src/lib/sound-engine.ts', import.meta.url))],
+  entryPoints: [fileURLToPath(new URL('../../migration/src/lib/effects/sound-engine.ts', import.meta.url))],
   bundle: true,
   format: 'iife',
   globalName: 'PmsSound',

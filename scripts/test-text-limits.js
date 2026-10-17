@@ -11,11 +11,11 @@ import { cp, mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { after, describe, it } from 'node:test';
-import { LISTS } from '../public/js/pms-schema.js';
-import { META, columnsOf } from '../public/js/pms-schema-meta.js';
-import { MAX_ACTIVITY_TITLE, MAX_GUEST_NAME, MAX_IMAGE_URL, MAX_OPTION_TEXT, optionTextProblem, optionValueFrom } from '../migration/src/lib/admin-content.js';
-import { MAX_CLIENT_NAME, SLUG_MAX, clientProblems } from '../migration/src/lib/admin-clients.js';
-import { ADMIN_PIN } from '../migration/src/lib/setup-admins.js';
+import { LISTS } from '../migration/src/lib/schema/pms-schema.js';
+import { META, columnsOf } from '../migration/src/lib/schema/pms-schema-meta.js';
+import { MAX_ACTIVITY_TITLE, MAX_GUEST_NAME, MAX_IMAGE_URL, MAX_OPTION_TEXT, optionTextProblem, optionValueFrom } from '../migration/src/lib/admin/admin-content.js';
+import { MAX_CLIENT_NAME, SLUG_MAX, clientProblems } from '../migration/src/lib/admin/admin-clients.js';
+import { ADMIN_PIN } from '../migration/src/lib/setup/setup-admins.js';
 import { freePort } from './free-port.js';
 import { STRAYS, UNINDEXED, createSharePointFake } from './sharepoint-fake.js';
 
@@ -23,7 +23,7 @@ const ROOT = path.join(import.meta.dirname, '..');
 const realFetch = globalThis.fetch;
 let pages = 0;
 const freshPage = async (settings) => {
-  const ds = await import(`../public/js/dataService.js?text-limits=${pages += 1}`);
+  const ds = await import(`../migration/src/lib/data/dataService.js?text-limits=${pages += 1}`);
   ds.configure(settings);
   return ds;
 };

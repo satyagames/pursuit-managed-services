@@ -1,13 +1,13 @@
 // Phase 11a: the wall display. Run: node --test scripts/test-results-wall.js (also part of npm test)
 //
-// "Open in a new tab" on the Live display opens the wall: `admin.html#live-display/<sessionId>/wall` (lib/live-wall.js), the same results with no
+// "Open in a new tab" on the Live display opens the wall: `admin.html#live-display/<sessionId>/wall` (lib/admin/live-wall.js), the same results with no
 // participant's name anywhere in the page. The facilitator's own view stays `#live-display/<sessionId>`. The browser side (names in the DOM, in each
 // wall mode, with a mutation that shows the check can fail) is scripts/migration-tests/results-charts-wall.spec.ts.
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { liveDisplayOfHash } from '../migration/src/lib/admin-address.js';
-import { WALL_SUFFIX, wallAddress, wallHash, wallOfHash } from '../migration/src/lib/live-wall.js';
+import { liveDisplayOfHash } from '../migration/src/lib/common/admin-address.js';
+import { WALL_SUFFIX, wallAddress, wallHash, wallOfHash } from '../migration/src/lib/admin/live-wall.js';
 
 describe('the wall display\'s address', () => {
   it('is the Live display\'s address with /wall at the end, and never reaches the server', () => {
@@ -27,7 +27,7 @@ describe('the wall display\'s address', () => {
     assert.equal(wallOfHash('#results'), null);
     assert.equal(wallOfHash('#live-display//wall'), null);
     assert.equal(wallOfHash(''), null);
-    // (lib/admin-address.js is carried by the participant page and was not changed: it reads the plain view as before.)
+    // (lib/common/admin-address.js is carried by the participant page and was not changed: it reads the plain view as before.)
     assert.equal(liveDisplayOfHash('#live-display/vine-2026-10-15'), 'vine-2026-10-15');
   });
 });

@@ -1,14 +1,14 @@
 <script lang="ts">
   import { tick } from 'svelte';
-  import { focusHeading } from './lib/focus.js';
-  import * as dataService from '../../public/js/dataService.js';
-  import { login } from './lib/admin-pin.js';
-  import { unlockFailureText } from './lib/admin-unlock.js';
-  import { liveDisplayHash, liveDisplayOfHash } from './lib/admin-address.js';
-  import { wallHash, wallOfHash } from './lib/live-wall.js';
-  import { APP_NAME } from './lib/app-name.js';
-  import { deployment } from './lib/start.js';
-  import { mayLeave } from './lib/unsaved.js';
+  import { focusHeading } from './lib/common/focus.js';
+  import * as dataService from './lib/data/dataService.js';
+  import { login } from './lib/admin/admin-pin.js';
+  import { unlockFailureText } from './lib/admin/admin-unlock.js';
+  import { liveDisplayHash, liveDisplayOfHash } from './lib/common/admin-address.js';
+  import { wallHash, wallOfHash } from './lib/admin/live-wall.js';
+  import { APP_NAME } from './lib/common/app-name.js';
+  import { deployment } from './lib/settings/start.js';
+  import { mayLeave } from './lib/admin/unsaved.js';
   import DeloitteWordmark from './components/DeloitteWordmark.svelte';
   import AdminClients from './admin/AdminClients.svelte';
   import AdminContent from './admin/AdminContent.svelte';

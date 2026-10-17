@@ -286,7 +286,7 @@ test('not live, and ended: the heading takes focus, the one button has the ring,
 });
 
 test('the stop screen (Phase 10b): the heading takes focus, Try again is the one stop and has the ring, and Tab is not trapped', async ({ page, browserName }) => {
-  // No settings file beside the pages and nothing built in: the participant page and the admin page both stop (lib/start.ts).
+  // No settings file beside the pages and nothing built in: the participant page and the admin page both stop (lib/settings/start.ts).
   const { fake } = await themedSite({ theme: 'kroger', live: true });
   for (const file of ['index.html', 'admin.html']) {
     const served = await serveSharePoint(page, fake, { settings: null });

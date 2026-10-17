@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { MAX_ACTIVITY_TITLE, cleanTitle, titleProblem } from '../lib/admin-content.js';
+  import { MAX_ACTIVITY_TITLE, cleanTitle, titleProblem } from '../lib/admin/admin-content.js';
 
   // Adding an activity, or renaming one and editing its description. A real <dialog> opened with
   // showModal(): the page behind is inert and Escape cancels. The name must read differently from the

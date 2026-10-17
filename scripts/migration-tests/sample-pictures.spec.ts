@@ -1,8 +1,8 @@
 import { test, expect, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { SAMPLE_PICTURES } from '../../migration/src/lib/sample-pictures.js';
-import { seedSampleClients } from '../../migration/src/lib/sample-seed.js';
+import { SAMPLE_PICTURES } from '../../migration/src/lib/setup/sample-pictures.js';
+import { seedSampleClients } from '../../migration/src/lib/setup/sample-seed.js';
 import { another, ds, openAdmin, participantUrl, startLocal, stopLocal, today, type Local } from './admin-local.js';
 import { newFake, onSite, pageUrl, serveSharePoint } from './sharepoint.js';
 
@@ -111,7 +111,7 @@ test.describe('on SharePoint (mocked REST)', () => {
 
   test('a participant on its own device sees Kroger\'s pictures, read from the library with its own sign-in', async ({ page }) => {
     const fake = newFake();
-    // Seeded as Setup seeds (lib/sample-seed.js), from this process.
+    // Seeded as Setup seeds (lib/setup/sample-seed.js), from this process.
     await onSite(fake, async (data) => {
       await seedSampleClients(data, { file: async (name: string, type: string) => new Blob([await readFile(path.join(PICTURES, name))], { type }), siteUrl: fake.settings.siteUrl });
       await data.activateClient('c-kroger', '2026-10-14');

@@ -5,7 +5,7 @@
 // does not hold is what the real site answers: every answer here is the fake's, and QA-TESTING.md lists what the tenant has to show.
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { LIBRARY, LISTS } from '../public/js/pms-schema.js';
+import { LIBRARY, LISTS } from '../migration/src/lib/schema/pms-schema.js';
 import { ACCESS_DENIED, ALL_TRAPS, OTHER_PREFIX, STRAYS, TITLE, UNIQUE_APART, UNIQUE_NEEDS_INDEX, createSharePointFake } from './sharepoint-fake.js';
 
 const EMPTY = [...Object.keys(LISTS), 'logoLibrary'];

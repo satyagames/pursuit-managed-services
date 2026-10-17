@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import ChartTip from './ChartTip.svelte';
-  import { people } from '../../lib/results-chart-model.js';
+  import { people } from '../../lib/results/results-chart-model.js';
   import { labelOf, rampColour, uid, type Chart, type Tip } from './chart-ui.js';
 
   // A confidence scale: one column for each step, low on the left and high on the right, in the blue ramp (lighter for low, darker for high: the

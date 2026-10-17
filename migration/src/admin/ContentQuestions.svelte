@@ -1,12 +1,12 @@
 <script lang="ts">
   import { onMount, untrack } from 'svelte';
-  import * as dataService from '../../../public/js/dataService.js';
-  import { answersToQuestions, orphanNote } from '../lib/adminData.js';
-  import { LAYOUTS, MAX_OPTION_TEXT, imageUrlProblem, layoutApplies, optionTextProblem, optionValueFrom, orderedContent, picturesStillShown } from '../lib/admin-content.js';
-  import { assetFileName, isOwnUpload } from '../lib/asset-names.js';
-  import type { Prepared } from '../lib/asset-image.js';
-  import { SLOTS } from '../lib/asset-specs.js';
-  import { questionLayout } from '../lib/pager-logic.js';
+  import * as dataService from '../lib/data/dataService.js';
+  import { answersToQuestions, orphanNote } from '../lib/admin/adminData.js';
+  import { LAYOUTS, MAX_OPTION_TEXT, imageUrlProblem, layoutApplies, optionTextProblem, optionValueFrom, orderedContent, picturesStillShown } from '../lib/admin/admin-content.js';
+  import { assetFileName, isOwnUpload } from '../lib/brand/asset-names.js';
+  import type { Prepared } from '../lib/brand/asset-image.js';
+  import { SLOTS } from '../lib/brand/asset-specs.js';
+  import { questionLayout } from '../lib/participant/pager-logic.js';
   import AssetUploader from './AssetUploader.svelte';
 
   type Section = { id: string; title: string; clientId?: string | null; questionIds?: string[] };

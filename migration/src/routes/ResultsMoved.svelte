@@ -1,7 +1,7 @@
 <script lang="ts">
   import { router } from 'svelte-spa-router';
-  import { adminAddress } from '../lib/admin-address.js';
-  import { APP_NAME } from '../lib/app-name.js';
+  import { adminAddress } from '../lib/common/admin-address.js';
+  import { APP_NAME } from '../lib/common/app-name.js';
 
   // `#/master-results/<sessionId>` was the facilitator's live results display. It lives on the admin page now (Results, "Live display"),
   // and so do the CSV, PDF and PowerPoint exports: this page only says so, and carries nothing of them. The link is built from the

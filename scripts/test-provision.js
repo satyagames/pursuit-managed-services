@@ -1,4 +1,4 @@
-// Phase 10c-3: Setup prepares a site for the app (migration/src/lib/provision.js). Run: node --test scripts/test-provision.js (part of `npm test`).
+// Phase 10c-3: Setup prepares a site for the app (migration/src/lib/setup/provision.js). Run: node --test scripts/test-provision.js (part of `npm test`).
 //
 // Part B, the plan: read only, and the same answer every time. It is worked out from one read of the site's lists and one read of each existing
 // list's columns, through the data layer (dataService.probeSharePointRead), against the mocked SharePoint REST (scripts/sharepoint-fake.js).
@@ -13,9 +13,9 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, it } from 'node:test';
-import { ID, LISTS, VERSION } from '../public/js/pms-schema.js';
-import { META, columnsOf } from '../public/js/pms-schema-meta.js';
-import { BUSY_LISTS, MADE_BY, SETTINGS_PENDING, create, definition, makePlan, planLines, readSite, showPlan, siteApi } from '../migration/src/lib/provision.js';
+import { ID, LISTS, VERSION } from '../migration/src/lib/schema/pms-schema.js';
+import { META, columnsOf } from '../migration/src/lib/schema/pms-schema-meta.js';
+import { BUSY_LISTS, MADE_BY, SETTINGS_PENDING, create, definition, makePlan, planLines, readSite, showPlan, siteApi } from '../migration/src/lib/setup/provision.js';
 import { ACCESS_DENIED, ALL_TRAPS, STRAYS, TITLE, UNINDEXED, createSharePointFake } from './sharepoint-fake.js';
 
 /** Every list of the schema and the picture library, by key: `without` all of them is a site with nothing of the app on it. */
@@ -29,7 +29,7 @@ const changes = { fields: [], lists: [], get length() { return this.fields.lengt
 async function siteWith(options = {}) {
   const fake = createSharePointFake({ schemaVersion: null, ...options });
   fake.install();
-  const ds = await import(`../public/js/dataService.js?provision=${pages += 1}`);
+  const ds = await import(`../migration/src/lib/data/dataService.js?provision=${pages += 1}`);
   ds.configure({ sharePoint: fake.settings });
   const api = siteApi(ds);
   const sent = [];
@@ -451,7 +451,7 @@ describe('Create: the one door it writes through', () => {
   });
 
   it('is SharePoint\'s alone: on the local server it refuses, and sends nothing', async () => {
-    const ds = await import(`../public/js/dataService.js?provision=${pages += 1}`);
+    const ds = await import(`../migration/src/lib/data/dataService.js?provision=${pages += 1}`);
     ds.configure({ baseUrl: 'http://127.0.0.1:9/api' });
     await assert.rejects(ds.sendToSharePoint('POST', '/web/lists', {}), /SharePoint mode is not enabled on this page\./);
   });
@@ -459,7 +459,7 @@ describe('Create: the one door it writes through', () => {
 
 describe('Create: what the module may send', () => {
   it('its source sends POST and MERGE only: no DELETE, no recycle, nothing that changes a column\'s type or renames a list', async () => {
-    const source = await readFile(path.join(import.meta.dirname, '..', 'migration/src/lib/provision.js'), 'utf8');
+    const source = await readFile(path.join(import.meta.dirname, '..', 'migration/src/lib/setup/provision.js'), 'utf8');
     const code = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
     assert.doesNotMatch(code, /'DELETE'|"DELETE"|`DELETE`/, 'no DELETE');
     assert.doesNotMatch(code, /recycle|deleteObject|breakRoleInheritance/i, 'no recycle');

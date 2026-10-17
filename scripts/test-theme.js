@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import {
   ACCENT_TOKENS, CONTROL_TOKENS, DANGER_HUE_MARGIN, DEFAULT_PRIMARY, MIN_GRAPHIC_CONTRAST, MIN_TEXT_CONTRAST, SURFACE_ALPHA,
   applyTheme, compositeOver, contrastRatio, dangerHueDistance, deriveTheme, hueOf, isNearDangerHue, normalizeHex, relativeLuminance, resetTheme,
-} from '../migration/src/lib/theme.js';
+} from '../migration/src/lib/brand/theme.js';
 
 const WHITE = '#FFFFFF';
 const HEX6 = /^#[0-9A-F]{6}$/;

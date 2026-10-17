@@ -1,22 +1,22 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import * as dataService from '../../../public/js/dataService.js';
-  import { embeddedAssetUrl } from '../../../public/js/assets.js';
-  import { effectiveSlug } from '../lib/admin-clients.js';
-  import { assetFileName, isOwnUpload } from '../lib/asset-names.js';
-  import { measureLogo, type Prepared } from '../lib/asset-image.js';
-  import { BRAND_SLOTS, slotSpec } from '../lib/asset-specs.js';
-  import type { Look } from '../lib/brand-look.js';
-  import { DEVICES, deviceById } from '../lib/brand-devices.js';
-  import { SCENES } from '../lib/brand-sample.js';
+  import * as dataService from '../lib/data/dataService.js';
+  import { embeddedAssetUrl } from '../lib/brand/assets.js';
+  import { effectiveSlug } from '../lib/admin/admin-clients.js';
+  import { assetFileName, isOwnUpload } from '../lib/brand/asset-names.js';
+  import { measureLogo, type Prepared } from '../lib/brand/asset-image.js';
+  import { BRAND_SLOTS, slotSpec } from '../lib/brand/asset-specs.js';
+  import type { Look } from '../lib/brand/brand-look.js';
+  import { DEVICES, deviceById } from '../lib/brand/brand-devices.js';
+  import { SCENES } from '../lib/brand/brand-sample.js';
   import {
     OPEN_PAGES_NOTE, PRESETS, brandReport, changesForSave, cloneDraft, copyColoursFrom, draftFromClient, parseColour, resetColours, sameDraft,
     type Draft, type LogoStats,
-  } from '../lib/brand-studio.js';
-  import { resolveClientTheme } from '../lib/client-theme.js';
-  import { DEFAULT_PRIMARY } from '../lib/theme.js';
-  import { copyText, participantPageUrl, qrImage } from '../lib/admin-links.js';
-  import { mayLeave, setLeaveGuard } from '../lib/unsaved.js';
+  } from '../lib/brand/brand-studio.js';
+  import { resolveClientTheme } from '../lib/brand/client-theme.js';
+  import { DEFAULT_PRIMARY } from '../lib/brand/theme.js';
+  import { copyText, participantPageUrl, qrImage } from '../lib/admin/admin-links.js';
+  import { mayLeave, setLeaveGuard } from '../lib/admin/unsaved.js';
   import AssetUploader from './AssetUploader.svelte';
   import BrandPreview from './BrandPreview.svelte';
   import ConfirmDialog from './ConfirmDialog.svelte';

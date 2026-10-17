@@ -15,18 +15,18 @@ import assert from 'node:assert/strict';
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { after, describe, it } from 'node:test';
-import * as ds from '../public/js/dataService.js';
-import { LISTS, selectOf } from '../public/js/pms-schema.js';
-import { activitiesOfClient } from '../migration/src/lib/admin-content.js';
-import { clientUsage, recentCodes } from '../migration/src/lib/admin-clients.js';
-import { evaluateReadiness, goLive, loadToday, pollToday } from '../migration/src/lib/admin-today.js';
-import { readNameSources } from '../migration/src/lib/admin-results.js';
-import { markReady, siteApi } from '../migration/src/lib/provision.js';
-import { PROBE_LEFT_OUT, schemaSpecs, selfTestProbes } from '../migration/src/lib/setup-checks.js';
-import { readSessionResults } from '../migration/src/lib/session-results.js';
+import * as ds from '../migration/src/lib/data/dataService.js';
+import { LISTS, selectOf } from '../migration/src/lib/schema/pms-schema.js';
+import { activitiesOfClient } from '../migration/src/lib/admin/admin-content.js';
+import { clientUsage, recentCodes } from '../migration/src/lib/admin/admin-clients.js';
+import { evaluateReadiness, goLive, loadToday, pollToday } from '../migration/src/lib/admin/admin-today.js';
+import { readNameSources } from '../migration/src/lib/admin/admin-results.js';
+import { markReady, siteApi } from '../migration/src/lib/setup/provision.js';
+import { PROBE_LEFT_OUT, schemaSpecs, selfTestProbes } from '../migration/src/lib/setup/setup-checks.js';
+import { readSessionResults } from '../migration/src/lib/results/session-results.js';
 import { selectLine, selectRequest } from './schema-baseline/select-baselines.js';
-import { samplePack } from '../migration/src/lib/sample-clients.js';
-import { seedPack } from '../migration/src/lib/seed.js';
+import { samplePack } from '../migration/src/lib/setup/sample-clients.js';
+import { seedPack } from '../migration/src/lib/setup/seed.js';
 import { STRAYS, TENANT_LEAVES_OUT, TITLE, UNINDEXED, UNNAMED, UNNAMED_REFUSAL, createSharePointFake, plainTitles } from './sharepoint-fake.js';
 
 const ROOT = path.join(import.meta.dirname, '..');
@@ -217,10 +217,9 @@ describe('every item read the data layer and Setup can send names its columns', 
     assert.deepEqual(UNNAMED.map((entry) => `${entry.list}${entry.query}`), []);
   });
 
-  it('in the source: each address of an item read in public/js and migration/src names its columns, through selectOf or the participant\'s own', async () => {
+  it('in the source: each address of an item read in the data layer and migration/src/lib names its columns, through selectOf or the participant\'s own', async () => {
     const files = [
-      ...['dataService.js'].map((name) => path.join(ROOT, 'public', 'js', name)),
-      ...(await readdir(path.join(ROOT, 'migration', 'src', 'lib'))).filter((name) => /\.(js|ts)$/.test(name)).map((name) => path.join(ROOT, 'migration', 'src', 'lib', name)),
+      ...(await readdir(path.join(ROOT, 'migration', 'src', 'lib'), { recursive: true })).filter((name) => /\.(js|ts)$/.test(name)).map((name) => path.join(ROOT, 'migration', 'src', 'lib', name)),
     ];
     const found = [];
     for (const file of files) {
@@ -234,10 +233,10 @@ describe('every item read the data layer and Setup can send names its columns', 
     // (A probe's query that names its own columns is sent as it is; one that names none is given the list's: probeSharePointRead.)
     const named = (line) => /selectOf\(|PARTICIPANT_SELECT|\/\\\$select=\/\.test\(query\) \? .*: spItems\(list, query\)/.test(line);
     assert.deepEqual(found.filter((entry) => !named(entry.line)).map((entry) => `${entry.where}: ${entry.line}`), []);
-    assert.ok(found.some((entry) => entry.where.startsWith('public/js/dataService.js') && /selectOf\(/.test(entry.line)), 'the data layer builds its item reads with selectOf');
-    assert.equal(found.filter((entry) => entry.where.startsWith('migration/src/lib/provision.js')).length, 2, 'Setup\'s two reads of the settings item');
+    assert.ok(found.some((entry) => entry.where.startsWith('migration/src/lib/data/dataService.js') && /selectOf\(/.test(entry.line)), 'the data layer builds its item reads with selectOf');
+    assert.equal(found.filter((entry) => entry.where.startsWith('migration/src/lib/setup/provision.js')).length, 2, 'Setup\'s two reads of the settings item');
     // The one read that names no columns on purpose: Setup's probe of what a site leaves out (one item, `$top=1`, which the strict mock answers).
-    const checks = await readFile(path.join(ROOT, 'migration', 'src', 'lib', 'setup-checks.js'), 'utf8');
+    const checks = await readFile(path.join(ROOT, 'migration', 'src', 'lib', 'setup', 'setup-checks.js'), 'utf8');
     assert.deepEqual(checks.match(/\/items`|\?\$top=1`/g), ['/items`', '?$top=1`']);
   });
 
@@ -254,7 +253,7 @@ describe('every item read the data layer and Setup can send names its columns', 
 
   it('the longest addresses, on the real site\'s address: naming the columns adds the same to every read of a list (at most 164 characters); printed', async () => {
     const fake = await site({ siteUrl: 'https://internal.global.deloitteonline.com/sites/PCOE' });
-    // The reads that carry the most ids (lib/read-groups.js, admin-clients.js, admin-results.js), each id as long as it can be: a session id is a slug of
+    // The reads that carry the most ids (lib/data/read-groups.js, admin-clients.js, admin-results.js), each id as long as it can be: a session id is a slug of
     // 40 and a date (51 characters), a question id a UUID (36). As a browser sends them: spaces and quotes encoded.
     const session = (index) => `${'a'.repeat(40)}-2026-10-${String(index + 10).padStart(2, '0')}`;
     const cases = [

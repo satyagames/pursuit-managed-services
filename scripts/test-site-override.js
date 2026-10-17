@@ -9,8 +9,8 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { promisify } from 'node:util';
 import { build } from 'vite';
-import { settingsProblem } from '../migration/src/lib/deploy-rules.js';
-import { resolveSettings, wrongSetting } from '../migration/src/lib/deploy-settings.js';
+import { settingsProblem } from '../migration/src/lib/settings/deploy-rules.js';
+import { resolveSettings, wrongSetting } from '../migration/src/lib/settings/deploy-settings.js';
 import { NO_PREFIX, builtDefine, builtSettings, readSiteUrl } from './site-override.js';
 import { TITLE } from './sharepoint-fake.js';
 
@@ -128,7 +128,7 @@ test('the values reach a page as one constant the bundler defines: no source tex
   for (const file of await readdir(path.join(root, 'migration/src'), { recursive: true })) {
     if (/\.(ts|js|svelte)$/.test(file) && (await source(path.join('migration/src', file))).includes('__PMS_BUILT__')) readers.push(file.split(path.sep).join('/'));
   }
-  assert.deepEqual(readers, ['lib/built-settings.ts']);
+  assert.deepEqual(readers, ['lib/settings/built-settings.ts']);
 });
 
 test('build-svelte-release.js checks the environment before it deletes or builds anything', async () => {

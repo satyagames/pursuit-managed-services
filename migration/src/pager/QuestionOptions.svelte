@@ -1,11 +1,11 @@
 <script lang="ts">
   import { LogoTile, OptionPill, PillButton } from '../components/index.js';
   import type { AnswerState } from '../components/index.js';
-  import { arrowKeys } from '../lib/roving.js';
+  import { arrowKeys } from '../lib/participant/roving.js';
   import {
     MAX_TEXT_LENGTH, gradedOptionState, isGraded, letterFor, showsLetters, usesTiles,
     type Answer, type GradedState, type Question,
-  } from '../lib/pager-logic.js';
+  } from '../lib/participant/pager-logic.js';
 
   let { question, labelledby, graded, draft, preview = false, showKey = false, onchoose, ontoggle, onrank, onclearrank, ontext }: {
     question: Question;

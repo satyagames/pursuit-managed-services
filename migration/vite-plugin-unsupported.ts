@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { Plugin } from 'vite';
-import { APP_NAME } from './src/lib/app-name.ts';
+import { APP_NAME } from './src/lib/common/app-name.ts';
 
 const read = (name: string) => readFileSync(fileURLToPath(new URL(`./src/unsupported/${name}`, import.meta.url)), 'utf8');
 

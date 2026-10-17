@@ -8,14 +8,14 @@ import { cp, mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
-import * as ds from '../public/js/dataService.js';
-import { buildClientTheme, resolveClientTheme, safeImageUrl } from '../migration/src/lib/client-theme.js';
-import { samplePack } from '../migration/src/lib/sample-clients.js';
-import { localSamplePack } from '../migration/src/lib/sample-seed.js';
-import { FILLABLE, seedPack } from '../migration/src/lib/seed.js';
+import * as ds from '../migration/src/lib/data/dataService.js';
+import { buildClientTheme, resolveClientTheme, safeImageUrl } from '../migration/src/lib/brand/client-theme.js';
+import { samplePack } from '../migration/src/lib/setup/sample-clients.js';
+import { localSamplePack } from '../migration/src/lib/setup/sample-seed.js';
+import { FILLABLE, seedPack } from '../migration/src/lib/setup/seed.js';
 import {
   CONTROL_TOKENS, DANGER_HUE_MARGIN, DEFAULT_PRIMARY, SURFACE_ALPHA, compositeOver, contrastRatio, dangerHueDistance, deriveTheme, isNearDangerHue,
-} from '../migration/src/lib/theme.js';
+} from '../migration/src/lib/brand/theme.js';
 import { STRAYS, TITLE, UNINDEXED, createSharePointFake } from './sharepoint-fake.js';
 
 const ROOT = path.join(import.meta.dirname, '..');
@@ -147,7 +147,7 @@ describe('the sample pack', () => {
 
   it('ThemeJson has the agreed shape and fits its column with a wide margin', () => {
     for (const client of pack.clients) {
-      // (`sample` is the marker lib/sample-notice.js reads, Phase 9b; no page that paints reads it.)
+      // (`sample` is the marker lib/admin/sample-notice.js reads, Phase 9b; no page that paints reads it.)
       assert.deepEqual(Object.keys(client.theme), ['version', 'primary', 'accent', 'tokens', 'assets', 'copy', 'sample']);
       assert.deepEqual(client.theme.sample, { source: 'Seed sample clients' });
       assert.deepEqual(Object.keys(client.theme.assets), ['hero', 'logo', 'background', 'tile']);
@@ -486,7 +486,7 @@ describe('no control is filled with the accent, or with anything near the wrong-
     // participant screen or component does.
     assert.deepEqual(accentReaders.sort(), [
       'migration/src/admin/BrandStudio.svelte', 'migration/src/admin/CopyBrandDialog.svelte', 'migration/src/dev/Styleguide.svelte',
-      'migration/src/lib/brand-studio.js', 'migration/src/lib/client-theme.js', 'migration/src/lib/legacy-colours.js',
+      'migration/src/lib/brand/brand-studio.js', 'migration/src/lib/brand/client-theme.js', 'migration/src/lib/brand/legacy-colours.js',
     ]);
     assert.deepEqual(accentReaders.filter((file) => /^migration\/src\/(components|routes|pager)\//.test(file)), [], 'no participant screen or component reads an accent');
     for (const control of ['PillButton', 'HomeButton', 'OptionPill', 'LogoTile', 'ActivityPill', 'SoundToggle', 'ActionBar']) {

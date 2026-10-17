@@ -2,7 +2,7 @@
 //
 // Open Sans, Regular and Bold, for the leader report's PDF: TrueType outlines (a PDF cannot embed the WOFF2 the page itself uses),
 // subset, with hinting, kerning and layout tables dropped, then joined end to end, deflated as one stream (zlib) and written as
-// base64. Inflate with DecompressionStream('deflate') and cut at each face's `bytes`; migration/src/lib/report-fonts.js does,
+// base64. Inflate with DecompressionStream('deflate') and cut at each face's `bytes`; migration/src/lib/exports/report-fonts.js does,
 // and only when a report is made.
 //
 // Open Sans is licensed under the Apache License, Version 2.0 (LICENSE-OpenSans-Apache-2.0.txt, beside this file). The copyright and

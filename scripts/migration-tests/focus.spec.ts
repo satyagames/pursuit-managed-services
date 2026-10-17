@@ -1,8 +1,8 @@
 import { test, expect, type Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { samplePack } from '../../migration/src/lib/sample-clients.js';
-import { seedPack } from '../../migration/src/lib/seed.js';
+import { samplePack } from '../../migration/src/lib/setup/sample-clients.js';
+import { seedPack } from '../../migration/src/lib/setup/seed.js';
 import { newFake, onSite, pageUrl, seedAndGoLive, serveSharePoint } from './sharepoint.js';
 
 // A heading that script moves focus to (a new screen, the next question) is not a control. For
@@ -73,7 +73,7 @@ test('"isn\'t live yet": the heading is focused on load with no outline and no h
 });
 
 test('the stop screen (Phase 10b): its heading is focused when the page opens, with no outline and no halo, on both pages', async ({ page }) => {
-  // A site whose folder has no pms-config.txt, and pages with nothing built in: both pages stop (lib/start.ts) and focus the heading.
+  // A site whose folder has no pms-config.txt, and pages with nothing built in: both pages stop (lib/settings/start.ts) and focus the heading.
   // The screen only ever appears as a page loads, when nobody has used the keyboard yet, so it draws nothing round the heading; the
   // ring on its one control, Try again, is held by settings-file.spec.ts and keyboard.spec.ts.
   for (const file of ['index.html', 'admin.html']) {

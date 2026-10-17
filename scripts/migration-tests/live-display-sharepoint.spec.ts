@@ -2,9 +2,9 @@ import { test, expect, type Page } from '@playwright/test';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import JSZip from 'jszip';
-import { sha256Hex } from '../../migration/src/lib/sha256.js';
-import { resultsToCsv } from '../../public/js/resultsExport.js';
-import { readSessionResults } from '../../migration/src/lib/session-results.js';
+import { sha256Hex } from '../../migration/src/lib/admin/sha256.js';
+import { resultsToCsv } from '../../migration/src/lib/exports/resultsExport.js';
+import { readSessionResults } from '../../migration/src/lib/results/session-results.js';
 import { advance, calls, freezeClock, gaps, lookTimes, looks, partsOf, quiet, recordFetches, setHidden, takeClock } from './polling-support.js';
 import { newFake, onSite, pageUrl, seedAndGoLive, serveSharePoint, shape, type Fake } from './sharepoint.js';
 

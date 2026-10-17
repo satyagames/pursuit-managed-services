@@ -3,7 +3,7 @@
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { unlockFailureText } from '../migration/src/lib/admin-unlock.js';
+import { unlockFailureText } from '../migration/src/lib/admin/admin-unlock.js';
 
 const unreachable = (error) => error?.name === 'TypeError';
 
@@ -32,7 +32,7 @@ describe('F-02: the PIN screen says why it cannot unlock', () => {
 
 describe('F-04: the wall says no more than a count when answers could not be read', () => {
   it('no instruction for the admin and no list title on the projector; the admin view keeps both', async () => {
-    const { wallUnreadableNotice, unreadableNotice, UNREADABLE_FIX } = await import('../migration/src/lib/unreadable.js');
+    const { wallUnreadableNotice, unreadableNotice, UNREADABLE_FIX } = await import('../migration/src/lib/results/unreadable.js');
     assert.equal(wallUnreadableNotice(1), "1 participant's answers could not be counted.");
     assert.equal(wallUnreadableNotice(3), "3 participants' answers could not be counted.");
     for (const count of [1, 3]) {
@@ -152,8 +152,8 @@ describe('F-20: confetti from a completed activity does not fall on the next act
   it('opening an activity clears any burst still on screen, through effects.ts', async () => {
     const { readFileSync } = await import('node:fs');
     const read = (file) => readFileSync(new URL(`../migration/src/${file}`, import.meta.url), 'utf8');
-    assert.match(read('lib/confetti.ts'), /export function clearConfetti\(\)/);
-    assert.match(read('lib/effects.ts'), /export function clearEffects\(\)[^}]*clearConfetti\(\)/s);
+    assert.match(read('lib/effects/confetti.ts'), /export function clearConfetti\(\)/);
+    assert.match(read('lib/effects/effects.ts'), /export function clearEffects\(\)[^}]*clearConfetti\(\)/s);
     assert.match(read('pager/ActivityPager.svelte'), /clearEffects\(\)/);
   });
 });

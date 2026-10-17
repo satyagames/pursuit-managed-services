@@ -1,4 +1,4 @@
-// The small part of canvas-confetti (ISC) that lib/confetti.ts uses. The package ships no types, and
+// The small part of canvas-confetti (ISC) that lib/effects/confetti.ts uses. The package ships no types, and
 // @types/canvas-confetti would be one more dependency for twenty lines.
 declare module 'canvas-confetti' {
   export interface Options {

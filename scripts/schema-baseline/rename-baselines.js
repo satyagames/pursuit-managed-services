@@ -22,8 +22,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
-import { ID, LISTS, selectOf } from '../../public/js/pms-schema.js';
-import { RETIRED, columnNamesAt } from '../../public/js/pms-schema-meta.js';
+import { ID, LISTS, selectOf } from '../../migration/src/lib/schema/pms-schema.js';
+import { RETIRED, columnNamesAt } from '../../migration/src/lib/schema/pms-schema-meta.js';
 import { BASELINE_DIR, NODE_SUITES, differences, parse, recordSuite } from '../request-baseline.js';
 import { sequence } from './select-baselines.js';
 

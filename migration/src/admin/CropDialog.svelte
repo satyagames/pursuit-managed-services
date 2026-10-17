@@ -1,16 +1,16 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
-  import type { Decoded } from '../lib/asset-image.js';
-  import { describeSpec, type SlotSpec } from '../lib/asset-specs.js';
-  import { safeArea } from '../lib/brand-devices.js';
+  import type { Decoded } from '../lib/brand/asset-image.js';
+  import { describeSpec, type SlotSpec } from '../lib/brand/asset-specs.js';
+  import { safeArea } from '../lib/brand/brand-devices.js';
   import {
     clampView, containScale, coverScale, fitView, keyboardView, panBy, scaleOf, scaleRange, sliderOf, zoomTo, type View,
-  } from '../lib/crop-math.js';
+  } from '../lib/brand/crop-math.js';
 
   /**
    * "Crop and fit": the picture is moved and zoomed inside a frame locked to the slot's shape (mouse, finger, arrow
    * keys or the zoom slider), and what is inside the frame becomes the slot's picture at exactly its size. The
-   * arithmetic is lib/crop-math.js (unit-tested); this only turns gestures into calls and draws the answer.
+   * arithmetic is lib/brand/crop-math.js (unit-tested); this only turns gestures into calls and draws the answer.
    */
   let { decoded, spec, warning = '', transparent, onconfirm, oncancel }: {
     decoded: Decoded;

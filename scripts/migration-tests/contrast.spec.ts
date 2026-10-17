@@ -3,7 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { THEMES, THEME_KEYS, a11yPack, notLivePage, openParticipant, settle, themedSite, walkParticipant, type ThemeKey } from './a11y-support.js';
 import { PIN, adminUrl, ds, startLocal, stopLocal, today, useServer, type Local } from './admin-local.js';
-import { seedPack } from '../../migration/src/lib/seed.js';
+import { seedPack } from '../../migration/src/lib/setup/seed.js';
 
 // Phase 8, part C: contrast, computed from what the browser actually painted. axe can check a colour against a flat background but not against
 // the participant page's gradient (it reports those as "needs review"), so this does it from pixels: every piece of visible text is found, all

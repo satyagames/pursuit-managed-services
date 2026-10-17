@@ -1,9 +1,9 @@
 import type { Page, Route } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import * as dataService from '../../public/js/dataService.js';
-import { samplePack } from '../../migration/src/lib/sample-clients.js';
-import { seedPack } from '../../migration/src/lib/seed.js';
+import * as dataService from '../../migration/src/lib/data/dataService.js';
+import { samplePack } from '../../migration/src/lib/setup/sample-clients.js';
+import { seedPack } from '../../migration/src/lib/setup/seed.js';
 import { createSharePointFake } from '../sharepoint-fake.js';
 
 // Runs a BUILT page in SharePoint mode: the page is served at an https address inside a site (which

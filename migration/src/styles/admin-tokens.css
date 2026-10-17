@@ -1,7 +1,7 @@
 /* Colours for the admin page: light, calm and operational. The Phase 1 tokens (tokens.css) stay the
  * source for type, targets, the green focus ring, --action and --danger; this file adds the light
  * surfaces and the status tints the dark participant palette has no use for, and points the legacy
- * admin sheet's own names (public/css/admin.css, which the old admin still uses) at them. Every text
+ * admin sheet's own names (migration/src/styles/legacy/admin.css, which the old admin still uses) at them. Every text
  * pair here is held to 4.5:1 by scripts/test-admin-today.js. */
 
 :root {

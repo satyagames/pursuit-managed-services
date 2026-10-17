@@ -12,11 +12,11 @@
 //                                                                    line in each file's header that says so. Refuses a file already translated.
 //
 // What is translated comes from the snapshot of the old schema (scripts/schema-baseline/schema-before-10c2b.json) and the schema file
-// (public/js/pms-schema.js), never from a table of its own: an old title, a library or a column the two do not name cannot be mapped.
+// (migration/src/lib/schema/pms-schema.js), never from a table of its own: an old title, a library or a column the two do not name cannot be mapped.
 import { readFile, readdir, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { LIBRARY, LISTS } from '../../public/js/pms-schema.js';
+import { LIBRARY, LISTS } from '../../migration/src/lib/schema/pms-schema.js';
 import { BASELINE_DIR, NODE_SUITES, differences, parse, recordSuite } from '../request-baseline.js';
 import { readSnapshot } from '../schema-snapshot.js';
 

@@ -37,9 +37,9 @@ before(async () => {
     server.stdout.on('data', (chunk) => String(chunk).includes('running') && resolve());
   });
 
-  ds = await import('../public/js/dataService.js');
+  ds = await import('../migration/src/lib/data/dataService.js');
   ds.configure({ baseUrl: `http://localhost:${PORT}/api` });
-  ({ readSessionResults } = await import('../migration/src/lib/session-results.js'));
+  ({ readSessionResults } = await import('../migration/src/lib/results/session-results.js'));
 
   // A ranked-voting question and an empty section, which the seed data doesn't have.
   const optionIds = ['o-test-rank-a', 'o-test-rank-b', 'o-test-rank-c'];
@@ -166,7 +166,7 @@ describe('results export', () => {
   });
 
   it('builds a CSV of question, option, count and percentage, and defuses spreadsheet formulas', async () => {
-    const { resultsToCsv } = await import('../public/js/resultsExport.js');
+    const { resultsToCsv } = await import('../migration/src/lib/exports/resultsExport.js');
     const session = await newSession();
     const track = await join(session.id);
     await answer(track, OBJECTIVE, 'o-obj-tech');
@@ -326,7 +326,7 @@ describe('QR tokens', () => {
     const token = await ds.provisionQrToken('c-kroger', session.id);
     // Six devices: each is the data service loaded as a module of its own, because one module is one page (it remembers an unfinished scan).
     const devices = await Promise.all(Array.from({ length: 6 }, async (_, index) => {
-      const device = await import(`../public/js/dataService.js?device=${index + 1}`);
+      const device = await import(`../migration/src/lib/data/dataService.js?device=${index + 1}`);
       device.configure({ baseUrl: `http://localhost:${PORT}/api` });
       return device;
     }));

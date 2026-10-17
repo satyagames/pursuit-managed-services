@@ -3,8 +3,8 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { describe, it } from 'node:test';
-import { LIBRARY, LISTS } from '../public/js/pms-schema.js';
-import { META } from '../public/js/pms-schema-meta.js';
+import { LIBRARY, LISTS } from '../migration/src/lib/schema/pms-schema.js';
+import { META } from '../migration/src/lib/schema/pms-schema-meta.js';
 import { REFERENCE_FILE, reference } from './build-lists-reference.js';
 
 describe('SHAREPOINT-LISTS.md', () => {

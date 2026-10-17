@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { sha256Hex } from '../../migration/src/lib/sha256.js';
+import { sha256Hex } from '../../migration/src/lib/admin/sha256.js';
 import { TITLE } from '../sharepoint-fake.js';
 import { newFake, pageUrl, serveSharePoint } from './sharepoint.js';
 

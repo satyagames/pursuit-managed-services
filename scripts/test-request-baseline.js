@@ -13,7 +13,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 import { promisify } from 'node:util';
-import { LIBRARY, LISTS } from '../public/js/pms-schema.js';
+import { LIBRARY, LISTS } from '../migration/src/lib/schema/pms-schema.js';
 import { BASELINE_DIR, NODE_SUITES, amendBaseline, amendment, combine, differences, explain, linesOf, normalise, parse, readBaseline, recordSuite, render, tally, tallyByTest } from './request-baseline.js';
 
 const ROOT = path.join(import.meta.dirname, '..');

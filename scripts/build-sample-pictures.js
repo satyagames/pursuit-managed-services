@@ -10,7 +10,7 @@
 // It writes, and these are committed:
 //   migration/src/assets/sample-pictures/<name>   the six files: what Setup's "Seed sample clients" uploads (src/setup/sample-picture-data.ts)
 //   public/assets/images/clients/<name>           the same six files: the local server's uploads, which server/data/clients.json points at
-//   migration/src/lib/sample-pictures.js          their names, types, sizes and hashes, and the focal point Brand Studio stored
+//   migration/src/lib/setup/sample-pictures.js          their names, types, sizes and hashes, and the focal point Brand Studio stored
 //   migration/src/setup/sample-picture-data.ts    Setup's imports of the six files, one by one by name (never a glob)
 // and test-results/sample-pictures/report.json (what Brand Studio said on the way: a picture enlarged, or made smaller to fit its cap).
 // A sample picture of an earlier run that is not one of the six is removed from both folders. Run it again only when a source picture,
@@ -24,13 +24,13 @@ import os from 'node:os';
 import path from 'node:path';
 import { build } from 'vite';
 import { freePort } from './free-port.js';
-import { samplePack } from '../migration/src/lib/sample-clients.js';
+import { samplePack } from '../migration/src/lib/setup/sample-clients.js';
 
 const ROOT = path.join(import.meta.dirname, '..');
 const SOURCES = path.join(ROOT, '.local', 'sample-images');
 const PICTURES = path.join(ROOT, 'migration', 'src', 'assets', 'sample-pictures');
 const UPLOADS = path.join(ROOT, 'public', 'assets', 'images', 'clients');
-const MANIFEST = path.join(ROOT, 'migration', 'src', 'lib', 'sample-pictures.js');
+const MANIFEST = path.join(ROOT, 'migration', 'src', 'lib', 'setup', 'sample-pictures.js');
 const IMPORTS = path.join(ROOT, 'migration', 'src', 'setup', 'sample-picture-data.ts');
 const REPORT = path.join(ROOT, 'test-results', 'sample-pictures', 'report.json');
 const CLIENTS = [{ id: 'c-kroger', name: 'Kroger', slug: 'kroger' }, { id: 'c-dominos', name: "Domino's", slug: 'dominos' }];
@@ -128,7 +128,7 @@ try {
 
 // 3. The files Brand Studio uploaded, into both folders; what it wrote, into the manifest. (With --check: only compared with the committed six.)
 if (CHECK) {
-  const { SAMPLE_PICTURES } = await import('../migration/src/lib/sample-pictures.js');
+  const { SAMPLE_PICTURES } = await import('../migration/src/lib/setup/sample-pictures.js');
   const differ = [];
   for (const client of CLIENTS) for (const slot of SLOTS) {
     const made = path.basename(report.clients[client.id].theme.assets[slot]);

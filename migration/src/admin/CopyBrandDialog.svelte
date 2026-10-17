@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { draftFromClient } from '../lib/brand-studio.js';
-  import { deriveTheme } from '../lib/theme.js';
+  import { draftFromClient } from '../lib/brand/brand-studio.js';
+  import { deriveTheme } from '../lib/brand/theme.js';
 
   type Client = { id: string; name: string; status?: string; theme?: unknown };
   let { clients, onChoose, onCancel }: {

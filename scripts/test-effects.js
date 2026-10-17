@@ -7,9 +7,9 @@ import {
 } from './audio-analysis.js';
 import {
   DELOITTE_GREEN, NARROW_SCALE, NARROW_WIDTH, buildPalette, confettiPlan, defaultOrigin, isRedish, originFromRect, parseColor, planDuration, tint, toHex, toHsl,
-} from '../migration/src/lib/confetti-plan.js';
-import { EFFECTS, SOUND_KEY, UNAVAILABLE_TITLE, answerEffect, readChoice, soundIsOn, writeChoice } from '../migration/src/lib/effect-plan.js';
-import { CUES, CUE_NAMES, MAX_VOICES, RETRIGGER_MS, createVoiceGate, cueEnd, toneSignature } from '../migration/src/lib/sound-cues.js';
+} from '../migration/src/lib/effects/confetti-plan.js';
+import { EFFECTS, SOUND_KEY, UNAVAILABLE_TITLE, answerEffect, readChoice, soundIsOn, writeChoice } from '../migration/src/lib/effects/effect-plan.js';
+import { CUES, CUE_NAMES, MAX_VOICES, RETRIGGER_MS, createVoiceGate, cueEnd, toneSignature } from '../migration/src/lib/effects/sound-cues.js';
 
 // Phase 3 (sound and confetti), the parts that need no browser: the cue table, the voice gate, which
 // moment makes which effect, the confetti plan and palette, the saved choice, the audio measurements
@@ -379,14 +379,14 @@ async function sources(dir) {
 }
 
 /** The only files that may name Web Audio or canvas-confetti, and the only files that may import the modules behind effects.ts. */
-const WEB_AUDIO_FILES = new Set(['migration/src/lib/sound-engine.ts']);
-const CONFETTI_FILES = new Set(['migration/src/lib/confetti.ts', 'migration/src/canvas-confetti.d.ts']);
+const WEB_AUDIO_FILES = new Set(['migration/src/lib/effects/sound-engine.ts']);
+const CONFETTI_FILES = new Set(['migration/src/lib/effects/confetti.ts', 'migration/src/canvas-confetti.d.ts']);
 const EFFECT_MODULES = {
-  'sound-engine': new Set(['migration/src/lib/effects.ts']),
-  confetti: new Set(['migration/src/lib/effects.ts']),
-  'sound-cues': new Set(['migration/src/lib/effects.ts', 'migration/src/lib/sound-engine.ts']),
-  'effect-plan': new Set(['migration/src/lib/effects.ts']),
-  'confetti-plan': new Set(['migration/src/lib/effects.ts', 'migration/src/lib/confetti.ts']),
+  'sound-engine': new Set(['migration/src/lib/effects/effects.ts']),
+  confetti: new Set(['migration/src/lib/effects/effects.ts']),
+  'sound-cues': new Set(['migration/src/lib/effects/effects.ts', 'migration/src/lib/effects/sound-engine.ts']),
+  'effect-plan': new Set(['migration/src/lib/effects/effects.ts']),
+  'confetti-plan': new Set(['migration/src/lib/effects/effects.ts', 'migration/src/lib/effects/confetti.ts']),
 };
 
 /** What a source file does that only effects.ts (and the engine files behind it) may do. */
@@ -424,27 +424,27 @@ test('that guard does catch a violation (so it cannot pass by looking at nothing
   assert.equal(violations(screen, "const lib = await import('canvas-confetti');").length, 1);
   assert.equal(violations(screen, "import * as sfx from '../../../public/js/sfx.js';").length, 1);
   assert.equal(violations(screen, "import { celebrate } from '../../../public/js/vfx.js';").length, 1);
-  assert.equal(violations(screen, "import { playCue } from '../lib/sound-engine.js';").length, 1);
-  assert.equal(violations(screen, "import { celebrate } from '../lib/confetti.js';").length, 1);
-  assert.equal(violations(screen, "import { CUES } from '../lib/sound-cues.js';").length, 1);
-  assert.equal(violations(screen, "import { answerEffect } from '../lib/effect-plan.js';").length, 1);
+  assert.equal(violations(screen, "import { playCue } from '../lib/effects/sound-engine.js';").length, 1);
+  assert.equal(violations(screen, "import { celebrate } from '../lib/effects/confetti.js';").length, 1);
+  assert.equal(violations(screen, "import { CUES } from '../lib/effects/sound-cues.js';").length, 1);
+  assert.equal(violations(screen, "import { answerEffect } from '../lib/effects/effect-plan.js';").length, 1);
   // What is allowed.
-  assert.deepEqual(violations(screen, "import { answerFeedback } from '../lib/effects.js';"), []);
+  assert.deepEqual(violations(screen, "import { answerFeedback } from '../lib/effects/effects.js';"), []);
   assert.deepEqual(violations(screen, '// AudioContext is only mentioned in a comment\n/* new Audio() */'), []);
-  assert.deepEqual(violations('migration/src/lib/effects.ts', "import * as engine from './sound-engine.js';\nimport { celebrate } from './confetti.js';"), []);
-  assert.deepEqual(violations('migration/src/lib/sound-engine.ts', 'const ctx = new AudioContext(); ctx.createOscillator();'), []);
-  assert.deepEqual(violations('migration/src/lib/confetti.ts', "import('canvas-confetti')"), []);
+  assert.deepEqual(violations('migration/src/lib/effects/effects.ts', "import * as engine from './sound-engine.js';\nimport { celebrate } from './confetti.js';"), []);
+  assert.deepEqual(violations('migration/src/lib/effects/sound-engine.ts', 'const ctx = new AudioContext(); ctx.createOscillator();'), []);
+  assert.deepEqual(violations('migration/src/lib/effects/confetti.ts', "import('canvas-confetti')"), []);
 });
 
 test('effects.ts exposes the semantic API the screens and Phase 5 rely on, and the screens use it', async () => {
-  const effects = await readFile(path.join(root, 'migration/src/lib/effects.ts'), 'utf8');
+  const effects = await readFile(path.join(root, 'migration/src/lib/effects/effects.ts'), 'utf8');
   for (const signature of [
     /export function setSoundDefault\(on: boolean\): void/, /export function setSound\(on: boolean\): void/, /export function answerFeedback\(/,
     /export function pick\(\): void/, /export function activityComplete\(\): void/, /export function finale\(\): void/,
     /export function unlockAudio\(\): void/, /export function initEffects\(\): void/, /export function soundState\(\)/, /export function onSoundChange\(/,
   ]) assert.match(effects, signature);
   const pager = await readFile(path.join(root, 'migration/src/pager/ActivityPager.svelte'), 'utf8');
-  assert.match(pager, /import \{ activityComplete, answerFeedback, clearEffects, pick \} from '\.\.\/lib\/effects\.js';/);
+  assert.match(pager, /import \{ activityComplete, answerFeedback, clearEffects, pick \} from '\.\.\/lib\/effects\/effects\.js';/);
   assert.match(await readFile(path.join(root, 'migration/src/routes/ThankYou.svelte'), 'utf8'), /\bfinale\(\);/);
   assert.match(await readFile(path.join(root, 'migration/src/routes/Welcome.svelte'), 'utf8'), /\bunlockAudio\(\)/);
   assert.match(await readFile(path.join(root, 'migration/src/components/SoundToggle.svelte'), 'utf8'), /onclick=\{\(\) => setSound\(!on\)\}/);

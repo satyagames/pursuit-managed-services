@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Setup's plan for this copy's lists (Phase 10c-3, lib/provision.js), as a person reads it: one block for each list that has something to
+  // Setup's plan for this copy's lists (Phase 10c-3, lib/setup/provision.js), as a person reads it: one block for each list that has something to
   // create or something wrong, what will be created in plain words, what Setup will not touch and how to fix it, and the internal names and
   // definitions under "Technical details". It shows a plan; it changes nothing. Only Setup loads this.
   type Item = { words: string; name?: string; label?: string; xml?: string; column?: string | null; changes?: Record<string, unknown>; kind?: string };

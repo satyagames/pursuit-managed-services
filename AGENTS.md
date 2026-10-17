@@ -35,7 +35,7 @@ from Phase 11a-2"). The pages of Phase 11a-2, everything after those steps, and 
   under `/api` and the uploaded pictures, and **no page**. `npm run dev:svelte` (participant, port 5173),
   `npm run dev:svelte:admin` (5175) and `npm run dev:svelte:setup` (5176) are the pages, from Vite, which sends `/api`
   and `/assets` to the server. `npm start` is the server without watch. Known gap: on the local server the admin's
-  participant link and QR codes point at the server's own port (`lib/admin-links.ts`), where the legacy participant
+  participant link and QR codes point at the server's own port (`lib/admin/admin-links.ts`), where the legacy participant
   page used to be and no page is now; open the participant page at Vite's address instead (CLEAN-BREAK-10C1.md, in git history at `7347c72`).
 - `npm run build:svelte:release` — builds the three standalone pages (`index.html`, `admin.html`, `setup.html`) into
   `build-svelte/release/`. No subfolders are needed on SharePoint. (`npm run build` and `npm run test:build` were the
@@ -64,7 +64,7 @@ from Phase 11a-2"). The pages of Phase 11a-2, everything after those steps, and 
   `admin-sharepoint.spec.ts` (budgets and the schema blockers against the fake) and `admin-smoke.spec.ts`
   (Chromium and WebKit); `npm run test:migration` runs them.
 - `npm run test:content` — runs [scripts/test-admin-content.js](scripts/test-admin-content.js) (also part of `npm test`): the
-  Content and Guests rules (`migration/src/lib/admin-content.js`: grouping, order, pasted names, guest status, CSV, the print sheet,
+  Content and Guests rules (`migration/src/lib/admin/admin-content.js`: grouping, order, pasted names, guest status, CSV, the print sheet,
   what a copy is) and `dataService.js` section 6 (copy, duplicate, assign, delete, bulk guests, bulk codes) against the mocked
   SharePoint REST (request counts, pacing, injected failures) and the real local server, which must leave the same records. Run it
   after touching section 6 or `admin-content.js`. The browser side is `admin-content.spec.ts` and `admin-guests.spec.ts` (local
@@ -126,7 +126,7 @@ from Phase 11a-2"). The pages of Phase 11a-2, everything after those steps, and 
   build into which the libraries are imported. Run it after touching `migration/src/main.ts`, `App.svelte`, an import in a participant
   route, `vite*.config.ts`, or `public/js/*` that the participant page imports.
 - `npm run test:polling` — [scripts/test-polling.js](scripts/test-polling.js) (also part of `npm test`): every rule of
-  `lib/poll-schedule.js` as numbers (waits, jitter, backoff, Retry-After, cost scaling, five minutes of ten devices), the admin-address
+  `lib/common/poll-schedule.js` as numbers (waits, jitter, backoff, Retry-After, cost scaling, five minutes of ten devices), the admin-address
   helpers, and source checks that the participant page has one timer and one read.
 - `npm run test:live` — [scripts/test-live-display.js](scripts/test-live-display.js) (also part of `npm test`): the Live display's own tally
   and Results' (`readSessionResults`) are held to a tally worked out by hand in the test (five kinds of question, three people), and its feed
@@ -160,7 +160,7 @@ from Phase 11a-2"). The pages of Phase 11a-2, everything after those steps, and 
 - `npm run build:report-fonts` — `python3 scripts/build-report-fonts.py` (needs `pip install fonttools`): subsets Open Sans Regular and Bold
   for the leader report's PDF into `migration/src/assets/report-fonts/open-sans-report.js` (generated, committed, with the licence text
   beside it). Re-run only when the source TTFs or the ranges change; builds never need Python.
-- `npm run oracle -- --seeds 500` — [scripts/oracle-results.js](scripts/oracle-results.js) (Phase 9a): makes random sessions from seeds, stores them as raw list rows, works every figure out again with rules of its own (it imports no counting code of the app) and compares them with the leader report's model, CSV and PDF text, the Results rows and the Live display tally, on the mocked SharePoint REST and the local server, in four time zones; it prints each difference with its seed. `npm run test:oracle` ([scripts/test-oracle.js](scripts/test-oracle.js), also part of `npm test`) runs 48 seeds and proves the comparison can fail. Run both after touching a counting rule, `lib/results-tally.js`, `lib/admin-results.js`, `lib/participant-names.js` or the CSV.
+- `npm run oracle -- --seeds 500` — [scripts/oracle-results.js](scripts/oracle-results.js) (Phase 9a): makes random sessions from seeds, stores them as raw list rows, works every figure out again with rules of its own (it imports no counting code of the app) and compares them with the leader report's model, CSV and PDF text, the Results rows and the Live display tally, on the mocked SharePoint REST and the local server, in four time zones; it prints each difference with its seed. `npm run test:oracle` ([scripts/test-oracle.js](scripts/test-oracle.js), also part of `npm test`) runs 48 seeds and proves the comparison can fail. Run both after touching a counting rule, `lib/results/results-tally.js`, `lib/admin/admin-results.js`, `lib/results/participant-names.js` or the CSV.
 - `node --test scripts/test-review-9a.js` (also part of `npm test`) — the Phase 9a review's other fixes: the wrong-address message, the CSV guard, unsent answers, the expired sign-in, in-place retry, the bounded wait, start-up reads, the tile fallback, Results' "completed"; the browser side is `scripts/migration-tests/review-9a.spec.ts` (the wrong-address message, the sign-in banner and the hub's retry in place, in all three engines) and one test in `flow.spec.ts` (a tile whose picture fails). The findings, what is open and what needs a decision are in `REVIEW-9A.md` (in git history at `7347c72`).
 - `PMS_LIST_PREFIX=PMS3 PMS_LABEL="Test, folder 3" npm run build:svelte:release` (any of `PMS_SITE_URL`, `PMS_LIST_PREFIX`, `PMS_LOGO_LIBRARY`, `PMS_BATCH`, `PMS_SUPPORT_NAME`, `PMS_SUPPORT_CONTACT`, `PMS_LABEL`; none is needed) — values built into the three Svelte pages (`scripts/site-override.js`, Phase 9c, reworked in Phase 10b: one constant the bundler defines, no source text is searched and replaced, and each value is held to the rule a page applies to its settings). With none set the pages have nothing built in and find their settings in `pms-config.txt` beside them: see "Rules from Phase 10b"; `npm run build:notices -- <file>` writes `THIRD-PARTY-NOTICES.txt` (`scripts/build-third-party-notices.js`, LIC-1, a proposal for whoever owns licence compliance, an extra file and not part of the three-file build); `npm run test:release-package` runs both tests (also part of `npm test`). A release package is `build-svelte/package/pms-<hash>/`, never committed, made by `npm run package:release` (Phase 10f: see the commands below and "Rules from Phase 10f").
 - `npm run test:settings` — [scripts/test-deploy-settings.js](scripts/test-deploy-settings.js), `test-settings-file.js`, `test-setup-deployment.js` and `test-site-override.js` (Phase 10b; all also part of `npm test`): which site and lists a copy of the app uses, as rows (every source, the order, every rule, each problem; the deciding file and the wording put to the same cases), the reader of `pms-config.txt` on a stand-in for fetch, the data layer's guard, Setup's panel and its read-only list rows, and the `PMS_` build values. Run it after touching `migration/src/lib/{deploy-*,settings-file,start,built-settings,setup-deployment,address-check}`, `migration/src/setup/`, an entry (`main.ts`, `admin-main.ts`, `setup-main.ts`), `scripts/site-override.js` or `migration/vite-plugin-built-settings.ts`. The browser side is `settings-file.spec.ts` and `setup-deployment.spec.ts`.
@@ -171,12 +171,12 @@ from Phase 11a-2"). The pages of Phase 11a-2, everything after those steps, and 
   [scripts/test-text-limits.js](scripts/test-text-limits.js) (the 255-character limit). Run it after touching `migration/src/lib/{provision,setup-admins,
   setup-import,setup-checks}.js`, `src/setup/`, `SetupApp.svelte`, `sendToSharePoint`, `addAdminUser`, `checkSharePointSchema` or `scripts/sharepoint-fake.js`.
   The browser side is `setup-provision.spec.ts` (the plan, Create, ready, admins and a whole new site, in three engines) and `text-limits.spec.ts`.
-- `npm run test:namespace` — [scripts/test-list-namespace.js](scripts/test-list-namespace.js) (also part of `npm test`): the list prefix and per-list titles in the data layer, on a mocked SharePoint that holds a plain AND a prefixed set of lists and answers both. It also runs nine mocked suites a second time on `Test` lists, a test copy on the same site (`PMS_TEST_LIST_PREFIX=Test node scripts/test-admin-today.js` does one by hand; it was `PMS3` until Phase 10c-2b). Run it after touching anything in `public/js/dataService.js` that builds an address or spells a list title, or `scripts/sharepoint-fake.js`.
+- `npm run test:namespace` — [scripts/test-list-namespace.js](scripts/test-list-namespace.js) (also part of `npm test`): the list prefix and per-list titles in the data layer, on a mocked SharePoint that holds a plain AND a prefixed set of lists and answers both. It also runs nine mocked suites a second time on `Test` lists, a test copy on the same site (`PMS_TEST_LIST_PREFIX=Test node scripts/test-admin-today.js` does one by hand; it was `PMS3` until Phase 10c-2b). Run it after touching anything in `migration/src/lib/data/dataService.js` that builds an address or spells a list title, or `scripts/sharepoint-fake.js`.
 - `npm run test:baseline` — [scripts/test-request-baseline.js](scripts/test-request-baseline.js) (also part of `npm test`): every SharePoint REST request ten mocked suites send, compared with `scripts/request-baseline/*.txt`, which were recorded at `2ad1520` (the local tag `legacy-final`) before the list namespace existed. `node scripts/request-baseline.js` prints the differences. **A difference is a finding: never regenerate a baseline to make it pass** (the writer refuses to overwrite one). A test that is REMOVED, or changed on purpose, is followed with `node scripts/request-baseline.js --amend <suite> --tests '<pattern of test names>'` (Phase 10c-1), run after the test file is edited and BEFORE any code is: it refuses unless the suite as last committed still sends its baseline and every test that was not named sends what it sent, and it prints each entry it changes, old and new. Four baselines were amended that way in Phase 10c-1 (the list is in CLEAN-BREAK-10C1.md, in git history at `7347c72`) and say so in their headers. **A change in the CODE that changes what is sent on purpose** (a read that is no longer made, a filter that lost a term), or in a helper several tests share, is amended with `--code` added (Phase 10c-2a): the "before" is then the last commit's whole tree (an export of `HEAD` in a temporary folder), so it is run with the tests and the code both in the working tree, before they are committed together, and it refuses unless the last commit sends its baseline and every test that was not named sends today what it sent then. `node scripts/request-baseline.js --explain <suite>` only reads: it lists, test by test, what each test sends that it did not send at the last commit. Use it to find the names for `--tests`, and keep what it prints. Every entry amended in Phase 10c-2a (584, part by part and test by test) is in `DROPS-10C2A-BASELINES.md` (in git history at `7347c72`). The browser side is `request-baseline.spec.ts` (the participant page's start-up, per engine).
 - `npm run build:sample-pictures` — [scripts/build-sample-pictures.js](scripts/build-sample-pictures.js) (Phase 10f): makes the sample clients' six pictures
   from VJR's files in the git-ignored `.local/sample-images/` (`<client>-<slot>.jpg`) by driving the BUILT admin page's Brand Studio in Chromium, so the files are
   exactly what Brand Studio stores; it writes them to `migration/src/assets/sample-pictures/` and `public/assets/images/clients/`, and writes
-  `migration/src/lib/sample-pictures.js` and `migration/src/setup/sample-picture-data.ts` (both generated). `-- --check` makes them again and says whether they are
+  `migration/src/lib/setup/sample-pictures.js` and `migration/src/setup/sample-picture-data.ts` (both generated). `-- --check` makes them again and says whether they are
   the committed six, byte for byte (they were, in Chromium 156). `npm run test:sample-pictures` runs [scripts/test-sample-pictures.js](scripts/test-sample-pictures.js)
   (also part of `npm test`, and a recorded suite): the files against their list and the slots' rules, and "Seed sample clients" on the mocked SharePoint REST and the
   real local server. The browser side is `sample-pictures.spec.ts`.
@@ -253,7 +253,7 @@ from Phase 11a-2"). The pages of Phase 11a-2, everything after those steps, and 
 - **Pictures** (`POST /api/uploads/logo`): without `?name=` it is exactly what it always was (a generated `upload-<time>-<id>` name, any
   of PNG, JPEG, GIF, WebP or SVG: the legacy admin used it, no page does now, and a test still makes an older-style upload with it). Brand Studio sends `?name=<slug>-<slot>-<10 hex>.<ext>`, the flat name
   SharePoint's ClientLogos library gets (`ASSET_NAME` in `server/api.js`, the same pattern as `dataService.js` and
-  `lib/asset-names.js`; a test says so): a named upload must be a PNG, JPEG or WebP whose extension is what it really is. `DELETE
+  `lib/brand/asset-names.js`; a test says so): a named upload must be a PNG, JPEG or WebP whose extension is what it really is. `DELETE
   /api/uploads/logo/<name>` removes a file of that shape and nothing else (never a seeded logo or an older upload). Files go to
   `UPLOAD_DIR` when set, and a name with a hash is served `immutable`.
 - Errors are thrown as `httpError(status, message)` and surface as `{ error }` JSON via
@@ -270,7 +270,7 @@ new build alone (each says so at its top); whether they move into `migration/` i
 - **`dataService.js` is the only file allowed to call `fetch()` or know a backend
   exists.** Screens and admin panels import its functions and never see a URL. Add
   new backend needs as functions there, not inline fetches in screens. (One exception, since
-  Phase 10b: `migration/src/lib/settings-file.js` reads `pms-config.txt`, which has to happen before the data layer knows
+  Phase 10b: `migration/src/lib/settings/settings-file.js` reads `pms-config.txt`, which has to happen before the data layer knows
   where to look. A test fails if any other file under `migration/src` fetches.)
 - **`dataService.js` no longer "only grows" (Phase 10c-1).** That rule existed because the legacy pages were built
   from the same file; they are gone, and so are the 16 exports that only they, or nothing, called (`requestCount`,
@@ -279,8 +279,8 @@ new build alone (each says so at its top); whether they move into `migration/` i
   `scripts/test-participant-storage.js` pins the whole export list (104 names since Phase 10j, which added `prepareWrites`; 103 after 10c-3, 102 after 10c-2b, 104 after 10c-2a, 115 when 10c-1 ended): an export cannot appear or disappear
   without that test being edited on purpose. **All of this file is in the participant page**, so whatever is added
   here is paid for there: logic that only the admin or Setup needs goes in a module under `migration/src/lib` that is
-  handed the data service (`picturesStillShown` in `lib/admin-content.js` and `clientUsage` in `lib/admin-clients.js` are the pattern). Since Phase 10c-2b every list and column the
-  adapter reads or writes comes from the schema file (`public/js/pms-schema.js`; see "Rules from Phase 10c-2b") and every column must
+  handed the data service (`picturesStillShown` in `lib/admin/admin-content.js` and `clientUsage` in `lib/admin/admin-clients.js` are the pattern). Since Phase 10c-2b every list and column the
+  adapter reads or writes comes from the schema file (`migration/src/lib/schema/pms-schema.js`; see "Rules from Phase 10c-2b") and every column must
   exist: there is no optional column any more. Any new function needs both adapters (the local Express one and SharePoint) and a parity test.
 - **The seven exports no page called are gone (Phase 10c-2a):** `joinSession`, `claimQrToken`, `saveResponse`,
   `getSessionResponses`, `getSessionResults`, `listVisitorRoster` and `listUserVisitLogs`, the legacy pages' own, and with
@@ -312,7 +312,7 @@ new build alone (each says so at its top); whether they move into `migration/` i
   here, and a delete leaves it) keep Results honest. `addGuests` and `provisionGuestCodes` check the session once (live, not ended,
   guests scan a personal QR) where `provisionQrToken` checks per guest, and make a code only for an enabled guest with no code that
   has not expired: pressing it twice, or after a failure, makes only what is missing. `guestNameKey` is the roster's comparison
-  (`lib/admin-content.js` `guestKey` must agree; a test says so). No new SharePoint column.
+  (`lib/admin/admin-content.js` `guestKey` must agree; a test says so). No new SharePoint column.
 - **Section 7 of `dataService.js` (Phase 6) is the pictures':** `uploadClientAsset(blob, name)` stores a finished PNG, JPEG or WebP under
   its flat content-hashed name (`<slug>-<slot>-<hash>.<ext>`) and resolves `{ url, name }`; `removeClientAsset(url)` removes one of ours,
   best effort, and never throws. On SharePoint the file goes to the ClientLogos library (`Files/add(..., overwrite=true)`, safe to
@@ -329,27 +329,27 @@ new build alone (each says so at its top); whether they move into `migration/` i
   milliseconds when SharePoint gave one: never retried here, never turned into plain reads** (the timer backs off; `spReadTogether`, which
   everything else uses, still falls back). A 400 or an unusable batch response turns batching off for the page, as it always did.
   (`readSessionResponses` only had its merge moved into `combineAnswers`.) No SharePoint column.
-- **The admin's PIN check is `migration/src/lib/admin-pin.js`** (`login(pin)`; `lib/sha256.js` is its fallback where
+- **The admin's PIN check is `migration/src/lib/admin/admin-pin.js`** (`login(pin)`; `lib/admin/sha256.js` is its fallback where
   `crypto.subtle` is missing). It moved there from the legacy admin folder in Phase 10c-1 with its code unchanged: the
   same hash, the same comparison, the same answers. It is a mock local PIN: do not add real secrets to
   `adminusers.json`. How a PIN is hashed, stored and compared is left as it is (ARCHITECTURE-10.md, decision 10, in git history at `7347c72`).
 - The legacy screens, admin panels, `app.js`, `kiosk.js`, `sfx.js` and `vfx.js` are gone, and so are their conventions
   (`render(container, context)`, `mount(container, ctx)`, `loadTemplate`). Sounds and confetti go through
-  `migration/src/lib/effects.ts`; `branding.js` is still how the Live display and the exports read a client's colours.
+  `migration/src/lib/effects/effects.ts`; `branding.js` is still how the Live display and the exports read a client's colours.
 
 ## Svelte app conventions (`migration/`)
 
-The Svelte app is the app. The participant page still loads `public/css/app.css` and `vfx.css` and the shared
+The Svelte app is the app. The participant page still loads `migration/src/styles/legacy/app.css` and `vfx.css` and the shared
 `public/js` modules (they were the legacy app's too, until Phase 10c-1); restyle by overriding in `migration/src/`,
 not by editing them, so that what the tests measure stays where it is.
 
-- **Product name**: user-visible text uses `APP_NAME` (`migration/src/lib/app-name.ts`); the
+- **Product name**: user-visible text uses `APP_NAME` (`migration/src/lib/common/app-name.ts`); the
   HTML shells use `%APP_NAME%`. Internal identifiers keep their `cec` spelling (`cec.sound`,
   `CEC_SHAREPOINT`, `p_cec_01/02`, file names, package name, storage keys).
 - **Colour and type**: use the custom properties in `src/styles/tokens.css`, never raw hex in a
   component. The defaults are the mockup palette and must equal `deriveTheme('#045BCC')`
   (tested). A client palette comes from `deriveTheme(primary, accent?)` and `applyTheme()` in
-  `src/lib/theme.js`, which keep white text at 4.5:1 or better. Body and option text is 16px or
+  `src/lib/brand/theme.js`, which keep white text at 4.5:1 or better. Body and option text is 16px or
   more; sizes use `clamp()`.
 - **The accent never drives a control.** Every control fill (`CONTROL_TOKENS`: the CTA, Next, Home,
   Retry, pills, tiles) comes from the client's PRIMARY; `resolveClientTheme` works them out again
@@ -364,7 +364,7 @@ not by editing them, so that what the tests measure stays where it is.
   `CheckBadge`, `HeroPlate`, `SoundToggle`. Tap targets are at
   least 44px, focus is the green ring from `base.css`, and correct/wrong always carry an icon
   and a word. A heading that a screen focuses by script (a new screen, the next question) goes
-  through `focusHeading()` in `lib/focus.ts` and nowhere else: it draws nothing for a pointer or
+  through `focusHeading()` in `lib/common/focus.ts` and nowhere else: it draws nothing for a pointer or
   touch user and the ring for a keyboard user, by one rule in `base.css` (never a component's own
   `:focus` rule; `:focus-visible` alone gets this wrong before the first input of a page load). Svelte scopes component CSS but cannot stop a *global* rule matching the markup,
   so avoid generic class names (`.option` and `.divider` already exist globally);
@@ -373,13 +373,13 @@ not by editing them, so that what the tests measure stays where it is.
   then the pager (`#/quiz/<id>`, one question per screen; its completion screen is part of the same
   route), then the finale (`#/thank-you`). `#/feedback/<id>` only redirects into the pager. The rules
   (graded Retry and reveal, validation, resume, first-try score, the sequential lock, the greeting)
-  live in `lib/pager-logic.js`, which has no DOM and is unit-tested by `scripts/test-pager.js`; the
+  live in `lib/participant/pager-logic.js`, which has no DOM and is unit-tested by `scripts/test-pager.js`; the
   screens only render what it says. Route copy is user-visible text, so check it against the mockup
   (`Design-Docs/references/Operate_Experience_Prototype_Mockup.pdf`, in git history at `7347c72`) before changing it.
-- **Saving answers goes through `lib/participantData.ts` and nowhere else.** A screen calls
+- **Saving answers goes through `lib/participant/participantData.ts` and nowhere else.** A screen calls
   `recordAnswer(sectionId, ...)` as each answer is given (a graded question at its FIRST pick, so a
   reload cannot hand out a fresh first try) and `flushActivity(sectionId)` once, on the activity's
-  last step. The mechanics are `lib/answer-store.js` (no DOM, unit-tested), which only
+  last step. The mechanics are `lib/participant/answer-store.js` (no DOM, unit-tested), which only
   `participantData.ts` imports:
   - **One Responses item per participant** (AppId = track id). The first save creates it; every
     later save is ONE request, a blind overwrite of the whole answer list (no read, no `If-Match`
@@ -407,13 +407,13 @@ not by editing them, so that what the tests measure stays where it is.
 - **The participant page is small, and has no results code (Phase 7).** `index.html` is about 155 KB gzip (153.5 KB when Phase 7c ended; Phase 8 added 1,882 B: the unsupported-browser notice, about 900 B, and the
   accessibility fixes, within a 2,048 B allowance that `test:bundle` holds) against a 400 KB target and a 450 KB
   ceiling (`scripts/test-bundle-budget.js` fails above the ceiling). It must not import `resultsExport.js`, Chart.js, jsPDF, PptxGenJS,
-  html2canvas or the Results charts (`admin/charts/`, `lib/results-chart-model.js`); all of them are the admin page's (Chart.js is in no page since
+  html2canvas or the Results charts (`admin/charts/`, `lib/results/results-chart-model.js`); all of them are the admin page's (Chart.js is in no page since
   Phase 11a; the admin page is about 550 KB gzip against a 700 KB budget: see "Leader report" below). The leader report, its fonts and its buttons are on that list too. The old `#/master-results/<sessionId>` address is `routes/ResultsMoved.svelte`: a notice, no boot, no request, and a link to
-  `admin.html#live-display/<sessionId>` built by `lib/admin-address.js` from the address it was opened at (the same folder, wherever it is
-  hosted; nothing of the participant's own address is carried over). `public/js/resultsExport.js` was shared with the legacy app and is kept as
+  `admin.html#live-display/<sessionId>` built by `lib/common/admin-address.js` from the address it was opened at (the same folder, wherever it is
+  hosted; nothing of the participant's own address is carried over). `migration/src/lib/exports/resultsExport.js` was shared with the legacy app and is kept as
   it was. (`resultsRenderer.js`, the Chart.js renderer of the Live display, left in Phase 11a: the charts are drawn by hand, see "Rules from Phase 11a".)
-- **Polling (Phase 7): one timer, one request, the budgets in `lib/poll-schedule.js`.** An open participant page looks at what the
-  facilitator did through `lib/page-watch.ts` (`createPageWatcher`, one `setTimeout` rescheduled after every look, never an interval) and
+- **Polling (Phase 7): one timer, one request, the budgets in `lib/common/poll-schedule.js`.** An open participant page looks at what the
+  facilitator did through `lib/common/page-watch.ts` (`createPageWatcher`, one `setTimeout` rescheduled after every look, never an interval) and
   `App.svelte`'s `checkServer()`, which makes ONE `readParticipantWatch` read. **While waiting (Welcome, the hub, the finale, "not live yet")
   it looks every 20 s (3 a minute; the budget is 4), with ±20% jitter on every wait; with a question or an activity's completion screen on
   screen it looks every 60 s; a hidden tab sends nothing and, shown again, looks once at once (not within 5 s of the last look);
@@ -435,14 +435,14 @@ not by editing them, so that what the tests measure stays where it is.
   the flag and the hub comes back with its progress. A page that boots on an ended session shows the same words (`reason:
   'session-ended'`), keeps looking at `experience.watchSessionId`, and starts again by itself when the session is reopened.
   The cost is one more read in the batch the page already sent and no more requests.
-- **Today's client decides everything a participant sees.** `lib/boot.js` (no DOM; only `App.svelte`
+- **Today's client decides everything a participant sees.** `lib/participant/boot.js` (no DOM; only `App.svelte`
   imports it) reads AppSettings (and who is signed in), then the Client, Session and Sections(ClientId) side by side with, on the plain
   link, the session's Tracks (Phase 10j): **two rounds and 6 requests to the first screen on the staff link, 8 at most**, measured
   in `scripts/test-participant-waits.js`, `scripts/test-participant-storage.js` and, in a real browser, in
   `scripts/migration-tests/sharepoint.spec.ts`. (Since Phase 10b a page on SharePoint asks for one thing before them: its settings
   file, a small static file in its own folder. **8 list requests plus 1 file**; no file on the local server.) The visit log, the resume stamp and (for a resumed
   staff visit) "who is signed in" are sent only after that screen is drawn. Keep to this: a new
-  read at boot must come out of that budget. `lib/experience.svelte.ts` holds the result for the
+  read at boot must come out of that budget. `lib/participant/experience.svelte.ts` holds the result for the
   screens. With no active client, an archived one, or an ended session, every participant route
   shows `routes/NotLive.svelte`; the page checks AppSettings on its timer and turns live by itself.
   **Nothing is cached between page loads**: browser storage holds only unsaved answers, this tab's
@@ -466,7 +466,7 @@ not by editing them, so that what the tests measure stays where it is.
   - Each "device" in a race test is its own module instance (`freshPage()` in
     `scripts/test-participant-storage.js`): one module is one page, and holds one write token.
 - **The theme is the client's stored one** (`Clients.ThemeJson`: `{ version, primary, accent, tokens,
-  assets, copy }`), resolved by `lib/client-theme.js` and applied with `applyTheme` before any client
+  assets, copy }`), resolved by `lib/brand/client-theme.js` and applied with `applyTheme` before any client
   colour is painted: `index.html` starts with `data-theme-pending`, under which the shell shows only
   `--bg-top`. Stored tokens pass `applyTheme`'s own checks or are derived again from the stored
   `primary`/`accent`; a client with no stored theme wears the default look. `ThemeVersion` is read on
@@ -477,11 +477,11 @@ not by editing them, so that what the tests measure stays where it is.
   answer as text when there is none; the hub's lock from `Sessions.ActivityFlow`.
 - **Never draw or imitate a client's logo.** A client with no logo file shows its name in type on
   the plate (`HeroPlate` `text`, from `theme.copy.logoText`).
-- **Results are read through `readSessionResponsesChecked`** (via `lib/adminData.ts` and `lib/session-results.js`: since Phase 9b the tolerant form of
+- **Results are read through `readSessionResponsesChecked`** (via `lib/admin/adminData.ts` and `lib/results/session-results.js`: since Phase 9b the tolerant form of
   `readSessionResponses`, which reads each participant's own item and names an item it cannot read instead of
   stopping). The Live display's timer reads the same records through
   `readLiveFeed` with `tolerant` (same merge, a parity test); Results and the CSV, PDF and PowerPoint exports call `getSessionResults` from `adminData.ts`, which is
-  `readSessionResults` (`lib/session-results.js`, built on `buildResults`; `scripts/test-live-display.js` holds it and the Live display's tally to a tally worked out by
+  `readSessionResults` (`lib/results/session-results.js`, built on `buildResults`; `scripts/test-live-display.js` holds it and the Live display's tally to a tally worked out by
   hand, and the oracle holds both to rules of its own). **Nothing reads, writes or clears a session's own item in Responses** (`AppId` = the session's id, no `TrackId`:
   the legacy pages' storage). Since Phase 10c-2a an item with no `TrackId` is nobody's: not read, not counted, not reported.
 - **Pictures on the participant page never hold it up** (`HeroPlate.svelte`, `AppShell.svelte`). Welcome shows the hero badge as it is
@@ -489,25 +489,25 @@ not by editing them, so that what the tests measure stays where it is.
   fills is reserved at once; the hero is `decoding="async"` with `fetchpriority="high"` and fades in on load; if it fails or has not
   arrived after 1.5 s the next choice is shown (and the badge takes over if it comes later). The background is an `<img>` that fades in
   after it loads (`object-position` is the focal point); until then, and always if it fails, the gradient is all there is. Alt text
-  comes from the client's name; the background is decorative. **The scrim is computed, not chosen** (`lib/scrim.js`): the least flat
+  comes from the client's name; the background is decorative. **The scrim is computed, not chosen** (`lib/brand/scrim.js`): the least flat
   opacity at which white words (on the page, on a translucent pill, and `--text-soft`) keep 4.5:1 over a pure white picture, rounded
   up to a whole percent (63%; the 60-78% gradient the shell had before did not hold under a pill). A test samples the pixels. In an
   effect, key an image's state on a `$derived` of its address, not on the prop: a rebuilt parent object re-runs an effect that reads
   the prop, and an image that is already showing would be put back to "loading".
-- **Sample clients** (Kroger, Domino's) are `lib/sample-clients.js`; `lib/seed.js` creates what is
+- **Sample clients** (Kroger, Domino's) are `lib/setup/sample-clients.js`; `lib/setup/seed.js` creates what is
   missing and never changes an existing record, except to fill a field that is empty and did not
   exist before Phase 4 (`FILLABLE`). `server/data` holds the same pack (`scripts/test-seeds.js`
   keeps them in step), and the Setup page's "Seed sample clients" runs the same code on SharePoint.
   Change sample content in `sample-clients.js` and then in `server/data` to match. Each carries `theme.sample` (see "Rules from Phase 9b"). Since Phase 10f each has a
   logo, a hero and a background: VJR's pictures, the logos the clients' real ones, as files (see "Rules from Phase 10f"); `samplePack()` alone has none, which is what
-  the tests build their sites from, and `server/data` holds `localSamplePack()` (`lib/sample-seed.js`).
-- **Sounds and confetti go through `lib/effects.ts` and nowhere else.** Screens announce what happened with
+  the tests build their sites from, and `server/data` holds `localSamplePack()` (`lib/setup/sample-seed.js`).
+- **Sounds and confetti go through `lib/effects/effects.ts` and nowhere else.** Screens announce what happened with
   `answerFeedback({ correct, firstTry, revealed, anchor })`, `pick()`, `activityComplete()` and `finale()`; the
   switch uses `setSound(on)`, `soundState()` and `onSoundChange()`; Welcome's begin tap calls `unlockAudio()`;
   Phase 5 wires a per-session default through `setSoundDefault(on)`. A screen never names a cue, a note or a
-  burst. Which moment makes which effect is `lib/effect-plan.js`; the sounds are DATA in `lib/sound-cues.js`
-  (notes, waveform, envelope, a `gain` trim); `lib/sound-engine.ts` turns them into Web Audio and
-  `lib/confetti.ts` drives canvas-confetti; the plan and palette are `lib/confetti-plan.js`. Only `effects.ts`
+  burst. Which moment makes which effect is `lib/effects/effect-plan.js`; the sounds are DATA in `lib/effects/sound-cues.js`
+  (notes, waveform, envelope, a `gain` trim); `lib/effects/sound-engine.ts` turns them into Web Audio and
+  `lib/effects/confetti.ts` drives canvas-confetti; the plan and palette are `lib/effects/confetti-plan.js`. Only `effects.ts`
   imports those, and `scripts/test-effects.js` fails if any other file under `migration/src` uses
   `AudioContext`, an audio element or `canvas-confetti` (it also still refuses an import of the legacy `sfx.js`/`vfx.js`, which no longer exist).
   - **Rules that must keep holding.** Sound is off until the person turns it on (key `pms.sound` in
@@ -539,9 +539,9 @@ not by editing them, so that what the tests measure stays where it is.
   page follows a `hashchange` too, so an address pasted into an open tab works). The page imports `styles/tokens.css`, `styles/fonts-admin.css`
   (Open Sans 400, 600 and 700 only: all six faces would add 62 KB gzip, three add 31) and `styles/admin-tokens.css` (the light
   surfaces and status tints, every text pair held to 4.5:1 by `scripts/test-admin-today.js`) over
-  `public/css/admin.css`, which was the legacy admin's sheet and is left as it is; `src/admin.css` overrides it. The bar is navy because the
+  `migration/src/styles/legacy/admin.css`, which was the legacy admin's sheet and is left as it is; `src/admin.css` overrides it. The bar is navy because the
   Deloitte wordmark is white. Targets are 44px, focus is the green ring with a navy halo, no page scrolls sideways at 390 wide.
-- **Today** (`admin/AdminToday.svelte`, logic in `lib/admin-today.js`, no DOM, unit-tested): the status panel, the
+- **Today** (`admin/AdminToday.svelte`, logic in `lib/admin/admin-today.js`, no DOM, unit-tested): the status panel, the
   picker (active clients; the date starts as today in the browser's local time), Go live, readiness, controls on the live session
   (identification mode, activity flow, End session, Reopen), the participant link and its QR, and "All sessions" (any session
   whose id is not `<slug>-<date>`, made live through `activateSession`). Rules that must keep holding:
@@ -565,21 +565,21 @@ not by editing them, so that what the tests measure stays where it is.
     hero image, guest mode with no guests, one live activity, a live activity with no questions, another client's session the
     same date, a date that is not today, a missing index, and a schema check that could not run. Go live is disabled while any
     blocker exists.
-- **Clients** (`admin/AdminClients.svelte`, rules in `lib/admin-clients.js`): a slug is `a-z0-9` words joined by single hyphens, at
+- **Clients** (`admin/AdminClients.svelte`, rules in `lib/admin/admin-clients.js`): a slug is `a-z0-9` words joined by single hyphens, at
   most 40, unique among all clients (archived too; a client with no stored slug uses the one its name makes, as `sessionIdFor`
   does), and locked once any session of the client exists. A new client's id is `c-<slug>`, so two admins adding one slug together
   cannot both succeed. A new client gets `deriveTheme('#045BCC')`; an edit keeps the stored palette, accent and pictures and takes
   the new words, through `reviseClientTheme()` (a stored accent is read in `client-theme.js` only), and sets `ThemeVersion` and
   `theme.version` to the old version plus one. A live client cannot be archived (asked of the server at the click); an archived one
   is hidden from Today and cannot go live. Delete protection (now also by activities) and the check-in QR for iPads are kept; the QR
-  needs the client to be live. Delete reads what uses the client through `clientUsage()` (`lib/admin-clients.js`: AppSettings and the client's sessions by `ClientId` in
+  needs the client to be live. Delete reads what uses the client through `clientUsage()` (`lib/admin/admin-clients.js`: AppSettings and the client's sessions by `ClientId` in
   one request, then those sessions' visits and codes by `SessionId`, 15 sessions to a read, in one more; the answers of those sessions only; never a whole list), and
   the check-in dialog lists the newest six codes of the session the code joins (`recentCodes()`, one read by `SessionId`). **Colours, the logo, hero art and the background are Brand Studio's** (next bullet): the form has the
   name, slug and words only, and each row has a **Brand** button. A new client's older colour fields come from the default palette
   (`legacyColours`).
-- **Brand Studio** (`admin/BrandStudio.svelte`, opened from a client's row on Clients; rules in `lib/brand-studio.js`, `lib/legacy-colours.js`,
-  `lib/asset-*.js`, `lib/crop-math.js`, `lib/image-sniff.js`, `lib/brand-devices.js`, `lib/brand-sample.js`, `lib/scrim.js`, all plain JS
-  with unit tests; `lib/asset-image.ts` is the only part that needs a canvas). Rules that must keep holding:
+- **Brand Studio** (`admin/BrandStudio.svelte`, opened from a client's row on Clients; rules in `lib/brand/brand-studio.js`, `lib/brand/legacy-colours.js`,
+  `lib/asset-*.js`, `lib/brand/crop-math.js`, `lib/brand/image-sniff.js`, `lib/brand/brand-devices.js`, `lib/brand/brand-sample.js`, `lib/brand/scrim.js`, all plain JS
+  with unit tests; `lib/brand/asset-image.ts` is the only part that needs a canvas). Rules that must keep holding:
   - **The stored shape** is `ThemeJson { version, primary, accent, plate?, tokens, assets: { hero, logo, background, backgroundFocus?, tile },
     copy }`. `plate` is written only as `'dark'` (absent is the light plate) and `backgroundFocus` ({ x, y } percentages) only with a
     background, so a theme that uses neither is stored exactly as before; `assets.tile` stays reserved and unused. `deriveTheme(primary,
@@ -597,7 +597,7 @@ not by editing them, so that what the tests measure stays where it is.
     about an accent or a primary within 30 degrees of the wrong-answer red, a very light or dark primary, an accent that fails 3:1 where
     it is used, and a logo whose drawn pixels are mostly very light on the light plate (or very dark on the dark one).
   - **Pictures** (`AssetUploader.svelte`, `CropDialog.svelte`): PNG, JPEG and WebP only, decided by the file's bytes (`inspectFile`), with a
-    10 MB input cap; SVG, GIF, animated PNG/WebP, a truncated file and a non-picture are each refused in words. Slots (`lib/asset-specs.js`):
+    10 MB input cap; SVG, GIF, animated PNG/WebP, a truncated file and a non-picture are each refused in words. Slots (`lib/brand/asset-specs.js`):
     hero 1200x1200 (300 KB), logo 800x400 (150 KB), background 1536x2048 (350 KB, with a focal point), tile 480x320 (60 KB). A picture
     enlarged more than twice is refused, more than 1x warned. The crop dialog moves and zooms inside a frame locked to the slot's shape
     (pointer, wheel, slider, arrow keys with `+` `-` Home End); the output is drawn at exactly the slot's size, EXIF orientation applied by
@@ -617,16 +617,16 @@ not by editing them, so that what the tests measure stays where it is.
     AppSettings says something else is live (`keyOf`: session, client, activation time); a save changes none of those. `OPEN_PAGES_NOTE`
     says so, and `scripts/test-brand.js` reads `App.svelte` and `experience.svelte.ts` to fail if that stops being true (going live again
     would also send everyone back to Welcome, so Brand Studio does not suggest it).
-  - **Unsaved changes**: leaving by tab, Back or Lock asks first (`lib/unsaved.ts`: in memory, no storage), and `beforeunload` covers
+  - **Unsaved changes**: leaving by tab, Back or Lock asks first (`lib/admin/unsaved.ts`: in memory, no storage), and `beforeunload` covers
     closing and reloading.
-  - **The Live display and the exports** read the stored theme when there is one (`masterColours`, through `lib/master-brand.ts`) and the older
+  - **The Live display and the exports** read the stored theme when there is one (`masterColours`, through `lib/admin/master-brand.ts`) and the older
     fields otherwise; `legacy-colours.js` is separate from `brand-studio.js`.
   - **`?preview=<clientId>`** (`routes/PreviewRoot.svelte`): that client's Welcome, activities and read-only questions, in its saved look,
     whether or not it is live, marked "Preview", reading the client and its activities and nothing else (no AppSettings, no visit, no
     track, no storage). Brand Studio shows the address, with Copy, Open and a QR code. **It marks no right answer** (Phase 9b, SEC-1: it has no PIN):
     only the PIN-gated Content preview passes `showKey`.
 - **Content** (`admin/AdminContent.svelte` with `ContentQuestions`, `ActivityFormDialog`, `CopyActivitiesDialog`;
-  rules in `lib/admin-content.js`, no DOM) is the old Activities and Content tabs in one, scoped by a client switcher that opens on
+  rules in `lib/admin/admin-content.js`, no DOM) is the old Activities and Content tabs in one, scoped by a client switcher that opens on
   the live client (a client picked this visit is kept while the live client has not changed). Rules that must keep holding:
   - **Everything on the left is `Sections.ClientId` and `Sections.Order`** (the order field existed; reorder is ▲ ▼ and renumbers
     1, 2, 3... writing only what moved). An activity with no client is shown to nobody and listed nowhere (Phase 10c-2a: the
@@ -645,7 +645,7 @@ not by editing them, so that what the tests measure stays where it is.
     or to clear a stored one. **Upload** is the same `AssetUploader` (compact) beside the address field with the `tile` spec (480x320,
     3:2, 60 KB): the picture is uploaded when it is chosen (the address field is the draft), stored as `<client slug>-tile-<hash>`,
     and the files this editing session replaced or abandoned are removed after Save or Cancel (`tidy()`); a pasted address is still allowed and is
-    never touched. Before it removes a file, `tidy()` asks `picturesStillShown()` (`lib/admin-content.js`) which of them another answer still shows (a duplicate, or a
+    never touched. Before it removes a file, `tidy()` asks `picturesStillShown()` (`lib/admin/admin-content.js`) which of them another answer still shows (a duplicate, or a
     copy for another client, shows the same file): the activities and then their answers by question, two requests on SharePoint however many pictures, and never a
     filter on `ImageUrl`, a column with no index. When that cannot be told, no file is removed.
   - **Preview** (`ActivityPreview.svelte`) takes the activity's client and puts its resolved theme on the preview frame
@@ -669,16 +669,16 @@ not by editing them, so that what the tests measure stays where it is.
   (`admin/AdminResults.svelte`) is the old Sessions panel without End/Reopen, which are on Today. On SharePoint it reads every session in
   full when it opens, on Refresh and after a restart (5 requests a session since Phase 9b), and keeps only the LIVE session fresh, with the
   Live display's one-request feed every 15 s (`data-session` on each card is the test hook). The local server refreshes everything every 2.5 s.
-  **A person's name on this screen is `lib/participant-names.js`, the one rule the leader report (PDF and CSV) names people by (Phase 7c):**
+  **A person's name on this screen is `lib/results/participant-names.js`, the one rule the leader report (PDF and CSV) names people by (Phase 7c):**
   the name on the guest's QR code (the track's `participantName`), else the visit log's name for that visit, else the roster's, else the
   account's sign-in name, else "Unnamed participant N" (never the client's name), and a repeated name as "Name (2)". It used to say
-  "Client · Visit 1". The rows are `lib/admin-results.js` `resultRows()` (plain JS; `scripts/test-participant-names.js` holds them equal to the
+  "Client · Visit 1". The rows are `lib/admin/admin-results.js` `resultRows()` (plain JS; `scripts/test-participant-names.js` holds them equal to the
   report on both adapters). The visit log and the roster are not on a track, so the screen reads them (`readNameSources()`: two lists in ONE
   `$batch`, for up to 20 sessions) only for a session with a track that has no name of its own: **+1 request when Results opens or is
   refreshed, none for a session of guests with QR names**, and, on the live session's timer, one more look for someone who joined in the last two
   minutes and is still unnamed (their sign-in is written a moment after their first screen), twice at most for each person
   (`rowsToLookForAgain`). Status, "joined ... via ...", the QR counts and Restart are as they were.
-- **Live display** (`admin/LiveDisplay.svelte`, the charts in `admin/charts/` since Phase 11a; loading in `lib/live-session.js`, the tally in `lib/results-tally.js`,
+- **Live display** (`admin/LiveDisplay.svelte`, the charts in `admin/charts/` since Phase 11a; loading in `lib/admin/live-session.js`, the tally in `lib/results/results-tally.js`,
   both plain JS) is what the participant page's Master screen was, in the admin page: a chart for each question of the session's
   enabled activities, the answer count and the iPad count, the client's colours in its header (`masterColours`, set on the display's own element and
   not on the admin page; since Phase 11a the charts themselves are in Deloitte's colours), **Full screen**, and the CSV, PDF and PowerPoint exports (`adminData.getSessionResults`, which is `readSessionResults`, so `readSessionResponsesChecked`;
@@ -689,7 +689,7 @@ not by editing them, so that what the tests measure stays where it is.
     its activities) and 3 more every 5 minutes (the structure again), 5.6 a minute in all (budget 6); none while the tab is hidden, one
     when it is shown; a 429 or 503 waits at least `Retry-After`. A change in the activities (one switched off, a question added) is found
     in the feed and re-reads the structure; an edit to a question's words waits for the 5-minute read or Refresh. The tally is
-    `lib/results-tally.js`, which Results' `readSessionResults` is built on too (`scripts/test-live-display.js` holds both to a tally worked out by hand, on both adapters).
+    `lib/results/results-tally.js`, which Results' `readSessionResults` is built on too (`scripts/test-live-display.js` holds both to a tally worked out by hand, on both adapters).
   - **Full screen** covers the window (`position: fixed`, the admin bar and tabs `inert`) and **shows ONE question at a time, sized so the whole
     card is on the screen (Phase 7c)**: a projector has no scroll wheel and the pointer is hidden, and before 7c the 1920x1080 display scrolled
     (the first card's axis labels ran past the bottom). Nothing scrolls now: the card (`ResultCard` `fit`, Phase 11a) takes the height between the
@@ -707,15 +707,15 @@ not by editing them, so that what the tests measure stays where it is.
   - A session that no longer exists says so with Try again; a logo that cannot load leaves no empty chip.
 - **Leader report and participant CSV (Phase 7b)** (`admin/ReportExports.svelte`: two buttons, **Leader report (PDF)** and **Participant
   answers (CSV)**, under each session card's heading on Results, so for today's session or any past one; the Live display and its
-  three exports are as they were). Five plain-JS files with no DOM: `lib/leader-report-data.js` reads, with calls the admin already
+  three exports are as they were). Five plain-JS files with no DOM: `lib/exports/leader-report-data.js` reads, with calls the admin already
   had (the session; one `$batch` of its activities, client, tracks, visit log and roster; the questions and options beside
   `readSessionResponses`: **4 requests on SharePoint, 5 when an answer points outside the session's activities**; nothing was added to
-  `dataService.js`); `lib/leader-report.js` counts and makes the CSV; `lib/leader-report-layout.js` places everything on A4 pages as
-  rectangles, lines and single lines of text, in millimetres; `lib/leader-report-pdf.js` draws them with jsPDF; `lib/report-fonts.js`
+  `dataService.js`); `lib/exports/leader-report.js` counts and makes the CSV; `lib/exports/leader-report-layout.js` places everything on A4 pages as
+  rectangles, lines and single lines of text, in millimetres; `lib/exports/leader-report-pdf.js` draws them with jsPDF; `lib/exports/report-fonts.js`
   unpacks the fonts and measures text. The report is made on demand in the page and stored nowhere. Rules that must keep holding:
   - **The counting rules are `COUNTING_RULES` in `leader-report.js`, printed in the report's "About this report" box, which since Phase 7c is the
     last section, "How the numbers are counted"; each has a test and a mutation.** Participants are every visit (track) in the order it joined,
-    a repeated name as "Name (2)". The naming rule is `lib/participant-names.js` (shared with Admin → Results; the mutation script patches it
+    a repeated name as "Name (2)". The naming rule is `lib/results/participant-names.js` (shared with Admin → Results; the mutation script patches it
     there). A name is what was recorded
     (the guest's QR name on the track, else the roster's, else the sign-in name UserVisitLogs holds for that visit or that account), or
     "Unnamed participant N": never the client's name, never an id, and a guest's visit never takes the iPad account's name. Scores use
@@ -782,7 +782,7 @@ not by editing them, so that what the tests measure stays where it is.
   Firefox.", with the app name and the Deloitte wordmark as text. It is `src/unsupported/page.html` and `support-check.js` (a classic ES5 script: it must run
   in a browser too old for the app), put in by `vite-plugin-unsupported.ts` at `%UNSUPPORTED_PAGE%` in each HTML shell. It is shown (1) by `<script nomodule>`
   in a browser with no module scripts, (2) by the feature test (`AbortSignal.timeout`, `structuredClone`, `Array.at`, `<dialog>`, `CSS.registerProperty`, `color-mix()`:
-  the newest things the app really uses, each of which implies the older ones in every engine, not a version number), after which `lib/support.ts`, the FIRST
+  the newest things the app really uses, each of which implies the older ones in every engine, not a version number), after which `lib/settings/support.ts`, the FIRST
   import of every entry, throws so that nothing of the app runs over it, (3) by any script `error` before `mounted()` is called after `mount()` (a module
   that cannot be parsed, or that throws at the top), and (4) by a `<noscript>` rule. It is shown with `style.display`, never the `hidden` attribute (Tailwind's
   layered `[hidden]{display:none!important}` beats an unlayered rule), its heading is `role="heading"` and not an `<h1>` (a page-wide `h1` selector in a
@@ -801,7 +801,7 @@ not by editing them, so that what the tests measure stays where it is.
     A 200% text size at 390 and 820 px and 320 px at 100% are the tested sizes (320 px at 200% is stricter than WCAG asks and only has to not overflow).
   - **A sticky bar must not cover the focused control**: the admin tab row is sticky, so `html { scroll-padding-top: 5.5rem }`; it scrolls sideways, so its padding
     is the ring's room.
-  - **A device turned over keeps what was in view** (`lib/keep-in-view.ts`, used by the pager): if the chosen answer (or what has focus) was on the screen it
+  - **A device turned over keeps what was in view** (`lib/participant/keep-in-view.ts`, used by the pager): if the chosen answer (or what has focus) was on the screen it
     is put back after the resize.
   - **A spoken answer does not end in two full stops** (`gradedAnnouncement`).
   - A contrast swatch in Brand Studio is a picture (a bar of the words' colour on the background colour), never text in a failing pair.
@@ -813,34 +813,34 @@ not by editing them, so that what the tests measure stays where it is.
   `python3 scripts/build-fonts.py` (needs `pip install fonttools brotli`) only when the source
   TTFs or glyph ranges change.
 - **Kiosk lock-down** (no pinch zoom, long-press menu, text selection) comes from
-  `src/lib/kiosk.ts` and applies only in an installed web app or with `?kiosk=1`. (The legacy pages' always-on
+  `src/lib/common/kiosk.ts` and applies only in an installed web app or with `?kiosk=1`. (The legacy pages' always-on
   script left in Phase 10c-1; a test fails if it comes back.)
 - **Line endings**: the working tree may be CRLF (Windows checkout) while git stores LF. When
   inspecting or staging, use `git -c core.autocrlf=input diff` / `add`, or every line looks changed.
 
 ## Rules from the Phase 9a review (keep them holding)
 
-- **"Click here to begin" is `beginVisit(visitId, ...)`, never `joinSession()`** (the legacy pages' own, removed in Phase 10c-2a): the id comes from `lib/visit-id.js`
+- **"Click here to begin" is `beginVisit(visitId, ...)`, never `joinSession()`** (the legacy pages' own, removed in Phase 10c-2a): the id comes from `lib/participant/visit-id.js`
   (kept for that session until the visit is known to have begun, then forgotten), so a press whose reply was lost finds the visit it made and a later
   "Start a new visit" is a new one; the write that moves the session to in-progress is tried, not required. A test fails if anything
   names `joinSession` again.
 - **The device that gets a QR code removes the tracks an earlier, cut-off try of that code left** (`openQrScan`: the `earlier` read rides in the scan's one
   batch and is never required). A scan is still 8 requests (9 for a session's first device); 14 where the site cannot batch, 13 with `batch: false`.
-- **An answer to a question that is not graded goes through `ungradedRecord()`** (`lib/pager-logic.js`): a wrong first try whose question then lost its
+- **An answer to a question that is not graded goes through `ungradedRecord()`** (`lib/participant/pager-logic.js`): a wrong first try whose question then lost its
   answer key is settled by it, instead of staying open for ever.
 - **Every look that reaches the server resumes saving** (`resumePendingSaves()` in `App.svelte`'s `checkServer`): the answer store has no timer of its own.
-- **An expired sign-in is not a lost connection** (`lib/sign-in.js`): `participant.signedOut` shows its own banner with Reload; a failed load says why in
+- **An expired sign-in is not a lost connection** (`lib/participant/sign-in.js`): `participant.signedOut` shows its own banner with Reload; a failed load says why in
   words (`loadFailure()` in `participantData.ts`) and "Try again" retries in place, never `location.reload()`. The hub still must not import `dataService`.
 - **A page never falls back to the local server because of where it was opened** (FH-3; replaced in Phase 10b). Phase 9a's fix was a message ("This page
-  is not set up for ..."); the cause is gone now: a page is not built for one address. `lib/address-check.js` is only `isLocalAddress()` (plain http, or this
+  is not set up for ..."); the cause is gone now: a page is not built for one address. `lib/settings/address-check.js` is only `isLocalAddress()` (plain http, or this
   computer, is the local server; every other https address is SharePoint), and a SharePoint page that cannot tell which lists are its own stops before either
-  app is mounted (`lib/start.ts`). `scripts/test-review-9a.js` and `review-9a.spec.ts` hold that.
+  app is mounted (`lib/settings/start.ts`). `scripts/test-review-9a.js` and `review-9a.spec.ts` hold that.
 - **Ranking points are counted among the options a question has now.** The Svelte admin reads results through `adminData.getSessionResults`, which since Phase 9b
-  is `readSessionResults` (`lib/session-results.js`: `buildResults`, which scores among the options that exist; `rescoreRanked` is gone);
+  is `readSessionResults` (`lib/results/session-results.js`: `buildResults`, which scores among the options that exist; `rescoreRanked` is gone);
   (`dataService.getSessionResults`, the legacy pages' own, left in Phase 10c-2a.)
 - **Results' "completed" is a final answer to every question** (`isRecordSettled`), as the participant's hub, Guests and the report have it.
 - **A CSV cell cannot start a formula**: at its start after white space, and after a `;` or a tab inside it (`csvCell` in `leader-report.js` and
-  `admin-content.js`; `public/js/resultsExport.js` was the legacy app's too and has only the first-character guard).
+  `admin-content.js`; `migration/src/lib/exports/resultsExport.js` was the legacy app's too and has only the first-character guard).
 - **A tile picture is removed only when no other answer shows it** (`ContentQuestions.tidy` asks `picturesStillShown()` first: see Content), and a tile whose picture fails shows
   its answer in words (`LogoTile`: done on the elements, because that component has a prop called `state` and so cannot hold a `$state` rune).
 - **A `Retry-After` is obeyed for 15 minutes at most** (`POLL.maxRetryAfterMs`).
@@ -856,35 +856,35 @@ not by editing them, so that what the tests measure stays where it is.
   `scripts/migration-tests/review-9b.spec.ts` (damaged items, Remove a visit, sample content) and `review-9b-setup.spec.ts` (Check Lists, by eye).
   Everything of this phase ran against the local server and the mocked SharePoint REST; none of it has met the real tenant or an iPad.
 - **A damaged answer item never stops a session's results (DI-6).** The Svelte admin reads answers through `dataService.readSessionResponsesChecked` and
-  `readLiveFeed(..., { tolerant: true })`, which return `unreadable: [{ id, reason }]` and leave that item out; `lib/unreadable.js` words it
+  `readLiveFeed(..., { tolerant: true })`, which return `unreadable: [{ id, reason }]` and leave that item out; `lib/results/unreadable.js` words it
   (`unreadableNotice`), once, for Results, the Live display and the leader report (`records.unreadable` -> `report.unreadable`, `meta.unreadableNotice`, bold on the cover).
   `readSessionResponses` and the participant's own reads still throw as they did; the participant's own item says `code: 'responses-unreadable'`
   in words. The oracle (`scripts/oracle-results.js`) damages items at random and compares the lists and the counts with its own rules. Somebody whose answers
   could not be read is not counted as "answered nothing" (the cover tile) and has no Restart.
 - **Removing a visit (DI-9) is `dataService.removeEmptyVisit` and nothing else** (never `deleteClientTrack`, which also unlinks the QR code): it re-reads the visit's own
   item, refuses on an answer, an ended session or an unreadable item, deletes the Tracks item and then an empty Responses item, and never touches a
-  QR code or the roster. A participant page that holds a removed visit says `visitGoneNotice` (`lib/visit-notice.js`): staff start again, a guest asks the facilitator.
+  QR code or the roster. A participant page that holds a removed visit says `visitGoneNotice` (`lib/participant/visit-notice.js`): staff start again, a guest asks the facilitator.
 - **Answers are never marked at `?preview=` (SEC-1).** `showKey` is off by default in `ActivityPager`, `QuestionOptions` and `Quiz`; `ActivityPreview.svelte` alone turns it on
-  (`scripts/test-review-9b.js` reads the source for it). Brand Studio's device preview draws `lib/brand-sample.js`, never the client's answers.
-- **Staff mode says its rule (DI-1):** `STAFF_MODE_WARNING` in `lib/admin-today.js`, beside "How people are identified" and as the readiness row `staff-signin`
+  (`scripts/test-review-9b.js` reads the source for it). Brand Studio's device preview draws `lib/brand/brand-sample.js`, never the client's answers.
+- **Staff mode says its rule (DI-1):** `STAFF_MODE_WARNING` in `lib/admin/admin-today.js`, beside "How people are identified" and as the readiness row `staff-signin`
   (a warning: it never blocks Go live). `boot.js` and how a staff device finds its earlier visit are unchanged.
-- **Sample content (SAM-1, SAM-2).** `lib/retired-logos.js`: the drawn Kroger address counts as no logo wherever a logo is read (`withoutRetiredLogo` in `client-theme.js`,
+- **Sample content (SAM-1, SAM-2).** `lib/brand/retired-logos.js`: the drawn Kroger address counts as no logo wherever a logo is read (`withoutRetiredLogo` in `client-theme.js`,
   `brand-studio.js`, `admin-today.js`, `master-brand.ts`, `LiveDisplay`, `AdminClients`); the file itself left with the legacy app in Phase 10c-1, and so did the three modules
-  that inlined pictures from `public/assets/images` into the pages (`test:bundle` fails if the stand-in is in a built page, and a test fails if a module globs `public/assets` again). `lib/sample-notice.js`: a client is a sample
+  that inlined pictures from `public/assets/images` into the pages (`test:bundle` fails if the stand-in is in a built page, and a test fails if a module globs `public/assets` again). `lib/admin/sample-notice.js`: a client is a sample
   when `theme.sample` exists or its id and `createdAt` are the seeds' (`SAMPLE_ORIGINS`); `Mark as confirmed` (`adminData.confirmSampleClient`) writes `theme.sample.confirmedBy`
   and `confirmedAt` into `Clients.ThemeJson` after re-reading the client (no new column, no version bump), and **`buildClientTheme` carries `sample` over, so every writer that
   rebuilds a theme must pass it** (`reviseClientTheme` and Brand Studio's `changesForSave` do). The leader report's cover says "Sample content, not yet confirmed with the client." until then.
 - **Check Lists (DEP-1), since Phase 10c-2b strict.** Phase 9b listed apart, "Please check by eye", what the strict check did not compare; since schema v2
-  Setup's check (`schemaSpecs` in `lib/setup-checks.js`, from `pms-schema-meta.js`, handed to `checkSharePointSchema({ specs })`) compares every column's type,
+  Setup's check (`schemaSpecs` in `lib/setup/setup-checks.js`, from `pms-schema-meta.js`, handed to `checkSharePointSchema({ specs })`) compares every column's type,
   index, uniqueness, required and date format, and there is nothing left to check by eye (see "Rules from Phase 10c-2b").
-- **No request address grows with the content (G).** Everything that reads many ids does it in groups of 20 (`lib/read-groups.js`, `readActivityContent`, `getSectionQuestions`
+- **No request address grows with the content (G).** Everything that reads many ids does it in groups of 20 (`lib/data/read-groups.js`, `readActivityContent`, `getSectionQuestions`
   for more than 20 questions, `readLiveFeed`'s activities): at most 1,500 characters at 15 or 60 questions of four options without its `$select`, and 1,700 with it (Phase 10h), on both adapters
   (`scripts/test-live-display.js`). (The legacy `dataService.getSessionResults`, which still made the long address, left in Phase 10c-2a.) A new read by SESSION id is 15 to a read (`clientUsage`): a
   session id is up to 51 characters, longer than the ids 20 was sized for. Setup's Run self-test adds two read-only probes
-  (`PROBE_YESNO`, `PROBE_LENGTH` in `lib/setup-checks.js`, run through `probeSharePointRead`); they only report and are not run on the local server. Since Phase 10c-2a
+  (`PROBE_YESNO`, `PROBE_LENGTH` in `lib/setup/setup-checks.js`, run through `probeSharePointRead`); they only report and are not run on the local server. Since Phase 10c-2a
   nothing depends on what the Yes/No probe finds: the app does not filter on a Yes/No column.
 - **The participant page may grow by 1,500 B gzip over where Phase 9a left it** (`PHASE_9B` in `scripts/bundle-budget.js`; 156,606 B before). Since the page carries all of
-  `dataService.js`, anything only the Setup page needs lives in a Setup-only module (`lib/setup-checks.js`) and `dataService.js` keeps a small primitive.
+  `dataService.js`, anything only the Setup page needs lives in a Setup-only module (`lib/setup/setup-checks.js`) and `dataService.js` keeps a small primitive.
 
 ## Rules from Phase 10b (deployment settings and the list namespace; keep them holding)
 
@@ -894,22 +894,22 @@ mock does are QA-TESTING.md items 88 to 96 (the first of these was answered on t
 which is why the file has been `pms-config.txt` since Phase 10g; see "Rules from Phase 10g"). The failure this phase exists to prevent is silent: a page that
 reads another copy's lists and works.
 
-- **One set of built pages goes anywhere.** A Svelte page finds its settings as it starts (`lib/start.ts`, the SECOND import of every entry, straight after
-  the browser check): on an `https` address that is not this computer it reads `pms-config.txt` from its own folder (`lib/settings-file.js`: once per
-  load, `cache: 'no-store'`, 8 seconds, never kept in browser storage), resolves (`lib/deploy-settings.js`), calls `configure({ sharePoint })` and only then
+- **One set of built pages goes anywhere.** A Svelte page finds its settings as it starts (`lib/settings/start.ts`, the SECOND import of every entry, straight after
+  the browser check): on an `https` address that is not this computer it reads `pms-config.txt` from its own folder (`lib/settings/settings-file.js`: once per
+  load, `cache: 'no-store'`, 8 seconds, never kept in browser storage), resolves (`lib/settings/deploy-settings.js`), calls `configure({ sharePoint })` and only then
   mounts. For each setting the file wins, then the values built into the page (`PMS_` variables), then, for the site alone, the page's own address. There is
   no default list prefix. `public/config.js` was the legacy pages' and left with them in Phase 10c-1 (a test fails if a Svelte file imports it or reads its globals).
 - **A missing file is an answer; a failed read is not.** HTTP 404 means "no file" and the built-in values are next. No connection, a time-out, any other
   status, a web page in the file's place and text that is not JSON all STOP the page (`PMS-CFG-002`): never fall through on an error, that is how a page ends
   up on the wrong lists. A key that is not a setting is refused by name, and so are two lists that would end under one title.
-- **Three files, on purpose.** `lib/deploy-settings.js` is in every page and only DECIDES (each rule answers yes or no; a problem is a code and a place:
-  `{ id: 'PMS-CFG-002', kind: 'invalid', at: 'lists.qrtokens' }`). `lib/deploy-problems.js` (the four problems in six parts each, kept together for
-  Phase 10d) and `lib/deploy-rules.js` (which rule was broken, in words; the build checks `PMS_` values with it) are loaded by **Setup alone**: the
+- **Three files, on purpose.** `lib/settings/deploy-settings.js` is in every page and only DECIDES (each rule answers yes or no; a problem is a code and a place:
+  `{ id: 'PMS-CFG-002', kind: 'invalid', at: 'lists.qrtokens' }`). `lib/settings/deploy-problems.js` (the four problems in six parts each, kept together for
+  Phase 10d) and `lib/settings/deploy-rules.js` (which rule was broken, in words; the build checks `PMS_` values with it) are loaded by **Setup alone**: the
   participant page could not carry the wording inside its allowance. `scripts/test-deploy-settings.js` puts every case to both and fails where they
   disagree or name different places; add a rule to both, with a row.
-- **The stop screen** of the participant and admin pages is a few plain elements made by `lib/start.ts` ("This page cannot start", the code, **Try again**,
+- **The stop screen** of the participant and admin pages is a few plain elements made by `lib/settings/start.ts` ("This page cannot start", the code, **Try again**,
   which reloads), in the page's own colours and its own button class (`.button` on the participant page, `.btn` on the admin's: the older stylesheet the
-  participant page loads, `public/css/app.css`, gives `.btn` a focus ring that is not the green one). Setup opens anyway, says the problem in full, and switches every action off.
+  participant page loads, `migration/src/styles/legacy/app.css`, gives `.btn` a focus ring that is not the green one). Setup opens anyway, says the problem in full, and switches every action off.
 - **`dataService.requireConfiguration()`** (opt-in; the three Svelte entries call it before anything else): until `configure()` is called, anything that
   would send a request, and `isSharePointMode()`, throws `PMS-CFG-003` and sends nothing. A test that configures the service itself never calls it. A new module that asks for data
   as it is imported will meet it in the tests, which is the point.
@@ -923,17 +923,17 @@ reads another copy's lists and works.
   answer, and recorded (`fake.strays`, `STRAYS`). Every mocked suite ends with "no request of this suite reached a list that is not its own" and is run a
   second time on `PMS3` lists by `scripts/test-list-namespace.js`. Keep that last test in a new mocked suite: with one list made to forget its prefix, the
   Today and Live display suites failed nothing else. `plainTitles()` takes the prefix off what the app said, for an assertion written with plain titles.
-- **Build values are one bundler constant** (`__PMS_BUILT__`, `migration/vite-plugin-built-settings.ts`, read only by `lib/built-settings.ts`), validated with
+- **Build values are one bundler constant** (`__PMS_BUILT__`, `migration/vite-plugin-built-settings.ts`, read only by `lib/settings/built-settings.ts`), validated with
   the rules a page applies. A blank `PMS_LIST_PREFIX` builds nothing in; the empty prefix, on purpose, is two quotation marks (`PMS_LIST_PREFIX='""'`). What is
   built in is a fallback: a settings file still wins, setting by setting. `__PMS_BUILD__` is the build's name (`pms-<commit>`), which only Setup reads.
-- **Setup's panel, list rows and probe are Setup's own modules** (`lib/setup-deployment.js`, `src/setup/`): `scripts/test-bundle-budget.js` fails if they, or
+- **Setup's panel, list rows and probe are Setup's own modules** (`lib/setup/setup-deployment.js`, `src/setup/`): `scripts/test-bundle-budget.js` fails if they, or
   the wording, are in the participant or admin page. "This copy of the app" is made from the resolver's own answer and the data layer's own titles
   (`sharePointListTitles`), so it cannot disagree with what the page does. "Where the lists are" only reads (fourteen GETs since Phase 10c-2a, fifteen before, through `probeSharePointRead(null,
   address)`), and is not shown on the local server. The label of a copy is in the admin bar and nowhere else.
 - **The participant page may grow by 1,500 B gzip over where Phase 9b left it** (`PHASE_10B` in `scripts/bundle-budget.js`; 157,359 B before). It ended
   52 B inside that. Phase 10c-1 then made the page 1,347 B smaller and set the next phase's starting point (`PHASE_10C1`, below); anything added to
-  `dataService.js`, `lib/start.ts`, `lib/deploy-settings.js` or `lib/settings-file.js` is still paid for by every participant.
-- (Until Phase 10c-1 the last rule here was about the legacy pages, which bundled `public/js/dataService.js`. They left the branch; see the next section.)
+  `dataService.js`, `lib/settings/start.ts`, `lib/settings/deploy-settings.js` or `lib/settings/settings-file.js` is still paid for by every participant.
+- (Until Phase 10c-1 the last rule here was about the legacy pages, which bundled `migration/src/lib/data/dataService.js`. They left the branch; see the next section.)
 
 ## Rules from Phase 10c-1 (the clean break; keep them holding)
 
@@ -954,7 +954,7 @@ site has not been touched. The full account is `CLEAN-BREAK-10C1.md` (in git his
   (Phase 10f: the one exception is the Setup page, which carries the six sample pictures from `migration/src/assets/sample-pictures/`, each imported by its name, never
   a glob, and never from `public/`; the participant and admin pages carry none, and `npm run test:bundle` holds that.)
 - **Found, and still left:** the local admin's participant link points at the local server's port, where no page is served any more
-  (`lib/admin-links.ts`). (The other thing found here, the self-test's sentence that named `public/config.js`, was corrected in Phase 10c-2a.)
+  (`lib/admin/admin-links.ts`). (The other thing found here, the self-test's sentence that named `public/config.js`, was corrected in Phase 10c-2a.)
 
 ## Rules from Phase 10c-2a (what the new project no longer has; keep them holding)
 
@@ -963,7 +963,7 @@ is `DROPS-10C2A.md` (in git history at `7347c72`); every request-baseline entry 
 `DROPS-10C2A-BASELINES.md` (in git history at `7347c72`). (Its list titles and column names were the old ones; Phase 10c-2b gave them the PMS names.)
 
 - **Twelve lists.** `ThemeConfig` is gone from the data layer, the mocked SharePoint, the local server (`theme.json`, its routes) and Setup. The Live display's
-  brand (`public/js/branding.js` `loadBrand`) is the client it is given, else the client of the session it is given, else `DEFAULT_BRAND`. A seed file that still
+  brand (`migration/src/lib/brand/branding.js` `loadBrand`) is the client it is given, else the client of the session it is given, else `DEFAULT_BRAND`. A seed file that still
   has `theme` is accepted and that key is not read.
 - **A session has no answer item of its own.** Nothing reads, writes or clears the item whose `AppId` is a session's id. A restart is
   `restartParticipantTrack` alone: it clears the participant's own item, checks the visit and stamps it (it used to create an empty item for the session on
@@ -996,9 +996,9 @@ is `DROPS-10C2A.md` (in git history at `7347c72`); every request-baseline entry 
 Everything of this phase ran against the local server and the mocked SharePoint REST. Nothing has met the real tenant or a real device. The full account is
 `SCHEMA-10C2B.md` (in git history at `7347c72`); the reference to every list and column is [SHAREPOINT-LISTS.md](SHAREPOINT-LISTS.md).
 
-- **The schema file is the one place a list or a column is named.** `public/js/pms-schema.js` (`LISTS`, `ID`, `LIBRARY`, `VERSION`; every page carries it,
+- **The schema file is the one place a list or a column is named.** `migration/src/lib/schema/pms-schema.js` (`LISTS`, `ID`, `LIBRARY`, `VERSION`; every page carries it,
   so keep it small) says each list's title before any prefix and, for each field of a record, its column, its kind (text, `number`, `yesno`, `date`,
-  `array`, `object`) and `indexed` where the data layer filters on it. `public/js/pms-schema-meta.js` (`META`, `columnsOf`, `LIBRARY_META`, `LOCAL_FILE`) says
+  `array`, `object`) and `indexed` where the data layer filters on it. `migration/src/lib/schema/pms-schema-meta.js` (`META`, `columnsOf`, `LIBRARY_META`, `LOCAL_FILE`) says
   everything else: SharePoint type, unique, required, allowed words, longest value, default, date format, purpose, who reads and writes it, personal data,
   each list's purpose and growth. Only Setup, the tests and the generators import META, and `npm run test:bundle` fails if its words are in the participant
   or the admin page. The data layer, Setup's check (`schemaSpecs`), the mock (`scripts/sharepoint-fake.js`), the stub of `test-sharepoint.js`, the local
@@ -1020,8 +1020,8 @@ Everything of this phase ran against the local server and the mocked SharePoint 
 - **The lists' version.** `SchemaVersion` (Number) on the PMSAppSettings item `default`, this build `VERSION` 2: read on the reads of that item that already
   happen (`getAppSettings`, `readLists`, `readParticipantWatch`; `listAdminUsers` for a site with no lists), never written (Setup writes it, 10c-3; no item
   is made by hand). A missing item, list or version is PMS-LST-010, lower 011, higher 012: the data layer tells the page (`configure({ onStop })`) and
-  throws the code; `lib/start.ts` puts up the stop screen on the participant and admin pages; Setup opens and says the case (`readListsVersion`, the words in
-  `lib/deploy-problems.js`). It costs the participant page no request, the admin none, Setup one GET as it opens. Go live reads AppSettings first.
+  throws the code; `lib/settings/start.ts` puts up the stop screen on the participant and admin pages; Setup opens and says the case (`readListsVersion`, the words in
+  `lib/settings/deploy-problems.js`). It costs the participant page no request, the admin none, Setup one GET as it opens. Go live reads AppSettings first.
 - **Tests name lists by key, never by title** (`fake.item('sections', id)`, `entry.list === 'responses'`, `without: ['clients.Slug']`); a test that quotes
   what the app said writes `${TITLE.<key>}` (`scripts/sharepoint-fake.js`). The mock refuses a name that is not a key, and `scripts/test-list-keys.js` scans
   for a title where a key belongs. A site the mock sets up is provisioned (`schemaVersion: 2`, the AppSettings item under an id outside the test's own
@@ -1045,7 +1045,7 @@ deployer are SHAREPOINT-DEPLOYMENT.md, "Preparing a new site".
 - **Setup's page is in steps:** 1. This copy of the app; 2. Lists (Show the plan, Create, Check Lists, Mark the site as ready); 3. Admins; 4. Sample clients
   (optional); 5. SharePoint self-test (optional); then "Where the lists are" and, last, "Moving content made on another copy" (the seed-file import). The check and
   the import each have their own status line (`lists-status`, `import-status`).
-- **The plan reads and never writes** (`migration/src/lib/provision.js`, Setup's alone; `npm run test:bundle` holds it, `setup-admins.js`, `setup-import.js` and
+- **The plan reads and never writes** (`migration/src/lib/setup/provision.js`, Setup's alone; `npm run test:bundle` holds it, `setup-admins.js`, `setup-import.js` and
   `src/setup/PlanView.svelte` out of the participant and admin pages): ONE read of the site's lists and ONE of each existing list's columns, the schema's lists
   only, under this copy's titles. The same site gives the same plan (`makePlan` is pure; the version-history choice is worked out again from the same reads).
   SharePoint's own Title is never created (the activities' title is that column).
@@ -1063,10 +1063,10 @@ deployer are SHAREPOINT-DEPLOYMENT.md, "Preparing a new site".
   it "Must not be required" on PMSActivities, which would have kept a Setup-made site from being marked ready and blocked Go live on Today.
 - **One door for Setup's writes to the site itself:** `dataService.sendToSharePoint(method, resource, body, headers)`, SharePoint only. Setup's reads go through
   `probeSharePointRead(null, address)`. Nothing else under `migration/src` fetches.
-- **Admins are added in Setup, and only there** (`lib/setup-admins.js`): a name and a PIN of 6 to 12 digits typed twice, stored as `{ id: admin-<8 hex>, name, pin:
-  <hash> }` through `dataService.addAdminUser` with the hash `lib/admin-pin.js` compares (`hashPin`, exported; `login` unchanged: decision 10). The PIN is never
+- **Admins are added in Setup, and only there** (`lib/setup/setup-admins.js`): a name and a PIN of 6 to 12 digits typed twice, stored as `{ id: admin-<8 hex>, name, pin:
+  <hash> }` through `dataService.addAdminUser` with the hash `lib/admin/admin-pin.js` compares (`hashPin`, exported; `login` unchanged: decision 10). The PIN is never
   stored, sent, logged or shown, and a PIN another admin has is refused. Setup lists the admins by name only (one read as it opens on lists of this version).
-- **The seed-file import brings no admins**, and it is Setup's alone (`lib/setup-import.js`, built on the data layer's own calls; `importSharePointSeed` left
+- **The seed-file import brings no admins**, and it is Setup's alone (`lib/setup/setup-import.js`, built on the data layer's own calls; `importSharePointSeed` left
   `dataService.js`). A file's `adminusers` are left out and the page says so.
 - **A single line of text holds 255 characters.** The data layer refuses a longer one before anything is sent, on both adapters (`fits` in `createItem` and
   `updateItem`; text kept in several lines is marked `long` in `pms-schema.js`, and a test holds `long` to META's Note). The admin's inputs take META's limits
@@ -1093,7 +1093,7 @@ Everything of this phase ran against the local server and the mocked SharePoint 
   `server/data/clients.json` points at them; `scripts/test-sample-pictures.js` holds the two copies, the list and the names together. The logos are the clients'
   real logos, supplied by VJR for this internal app: files only, never redrawn or imitated. To change one: replace the source in `.local/sample-images/`, run the
   generator, and commit both copies and the two generated modules.
-- **"Seed sample clients" puts the pictures in the library first** (`lib/sample-seed.js`, Setup's alone): for each client whose theme it writes (one that does not
+- **"Seed sample clients" puts the pictures in the library first** (`lib/setup/sample-seed.js`, Setup's alone): for each client whose theme it writes (one that does not
   exist, or an empty theme), one GET of the library's files, then each picture not already there (`uploadClientAsset`, as Brand Studio's save), then the clients
   with the addresses in their theme and LogoUrl and the focal point Brand Studio stored. A client that exists gets nothing, its pictures included, so a second run
   uploads and writes nothing. A failed upload stops it before any client is written. On the local server there is no listing: a file is written again, the same bytes.
@@ -1123,7 +1123,7 @@ showed SharePoint's own "Sorry, something went wrong: File Not Found" page altho
 status (which `settings-file.js` classes as `page`, not as a 404). The same file renamed `pms-config.txt` is served as its text. Everything else (the lists, Setup's plan,
 Create, Mark ready, Add an admin, Go live, an iPad) has still not run on the real site. The report is [RELEASE-10G.md](RELEASE-10G.md).
 
-- **The settings file is `pms-config.txt`, and that is its only name.** `SETTINGS_FILE` in `lib/deploy-settings.js` is the one place the code spells it. Its content is
+- **The settings file is `pms-config.txt`, and that is its only name.** `SETTINGS_FILE` in `lib/settings/deploy-settings.js` is the one place the code spells it. Its content is
   still JSON and its rules (`configVersion`, `listPrefix`, `lists`, `logoLibrary`, `batch`, `support`, `label`, `siteUrl`) are unchanged. The pages read it and nothing else:
   a `pms-config.json` in the folder is never asked for, never read and never a stand-in for a missing `.txt` (a 404 for the `.txt` is "no file", PMS-CFG-001, whatever else is
   there). Do not read both, so there is never a question of which wins. `scripts/test-settings-file.js` (a stand-in for fetch with a decoy `.json`),
@@ -1150,7 +1150,7 @@ The real site (PCOE, `pms-969bf16`, steps 1 to 9 of the runbook on 14 Oct 2026) 
 [RELEASE-10H.md](RELEASE-10H.md). **These pages have not run on the real site yet**: QA-TESTING.md items 138 to 142.
 
 - **Every item read names its columns.** That site left `ClientId` out of every PMSActivities item read that did not say which columns to return (`items?$top=200`) and returned it to one
-  that did; why, and what else it leaves out, is not known (the self-test's third probe asks it, QA item 139). `public/js/pms-schema.js` `selectOf(key)` is the `$select` of a list (`Id`,
+  that did; why, and what else it leaves out, is not known (the self-test's third probe asks it, QA item 139). `migration/src/lib/schema/pms-schema.js` `selectOf(key)` is the `$select` of a list (`Id`,
   `AppId` and every column the schema maps, once), and in `dataService.js` every item read's address is made by `spItems(list, query)`, which ends with it (`spFind`, the list GET of
   `spSend`, `spByAppId`, `spItemsAddress` and so `readLists`, and `probeSharePointRead` when its query names none). `PARTICIPANT_SELECT` was named before and is kept as it is.
   Setup's reads of items name theirs too (`provision.js`). `scripts/test-named-reads.js` checks the source (every `/items?` address names its columns) and walks the pages on the
@@ -1200,7 +1200,7 @@ items 143 to 145.
   `pms-schema-meta.js` `RETIRED` names the columns an earlier version had (the two `DisplayName` columns, last in version 2, and what holds their value now); `retiredColumn()` and
   `columnNamesAt(key, version)` read it. Nothing reads or writes a retired column, the strict check does not look at it (it flags an extra column only when it is required), and
   Setup never deletes it.
-- **Setup brings an older site up** (`lib/provision.js`): the plan lists a retired column under what it will not touch, as harmless; Create adds the new columns and only adds; and
+- **Setup brings an older site up** (`lib/setup/provision.js`): the plan lists a retired column under what it will not touch, as harmless; Create adds the new columns and only adds; and
   **Mark the site as ready, once the check of this version is clean, raises a lower version (1 or 2) to `VERSION`** (SchemaVersion alone, If-Match on the item as read, read back)
   and says "Raised the lists from version 2 to version 3."; it never lowers a higher version ("Setup never lowers the version of the lists: upload the newer files."), leaves a
   value that is no version as it is, and writes nothing while a problem remains. A clean Create runs it by itself. PMS-LST-011's words in Setup say what to press (Show the plan,
@@ -1210,7 +1210,7 @@ items 143 to 145.
 - **The mock answers as the site did** (`scripts/sharepoint-fake.js`): `refusesByName` (default `TENANT_REFUSES_BY_NAME`, `['DisplayName']`) refuses an item read whose `$select` names
   such a column when it would return a row (400, `REFUSED_WORDS`, noted in `REFUSED_BY_NAME`; with no row it is answered, as PMSGuestList was); `leavesOut` is `['ClientId',
   'DisplayName']`; `listsVersion: 2` builds a site as Setup made it for version 2 (its settings item says 2 unless `schemaVersion` says otherwise); the default version follows `VERSION`.
-- **Setup's self-test is eleven steps on SharePoint**: a fourth read-only probe, "columns this site will not return by name" (`lib/setup-checks.js`): for each list with an item, its
+- **Setup's self-test is eleven steps on SharePoint**: a fourth read-only probe, "columns this site will not return by name" (`lib/setup/setup-checks.js`): for each list with an item, its
   own columns from its fields, one item naming them all, and only when that is refused each alone. It reports and never fails.
 - **The request baselines followed the rename by translation** (`scripts/schema-baseline/rename-baselines.js`): 34 entries in 10 files, each only the column in a `$select`; a fresh
   recording equalled it in every node suite (`--check`), 26,178 requests in the same number and order as `e07d2e3` (`--order e07d2e3`: part A was red, so the last green commit is
@@ -1239,13 +1239,13 @@ QA-TESTING.md items 146 to 149 (the timing check before and after, among them).
 - **Beginning a visit** (`beginVisit`): AppSettings and the session are read side by side, and their checks keep their order and words (what AppSettings says wins over anything the
   session read says; tested on every refusal path). The session is moved to in progress with the version the check read (If-Match), so it is not read again; a 412 says nothing. With
   `waitForSession: false` (Welcome) the press does not wait for that write; the default waits, which keeps a test's set-up in order.
-- **Fetching ahead** (`dataService.prepareWrites`, `lib/boot.js` `writesAhead`; App.svelte after the visit log): the write token, the participants list's type and columns where a visit
+- **Fetching ahead** (`dataService.prepareWrites`, `lib/participant/boot.js` `writesAhead`; App.svelte after the visit log): the write token, the participants list's type and columns where a visit
   can begin, the sessions list's where it would be the session's first, the answers list's type for a visit with no answer item. They are the requests the writes make, shared
   (`spDigest`, `spMetadata`, and a type read prepareWrites started); a failed one is forgotten. Nothing is fetched that the page will not use (a later device does not fetch the
   sessions list's check).
 - **The boot reads the session's visits in its second round**, beside the client, the session and the activities, before it knows the session is live and for staff: what that read
   finds is used only if it is, and is otherwise dropped, never offered on Welcome. If it fails, the first screen still comes up and Welcome looks for itself.
-- **The activities' questions and options are held for the page's life** (`lib/activity-content.js`, `experience.activityContent`): read for every enabled activity in one go (the data
+- **The activities' questions and options are held for the page's life** (`lib/participant/activity-content.js`, `experience.activityContent`): read for every enabled activity in one go (the data
   layer's `getSectionQuestions` handed every id: 20 to an address) once the first screen is up, beside a QR code's claim, or when an activity is opened before anything was read. An
   activity opens from them; a read on its way is waited for, never sent twice; what is not held (a new activity, a question added, a read that failed) is read when it opens.
   `FIRST_CONTENT_MS` and the boot's `content` are gone. Held by question id, in memory only: nothing of it is kept between page loads.
@@ -1272,7 +1272,7 @@ code and finished four activities had picked. This phase changed how Results are
 not the lists, Setup or the participant page. The report is [RELEASE-11A.md](RELEASE-11A.md). **These pages have not run on the real site, an iPad or a projector**:
 QA-TESTING.md items 150 to 156.
 
-- **One chart model, no drawing in it** (`migration/src/lib/results-chart-model.js`, plain JS): every share, headline, average, band, support score, rank and word a chart
+- **One chart model, no drawing in it** (`migration/src/lib/results/results-chart-model.js`, plain JS): every share, headline, average, band, support score, rank and word a chart
   shows. Phase 11b's leader report builds on it; a number shown on the screen is worked out there and nowhere else. Its rules, each with a hand-worked test: shares are counts
   over the people who answered; single choice, true or false and a scale are rounded by the largest remainder to exactly 100 (answers to an answer that has gone take their
   share and are said under the chart); multiple choice is rounded alone; the support score is `(points - rankers) / (rankers x (options - 1)) x 100` (with every voter
@@ -1282,12 +1282,12 @@ QA-TESTING.md items 150 to 156.
   `ResultQuestion.svelte`; it is a dev dependency now, for the bundle test's negative control alone). `ResultCard` is the card: the headline, the question, "N answered", a
   4px Deloitte Green rule, the numbers view (the accessible twin of the chart), and on the wall Show answer. Bar rows and scale columns are 44px targets on the admin view
   and 24px (`--mark-target`) in full screen, where a bar opens nothing.
-- **Names are on the admin view only.** The names a chart shows are `lib/participant-names.js`'s (as on the Results rows and in the report: "Name (2)", "Unnamed participant
-  N"), through `namesFor`. **The wall (full screen, and `#live-display/<id>/wall`, which "Open in a new tab" opens: `lib/live-wall.js`) is given a model with no names**, so
+- **Names are on the admin view only.** The names a chart shows are `lib/results/participant-names.js`'s (as on the Results rows and in the report: "Name (2)", "Unnamed participant
+  N"), through `namesFor`. **The wall (full screen, and `#live-display/<id>/wall`, which "Open in a new tab" opens: `lib/admin/live-wall.js`) is given a model with no names**, so
   no name is in its DOM: `LiveDisplay.svelte`'s `withNames` is `!wall && namesShown`, and `results-charts-wall-mutation.spec.ts` builds a page without that and shows the check
-  finds names. `lib/admin-address.js` (carried by the participant page) is not where the wall's address is.
+  finds names. `lib/common/admin-address.js` (carried by the participant page) is not where the wall's address is.
 - **No request was added for names.** A guest's QR name is on the visit; a staff sign-in name is in the visit log, which Results reads and the Live display does not: Results
-  keeps what it read for the page's life (`holdNameSources` in `lib/admin-results.js`), so a Live display opened from Results names staff, and one opened straight from its
+  keeps what it read for the page's life (`holdNameSources` in `lib/admin/admin-results.js`), so a Live display opened from Results names staff, and one opened straight from its
   address calls them "Unnamed participant N" (VJR's choice, 16 Oct 2026). The request baselines did not change.
 - **The colours are `styles/results-tokens.css`** (the admin page's alone), held by `scripts/test-results-palette.js`: one series is one colour (the top choice Deloitte Blue
   with "Top choice", the rest the tint), Dark Green means correct and nothing else (with a tick and the word), Deloitte Green is the card's rule and never a bar, words never
@@ -1315,7 +1315,7 @@ laptop, an iPad or a projector**: QA-TESTING.md items 157 to 160.
   fraction of a pixel is enough for Windows to draw a scrollbar with arrows; Playwright's Chromium hides scrollbars and macOS draws them only while scrolling, which is why
   11a's tests never showed it). A scale of more steps than its card holds at 44px shares the width out. `results-charts-fit.spec.ts` fails on any such box, at nine sizes
   and at 125% and 150% scaling, in three engines.
-- **A tooltip is drawn in a layer fixed to the window** (`ChartTip.svelte`, `lib/tip-place.js`, unit-tested by `scripts/test-results-chart-fit.js`): clear of its mark
+- **A tooltip is drawn in a layer fixed to the window** (`ChartTip.svelte`, `lib/results/tip-place.js`, unit-tested by `scripts/test-results-chart-fit.js`): clear of its mark
   and the mark's own label (`data-label-of`), above them or under them, moved along to stay in the window, following its mark on scroll; z-index 50, over the sticky bar.
   A chart hands ChartTip the elements, never a place it worked out itself.
 - **In full screen the chart takes the room its card gives it** (`fit` on BarChart, ScaleChart and SplitBar): the bars share out the height, a scale's plot grows, a
@@ -1343,12 +1343,12 @@ On the real site (PCOE, `pms-283ad18`, 16 Oct 2026, photographed by Satyadev on 
 Satyadev's Windows checkout of VJR's files, which has none of the earlier history: `pms-11a3` starts at `3a8b32b`, proven to build into `pms-283ad18`'s pages byte for byte.
 The report is [RELEASE-11A3.md](RELEASE-11A3.md). **These pages have not run on the real site, an iPad or a projector**: QA-TESTING.md items 161 to 166.
 
-- **A tooltip keeps clear of its card's words and buttons where there is room** (`placeTip(..., { avoid })` in `lib/tip-place.js`; ResultCard marks them `data-tip-avoid`):
+- **A tooltip keeps clear of its card's words and buttons where there is room** (`placeTip(..., { avoid })` in `lib/results/tip-place.js`; ResultCard marks them `data-tip-avoid`):
   above, or above moved along while it still spans its mark, then under, or under moved along; with no room on either side, the place covering the fewest of their pixels.
   It is still always whole, inside the window and clear of its mark and the mark's own label. `tipProblems` fails a tooltip over the card's words when the place under its mark was clear.
-- **The full screen's type steps are `lib/present-fit.js`** (`nextFit`, `scaleOf`, `SMALLEST`): the fit factor's floor is the one that gives 0.75 (it was 0.5, which left a window
+- **The full screen's type steps are `lib/results/present-fit.js`** (`nextFit`, `scaleOf`, `SMALLEST`): the fit factor's floor is the one that gives 0.75 (it was 0.5, which left a window
   1,550 px wide or more stopped above 0.75, neither smaller nor spilling, and the card cut at its edge).
-- **`online` during a look asks for one more look as soon as it ends** (`lib/page-watch.ts`, `scripts/test-page-watch.js`; a `Retry-After` is still a floor). Dropping it was the
+- **`online` during a look asks for one more look as soon as it ends** (`lib/common/page-watch.ts`, `scripts/test-page-watch.js`; a `Retry-After` is still a floor). Dropping it was the
   real cause of the `participant.spec.ts:91` flake.
 - **A ranking's place is its number alone** ("1", "1", "3", "4", "5"; `rankLabel` in `results-chart-model.js`): "1=" for a shared place read as a typo on the
   real site, beside "3.".
@@ -1371,22 +1371,22 @@ and the leader report's results in its own words and the client's colour. This p
 lists, Setup, what is counted or stored, the CSV files, a request (the baselines did not move) or the participant page (byte for byte). The report is [RELEASE-11B.md](RELEASE-11B.md).
 **None of it has been saved from the real site, opened in PowerPoint from there, or printed**: QA-TESTING.md items 167 to 170.
 
-- **The one-pager is the Live display's chart, on paper** (`public/js/resultsExport.js`): `buildReport` takes `chartOf(question, { names: null })` for each live question and
+- **The one-pager is the Live display's chart, on paper** (`migration/src/lib/exports/resultsExport.js`): `buildReport` takes `chartOf(question, { names: null })` for each live question and
   `answerCounts` over them; the card is the headline, the question, "N answered", "N of M got it right first time" and the chart. **No name is in either file**: the model is made
   with no names. The PDF and the PowerPoint are still ONE layout of primitives (`rect`, `line`, `tick`, `text`, `image`), and still aim for one page with two or three cards
   across. The writers take their library (`pdfBytes(pages, report, { jsPDF })`, `pptxFile(pages, report, { PptxGenJS })`) so a node test writes and reads both files.
 - **"N answers from M iPads" is `answersFrom(answerCounts(...))`, singular for one** ("1 answer from 1 iPad"), on the screen and in the files: the iPads that answered. The leader
-  report counts everyone who opened the session, on purpose, and its last page says so (`LIVE_FILES_NOTE` in `lib/leader-report.js`, after the rules and not one of them).
-- **A chart on paper is `lib/results-chart-figure.js`** (`chartFigure`), shared by the one-pager and the leader report: it draws what the screen's charts draw (bars on white with
+  report counts everyone who opened the session, on purpose, and its last page says so (`LIVE_FILES_NOTE` in `lib/exports/leader-report.js`, after the rules and not one of them).
+- **A chart on paper is `lib/results/results-chart-figure.js`** (`chartFigure`), shared by the one-pager and the leader report: it draws what the screen's charts draw (bars on white with
   gridlines at 0, 50 and 100%, the screen's order, the correct answer Dark Green with a tick and "Correct" in bold, the top choice blue with "Top choice", the rest the tint; a
   true-or-false split; a scale's columns against the tallest, every other band shaded, its average as a line; a ranking's places and support scores; the words that came up most) as
   neutral items each caller turns into its own (a text item is one line, `y` the top of its box). It counts nothing. A bar chart reports `breaks`, so the report can carry a long
   chart overleaf between two bars. Items carry a `role` (`bar`, `label`, `value`, `tag`, `rank`, `average` ...) that the tests read and the writers ignore.
-- **Every colour of a chart on paper is read from `styles/results-tokens.css`** (`lib/results-palette.js` `readPalette` parses the file's text; the admin page imports it with
-  `?raw` in `lib/results-palette-source.ts`, node reads it from disk in `scripts/results-palette-node.js`). A missing token is refused by name. `layoutReport` and
+- **Every colour of a chart on paper is read from `styles/results-tokens.css`** (`lib/results/results-palette.js` `readPalette` parses the file's text; the admin page imports it with
+  `?raw` in `lib/results/results-palette-source.ts`, node reads it from disk in `scripts/results-palette-node.js`). A missing token is refused by name. `layoutReport` and
   `layoutLeaderReport` refuse to lay out without the palette. The client's colours stay in the one-pager's header and the report's structure (title band, rules, tiles, completion
   bars); D3 (the blues) is still VJR's to decide, and changing them is that one file.
-- **The leader report's "Results by activity"** prints each question's `chart.headline` and `chart.gradedLine` (`chartOfQuestion` in `lib/leader-report.js`: the chart model
+- **The leader report's "Results by activity"** prints each question's `chart.headline` and `chart.gradedLine` (`chartOfQuestion` in `lib/exports/leader-report.js`: the chart model
   over the report's OWN counts, a graded question's first pick, no times and no names, so a report reads the same from either storage) and draws it with the figure. Every
   figure it printed before is still printed (the facts under each question, the bars' counts and shares, the points and average places); `COUNTING_RULES` are as they were and
   the oracle finds 0 differences. A ranking's bar value is "Support N · N pts". The correct answer's words are bold with a tick and "Correct" (it was "1887 (correct answer)").
@@ -1420,7 +1420,7 @@ first (`scripts/test-ux-12.js`, part of `npm test`). **Nothing of Part 2 has met
 The brief is [EXPORT-DESIGN.md](EXPORT-DESIGN.md) (the brand and language guides' rules by page, the page maps, D3 to D5); the report is [RELEASE-13.md](RELEASE-13.md). **None of it
 has been saved from the real site, opened in PowerPoint or Excel from there, projected or printed**: QA-TESTING.md items 171 to 176.
 
-- **Every file opens with the answer, from one model.** `lib/export-summary.js` (`summarizeActivity`, `summarizeSession`, `scoreboardOf`) is each activity's takeaway, made of
+- **Every file opens with the answer, from one model.** `lib/results/export-summary.js` (`summarizeActivity`, `summarizeSession`, `scoreboardOf`) is each activity's takeaway, made of
   the chart model's own words and numbers by a rule (the average right first time and the most missed graded question; else the clearest single leader; else a tie, a
   ranking, the comments), with "Only N answers." under `FEW_ANSWERS` (5, in `results-chart-model.js` with `numberWords`: one to nine in words). It counts nothing; a test holds
   every number in a takeaway to the question it names. The leader report, the pack and the summary CSV print the same sentences.
@@ -1429,7 +1429,7 @@ has been saved from the real site, opened in PowerPoint or Excel from there, pro
   finished", takeaway); each question is ONE framed card (`role: 'card'`) that is never split unless it is longer than a page; a graded activity ends with its scoreboard. The
   client's colour is the title band only (`role: 'title-band'`); rules and marks are the palette's (Deloitte Green), words black and `#53565A`. "Answered by N of M." stays
   on every card: the oracle reads it. The PDF's language is set.
-- **The Live display's Export PDF and Export PPT are the summary pack** (`public/js/resultsExport.js`): one layout of 16:9 pages (`PACK_PAGE`, 297 x 167 mm) measured in the
+- **The Live display's Export PDF and Export PPT are the summary pack** (`migration/src/lib/exports/resultsExport.js`): one layout of 16:9 pages (`PACK_PAGE`, 297 x 167 mm) measured in the
   embedded Open Sans (`layoutReport(report, logo, palette, measure)`), drawn by two writers: the PDF puts each page in the middle of an A4 landscape sheet and embeds Open Sans
   (`pdfBytes(..., { jsPDF, fonts })`), the PowerPoint is 16:9 native text and shapes with speaker notes (`page.notes`). Page 1 is the summary only; then each live activity.
   **No word under 12 pt; titles 28, takeaways and headlines 18.** Four cards a page is the MOST (at these sizes taller charts fit two); a row that does not fit goes to the next
@@ -1445,16 +1445,16 @@ has been saved from the real site, opened in PowerPoint or Excel from there, pro
 ## Before finishing a change
 
 - If you touched session/track/response flow: run `npm test`.
-- If you touched `public/js/dataService.js`: all of it is in the participant page, and every mocked suite sends its requests through it, so also run
+- If you touched `migration/src/lib/data/dataService.js`: all of it is in the participant page, and every mocked suite sends its requests through it, so also run
   `npm run test:bundle`, `npm run test:baseline` and `npm run test:migration`. If you removed or changed a test on purpose, or changed on purpose what the code sends, see `--amend`, `--code` and `--explain` under `npm run test:baseline`.
-- If you touched how a page starts, its settings, a `PMS_` build value, or anything in `public/js/dataService.js` that builds an address or spells a list
+- If you touched how a page starts, its settings, a `PMS_` build value, or anything in `migration/src/lib/data/dataService.js` that builds an address or spells a list
   title: run `npm run test:settings`, `npm run test:namespace`, `npm run test:baseline` and `npm run test:bundle` (the participant page has no allowance of its own
   to spend: it may not grow beyond where the newest phase left it, `PHASE_10J`), then `settings-file.spec.ts`, `setup-deployment.spec.ts` and `request-baseline.spec.ts` in
   all three engines.
-- If you touched what the participant page reads or writes, when it reads it, or what a screen waits for (`lib/boot.js`, `lib/activity-content.js`, `experience.svelte.ts`,
-  `participantData.ts`, `answer-store.js`, `App.svelte`, `Welcome.svelte`, `Agenda.svelte`, `ActivityPager.svelte`, or a participant path of `public/js/dataService.js`): run
+- If you touched what the participant page reads or writes, when it reads it, or what a screen waits for (`lib/participant/boot.js`, `lib/participant/activity-content.js`, `experience.svelte.ts`,
+  `participantData.ts`, `answer-store.js`, `App.svelte`, `Welcome.svelte`, `Agenda.svelte`, `ActivityPager.svelte`, or a participant path of `migration/src/lib/data/dataService.js`): run
   `node --test scripts/test-participant-waits.js` and read its table; a moment that takes another round needs a reason (see "Rules from Phase 10j").
-- If you added or changed an item read (in `public/js/dataService.js`, or anywhere under `migration/src`): it must name its columns, through `selectOf` (see "Rules from Phase 10h"); run
+- If you added or changed an item read (in `migration/src/lib/data/dataService.js`, or anywhere under `migration/src`): it must name its columns, through `selectOf` (see "Rules from Phase 10h"); run
   `node --test scripts/test-named-reads.js`, `npm run test:baseline` and `npm run test:namespace`, and the strict mock will refuse it in every suite if it does not.
 - If you touched `spHttp`'s reading of a refusal, or a caller of 409: run `node --test scripts/test-duplicates.js` and `npm test`.
 - If you named a new column, or renamed one: no column may be named like a SharePoint list-item property (`npm run test:schema` lists them); a rename is a new `VERSION`, an entry in
@@ -1462,15 +1462,15 @@ has been saved from the real site, opened in PowerPoint or Excel from there, pro
   new recording (see "Rules from Phase 10i").
 - If you touched a sentence a page shows that names a list: take the title from `sharePointListTitles()` (or `listTitles()` on Setup), never spell it; run
   `node --test scripts/test-shown-names.js`.
-- If you touched `migration/src/lib/results-chart-model.js`, `admin/charts/`, `styles/results-tokens.css`, `LiveDisplay.svelte` or `AdminResults.svelte`: run `npm run test:charts`,
+- If you touched `migration/src/lib/results/results-chart-model.js`, `admin/charts/`, `styles/results-tokens.css`, `LiveDisplay.svelte` or `AdminResults.svelte`: run `npm run test:charts`,
   `npm run test:bundle` (the participant page's Tailwind rules) and the `results-charts-*` and `live-display*` specs in all three engines, and look at `test-results/charts/`.
 - If you touched any `server/data/*.json` by hand: run `npm run validate:data`.
 - If you touched Setup's plan, Create, Mark the site as ready, Add an admin, the seed-file import or the fake's site building: run `npm run test:provision`,
   `npm run test:baseline`, `npm run test:namespace` and `npm run test:bundle`, then `setup-provision.spec.ts` and `setup.spec.ts` in all three engines, and see
   "Rules from Phase 10c-3".
-- If you touched a list or a column: change `public/js/pms-schema.js` and `pms-schema-meta.js` together, run `npm run build:lists-reference`,
+- If you touched a list or a column: change `migration/src/lib/schema/pms-schema.js` and `pms-schema-meta.js` together, run `npm run build:lists-reference`,
   `npm run test:schema`, `npm run test:baseline` and `npm run test:bundle` (the participant page carries `pms-schema.js`), and see "Rules from Phase 10c-2b".
-- If you touched the sample pictures, `lib/sample-seed.js`, `lib/sample-clients.js` or Setup's seed: run `npm run test:sample-pictures`, `npm run test:baseline`,
+- If you touched the sample pictures, `lib/setup/sample-seed.js`, `lib/setup/sample-clients.js` or Setup's seed: run `npm run test:sample-pictures`, `npm run test:baseline`,
   `npm run test:namespace` and `npm run test:bundle`, then `sample-pictures.spec.ts`, `setup.spec.ts` and `brand-studio.spec.ts`.
 - If you touched the release package, its documents or the permissions: run `npm run test:release-package`, then `npm run package:release` and
   `npm run test:rehearsal` on a committed tree.
@@ -1478,7 +1478,7 @@ has been saved from the real site, opened in PowerPoint or Excel from there, pro
   `npm run test:brand` and `npm run test:migration`, and look at the screenshots `brand-*.png` in `test-results/admin/`.
 - If you touched the leader report, its fonts or the participant CSV: run `npm run test:report`, `npm run test:report:mutations`,
   `npm run test:bundle` and `npm run test:migration`, and look at the pictures in `test-results/report/`.
-- If you touched `public/js/resultsExport.js`, `lib/results-chart-figure.js`, `lib/results-palette*.{js,ts}` or the report's results section: run `npm run test:report` (it holds the
+- If you touched `migration/src/lib/exports/resultsExport.js`, `lib/results/results-chart-figure.js`, `lib/results/results-palette*.{js,ts}` or the report's results section: run `npm run test:report` (it holds the
   one-pager and the report's charts), `npm run test:report:mutations`, `npm run test:charts`, `npm run oracle -- --seeds 500` and `npm run test:bundle`, and LOOK at the pages
   (`npm run look:exports` renders every export, in greyscale too; `scripts/render-pdf-pages.js` renders any PDF; see "Rules from Phase 11b" and "Rules from Phase 13").
 - If you touched any markup or CSS a person sees, a focus rule, a heading, a colour or a screen change in `migration/`: run `npm run test:a11y` (axe must find

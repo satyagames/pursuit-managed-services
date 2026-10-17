@@ -1,11 +1,11 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import * as dataService from '../../../public/js/dataService.js';
-  import { loadGuestState, refreshGuestState, type GuestState, type GuestToken, type GuestVisitor } from '../lib/adminData.js';
-  import { copyText, participantPageUrl, qrImage } from '../lib/admin-links.js';
+  import * as dataService from '../lib/data/dataService.js';
+  import { loadGuestState, refreshGuestState, type GuestState, type GuestToken, type GuestVisitor } from '../lib/admin/adminData.js';
+  import { copyText, participantPageUrl, qrImage } from '../lib/admin/admin-links.js';
   import {
     MAX_GUEST_NAME, completedTrackIds, csvFileName, guestKey, guestRows, guestsCsv, parseGuestNames, pasteSummary, printCards, statusCounts,
-  } from '../lib/admin-content.js';
+  } from '../lib/admin/admin-content.js';
 
   type QrDisplay = { visitor: GuestVisitor; url: string; image: string };
   type Progress = { label: string; done: number; total: number };

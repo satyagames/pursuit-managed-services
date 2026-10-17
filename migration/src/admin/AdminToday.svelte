@@ -1,11 +1,11 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import * as dataService from '../../../public/js/dataService.js';
+  import * as dataService from '../lib/data/dataService.js';
   import {
     POLL_MS, STAFF_MODE_WARNING, blockedReason, evaluateReadiness, goLive, isCalendarDate, isStaffMode, liveStatus, loadReadinessInputs, loadToday, localDate, makeSessionLive,
     needsSwitchConfirmation, notLiveText, pollToday, switchDialog,
-  } from '../lib/admin-today.js';
-  import { copyText, participantPageUrl, qrImage } from '../lib/admin-links.js';
+  } from '../lib/admin/admin-today.js';
+  import { copyText, participantPageUrl, qrImage } from '../lib/admin/admin-links.js';
   import ConfirmDialog from './ConfirmDialog.svelte';
 
   type Client = { id: string; name: string; status?: string; logoUrl?: string | null; theme?: { assets?: { logo?: string | null; hero?: string | null } } | null };

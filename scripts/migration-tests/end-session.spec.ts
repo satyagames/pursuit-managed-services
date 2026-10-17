@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { samplePack } from '../../migration/src/lib/sample-clients.js';
+import { samplePack } from '../../migration/src/lib/setup/sample-clients.js';
 import { onSite, type Fake } from './sharepoint.js';
 import { advance, freezeClock, liveSite, looks, openVisitor, partsOf, quiet } from './polling-support.js';
 

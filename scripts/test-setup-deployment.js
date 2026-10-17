@@ -1,4 +1,4 @@
-// Phase 10b: what Setup says about this copy of the app (migration/src/lib/setup-deployment.js), as plain cases, and its read-only
+// Phase 10b: what Setup says about this copy of the app (migration/src/lib/setup/setup-deployment.js), as plain cases, and its read-only
 // look at where the lists are, against the mocked SharePoint REST. Run: node --test scripts/test-setup-deployment.js (part of `npm test`).
 //
 // The panel's rows are made from the resolver's own answer, so they are tested from it: nothing here builds a row by hand. Whether a
@@ -8,8 +8,8 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, it } from 'node:test';
-import { resolveSettings } from '../migration/src/lib/deploy-settings.js';
-import { copyRows, folderOf, listRows, readListAddresses, sameListByAddress, waysToFix } from '../migration/src/lib/setup-deployment.js';
+import { resolveSettings } from '../migration/src/lib/settings/deploy-settings.js';
+import { copyRows, folderOf, listRows, readListAddresses, sameListByAddress, waysToFix } from '../migration/src/lib/setup/setup-deployment.js';
 import { OTHER_PREFIX, STRAYS, TITLE, UNINDEXED, createSharePointFake } from './sharepoint-fake.js';
 
 const ROOT = path.join(import.meta.dirname, '..');
@@ -20,7 +20,7 @@ const realFetch = globalThis.fetch;
 
 let pages = 0;
 const freshPage = async (settings) => {
-  const page = await import(`../public/js/dataService.js?setup=${pages += 1}`);
+  const page = await import(`../migration/src/lib/data/dataService.js?setup=${pages += 1}`);
   page.configure(settings);
   return page;
 };
@@ -226,8 +226,8 @@ describe('"Where the lists are": SharePoint\'s own answer for each title, and on
 describe('only Setup carries this', () => {
   it('the module, the two components and the wording are imported by the Setup page alone', async () => {
     const setup = await readFile(path.join(ROOT, 'migration/src/SetupApp.svelte'), 'utf8');
-    for (const name of ['./lib/setup-deployment.js', './setup/CopyPanel.svelte', './setup/ListAddresses.svelte', './lib/deploy-problems.js', './lib/deploy-rules.js']) assert.ok(setup.includes(`'${name}'`), `SetupApp imports ${name}`);
-    for (const entry of ['App.svelte', 'AdminApp.svelte', 'main.ts', 'admin-main.ts', 'lib/start.ts', 'lib/deploy-settings.js']) {
+    for (const name of ['./lib/setup/setup-deployment.js', './setup/CopyPanel.svelte', './setup/ListAddresses.svelte', './lib/settings/deploy-problems.js', './lib/settings/deploy-rules.js']) assert.ok(setup.includes(`'${name}'`), `SetupApp imports ${name}`);
+    for (const entry of ['App.svelte', 'AdminApp.svelte', 'main.ts', 'admin-main.ts', 'lib/settings/start.ts', 'lib/settings/deploy-settings.js']) {
       const code = (await readFile(path.join(ROOT, 'migration/src', entry), 'utf8')).replace(/<!--[\s\S]*?-->|\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
       assert.doesNotMatch(code, /setup-deployment|CopyPanel|ListAddresses|deploy-problems|deploy-rules/, entry);
     }

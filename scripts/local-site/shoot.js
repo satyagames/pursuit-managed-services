@@ -353,7 +353,7 @@ async function tiles(deviceKey) {
   const fake = running.site.fake;
   // Kroger live in staff mode, with a free hub (the tiles activity is sixth, after five in sequence).
   const restore = fake.install();
-  const ds = await import(`../../public/js/dataService.js?shoot-tiles=${Date.now()}`);
+  const ds = await import(`../../migration/src/lib/data/dataService.js?shoot-tiles=${Date.now()}`);
   ds.configure({ sharePoint: fake.settings });
   try {
     const { session } = await ds.activateClient('c-kroger', '2026-10-16');
@@ -517,7 +517,7 @@ async function goLiveStaff(clientId) {
   const fake = running.site.fake;
   const restore = fake.install();
   try {
-    const ds = await import(`../../public/js/dataService.js?shoot-live=${clientId}-${Date.now()}`);
+    const ds = await import(`../../migration/src/lib/data/dataService.js?shoot-live=${clientId}-${Date.now()}`);
     ds.configure({ sharePoint: fake.settings });
     const { session } = await ds.activateClient(clientId, '2026-10-16');
     await ds.updateSession(session.id, { activityFlow: 'open', participationMode: 'staff' });

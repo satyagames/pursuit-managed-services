@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { SAMPLE_NOTICE, confirmedLine, sampleState } from '../lib/sample-notice.js';
+  import { SAMPLE_NOTICE, confirmedLine, sampleState } from '../lib/admin/sample-notice.js';
 
   // "Sample content: confirm with the client team before real use" with a Mark as confirmed button, for a client the seeds made (Phase 9b, SAM-2); once
   // somebody has confirmed it, a quiet line says who and when. Nothing at all for a client that is not a sample. The same words on the Clients list and

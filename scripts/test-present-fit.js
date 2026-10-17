@@ -1,13 +1,13 @@
 // Phase 11a-3, item E: the full screen's type, a step at a time. Run: node --test scripts/test-present-fit.js (also part of npm test and
 // npm run test:charts)
 //
-// A question with eight answers of about 90 characters was cut off in full screen on a screen held upright. migration/src/lib/present-fit.js is the
+// A question with eight answers of about 90 characters was cut off in full screen on a screen held upright. migration/src/lib/results/present-fit.js is the
 // step LiveDisplay.svelte takes while the card does not fit: every step makes the type smaller until it is SMALLEST, and then the card spills (the
 // screen scrolls as one page). A card is never left cut at its edge. The browser side is results-charts-fit.spec.ts.
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { SMALLEST, nextFit, scaleOf } from '../migration/src/lib/present-fit.js';
+import { SMALLEST, nextFit, scaleOf } from '../migration/src/lib/results/present-fit.js';
 
 /** The steps LiveDisplay takes for a card that never fits, at most 12 (its loop's limit): the scales drawn, and whether it then spills. */
 function walk(presentScale) {

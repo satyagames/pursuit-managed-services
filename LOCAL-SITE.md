@@ -23,7 +23,7 @@ Playwright's own Chromium on the control page. Use **Node 22** (on the Windows c
 | Control page | `https://pms-local.test/__local/` |
 
 **Why `https://pms-local.test` and not `http://127.0.0.1:5190`.** A page opened over plain http, or at `localhost` or `127.0.0.1`, takes itself for the
-local Express server (`migration/src/lib/address-check.js`) and never talks to SharePoint, so the shipped pages could not be tested there. On
+local Express server (`migration/src/lib/settings/address-check.js`) and never talks to SharePoint, so the shipped pages could not be tested there. On
 `https://pms-local.test/...` they behave exactly as on PCOE: they read `pms-config.txt` beside them, work out the site from their own address and call
 `/sites/PCOE/_api`. The name is in no DNS. `--open` starts a browser that maps it to the server (`--host-rules`) and accepts the server's own certificate;
 nothing on the machine is changed. To use your own browser instead, add `127.0.0.1 pms-local.test` to the hosts file (needs an administrator), open

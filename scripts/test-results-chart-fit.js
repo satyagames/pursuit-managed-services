@@ -1,12 +1,12 @@
 // Phase 11a-2: where a Results chart's tooltip goes. Run: node --test scripts/test-results-chart-fit.js (also part of npm test and npm run test:charts)
 //
-// migration/src/lib/tip-place.js decides where in the window a tooltip is drawn: centred on its mark, above the mark and the mark's own label, under
+// migration/src/lib/results/tip-place.js decides where in the window a tooltip is drawn: centred on its mark, above the mark and the mark's own label, under
 // them when there is no room above, and always inside the window. Every expected place is worked out by hand in the comments beside it. The browser
 // side, at every size and in all three engines, is scripts/migration-tests/results-charts-fit.spec.ts.
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { TIP_GAP, TIP_MARGIN, around, placeTip } from '../migration/src/lib/tip-place.js';
+import { TIP_GAP, TIP_MARGIN, around, placeTip } from '../migration/src/lib/results/tip-place.js';
 
 const WINDOW = { width: 1536, height: 864 };
 const TIP = { width: 200, height: 60 };

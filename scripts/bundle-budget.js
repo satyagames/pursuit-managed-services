@@ -51,7 +51,7 @@ export const PHASE_9B = Object.freeze({ participantBefore: 156_606, allowance: 1
  * the guard that refuses a request made before the page is set up, and the prefix and per-list titles in the data service (all of
  * which the participant page carries). What it takes out: public/config.js and the Phase 9a message for a page opened at an address
  * it was not built for, which the page's own address now settles. The six-part wording of each problem and the rules in words are
- * Setup's alone (lib/deploy-problems.js, lib/deploy-rules.js): they would not fit here. The ceiling above is not raised, and the
+ * Setup's alone (lib/settings/deploy-problems.js, lib/settings/deploy-rules.js): they would not fit here. The ceiling above is not raised, and the
  * Phase 9b line is kept as the record of that phase (753 B; it can no longer be measured on its own). It ended at 158,807 B
  * (1,448 B; the assign fix that followed added nothing to this page).
  */
@@ -80,7 +80,7 @@ export const PHASE_10C2A = Object.freeze({ participantBefore: 157_460, allowance
 
 /**
  * Phase 10c-2b (one schema file, the PMS list names and schema v2) may add to the participant page at most 600 B gzip NET over where Phase
- * 10c-2a ended (155,669 B): the schema file (public/js/pms-schema.js, which every page carries; pms-schema-meta.js is Setup's alone and a test
+ * 10c-2a ended (155,669 B): the schema file (migration/src/lib/schema/pms-schema.js, which every page carries; pms-schema-meta.js is Setup's alone and a test
  * holds it out of this page) and the check of the lists' version on the AppSettings item. What it took out of the data layer, which this page
  * carries: the hand-kept maps (spLists, spAdded, the four kind sets, spBaseTypes, spBaseSpec, spTypeLabel), the optional-column code
  * (spRequireColumns), addedSharePointColumns and deleteClientTrack. It ended at 155,574 B, 95 B smaller (as measured after each part: C -110,
@@ -91,7 +91,7 @@ export const PHASE_10C2B = Object.freeze({ participantBefore: 155_669, allowance
 /**
  * Phase 10c-3 (Setup prepares a new site: the plan, Create, the version written last, Add an admin, the 255-character limit) may add NOTHING to the
  * participant page: it starts from where Phase 10c-2b ended (155,574 B). Everything that makes lists, marks a site ready, adds an admin or imports a
- * seed file is Setup's alone (lib/provision.js, lib/setup-admins.js, lib/setup-import.js; scripts/test-bundle-budget.js holds them out of this page).
+ * seed file is Setup's alone (lib/setup/provision.js, lib/setup/setup-admins.js, lib/setup/setup-import.js; scripts/test-bundle-budget.js holds them out of this page).
  * What it put in the data layer, which this page carries: sendToSharePoint (Setup's one way to write to the site, +49 B), the check that leaves
  * SharePoint's own Title alone (+6 B), addAdminUser, and the refusal of a single line over 255 characters before it is written (+133 B); what it took
  * out: the seed-file import, which moved to Setup (-442 B with addAdminUser). It ended at 155,320 B, 254 B smaller. The next phase starts from
@@ -102,7 +102,7 @@ export const PHASE_10C3 = Object.freeze({ participantBefore: 155_574, allowance:
 /**
  * Phase 10f (the sample clients get VJR's pictures; Design-Docs removed; the release package) may add NOTHING to the participant page or to the
  * admin page. It starts from where Phase 10c-3 ended (participant 155,320 B; admin 605,064 B, both measured in this checkout). The six pictures
- * and the seeding that uploads them are Setup's alone (lib/sample-seed.js, lib/sample-pictures.js, src/setup/sample-picture-data.ts;
+ * and the seeding that uploads them are Setup's alone (lib/setup/sample-seed.js, lib/setup/sample-pictures.js, src/setup/sample-picture-data.ts;
  * scripts/test-bundle-budget.js holds them, and the bytes of every picture, out of the other two pages): a participant or a facilitator loads a
  * client's pictures from the picture library, as for any client. Setup grows by what the pictures weigh (they are already compressed, so gzip
  * gains little on them); `setupPictures` is the most that may be (about 1 MB, the brief's limit). The next phase starts from `participantAfter`.
@@ -113,7 +113,7 @@ export const PHASE_10F = Object.freeze({ participantBefore: 155_320, adminBefore
  * Phase 10g (the settings file is `pms-config.txt`, the first finding from the real site) may add at most 100 B gzip to the participant page. It starts
  * from where Phase 10f ended (participant 155,320 B; admin 605,064 B, both measured in this checkout: a fresh checkout measures 11 B less, so the
  * allowance holds in both). The name is the one constant `SETTINGS_FILE`, three characters different and the same length as before; what the pages
- * gained is the HTTP status that goes with a web page, or text that is not JSON, found in the file's place (lib/settings-file.js), so that Setup's
+ * gained is the HTTP status that goes with a web page, or text that is not JSON, found in the file's place (lib/settings/settings-file.js), so that Setup's
  * Details line can say what the site answered. The admin page carries the same reader and is held to the same allowance. The next phase starts from
  * `participantAfter`.
  */
@@ -177,7 +177,7 @@ export const PHASE_11A3 = Object.freeze({
  * Phase 11b (the leader report and the Live display's one-page PDF and PowerPoint on the chart model and the Results palette) changes the admin page
  * only: the participant page must be BYTE FOR BYTE what Phase 11a-3 left (`participantSha256`, the SHA-256 of index.html as the brief recorded it at
  * e2fbfb6, and its Tailwind rules 11a's), and the admin page may grow by at most `adminAllowance` over where 11a-3 left it (554,263 B): the files'
- * new drawing (lib/results-chart-figure.js, lib/results-palette.js and results-tokens.css as text) is the admin page's, and stays far under its
+ * new drawing (lib/results/results-chart-figure.js, lib/results/results-palette.js and results-tokens.css as text) is the admin page's, and stays far under its
  * 700,000 B budget. `participantAfter` and `adminAfter` are the pages when the phase ended; the next phase starts from them.
  */
 export const PHASE_11B = Object.freeze({
@@ -202,7 +202,7 @@ export const PHASE_12 = Object.freeze({
 
 /**
  * Phase 13 (the Results exports redesigned for leadership, EXPORT-DESIGN.md) changes the admin page alone: the leader report's "At a glance" and activity
- * pages, the summary pack (lib/export-summary.js, the pack's layout and its two writers in public/js/resultsExport.js) and the summary CSV. The participant
+ * pages, the summary pack (lib/results/export-summary.js, the pack's layout and its two writers in migration/src/lib/exports/resultsExport.js) and the summary CSV. The participant
  * page does not change, byte for byte (its SHA-256 is the deployed pms-d19bd14 page's), with 11a's Tailwind rules; the admin page may grow by at most
  * its allowance over where 12 left it, and stays under its 700,000 B budget. `adminAfter` is the page when the phase ended (this checkout); the next phase
  * starts from it.
@@ -239,12 +239,12 @@ export const FORBIDDEN = Object.freeze([
   { library: 'PptxGenJS', text: /PptxGenJS/, module: /node_modules\/pptxgenjs\// },
   { library: 'html2canvas', text: /html2canvas/, module: /node_modules\/html2canvas\// },
   { library: 'the vendored chart library (Chart.js)', text: /_chartjs|chartjs-/, module: /node_modules\/chart\.js\// },
-  { library: 'the export writer (public/js/resultsExport.js)', text: null, module: /public\/js\/resultsExport\.js$/ },
+  { library: 'the export writer (migration/src/lib/exports/resultsExport.js)', text: null, module: /migration\/src\/lib\/exports\/resultsExport\.js$/ },
   // Phase 11a: the Results charts (drawn by hand: no chart library is in any page since then) and their model are the admin page's alone. They
   // replaced public/js/resultsRenderer.js, which drew with Chart.js, and the Live display's question card that used it (ResultQuestion).
-  { library: 'the Results charts (admin/charts, lib/results-chart-model.js)', text: /Words that came up most/, module: /migration\/src\/admin\/charts\/|migration\/src\/lib\/results-chart-model\.js$/ },
+  { library: 'the Results charts (admin/charts, lib/results/results-chart-model.js)', text: /Words that came up most/, module: /migration\/src\/admin\/charts\/|migration\/src\/lib\/results\/results-chart-model\.js$/ },
   // Phase 7b: the leader report, its writer, and the TrueType faces it embeds (26 kB), are the admin page's alone.
-  { library: 'the leader report (lib/leader-report*.js)', text: /How the numbers are counted/, module: /migration\/src\/lib\/leader-report[^/]*\.js$/ },
+  { library: 'the leader report (lib/exports/leader-report*.js)', text: /How the numbers are counted/, module: /migration\/src\/lib\/exports\/leader-report[^/]*\.js$/ },
   { library: 'the leader report\'s embedded fonts (report-fonts)', text: /OpenSans-Regular/, module: /report-fonts(?:\.js|\/open-sans-report\.js)$/ },
   { library: 'the leader report buttons (ReportExports)', text: null, module: /ReportExports\.svelte$/ },
 ]);

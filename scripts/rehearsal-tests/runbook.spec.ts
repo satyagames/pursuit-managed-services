@@ -2,11 +2,11 @@ import { test, expect, type Browser, type BrowserContext, type Page } from '@pla
 import { mkdir, readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import * as dataService from '../../public/js/dataService.js';
-import { samplePack } from '../../migration/src/lib/sample-clients.js';
-import { SAMPLE_PICTURES } from '../../migration/src/lib/sample-pictures.js';
-import { seedSampleClients } from '../../migration/src/lib/sample-seed.js';
-import { sha256Hex } from '../../migration/src/lib/sha256.js';
+import * as dataService from '../../migration/src/lib/data/dataService.js';
+import { samplePack } from '../../migration/src/lib/setup/sample-clients.js';
+import { SAMPLE_PICTURES } from '../../migration/src/lib/setup/sample-pictures.js';
+import { seedSampleClients } from '../../migration/src/lib/setup/sample-seed.js';
+import { sha256Hex } from '../../migration/src/lib/admin/sha256.js';
 import { FOLDER_URL, SETTINGS_TEXT, SITE, TIMING_CHECK } from '../release-docs.js';
 import { TITLE, createSharePointFake } from '../sharepoint-fake.js';
 import { emptyRoom, scrollProblems, tipProblems } from '../migration-tests/results-charts-support.js';

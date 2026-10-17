@@ -1,5 +1,5 @@
 // Phase 6: where Brand Studio's pictures go. uploadClientAsset() and removeClientAsset()
-// (public/js/dataService.js, section 7) run against the mocked SharePoint REST (scripts/sharepoint-fake.js,
+// (migration/src/lib/data/dataService.js, section 7) run against the mocked SharePoint REST (scripts/sharepoint-fake.js,
 // which now has a ClientLogos library and counts every request) and against the real local server on a
 // scratch copy of server/data with UPLOAD_DIR, and the two must behave alike. Run: npm run test:brand
 // (also part of npm test).
@@ -14,10 +14,10 @@ import { cp, mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
-import * as ds from '../public/js/dataService.js';
+import * as ds from '../migration/src/lib/data/dataService.js';
 import { ASSET_NAME } from '../server/api.js';
-import { assetFileName } from '../migration/src/lib/asset-names.js';
-import { SAMPLE_PICTURE_NAMES } from '../migration/src/lib/sample-pictures.js';
+import { assetFileName } from '../migration/src/lib/brand/asset-names.js';
+import { SAMPLE_PICTURE_NAMES } from '../migration/src/lib/setup/sample-pictures.js';
 import { STRAYS, TITLE, UNINDEXED, createSharePointFake } from './sharepoint-fake.js';
 
 const ROOT = path.join(import.meta.dirname, '..');
@@ -33,14 +33,14 @@ const named = (slug, slot, bytes, type) => assetFileName(slug, slot, bytes, type
 
 let pages = 0;
 async function freshPage(settings) {
-  const page = await import(`../public/js/dataService.js?brand-page=${pages += 1}`);
+  const page = await import(`../migration/src/lib/data/dataService.js?brand-page=${pages += 1}`);
   page.configure(settings);
   return page;
 }
 
 describe('the picture names the adapter and the local server accept are the same', () => {
   it('one pattern in dataService.js, the server and asset-names.js', async () => {
-    const service = await readFile(path.join(ROOT, 'public', 'js', 'dataService.js'), 'utf8');
+    const service = await readFile(path.join(ROOT, 'migration', 'src', 'lib', 'data', 'dataService.js'), 'utf8');
     const inService = /const ASSET_NAME = (\/.*\/);/.exec(service)?.[1];
     assert.equal(inService, String(ASSET_NAME));
     const good = ['kroger-hero-0123456789.png', 'my-co-background-abcdef0123.jpg', 'a-tile-0000000000.webp', 'x1-logo-ffffffffff.webp'];

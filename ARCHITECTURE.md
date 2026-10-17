@@ -14,7 +14,7 @@ iPad (Safari)
   screens: public/screens/*, public/js/screens/*
       │  import { getSection, listQuestions, saveResponse, … }
       ▼
-public/js/dataService.js ────── the only code that talks to a backend
+migration/src/lib/data/dataService.js ────── the only code that talks to a backend
       │  HTTP + JSON
       ▼
 LOCAL:  Express API (server/, /api/*)            ──▶  JSON files (server/data/*.json)
@@ -370,7 +370,7 @@ gets all data from `dataService`.
 
 `/admin.html` is a separate page for the facilitator's own iPad. It shares only
 `dataService.js` with the client app. Code lives in `public/js/screens/admin/`
-(markup in `public/screens/admin/`, styles in `public/css/admin.css`).
+(markup in `public/screens/admin/`, styles in `migration/src/styles/legacy/admin.css`).
 
 - **Login** retains the PIN check against local `adminusers.json` or SharePoint
   AdminUsers.PinHash, mapped to the app's `pin` property. It carries a pure-JS SHA-256 because

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { people } from '../../lib/results-chart-model.js';
+  import { people } from '../../lib/results/results-chart-model.js';
   import BarChart, { type BarRow } from './BarChart.svelte';
   import ChartTable from './ChartTable.svelte';
   import NamesPanel from './NamesPanel.svelte';
@@ -9,7 +9,7 @@
   import { VIEW_NUMBERS, isLatestPanel, notePanel, uid, type Chart, type Who } from './chart-ui.js';
 
   // One question's results on the admin page (Phase 11a): the headline in plain words, the question, how many answered, a 4px Deloitte Green rule on
-  // the card's top edge, and the chart that fits the question (lib/results-chart-model.js works out every number): bars for single and multiple choice,
+  // the card's top edge, and the chart that fits the question (lib/results/results-chart-model.js works out every number): bars for single and multiple choice,
   // one split bar for true or false, columns for a confidence scale, support scores for a ranking, and the words and comments of written answers.
   // A button swaps the chart for its numbers (its accessible twin). On the admin view a bar opens the names of the people who picked it, under the card; on the wall
   // display (full screen, and the page "Open in a new tab" opens) there are no names anywhere in the page: the card is given a model without them.

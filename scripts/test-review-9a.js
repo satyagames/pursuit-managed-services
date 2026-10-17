@@ -6,10 +6,10 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { describe, it } from 'node:test';
 import { STRAYS, SUITE_PREFIX, UNINDEXED } from './sharepoint-fake.js';
-import { isLocalAddress } from '../migration/src/lib/address-check.js';
-import { resolveSettings } from '../migration/src/lib/deploy-settings.js';
-import { csvCell as guestCell } from '../migration/src/lib/admin-content.js';
-import { csvCell as reportCell } from '../migration/src/lib/leader-report.js';
+import { isLocalAddress } from '../migration/src/lib/settings/address-check.js';
+import { resolveSettings } from '../migration/src/lib/settings/deploy-settings.js';
+import { csvCell as guestCell } from '../migration/src/lib/admin/admin-content.js';
+import { csvCell as reportCell } from '../migration/src/lib/exports/leader-report.js';
 
 const source = (file) => readFile(new URL(`../${file}`, import.meta.url), 'utf8');
 const at = (href) => { const url = new URL(href); return { protocol: url.protocol, hostname: url.hostname, origin: url.origin }; };
@@ -41,7 +41,7 @@ describe('a page never falls back to the local server because of where it was op
   });
 
   it('the participant page and the admin page settle it before they read anything: neither app is mounted, and no request is sent, until it is', async () => {
-    const [app, admin, start, entry, adminEntry] = await Promise.all(['migration/src/App.svelte', 'migration/src/AdminApp.svelte', 'migration/src/lib/start.ts', 'migration/src/main.ts', 'migration/src/admin-main.ts'].map(source));
+    const [app, admin, start, entry, adminEntry] = await Promise.all(['migration/src/App.svelte', 'migration/src/AdminApp.svelte', 'migration/src/lib/settings/start.ts', 'migration/src/main.ts', 'migration/src/admin-main.ts'].map(source));
     for (const text of [app, admin]) assert.doesNotMatch(text, /addressProblem|address-check/, 'the Phase 9a check is gone from the apps: start-up has already answered it');
     assert.match(entry, /void startPage\(target, App\)\.then\(mounted\);/);
     assert.match(adminEntry, /void startPage\(target, AdminApp\)\.then\(mounted\);/);
@@ -93,7 +93,7 @@ describe('a CSV cell cannot start a formula, however it is opened (S-6)', () => 
 
 describe('answers a failed Submit left on the device are sent when the server next answers, with no tap (F-3)', () => {
   it('after every try has failed nothing goes out by itself; the page’s next successful look sends it', async () => {
-    const { createAnswerStore, SaveFailedError } = await import('../migration/src/lib/answer-store.js');
+    const { createAnswerStore, SaveFailedError } = await import('../migration/src/lib/participant/answer-store.js');
     let down = true;
     const sent = [];
     const api = {
@@ -124,7 +124,7 @@ describe('answers a failed Submit left on the device are sent when the server ne
   });
 
   it('the participant page resumes saving after every look that reached the server', async () => {
-    const [app, data] = await Promise.all([source('migration/src/App.svelte'), source('migration/src/lib/participantData.ts')]);
+    const [app, data] = await Promise.all([source('migration/src/App.svelte'), source('migration/src/lib/participant/participantData.ts')]);
     assert.match(data, /export function resumePendingSaves\(\): void \{\s*const visit = currentVisit\(\);\s*if \(visit\) store\.resume\(visit\);\s*\}/);
     const check = app.slice(app.indexOf('async function checkServer()'), app.indexOf('let pageTitle'));
     assert.match(check, /failedWatches = 0;\s*participant\.connectionLost = false;\s*participant\.signedOut = false;\s*resumePendingSaves\(\);/, 'straight after the look is known to have reached the server');
@@ -165,7 +165,7 @@ describe('an answer tile whose picture is gone still says what the answer is (S-
 describe('an expired sign-in is told from a lost connection, and the page says what to do (F-2)', () => {
   /** What the data service throws when SharePoint answers every request with `reply`. */
   async function thrownFor(reply) {
-    const ds = await import(`../public/js/dataService.js?signin=${Math.random()}`);
+    const ds = await import(`../migration/src/lib/data/dataService.js?signin=${Math.random()}`);
     const realFetch = globalThis.fetch;
     globalThis.fetch = async () => reply();
     try {
@@ -178,7 +178,7 @@ describe('an expired sign-in is told from a lost connection, and the page says w
   const json = (status, message) => () => new Response(JSON.stringify({ error: { message: { value: message } } }), { status, headers: { 'Content-Type': 'application/json' } });
 
   it('a sign-in page in place of an answer, and a 401, are a sign-in that has run out', async () => {
-    const { isSignedOut } = await import('../migration/src/lib/sign-in.js');
+    const { isSignedOut } = await import('../migration/src/lib/participant/sign-in.js');
     const page = await thrownFor(html);
     assert.equal(page.status, 401);
     assert.equal(isSignedOut(page), true, page.message);
@@ -187,7 +187,7 @@ describe('an expired sign-in is told from a lost connection, and the page says w
   });
 
   it('a refusal, a busy server and no connection are not', async () => {
-    const { isSignedOut } = await import('../migration/src/lib/sign-in.js');
+    const { isSignedOut } = await import('../migration/src/lib/participant/sign-in.js');
     assert.equal(isSignedOut(await thrownFor(json(403, 'Access denied. You do not have permission to perform this action or access this resource.'))), false);
     assert.equal(isSignedOut(await thrownFor(json(503, 'The server is busy.'))), false);
     assert.equal(isSignedOut(await thrownFor(() => { throw new TypeError('Load failed'); })), false);
@@ -196,7 +196,7 @@ describe('an expired sign-in is told from a lost connection, and the page says w
   });
 
   it('the participant page shows it, from a look and from a save, and takes it down when a look gets through', async () => {
-    const [app, pager, state] = await Promise.all([source('migration/src/App.svelte'), source('migration/src/pager/ActivityPager.svelte'), source('migration/src/lib/session.svelte.ts')]);
+    const [app, pager, state] = await Promise.all([source('migration/src/App.svelte'), source('migration/src/pager/ActivityPager.svelte'), source('migration/src/lib/participant/session.svelte.ts')]);
     assert.match(state, /signedOut: boolean;/);
     assert.equal(app.match(/if \(isSignedOut\(cause\)\) participant\.signedOut = true;/g)?.length, 2, 'both places a look can fail');
     assert.match(app, /participant\.connectionLost = false;\s*participant\.signedOut = false;/);
@@ -207,8 +207,8 @@ describe('an expired sign-in is told from a lost connection, and the page says w
 
 describe('a screen that could not be loaded says why in plain words and tries again in place (F-4)', () => {
   it('the words: the sign-in, the connection, or what the server said', async () => {
-    const { loadFailureText } = await import('../migration/src/lib/sign-in.js');
-    const { isUnreachable } = await import('../public/js/dataService.js');
+    const { loadFailureText } = await import('../migration/src/lib/participant/sign-in.js');
+    const { isUnreachable } = await import('../migration/src/lib/data/dataService.js');
     assert.equal(loadFailureText(new TypeError('Load failed'), isUnreachable, 'Could not load.'), 'Can’t reach the server. Check the connection, then try again.');
     assert.equal(loadFailureText(Object.assign(new Error('x'), { name: 'TimeoutError' }), isUnreachable, 'Could not load.'), 'Can’t reach the server. Check the connection, then try again.');
     assert.match(loadFailureText(Object.assign(new Error('SharePoint returned a sign-in page or non-JSON response.'), { status: 401 }), isUnreachable, 'x'), /^Your sign-in has expired\./);
@@ -229,7 +229,7 @@ describe('a screen that could not be loaded says why in plain words and tries ag
 
 describe('a wait the server asks for is obeyed, within what a timer can hold (F-8)', () => {
   it('a Retry-After of an hour, or of a number no timer can count to, becomes the longest wait there is', async () => {
-    const { POLL, adminDelay, nextDelay } = await import('../migration/src/lib/poll-schedule.js');
+    const { POLL, adminDelay, nextDelay } = await import('../migration/src/lib/common/poll-schedule.js');
     assert.equal(POLL.maxRetryAfterMs, 15 * 60_000);
     for (const asked of [3_600_000, 99_999_999_000, Number.MAX_SAFE_INTEGER]) {
       for (const wait of [nextDelay({ retryAfterMs: asked, random: () => 1 }), nextDelay({ retryAfterMs: asked, local: true }), adminDelay({ retryAfterMs: asked }), adminDelay({ retryAfterMs: asked, local: true })]) {
@@ -244,8 +244,8 @@ describe('a wait the server asks for is obeyed, within what a timer can hold (F-
 
 describe('a read the first screen can do without does not stop it (F-11)', () => {
   it('the look for a staff member’s earlier visit, and the activities read ahead, may each fail: Welcome still comes up', async () => {
-    const { bootParticipant } = await import('../migration/src/lib/boot.js');
-    const { createActivityContent } = await import('../migration/src/lib/activity-content.js');
+    const { bootParticipant } = await import('../migration/src/lib/participant/boot.js');
+    const { createActivityContent } = await import('../migration/src/lib/participant/activity-content.js');
     const live = { status: 'live', reason: null, settings: { activeSessionId: 's1', activeClientId: 'c1' }, client: { id: 'c1' }, session: { id: 's1', clientId: 'c1', participationMode: 'staff' }, sections: [{ id: 'sec1', enabled: true, questionIds: ['q1'] }] };
     const asked = [];
     const base = {
@@ -259,7 +259,7 @@ describe('a read the first screen can do without does not stop it (F-11)', () =>
       const noTracks = await bootParticipant({ ...base, listClientTracks: async () => { throw new TypeError('Load failed'); } }, { path: '/' });
       assert.equal(noTracks.experience.status, 'live');
       assert.equal(noTracks.accountChecked, false, 'Welcome looks for itself when it opens');
-      // (Phase 10j: the boot reads no activity; the page reads them all once its first screen is up, lib/activity-content.js.)
+      // (Phase 10j: the boot reads no activity; the page reads them all once its first screen is up, lib/participant/activity-content.js.)
       const found = await bootParticipant(base, { path: '/' });
       assert.equal(found.accountChecked, true);
       assert.deepEqual(asked, [], 'no question is read before the first screen');
@@ -274,7 +274,7 @@ describe('a read the first screen can do without does not stop it (F-11)', () =>
 
 describe('Results says "completed" only when every answer is final, as the participant’s own page and the report do (R-2)', () => {
   it('a wrong first answer that was never tried again is answered, and not completed', async () => {
-    const { resultRows } = await import('../migration/src/lib/admin-results.js');
+    const { resultRows } = await import('../migration/src/lib/admin/admin-results.js');
     const answer = (trackId, questionId, extra = {}) => ({ questionId, clientTrackId: trackId, clientId: 'c', answer: 'o', firstAnswer: 'o', finalAnswer: 'o', attempts: 1, correct: null, timestamp: null, ...extra });
     const result = {
       session: { id: 's', sectionIds: ['sec'] },

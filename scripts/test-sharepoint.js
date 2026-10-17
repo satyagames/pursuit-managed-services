@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import { sharePointFolder } from './deployment-config.js';
 import { afterEach, test } from 'node:test';
-import * as service from '../public/js/dataService.js';
-import { DEFAULT_BRAND, loadBrand } from '../public/js/branding.js';
-import { login } from '../migration/src/lib/admin-pin.js';
-import { sha256Hex } from '../migration/src/lib/sha256.js';
-import { importSeed } from '../migration/src/lib/setup-import.js';
-import { LISTS, VERSION } from '../public/js/pms-schema.js';
-import { columnsOf } from '../public/js/pms-schema-meta.js';
+import * as service from '../migration/src/lib/data/dataService.js';
+import { DEFAULT_BRAND, loadBrand } from '../migration/src/lib/brand/branding.js';
+import { login } from '../migration/src/lib/admin/admin-pin.js';
+import { sha256Hex } from '../migration/src/lib/admin/sha256.js';
+import { importSeed } from '../migration/src/lib/setup/setup-import.js';
+import { LISTS, VERSION } from '../migration/src/lib/schema/pms-schema.js';
+import { columnsOf } from '../migration/src/lib/schema/pms-schema-meta.js';
 import { TITLE } from './sharepoint-fake.js';
 
 const originalFetch = globalThis.fetch;
@@ -153,7 +153,7 @@ test('switching a session to Staff mode retires all unclaimed visitor QR codes',
   assert.equal(tokens.find((token) => token.AppId === 'staff-token').Used, false);
 });
 
-// The stub's lists, by title: every column of each, from the schema (public/js/pms-schema.js and pms-schema-meta.js; schema v2 has no
+// The stub's lists, by title: every column of each, from the schema (migration/src/lib/schema/pms-schema.js and pms-schema-meta.js; schema v2 has no
 // column that may be left out). JSON is plain text of several lines; every other column is reported as a single line of text.
 const stubColumns = Object.fromEntries(Object.entries(LISTS).map(([key, { title }]) => [title, columnsOf(key).map((column) => column.name)]));
 const noteColumns = new Set(Object.keys(LISTS).flatMap((key) => columnsOf(key).filter((column) => ['array', 'object'].includes(column.kind)).map((column) => column.name)));
@@ -354,7 +354,7 @@ test('seed import skips existing records, brings no admins, never imports live h
     adminusers: [{ id: 'admin', pin: sha256Hex('1357'), name: 'Facilitator' }], theme: { primaryColor: '#112233' },
     tracks: [{ id: 'must-not-import' }], responses: [], qrtokens: [],
   } };
-  // (Phase 10c-3: the import is Setup's alone, lib/setup-import.js, built on the data layer's own calls. A file's admins are left out: admins are
+  // (Phase 10c-3: the import is Setup's alone, lib/setup/setup-import.js, built on the data layer's own calls. A file's admins are left out: admins are
   // added with Add an admin. The file still holds `theme`, as one made before Phase 10c-2a does: it is accepted, and nothing is imported for it.)
   const first = await importSeed(service, seed);
   assert.deepEqual(first.map((result) => [result.list, result.id, result.status]), [[TITLE.clients, 'client', 'Skipped existing'], [TITLE.clients, 'client-two', 'Imported']]);

@@ -1,9 +1,9 @@
 import { chromium, test, expect } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { sha256Hex } from '../../migration/src/lib/sha256.js';
-import { samplePack } from '../../migration/src/lib/sample-clients.js';
-import { seedPack } from '../../migration/src/lib/seed.js';
+import { sha256Hex } from '../../migration/src/lib/admin/sha256.js';
+import { samplePack } from '../../migration/src/lib/setup/sample-clients.js';
+import { seedPack } from '../../migration/src/lib/setup/seed.js';
 import { pageAddress, startHttpsSite } from './https-site.js';
 import { newFake, onSite, seedAndGoLive } from './sharepoint.js';
 

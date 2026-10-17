@@ -10,25 +10,25 @@ import { describe, it } from 'node:test';
 import {
   ACCEPT, BRAND_SLOTS, KB, MAX_INPUT_BYTES, MAX_UPSCALE, MIN_SCALE_SHARE, SLOTS, checkDimensions, describeSpec, extensionOf, fitScale,
   formatBytes, minimumWidth, slotSpec,
-} from '../migration/src/lib/asset-specs.js';
-import { inspectFile, isTruncated, sniffImage } from '../migration/src/lib/image-sniff.js';
+} from '../migration/src/lib/brand/asset-specs.js';
+import { inspectFile, isTruncated, sniffImage } from '../migration/src/lib/brand/image-sniff.js';
 import {
   MAX_ZOOM, clampView, containScale, coverScale, drawPlan, fitView, keyboardView, panBy, scaleOf, scaleRange, sliderOf, zoomTo,
-} from '../migration/src/lib/crop-math.js';
-import { CompressError, QUALITIES, SCALE_STEPS, compressToCap } from '../migration/src/lib/asset-compress.js';
-import { SCRIM_ALPHA, SCRIM_COLOUR, minimumScrimAlpha, worstTextContrast } from '../migration/src/lib/scrim.js';
-import { assetFileName, fileNameOf, isOwnUpload, sha256Hex } from '../migration/src/lib/asset-names.js';
+} from '../migration/src/lib/brand/crop-math.js';
+import { CompressError, QUALITIES, SCALE_STEPS, compressToCap } from '../migration/src/lib/brand/asset-compress.js';
+import { SCRIM_ALPHA, SCRIM_COLOUR, minimumScrimAlpha, worstTextContrast } from '../migration/src/lib/brand/scrim.js';
+import { assetFileName, fileNameOf, isOwnUpload, sha256Hex } from '../migration/src/lib/brand/asset-names.js';
 import {
   DARK_PIXEL, LIGHT_PIXEL, MOSTLY, OPEN_PAGES_NOTE, PRESETS, brandReport, changesForSave, contrastRows, copyColoursFrom, draftFromClient,
   legacyColours, logoStats, logoUrlChange, masterColours, plateAdvice, resetColours, sameDraft,
-} from '../migration/src/lib/brand-studio.js';
-import { DEVICES, deviceById, fitToWidth, safeArea, visibleShare } from '../migration/src/lib/brand-devices.js';
-import { buildClientTheme, resolveClientTheme, reviseClientTheme, safeFocus, safePlate } from '../migration/src/lib/client-theme.js';
+} from '../migration/src/lib/brand/brand-studio.js';
+import { DEVICES, deviceById, fitToWidth, safeArea, visibleShare } from '../migration/src/lib/brand/brand-devices.js';
+import { buildClientTheme, resolveClientTheme, reviseClientTheme, safeFocus, safePlate } from '../migration/src/lib/brand/client-theme.js';
 import {
   DEFAULT_PRIMARY, MIN_GRAPHIC_CONTRAST, MIN_TEXT_CONTRAST, PLATE_COLOURS, SURFACE_ALPHA, compositeOver, contrastRatio, deriveTheme, isNearDangerHue,
   relativeLuminance,
-} from '../migration/src/lib/theme.js';
-import { samplePack } from '../migration/src/lib/sample-clients.js';
+} from '../migration/src/lib/brand/theme.js';
+import { samplePack } from '../migration/src/lib/setup/sample-clients.js';
 
 const ROOT = path.join(import.meta.dirname, '..');
 const WHITE = '#FFFFFF';
@@ -814,7 +814,7 @@ describe('what a save writes, and what the older screens read', () => {
   it('prints a note about open pages that the participant code bears out', async () => {
     assert.match(OPEN_PAGES_NOTE, /already open keep the old look until they are reloaded/);
     assert.match(OPEN_PAGES_NOTE, /Nothing is pushed/);
-    const experience = await readFile(path.join(ROOT, 'migration', 'src', 'lib', 'experience.svelte.ts'), 'utf8');
+    const experience = await readFile(path.join(ROOT, 'migration', 'src', 'lib', 'participant', 'experience.svelte.ts'), 'utf8');
     const app = await readFile(path.join(ROOT, 'migration', 'src', 'App.svelte'), 'utf8');
     // What tells an open page that something else is live: these three AppSettings fields, nothing about a theme.
     const key = /const keyOf = .*JSON\.stringify\(\[(.*)\]\)/.exec(experience)?.[1] ?? '';

@@ -4,17 +4,17 @@
 // What this holds, on the mocked SharePoint REST: SchemaVersion on the item `default` of PMSAppSettings is read and never written; this
 // build is for version 3 (2 until Phase 10i); a missing item, a missing list or no SchemaVersion is PMS-LST-010, a lower version PMS-LST-011 and a higher one
 // PMS-LST-012, from every read of that item (getAppSettings, readLists, readParticipantWatch) and at no extra request; the data layer
-// hands the code to the page's stop handler (lib/start.ts) and throws it; the local server has no version. What it does not hold: what
+// hands the code to the page's stop handler (lib/settings/start.ts) and throws it; the local server has no version. What it does not hold: what
 // the real site answers. A page opened on the real site before Setup has run is QA-TESTING.md's to see.
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { VERSION } from '../public/js/pms-schema.js';
+import { VERSION } from '../migration/src/lib/schema/pms-schema.js';
 import { STRAYS, TITLE, UNINDEXED, createSharePointFake } from './sharepoint-fake.js';
 
 let copies = 0;
 /** A data layer of its own (one module is one page), pointed at `fake`, with a stop handler that notes what it is handed. */
 async function pageOn(fake) {
-  const ds = await import(`../public/js/dataService.js?schema-version=${copies += 1}`);
+  const ds = await import(`../migration/src/lib/data/dataService.js?schema-version=${copies += 1}`);
   const stops = [];
   ds.configure({ sharePoint: fake.settings, onStop: (code) => stops.push(code) });
   return { ds, stops };
@@ -98,18 +98,18 @@ describe('the version of the lists', () => {
 
   it('a page with no stop handler (Setup, a test) is only thrown the code; and the local server has no version to check', async () => {
     const fake = site(1);
-    const ds = await import(`../public/js/dataService.js?schema-version=${copies += 1}`);
+    const ds = await import(`../migration/src/lib/data/dataService.js?schema-version=${copies += 1}`);
     ds.configure({ sharePoint: fake.settings });
     await assert.rejects(ds.getAppSettings(), coded('PMS-LST-011'));
-    const local = await import(`../public/js/dataService.js?schema-version=${copies += 1}`);
+    const local = await import(`../migration/src/lib/data/dataService.js?schema-version=${copies += 1}`);
     local.configure({ baseUrl: 'http://local.invalid/api' });
     const real = globalThis.fetch;
     globalThis.fetch = async () => new Response(JSON.stringify({ id: 'default', activeSessionId: null }), { status: 200 });
     try { assert.deepEqual(await local.getAppSettings(), { id: 'default', activeSessionId: null }); } finally { globalThis.fetch = real; }
   });
 
-  it('Setup says each case in full, in the words the brief gave (lib/deploy-problems.js; the other pages show the code)', async () => {
-    const { LISTS_PROBLEM_IDS, problem } = await import('../migration/src/lib/deploy-problems.js');
+  it('Setup says each case in full, in the words the brief gave (lib/settings/deploy-problems.js; the other pages show the code)', async () => {
+    const { LISTS_PROBLEM_IDS, problem } = await import('../migration/src/lib/settings/deploy-problems.js');
     assert.deepEqual(LISTS_PROBLEM_IDS, ['PMS-LST-010', 'PMS-LST-011', 'PMS-LST-012']);
     const said = (id, version) => { const found = problem({ id, version, wanted: VERSION }); return `${found.title}. ${found.next}`; };
     assert.equal(said('PMS-LST-010', null), "This site's lists have not been set up for this app yet. Open Setup.");

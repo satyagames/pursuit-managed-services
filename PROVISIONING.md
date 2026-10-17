@@ -1,6 +1,6 @@
 # Pursuits CEC: SharePoint Online List Provisioning
 
-> **Replaced (Phase 10c-2b).** The lists of the new site are described in [SHAREPOINT-LISTS.md](SHAREPOINT-LISTS.md), which is generated from the app's one schema file (`public/js/pms-schema.js` and `pms-schema-meta.js`), and Setup will create them (Phase 10c-3). What follows describes the old site and is kept as a record: do not create lists from it.
+> **Replaced (Phase 10c-2b).** The lists of the new site are described in [SHAREPOINT-LISTS.md](SHAREPOINT-LISTS.md), which is generated from the app's one schema file (`migration/src/lib/schema/pms-schema.js` and `pms-schema-meta.js`), and Setup will create them (Phase 10c-3). What follows describes the old site and is kept as a record: do not create lists from it.
 
 > **This document describes the lists of the old site**, under their old names and in their old shape. The new build goes to a new site whose lists have new names (`PMS` and a meaningful name) and one improved shape, and Setup will create them: this document is replaced in Phase 10c-3 (and the README in Phase 10e). The legacy pages it mentions left this branch in Phase 10c-1 and are kept only in the local tag `legacy-final`. **Since Phase 10c-2a the new build uses twelve of these lists, not thirteen:** it does not check, read or write `ThemeConfig`, it does not use the one-item-per-session row of `Responses` (only the one item per participant), and Setup has no step that assigns activities. Those passages below are the old site's.
 

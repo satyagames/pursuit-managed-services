@@ -1,23 +1,23 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
-  import * as dataService from '../../../public/js/dataService.js';
+  import * as dataService from '../lib/data/dataService.js';
   import { ActionBar, Divider, HomeButton, PillButton, ProgressBar } from '../components/index.js';
-  import { LOADING_DELAY_MS } from '../lib/activity-content.js';
-  import { activityComplete, answerFeedback, clearEffects, pick } from '../lib/effects.js';
-  import { loadActivity } from '../lib/experience.svelte.js';
-  import { focusHeading } from '../lib/focus.js';
-  import { keepInView } from '../lib/keep-in-view.js';
-  import { navigateTo } from '../lib/navigation.js';
+  import { LOADING_DELAY_MS } from '../lib/participant/activity-content.js';
+  import { activityComplete, answerFeedback, clearEffects, pick } from '../lib/effects/effects.js';
+  import { loadActivity } from '../lib/participant/experience.svelte.js';
+  import { focusHeading } from '../lib/common/focus.js';
+  import { keepInView } from '../lib/participant/keep-in-view.js';
+  import { navigateTo } from '../lib/participant/navigation.js';
   import {
     chooseGraded, correctOptionIds, firstTryScore, firstUnansweredIndex, gradedAnnouncement, gradedRecord,
     gradedStateFromRecord, greetingName, isAnswerComplete, isGraded, isGradedResolved, isRecordSettled, normalizeAnswer,
     retryGraded, startGraded, toggleChoice, toggleRank, ungradedRecord,
     type Answer, type GradedState, type Question,
-  } from '../lib/pager-logic.js';
-  import { answerRecord, flushActivity, getSavedAnswers, knownProgress, loadFailure, pendingAnswers, recordAnswer } from '../lib/participantData.js';
-  import { participant } from '../lib/session.svelte.js';
-  import { isSignedOut } from '../lib/sign-in.js';
-  import { APP_NAME } from '../lib/app-name.js';
+  } from '../lib/participant/pager-logic.js';
+  import { answerRecord, flushActivity, getSavedAnswers, knownProgress, loadFailure, pendingAnswers, recordAnswer } from '../lib/participant/participantData.js';
+  import { participant } from '../lib/participant/session.svelte.js';
+  import { isSignedOut } from '../lib/participant/sign-in.js';
+  import { APP_NAME } from '../lib/common/app-name.js';
   import ActivityComplete from './ActivityComplete.svelte';
   import QuestionOptions from './QuestionOptions.svelte';
 

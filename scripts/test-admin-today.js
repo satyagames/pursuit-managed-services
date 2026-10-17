@@ -13,20 +13,20 @@ import { cp, mkdtemp, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
-import * as ds from '../public/js/dataService.js';
+import * as ds from '../migration/src/lib/data/dataService.js';
 import {
   STAFF_MODE_WARNING, blockedReason, evaluateReadiness, goLive, isCalendarDate, liveStatus, loadReadinessInputs, loadToday, localDate, makeSessionLive,
   needsSwitchConfirmation, notLiveText, pollToday, startingClientId, switchDialog,
-} from '../migration/src/lib/admin-today.js';
+} from '../migration/src/lib/admin/admin-today.js';
 import {
   SLUG_PATTERN, clientProblems, clientRows, clientUsage, createClientRecord, defaultEventTitle, effectiveSlug, formOf, isClientLive, recentCodes,
   setClientStatus, slugProblem, themeForSave, updateClientRecord,
-} from '../migration/src/lib/admin-clients.js';
-import { resolveClientTheme } from '../migration/src/lib/client-theme.js';
-import { schemaSpecs } from '../migration/src/lib/setup-checks.js';
-import { contrastRatio, deriveTheme } from '../migration/src/lib/theme.js';
-import { samplePack } from '../migration/src/lib/sample-clients.js';
-import { seedPack } from '../migration/src/lib/seed.js';
+} from '../migration/src/lib/admin/admin-clients.js';
+import { resolveClientTheme } from '../migration/src/lib/brand/client-theme.js';
+import { schemaSpecs } from '../migration/src/lib/setup/setup-checks.js';
+import { contrastRatio, deriveTheme } from '../migration/src/lib/brand/theme.js';
+import { samplePack } from '../migration/src/lib/setup/sample-clients.js';
+import { seedPack } from '../migration/src/lib/setup/seed.js';
 import { STRAYS, TITLE, UNINDEXED, createSharePointFake, plainTitles } from './sharepoint-fake.js';
 
 /** The check-by-eye lines with the suite's prefix taken off the titles: they name the list as the site has it (see plainTitles). */
@@ -40,7 +40,7 @@ const shape = (entry) => `${entry.method} ${entry.list ?? entry.path.split('/_ap
 /** A page of its own: the data service as a separate module, so no write token or list metadata is shared between "admins". */
 let pages = 0;
 async function freshPage(settings) {
-  const page = await import(`../public/js/dataService.js?admin-page=${pages += 1}`);
+  const page = await import(`../migration/src/lib/data/dataService.js?admin-page=${pages += 1}`);
   page.configure(settings);
   return page;
 }
@@ -288,19 +288,19 @@ describe('switching away from a live client', () => {
 
   it('the participant page really does what the confirmation says (read from its source, not guessed)', async () => {
     const app = await readFile(path.join(ROOT, 'migration/src/App.svelte'), 'utf8');
-    // How often, and when not: lib/poll-schedule.js decides the wait, lib/page-watch.ts the rest, App.svelte what is checked.
-    const schedule = await readFile(path.join(ROOT, 'migration/src/lib/poll-schedule.js'), 'utf8');
+    // How often, and when not: lib/common/poll-schedule.js decides the wait, lib/common/page-watch.ts the rest, App.svelte what is checked.
+    const schedule = await readFile(path.join(ROOT, 'migration/src/lib/common/poll-schedule.js'), 'utf8');
     assert.match(schedule, /idlePerMinute: 3,/, 'a waiting page checks 3 times a minute (every 20 seconds), so "within about 25 seconds" holds (20 s plus up to 20% jitter)');
     assert.match(schedule, /questionPerMinute: 1,/, 'a page with a question on screen checks once a minute, so "about a minute and a half" holds');
     assert.match(schedule, /jitter: 0\.2,/);
     assert.match(app, /createPageWatcher\(\{[\s\S]*mode: \(\) => modeOf\(router\.location\)/, 'the page watches through the one timer, by what is on screen');
     assert.match(app, /enabled: \(\) => !\(previewId \|\|/, 'a preview page, which shows no live session, never checks');
-    const watcher = await readFile(path.join(ROOT, 'migration/src/lib/page-watch.ts'), 'utf8');
+    const watcher = await readFile(path.join(ROOT, 'migration/src/lib/common/page-watch.ts'), 'utf8');
     assert.match(watcher, /document\.hidden/, 'a hidden page does not check');
     assert.match(watcher, /visibilitychange', onVisibility/, 'and checks as soon as it comes back');
     assert.match(app, /async function followFacilitator[\s\S]*clearTrack\(\);[\s\S]*navigateTo\('\/welcome'\)/, 'it drops the visit and lands on Welcome');
     assert.match(app, /settings\.activeSessionId !== track\.sessionId\) \{\s*await followFacilitator/, 'a visit is dropped when the active session is no longer its own');
-    const cache = await readFile(path.join(ROOT, 'migration/src/lib/experience.svelte.ts'), 'utf8');
+    const cache = await readFile(path.join(ROOT, 'migration/src/lib/participant/experience.svelte.ts'), 'utf8');
     assert.match(cache, /export const isStale/, 'a page with no visit follows too');
   });
 });

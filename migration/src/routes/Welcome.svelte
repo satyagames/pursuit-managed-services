@@ -1,16 +1,16 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import * as dataService from '../../../public/js/dataService.js';
+  import * as dataService from '../lib/data/dataService.js';
   import { HeroPlate, PillButton } from '../components/index.js';
-  import { unlockAudio } from '../lib/effects.js';
-  import { experience } from '../lib/experience.svelte.js';
-  import { focusHeading } from '../lib/focus.js';
-  import { navigateTo } from '../lib/navigation.js';
-  import { greetingName, hiLine } from '../lib/pager-logic.js';
-  import { hasAnyAnswer, restoreAnswers } from '../lib/participantData.js';
-  import { participant, setTrack, takeEarlierVisit, type ParticipantTrack } from '../lib/session.svelte.js';
-  import { visitBegun, visitIdFor } from '../lib/visit-id.js';
-  import { APP_NAME } from '../lib/app-name.js';
+  import { unlockAudio } from '../lib/effects/effects.js';
+  import { experience } from '../lib/participant/experience.svelte.js';
+  import { focusHeading } from '../lib/common/focus.js';
+  import { navigateTo } from '../lib/participant/navigation.js';
+  import { greetingName, hiLine } from '../lib/participant/pager-logic.js';
+  import { hasAnyAnswer, restoreAnswers } from '../lib/participant/participantData.js';
+  import { participant, setTrack, takeEarlierVisit, type ParticipantTrack } from '../lib/participant/session.svelte.js';
+  import { visitBegun, visitIdFor } from '../lib/participant/visit-id.js';
+  import { APP_NAME } from '../lib/common/app-name.js';
 
   type StaffTrack = ParticipantTrack & { sharePointUserId?: string | null; visitorId?: string | null };
   /** What Welcome draws from, when it is not today's live experience: Brand Studio's preview of a draft. */
@@ -78,7 +78,7 @@
         await navigateTo('/agenda');
         return;
       }
-      // A new visit is begun with an id the page chose (lib/visit-id.js): a press whose reply was lost, pressed again, finds the
+      // A new visit is begun with an id the page chose (lib/participant/visit-id.js): a press whose reply was lost, pressed again, finds the
       // visit it already made instead of making a second one. The press does not wait for the session to be moved on (Phase 10j).
       const live = participant.activeSession;
       const track = trackId

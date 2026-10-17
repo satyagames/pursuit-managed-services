@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, it } from 'node:test';
-import { contrastRatio, relativeLuminance } from '../migration/src/lib/theme.js';
+import { contrastRatio, relativeLuminance } from '../migration/src/lib/brand/theme.js';
 
 const ROOT = path.join(import.meta.dirname, '..');
 const CSS = await readFile(path.join(ROOT, 'migration', 'src', 'styles', 'results-tokens.css'), 'utf8');

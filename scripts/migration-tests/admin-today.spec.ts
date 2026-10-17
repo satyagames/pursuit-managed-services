@@ -6,8 +6,8 @@ import { cp, mkdir, mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import * as ds from '../../public/js/dataService.js';
-import { localDate } from '../../migration/src/lib/admin-today.js';
+import * as ds from '../../migration/src/lib/data/dataService.js';
+import { localDate } from '../../migration/src/lib/admin/admin-today.js';
 import { sharePointFolderPath } from '../deployment-config.js';
 
 // The facilitator's Today and Clients screens, end to end: the BUILT admin and participant pages

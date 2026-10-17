@@ -1,6 +1,6 @@
 /* Design tokens for the participant pages (PMS-IMPLEMENTATION-PLAN.md 2.2 and 2.3, in git history at 7347c72).
  *
- * Colours: the default theme is the mockup palette (Design-Docs/references/Operate_Experience_Prototype_Mockup.pdf, in git history at 7347c72). lib/theme.js `deriveTheme('#045BCC')`
+ * Colours: the default theme is the mockup palette (Design-Docs/references/Operate_Experience_Prototype_Mockup.pdf, in git history at 7347c72). lib/brand/theme.js `deriveTheme('#045BCC')`
  * returns exactly these values, and `applyTheme()` writes a client's palette onto <html> as
  * inline custom properties, which win over this file. Correct (--success), wrong (--danger,
  * --danger-tint) and the Deloitte green (--focus, --progress) are fixed for every client.
@@ -28,14 +28,14 @@
   --focus: #86bc25; /* Deloitte green */
   --progress: #86bc25;
   /* The only two places a client's accent colour shows, and only where it has 3:1 against what
-     it is drawn on (lib/theme.js). It never fills a button: --action comes from the primary. */
+     it is drawn on (lib/brand/theme.js). It never fills a button: --action comes from the primary. */
   --accent-rule: #ffffff; /* the thin rule (Divider) */
   --accent-ring: rgb(255 255 255 / 0); /* the ring on the logo plate (HeroPlate): none by default */
   --text: #ffffff;
   --text-soft: #d6e4fa; /* secondary text on the page background only, never on a pill (4.8:1 on --bg-mid) */
   --plate: #ffffff; /* the white plate behind a client logo: logos are drawn for a light background */
   --on-plate: #0b1f3a;
-  --plate-dark: #0b1f3a; /* the dark plate a white logo needs (Brand Studio's "Plate"); lib/theme.js PLATE_COLOURS.dark */
+  --plate-dark: #0b1f3a; /* the dark plate a white logo needs (Brand Studio's "Plate"); lib/brand/theme.js PLATE_COLOURS.dark */
   --on-plate-dark: #ffffff;
 
   /* ---- Type ---------------------------------------------------------------------------- */

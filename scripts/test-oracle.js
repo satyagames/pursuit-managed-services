@@ -156,13 +156,13 @@ describe('the oracle’s own tools', () => {
     assert.deepEqual(parseCsv(`${String.fromCharCode(0xFEFF)}a,b\r\n"x, ""y""","line\nbreak"\r\n`), [['a', 'b'], ['x, "y"', 'line\nbreak']]);
   });
 
-  it('the Results screen and the exports read results the way the oracle compares them (lib/adminData.ts)', async () => {
+  it('the Results screen and the exports read results the way the oracle compares them (lib/admin/adminData.ts)', async () => {
     const { readFile } = await import('node:fs/promises');
-    const source = await readFile(new URL('../migration/src/lib/adminData.ts', import.meta.url), 'utf8');
+    const source = await readFile(new URL('../migration/src/lib/admin/adminData.ts', import.meta.url), 'utf8');
     assert.match(source, /export const getSessionResults = readSessionResults as unknown as \(sessionId: string\) => Promise<SessionResults \| null>;/);
-    assert.match(source, /import \{ readSessionResults \} from '\.\/session-results\.js';/);
+    assert.match(source, /import \{ readSessionResults \} from '\.\.\/results\/session-results\.js';/);
     const callers = await Promise.all(['admin/AdminResults.svelte', 'admin/LiveDisplay.svelte'].map((file) => readFile(new URL(`../migration/src/${file}`, import.meta.url), 'utf8')));
-    for (const text of callers) assert.match(text, /import \{[^}]*\bgetSessionResults\b[^}]*\} from '\.\.\/lib\/adminData\.js'/);
+    for (const text of callers) assert.match(text, /import \{[^}]*\bgetSessionResults\b[^}]*\} from '\.\.\/lib\/admin\/adminData\.js'/);
   });
 
   it('the same seed makes the same session, and the stored rows are raw', () => {

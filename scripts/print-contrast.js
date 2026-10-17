@@ -6,7 +6,7 @@
 // are measured and listed apart, never failed: a bar in the tint and a scale's light steps, which the Results palette holds at 2:1 or more
 // (styles/results-tokens.css: "every bar has its value written beside it"); for those the test holds instead that the value IS written beside them.
 
-import { contrastRatio } from '../migration/src/lib/theme.js';
+import { contrastRatio } from '../migration/src/lib/brand/theme.js';
 
 export const WORDS = 4.5;
 export const MARKS = 3;

@@ -1,10 +1,10 @@
 // Phase 7c: ONE rule names a participant. Run: npm run test:report
 //
 // Admin → Results used to label a nameless visit with the client's name ("Harbour & Søn · Visit 1") and a second visit as "· Visit 2", while the
-// leader report said "Unnamed participant 1" and "José Álvarez (2)". The rule now lives in migration/src/lib/participant-names.js and both use it.
+// leader report said "Unnamed participant 1" and "José Álvarez (2)". The rule now lives in migration/src/lib/results/participant-names.js and both use it.
 // This builds ONE session (the report's Harbour fixture: seven visits, among them a guest named from the QR code, staff named from the visit log,
 // a guest named from the roster, two visits with no name anywhere, and the same guest twice), takes the names from the code Admin → Results
-// uses (lib/admin-results.js, over the same reads the screen makes), and from the leader report, its CSV and its PDF, and asserts the
+// uses (lib/admin/admin-results.js, over the same reads the screen makes), and from the leader report, its CSV and its PDF, and asserts the
 // lists are equal: the same people, the same names, in the same order. On the mocked SharePoint REST and on the real local server.
 // It is not the real tenant, and the screen's own timers are checked in the browser specs (scripts/migration-tests).
 
@@ -15,12 +15,12 @@ import { cp, mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
-import * as ds from '../public/js/dataService.js';
-import { hasOwnName, readNameSources, resultRows, rowsToLookForAgain, sessionsNeedingNames } from '../migration/src/lib/admin-results.js';
-import { buildLeaderReport, participantAnswersRows } from '../migration/src/lib/leader-report.js';
-import { readLeaderReportRecords } from '../migration/src/lib/leader-report-data.js';
-import { nameParticipants } from '../migration/src/lib/participant-names.js';
-import { readSessionResults } from '../migration/src/lib/session-results.js';
+import * as ds from '../migration/src/lib/data/dataService.js';
+import { hasOwnName, readNameSources, resultRows, rowsToLookForAgain, sessionsNeedingNames } from '../migration/src/lib/admin/admin-results.js';
+import { buildLeaderReport, participantAnswersRows } from '../migration/src/lib/exports/leader-report.js';
+import { readLeaderReportRecords } from '../migration/src/lib/exports/leader-report-data.js';
+import { nameParticipants } from '../migration/src/lib/results/participant-names.js';
+import { readSessionResults } from '../migration/src/lib/results/session-results.js';
 import { HARBOUR_MOVED, HARBOUR_PEOPLE, harbourContent, seedSession } from './leader-report-fixtures.js';
 import { makeReport } from './leader-report-node.js';
 import { inspectPdf } from './pdf-inspect.js';

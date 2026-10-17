@@ -2,7 +2,7 @@
   "about": "The lists and columns of the app as they were written by hand, in six places, before Phase 10c-2b gave them one file. A record: never regenerated. See scripts/schema-snapshot.js.",
   "readFrom": "ec31ac9 (Phase 10c-2a: proof and report)",
   "tables": {
-    "public/js/dataService.js": {
+    "migration/src/lib/data/dataService.js": {
       "spLists": {
         "clients": [
           "Clients",
@@ -280,7 +280,7 @@
       "spBaseSpec": "const spBaseSpec = (list, column) => column === 'AppId' ? { column, expect: 'Text', indexed: true, unique: true, strict: true } : { column, expect: Object.keys(spBaseTypes).find((type) => spBaseTypes[type].includes(column)) ?? 'Text', strict: Object.entries(spLists[list][1]).some(([key, name]) => name === column && spArrays.has(key)), };",
       "library": "ClientLogos"
     },
-    "migration/src/lib/setup-checks.js": {
+    "migration/src/lib/setup/setup-checks.js": {
       "PROVISIONED": {
         "clients": "AppId:Text! Name:Text LogoUrl:Text PrimaryColor:Text SecondaryColor:Text CreatedAt:DateTime",
         "sessions": "AppId:Text! ClientId:Text! SessionDate:DateTime ActiveSectionId:Text Status:Choice EndedAt:DateTime ParticipationMode:Choice",

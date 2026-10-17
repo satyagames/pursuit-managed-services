@@ -1,21 +1,21 @@
 <script lang="ts">
   import { mount, unmount } from 'svelte';
-  import { embeddedAssetUrl } from '../../../public/js/assets.js';
+  import { embeddedAssetUrl } from '../lib/brand/assets.js';
   import DeloitteWordmark from '../components/DeloitteWordmark.svelte';
-  import { APP_NAME } from '../lib/app-name.js';
-  import { buildLeaderReport, participantAnswersCsv, reportFileName } from '../lib/leader-report.js';
-  import { readLeaderReportRecords } from '../lib/leader-report-data.js';
-  import { layoutLeaderReport } from '../lib/leader-report-layout.js';
-  import { writeLeaderReportPdf, type Wordmark } from '../lib/leader-report-pdf.js';
-  import { createMeasure, loadReportFonts } from '../lib/report-fonts.js';
-  import { RESULTS_PALETTE } from '../lib/results-palette-source.js';
-  import { getSessionResults } from '../lib/adminData.js';
-  import { summaryCsvFile } from '../../../public/js/resultsExport.js';
+  import { APP_NAME } from '../lib/common/app-name.js';
+  import { buildLeaderReport, participantAnswersCsv, reportFileName } from '../lib/exports/leader-report.js';
+  import { readLeaderReportRecords } from '../lib/exports/leader-report-data.js';
+  import { layoutLeaderReport } from '../lib/exports/leader-report-layout.js';
+  import { writeLeaderReportPdf, type Wordmark } from '../lib/exports/leader-report-pdf.js';
+  import { createMeasure, loadReportFonts } from '../lib/exports/report-fonts.js';
+  import { RESULTS_PALETTE } from '../lib/results/results-palette-source.js';
+  import { getSessionResults } from '../lib/admin/adminData.js';
+  import { summaryCsvFile } from '../lib/exports/resultsExport.js';
 
   // The exports for leaders, for one session of the Results screen (Phase 7b): the leader report, a PDF made here in the page
   // from the session's saved answers (nothing is stored anywhere: it is made again each time); the summary by activity (Phase 13), the
   // Live display's CSV, one row per answer option; and all answers, the participant CSV, one row for each person and question. The numbers
-  // are lib/leader-report.js's and the chart model's; this component only reads, shows progress and saves the file.
+  // are lib/exports/leader-report.js's and the chart model's; this component only reads, shows progress and saves the file.
 
   let { sessionId, clientName = '', onToast }: {
     sessionId: string;

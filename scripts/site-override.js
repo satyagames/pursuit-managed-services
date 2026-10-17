@@ -9,12 +9,12 @@
 //   PMS_LABEL=Test, folder 3                   a short name for this copy, shown in the admin bar and on Setup
 //
 // They reach a page as ONE constant, `__PMS_BUILT__`, that the bundler defines (migration/vite-plugin-built-settings.ts) and
-// migration/src/lib/built-settings.ts reads: no text of any source file is searched for and replaced (until Phase 10b this was a
+// migration/src/lib/settings/built-settings.ts reads: no text of any source file is searched for and replaced (until Phase 10b this was a
 // search-and-replace of three exact strings of the legacy pages' settings file, which left the branch in Phase 10c-1). With no variable set the
 // constant is `{}`. A page reads its settings file, pms-config.txt, first and uses these for what the file leaves out
-// (lib/deploy-settings.js), so a value built in is a fallback and never an override. The rules for each value are the ones the page
-// itself applies (lib/deploy-rules.js), so a build cannot put in what a page would refuse.
-import { settingsProblem } from '../migration/src/lib/deploy-rules.js';
+// (lib/settings/deploy-settings.js), so a value built in is a fallback and never an override. The rules for each value are the ones the page
+// itself applies (lib/settings/deploy-rules.js), so a build cannot put in what a page would refuse.
+import { settingsProblem } from '../migration/src/lib/settings/deploy-rules.js';
 
 /** The variable each setting comes from, for the words of a refusal. */
 const VARIABLE = { siteUrl: 'PMS_SITE_URL', listPrefix: 'PMS_LIST_PREFIX', logoLibrary: 'PMS_LOGO_LIBRARY', batch: 'PMS_BATCH', 'support.name': 'PMS_SUPPORT_NAME', 'support.contact': 'PMS_SUPPORT_CONTACT', label: 'PMS_LABEL' };

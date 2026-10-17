@@ -3,12 +3,12 @@ import { createHash } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { GIF, SVG, makeImage, truncated, withExifOrientation } from './brand-images.js';
-import { OPEN_PAGES_NOTE, legacyColours } from '../../migration/src/lib/brand-studio.js';
-import { resolveClientTheme } from '../../migration/src/lib/client-theme.js';
-import { assetFileName } from '../../migration/src/lib/asset-names.js';
-import { SCRIM_ALPHA } from '../../migration/src/lib/scrim.js';
-import { SAMPLE_PICTURES, SAMPLE_PICTURE_NAMES } from '../../migration/src/lib/sample-pictures.js';
-import { contrastRatio, deriveTheme, relativeLuminance } from '../../migration/src/lib/theme.js';
+import { OPEN_PAGES_NOTE, legacyColours } from '../../migration/src/lib/brand/brand-studio.js';
+import { resolveClientTheme } from '../../migration/src/lib/brand/client-theme.js';
+import { assetFileName } from '../../migration/src/lib/brand/asset-names.js';
+import { SCRIM_ALPHA } from '../../migration/src/lib/brand/scrim.js';
+import { SAMPLE_PICTURES, SAMPLE_PICTURE_NAMES } from '../../migration/src/lib/setup/sample-pictures.js';
+import { contrastRatio, deriveTheme, relativeLuminance } from '../../migration/src/lib/brand/theme.js';
 import { PIN, adminUrl, another, ds, expectFits, openAdmin, participantUrl, shoot, startLocal, stopLocal, today, viewports, type Local } from './admin-local.js';
 
 // Phase 6: Brand Studio end to end. The BUILT admin and participant pages against the REAL local server on a scratch

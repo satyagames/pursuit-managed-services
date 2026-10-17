@@ -3,9 +3,9 @@
   import preflightCss from 'tailwindcss/preflight.css?inline';
   import tokensCss from '../styles/tokens.css?inline';
   import baseCss from '../styles/base.css?inline';
-  import type { Look } from '../lib/brand-look.js';
-  import { applyTheme, resetTheme } from '../lib/theme.js';
-  import { fitToWidth, type Device } from '../lib/brand-devices.js';
+  import type { Look } from '../lib/brand/brand-look.js';
+  import { applyTheme, resetTheme } from '../lib/brand/theme.js';
+  import { fitToWidth, type Device } from '../lib/brand/brand-devices.js';
   import BrandPreviewStage from './BrandPreviewStage.svelte';
 
   /**

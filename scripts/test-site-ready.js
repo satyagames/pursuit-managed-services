@@ -1,15 +1,15 @@
 // Phase 10c-3, part D: the site is marked ready only when the check is clean. Run: node --test scripts/test-site-ready.js (part of `npm test`).
 //
-// "Mark the site as ready" (migration/src/lib/provision.js, markReady) runs Setup's strict check (Check Lists, from pms-schema-meta.js) and looks for the
+// "Mark the site as ready" (migration/src/lib/setup/provision.js, markReady) runs Setup's strict check (Check Lists, from pms-schema-meta.js) and looks for the
 // picture library; only when both find nothing wrong does it write the version of the lists, the last thing Setup writes: the PMSAppSettings item
 // `default` with Title `default` and SchemaVersion (this build's VERSION: 3 since Phase 10i; the other columns left empty), or SchemaVersion alone on an item that has none. A half-built or
 // wrong site never claims to be ready. Before it, every page of the app stops with PMS-LST-010; after it, they work. Against the mocked SharePoint REST;
 // what the real site answers is QA-TESTING.md's to see.
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { ID, LISTS, VERSION } from '../public/js/pms-schema.js';
-import { create, markReady, showPlan, siteApi } from '../migration/src/lib/provision.js';
-import { schemaSpecs } from '../migration/src/lib/setup-checks.js';
+import { ID, LISTS, VERSION } from '../migration/src/lib/schema/pms-schema.js';
+import { create, markReady, showPlan, siteApi } from '../migration/src/lib/setup/provision.js';
+import { schemaSpecs } from '../migration/src/lib/setup/setup-checks.js';
 import { STRAYS, UNINDEXED, createSharePointFake } from './sharepoint-fake.js';
 
 const EVERYTHING = [...Object.keys(LISTS), 'logoLibrary'];
@@ -18,7 +18,7 @@ let pages = 0;
 async function siteWith(options = {}) {
   const fake = createSharePointFake({ schemaVersion: null, ...options });
   fake.install();
-  const ds = await import(`../public/js/dataService.js?site-ready=${pages += 1}`);
+  const ds = await import(`../migration/src/lib/data/dataService.js?site-ready=${pages += 1}`);
   ds.configure({ sharePoint: fake.settings });
   const titles = ds.sharePointListTitles();
   return { fake, ds, api: siteApi(ds), titles, check: () => ds.checkSharePointSchema({ specs: schemaSpecs }) };

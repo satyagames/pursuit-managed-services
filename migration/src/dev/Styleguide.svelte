@@ -3,20 +3,20 @@
   // dynamic import that App.svelte only creates when import.meta.env.DEV, so release builds
   // contain none of this file (scripts/migration-tests/foundation.spec.ts checks that).
   import { onDestroy } from 'svelte';
-  import { APP_NAME } from '../lib/app-name.js';
-  import { CONFETTI_LIST, CUE_LIST, auditionConfetti, auditionCue } from '../lib/effects.js';
-  import { DEFAULT_PRIMARY, SURFACE_ALPHA, applyTheme, compositeOver, contrastRatio, deriveTheme, resetTheme } from '../lib/theme.js';
+  import { APP_NAME } from '../lib/common/app-name.js';
+  import { CONFETTI_LIST, CUE_LIST, auditionConfetti, auditionCue } from '../lib/effects/effects.js';
+  import { DEFAULT_PRIMARY, SURFACE_ALPHA, applyTheme, compositeOver, contrastRatio, deriveTheme, resetTheme } from '../lib/brand/theme.js';
   import {
     ActionBar, ActivityPill, AppShell, CheckBadge, DeloitteWordmark, Divider, HeroPlate, HomeButton, LogoTile, OptionPill, PillButton,
     ProgressBar, SoundToggle,
   } from '../components/index.js';
   import type { ActivityState, AnswerState } from '../components/index.js';
   import NotLive from '../routes/NotLive.svelte';
-  import { problem } from '../lib/deploy-problems.js';
-  import { spelledOut } from '../lib/deploy-rules.js';
-  import { resolveSettings } from '../lib/deploy-settings.js';
-  import { copyRows, listRows, waysToFix } from '../lib/setup-deployment.js';
-  import { listTitles } from '../lib/setupData.js';
+  import { problem } from '../lib/settings/deploy-problems.js';
+  import { spelledOut } from '../lib/settings/deploy-rules.js';
+  import { resolveSettings } from '../lib/settings/deploy-settings.js';
+  import { copyRows, listRows, waysToFix } from '../lib/setup/setup-deployment.js';
+  import { listTitles } from '../lib/setup/setupData.js';
   import CopyPanel from '../setup/CopyPanel.svelte';
   import ListAddresses from '../setup/ListAddresses.svelte';
 
@@ -266,7 +266,7 @@
     <p class="muted">
       Setup's own pieces (Phase 10b). They are the Setup page's, which has one light look and never a client's: the cards below are the
       same under every palette. The stop screen of the participant and admin pages is a few plain elements of the page itself
-      (lib/start.ts), not a component: the browser tests look at it in the built pages.
+      (lib/settings/start.ts), not a component: the browser tests look at it in the built pages.
     </p>
     <h3>Everything in order</h3>
     <div class="setup-card"><CopyPanel rows={copyReady.rows} /></div>

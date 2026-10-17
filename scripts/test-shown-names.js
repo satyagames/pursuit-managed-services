@@ -9,7 +9,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 import { readSnapshot } from './schema-snapshot.js';
-import { LIBRARY, LISTS } from '../public/js/pms-schema.js';
+import { LIBRARY, LISTS } from '../migration/src/lib/schema/pms-schema.js';
 
 const ROOT = path.join(import.meta.dirname, '..');
 
@@ -20,11 +20,11 @@ async function sources() {
     for (const entry of await readdir(dir, { withFileTypes: true })) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) await walk(full);
-      else if (/\.(svelte|js|ts|html)$/.test(entry.name) && !/sample-picture-data\.ts$|open-sans-report\.js$/.test(entry.name)) files.push(full);
+      // (pms-schema-meta.js and assets.js were in public/js until Phase 14 and never read here: META's descriptions are Setup's and the tests'.)
+      else if (/\.(svelte|js|ts|html)$/.test(entry.name) && !/sample-picture-data\.ts$|open-sans-report\.js$|pms-schema-meta\.js$|^assets\.js$/.test(entry.name)) files.push(full);
     }
   };
   await walk(path.join(ROOT, 'migration', 'src'));
-  for (const name of ['dataService.js', 'pms-schema.js', 'branding.js', 'resultsExport.js']) files.push(path.join(ROOT, 'public', 'js', name));
   return files;
 }
 

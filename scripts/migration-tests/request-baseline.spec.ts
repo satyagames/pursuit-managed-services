@@ -18,8 +18,8 @@ const choices = (page: Page) => page.locator('.pms-options button');
 
 /**
  * Waits until the page has sent what it reads and fetches ahead once its first screen is up (Phase 10j): the questions and options of every
- * enabled activity (part D: lib/activity-content.js; a QR scan reads them beside its claim), and once its visit is logged what its next writes
- * will ask for (part C: lib/boot.js writesAhead): the answers list's item type always here, and, where a visit can begin from Welcome, the
+ * enabled activity (part D: lib/participant/activity-content.js; a QR scan reads them beside its claim), and once its visit is logged what its next writes
+ * will ask for (part C: lib/participant/boot.js writesAhead): the answers list's item type always here, and, where a visit can begin from Welcome, the
  * participants list's type and columns and, for a session not started yet, the sessions list's. So a recording does not depend on how soon the
  * page is closed.
  */

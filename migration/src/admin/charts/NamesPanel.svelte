@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { people } from '../../lib/results-chart-model.js';
+  import { people } from '../../lib/results/results-chart-model.js';
   import { placeName, timeOf, type Who } from './chart-ui.js';
 
   // Who picked an answer (admin view only): under its card, "Who picked: 1014 Vine Street, Cincinnati (2 people)" and each name with the time they
-  // answered. The names are lib/participant-names.js's, as on the Results rows and in the report ("Unnamed participant 2", "Mike A (2)"), and there
+  // answered. The names are lib/results/participant-names.js's, as on the Results rows and in the report ("Unnamed participant 2", "Mike A (2)"), and there
   // are as many as the chart counts. For a ranking it is everyone who ranked the answer, with the place they gave it. Esc or the close button closes
   // it, and focus goes back to the bar that opened it (the card does that). The wall display never has one.
   let { id, label, who, ranking = false, headingLevel = 4, onClose }: {

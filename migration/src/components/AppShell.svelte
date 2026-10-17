@@ -1,13 +1,13 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { SCRIM_ALPHA } from '../lib/scrim.js';
+  import { SCRIM_ALPHA } from '../lib/brand/scrim.js';
   import DeloitteWordmark from './DeloitteWordmark.svelte';
 
   let { background = null, focus = null, stage = 'narrow', contained = false, right, children }: {
     /**
      * Optional full-bleed picture behind the page. The page's own colours show until it has loaded, and if it
      * fails or never arrives they simply stay: nothing waits for it. Once it is showing, a dark scrim keeps
-     * white text at 4.5:1 even over a pure white picture (lib/scrim.js works out how dark, not a guess).
+     * white text at 4.5:1 even over a pure white picture (lib/brand/scrim.js works out how dark, not a guess).
      */
     background?: string | null;
     /** The part of the picture that should stay in view when the screen is not its shape: percentages, 50/50 is the middle. */

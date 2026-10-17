@@ -1,4 +1,4 @@
-// Phase 10b: reading pms-config.txt at start-up (migration/src/lib/settings-file.js), the data layer's guard against a request
+// Phase 10b: reading pms-config.txt at start-up (migration/src/lib/settings/settings-file.js), the data layer's guard against a request
 // before set-up (dataService.requireConfiguration), and the order the three entries do things in.
 // Run: node --test scripts/test-settings-file.js (part of `npm test`).
 //
@@ -8,8 +8,8 @@ import assert from 'node:assert/strict';
 import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, it } from 'node:test';
-import { readSettingsFile } from '../migration/src/lib/settings-file.js';
-import { SETTINGS_FILE, resolveSettings } from '../migration/src/lib/deploy-settings.js';
+import { readSettingsFile } from '../migration/src/lib/settings/settings-file.js';
+import { SETTINGS_FILE, resolveSettings } from '../migration/src/lib/settings/deploy-settings.js';
 
 const ROOT = path.join(import.meta.dirname, '..');
 const PAGE = 'https://americas.internal.deloitteonline.com/sites/CreativeExpCOE/Shared%20Documents/p_cec_03/index.html';
@@ -39,7 +39,7 @@ describe('reading pms-config.txt', () => {
     assert.ok([undefined, 'same-origin'].includes(asked[0].options.credentials), 'the page\'s own sign-in goes with it (what a request to the same origin does unless told otherwise)');
     assert.equal(asked[0].options.method ?? 'GET', 'GET');
     assert.ok(asked[0].options.signal instanceof AbortSignal);
-    assert.match(await source('migration/src/lib/settings-file.js'), /AbortSignal\.timeout\(8000\)/);
+    assert.match(await source('migration/src/lib/settings/settings-file.js'), /AbortSignal\.timeout\(8000\)/);
   });
 
   it('HTTP 404 means there is no file: that is an answer, and the built-in values are next', async () => {
@@ -67,9 +67,9 @@ describe('reading pms-config.txt', () => {
     assert.deepEqual((await reading(text(page, 200, 'text/html'))).outcome, { fileError: { kind: 'page', status: 200 } });
   });
 
-  it('no code or help text under migration/ or public/js says pms-config.json: the one name is SETTINGS_FILE, and every sentence that names the file follows it', async () => {
+  it('no code or help text under migration/ says pms-config.json: the one name is SETTINGS_FILE, and every sentence that names the file follows it', async () => {
     const files = [];
-    for (const dir of ['migration/src', 'public/js']) {
+    for (const dir of ['migration/src']) {
       for (const name of await readdir(path.join(ROOT, dir), { recursive: true })) {
         if (/\.(ts|js|svelte|css|html)$/.test(name)) files.push(path.join(dir, name));
       }
@@ -123,7 +123,7 @@ describe('reading pms-config.txt', () => {
 
 describe('the data layer refuses to be asked before it has been set up, for a page that opted in', () => {
   let pages = 0;
-  const freshPage = () => import(`../public/js/dataService.js?guard=${pages += 1}`);
+  const freshPage = () => import(`../migration/src/lib/data/dataService.js?guard=${pages += 1}`);
   /** Runs `work` with every request counted and answered with an empty list. */
   async function counting(work) {
     const real = globalThis.fetch;
@@ -154,7 +154,7 @@ describe('the data layer refuses to be asked before it has been set up, for a pa
       for (const [name, call] of Object.entries(calls(page))) {
         await assert.rejects(async () => call(), (error) => {
           assert.equal(error.code, 'PMS-CFG-003', `${name}: ${error.message}`);
-          assert.equal(error.message, 'PMS-CFG-003', 'the code is the message; its words are with the other three (lib/deploy-problems.js)');
+          assert.equal(error.message, 'PMS-CFG-003', 'the code is the message; its words are with the other three (lib/settings/deploy-problems.js)');
           return true;
         }, name);
       }
@@ -185,13 +185,12 @@ describe('the data layer refuses to be asked before it has been set up, for a pa
     const page = await freshPage();
     assert.equal(page.isSharePointMode(), false);
     assert.equal(await counting(() => page.listClients()), 1, 'the request goes to the local server, as before');
-    // The modules the pages share from public/js do not opt in themselves: only an entry does (lib/start.ts). (Until Phase 10c-1 this
+    // The modules the pages share (until Phase 14 in public/js) do not opt in themselves: only an entry does (lib/settings/start.ts). (Until Phase 10c-1 this
     // loop also read the legacy screens, which never opted in; they left the branch with the legacy app. resultsRenderer.js, the Live display's
     // Chart.js renderer, left in Phase 11a, when the Results charts were drawn by hand.)
-    const shared = (await readdir(path.join(ROOT, 'public', 'js'), { recursive: true })).filter((name) => name.endsWith('.js') && !name.endsWith('dataService.js'));
-    assert.deepEqual(shared.map((name) => name.split(path.sep).join('/')).sort(), ['assets.js', 'branding.js', 'pms-schema-meta.js', 'pms-schema.js', 'resultsExport.js']);
+    const shared = ['brand/assets.js', 'brand/branding.js', 'schema/pms-schema-meta.js', 'schema/pms-schema.js', 'exports/resultsExport.js'];
     for (const file of shared) {
-      assert.doesNotMatch(await source(path.join('public', 'js', file)), /requireConfiguration|sharePointListTitles/, `${file} must not opt in`);
+      assert.doesNotMatch(await source(path.join('migration', 'src', 'lib', file)), /requireConfiguration|sharePointListTitles/, `${file} must not opt in`);
     }
   });
 });
@@ -202,14 +201,14 @@ describe('the three entries find their settings before anything asks for data', 
   it('each imports the start-up module straight after the browser check, and no longer imports public/config.js', async () => {
     for (const file of ENTRIES) {
       const imports = [...(await source(file)).matchAll(/^import .*?['"]([^'"]+)['"];?\r?$/gm)].map((match) => match[1]);
-      assert.equal(imports[0], './lib/support.js', `${file}: the browser check stays first`);
-      assert.equal(imports[1], './lib/start.js', `${file}: then the settings, before any module that could ask for data`);
+      assert.equal(imports[0], './lib/settings/support.js', `${file}: the browser check stays first`);
+      assert.equal(imports[1], './lib/settings/start.js', `${file}: then the settings, before any module that could ask for data`);
       assert.ok(!imports.some((name) => name.endsWith('public/config.js')), `${file} still imports public/config.js`);
     }
   });
 
   it('the start-up module turns the guard on as it loads, and mounts only once the data layer is configured', async () => {
-    const start = (await source('migration/src/lib/start.ts')).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+    const start = (await source('migration/src/lib/settings/start.ts')).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
     const guard = start.indexOf('dataService.requireConfiguration()');
     assert.ok(guard !== -1 && guard < start.indexOf('export '), 'requireConfiguration() runs at the top of the module, before anything is exported or called');
     // (Since Phase 10c-2b it also hands the data layer what to do on lists of another version: put the stop screen up, once the app is mounted.)
@@ -221,6 +220,9 @@ describe('the three entries find their settings before anything asks for data', 
   it('nothing under migration/src imports the legacy pages\' settings file or reads its globals, and that file is gone', async () => {
     const files = (await readdir(path.join(ROOT, 'migration', 'src'), { recursive: true })).filter((name) => /\.(ts|js|svelte)$/.test(name));
     for (const file of files) {
+      // (Phase 14: the data layer, in public/js until then and outside this check, still takes its first values from those globals, which no page
+      // sets: RELEASE-14.md, "Found, and left".)
+      if (/lib[\\/]data[\\/]dataService\.js$/.test(file)) continue;
       const code = (await source(path.join('migration', 'src', file))).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
       assert.doesNotMatch(code, /public\/config\.js|CEC_SHAREPOINT|CEC_API_BASE/, file);
     }
@@ -235,8 +237,9 @@ describe('the three entries find their settings before anything asks for data', 
       const code = (await source(path.join('migration', 'src', file))).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
       if (/\bfetch\b|XMLHttpRequest|sendBeacon/.test(code)) fetching.push(file.split(path.sep).join('/'));
     }
-    assert.deepEqual(fetching, ['lib/settings-file.js']);
-    const reader = await source('migration/src/lib/settings-file.js');
+    // The data layer itself is in migration/src since Phase 14 (it was public/js/dataService.js).
+    assert.deepEqual(fetching.sort(), ['lib/data/dataService.js', 'lib/settings/settings-file.js']);
+    const reader = await source('migration/src/lib/settings/settings-file.js');
     assert.equal([...reader.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '').matchAll(/\bfetch\(/g)].length, 1, 'one request, to one address');
     assert.match(reader, /fetch\(new URL\(SETTINGS_FILE, pageUrl\)\.href, \{ cache: 'no-store', signal: AbortSignal\.timeout\(8000\) \}\)/);
   });

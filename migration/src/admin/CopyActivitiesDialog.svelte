@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, untrack } from 'svelte';
-  import * as dataService from '../../../public/js/dataService.js';
-  import { activitiesOfClient, copyOutcome, copyTotalsText } from '../lib/admin-content.js';
+  import * as dataService from '../lib/data/dataService.js';
+  import { activitiesOfClient, copyOutcome, copyTotalsText } from '../lib/admin/admin-content.js';
 
   type Client = { id: string; name: string; status?: string };
   type Section = { id: string; title: string; order?: number; enabled?: boolean; questionIds?: string[]; clientId?: string | null };

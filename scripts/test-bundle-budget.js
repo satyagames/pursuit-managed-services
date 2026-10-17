@@ -6,7 +6,7 @@ import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
 import { PAGES, ROOT, analyzePage } from './analyze-bundle.js';
 import { BUDGET, FORBIDDEN, PHASE_8, PHASE_9A, PHASE_9B, PHASE_10B, PHASE_10C1, PHASE_10C2A, PHASE_10C2B, PHASE_10C3, PHASE_10F, PHASE_10G, PHASE_10H, PHASE_10I, PHASE_10J, PHASE_11A, PHASE_11A3, PHASE_11B, PHASE_12, PHASE_13, checkBudgets, utilityClasses } from './bundle-budget.js';
-import { SAMPLE_PICTURE_NAMES } from '../migration/src/lib/sample-pictures.js';
+import { SAMPLE_PICTURE_NAMES } from '../migration/src/lib/setup/sample-pictures.js';
 import { pageProblems } from './release-proofs.js';
 
 // Phase 7: the participant page must stay small (it is what ten iPads load over one SharePoint account), and nothing that only the
@@ -66,7 +66,7 @@ describe('the page budgets', () => {
 
   it('does carry the exports on the admin page: PDF, PowerPoint and the Results charts, nothing dropped, and no chart library', () => {
     const ids = built.admin.modules.map((module) => module.id);
-    for (const part of ['node_modules/jspdf/', 'node_modules/pptxgenjs/', 'public/js/resultsExport.js', 'migration/src/admin/charts/ResultCard.svelte', 'migration/src/lib/results-chart-model.js']) {
+    for (const part of ['node_modules/jspdf/', 'node_modules/pptxgenjs/', 'migration/src/lib/exports/resultsExport.js', 'migration/src/admin/charts/ResultCard.svelte', 'migration/src/lib/results/results-chart-model.js']) {
       assert.ok(ids.some((id) => id.replaceAll('\\', '/').includes(part)), `${part} is on the admin page`);
     }
     for (const marker of [/jsPDF/, /PptxGenJS/, /Words that came up most/]) assert.match(built.admin.html, marker);
@@ -77,7 +77,7 @@ describe('the page budgets', () => {
 
   it('carries the leader report on the admin page, with its two faces, and none of it on the participant page', () => {
     const ids = built.admin.modules.map((module) => module.id);
-    for (const part of ['lib/leader-report.js', 'lib/leader-report-layout.js', 'lib/leader-report-pdf.js', 'lib/leader-report-data.js', 'lib/report-fonts.js', 'assets/report-fonts/open-sans-report.js', 'admin/ReportExports.svelte', 'lib/export-summary.js']) {
+    for (const part of ['lib/exports/leader-report.js', 'lib/exports/leader-report-layout.js', 'lib/exports/leader-report-pdf.js', 'lib/exports/leader-report-data.js', 'lib/exports/report-fonts.js', 'assets/report-fonts/open-sans-report.js', 'admin/ReportExports.svelte', 'lib/results/export-summary.js']) {
       assert.ok(ids.some((id) => id.endsWith(part)), `${part} is on the admin page`);
     }
     // (Phase 13: "Participant answers (CSV)" is "All answers (CSV)", and "Summary by activity (CSV)" is beside it.)
@@ -88,11 +88,11 @@ describe('the page budgets', () => {
   });
 
   it('is honest about what the admin build leaves out: only jsPDF\'s HTML and SVG paths, which no export calls', async () => {
-    const source = await readFile(path.join(ROOT, 'public/js/resultsExport.js'), 'utf8');
+    const source = await readFile(path.join(ROOT, 'migration/src/lib/exports/resultsExport.js'), 'utf8');
     // The admin build stubs html2canvas, canvg and dompurify (migration/vite.admin.config.ts); these are the calls that need them.
     assert.doesNotMatch(source, /\.html\(|addSvgAsImage|\.svg\(|html2canvas|canvg|dompurify/i, 'resultsExport.js must not use what the admin build stubs');
     for (const file of ['leader-report-pdf.js', 'leader-report-layout.js', 'leader-report.js', 'report-fonts.js']) {
-      const report = await readFile(path.join(ROOT, 'migration/src/lib', file), 'utf8');
+      const report = await readFile(path.join(ROOT, 'migration/src/lib/exports', file), 'utf8');
       assert.doesNotMatch(report, /\.html\(|addSvgAsImage|\.svg\(|html2canvas|canvg|dompurify/i, `${file} must not use what the admin build stubs`);
     }
     const ids = built.admin.modules.map((module) => module.id);
@@ -101,11 +101,11 @@ describe('the page budgets', () => {
   });
 });
 
-// Phase 10c-2b: the schema's names (public/js/pms-schema.js) are in every page; everything else about the lists (pms-schema-meta.js: what
+// Phase 10c-2b: the schema's names (migration/src/lib/schema/pms-schema.js) are in every page; everything else about the lists (pms-schema-meta.js: what
 // each list and column is for, its type in words, who uses it, whether it is personal data) is Setup's alone.
 describe('Phase 10c-2b: the schema\'s descriptions are on the Setup page only', () => {
   it('no sentence of pms-schema-meta.js is in the participant page or the admin page, and Setup carries them (the check can fail)', async () => {
-    const { META } = await import('../public/js/pms-schema-meta.js');
+    const { META } = await import('../migration/src/lib/schema/pms-schema-meta.js');
     // Every list's purpose and every column's: sentences long enough that they could not be in a page by chance, as the bundler writes
     // a string (an apostrophe may be escaped). (AppId's are made up as the file is read, from a few words each: left out.)
     const sentences = [...Object.values(META).flatMap((list) => [list.purpose,
@@ -290,7 +290,7 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
   });
 
   it('the six sample pictures are in the Setup page, whole, and in neither of the other two: not their bytes, their names, or the modules that seed them (Phase 10f)', async () => {
-    const seeding = /lib\/(sample-seed|sample-pictures)\.js$|\/setup\/sample-picture-data\.ts$|\/assets\/sample-pictures\//;
+    const seeding = /lib\/setup\/(sample-seed|sample-pictures)\.js$|\/setup\/sample-picture-data\.ts$|\/assets\/sample-pictures\//;
     assert.ok(built.setup.modules.filter((module) => seeding.test(module.id.replaceAll('\\', '/'))).length >= 3, 'Setup carries the seeding, the list and the files');
     let weight = 0;
     for (const name of SAMPLE_PICTURE_NAMES) {
@@ -319,7 +319,7 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
     assert.match(built.setup.html, /This copy of the app has not been set up yet/);
     assert.match(built.setup.html, /must be empty, or a letter followed by up to 15 letters or digits/);
     // Setup's first panel, its rows of where the lists are and the probe are Setup's alone too (Phase 10b, part G).
-    const setupOnly = /lib\/(deploy-(problems|rules)|setup-deployment)\.js$|\/setup\/(CopyPanel|ListAddresses)\.svelte$/;
+    const setupOnly = /lib\/settings\/deploy-(problems|rules)\.js$|lib\/setup\/setup-deployment\.js$|\/setup\/(CopyPanel|ListAddresses)\.svelte$/;
     assert.equal(built.setup.modules.filter((module) => setupOnly.test(module.id.replaceAll('\\', '/'))).length, 5, 'Setup carries all five');
     assert.match(built.setup.html, /Where the lists are/);
     assert.match(built.setup.html, /This copy of the app/);
@@ -329,12 +329,12 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
       assert.equal(page.modules.some((module) => setupOnly.test(module.id.replaceAll('\\', '/'))), false, `${page.name} bundles something that is Setup's alone`);
       assert.match(page.html, /This page cannot start/, `${page.name}: the stop screen`);
       assert.match(page.html, /PMS-CFG-00/, `${page.name}: the codes`);
-      assert.equal(page.modules.some((module) => /lib\/deploy-settings\.js$/.test(module.id.replaceAll('\\', '/'))), true, `${page.name}: the resolver`);
+      assert.equal(page.modules.some((module) => /lib\/settings\/deploy-settings\.js$/.test(module.id.replaceAll('\\', '/'))), true, `${page.name}: the resolver`);
     }
   });
 
   it('Setup\'s plan for a site, what makes the lists, Add an admin and the seed-file import are in the Setup page alone (Phase 10c-3)', () => {
-    const provisioning = /lib\/(provision|setup-admins|setup-import)\.js$|\/setup\/PlanView\.svelte$/;
+    const provisioning = /lib\/setup\/(provision|setup-admins|setup-import)\.js$|\/setup\/PlanView\.svelte$/;
     assert.equal(built.setup.modules.filter((module) => provisioning.test(module.id.replaceAll('\\', '/'))).length, 4, 'Setup carries all four');
     assert.match(built.setup.html, /Show the plan/);
     assert.match(built.setup.html, /Made by Setup/);
@@ -406,7 +406,7 @@ import { jsPDF } from 'jspdf';
 import PptxGenJS from 'pptxgenjs';
 import Chart from 'chart.js/auto';
 import ResultCard from './admin/charts/ResultCard.svelte';
-import { downloadCsv } from '../../public/js/resultsExport.js';
+import { downloadCsv } from './lib/exports/resultsExport.js';
 globalThis.__leak = [jsPDF, PptxGenJS, Chart, ResultCard, downloadCsv];
 `;
       },
@@ -439,15 +439,15 @@ globalThis.__leak = [axe];
       transform(code, id) {
         if (!id.endsWith('/migration/src/main.ts')) return null;
         return `${code}
-import { buildLeaderReport } from './lib/leader-report.js';
-import { loadReportFonts } from './lib/report-fonts.js';
+import { buildLeaderReport } from './lib/exports/leader-report.js';
+import { loadReportFonts } from './lib/exports/report-fonts.js';
 globalThis.__leak = [buildLeaderReport, loadReportFonts];
 `;
       },
     };
     const leaky = await analyzePage(page('participant'), { outRoot: path.join(outRoot, 'leak-report'), keepHtml: true, extraPlugins: [leak] });
     const broken = checkBudgets({ participantGzip: leaky.htmlGzip, adminGzip: built.admin.htmlGzip, participantHtml: leaky.html, participantModules: leaky.modules.map((module) => module.id) });
-    for (const library of ['the leader report (lib/leader-report*.js)', 'embedded fonts']) assert.ok(broken.some((line) => line.includes(library)), `${library} is reported: ${broken.join(' | ')}`);
+    for (const library of ['the leader report (lib/exports/leader-report*.js)', 'embedded fonts']) assert.ok(broken.some((line) => line.includes(library)), `${library} is reported: ${broken.join(' | ')}`);
     assert.ok(leaky.htmlGzip > built.participant.htmlGzip + 25_000, 'the fonts alone are 26 kB');
   }, { timeout: 120_000 });
 });

@@ -43,9 +43,9 @@ export function groupOf(id) {
   }
   const relative = path.relative(ROOT, clean).split(path.sep);
   if (relative[0] === 'migration' && relative[1] === 'src') {
+    if (relative[2] === 'lib' && relative.length > 4) return `migration/src/lib/${relative[3]}/`;
     return relative.length > 3 ? `migration/src/${relative[2]}/` : 'migration/src (root)';
   }
-  if (relative[0] === 'public' && relative[1] === 'js') return relative.length > 3 ? `public/js/${relative[2]}/` : `public/js/${relative[2]}`;
   return relative.slice(0, 2).join('/');
 }
 

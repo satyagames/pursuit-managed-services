@@ -12,18 +12,18 @@ import { cp, mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
-import * as ds from '../public/js/dataService.js';
-import { BACKOFF_MS, SaveFailedError, createAnswerStore } from '../migration/src/lib/answer-store.js';
-import { createActivityContent } from '../migration/src/lib/activity-content.js';
-import { bootParticipant } from '../migration/src/lib/boot.js';
-import { nextDelay } from '../migration/src/lib/poll-schedule.js';
+import * as ds from '../migration/src/lib/data/dataService.js';
+import { BACKOFF_MS, SaveFailedError, createAnswerStore } from '../migration/src/lib/participant/answer-store.js';
+import { createActivityContent } from '../migration/src/lib/participant/activity-content.js';
+import { bootParticipant } from '../migration/src/lib/participant/boot.js';
+import { nextDelay } from '../migration/src/lib/common/poll-schedule.js';
 import {
   MAX_TEXT_LENGTH, MAX_WRONG_TRIES, chooseGraded, firstTryScore, gradedRecord, gradedStateFromRecord, isRecordSettled, retryGraded, startGraded,
-} from '../migration/src/lib/pager-logic.js';
-import { samplePack } from '../migration/src/lib/sample-clients.js';
-import { seedPack } from '../migration/src/lib/seed.js';
-import { readSessionResults } from '../migration/src/lib/session-results.js';
-import { PROBE_LENGTH, PROBE_YESNO, schemaSpecs, selfTestProbes } from '../migration/src/lib/setup-checks.js';
+} from '../migration/src/lib/participant/pager-logic.js';
+import { samplePack } from '../migration/src/lib/setup/sample-clients.js';
+import { seedPack } from '../migration/src/lib/setup/seed.js';
+import { readSessionResults } from '../migration/src/lib/results/session-results.js';
+import { PROBE_LENGTH, PROBE_YESNO, schemaSpecs, selfTestProbes } from '../migration/src/lib/setup/setup-checks.js';
 import { PHASE_4_COLUMNS, STRAYS, SUITE_PREFIX, TITLE, UNINDEXED, createSharePointFake, plainTitles } from './sharepoint-fake.js';
 
 const ROOT = path.join(import.meta.dirname, '..');
@@ -57,7 +57,7 @@ function testStore({ storage = memoryStorage(), api = ds } = {}) {
 }
 
 /**
- * The boot as the page runs it (App.svelte): with the page's holder of the activities' questions (Phase 10j, lib/activity-content.js), which a
+ * The boot as the page runs it (App.svelte): with the page's holder of the activities' questions (Phase 10j, lib/participant/activity-content.js), which a
  * QR scan has read them beside the claim. Resolves to the boot's result, with that holder as `held`.
  */
 async function pageBoot(api, request) {
@@ -94,7 +94,7 @@ async function visitorCodes(session, count, clientId = 'c-kroger') {
  */
 let pagesOpened = 0;
 async function freshPage(settings) {
-  const page = await import(`../public/js/dataService.js?page=${pagesOpened += 1}`);
+  const page = await import(`../migration/src/lib/data/dataService.js?page=${pagesOpened += 1}`);
   page.configure(settings);
   return page;
 }
@@ -126,7 +126,7 @@ after(async () => {
     console.log('\nMeasured against the mocked SharePoint REST:');
     for (const [what, count, budget] of measured) console.log(`  ${String(count).padStart(4)}  ${budget ? `(budget ${budget})`.padEnd(14) : ''.padEnd(14)} ${what}`);
     // Phase 10b: these are the requests the data layer sends. A page on SharePoint asks for one thing more, before any of them and on
-    // every load: its settings file, pms-config.txt, a small static file in its own folder (lib/settings-file.js), which is not a
+    // every load: its settings file, pms-config.txt, a small static file in its own folder (lib/settings/settings-file.js), which is not a
     // REST request. So a first screen is 8 list requests plus 1 file, and the first device of a session on a QR scan 9 plus 1.
     // scripts/migration-tests/sharepoint.spec.ts counts the file in a browser; on the local server none is asked for.
     console.log('        + 1 request for pms-config.txt before each "boot" above, in a page on SharePoint (none on the local server)');
@@ -1505,7 +1505,7 @@ describe('the SharePoint self-test', () => {
   // asks it: three spellings of the Yes/No filter on a small read, and a $filter that grows from 1,000 to 4,000 characters on the one-item AppSettings list.
   // They never write, never fail the self-test, and are not run on the local server.
   describe('Phase 9b (G): the self-test\'s two read-only probes of the tenant', () => {
-    // (The Setup page hands the self-test these two as extra steps: lib/setup-checks.js, which the participant page does not carry.)
+    // (The Setup page hands the self-test these two as extra steps: lib/setup/setup-checks.js, which the participant page does not carry.)
     const run = async (arrange = () => {}) => {
       const fake = createSharePointFake();
       fake.install();
@@ -1726,7 +1726,7 @@ describe('the boundaries this phase relies on', () => {
     return found;
   }
 
-  // Everything public/js/dataService.js exports. Until Phase 10c-1 the legacy app was built from the same file, so nothing could be taken
+  // Everything migration/src/lib/data/dataService.js exports. Until Phase 10c-1 the legacy app was built from the same file, so nothing could be taken
   // out of it and this test held that it only grew. The legacy app left the branch, that rule went with it, and so did the 16 exports that
   // only the legacy pages, or nothing, called (GONE, the first three lines). Phase 10c-2a took out the seven that only tests called;
   // setCurrentTrack, which set a value only one of those seven read; and restartClientTrack, which cleared a session's shared answer
@@ -1764,26 +1764,25 @@ describe('the boundaries this phase relies on', () => {
     'addedSharePointColumns',
     // Phase 10c-2b, G: no page called it (Results removes an empty visit with removeEmptyVisit, which never touches a QR code).
     'deleteClientTrack',
-    // Phase 10c-3, E: Setup's alone, now migration/src/lib/setup-import.js (and it brings no admins).
+    // Phase 10c-3, E: Setup's alone, now migration/src/lib/setup/setup-import.js (and it brings no admins).
     'importSharePointSeed',
   ];
 
   it('dataService exports exactly what is listed here; what only the legacy pages, only tests, or nothing called is gone', () => {
     assert.deepEqual(Object.keys(ds).sort(), EXPORTS);
-    // (Phase 10c-3: sendToSharePoint, the Setup page's one way to write to the site itself, for lib/provision.js, and addAdminUser came; the seed-file
-    // import, Setup's alone, went to migration/src/lib/setup-import.js. Still 103. Phase 10j: prepareWrites, 104.)
+    // (Phase 10c-3: sendToSharePoint, the Setup page's one way to write to the site itself, for lib/setup/provision.js, and addAdminUser came; the seed-file
+    // import, Setup's alone, went to migration/src/lib/setup/setup-import.js. Still 103. Phase 10j: prepareWrites, 104.)
     assert.equal(EXPORTS.length, 104);
     assert.equal(GONE.length, 30);
     for (const name of GONE) assert.ok(!(name in ds), `${name} is back`);
   });
 
   it('nothing calls the seven exports that only tests had kept: no page, no shared module, no test and no helper', async () => {
-    // (A call on the data service, under any of the names a file gives it. The admin's own getSessionResults is lib/adminData.ts's, a
+    // (A call on the data service, under any of the names a file gives it. The admin's own getSessionResults is lib/admin/adminData.ts's, a
     // different function, and is called without a prefix.)
     const called = new RegExp(`\\b(?:dataService|api|ds|service|page|device)\\.(?:${SEVEN.join('|')})\\(`);
-    const shared = ['assets.js', 'branding.js', 'resultsExport.js', 'dataService.js'].map((name) => path.join('public', 'js', name));
     const callers = [];
-    for (const file of [...await sourceFiles(path.join('migration', 'src')), ...shared, ...await sourceFiles('scripts')]) {
+    for (const file of [...await sourceFiles(path.join('migration', 'src')), ...await sourceFiles('scripts')]) {
       const code = (await source(file)).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
       if (called.test(code)) callers.push(file.split(path.sep).join('/'));
     }
@@ -1798,10 +1797,12 @@ describe('the boundaries this phase relies on', () => {
     for (const file of await sourceFiles('migration/src')) {
       const text = (await source(file)).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
       const name = file.split(path.sep).join('/');
-      const isDoor = name.endsWith('lib/participantData.ts');
-      const isStore = name.endsWith('lib/answer-store.js');
+      const isDoor = name.endsWith('lib/participant/participantData.ts');
+      const isStore = name.endsWith('lib/participant/answer-store.js');
       // The boot sequence reads the visit's item (alongside its other reads) and hands it to participantData; it never writes.
-      const isBoot = name.endsWith('lib/boot.js');
+      const isBoot = name.endsWith('lib/participant/boot.js');
+      // The data layer is where the saves go (it was in public/js, outside this check, until Phase 14).
+      if (name.endsWith('lib/data/dataService.js')) continue;
       if (!isDoor && /from ['"][^'"]*answer-store(\.js)?['"]/.test(text)) offenders.push(`${name} imports the answer store`);
       if (!isDoor && !isStore && /\b(saveParticipantResponses|saveResponses?)\b/.test(text)) offenders.push(`${name} writes answers itself`);
       if (!isDoor && !isStore && !isBoot && /\bgetParticipantResponses\b/.test(text)) offenders.push(`${name} reads answers itself`);
@@ -1810,9 +1811,9 @@ describe('the boundaries this phase relies on', () => {
     }
     assert.deepEqual(offenders, []);
     // Since Phase 9b the admin reads answers through readSessionResponsesChecked(): readSessionResponses() that names a damaged item instead of stopping.
-    assert.match(await source('migration/src/lib/adminData.ts'), /dataService\.readSessionResponsesChecked/);
-    assert.match(await source('migration/src/lib/session-results.js'), /\.readSessionResponsesChecked/);
-    assert.match(await source('migration/src/lib/adminData.ts'), /dataService\.restartParticipantTrack/);
+    assert.match(await source('migration/src/lib/admin/adminData.ts'), /dataService\.readSessionResponsesChecked/);
+    assert.match(await source('migration/src/lib/results/session-results.js'), /\.readSessionResponsesChecked/);
+    assert.match(await source('migration/src/lib/admin/adminData.ts'), /dataService\.restartParticipantTrack/);
   });
 
   it('only the boot sequence decides what is read before the first screen, and nothing keeps data between page loads', async () => {
@@ -1830,9 +1831,9 @@ describe('the boundaries this phase relies on', () => {
       if (/\b(?:local|session)Storage\b/.test(text)) users.push(file.split(path.sep).join('/'));
       for (const match of text.matchAll(/['"`]((?:cec-[a-z-]+:)|(?:pms\.[a-z]+))/g)) keys.add(match[1]);
     }
-    assert.deepEqual(users.sort(), ['migration/src/App.svelte', 'migration/src/lib/answer-store.js', 'migration/src/lib/effects.ts', 'migration/src/lib/participantData.ts']);
+    assert.deepEqual(users.sort(), ['migration/src/App.svelte', 'migration/src/lib/effects/effects.ts', 'migration/src/lib/participant/answer-store.js', 'migration/src/lib/participant/participantData.ts']);
     assert.deepEqual([...keys].sort(), ['cec-answers:', 'cec-visit-id:', 'cec-visit-logged:', 'pms.sound']);
-    for (const file of ['boot.js', 'experience.svelte.ts', 'client-theme.js']) {
+    for (const file of ['participant/boot.js', 'participant/experience.svelte.ts', 'brand/client-theme.js']) {
       assert.doesNotMatch(await source('migration/src/lib', file), /Storage\b|indexedDB|caches\./, `${file} keeps nothing`);
     }
   });
@@ -1969,7 +1970,7 @@ describe('beginVisit: one visit however often it is pressed, and no need to writ
   });
 
   it('the id: the same for a session while a try is unfinished, another session\'s is its own, and a new one once the visit has begun', async () => {
-    const { newVisitId, visitBegun, visitIdFor } = await import('../migration/src/lib/visit-id.js');
+    const { newVisitId, visitBegun, visitIdFor } = await import('../migration/src/lib/participant/visit-id.js');
     const first = visitIdFor('session-a');
     assert.equal(visitIdFor('session-a'), first, 'pressed again after a lost reply: the same visit');
     assert.notEqual(visitIdFor('session-b'), first, 'the facilitator went live with something else meanwhile: never the other session\'s id');
@@ -1983,7 +1984,7 @@ describe('beginVisit: one visit however often it is pressed, and no need to writ
   });
 
   it('SharePoint: a visit left by a lost reply in one session is not what begins a visit in the next (each session has its own id)', async () => {
-    const { visitBegun, visitIdFor } = await import('../migration/src/lib/visit-id.js');
+    const { visitBegun, visitIdFor } = await import('../migration/src/lib/participant/visit-id.js');
     const { session } = await liveSharePoint();
     const stale = visitIdFor(session.id);
     await ds.beginVisit(stale, session.id, 'c-kroger'); // made; the page never heard, so the id is still held

@@ -1,38 +1,38 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
-  import * as dataService from '../../../public/js/dataService.js';
-  import { embeddedAssetUrl } from '../../../public/js/assets.js';
-  import { loadBrand } from '../../../public/js/branding.js';
-  import { downloadCsv, downloadPdf, downloadPptx, liveSections } from '../../../public/js/resultsExport.js';
-  import { APP_NAME } from '../lib/app-name.js';
-  import { getSessionResults, type SessionResults } from '../lib/adminData.js';
-  import { masterColours } from '../lib/legacy-colours.js';
-  import { withoutRetiredLogo } from '../lib/retired-logos.js';
-  import { namesByVisit, unreadableNotice, wallUnreadableNotice } from '../lib/unreadable.js';
-  import { loadLiveStructure, readLive, type LiveRead, type LiveStructure } from '../lib/live-session.js';
-  import { withStoredColours } from '../lib/master-brand.js';
-  import { createPageWatcher, type PageWatcher } from '../lib/page-watch.js';
-  import { adminDelay } from '../lib/poll-schedule.js';
-  import { heldNameSources } from '../lib/admin-results.js';
-  import { wallAddress } from '../lib/live-wall.js';
-  import { nextFit, scaleOf } from '../lib/present-fit.js';
-  import { answerCounts, answersFrom, answersOf, chartsOf, namesFor } from '../lib/results-chart-model.js';
-  import { RESULTS_PALETTE } from '../lib/results-palette-source.js';
+  import * as dataService from '../lib/data/dataService.js';
+  import { embeddedAssetUrl } from '../lib/brand/assets.js';
+  import { loadBrand } from '../lib/brand/branding.js';
+  import { downloadCsv, downloadPdf, downloadPptx, liveSections } from '../lib/exports/resultsExport.js';
+  import { APP_NAME } from '../lib/common/app-name.js';
+  import { getSessionResults, type SessionResults } from '../lib/admin/adminData.js';
+  import { masterColours } from '../lib/brand/legacy-colours.js';
+  import { withoutRetiredLogo } from '../lib/brand/retired-logos.js';
+  import { namesByVisit, unreadableNotice, wallUnreadableNotice } from '../lib/results/unreadable.js';
+  import { loadLiveStructure, readLive, type LiveRead, type LiveStructure } from '../lib/admin/live-session.js';
+  import { withStoredColours } from '../lib/admin/master-brand.js';
+  import { createPageWatcher, type PageWatcher } from '../lib/common/page-watch.js';
+  import { adminDelay } from '../lib/common/poll-schedule.js';
+  import { heldNameSources } from '../lib/admin/admin-results.js';
+  import { wallAddress } from '../lib/admin/live-wall.js';
+  import { nextFit, scaleOf } from '../lib/results/present-fit.js';
+  import { answerCounts, answersFrom, answersOf, chartsOf, namesFor } from '../lib/results/results-chart-model.js';
+  import { RESULTS_PALETTE } from '../lib/results/results-palette-source.js';
   import ResultCard from './charts/ResultCard.svelte';
 
   // The facilitator's live results display (it was the participant page's Master screen until Phase 7): a live tally for each
   // question of the session, the number of answers and of iPads, in the client's own colours, and a Full screen view for projecting
-  // it. It reads ONE request every 12 s on SharePoint (lib/live-session.ts) and nothing while the tab is hidden. The CSV, PDF and
-  // PowerPoint exports are here too, and read through getSessionResults() (lib/session-results.js, the same arithmetic as the display's own).
+  // it. It reads ONE request every 12 s on SharePoint (lib/admin/live-session.ts) and nothing while the tab is hidden. The CSV, PDF and
+  // PowerPoint exports are here too, and read through getSessionResults() (lib/results/session-results.js, the same arithmetic as the display's own).
   // An answer item that cannot be read is left out of the tally and said so at the top (Phase 9b, DI-6), here and in the exports' own message.
   // In full screen it shows ONE question at a time, sized so the whole card is on the screen (a projector has no scroll wheel and the
   // pointer is hidden): Previous and Next, the arrow keys, and an Auto-advance switch. None of that reads anything.
   //
-  // Since Phase 11a each question is a chart of its own kind (admin/charts/, its numbers from lib/results-chart-model.js), in Deloitte's colours.
+  // Since Phase 11a each question is a chart of its own kind (admin/charts/, its numbers from lib/results/results-chart-model.js), in Deloitte's colours.
   // There are two views. The ADMIN view (this page as the facilitator opens it) names people: a bar opens who picked it, and a Names shown switch
   // hides them. The WALL (full screen, and the page "Open in a new tab" opens, `#live-display/<id>/wall`) has no participant's name anywhere in
   // the page: its charts are made from a model given no names, and a graded question's answer is marked only when the presenter presses Show answer.
-  // The names are lib/participant-names.js's, from what this page already reads (the visits carry a guest's QR name; a staff sign-in name is
+  // The names are lib/results/participant-names.js's, from what this page already reads (the visits carry a guest's QR name; a staff sign-in name is
   // known when Results has read it in this tab): no request was added.
 
   type Session = { id: string; clientId: string; date?: string; status?: string };
@@ -114,7 +114,7 @@
   /** The wall: full screen, or the page "Open in a new tab" opens. Nobody's name is in the page. */
   const wall = $derived(presenting || wallPage);
   const withNames = $derived(!wall && namesShown);
-  // Who is who, for the admin view's names (lib/participant-names.js, as on the Results rows); none at all on the wall, or with names hidden.
+  // Who is who, for the admin view's names (lib/results/participant-names.js, as on the Results rows); none at all on the wall, or with names hidden.
   const names = $derived(results && withNames ? namesFor({ tracks: results.tracks, answers: answersOf(results), ...(heldNameSources(results.session.id) ?? {}) }) : null);
   const chartSections = $derived(results ? chartsOf({ sections }, { names }) : []);
   const charts = $derived(new Map(chartSections.flatMap((section) => section.charts.map((chart) => [chart.id, chart]))));
@@ -134,7 +134,7 @@
   const currentId = $derived(current?.id ?? '');
   const currentChart = $derived(current ? charts.get(current.id) ?? null : null);
   const currentTitle = $derived(sections.find((section) => section.questions.some((question) => question.id === current?.id))?.title ?? '');
-  // The type, and the steps that make it smaller for a card that does not fit, are lib/present-fit.js (Phase 11a-3): never below SMALLEST, and past
+  // The type, and the steps that make it smaller for a card that does not fit, are lib/results/present-fit.js (Phase 11a-3): never below SMALLEST, and past
   // it the card spills.
   const scale = $derived(presenting ? scaleOf(presentScale, fitFactor) : 1);
 

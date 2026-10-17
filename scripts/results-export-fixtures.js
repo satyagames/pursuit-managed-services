@@ -1,5 +1,5 @@
 // Results trees for the Live display's one-page PDF and PowerPoint (Phase 11b: scripts/test-results-export.js, and for looking at the files by hand).
-// Each is built with lib/results-tally.js buildResults from records written out here, as lib/session-results.js hands a session to the exports.
+// Each is built with lib/results/results-tally.js buildResults from records written out here, as lib/results/session-results.js hands a session to the exports.
 //
 //   krogerResults()  Kroger on the real site, 16 Oct 2026: five visits that answered 9, 8, 0, 8 and 9 of nine questions, and a sixth whose answers
 //                    could not be read.
@@ -7,7 +7,7 @@
 //   bigResults()     60 people and 15 questions of every kind, answers of 90 characters: the sizes the layout must hold.
 //   oddResults()     words the one-pager's font cannot draw (another script, emoji), a comment of 1,000 characters, an answer to an option that has gone.
 
-import { buildResults } from '../migration/src/lib/results-tally.js';
+import { buildResults } from '../migration/src/lib/results/results-tally.js';
 import { VINE_PEOPLE, vineContent } from './results-charts-fixtures.js';
 
 const at = (minute) => new Date(Date.UTC(2026, 9, 16, 10, 0) + minute * 60_000).toISOString();

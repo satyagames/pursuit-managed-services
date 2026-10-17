@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { UNAVAILABLE_TITLE, onSoundChange, setSound, soundState } from '../lib/effects.js';
+  import { UNAVAILABLE_TITLE, onSoundChange, setSound, soundState } from '../lib/effects/effects.js';
 
   /**
    * The compact header sound switch: a speaker, off until tapped. Tapping it turns sound on and plays

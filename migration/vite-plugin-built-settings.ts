@@ -23,7 +23,7 @@ export function buildName(env: Record<string, string | undefined> = process.env)
 /**
  * Gives every page two constants. `__PMS_BUILT__` is the PMS_ values of the environment the build ran in (scripts/site-override.js),
  * `{}` when there are none; a caller that passes its own `define` for it (a test building for a made-up environment) is left alone.
- * `__PMS_BUILD__` is the build's name. src/lib/built-settings.ts is the one file that reads either.
+ * `__PMS_BUILD__` is the build's name. src/lib/settings/built-settings.ts is the one file that reads either.
  */
 export function builtSettings(): Plugin {
   return {

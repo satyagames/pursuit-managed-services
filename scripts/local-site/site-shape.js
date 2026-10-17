@@ -1,7 +1,7 @@
 // Where the local site is and who is asking (Phase 12): the address, the personas, the fixed "now", and the one way a mocked site is made for it.
 //
 // The address is HTTPS on a `.test` host name on purpose: a page opened over plain http, or at localhost or 127.0.0.1, takes itself for the local
-// Express server (migration/src/lib/address-check.js isLocalAddress) and never asks SharePoint. On https://pms-local.test/... the shipped pages behave
+// Express server (migration/src/lib/settings/address-check.js isLocalAddress) and never asks SharePoint. On https://pms-local.test/... the shipped pages behave
 // exactly as on PCOE: they read pms-config.txt beside them, work out the site from their own address and talk to /sites/PCOE/_api.
 
 import { AsyncLocalStorage } from 'node:async_hooks';

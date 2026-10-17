@@ -3,9 +3,9 @@
 // actually exists in the target file. Run with: node scripts/validate-data.js
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { resolveClientTheme } from '../migration/src/lib/client-theme.js';
-import { LISTS } from '../public/js/pms-schema.js';
-import { LOCAL_FILE, columnsOf } from '../public/js/pms-schema-meta.js';
+import { resolveClientTheme } from '../migration/src/lib/brand/client-theme.js';
+import { LISTS } from '../migration/src/lib/schema/pms-schema.js';
+import { LOCAL_FILE, columnsOf } from '../migration/src/lib/schema/pms-schema-meta.js';
 
 const DATA_DIR = path.resolve(process.env.DATA_DIR ?? path.join(import.meta.dirname, '..', 'server', 'data'));
 
@@ -70,7 +70,7 @@ function checkRef(items, name, field, targetIndex, targetName, { optional = fals
 }
 
 async function main() {
-  // Every list of the schema (public/js/pms-schema.js) has its file; the answers' file may be missing (the server reads none as empty).
+  // Every list of the schema (migration/src/lib/schema/pms-schema.js) has its file; the answers' file may be missing (the server reads none as empty).
   const required = Object.keys(LISTS).filter((key) => !LOCAL_FILE[key]);
   const { clients, sessions, sections, questions, options, qrtokens, adminusers, tracks, appsettings, visitorroster, uservisitlogs } =
     Object.fromEntries(await Promise.all(required.map(async (key) => [key, await loadJson(key)])));

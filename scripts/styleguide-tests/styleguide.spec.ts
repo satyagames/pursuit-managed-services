@@ -3,8 +3,8 @@ import { test, expect, type Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { confettiCanvas, installAudioStub, installConfettiSpy, readAudio, readConfetti, resetConfetti } from '../migration-tests/effects-support.js';
-import { CUES, CUE_NAMES, toneSignature } from '../../migration/src/lib/sound-cues.js';
-import { CONFETTI_SIZES, confettiPlan } from '../../migration/src/lib/confetti-plan.js';
+import { CUES, CUE_NAMES, toneSignature } from '../../migration/src/lib/effects/sound-cues.js';
+import { CONFETTI_SIZES, confettiPlan } from '../../migration/src/lib/effects/confetti-plan.js';
 
 // The dev-only #/styleguide: screenshots at phone, iPad and desktop sizes, and an audit of the
 // components in every state (tap targets, visible focus, contrast for each palette).

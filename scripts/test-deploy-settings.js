@@ -1,7 +1,7 @@
 // Phase 10b: which site and which lists a copy of the app uses, as plain cases.
 // Run: node --test scripts/test-deploy-settings.js (part of `npm test`).
 //
-// The resolver (migration/src/lib/deploy-settings.js) is one pure function, so everything here is a row: what the page's address,
+// The resolver (migration/src/lib/settings/deploy-settings.js) is one pure function, so everything here is a row: what the page's address,
 // the settings file and the values built into the page are, and what must come out. Nothing here has met a real SharePoint site.
 //
 // Three files, on purpose. deploy-settings.js is in every page, and every page has a size to keep to, so it only DECIDES: each rule
@@ -13,11 +13,11 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, it } from 'node:test';
-import * as ds from '../public/js/dataService.js';
-import { isLocalAddress } from '../migration/src/lib/address-check.js';
-import { PROBLEM_IDS, PUBLISHER, problem } from '../migration/src/lib/deploy-problems.js';
-import { settingsProblem, siteUrlProblem, spelledOut } from '../migration/src/lib/deploy-rules.js';
-import { SETTINGS_FILE, listTitles, resolveSettings, siteOf, wrongSetting } from '../migration/src/lib/deploy-settings.js';
+import * as ds from '../migration/src/lib/data/dataService.js';
+import { isLocalAddress } from '../migration/src/lib/settings/address-check.js';
+import { PROBLEM_IDS, PUBLISHER, problem } from '../migration/src/lib/settings/deploy-problems.js';
+import { settingsProblem, siteUrlProblem, spelledOut } from '../migration/src/lib/settings/deploy-rules.js';
+import { SETTINGS_FILE, listTitles, resolveSettings, siteOf, wrongSetting } from '../migration/src/lib/settings/deploy-settings.js';
 import { TITLE } from './sharepoint-fake.js';
 
 const ROOT = path.join(import.meta.dirname, '..');
@@ -36,7 +36,7 @@ const sixParts = (result, input = {}) => problem(only(result), { pageUrl: input.
 /** The usual title of each list, by key, and of the picture library: the data layer's own. */
 const USUAL = ds.sharePointListTitles({});
 const LIST_KEYS = Object.keys(USUAL).filter((key) => key !== 'logoLibrary');
-/** Where a sentence of lib/deploy-rules.js says the settings are wrong: the setting it quotes first, '*' for "not an object". */
+/** Where a sentence of lib/settings/deploy-rules.js says the settings are wrong: the setting it quotes first, '*' for "not an object". */
 const placeIn = (sentence) => /^"([^"]+)"/.exec(sentence)?.[1] ?? '*';
 const long = (length) => 'x'.repeat(length);
 
@@ -420,12 +420,12 @@ describe('the four problems, each in six parts', () => {
 
   it('the deciding file carries no sentence, and the participant and admin pages do not load the words', async () => {
     const code = async (file) => (await readFile(path.join(ROOT, file), 'utf8')).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
-    const resolver = await code('migration/src/lib/deploy-settings.js');
+    const resolver = await code('migration/src/lib/settings/deploy-settings.js');
     assert.doesNotMatch(resolver, /deploy-problems|deploy-rules/);
     assert.doesNotMatch(resolver, /['"`][A-Z][a-z]+ [a-z]+ [a-z]+/, 'no sentence in the resolver');
-    assert.doesNotMatch(await code('migration/src/lib/start.ts'), /deploy-problems|deploy-rules/);
+    assert.doesNotMatch(await code('migration/src/lib/settings/start.ts'), /deploy-problems|deploy-rules/);
     for (const entry of ['migration/src/main.ts', 'migration/src/admin-main.ts']) assert.doesNotMatch(await code(entry), /deploy-problems|deploy-rules/);
-    assert.match(await code('migration/src/SetupApp.svelte'), /from '\.\/lib\/deploy-problems\.js'/);
+    assert.match(await code('migration/src/SetupApp.svelte'), /from '\.\/lib\/settings\/deploy-problems\.js'/);
   });
 });
 
@@ -447,7 +447,7 @@ describe('list titles: the prefix, and a list that is named on its own', () => {
       assert.match(settingsProblem({ lists: { [key]: 'Named' } }), /is not one of this app's lists \(clients, sessions, sections, questions, options, tracks, qrtokens, appsettings, visitorroster, uservisitlogs, adminusers, responses\)$/);
     }
     for (const file of ['deploy-settings.js', 'deploy-rules.js', 'deploy-problems.js']) {
-      const source = await readFile(path.join(ROOT, 'migration/src/lib', file), 'utf8');
+      const source = await readFile(path.join(ROOT, 'migration/src/lib/settings', file), 'utf8');
       for (const title of Object.values(USUAL)) assert.ok(!new RegExp(`['"\`]${title}['"\`]`).test(source), `${file} spells out the title ${title}`);
     }
   });

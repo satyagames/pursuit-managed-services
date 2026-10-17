@@ -1,4 +1,4 @@
-// Phase 11b: the Live display's one-page PDF and PowerPoint (public/js/resultsExport.js). Run: node --test scripts/test-results-export.js
+// Phase 11b: the Live display's one-page PDF and PowerPoint (migration/src/lib/exports/resultsExport.js). Run: node --test scripts/test-results-export.js
 // (also part of npm test)
 //
 // The two files are one layout (layoutReport: rectangles, lines, text and pictures in millimetres) drawn by two writers, so this test lays a
@@ -10,9 +10,9 @@ import { before, describe, it } from 'node:test';
 import { jsPDF } from 'jspdf';
 import JSZip from 'jszip';
 import PptxGenJS from 'pptxgenjs';
-import { createMeasure, loadReportFonts } from '../migration/src/lib/report-fonts.js';
-import { buildResults } from '../migration/src/lib/results-tally.js';
-import * as resultsExport from '../public/js/resultsExport.js';
+import { createMeasure, loadReportFonts } from '../migration/src/lib/exports/report-fonts.js';
+import { buildResults } from '../migration/src/lib/results/results-tally.js';
+import * as resultsExport from '../migration/src/lib/exports/resultsExport.js';
 import { inspectPdf } from './pdf-inspect.js';
 import { bigResults, krogerResults, oddResults, vineResults } from './results-export-fixtures.js';
 import { contrastOf } from './print-contrast.js';

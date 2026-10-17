@@ -18,13 +18,13 @@ import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
 import { crc32, deflateSync, gzipSync } from 'node:zlib';
 import { jsPDF } from 'jspdf';
-import * as ds from '../public/js/dataService.js';
+import * as ds from '../migration/src/lib/data/dataService.js';
 import { REPORT_FONTS, REPORT_FONT_DATA, REPORT_FONT_RANGES } from '../migration/src/assets/report-fonts/open-sans-report.js';
-import { COUNTING_RULES, NO_ANSWERS, STRAY_TITLE, buildLeaderReport, participantAnswersCsv } from '../migration/src/lib/leader-report.js';
-import { readLeaderReportRecords } from '../migration/src/lib/leader-report-data.js';
-import { CONFIDENTIAL, PAGE, SESSION_ENDED, SESSION_NOT_ENDED, layoutLeaderReport } from '../migration/src/lib/leader-report-layout.js';
-import { svgPath, writeLeaderReportPdf } from '../migration/src/lib/leader-report-pdf.js';
-import { MISSING, binaryString, createMeasure, loadReportFonts } from '../migration/src/lib/report-fonts.js';
+import { COUNTING_RULES, NO_ANSWERS, STRAY_TITLE, buildLeaderReport, participantAnswersCsv } from '../migration/src/lib/exports/leader-report.js';
+import { readLeaderReportRecords } from '../migration/src/lib/exports/leader-report-data.js';
+import { CONFIDENTIAL, PAGE, SESSION_ENDED, SESSION_NOT_ENDED, layoutLeaderReport } from '../migration/src/lib/exports/leader-report-layout.js';
+import { svgPath, writeLeaderReportPdf } from '../migration/src/lib/exports/leader-report-pdf.js';
+import { MISSING, binaryString, createMeasure, loadReportFonts } from '../migration/src/lib/exports/report-fonts.js';
 import { BIG, HARBOUR_MOVED, HARBOUR_PEOPLE, bigComment, bigName, bigRecords, harbourContent, harbourRecords, seedSession } from './leader-report-fixtures.js';
 import { makeReport, wordmarkFromComponent } from './leader-report-node.js';
 import { nodePalette } from './results-palette-node.js';
@@ -520,7 +520,7 @@ describe('speed, progress and Cancel', () => {
 
   it('is drawn from rectangles, lines, text, pictures and paths only: no HTML or SVG rendering', async () => {
     for (const file of ['leader-report-pdf.js', 'leader-report-layout.js', 'leader-report.js', 'report-fonts.js', 'leader-report-data.js']) {
-      const source = await readFile(path.join(ROOT, 'migration', 'src', 'lib', file), 'utf8');
+      const source = await readFile(path.join(ROOT, 'migration', 'src', 'lib', 'exports', file), 'utf8');
       assert.doesNotMatch(source, /\.html\(|addSvgAsImage|html2canvas|canvg|dompurify/i, file);
       assert.doesNotMatch(source, /public\/assets\/(Logos|BrandGuidelines)/, `${file} reads nothing from the untracked brand folders`);
     }

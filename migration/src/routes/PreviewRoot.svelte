@@ -1,6 +1,6 @@
 <script lang="ts">
   import { PillButton } from '../components/index.js';
-  import { experience, knownActivities } from '../lib/experience.svelte.js';
+  import { experience, knownActivities } from '../lib/participant/experience.svelte.js';
   import ActivityPager from '../pager/ActivityPager.svelte';
   import Agenda from './Agenda.svelte';
   import Welcome from './Welcome.svelte';

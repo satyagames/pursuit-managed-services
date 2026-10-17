@@ -1,7 +1,7 @@
 // Phase 13, item D: the Live display's Export PDF and Export PPT are a summary pack, not a miniature of the screen. Run:
 // node --test scripts/test-results-pack.js (also part of npm test and npm run test:report)
 //
-// One layout (public/js/resultsExport.js layoutReport: a 16:9 page of 297 x 167 mm, in the embedded Open Sans's own widths) drawn by two writers:
+// One layout (migration/src/lib/exports/resultsExport.js layoutReport: a 16:9 page of 297 x 167 mm, in the embedded Open Sans's own widths) drawn by two writers:
 // the PDF puts it in the middle of an A4 landscape sheet, the PowerPoint is a 16:9 slide of native text and shapes with speaker notes. Page 1 is the
 // summary (title, client, date, the iPads line, one takeaway per activity, nothing else); then each live activity, four cards a page at most. The
 // files are written with jsPDF's and PptxGenJS's node builds and read back: the PDF with pdf.js, the PowerPoint as the XML of its slides and notes.
@@ -12,9 +12,9 @@ import { before, describe, it } from 'node:test';
 import { jsPDF } from 'jspdf';
 import JSZip from 'jszip';
 import PptxGenJS from 'pptxgenjs';
-import { createMeasure, loadReportFonts } from '../migration/src/lib/report-fonts.js';
-import { buildResults } from '../migration/src/lib/results-tally.js';
-import * as resultsExport from '../public/js/resultsExport.js';
+import { createMeasure, loadReportFonts } from '../migration/src/lib/exports/report-fonts.js';
+import { buildResults } from '../migration/src/lib/results/results-tally.js';
+import * as resultsExport from '../migration/src/lib/exports/resultsExport.js';
 import { inspectPdf, squash } from './pdf-inspect.js';
 import { bigResults, krogerResults, oddResults, vineResults } from './results-export-fixtures.js';
 import { nodePalette } from './results-palette-node.js';

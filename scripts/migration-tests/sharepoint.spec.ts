@@ -1,8 +1,8 @@
 import { test, expect, type Page } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { samplePack } from '../../migration/src/lib/sample-clients.js';
-import { seedPack } from '../../migration/src/lib/seed.js';
+import { samplePack } from '../../migration/src/lib/setup/sample-clients.js';
+import { seedPack } from '../../migration/src/lib/setup/seed.js';
 import { newFake, onSite, pageUrl, seedAndGoLive, serveSharePoint, shape, stampFirstAppearance, type Fake } from './sharepoint.js';
 import { TITLE } from '../sharepoint-fake.js';
 

@@ -5,7 +5,7 @@
 //   POST /__local/<action>              persona, scenario, reset, latency, fault, offline, expire-token, clear, freeze
 // A POST from the form answers with a redirect back to the page; one with Accept: application/json answers with the state.
 
-import { qrUrl } from '../../public/js/dataService.js';
+import { qrUrl } from '../../migration/src/lib/data/dataService.js';
 import { SCENARIOS } from './scenarios.js';
 import { FOLDER_PATH, PERSONA_COOKIE, PERSONAS, pageUrl, personaFromCookie } from './site-shape.js';
 

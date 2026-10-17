@@ -18,7 +18,7 @@
 import { readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { LISTS } from '../../public/js/pms-schema.js';
+import { LISTS } from '../../migration/src/lib/schema/pms-schema.js';
 import { BASELINE_DIR, NODE_SUITES, differences, explain, exportLastCommit, parse, recordSuite } from '../request-baseline.js';
 
 export const BEGIN_NOTE = '# Amended in Phase 10j, part C: beginning a visit (dataService.js beginVisit) moves the session on with the version its check read, so the second read of the session by its AppId, which the general update made before that write, is gone, and the session is read side by side with AppSettings, so a press that AppSettings refuses reads it too (and its error is still AppSettings\'s): each entry of such a read is lower by the visits begun on a session that had not started, and higher by the presses refused, found by running the suite on the last commit\'s tree and on today\'s, test by test (scripts/schema-baseline/begin-baselines.js), and a fresh recording equalled the translation exactly; every test sends every other request as it did. Nothing else was changed.';

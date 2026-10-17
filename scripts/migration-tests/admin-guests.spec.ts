@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { readFile, writeFile } from 'node:fs/promises';
-import { qrImage } from '../../migration/src/lib/admin-links.js';
+import { qrImage } from '../../migration/src/lib/admin/admin-links.js';
 import {
   another, answerQuestions, ds, expectFits, openAdmin, participantUrl, shoot, shots, startLocal, stopLocal, today, viewports, type Local,
 } from './admin-local.js';

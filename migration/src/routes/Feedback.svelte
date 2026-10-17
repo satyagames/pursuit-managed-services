@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { router } from 'svelte-spa-router';
-  import { navigateTo } from '../lib/navigation.js';
+  import { navigateTo } from '../lib/participant/navigation.js';
 
   // #/feedback/<sectionId> predates the pager. Open-text questions are steps of the pager now, so
   // an old link (or a bookmark) simply lands on the same activity.

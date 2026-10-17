@@ -1,7 +1,7 @@
 // Phase 10c-2b: one schema file, the PMS list names and schema v2, and every reader built on them.
 // Run: node --test scripts/test-schema.js (part of `npm test`, and of `npm run test:schema`).
 //
-// What this holds: that public/js/pms-schema.js (the names, every page) and public/js/pms-schema-meta.js (everything else, Setup and the
+// What this holds: that migration/src/lib/schema/pms-schema.js (the names, every page) and migration/src/lib/schema/pms-schema-meta.js (everything else, Setup and the
 // tests only) describe the same lists and columns; that the snapshot of the six hand-kept tables they replaced
 // (scripts/schema-baseline/schema-before-10c2b.json), with the changes of this phase applied one by one, is exactly what they say (part
 // C proved the same file at the old names and shape equal to the snapshot itself: that commit holds it); that the titles are the ones
@@ -11,9 +11,9 @@ import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, it } from 'node:test';
-import { ID, LIBRARY, LISTS } from '../public/js/pms-schema.js';
-import { LIBRARY_META, LOCAL_FILE, META, columnsOf } from '../public/js/pms-schema-meta.js';
-import { schemaSpecs } from '../migration/src/lib/setup-checks.js';
+import { ID, LIBRARY, LISTS } from '../migration/src/lib/schema/pms-schema.js';
+import { LIBRARY_META, LOCAL_FILE, META, columnsOf } from '../migration/src/lib/schema/pms-schema-meta.js';
+import { schemaSpecs } from '../migration/src/lib/setup/setup-checks.js';
 import { BASELINE_DIR } from './request-baseline.js';
 import { readSnapshot, readTables } from './schema-snapshot.js';
 import { createSharePointFake } from './sharepoint-fake.js';
@@ -253,13 +253,13 @@ describe('every reader is built on the schema file', () => {
   it('the local server serves a file for each list, and the seed checker reads the schema', async () => {
     const { LIST_FILES } = await import('../server/api.js');
     assert.deepEqual([...LIST_FILES].sort(), Object.keys(LISTS).map((key) => LOCAL_FILE[key] ?? key).sort());
-    assert.match(await source('scripts/validate-data.js'), /from '\.\.\/public\/js\/pms-schema(-meta)?\.js'/);
+    assert.match(await source('scripts/validate-data.js'), /from '\.\.\/migration\/src\/lib\/schema\/pms-schema(-meta)?\.js'/);
   });
 
   it('no hand-kept table is left: each reader that had one has none, and spells no list title, old or new', async () => {
     const tables = {
-      'public/js/dataService.js': /\bconst (?:spLists|spAdded|spColumns|spArrays|spObjects|spBooleans|spDates|spBaseTypes|spBaseSpec)\b/,
-      'migration/src/lib/setup-checks.js': /\bconst (?:PROVISIONED|STRICT)\b/,
+      'migration/src/lib/data/dataService.js': /\bconst (?:spLists|spAdded|spColumns|spArrays|spObjects|spBooleans|spDates|spBaseTypes|spBaseSpec)\b/,
+      'migration/src/lib/setup/setup-checks.js': /\bconst (?:PROVISIONED|STRICT)\b/,
       'scripts/sharepoint-fake.js': /\b(?:const|export const) (?:SCHEMA|CHOICES|ADDED_COLUMNS)\b/,
       'server/api.js': /\bconst LISTS = \[/,
       'scripts/validate-data.js': /\[\s*'clients', 'sessions'/,

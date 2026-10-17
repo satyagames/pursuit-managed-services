@@ -1,17 +1,17 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import * as dataService from '../../../public/js/dataService.js';
-  import { embeddedAssetUrl } from '../../../public/js/assets.js';
+  import * as dataService from '../lib/data/dataService.js';
+  import { embeddedAssetUrl } from '../lib/brand/assets.js';
   import BrandStudio from './BrandStudio.svelte';
   import SampleNotice from './SampleNotice.svelte';
-  import { confirmSampleClient, readSessionResponses } from '../lib/adminData.js';
-  import { withoutRetiredLogo } from '../lib/retired-logos.js';
+  import { confirmSampleClient, readSessionResponses } from '../lib/admin/adminData.js';
+  import { withoutRetiredLogo } from '../lib/brand/retired-logos.js';
   import {
     MAX_CLIENT_NAME, clientProblems, clientRows, clientUsage, createClientRecord, defaultEventTitle, formOf, isClientLive, recentCodes, setClientStatus, slugProblem,
     updateClientRecord,
-  } from '../lib/admin-clients.js';
-  import { liveStatus } from '../lib/admin-today.js';
-  import { copyText, participantPageUrl, qrImage } from '../lib/admin-links.js';
+  } from '../lib/admin/admin-clients.js';
+  import { liveStatus } from '../lib/admin/admin-today.js';
+  import { copyText, participantPageUrl, qrImage } from '../lib/admin/admin-links.js';
 
   type Client = {
     id: string; name: string; slug?: string; status?: string; logoUrl?: string | null; primaryColor?: string; secondaryColor?: string; createdAt?: string;

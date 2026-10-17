@@ -1,4 +1,4 @@
-// Who may read and write each list and the picture library (Phase 10f), worked out from public/js/pms-schema-meta.js: each list's `reads` and
+// Who may read and write each list and the picture library (Phase 10f), worked out from migration/src/lib/schema/pms-schema-meta.js: each list's `reads` and
 // `writes` name the pages that read and write it (participant, admin, setup). The same table is in SHAREPOINT-LISTS.md (scripts/build-lists-reference.js)
 // and in the release package's RUNBOOK.md (scripts/release-docs.js), so the two cannot disagree with each other or with the schema.
 //
@@ -6,8 +6,8 @@
 // list needs Contribute there, a page that only reads it needs Read, and a list a page neither reads nor writes is one its accounts must not be
 // able to read at all. For the participant accounts (the iPads, and anyone who opens the participant page) that is PMSAdminUsers: it holds the
 // facilitators' PIN hashes, and the PIN only gates the admin page's screens, so the list's permission is the real lock.
-import { LISTS } from '../public/js/pms-schema.js';
-import { LIBRARY_META, META } from '../public/js/pms-schema-meta.js';
+import { LISTS } from '../migration/src/lib/schema/pms-schema.js';
+import { LIBRARY_META, META } from '../migration/src/lib/schema/pms-schema-meta.js';
 
 /**
  * The two kinds of account a permission is set for, by the page they use. Setup is run by a site owner, who has Full Control of the site: it makes

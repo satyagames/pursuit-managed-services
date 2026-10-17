@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { seedPack } from '../../migration/src/lib/seed.js';
+import { seedPack } from '../../migration/src/lib/setup/seed.js';
 import { PIN, activityRow, adminUrl, ds, openAdmin, startLocal, stopLocal, today, useServer, type Local } from './admin-local.js';
 import { a11yPack, axeCheck, describeFindings, notLivePage, openParticipant, themedSite, THEMES, THEME_KEYS, walkParticipant, type Finding } from './a11y-support.js';
 import { newFake, pageUrl, serveSharePoint } from './sharepoint.js';

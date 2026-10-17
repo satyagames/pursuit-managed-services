@@ -1,13 +1,13 @@
 // What the Results charts (Phase 11a) share on the screen: the model's type, the tooltip, the time beside a name and the ramp of a scale.
-// The numbers are lib/results-chart-model.js's; nothing here counts.
+// The numbers are lib/results/results-chart-model.js's; nothing here counts.
 
-import type { chartOf } from '../../lib/results-chart-model.js';
+import type { chartOf } from '../../lib/results/results-chart-model.js';
 
 export type Chart = ReturnType<typeof chartOf> & Record<string, any>;
 export type Who = { key: string; name: string; at: string | null; place?: number };
 
 /**
- * A tooltip: the value first, then the label, beside the mark it is about. ChartTip draws it in a layer fixed to the window (lib/tip-place.js
+ * A tooltip: the value first, then the label, beside the mark it is about. ChartTip draws it in a layer fixed to the window (lib/results/tip-place.js
  * decides where), clear of `target` and everything in `clear` (the mark's own label), centred across on `centre` (else on `target`), and where
  * there is room clear of its card's words and buttons (marked data-tip-avoid) and then of the other marks' figures and labels (data-tip-soft).
  */

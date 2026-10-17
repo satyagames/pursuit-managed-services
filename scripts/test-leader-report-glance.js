@@ -3,12 +3,12 @@
 //
 // The report is made in node by the model, layout and writer the admin page uses (scripts/leader-report-node.js) and read back with pdf.js. Every
 // figure and sentence expected here is worked out BY HAND from the Harbour fixture (scripts/leader-report-fixtures.js) in the comments beside it;
-// the takeaways are lib/export-summary.js's, held to the same hand-worked numbers in scripts/test-export-summary.js.
+// the takeaways are lib/results/export-summary.js's, held to the same hand-worked numbers in scripts/test-export-summary.js.
 
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { before, describe, it } from 'node:test';
-import { PAGE, WORDMARK_RATIO, layoutLeaderReport } from '../migration/src/lib/leader-report-layout.js';
+import { PAGE, WORDMARK_RATIO, layoutLeaderReport } from '../migration/src/lib/exports/leader-report-layout.js';
 import { bigRecords, harbourRecords } from './leader-report-fixtures.js';
 import { makeReport } from './leader-report-node.js';
 import { inspectPdf, squash } from './pdf-inspect.js';
@@ -171,6 +171,6 @@ describe('the client\'s colour is on the cover band only, and the words are the 
   it('sets the PDF\'s title and its language', async () => {
     assert.equal(small.read.info.Title, 'Harbour & Søn leader report');
     assert.match(Buffer.from(small.bytes).toString('latin1'), /\/Lang \(en-US\)/);
-    assert.ok((await readFile(new URL('../migration/src/lib/leader-report-pdf.js', import.meta.url), 'utf8')).includes('setLanguage'));
+    assert.ok((await readFile(new URL('../migration/src/lib/exports/leader-report-pdf.js', import.meta.url), 'utf8')).includes('setLanguage'));
   });
 });

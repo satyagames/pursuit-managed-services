@@ -2,15 +2,15 @@
 // `npm run test:release-package`).
 //
 // What no page of the package may hold (scripts/release-proofs.js), shown to be able to fail; the checksum file as `shasum -a 256 -c` reads it;
-// the permissions table (scripts/permissions.js) held to public/js/pms-schema-meta.js and to VJR's three groups; and RUNBOOK.md and
+// the permissions table (scripts/permissions.js) held to migration/src/lib/schema/pms-schema-meta.js and to VJR's three groups; and RUNBOOK.md and
 // RELEASE-NOTES.md (scripts/release-docs.js) held to the site, the steps, the codes and the QA-TESTING.md items. `npm run package:release`
 // builds the package itself and runs the same proofs on the real pages.
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, it } from 'node:test';
-import { LIBRARY, LISTS } from '../public/js/pms-schema.js';
-import { LIBRARY_META, META } from '../public/js/pms-schema-meta.js';
+import { LIBRARY, LISTS } from '../migration/src/lib/schema/pms-schema.js';
+import { LIBRARY_META, META } from '../migration/src/lib/schema/pms-schema-meta.js';
 import { NONE, READ, ROLES, WRITE, participantGroups, permissionRows, permissionsTable } from './permissions.js';
 import { DEMO_PIN_HASH, checksumFile, listingProblems, pageProblems, sha256, verifyChecksums, withoutEncodedBytes } from './release-proofs.js';
 import { FOLDER_URL, LAST_LINE, LATER, QA_BY_NOTE, QA_BY_STEP, SETTINGS, SETTINGS_TEXT, SITE, TIMING_CHECK, UPLOADED, releaseNotes, runbook } from './release-docs.js';
@@ -129,7 +129,7 @@ describe('RUNBOOK.md', () => {
   });
 
   it('the support contact is a settings file a page accepts, and the participant groups are the table\'s', async () => {
-    const { wrongSetting } = await import('../migration/src/lib/deploy-settings.js');
+    const { wrongSetting } = await import('../migration/src/lib/settings/deploy-settings.js');
     const json = /```json\n\s*(\{.+\})\n\s*```/.exec(book)?.[1];
     assert.ok(json, 'the exact JSON is in the runbook');
     assert.equal(wrongSetting(JSON.parse(json)), '', 'and every page would accept it');

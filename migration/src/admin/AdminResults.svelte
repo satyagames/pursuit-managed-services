@@ -1,14 +1,14 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import * as dataService from '../../../public/js/dataService.js';
-  import { restartClientTrack, getSessionResults, removeEmptyVisit } from '../lib/adminData.js';
-  import type { SessionResults, SessionTrack, SessionSection } from '../lib/adminData.js';
-  import { loadLiveStructure, readLive, type LiveStructure } from '../lib/live-session.js';
-  import { namesByVisit, unreadableNotice } from '../lib/unreadable.js';
-  import { createPageWatcher, type PageWatcher } from '../lib/page-watch.js';
-  import { adminDelay } from '../lib/poll-schedule.js';
-  import { REMOVE_VISIT_CONFIRM, canRemoveVisit, holdNameSources, readNameSources, resultRows, rowsToLookForAgain, sessionsNeedingNames, type NameSources } from '../lib/admin-results.js';
-  import { answerCounts, answersFrom, answersOf, chartsOf, namesFor } from '../lib/results-chart-model.js';
+  import * as dataService from '../lib/data/dataService.js';
+  import { restartClientTrack, getSessionResults, removeEmptyVisit } from '../lib/admin/adminData.js';
+  import type { SessionResults, SessionTrack, SessionSection } from '../lib/admin/adminData.js';
+  import { loadLiveStructure, readLive, type LiveStructure } from '../lib/admin/live-session.js';
+  import { namesByVisit, unreadableNotice } from '../lib/results/unreadable.js';
+  import { createPageWatcher, type PageWatcher } from '../lib/common/page-watch.js';
+  import { adminDelay } from '../lib/common/poll-schedule.js';
+  import { REMOVE_VISIT_CONFIRM, canRemoveVisit, holdNameSources, readNameSources, resultRows, rowsToLookForAgain, sessionsNeedingNames, type NameSources } from '../lib/admin/admin-results.js';
+  import { answerCounts, answersFrom, answersOf, chartsOf, namesFor } from '../lib/results/results-chart-model.js';
   import ReportExports from './ReportExports.svelte';
   import ResultCard from './charts/ResultCard.svelte';
 
@@ -39,14 +39,14 @@
 
   // How this screen keeps up (Phase 7). Every session is read in full when it opens, on Refresh and after a restart (5 requests a session on
   // SharePoint since Phase 9b: the session, its visits and its answers, then its activities, then their questions and options in groups of 20). What changes while it is open is the session that is LIVE, so on SharePoint only that one is refreshed on the timer, with
-  // the same one-request feed the Live display uses (lib/live-session.js), every 15 seconds and never while the tab is hidden. The local
+  // the same one-request feed the Live display uses (lib/admin/live-session.js), every 15 seconds and never while the tab is hidden. The local
   // server has no throttle, so it still refreshes everything every 2.5 seconds.
   const local = !dataService.isSharePointMode();
   const LIVE_REFRESH_MS = 15_000;
   let liveHeld: LiveStructure | null = null;
   let namesHeld = new Map<string, string>();
   let tokensHeld: Token[] = [];
-  // A person is named by lib/participant-names.js, the rule the leader report uses, so the screen and the PDF agree. A track carries a
+  // A person is named by lib/results/participant-names.js, the rule the leader report uses, so the screen and the PDF agree. A track carries a
   // guest's QR name itself; a staff sign-in name is in the session's visit log and a roster name in its roster, which are read with
   // the session (only for a session with a track that has no name of its own) and again, for the live session, when somebody who joined in
   // the last two minutes is still unnamed (rowsToLookForAgain: twice for each person at most, because a page records a sign-in a moment

@@ -12,12 +12,12 @@
 // scripts/test-duplicates.js (also part of npm test).
 import assert from 'node:assert/strict';
 import { after, describe, it } from 'node:test';
-import * as ds from '../public/js/dataService.js';
-import { createClientRecord } from '../migration/src/lib/admin-clients.js';
-import { goLive } from '../migration/src/lib/admin-today.js';
-import { createAnswerStore } from '../migration/src/lib/answer-store.js';
-import { samplePack } from '../migration/src/lib/sample-clients.js';
-import { seedPack } from '../migration/src/lib/seed.js';
+import * as ds from '../migration/src/lib/data/dataService.js';
+import { createClientRecord } from '../migration/src/lib/admin/admin-clients.js';
+import { goLive } from '../migration/src/lib/admin/admin-today.js';
+import { createAnswerStore } from '../migration/src/lib/participant/answer-store.js';
+import { samplePack } from '../migration/src/lib/setup/sample-clients.js';
+import { seedPack } from '../migration/src/lib/setup/seed.js';
 import { DUPLICATE_CODE, DUPLICATE_WORDS, STRAYS, TITLE, UNINDEXED, UNNAMED, createSharePointFake } from './sharepoint-fake.js';
 
 const realFetch = globalThis.fetch;
@@ -25,7 +25,7 @@ const DAY = '2026-10-15';
 /** Each "device" or "admin" is a module of its own (one page, one write token). */
 let pages = 0;
 async function freshPage(settings) {
-  const page = await import(`../public/js/dataService.js?duplicates-page=${pages += 1}`);
+  const page = await import(`../migration/src/lib/data/dataService.js?duplicates-page=${pages += 1}`);
   page.configure(settings);
   return page;
 }

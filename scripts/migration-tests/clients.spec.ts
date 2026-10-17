@@ -5,7 +5,7 @@ import { cp, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import * as ds from '../../public/js/dataService.js';
+import * as ds from '../../migration/src/lib/data/dataService.js';
 import { sharePointFolderPath } from '../deployment-config.js';
 
 // The two seeded clients, end to end: the BUILT participant page against the REAL local server

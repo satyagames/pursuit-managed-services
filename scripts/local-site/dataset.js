@@ -1,6 +1,6 @@
 // VJR's dummy dataset (datasets/pms-content-pack.json) and pictures (datasets/branding.json, datasets/images/) turned into the app's own records,
 // for the local site only (Phase 12). Plain data in, the four record lists out; the records go into a site through the app's own seed path
-// (lib/seed.js seedPack, the same one Setup's "Seed sample clients" uses), so nothing here creates a record a second way.
+// (lib/setup/seed.js seedPack, the same one Setup's "Seed sample clients" uses), so nothing here creates a record a second way.
 //
 // Ids are fixed and readable (c-kroger, sec-kroger-mcq, q-kroger-mcq-2, o-kroger-mcq-2-c), so seeding twice creates nothing twice. An option's
 // value is made as Admin -> Content makes it (ContentQuestions.svelte makeOptionFields): a scale's 1, 2, 3; otherwise optionValueFrom(label).
@@ -9,9 +9,9 @@
 import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildClientTheme } from '../../migration/src/lib/client-theme.js';
-import { optionValueFrom } from '../../migration/src/lib/admin-content.js';
-import { assetFileName } from '../../migration/src/lib/asset-names.js';
+import { buildClientTheme } from '../../migration/src/lib/brand/client-theme.js';
+import { optionValueFrom } from '../../migration/src/lib/admin/admin-content.js';
+import { assetFileName } from '../../migration/src/lib/brand/asset-names.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const DATASETS = path.join(HERE, 'datasets');

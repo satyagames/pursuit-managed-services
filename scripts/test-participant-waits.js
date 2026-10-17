@@ -9,8 +9,8 @@
 // needs before the person sees the next screen; what the moment leaves going in the background (a write it does not wait for) is let go
 // after it, in waves too, and counted apart. So the count is the same on any machine, however slow.
 //
-// Each moment runs what the page runs at that moment: the data layer (public/js/dataService.js, a module of its own for each "page", as
-// scripts/test-participant-storage.js does) and the page's plain modules (lib/boot.js, lib/answer-store.js). Where the page's own code is a
+// Each moment runs what the page runs at that moment: the data layer (migration/src/lib/data/dataService.js, a module of its own for each "page", as
+// scripts/test-participant-storage.js does) and the page's plain modules (lib/participant/boot.js, lib/participant/answer-store.js). Where the page's own code is a
 // Svelte file, the moment says which calls it stands for.
 //
 // The targets of Phase 10j are asserted below. A target that a later part of the phase meets was a node:test `todo` until that part (it ran,
@@ -24,22 +24,22 @@ import { cp, mkdtemp, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
-import * as ds from '../public/js/dataService.js';
-import { createAnswerStore } from '../migration/src/lib/answer-store.js';
-import * as bootModule from '../migration/src/lib/boot.js';
-import { bootParticipant } from '../migration/src/lib/boot.js';
-import { samplePack } from '../migration/src/lib/sample-clients.js';
-import { seedPack } from '../migration/src/lib/seed.js';
+import * as ds from '../migration/src/lib/data/dataService.js';
+import { createAnswerStore } from '../migration/src/lib/participant/answer-store.js';
+import * as bootModule from '../migration/src/lib/participant/boot.js';
+import { bootParticipant } from '../migration/src/lib/participant/boot.js';
+import { samplePack } from '../migration/src/lib/setup/sample-clients.js';
+import { seedPack } from '../migration/src/lib/setup/seed.js';
 import { freePort } from './free-port.js';
 import { REFUSED_BY_NAME, STRAYS, TITLE, UNINDEXED, UNNAMED, createSharePointFake } from './sharepoint-fake.js';
 
 const ROOT = path.join(import.meta.dirname, '..');
 // (Imported when first used: Phase 10j part D's tests of the boot were run against the last commit, which had no such module, to see them fail.)
-const contentModule = import('../migration/src/lib/activity-content.js').catch(() => null);
-/** The page's holder of the activities' questions (lib/activity-content.js, as lib/experience.svelte.ts makes it), on `page`'s data layer. */
+const contentModule = import('../migration/src/lib/participant/activity-content.js').catch(() => null);
+/** The page's holder of the activities' questions (lib/participant/activity-content.js, as lib/participant/experience.svelte.ts makes it), on `page`'s data layer. */
 async function contentHolder(page) {
   const module = await contentModule;
-  if (!module) throw new Error('migration/src/lib/activity-content.js is missing');
+  if (!module) throw new Error('migration/src/lib/participant/activity-content.js is missing');
   return module.createActivityContent({ api: page });
 }
 const realFetch = globalThis.fetch;
@@ -120,7 +120,7 @@ async function liveSite(_settings = {}) {
 let pagesOpened = 0;
 /** A page of its own: the data layer as a separate module, so it shares no write token, list type or column check with any other. */
 async function freshPage(fake, settings = {}) {
-  const page = await import(`../public/js/dataService.js?waits=${pagesOpened += 1}`);
+  const page = await import(`../migration/src/lib/data/dataService.js?waits=${pagesOpened += 1}`);
   page.configure({ sharePoint: { ...fake.settings, ...settings } });
   return page;
 }
@@ -129,7 +129,7 @@ const memoryStorage = () => {
   const map = new Map();
   return { getItem: (key) => map.get(key) ?? null, setItem: (key, value) => { map.set(key, value); }, removeItem: (key) => { map.delete(key); } };
 };
-/** The page's answer store (lib/answer-store.js, as lib/participantData.ts makes it), on `page`'s data layer; waits are not slept. */
+/** The page's answer store (lib/participant/answer-store.js, as lib/participant/participantData.ts makes it), on `page`'s data layer; waits are not slept. */
 const answerStore = (page) => createAnswerStore({ api: page, storage: memoryStorage(), sleep: async () => {} });
 
 /** `count` guests with a personal code each, the session being for guests: how a QR visit arrives. */
@@ -151,7 +151,7 @@ const pickOf = (questionId, optionId) => ({ questionId, answer: optionId, firstA
 /**
  * What App.svelte's afterFirstScreen sends once the first screen is drawn: (Phase 10j, part D) the questions and options of every enabled
  * activity, read in the background into the page's holder (experience.holdActivityContent); the visit log (logEntry, through
- * recordParticipantVisit), then (part C) what the page's writes will need, fetched ahead (lib/boot.js writesAhead, dataService.prepareWrites),
+ * recordParticipantVisit), then (part C) what the page's writes will need, fetched ahead (lib/participant/boot.js writesAhead, dataService.prepareWrites),
  * and, for a visit resumed from its address, the resume stamp. `content` is the page's holder; none, as before part D, reads no content.
  */
 async function afterFirstScreen(page, boot, content = null) {
@@ -198,7 +198,7 @@ async function arriveAtHub(content, sections, store = null, visit = null) {
 
 /**
  * An activity, opening (ActivityPager.svelte, experience.loadActivity): its questions and options from what the page holds (Phase 10j,
- * part D: lib/activity-content.js), read only when they are not held. It shows "Loading activity..." while it waits.
+ * part D: lib/participant/activity-content.js), read only when they are not held. It shows "Loading activity..." while it waits.
  */
 const openActivity = (content, section, sections) => content.questionsOf(section, sections);
 
@@ -410,7 +410,7 @@ describe('the rounds a participant waits (Phase 10j)', () => {
 // ---- Part E: the hub and the activities -----------------------------------------------------------------------------------------
 // The hub read the client's activities on every arrival and showed "Loading activities..." until they came back; each activity but the one the
 // boot had fetched read its questions and options when it was opened. Since Phase 10j the hub is drawn at once from what the page holds, and
-// the activities and the enabled ones' content are read again behind it, together (lib/activity-content.js refreshWith: the data layer's
+// the activities and the enabled ones' content are read again behind it, together (lib/participant/activity-content.js refreshWith: the data layer's
 // readLists, one $batch where the site can batch); an activity opens from what is held (part D). An edit made in Content reaches a participant
 // at the next activity they open after visiting the hub; an activity already open keeps what it opened with.
 
@@ -496,7 +496,7 @@ describe('the hub and the activities (part E)', () => {
     const pager = await readFile(path.join(ROOT, 'migration', 'src', 'pager', 'ActivityPager.svelte'), 'utf8');
     assert.match(pager, /\{#if phase === 'loading'\}\s*\{#if slow\}/);
     for (const source of [agenda, pager]) assert.match(source, /setTimeout\(\(\) => \{ slow = true; \}, LOADING_DELAY_MS\)/);
-    const experienceSource = await readFile(path.join(ROOT, 'migration', 'src', 'lib', 'experience.svelte.ts'), 'utf8');
+    const experienceSource = await readFile(path.join(ROOT, 'migration', 'src', 'lib', 'participant', 'experience.svelte.ts'), 'utf8');
     assert.match(experienceSource, /activityContent\.refreshWith\(experience\.clientId, withContent \? activities : \[\]\)/);
     const { LOADING_DELAY_MS } = (await contentModule) ?? {};
     assert.equal(LOADING_DELAY_MS, 300);
@@ -507,7 +507,7 @@ describe('the hub and the activities (part E)', () => {
 // The plain link's boot read AppSettings and who is signed in; then the client, the session and the activities; then the session's visits
 // (has this account visited today?); then the first activity's questions and options, which Welcome never shows: four rounds before
 // Welcome. Since Phase 10j the visits are read in round 2, beside the rest, and the questions and options of every enabled activity once the
-// first screen is up (lib/activity-content.js), so Welcome waits for two rounds, three for someone with an earlier visit today (its answers).
+// first screen is up (lib/participant/activity-content.js), so Welcome waits for two rounds, three for someone with an earlier visit today (its answers).
 
 describe('the first screen (part D)', () => {
   const readsOf = (fake, list) => fake.select((entry) => entry.method === 'GET' && entry.list === list).length;
@@ -681,7 +681,7 @@ describe('the first screen (part D)', () => {
     const app = await readFile(path.join(ROOT, 'migration', 'src', 'App.svelte'), 'utf8');
     assert.match(app, /async function afterFirstScreen\(boot: Boot\) \{\s*await painted\(\);\s*void holdActivityContent\(\);/);
     assert.match(app, /bootParticipant\(dataService, \{ [^}]*content: activityContent \}\)/);
-    const experienceSource = await readFile(path.join(ROOT, 'migration', 'src', 'lib', 'experience.svelte.ts'), 'utf8');
+    const experienceSource = await readFile(path.join(ROOT, 'migration', 'src', 'lib', 'participant', 'experience.svelte.ts'), 'utf8');
     assert.match(experienceSource, /activityContent\.questionsOf\(section, activities\)/, 'an activity opens from what is held');
     assert.doesNotMatch(experienceSource, /FIRST_CONTENT_MS|firstContent/);
   });
@@ -834,7 +834,7 @@ describe('beginning a visit (part C)', () => {
     }
   });
 
-  it('what the page fetches ahead, by what it can write (lib/boot.js writesAhead)', () => {
+  it('what the page fetches ahead, by what it can write (lib/participant/boot.js writesAhead)', () => {
     const live = (session) => ({ status: 'live', session: { id: 's', clientId: 'c', status: 'not-started', participationMode: 'staff', ...session } });
     const ahead = bootModule.writesAhead;
     assert.deepEqual(ahead({ experience: live(), track: null, own: undefined, code: null }), { checked: ['tracks', 'sessions'], types: ['responses'] }, 'can begin, and the first visit moves the session on');
@@ -847,7 +847,7 @@ describe('beginning a visit (part C)', () => {
   });
 
   it('prepareWrites never throws, and sends nothing on the local server', async () => {
-    const page = await import(`../public/js/dataService.js?waits=${pagesOpened += 1}`);
+    const page = await import(`../migration/src/lib/data/dataService.js?waits=${pagesOpened += 1}`);
     page.configure({ baseUrl: 'http://127.0.0.1:9/api' });
     let asked = 0;
     const previous = globalThis.fetch;
@@ -935,7 +935,7 @@ describe('the column check reads only what it checks (part B)', () => {
   });
 
   it('the check reads exactly the properties it names (a source check of spMetadata)', async () => {
-    const source = await readFile(path.join(ROOT, 'public', 'js', 'dataService.js'), 'utf8');
+    const source = await readFile(path.join(ROOT, 'migration', 'src', 'lib', 'data', 'dataService.js'), 'utf8');
     const body = /async function spMetadata\(list\) \{[\s\S]*?\n\}\n/.exec(source)?.[0];
     assert.ok(body, 'spMetadata is where it was');
     const read = new Set([...body.matchAll(/\b(?:field|appId|extra)\??\.([A-Z]\w+)/g)].map(([, property]) => property));

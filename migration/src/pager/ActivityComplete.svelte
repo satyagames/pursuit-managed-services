@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { CheckBadge, HomeButton, PillButton } from '../components/index.js';
-  import { focusHeading } from '../lib/focus.js';
-  import { hiLine } from '../lib/pager-logic.js';
+  import { focusHeading } from '../lib/common/focus.js';
+  import { hiLine } from '../lib/participant/pager-logic.js';
 
   let { name, title, right, total, allDone, onback, onfinish, onhome }: {
     name: string;

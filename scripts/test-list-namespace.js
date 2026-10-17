@@ -9,10 +9,10 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { after, describe, it } from 'node:test';
-import { bootParticipant } from '../migration/src/lib/boot.js';
-import { samplePack } from '../migration/src/lib/sample-clients.js';
-import { seedPack } from '../migration/src/lib/seed.js';
-import { schemaSpecs } from '../migration/src/lib/setup-checks.js';
+import { bootParticipant } from '../migration/src/lib/participant/boot.js';
+import { samplePack } from '../migration/src/lib/setup/sample-clients.js';
+import { seedPack } from '../migration/src/lib/setup/seed.js';
+import { schemaSpecs } from '../migration/src/lib/setup/setup-checks.js';
 import { NODE_SUITES, differences, readBaseline, recordSuite } from './request-baseline.js';
 import { LIBRARY_KEY, OTHER_PREFIX, TITLE, createSharePointFake } from './sharepoint-fake.js';
 
@@ -26,7 +26,7 @@ let pages = 0;
 /** A page of its own on `fake`: the data service as a separate module, configured with what the fake says its settings are. */
 async function pageOn(fake, extra = {}) {
   fake.install();
-  const page = await import(`../public/js/dataService.js?namespace=${pages += 1}`);
+  const page = await import(`../migration/src/lib/data/dataService.js?namespace=${pages += 1}`);
   page.configure({ sharePoint: { ...fake.settings, ...extra } });
   return page;
 }
@@ -101,7 +101,7 @@ describe(`a copy with the prefix ${OTHER_PREFIX} uses its own lists and no other
     const log = async (settings) => {
       const fake = createSharePointFake({ prefix: '' });
       fake.install();
-      const page = await import(`../public/js/dataService.js?namespace=${pages += 1}`);
+      const page = await import(`../migration/src/lib/data/dataService.js?namespace=${pages += 1}`);
       page.configure({ sharePoint: settings(fake) });
       await seedPack(page, samplePack());
       const { session } = await page.activateClient('c-kroger', DAY);
@@ -183,7 +183,7 @@ describe('what the app says names the list a person will find on the site', () =
   });
 
   it('a claim with no version to hold names the codes list by its title (read from the source: the fake always gives a version)', async () => {
-    const source = await readFile(path.join(ROOT, 'public/js/dataService.js'), 'utf8');
+    const source = await readFile(path.join(ROOT, 'migration/src/lib/data/dataService.js'), 'utf8');
     assert.match(source, /SharePoint did not return an ETag for \$\{spTitle\('qrtokens'\)\}\./);
     for (const spelled of ["list: 'Sections'", 'for Responses.AppId', 'an ETag for QRTokens', 'in the Responses list first']) {
       assert.ok(!source.includes(spelled), `the data layer still spells a title out: ${spelled}`);
@@ -192,7 +192,7 @@ describe('what the app says names the list a person will find on the site', () =
     // (Three until Phase 10c-1: the third was the older upload with no name, which left with the legacy admin.)
     assert.equal([...source.matchAll(/getbytitle\(/g)].length, 2, 'two addresses name a list or the library by title: every list\'s, and the picture library\'s folder');
     assert.equal([...source.matchAll(/\$\{LIBRARY\}/g)].length, 1, 'and one place reads the library\'s usual title');
-    assert.equal([...(await readFile(path.join(ROOT, 'public/js/pms-schema.js'), 'utf8')).matchAll(new RegExp(`'${TITLE.logoLibrary}'`, 'g'))].length, 1, 'which the schema file holds');
+    assert.equal([...(await readFile(path.join(ROOT, 'migration/src/lib/schema/pms-schema.js'), 'utf8')).matchAll(new RegExp(`'${TITLE.logoLibrary}'`, 'g'))].length, 1, 'which the schema file holds');
   });
 
   it('a missing list, a missing column and a duplicate are reported under the title on this site', async () => {

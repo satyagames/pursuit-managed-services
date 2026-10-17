@@ -1,8 +1,8 @@
 import { test, expect, type Page } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { sha256Hex } from '../../migration/src/lib/sha256.js';
-import { localDate } from '../../migration/src/lib/admin-today.js';
+import { sha256Hex } from '../../migration/src/lib/admin/sha256.js';
+import { localDate } from '../../migration/src/lib/admin/admin-today.js';
 import { makeImage } from './brand-images.js';
 import { newFake, onSite, pageUrl, seedAndGoLive, serveSharePoint, shape, type Fake } from './sharepoint.js';
 import { TITLE } from '../sharepoint-fake.js';

@@ -1,8 +1,8 @@
 // The two documents of the release package for the new site (Phase 10f): RUNBOOK.md, for the colleague who puts the app on the site, and
 // RELEASE-NOTES.md. Plain functions of what the package holds, so scripts/test-release-docs.js can hold their words to the site, the steps,
-// the permissions (scripts/permissions.js, from public/js/pms-schema-meta.js) and the QA-TESTING.md items. scripts/build-release-package.js
+// the permissions (scripts/permissions.js, from migration/src/lib/schema/pms-schema-meta.js) and the QA-TESTING.md items. scripts/build-release-package.js
 // writes them into the package folder; they are never committed (build-svelte/ is git-ignored).
-import { VERSION } from '../public/js/pms-schema.js';
+import { VERSION } from '../migration/src/lib/schema/pms-schema.js';
 import { participantGroups, permissionsTable, SETUP_NOTE } from './permissions.js';
 
 /** The new site (VJR, 14 Oct 2026). Nothing in the pages names it: a page works out its site from its own address (Phase 10b). */

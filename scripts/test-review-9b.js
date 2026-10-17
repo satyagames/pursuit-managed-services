@@ -6,17 +6,17 @@ import assert from 'node:assert/strict';
 import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, it } from 'node:test';
-import { UNREADABLE_FIX, namesByVisit, unreadableNotice } from '../migration/src/lib/unreadable.js';
-import { REMOVE_VISIT_CONFIRM, REMOVE_VISIT_REFUSED, canRemoveVisit } from '../migration/src/lib/admin-results.js';
-import { visitGoneNotice } from '../migration/src/lib/visit-notice.js';
-import { isRetiredLogo, withoutRetiredLogo } from '../migration/src/lib/retired-logos.js';
-import { SAMPLE_NOTICE, SAMPLE_ORIGINS, SAMPLE_REPORT_LINE, confirmedLine, confirmedTheme, isSampleClient, needsConfirmation, sampleState } from '../migration/src/lib/sample-notice.js';
-import { buildClientTheme, resolveClientTheme, reviseClientTheme } from '../migration/src/lib/client-theme.js';
-import { changesForSave, draftFromClient } from '../migration/src/lib/brand-studio.js';
-import { evaluateReadiness } from '../migration/src/lib/admin-today.js';
-import { samplePack } from '../migration/src/lib/sample-clients.js';
-import { SAMPLE_PICTURES } from '../migration/src/lib/sample-pictures.js';
-import { NO_ANSWERS, buildLeaderReport, participantAnswersCsv } from '../migration/src/lib/leader-report.js';
+import { UNREADABLE_FIX, namesByVisit, unreadableNotice } from '../migration/src/lib/results/unreadable.js';
+import { REMOVE_VISIT_CONFIRM, REMOVE_VISIT_REFUSED, canRemoveVisit } from '../migration/src/lib/admin/admin-results.js';
+import { visitGoneNotice } from '../migration/src/lib/participant/visit-notice.js';
+import { isRetiredLogo, withoutRetiredLogo } from '../migration/src/lib/brand/retired-logos.js';
+import { SAMPLE_NOTICE, SAMPLE_ORIGINS, SAMPLE_REPORT_LINE, confirmedLine, confirmedTheme, isSampleClient, needsConfirmation, sampleState } from '../migration/src/lib/admin/sample-notice.js';
+import { buildClientTheme, resolveClientTheme, reviseClientTheme } from '../migration/src/lib/brand/client-theme.js';
+import { changesForSave, draftFromClient } from '../migration/src/lib/brand/brand-studio.js';
+import { evaluateReadiness } from '../migration/src/lib/admin/admin-today.js';
+import { samplePack } from '../migration/src/lib/setup/sample-clients.js';
+import { SAMPLE_PICTURES } from '../migration/src/lib/setup/sample-pictures.js';
+import { NO_ANSWERS, buildLeaderReport, participantAnswersCsv } from '../migration/src/lib/exports/leader-report.js';
 import { harbourRecords } from './leader-report-fixtures.js';
 import { makeReport } from './leader-report-node.js';
 import { inspectPdf, squash } from './pdf-inspect.js';
@@ -169,14 +169,14 @@ describe('DI-9: a visit with no answers can be removed from Results, and a page 
   });
 
   it('the page uses those words where a visit is gone: a page that was open, and a link opened afresh', async () => {
-    const [app, boot] = await Promise.all([source('migration/src/App.svelte'), source('migration/src/lib/boot.js')]);
+    const [app, boot] = await Promise.all([source('migration/src/App.svelte'), source('migration/src/lib/participant/boot.js')]);
     assert.match(app, /participant\.notice = visitGoneNotice\(guest\)/);
     assert.match(boot, /result\.notice = visitGoneNotice\(/);
     for (const text of [app, boot]) assert.doesNotMatch(text, /select your client (below )?to start again|Select your client to start again/i, 'the old words pointed at a client list that is not on Welcome any more');
   });
 
   it('Results offers it only through canRemoveVisit, and removes through removeEmptyVisit alone (never deleteClientTrack, which also unlinks the QR code)', async () => {
-    const [results, data] = await Promise.all([source('migration/src/admin/AdminResults.svelte'), source('migration/src/lib/adminData.ts')]);
+    const [results, data] = await Promise.all([source('migration/src/admin/AdminResults.svelte'), source('migration/src/lib/admin/adminData.ts')]);
     assert.match(results, /\{#if canRemoveVisit\(row, session\)\}/);
     assert.match(results, /removeEmptyVisit\(row\.track\.id\)/);
     assert.doesNotMatch(results, /deleteClientTrack/);
@@ -191,7 +191,7 @@ describe('SAM-1: Kroger has no logo until a real one is uploaded, on a fresh sit
   it('the pack draws no logo for Kroger, like Domino\'s; since Phase 10f the seeds bring VJR\'s real logo FILE; and the stand-in is in no Svelte page', async () => {
     assert.equal(krogerPack().logoUrl, null, 'the pack itself has no picture');
     assert.equal(samplePack().clients.find((client) => client.id === 'c-dominos').logoUrl, null);
-    // Phase 10f (VJR's decision): the sample clients are seeded with their real logos, supplied by VJR as files (lib/sample-pictures.js). A file,
+    // Phase 10f (VJR's decision): the sample clients are seeded with their real logos, supplied by VJR as files (lib/setup/sample-pictures.js). A file,
     // never a drawing: the local server's data points at it, and it is not the retired stand-in.
     const stored = JSON.parse(await source('server/data/clients.json')).find((client) => client.id === 'c-kroger');
     assert.equal(stored.logoUrl, `/assets/images/clients/${SAMPLE_PICTURES['c-kroger'].logo.name}`);
@@ -245,7 +245,7 @@ describe('SAM-1: Kroger has no logo until a real one is uploaded, on a fresh sit
   });
 
   it('the Live display and the Clients list read a client\'s logo through the same rule', async () => {
-    for (const file of ['migration/src/admin/LiveDisplay.svelte', 'migration/src/admin/AdminClients.svelte', 'migration/src/lib/master-brand.ts', 'migration/src/lib/admin-today.js', 'migration/src/lib/client-theme.js', 'migration/src/lib/brand-studio.js']) {
+    for (const file of ['migration/src/admin/LiveDisplay.svelte', 'migration/src/admin/AdminClients.svelte', 'migration/src/lib/admin/master-brand.ts', 'migration/src/lib/admin/admin-today.js', 'migration/src/lib/brand/client-theme.js', 'migration/src/lib/brand/brand-studio.js']) {
       assert.match(await source(file), /withoutRetiredLogo|isRetiredLogo/, file);
     }
   });

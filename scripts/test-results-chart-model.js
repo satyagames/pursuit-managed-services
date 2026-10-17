@@ -1,9 +1,9 @@
 // Phase 11a: one chart model for Results. Run: node --test scripts/test-results-chart-model.js (also part of npm test)
 //
-// migration/src/lib/results-chart-model.js turns a question's tally and its answers into what a chart shows: shares, a headline, who picked
+// migration/src/lib/results/results-chart-model.js turns a question's tally and its answers into what a chart shows: shares, a headline, who picked
 // what, a scale's average and bands, a ranking's support scores and the words that came up most in written answers. Every expected number
 // here is worked out BY HAND in the comments beside it, from the figures of VJR's run on the PCOE site (15 Oct 2026: four people), never by
-// calling the code under test. The tally objects are written out as lib/results-tally.js hands them on ({ respondents, responses, options:
+// calling the code under test. The tally objects are written out as lib/results/results-tally.js hands them on ({ respondents, responses, options:
 // [{ count, score? }] }); one test builds them with buildResults to show the two agree.
 
 import assert from 'node:assert/strict';
@@ -11,9 +11,9 @@ import { describe, it } from 'node:test';
 import {
   MULTI_CAPTION, NO_ANSWERS, RANKING_CAPTION, STOP_WORDS, TOP_WORDS, answerCounts, answersFrom, answersOf, bandOf, chartKind, chartOf, chartsOf, foldPlural,
   namesFor, people, removedLine, segmentsOf, supportScore, topWords, wholePercents, wordsIn,
-} from '../migration/src/lib/results-chart-model.js';
-import { resultRows } from '../migration/src/lib/admin-results.js';
-import { buildResults } from '../migration/src/lib/results-tally.js';
+} from '../migration/src/lib/results/results-chart-model.js';
+import { resultRows } from '../migration/src/lib/admin/admin-results.js';
+import { buildResults } from '../migration/src/lib/results/results-tally.js';
 
 const OPEN = String.fromCharCode(0x201C);
 const CLOSE = String.fromCharCode(0x201D);
@@ -443,7 +443,7 @@ describe('"N answers from M iPads" (Phase 11a-2, part D)', () => {
 });
 
 describe('a session', () => {
-  it('agrees with the tally lib/results-tally.js builds, section by section', () => {
+  it('agrees with the tally lib/results/results-tally.js builds, section by section', () => {
     // The same four answers to the address question, counted by buildResults: 1, 2, 1, 0.
     const question = addressQuestion();
     const results = buildResults({

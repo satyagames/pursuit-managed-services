@@ -845,7 +845,7 @@ device, and the new site has not been touched.**
 99. **`npm install` on a clean copy.** The `postinstall` script is gone (it copied libraries into `public/vendor/` for the legacy pages). It was **not** run on the
     development Mac, where `npm install` removes hand-restored binaries. On a fresh clone: `npm install`, then `npm test` and `npm run build:svelte:release`.
     **Expect** no script to run during the install, 894 tests to pass (914 when Phase 10c-1 ended; Phase 10c-2a removed tests with what they tested), and three files in `build-svelte/release/`.
-100. **The PIN after the move.** The admin's PIN check moved from the legacy admin folder into `migration/src/lib/admin-pin.js` with its code unchanged. On the test
+100. **The PIN after the move.** The admin's PIN check moved from the legacy admin folder into `migration/src/lib/admin/admin-pin.js` with its code unchanged. On the test
     site, unlock the admin with the PIN that worked before. **Expect** it to unlock, and a wrong PIN to be refused as before. On a plain-`http` address (a LAN
     address in local development) the pure-JavaScript SHA-256 is used instead of the browser's: check there once too.
 101. **Local development without the legacy pages.** `npm run dev` now serves no page. Start `npm run dev:svelte`, `dev:svelte:admin` and `dev:svelte:setup` beside
@@ -985,7 +985,7 @@ The release package's `RUNBOOK.md` (`npm run package:release`) is the order to d
 and a hand-built one with a misnamed column): `npm run test:rehearsal`. **Every point below is UNPROVEN until the new site shows it.**
 
 133. **The sample pictures in the library.** Setup, **Seed sample clients** on the new site. **Expect** "Complete: 76 created, 0 completed, 0 already present. Pictures:
-    6 uploaded, 0 already in the library.", and six files in `PMSClientImages`, named and sized as `migration/src/lib/sample-pictures.js` lists them (a logo, a hero and
+    6 uploaded, 0 already in the library.", and six files in `PMSClientImages`, named and sized as `migration/src/lib/setup/sample-pictures.js` lists them (a logo, a hero and
     a background for Kroger and for Domino's, WebP), uploaded BEFORE the two clients were made. The library's file listing (`/_api/web/lists/getbytitle('PMSClientImages')/RootFolder/Files`)
     is read once; a second press reads nothing of it, uploads nothing and writes nothing. If the library refuses the listing, the seed stops before any client is made.
 134. **The sample pictures on the pages.** With Kroger live: Welcome on an iPad shows the "Operate at the speed of Fresh" badge and the dark blue background, loaded from
