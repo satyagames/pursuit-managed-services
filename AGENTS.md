@@ -1395,6 +1395,20 @@ lists, Setup, what is counted or stored, the CSV files, a request (the baselines
   another script shows as empty quotation marks there. Known, and left (RELEASE-11B.md).
 - **The release documents** name the branch `pms-11b` and say what changed since pms-e2fbfb6; RUNBOOK.md's note for the PCOE site has a ninth step, the files (QA items 167 to 170).
 
+## Rules from Phase 12 (the local PCOE site and the approved UX fixes; keep them holding)
+
+The local stand-in for PCOE is [LOCAL-SITE.md](LOCAL-SITE.md) (`npm run local:site -- --open`, `npm run test:local-site`, `npm run ux:shoot`); the review is
+[UX-REVIEW.md](UX-REVIEW.md). Part 2 (branch `pms-12-fixes`) fixed F-01 to F-05, F-08, F-10, F-11, F-13 to F-15, F-17, F-20, F-24 and the font fallback, each test
+first (`scripts/test-ux-12.js`, part of `npm test`). **Nothing of Part 2 has met the real site or a real device, and the heavy gates have not run.**
+
+- **A poll is never a readiness blocker.** SharePoint stores the null Content writes for "not correct" as No, so a poll reads back with every answer `false`.
+- **Open Sans stays embedded in every page** (VJR, 17 Oct 2026: the brand font on every device). `styles/fonts-fallback.css` (local Arial, measured overrides) is
+  second in `--font-sans` so nothing moves while Open Sans decodes; its figures are held by `scripts/test-ux-12.js`.
+- The wall says only how many answers could not be counted (`wallUnreadableNotice`); the admin view keeps the full notice.
+- Confetti is cleared through `effects.ts` `clearEffects()` when an activity opens.
+- **`PHASE_12`** (`scripts/bundle-budget.js`): participant +269 B, admin +340 B gzip over 11b (allowances 600 and 1,000); the next phase starts from its `*After`.
+- F-16 (the staff-mode warning twice) is kept on purpose (Phase 9b, DI-1).
+
 ## Before finishing a change
 
 - If you touched session/track/response flow: run `npm test`.
