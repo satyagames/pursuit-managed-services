@@ -235,7 +235,7 @@ const fieldAsRead = (select) => (field) => {
  *   `duplicateStatus` and `duplicateCode` (Phase 10h) are how a duplicate is refused: see the top of the file. `refusesByName` (Phase 10i)
  *   is the columns an item read may not name when it would return a row: see the top of the file; `[]` answers every one.
  */
-export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Casey Example' }, siteUrl = SITE_URL, prefix = SUITE_PREFIX, lists: named = {}, logoLibrary, addresses = {}, listsVersion = VERSION, schemaVersion = listsVersion, traps = {}, strict = true, leavesOut = TENANT_LEAVES_OUT, refusesByName = TENANT_REFUSES_BY_NAME, duplicateStatus = 500, duplicateCode = false } = {}) {
+export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Casey Example' }, siteUrl = SITE_URL, prefix = SUITE_PREFIX, lists: named = {}, logoLibrary, addresses = {}, listsVersion = VERSION, schemaVersion = listsVersion, traps = {}, strict = true, leavesOut = TENANT_LEAVES_OUT, refusesByName = TENANT_REFUSES_BY_NAME, duplicateStatus = 500, duplicateCode = false, realShape = null } = {}) {
   const fields = new Map();
   const lists = new Map();
   /** The other set's rows, by the title a request names: empty unless something went to the wrong lists. */
@@ -307,7 +307,15 @@ export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Ca
   const builtInTitle = () => ({ Id: `00000000-0000-4000-8000-${String(nextFieldId++).padStart(12, '0')}`, InternalName: 'Title', StaticName: 'Title', Title: 'Title', TypeAsString: 'Text', Indexed: false, EnforceUniqueValues: false, Required: true, ReadOnlyField: false, Hidden: false, FromBaseType: true, RichText: false, AppendOnly: false, MaxLength: 255, DefaultValue: null });
   const isWrite = (entry) => entry.method !== 'GET' && !/\/(contextinfo|\$batch)$/.test(entry.path);
   const yes = (value) => /^true$/i.test(String(value ?? ''));
-  const stamp = (title, item) => ({ ...item, __metadata: { etag: `"${version += 1}"`, type: typeOf(title) } });
+  // (`realShape`, the local site's alone (Phase 12): an item also carries SharePoint's Created and Modified, and its __metadata the id and uri a
+  // real one has. Off by default, so every suite's items are what they always were.)
+  const stamp = (title, item) => {
+    const etag = `"${version += 1}"`;
+    if (!realShape) return { ...item, __metadata: { etag, type: typeOf(title) } };
+    const now = realShape.now();
+    const uri = `${siteUrl}/_api/Web/Lists(guid'${idOf(title)}')/Items(${item.Id})`;
+    return { ...item, Created: item.Created ?? now, Modified: now, __metadata: { id: uri, uri, etag, type: typeOf(title) } };
+  };
   /** An item as SharePoint returns it without being told which columns: without `leavesOut` (Phase 10h). */
   const leftOut = (row) => Object.fromEntries(Object.entries(row).filter(([column]) => !leavesOut.includes(column)));
   /** Puts an item straight into one of the test's own lists (by key), as if it had always been there. Only that list's columns. */
@@ -444,7 +452,8 @@ export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Ca
 
     if (path.endsWith('/_api/$batch') && !entry.batched) return method === 'POST' ? batch(request, headers, entry) : error(405, 'The batch endpoint only accepts POST.');
     if (path.endsWith('/contextinfo')) return ok({ GetContextWebInformation: { FormDigestValue: 'digest-token', FormDigestTimeoutSeconds: 1800 } });
-    if (path.endsWith('/web/currentuser')) return ok(user);
+    // (`user` may be a function, asked on every request: the local site's personas, Phase 12.)
+    if (path.endsWith('/web/currentuser')) return ok(typeof user === 'function' ? user() : user);
     // The site's lists (Phase 10c-3): what Setup's plan reads, and where Create makes a list or the library.
     if (/\/web\/lists$/.test(path)) return method === 'GET' ? ok({ results: siteTitles().map(siteEntry) }) : createList(request, headers, entry);
     if (list === LIBRARY_KEY && !entry.stray && !libraryPresent) return error(404, 'List does not exist. The page you selected contains a list that does not exist. It may have been deleted by another user.');
@@ -776,5 +785,27 @@ export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Ca
     },
     /** The stored item with this AppId in one of the test's own lists (by key), or undefined. */
     item: (list, appId) => lists.get(knownKey(list))?.find((row) => row.AppId === appId),
+    /**
+     * The whole site as plain data (Phase 12, the local site's persistence): the test's own lists, their columns and settings, the library's
+     * files (base64) and the counters, so `importState` on a fake made with the same options puts it back exactly, ids and versions included.
+     */
+    exportState: () => ({
+      lists: Object.fromEntries(lists), fields: Object.fromEntries(fields), listSettings: Object.fromEntries(listSettings), libraryPresent,
+      files: [...files].map(([key, { bytes, type }]) => [key, { type, base64: Buffer.from(bytes).toString('base64') }]),
+      counters: { nextId, version, nextFieldId },
+    }),
+    /** Replaces the site with what `exportState` gave. */
+    importState(state) {
+      lists.clear();
+      for (const [key, rows] of Object.entries(state.lists)) lists.set(knownKey(key), rows);
+      fields.clear();
+      for (const [key, columns] of Object.entries(state.fields)) fields.set(knownKey(key), columns);
+      listSettings.clear();
+      for (const [title, value] of Object.entries(state.listSettings ?? {})) listSettings.set(title, value);
+      libraryPresent = Boolean(state.libraryPresent);
+      files.clear();
+      for (const [key, { type, base64 }] of state.files ?? []) files.set(key, { type, bytes: new Uint8Array(Buffer.from(base64, 'base64')) });
+      ({ nextId, version, nextFieldId } = state.counters);
+    },
   };
 }
