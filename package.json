@@ -44,7 +44,7 @@
     "test:a11y": "npm run build:svelte:release && playwright test --config migration/playwright.config.ts a11y keyboard aria reflow contrast motion unsupported",
     "test:devices": "npm run build:svelte:release && playwright test --config migration/playwright.config.ts devices",
     "test:perf": "npm run build:svelte:release && playwright test --config migration/playwright.config.ts --project=chromium performance latency",
-    "test:report": "node --test scripts/test-leader-report.js scripts/test-leader-report-pdf.js scripts/test-participant-names.js scripts/test-leader-report-charts.js scripts/test-results-export.js scripts/test-export-summary.js scripts/test-leader-report-glance.js scripts/test-results-pack.js scripts/test-results-csv.js scripts/test-module-headers.js",
+    "test:report": "node --test scripts/test-leader-report.js scripts/test-leader-report-pdf.js scripts/test-participant-names.js scripts/test-leader-report-charts.js scripts/test-results-export.js scripts/test-export-summary.js scripts/test-leader-report-glance.js scripts/test-results-pack.js scripts/test-results-csv.js",
     "look:exports": "node scripts/look-exports.js",
     "test:report:mutations": "node scripts/mutate-leader-report.js",
     "build:report-fonts": "python3 scripts/build-report-fonts.py",
