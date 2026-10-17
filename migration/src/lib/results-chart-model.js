@@ -80,6 +80,17 @@ export const answersOf = (results) => (results.sections ?? []).flatMap((section)
 /** "1 person", "2 people". @param {number} count */
 export const people = (count) => `${count} ${count === 1 ? 'person' : 'people'}`;
 
+const SMALL = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+
+/** A count in running words as the language guide (p. 40) has it: one to nine spelled out, 10 and more as figures with commas. @param {number} count */
+export const numberWords = (count) => (Number.isInteger(count) && count >= 1 && count <= 9 ? SMALL[count] : count.toLocaleString('en-US'));
+
+/** Under this many answers a share is said to rest on few (Phase 13): a percentage of three people must not read like one of three hundred. */
+export const FEW_ANSWERS = 5;
+
+/** "Only four answers." under FEW_ANSWERS; nothing at that many or more, and nothing for none (NO_ANSWERS says so). @param {number} answered */
+export const fewAnswersLine = (answered) => (answered > 0 && answered < FEW_ANSWERS ? `Only ${numberWords(answered)} ${answered === 1 ? 'answer' : 'answers'}.` : '');
+
 const byTime = (a, b) => String(a.at ?? '').localeCompare(String(b.at ?? '')) || a.name.localeCompare(b.name);
 
 /** @param {TallyAnswer} answer @param {Map<string, string> | null} names */
