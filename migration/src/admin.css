@@ -621,7 +621,7 @@ input[type='date']:focus-within {
 
 @media (min-width: 960px) {
   .content-layout {
-    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
     align-items: start;
   }
 }
@@ -658,6 +658,10 @@ input[type='date']:focus-within {
 
 .activity__actions {
   flex: 1 0 100%;
+}
+
+.activity__actions .btn--danger {
+  margin-left: auto;
 }
 
 .questions__head {

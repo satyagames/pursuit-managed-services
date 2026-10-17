@@ -157,3 +157,12 @@ describe('F-20: confetti from a completed activity does not fall on the next act
     assert.match(read('pager/ActivityPager.svelte'), /clearEffects\(\)/);
   });
 });
+
+describe('F-15: Content: an activity\'s buttons fit one line on a laptop, Delete apart at the end', () => {
+  it('admin.css: the activities column is the wider one, and Delete is pushed to the row end', async () => {
+    const { readFileSync } = await import('node:fs');
+    const css = readFileSync(new URL('../migration/src/admin.css', import.meta.url), 'utf8');
+    assert.match(css, /\.content-layout\s*\{\s*grid-template-columns:\s*minmax\(0, 6fr\) minmax\(0, 5fr\);/);
+    assert.match(css, /\.activity__actions \.btn--danger\s*\{\s*margin-left:\s*auto;/);
+  });
+});
