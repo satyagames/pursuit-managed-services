@@ -580,14 +580,15 @@ test('Export CSV downloads exactly the rows the tally has, through the one reade
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Export CSV' }).click();
   const file = await download;
-  expect(file.suggestedFilename()).toBe(`results-${live.session.id}-${new Date().toISOString().slice(0, 10)}.csv`);
+  // Phase 13: the summary by activity, with the client's name in every row.
+  expect(file.suggestedFilename()).toBe(`summary-by-activity-${live.session.id}-${new Date().toISOString().slice(0, 10)}.csv`);
   const text = (await readFile((await file.path())!, 'utf8')).replace(/^﻿/, '');
   // What the exporter writes for the session as dataService reads it now: the same file, to the byte.
-  expect(text).toBe(resultsToCsv(await readSessionResults(live.session.id)));
-  expect(text.split('\r\n')[0]).toBe('Activity,Question,Type,Option,Count,Percentage,Score,Respondents');
-  expect(text).toContain('Great Western Tea co.,2,66.7,,3');
+  expect(text).toBe(resultsToCsv(await readSessionResults(live.session.id), { name: 'Kroger' }));
+  expect(text.split('\r\n')[0]).toBe('Client,Session date,Activity,Question number,Question,Question type,Option,Answers,Share of answers (%),Rank or score,Correct option,Top choice,Answers to this question,Takeaway');
+  expect(text).toContain('Great Western Tea co.,2,67,');
   expect(text).toContain('Faster check-in');
-  await expect(page.getByText(/^Saved results-.*\.csv$/).first()).toBeVisible();
+  await expect(page.getByText(/^Saved summary-by-activity-.*\.csv$/).first()).toBeVisible();
 });
 
 test('Export PDF and Export PPT download real files from the admin page, branded with the session\'s client and this product\'s name', async ({ page }) => {

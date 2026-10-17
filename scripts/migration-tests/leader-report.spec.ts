@@ -8,7 +8,8 @@ import { BIG, HARBOUR_MOVED, HARBOUR_PEOPLE, bigComment, bigContent, bigName, bi
 import { inspectPdf, squash } from '../pdf-inspect.js';
 import { renderPdfPages } from '../render-pdf-pages.js';
 
-// Phase 7b in a real browser: Admin -> Results -> "Leader report (PDF)" and "Participant answers (CSV)", against the REAL local server on
+// Phase 7b in a real browser: Admin -> Results -> "Leader report (PDF)" and "All answers (CSV)" ("Participant answers (CSV)" until Phase 13,
+// which added "Summary by activity (CSV)" between them), against the REAL local server on
 // a scratch copy of server/data, in Chromium and in WebKit (the engine of every iPad browser). The files are what the browser
 // downloaded; the PDF is read back with pdf.js in this process. The numbers themselves are held by scripts/test-leader-report.js.
 // Pictures of the pages, for a person to look at, are written to test-results/report/.
@@ -75,7 +76,7 @@ test('both buttons download: the leader report as a PDF with embedded fonts and 
   expect(pdf.bytes.length).toBeGreaterThan(20_000);
   await writeFile(path.join(out, `download-${browserName}.pdf`), pdf.bytes);
 
-  const csv = await download(page, session.id, 'Participant answers (CSV)');
+  const csv = await download(page, session.id, 'All answers (CSV)');
   expect(csv.name).toMatch(/^participant-answers-harbour-2026-10-11-\d{4}-\d{2}-\d{2}\.csv$/);
   expect([...csv.bytes.subarray(0, 3)]).toEqual([0xEF, 0xBB, 0xBF]); // the byte-order mark, so a spreadsheet reads the accents
   const rows = csv.bytes.toString('utf8').slice(1);
@@ -108,7 +109,7 @@ test('sixty people and fifteen questions: the report is ready in under ten secon
   expect(read.pages.at(-1)!.text).toContain(`Page ${read.pages.length} of ${read.pages.length}`);
 
   const csvStarted = Date.now();
-  const csv = await download(page, session.id, 'Participant answers (CSV)');
+  const csv = await download(page, session.id, 'All answers (CSV)');
   await note({ what: 'participant CSV, 60 people x 15 questions, click to file (local server)', browser: browserName, msFromClickToDownload: Date.now() - csvStarted, rows: csv.bytes.toString('utf8').split('\r\n').length - 2 });
   expect(csv.bytes.toString('utf8').split('\r\n').length - 2).toBe(60 * 15);
 });
@@ -131,7 +132,7 @@ test('the progress line counts the pages, and Cancel stops the report and saves 
   expect(total).toBeGreaterThan(20);
   await expect(line(page, session.id)).toHaveAttribute('role', 'status');
   await expect(card(page, session.id).getByRole('button', { name: 'Preparing...' })).toBeDisabled();
-  await expect(card(page, session.id).getByRole('button', { name: 'Participant answers (CSV)' })).toBeDisabled();
+  await expect(card(page, session.id).getByRole('button', { name: 'All answers (CSV)' })).toBeDisabled();
   // Each tick of the clock lets it draw a little more; held still, it waits where it is.
   const drawing = async () => Number((await line(page, session.id).textContent())?.match(/^Preparing page (\d+) of/)?.[1] ?? 0);
   await page.clock.runFor(1);
@@ -170,6 +171,27 @@ test('a session that has gone says so, and the buttons work again', async ({ pag
   await expect(card(page, session.id).getByRole('button', { name: 'Leader report (PDF)' })).toBeEnabled();
 });
 
+test('Summary by activity (CSV): the Live display summary file, from the Results card, between the report and all answers in the keyboard order (Phase 13)', async ({ page, browserName }) => {
+  const { session } = await seedSession(ds, harbour());
+  await openAdmin(page, local, 'Results');
+  const csv = await download(page, session.id, 'Summary by activity (CSV)');
+  expect(csv.name).toBe(`summary-by-activity-${session.id}-${new Date().toISOString().slice(0, 10)}.csv`);
+  const text = csv.bytes.toString('utf8');
+  expect(text.charCodeAt(0)).toBe(0xFEFF);
+  expect(text.slice(1).split('\r\n')[0]).toBe('Client,Session date,Activity,Question number,Question,Question type,Option,Answers,Share of answers (%),Rank or score,Correct option,Top choice,Answers to this question,Takeaway');
+  // Harbour History's Q1 (worked by hand in scripts/test-leader-report-charts.js): 1887 is right and the top choice, 3 of 6 (50%).
+  expect(text).toContain(',Harbour History,1,Which year did the harbour open?,Single choice,1887,3,50,,Yes,Yes,6,The top choice (50%) was 1887.');
+  for (const name of ['José Álvarez', 'Zoë Brontë']) expect(text, 'no name in the summary').not.toContain(name);
+  await expect(line(page, session.id)).toContainText('Saved summary-by-activity-');
+  // The keyboard reaches the three in the order they are read. (WebKit is Safari on a Mac, which skips buttons with Tab: Alt+Tab there, as keyboard.spec.ts does.)
+  const tab = browserName === 'webkit' ? 'Alt+Tab' : 'Tab';
+  await card(page, session.id).getByRole('button', { name: 'Leader report (PDF)' }).focus();
+  await page.keyboard.press(tab);
+  await expect(card(page, session.id).getByRole('button', { name: 'Summary by activity (CSV)' })).toBeFocused();
+  await page.keyboard.press(tab);
+  await expect(card(page, session.id).getByRole('button', { name: 'All answers (CSV)' })).toBeFocused();
+});
+
 test('the buttons fit a phone, an iPad and a laptop, with targets of 44px and no sideways scroll', async ({ page }) => {
   const { session } = await seedSession(ds, harbour());
   await openAdmin(page, local, 'Results');
@@ -177,7 +199,7 @@ test('the buttons fit a phone, an iPad and a laptop, with targets of 44px and no
     await page.setViewportSize(viewport);
     await expect(card(page, session.id).getByRole('button', { name: 'Leader report (PDF)' })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `${viewport.width}: no sideways scroll`).toBe(true);
-    for (const name of ['Leader report (PDF)', 'Participant answers (CSV)']) {
+    for (const name of ['Leader report (PDF)', 'Summary by activity (CSV)', 'All answers (CSV)']) {
       const box = (await card(page, session.id).getByRole('button', { name }).boundingBox())!;
       expect(box.height, `${name} at ${viewport.width}`).toBeGreaterThanOrEqual(43.5);
       expect(box.width, `${name} at ${viewport.width}`).toBeGreaterThanOrEqual(43.5);

@@ -3,15 +3,14 @@
  * resultsExport.js: turns a session's aggregated results (the tree that
  * migration/src/lib/session-results.js readSessionResults() returns) into files for the facilitator.
  *
- *   CSV  resultsToCsv() builds the text, downloadCsv() saves it.
+ *   CSV  summary by activity (Phase 13): summaryRows() and resultsToCsv() build it, downloadCsv() saves it.
  *   PDF  downloadPdf(): the summary pack (jsPDF): a summary page, then a page for each live activity (Phase 13).
  *   PPT  downloadPptx(): the same pack as 16:9 slides with speaker notes (PptxGenJS).
  *
- * Nothing here fetches data. The CSV's numbers come straight from the tally (count,
- * percent, score); the PDF and PPT show each question as the Live display's chart does,
- * from the same chart model (Phase 11b), so every file agrees with what the screen shows.
- * The PDF and PPT are built from one layout (see "One-page report"), so they match each
- * other too. The caller passes the client's brand (branding.js's currentBrand()) and the
+ * Nothing here fetches data. Every file shows each question as the Live display's chart does,
+ * from the same chart model (Phase 11b) and the same takeaways (lib/export-summary.js, Phase 13),
+ * so every file agrees with what the screen shows. The PDF and PPT are built from one layout
+ * (see "The summary pack"), so they match each other too. The caller passes the client's brand (branding.js's currentBrand()) and the
  * Results palette; without a brand the report is unbranded.
  */
 
@@ -20,63 +19,67 @@ import { MULTI_CAPTION, RANKING_CAPTION, answerCounts, answersFrom, chartOf, few
 import { chartFigure } from '../../migration/src/lib/results-chart-figure.js';
 import { summarizeSession } from '../../migration/src/lib/export-summary.js';
 import { binaryString, createMeasure, loadReportFonts } from '../../migration/src/lib/report-fonts.js';
+import { csvCell } from '../../migration/src/lib/leader-report.js';
 
-const COLUMNS = ['Activity', 'Question', 'Type', 'Option', 'Count', 'Percentage', 'Score', 'Respondents'];
+/** The summary CSV's columns, in reading order (Phase 13, EXPORT-DESIGN.md 3.3). */
+export const SUMMARY_COLUMNS = Object.freeze(['Client', 'Session date', 'Activity', 'Question number', 'Question', 'Question type', 'Option', 'Answers', 'Share of answers (%)', 'Rank or score', 'Correct option', 'Top choice', 'Answers to this question', 'Takeaway']);
 
 /** The sections a session is showing (a section an admin hasn't enabled has no results to export). */
 export const liveSections = (results) => results.sections.filter((section) => section.enabled === true);
 
+/** A question's type in words, as a spreadsheet's reader would name it. */
+const TYPE_WORDS = Object.freeze({
+  'single-select': 'Single choice', 'multi-select': 'Multiple choice', 'true-false': 'True or false',
+  'confidence-continuum': 'Confidence scale', 'ranked-voting': 'Ranking', 'open-text-feedback': 'Written answer',
+});
+
 /**
- * One row per option of each question: section, question, type, option, count,
- * percentage (0-100, one decimal), and respondents (how many iPads answered the
- * question). Ranked-voting rows also carry their Borda score, and their percentage is the
- * option's share of all points. An open-text question has no options, so each
- * comment is a row of its own: the comment in the Option column, a count of 1 and no
- * percentage.
+ * "Summary by activity": one row per option of each live question, in the screen's order (the chart model's: single and multiple choice
+ * highest first, true or false and a scale in their own order, a ranking by its support score), with the client, the session's date (ISO), the
+ * question's number and type in words, the answers to the option and their share as whole numbers (the screen's), a scale step's place or a
+ * ranking's support score, the correct answer and the top choice marked "Yes", the answers to the question, and the question's headline on its
+ * first row. A written-answer question's rows are the words that came up most (each with the comments it is in). Then every comment is a row of
+ * its own, "Comment", with no name and no share. Numbers are numbers.
  */
-export function resultsRows(results) {
+export function summaryRows(results, brand = {}) {
+  const report = buildReport(results, brand);
+  const head = [report.clientName, report.sessionDay];
   const rows = [];
-  for (const section of liveSections(results)) {
-    for (const question of section.questions) {
-      const base = [section.title, question.prompt, question.type];
-      if (question.type === 'open-text-feedback') {
-        for (const response of question.responses) {
-          rows.push([...base, String(response.answer), 1, '', '', question.respondents]);
-        }
-        continue;
-      }
-      for (const option of question.options) {
-        rows.push([
-          ...base, option.label, option.count, option.percent.toFixed(1), option.score ?? '', question.respondents,
-        ]);
+  const comments = [];
+  for (const question of report.questions) {
+    const { chart } = question;
+    const type = TYPE_WORDS[chart.type] ?? 'Single choice';
+    const base = [...head, question.section, question.number, chart.prompt, type];
+    const own = [];
+    const yes = (value) => (value ? 'Yes' : '');
+    if (chart.kind === 'text') {
+      for (const word of chart.words) own.push([word.word, word.count, '', '', '', '']);
+      for (const comment of chart.comments) comments.push([...head, question.section, question.number, chart.prompt, 'Comment', comment.text, '', '', '', '', '', chart.answered, '']);
+    } else if (chart.kind === 'ranking') {
+      for (const option of chart.options) own.push([option.label, option.rankers, '', option.score, '', yes(option.rank === 1 && chart.answered > 0)]);
+    } else {
+      const options = chart.kind === 'scale' && chart.scale ? chart.scale.steps : chart.options;
+      for (const option of options) {
+        const place = chart.kind === 'scale' && Number.isFinite(Number(option.value)) ? Number(option.value) : '';
+        own.push([option.label, option.count, option.percent, place, yes(option.isCorrect), yes(option.isTop)]);
       }
     }
+    if (own.length === 0) own.push(['', '', '', '', '', '']);
+    own.forEach((cells, index) => rows.push([...base, ...cells, chart.answered, index === 0 ? chart.headline : '']));
   }
-  return rows;
+  return [...rows, ...comments];
 }
 
-/**
- * A CSV field, quoted when it holds a comma, quote or line break. Text that starts
- * with = + - @ (or a tab/CR) would run as a formula when the file is opened in Excel, and
- * comments come from the audience, so those get a leading apostrophe. Numbers
- * pass through untouched, so a negative number stays one.
- */
-function csvField(value) {
-  if (typeof value === 'number') return String(value);
-  let text = String(value);
-  if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
-  return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
-}
+/** The summary CSV's text: a header row, then summaryRows(), CRLF line ends; cells as the leader report writes them (csvCell). */
+export const resultsToCsv = (results, brand = {}) => `${[SUMMARY_COLUMNS, ...summaryRows(results, brand)].map((row) => row.map(csvCell).join(',')).join('\r\n')}\r\n`;
 
-/** The results as CSV text: a header row, then resultsRows(), CRLF line ends. */
-export function resultsToCsv(results) {
-  return [COLUMNS, ...resultsRows(results)].map((row) => row.map(csvField).join(',')).join('\r\n') + '\r\n';
-}
+/** The file itself: a byte-order mark first, so Excel reads it as UTF-8 (accents, curly quotes in comments). */
+export const summaryCsvFile = (results, brand = {}) => `${String.fromCharCode(0xFEFF)}${resultsToCsv(results, brand)}`;
 
 /** A file name safe on every OS, e.g. "results-s-kroger-kickoff-2026-09-19.csv". */
-export function exportFileName(results, extension) {
+export function exportFileName(results, extension, prefix = 'results') {
   const slug = String(results.session.id).replace(/[^\w-]+/g, '-');
-  return `results-${slug}-${new Date().toISOString().slice(0, 10)}.${extension}`;
+  return `${prefix}-${slug}-${new Date().toISOString().slice(0, 10)}.${extension}`;
 }
 
 /** Saves a Blob as a file through the browser's download. (Safari on iPad shows its download prompt.) */
@@ -89,15 +92,10 @@ function saveBlob(blob, fileName) {
   setTimeout(() => URL.revokeObjectURL(url), 10_000); // after the browser has started the download
 }
 
-function saveFile(text, fileName, mimeType) {
-  // The byte-order mark makes Excel read the file as UTF-8 (accents, curly quotes in comments).
-  saveBlob(new Blob(['\ufeff', text], { type: `${mimeType};charset=utf-8` }), fileName);
-}
-
-/** Exports the session's current results as a CSV download. Resolves to the file name. */
-export function downloadCsv(results) {
-  const fileName = exportFileName(results, 'csv');
-  saveFile(resultsToCsv(results), fileName, 'text/csv');
+/** Exports the session's summary by activity as a CSV download (`brand.name` is the client's name in every row). Resolves to the file name. */
+export function downloadCsv(results, brand = {}) {
+  const fileName = exportFileName(results, 'csv', 'summary-by-activity');
+  saveBlob(new Blob([summaryCsvFile(results, brand)], { type: 'text/csv;charset=utf-8' }), fileName);
   return fileName;
 }
 

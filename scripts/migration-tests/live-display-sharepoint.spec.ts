@@ -158,10 +158,12 @@ test('the exports from the admin page are the same files on SharePoint: CSV byte
   const csv = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Export CSV' }).click();
   const text = (await readFile((await (await csv).path())!, 'utf8')).replace(/^﻿/, '');
-  const expected = await onSite(fake, async () => resultsToCsv(await readSessionResults(session.id)));
+  // Phase 13: the summary by activity, with the client's name (the one the display shows) in every row; shares as whole numbers.
+  const client = (await page.locator('.live__client').innerText()).trim();
+  const expected = await onSite(fake, async () => resultsToCsv(await readSessionResults(session.id), { name: client }));
   expect(text).toBe(expected);
-  expect(text).toContain('Great Western Tea co.,2,66.7,,3');
-  expect(text, 'the third iPad\'s answer is counted').toContain('Kroger grocery and Baking co.,1,33.3,,3');
+  expect(text).toContain('Great Western Tea co.,2,67,');
+  expect(text, 'the third iPad\'s answer is counted').toContain('Kroger grocery and Baking co.,1,33,');
 
   const pdf = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Export PDF' }).click();

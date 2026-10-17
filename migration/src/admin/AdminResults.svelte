@@ -16,7 +16,7 @@
   type Client = { id: string; name: string };
   type Token = { id: string; sessionId: string; used?: boolean; expiredAt?: string | null };
   type TrackRow = { track: SessionTrack; name: string; unnamed: boolean; status: string; answered: number; total: number };
-  type SessionCard = { results: SessionResults; owner: string; codes: string[]; tracks: TrackRow[]; unreadable: string; charts: ReturnType<typeof chartsOf> };
+  type SessionCard = { results: SessionResults; owner: string; clientName: string; codes: string[]; tracks: TrackRow[]; unreadable: string; charts: ReturnType<typeof chartsOf> };
 
   let { onToast, onLiveDisplay }: {
     onToast: (message: string, kind?: 'info' | 'success' | 'error') => void;
@@ -156,7 +156,7 @@
     // The charts of the session's live activities (Phase 11a), with each answer's names: the same rule as the rows, over what was read for them.
     const charts = chartsOf({ sections: result.sections.filter((section) => section.enabled) }, { names: namesFor({ tracks: result.tracks, answers: answersOf(result), ...(sources ?? {}) }) });
     // What could not be read (Phase 9b, DI-6), said beside the export buttons, with each person's name the way their row has it.
-    return { results: result, owner: namesHeld.get(result.session.clientId) ?? result.session.clientId, codes: tokensHeld.filter((token) => token.sessionId === result.session.id).map((token) => token.expiredAt ? 'expired' : token.used ? 'used' : 'unused'), tracks, unreadable: unreadableNotice(result.unreadable, namesByVisit(tracks)), charts };
+    return { results: result, owner: namesHeld.get(result.session.clientId) ?? result.session.clientId, clientName: namesHeld.get(result.session.clientId) ?? '', codes: tokensHeld.filter((token) => token.sessionId === result.session.id).map((token) => token.expiredAt ? 'expired' : token.used ? 'used' : 'unused'), tracks, unreadable: unreadableNotice(result.unreadable, namesByVisit(tracks)), charts };
   }
 
   /** Everything, from the start: every session in full. The live one is read the lean way, so the timer can carry on from it. */
@@ -234,7 +234,7 @@
           <strong>{card.owner}</strong><span class="muted">{session.date ?? ''}</span><span class="tag">Session: {session.status ?? 'unknown'}</span><span class="card__spacer"></span>
           <button class="btn btn--small" type="button" onclick={() => onLiveDisplay(session.id)}>Live display</button>
         </header>
-        <ReportExports sessionId={session.id} {onToast} />
+        <ReportExports sessionId={session.id} clientName={card.clientName} {onToast} />
         {#if card.unreadable}<p class="notice card__unreadable" role="status" data-testid="unreadable-notice"><strong>{card.unreadable}</strong></p>{/if}
         <!-- (Phase 12, F-08: the charts first; with sixty people the list ran 5,000 px above them.) -->
         <details class="tally" open={openResults.includes(session.id)} ontoggle={(event) => { const isOpen = (event.currentTarget as HTMLDetailsElement).open; openResults = isOpen ? [...new Set([...openResults, session.id])] : openResults.filter((id) => id !== session.id); }}>

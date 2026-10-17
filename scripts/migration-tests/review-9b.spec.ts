@@ -105,7 +105,7 @@ test('Results, the Live display, the exports and the leader report show the rest
   expect(squash(read.pages.map((sheet) => sheet.text).join(' '))).toContain(squash('Saved answers could not be read, so none are counted here.'));
   await expect(here.locator('.report-exports__status')).toContainText('Saved leader-report-');
   // The CSV needs no extra row: it holds the readable people, and nothing about the damage.
-  const csv = await download(page, 'Participant answers (CSV)', here);
+  const csv = await download(page, 'All answers (CSV)', here);
   expect(csv.bytes.toString('utf8')).not.toContain('could not be read');
   expect(csv.bytes.toString('utf8').split('\r\n').filter(Boolean).length).toBeGreaterThan(4);
 

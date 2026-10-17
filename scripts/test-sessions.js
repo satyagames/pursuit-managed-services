@@ -180,11 +180,12 @@ describe('results export', () => {
     } finally {
       await ds.updateSection(section.id, { enabled: section.enabled });
     }
-    const objective = 'Straight Talk,Vote on your top business objective for transition,single-select';
-    assert.equal(lines[0], 'Activity,Question,Type,Option,Count,Percentage,Score,Respondents');
-    assert.ok(lines.includes(`${objective},Modernize technology,1,100.0,,1`));
-    assert.ok(lines.includes(`${objective},Reduce cost,0,0.0,,1`));
-    assert.ok(lines.some((line) => line.endsWith(`,"'=HYPERLINK(""http://x""), ""quoted""",1,,,1`)), 'the comment is quoted and de-fanged');
+    // Phase 13: the summary by activity (scripts/test-results-csv.js holds it by hand); the old eight columns are gone.
+    const objective = 'Straight Talk,';
+    assert.equal(lines[0], 'Client,Session date,Activity,Question number,Question,Question type,Option,Answers,Share of answers (%),Rank or score,Correct option,Top choice,Answers to this question,Takeaway');
+    assert.ok(lines.some((line) => line.includes(objective) && line.includes(',Vote on your top business objective for transition,Single choice,Modernize technology,1,100,,,Yes,1,')), lines.join(' | '));
+    assert.ok(lines.some((line) => line.includes(objective) && line.includes(',Vote on your top business objective for transition,Single choice,Reduce cost,0,0,,,,1,')));
+    assert.ok(lines.some((line) => line.endsWith(`,Comment,"'=HYPERLINK(""http://x""), ""quoted""",,,,,,1,`)), 'the comment is quoted and de-fanged');
     assert.ok(!lines.some((line) => line.startsWith('Empty')), 'a section that is not enabled is left out');
     assert.equal(lines.at(-1), '', 'ends with a line break');
   });

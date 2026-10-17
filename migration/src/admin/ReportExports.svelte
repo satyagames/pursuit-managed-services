@@ -9,17 +9,21 @@
   import { writeLeaderReportPdf, type Wordmark } from '../lib/leader-report-pdf.js';
   import { createMeasure, loadReportFonts } from '../lib/report-fonts.js';
   import { RESULTS_PALETTE } from '../lib/results-palette-source.js';
+  import { getSessionResults } from '../lib/adminData.js';
+  import { summaryCsvFile } from '../../../public/js/resultsExport.js';
 
-  // The two exports for leaders, for one session of the Results screen (Phase 7b): the leader report, a PDF made here in the page
-  // from the session's saved answers (nothing is stored anywhere: it is made again each time), and the participant CSV, one row for
-  // each person and question. The numbers are lib/leader-report.js; this component only reads, shows progress and saves the file.
+  // The exports for leaders, for one session of the Results screen (Phase 7b): the leader report, a PDF made here in the page
+  // from the session's saved answers (nothing is stored anywhere: it is made again each time); the summary by activity (Phase 13), the
+  // Live display's CSV, one row per answer option; and all answers, the participant CSV, one row for each person and question. The numbers
+  // are lib/leader-report.js's and the chart model's; this component only reads, shows progress and saves the file.
 
-  let { sessionId, onToast }: {
+  let { sessionId, clientName = '', onToast }: {
     sessionId: string;
+    clientName?: string;
     onToast: (message: string, kind?: 'info' | 'success' | 'error') => void;
   } = $props();
 
-  let busy = $state<'' | 'pdf' | 'csv'>('');
+  let busy = $state<'' | 'pdf' | 'summary' | 'csv'>('');
   let status = $state('');
   let failed = $state(false);
   let took = $state(0);
@@ -77,7 +81,7 @@
 
   const cancelled = () => new DOMException('The report was cancelled.', 'AbortError');
 
-  async function run(kind: 'pdf' | 'csv') {
+  async function run(kind: 'pdf' | 'summary' | 'csv') {
     if (busy) return;
     busy = kind;
     failed = false;
@@ -87,6 +91,18 @@
     const { signal } = controller;
     const started = performance.now();
     try {
+      if (kind === 'summary') {
+        // The summary by activity: the same file as the Live display's Export CSV, read through the one reader of answers.
+        const results = await getSessionResults(sessionId);
+        if (signal.aborted) throw cancelled();
+        if (!results) throw new Error('That session no longer exists.');
+        const fileName = reportFileName('summary-by-activity', sessionId, 'csv');
+        save(new Blob([summaryCsvFile(results, { name: clientName })], { type: 'text/csv;charset=utf-8' }), fileName);
+        took = Math.round(performance.now() - started);
+        status = `Saved ${fileName}`;
+        onToast(`Saved ${fileName}`, 'success');
+        return;
+      }
       const records = await readLeaderReportRecords(sessionId);
       if (signal.aborted) throw cancelled();
       if (!records) throw new Error('That session no longer exists.');
@@ -131,7 +147,8 @@
 <div class="report-exports" data-report-session={sessionId}>
   <span class="report-exports__label">For leaders</span>
   <button class="btn btn--small" type="button" onclick={() => void run('pdf')} disabled={!!busy}>{busy === 'pdf' ? 'Preparing...' : 'Leader report (PDF)'}</button>
-  <button class="btn btn--small" type="button" onclick={() => void run('csv')} disabled={!!busy}>{busy === 'csv' ? 'Preparing...' : 'Participant answers (CSV)'}</button>
+  <button class="btn btn--small" type="button" onclick={() => void run('summary')} disabled={!!busy}>{busy === 'summary' ? 'Preparing...' : 'Summary by activity (CSV)'}</button>
+  <button class="btn btn--small" type="button" onclick={() => void run('csv')} disabled={!!busy}>{busy === 'csv' ? 'Preparing...' : 'All answers (CSV)'}</button>
   {#if busy === 'pdf'}<button class="btn btn--small" type="button" onclick={() => controller?.abort()}>Cancel</button>{/if}
   {#if status}<p class="report-exports__status" class:report-exports__status--failed={failed} role={failed ? 'alert' : 'status'} data-ms={took || undefined}>{status}</p>{/if}
 </div>

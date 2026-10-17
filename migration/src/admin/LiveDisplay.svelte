@@ -434,7 +434,8 @@
       if (!active) return;
       if (!current) throw new Error('That session no longer exists.');
       let fileName: string;
-      if (kind === 'csv') fileName = downloadCsv(current);
+      // The summary by activity (Phase 13): the client's name is the one this display already holds, so the file costs no read of its own.
+      if (kind === 'csv') fileName = downloadCsv(current, { name: (typeof structure?.client?.name === 'string' ? structure.client.name.trim() : '') });
       else {
         const [loaded] = await Promise.all([
           loadBrand({ state: { clientId: current.session.clientId }, sessionId: current.session.id }),

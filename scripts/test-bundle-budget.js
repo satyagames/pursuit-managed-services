@@ -77,10 +77,11 @@ describe('the page budgets', () => {
 
   it('carries the leader report on the admin page, with its two faces, and none of it on the participant page', () => {
     const ids = built.admin.modules.map((module) => module.id);
-    for (const part of ['lib/leader-report.js', 'lib/leader-report-layout.js', 'lib/leader-report-pdf.js', 'lib/leader-report-data.js', 'lib/report-fonts.js', 'assets/report-fonts/open-sans-report.js', 'admin/ReportExports.svelte']) {
+    for (const part of ['lib/leader-report.js', 'lib/leader-report-layout.js', 'lib/leader-report-pdf.js', 'lib/leader-report-data.js', 'lib/report-fonts.js', 'assets/report-fonts/open-sans-report.js', 'admin/ReportExports.svelte', 'lib/export-summary.js']) {
       assert.ok(ids.some((id) => id.endsWith(part)), `${part} is on the admin page`);
     }
-    for (const marker of [/How the numbers are counted/, /OpenSans-Regular/, /OpenSans-Bold/, /Leader report \(PDF\)/, /Participant answers \(CSV\)/]) {
+    // (Phase 13: "Participant answers (CSV)" is "All answers (CSV)", and "Summary by activity (CSV)" is beside it.)
+    for (const marker of [/How the numbers are counted/, /OpenSans-Regular/, /OpenSans-Bold/, /Leader report \(PDF\)/, /Summary by activity \(CSV\)/, /All answers \(CSV\)/, /What each activity found/]) {
       assert.match(built.admin.html, marker);
       assert.doesNotMatch(built.participant.html, marker);
     }
