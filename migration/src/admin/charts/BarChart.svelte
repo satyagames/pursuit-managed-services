@@ -223,7 +223,7 @@
 
   .bars__tag {
     display: inline-flex;
-    align-items: center;
+    align-items: baseline;
     gap: 0.2rem;
     color: var(--viz-text-secondary);
     font-size: 0.875em;
@@ -231,7 +231,13 @@
     white-space: nowrap;
   }
 
+  .bars__tag + .bars__tag::before {
+    content: '·';
+    margin-right: 0.3rem;
+  }
+
   .bars__tick {
+    align-self: center;
     width: 1.1em;
     height: 1.1em;
     fill: none;

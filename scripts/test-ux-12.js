@@ -116,3 +116,13 @@ describe('F-11: a chosen answer (a rank, a poll, multi-select) does not look lik
     assert.match(badge, /color:\s*var\(--action\)/, 'the number in the button colour on white (4.9:1)');
   });
 });
+
+describe('F-14: "Correct" and "Top choice" beside a bar sit on the text\'s baseline, apart', () => {
+  it('BarChart: the tags align to the baseline and a second tag is set apart', async () => {
+    const { readFileSync } = await import('node:fs');
+    const source = readFileSync(new URL('../migration/src/admin/charts/BarChart.svelte', import.meta.url), 'utf8');
+    const tag = /\.bars__tag\s*\{([^}]*)\}/.exec(source)?.[1] ?? '';
+    assert.match(tag, /align-items:\s*baseline/);
+    assert.match(source, /\.bars__tag \+ \.bars__tag::before\s*\{[^}]*content:\s*'·'/);
+  });
+});
