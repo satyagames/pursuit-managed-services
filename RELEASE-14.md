@@ -108,7 +108,31 @@ most common problems; security and privacy; licence and notices; contributing. N
 
 ## 5. The package
 
-PACKAGE
+**`pms-e470847`**, made by `npm run package:release` from commit `e470847` in a fresh checkout. `SHA256SUMS.txt` passes in the folder (7 OK) and in
+a fresh unzip (7 OK); no page holds a site address, a folder name, a PIN hash, the demo PIN, `p_cec_` or `CreativeExpCOE`. This report was committed
+after it, and changes no page.
+
+| File | Bytes | gzip -9 | SHA-256 | Against the baseline `pms-1ab63bd` |
+|---|---:|---:|---|---|
+| index.html | 374,368 | 157,027 | `9cae99e5bf091d27acabc75a4a469c6a5bc7995d6ef28237594daa5c1bca3557` | **byte for byte** (and pms-757be5c's and pms-d19bd14's) |
+| admin.html | 1,548,894 | 562,606 | `04e64562f598981d3ee6dc1eb846395e1cbf0432c9df69c0cd755023fb230c1b` | **byte for byte** (and pms-757be5c's) |
+| setup.html | 1,172,836 | 788,960 | `a0db0078aec8b8b3774f4684b47666e913915d6602eb8c9fb49d45bde0d35de7` | differs in one place only: the build name it shows (`pms-e470847` for `pms-1ab63bd`) |
+| pms-config.txt | 54 | | `04426124f56abad3973d69fb4a8608e673d86745419bf1cc41c5a70441cc607f` | byte for byte |
+| THIRD-PARTY-NOTICES.txt | 40,835 | | `e4ecfa86a85da94926f3f25b9f2b99791c38cc3ea100c5454bb333e620ec1eb4` | byte for byte |
+| RELEASE-NOTES.md | 30,233 | | `907f960def8c1741cd24699d7fc08e9555520d2d0b7e15240d7dd25959debc57` | this release's section added |
+| RUNBOOK.md | 35,115 | | `6fee4c7cbad21c5269919b02f472bd5d281222dd381b2b19825797c512c0d77e` | the PCOE note's Phase 14 paragraph and step 10 added |
+| **pms-e470847.zip** | 1,544,530 | | `d96eb7b190c206e989434581193f799a82967b6d19f7afede9c661eae004d50c` | |
+
+On this package: `npm run test:local-site` 26 of 26 (Setup's self-test 11 of 11 on the local PCOE stand-in), and the browser suite ran on the same pages
+(section 3). For PCOE: replace the three pages (RUNBOOK.md's note, steps 1, 2 and 10); nothing in Setup or the lists changes.
+
+**The screenshots** (`npm run ux:shoot`, the local site's harness, git-ignored in `ux-review/`): 394 pictures of every screen and state on every
+device, from the baseline package (`ux-review/14-before`) and from this one (`ux-review/14-after`). 328 are byte for byte the same. To tell a change
+from the harness's own noise, the baseline package was shot a second time (`ux-review/14-before-2`): two runs of the same pages already differ in 57
+pictures (confetti falls differently, a clock line says "Updated 5:00:12 PM" or "5:00:13 PM"). Only 12 differ after and not in that second run: six of
+Setup, whose one difference is the build name it shows, and six where 13 to 54 pixels of a million differ, by 1 or 2 levels of a colour channel (22 at
+most, at the edge of a cropped logo), at the edges of pictures and buttons, which is drawing noise. I looked at the pairs that differ: a completion
+screen (the confetti), Results (the clock), Brand Studio (no visible difference). Nothing a person would see changed.
 
 ## 6. What only the real site can show
 
