@@ -1086,7 +1086,7 @@ QA-TESTING.md items 150 to 156.
 - **The colours are `styles/results-tokens.css`** (the admin page's alone), held by `scripts/test-results-palette.js`: one series is one colour (the top choice Deloitte Blue
   with "Top choice", the rest the tint), Dark Green means correct and nothing else (with a tick and the word), Deloitte Green is the card's rule and never a bar, words never
   wear a data colour, the client's colours stay in the heading and never recolour a mark. Every chart sits on a white card, so there are no dark values. Most of the palette
-  is not in the 2025 brand guide (`public/assets/BrandGuidelines`, page 42: only Deloitte Green and Dark Green are); VJR kept the validated set.
+  is not in the 2025 US brand style guide (page 42: only Deloitte Green and Dark Green are; the PDF is kept outside the repository); VJR kept the validated set.
 - **The participant page may not change at all, to its Tailwind rules** (`PHASE_11A`: allowance 0, and `participantUtilities`, the class names of its `@layer utilities`, must
   be exactly what they were). Tailwind reads every file under `migration/` for class names, words a page shows and comments included: "View as table" is spelt in two parts in
   `admin/charts/chart-ui.ts`, no file there uses a size query (`@container` is a class to Tailwind), and `chart-ui.ts` keeps the word "container" on purpose (it was in the
