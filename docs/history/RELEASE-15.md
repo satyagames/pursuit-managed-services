@@ -3,8 +3,8 @@
 Branch `pms-15`, from `pms-14` at `6aaa87e` (the brief named `85f6abb`; `6aaa87e` is one commit later and only drops a stale lock-file flag). **Not
 pushed.** Nothing of it has met a real iPad, iPhone, laptop or the real site: QA-TESTING.md items 182 to 187.
 
-Commits, one cause each: `a20acf5` the alignment tooling; `f398b65` A-01; `015aa6b` A-02 and the review; `408aaef` the motion system; the Animations
-switch; the documents. Each commit passes `npm run check:svelte` and `npm test` on its own; Part 1's three can ship without the rest.
+Commits, one cause each: `a20acf5` the alignment tooling; `f398b65` A-01; `015aa6b` A-02 and the review; `408aaef` the motion system; `1e5aed7` the
+Animations switch; `33021a3` the documents; `21f23be` what the full browser suite found; `b643f1b` the final sizes. Each commit passes `npm run check:svelte` and `npm test` on its own; Part 1's three can ship without the rest.
 
 ## Before and after
 
@@ -20,8 +20,8 @@ performance runs and 962 measured screenshots (`ux-review/before-15/`).
 | `npm run test:report`, `test:report:mutations` | pass, 64 of 64 caught | pass, 64 of 64 caught |
 | `npm run oracle -- --seeds 500` | 0 differences | 0 differences |
 | `npm run test:charts` | pass | pass |
-| `npm run test:local-site` | pass | see "The package" |
-| `npm run test:migration` (Chromium, WebKit) | 784 passed, 24 failed, 13 skipped | see "The browser suite" |
+| `npm run test:local-site` | pass | pass (on `pms-b643f1b`) |
+| `npm run test:migration` (Chromium, WebKit) | 784 passed, 24 failed, 13 skipped | 834 passed, 28 failed, 15 skipped; after the fixes, see "The browser suite" |
 
 The 24 failures before any change: 20 are this machine's known WebKit faults (17 of `effects-audio.spec.ts`, `brand-smoke.spec.ts`, the `flow.spec.ts`
 header test, one `keyboard.spec.ts` test), 2 the known flakes (`admin-today.spec.ts` "slugs", `brand-studio.spec.ts` "an answer tile's picture"), and
@@ -88,8 +88,8 @@ on, 5 off) are inflated by the spec's own frame recorder: any frame callback mak
 animation still attached). Every entrance of every kind of question, 1 to 12 answers, every direction, ends within 700 ms (longest 640 ms;
 `scripts/test-motion-plan.js`).
 
-**The startup** (`node scripts/local-site/measure.js`, PCOE latency, 4x CPU) before: ready in 1,040 ms, 62 ms script, 10 MB heap, no long task; after: see
-"The package". No motion work runs before the first screen (the first screen does not move).
+**The startup** (`node scripts/local-site/measure.js`, PCOE latency, 4x CPU) before → after: ready in 1,040 → 1,050 ms, first paint 196 → 172 ms, 62 → 60 ms
+script, 10 → 10 MB heap, no long task either way; the visit (begin, hub, an activity, Submit) CLS 0.0267 → 0.0213. No motion work runs before the first screen (the first screen does not move).
 
 **Looked at, moving** (`node scripts/local-site/filmstrip.js`: 40 strips, every 50 ms, iPhone portrait and iPad landscape, motion on and off, in
 `ux-review/after-15/filmstrips/`, Chromium). On Next the question slides in from the right first, then A to D alternately from left and right, all readable
@@ -114,12 +114,43 @@ other's save: the colour and the switch both stay; in a browser too (`motion-swi
 
 **The controls.** One component (`admin/MotionSwitch.svelte`): a `role="switch"` button with On/Off in words, 44 px, Space and Enter, the admin focus ring,
 saved at once with "Animations are on/off for <client>", put back to the saved value with "Could not save the animations setting." on failure. In Brand
-Studio a card with the help line; on Today under Controls for the live client. **Decision:** it saves at once in both places, so it is never one of Brand
+Studio a card with the help line; on Today under Controls for the live client. Brand Studio's preview shows a still look (frame level set from the switch). **Decision:** it saves at once in both places, so it is never one of Brand
 Studio's unsaved changes (the brief asked for the unsaved flag; one immediate value avoids a draft that could overwrite a flip made on Today).
 
 **How soon a participant sees it:** at the page's next boot: a reload, or the boot a restart or a change of what is live makes. An open page keeps what it
 booted with (the timer reads the session, not the client; a read was not added). Off removes the screens' motion, the page's small transitions and the
 confetti; sound is untouched; the device's reduced motion always wins.
+
+## The browser suite
+
+The first full run on the motion and switch commits (Chromium and WebKit): 834 passed, 28 failed, 15 skipped. 21 of the failures are the baseline's known
+WebKit faults and flakes, unchanged; the two `admin-content.spec.ts` failures of the baseline passed. Five were this phase's, and were fixed in `21f23be`:
+`?preview=` kept the governor's state in session storage (`brand-studio.spec.ts` :1013); Brand Studio's preview animated each picked screen and its layout
+test measured mid-rise (:964, both engines); `flow.spec.ts` "reduced motion switches the step animation off" pinned the old `.pms-step` keyframe (both
+engines; now it reads the next question's motion, same intent). One (`participant.spec.ts` :25, WebKit, an extra visit write) passed 5 of 5 on rerun.
+The re-run of every spec those fixes touch (Brand Studio, Brand smoke, flow, participant, motion, alignment, axe; both engines): 270 passed, 4 failed,
+3 skipped, the four being the known tile-upload flake, the known WebKit brand-smoke and header faults, and a Windows socket error
+(`ERR_NO_BUFFER_SPACE`, `flow.spec.ts` :567, 5 of 5 on rerun). The whole suite was not run a second time after `21f23be`.
+
+**Alignment after:** the participant and tile flows shot again on `pms-b643f1b` at the seven sizes (511 pictures, 0 problems): the same four groups as
+before, each by design (ALIGNMENT-REVIEW.md), nothing new from the motion.
+
+## The package
+
+`pms-b643f1b` (`build-svelte/package/pms-b643f1b/`, `build-svelte/package/pms-b643f1b.zip`), made by `npm run package:release` from the committed tree in a fresh
+checkout; `shasum -a 256 -c` passes in the folder (7 OK) and in a fresh unzip (7 OK). RUNBOOK.md's note says what Phase 15 changes and adds step 11 (the
+motion and the switch, QA 182 to 187); RELEASE-NOTES.md has what changed since pms-e470847.
+
+| File | Bytes | gzip -9 | SHA-256 |
+|---|---:|---:|---|
+| index.html | 380,658 | 158,965 | `62a854f665472c95f189a27cc7bca9de9ba15af22152bcbca7f0ed10ef2922ef` |
+| admin.html | 1,566,921 | 569,520 | `c4e0599a48424c9b5c73d245282b441e2373cd15e152b206b4705edab96dbee5` |
+| setup.html | 1,173,530 | 789,105 | `b67f3338ffc49d10040e19c6068b14aa9390b6cb0cf4070a902e1d5aaa9a012d` |
+| pms-config.txt | 54 | | `04426124f56abad3973d69fb4a8608e673d86745419bf1cc41c5a70441cc607f` |
+| THIRD-PARTY-NOTICES.txt | 40,835 | | `e4ecfa86a85da94926f3f25b9f2b99791c38cc3ea100c5454bb333e620ec1eb4` |
+| RELEASE-NOTES.md | 32,332 | | `71a88c6950437fd2bcb6db29159e4bec423d0dd9a398813d11746e95c97a6ef2` |
+| RUNBOOK.md | 36,713 | | `2f13274944cea6fc1cee433b708d95dc9e80aaa213647582a3ad47f9915437e7` |
+| **pms-b643f1b.zip** | 1,554,304 | | `49a65c641380285002cb0c514012bdb45973cc61c33d428f9cb95f7ec7487ab6` |
 
 ## Decisions made here
 
