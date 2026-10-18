@@ -15,7 +15,9 @@
    * A client with an accent colour that shows on the plate gets a thin ring of it just inside the
    * plate's edge (--accent-ring). It is drawn on the plate, clear of the logo's own space.
    */
-  let { hero = null, logo = null, text = '', name, plate = 'light', slowMs = 1500 }: {
+  import { motion as move, type MotionParams } from '../lib/motion/motion.js';
+
+  let { hero = null, logo = null, text = '', name, plate = 'light', slowMs = 1500, motion = null }: {
     /** The hero badge's address. */
     hero?: string | null;
     /** The logo's address, for the plate. */
@@ -28,6 +30,8 @@
     plate?: 'light' | 'dark';
     /** How long the badge may take before the plate is shown in its place. */
     slowMs?: number;
+    /** Its part in the screen's motion (lib/motion/motion.ts). */
+    motion?: MotionParams | null;
   } = $props();
 
   const initials = $derived(name.split(/\s+/).filter(Boolean).slice(0, 2).map((word) => word[0]).join('').toUpperCase());
@@ -59,7 +63,7 @@
   const picture = $derived(logo && !logoFailed ? logo : null);
 </script>
 
-<div class="pms-hero-box" data-badge={hero ? badge : 'none'}>
+<div class="pms-hero-box" data-badge={hero ? badge : 'none'} use:move={motion}>
   {#if showPlate}
     <div class="pms-hero" data-plate={plate} class:pms-hero-named={!picture && text.trim() !== ''}>
       {#if picture}
@@ -106,7 +110,7 @@
     height: 100%;
     object-fit: contain;
     opacity: 0;
-    transition: opacity 320ms ease;
+    transition: opacity var(--motion-duration-base) var(--motion-ease-standard);
   }
 
   .pms-badge-ready {

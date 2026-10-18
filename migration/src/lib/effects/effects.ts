@@ -17,6 +17,7 @@ import { celebrate, clearConfetti } from './confetti.js';
 import { EFFECTS, UNAVAILABLE_TITLE, answerEffect, readChoice, soundIsOn, writeChoice, type Effect } from './effect-plan.js';
 import { CUES, CUE_NAMES, type CueName } from './sound-cues.js';
 import * as engine from './sound-engine.js';
+import { motionLevel } from '../motion/motion.js';
 
 export { UNAVAILABLE_TITLE };
 export type { ConfettiSize, CueName };
@@ -126,7 +127,8 @@ export function unlockAudio(): void {
 
 function run(effect: Effect, anchor?: Element | null): void {
   if (effect.cue && soundState().on) engine.playCue(effect.cue);
-  if (effect.confetti) void celebrate(effect.confetti, anchor);
+  // Confetti is motion: the client's Animations switch, ?motion=off and the governor at its lowest leave it out (Phase 15), as reduced motion does.
+  if (effect.confetti && motionLevel() !== 'none') void celebrate(effect.confetti, anchor);
 }
 
 /** A choice was made in a question that is not graded: a soft tick. */

@@ -4,6 +4,7 @@
   import { APP_NAME } from '../lib/common/app-name.js';
   import { navigateTo } from '../lib/participant/navigation.js';
   import { participant } from '../lib/participant/session.svelte.js';
+  import { motion } from '../lib/motion/motion.js';
 
   let path = $derived(router.location);
   let title = $derived(path.startsWith('/quiz/') ? 'Activity' : path.startsWith('/feedback/') ? 'Feedback' : path === '/thank-you' ? 'Thank you' : path === '/agenda' ? 'Agenda' : 'Page not found');
@@ -13,7 +14,7 @@
   });
 </script>
 
-<section class="screen stage-placeholder">
+<section class="screen stage-placeholder" use:motion={{ role: 'card' }}>
   <p class="eyebrow">{APP_NAME}</p>
   <h1>{title}</h1>
   {#if participant.sessionId}

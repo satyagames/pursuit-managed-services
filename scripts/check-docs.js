@@ -34,7 +34,7 @@ export const GONE = new Map(Object.entries({
   'public/config.js': 'the legacy pages\' settings, gone in Phase 10c-1', 'config.js': 'the legacy pages\' settings, gone in Phase 10c-1',
   'public/js/kiosk.js': 'the legacy always-on kiosk script, gone in Phase 10c-1', 'kiosk.js': 'the legacy always-on kiosk script, gone in Phase 10c-1',
   'public/js/app.js': 'the legacy app, in the tag legacy-final', 'app.js': 'the legacy app, in the tag legacy-final',
-  'sfx.js': 'the legacy sound module, gone', 'vfx.js': 'the legacy effects module, gone', 'resultsRenderer.js': 'the Chart.js renderer, gone in Phase 11a',
+  'sfx.js': 'the legacy sound module, gone', 'vfx.css': 'the legacy motion sheet, gone in Phase 15 (lib/motion/motion-tokens.css)', 'vfx.js': 'the legacy effects module, gone', 'resultsRenderer.js': 'the Chart.js renderer, gone in Phase 11a',
   'public/js/resultsRenderer.js': 'the Chart.js renderer, gone in Phase 11a', 'ResultQuestion.svelte': 'the Live display\'s old card, gone in Phase 11a',
   'responses.json': 'the legacy session answer file, gone in Phase 10c-2a', 'theme.json': 'the ThemeConfig file, gone in Phase 10c-2a',
   'public/js': 'the folder of the shared modules until Phase 14', 'public/css': 'the folder of the legacy sheets until Phase 14',

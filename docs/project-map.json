@@ -298,6 +298,7 @@
     "migration/src/lib/data": "The data layer: the one module that talks to SharePoint REST (or, on the local server, its JSON API), and grouping of long id lists into short reads. Every page carries it.",
     "migration/src/lib/effects": "Sounds and confetti, behind one door (`effects.ts`): which moment makes which effect, the cues as data, Web Audio, canvas-confetti.",
     "migration/src/lib/exports": "The files a leader gets: the leader report (data, counting, layout, PDF writer, fonts) and the Live display's summary pack (PDF, PowerPoint) and summary CSV.",
+    "migration/src/lib/motion": "The participant screens' motion, behind one door (`motion.ts`): the plan by kind of question and part of a screen, the tokens and shapes (CSS), the level and the governor.",
     "migration/src/lib/participant": "The participant page: the boot sequence, the visit, the activities held for the page's life, the pager's rules, saving answers, screen moves.",
     "migration/src/lib/results": "Results counted and shown: the tally, the chart model (every number a chart shows), the palette, the figure on paper, names, the takeaways, where a tooltip goes.",
     "migration/src/lib/schema": "The lists and columns: `pms-schema.js`, the names every page carries, and `pms-schema-meta.js`, everything else about them (Setup, the tests and the generators only).",

@@ -3,6 +3,7 @@
   import { CheckBadge, HomeButton, PillButton } from '../components/index.js';
   import { focusHeading } from '../lib/common/focus.js';
   import { hiLine } from '../lib/participant/pager-logic.js';
+  import { motion } from '../lib/motion/motion.js';
 
   let { name, title, right, total, allDone, onback, onfinish, onhome }: {
     name: string;
@@ -25,7 +26,7 @@
   const summary = $derived(total > 0 ? `${right} of ${total} right on the first try` : 'Thanks for sharing');
 </script>
 
-<div class="pms-complete">
+<div class="pms-complete" use:motion={{ role: 'card' }}>
   <CheckBadge />
   <h1 bind:this={heading} tabindex="-1">{headline}</h1>
   <p class="pms-complete-summary" role="status">{summary}</p>

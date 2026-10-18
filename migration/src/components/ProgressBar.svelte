@@ -8,7 +8,7 @@
 
   const safeMax = $derived(max > 0 ? max : 1);
   const clamped = $derived(Math.min(safeMax, Math.max(0, value)));
-  const percent = $derived((clamped / safeMax) * 100);
+  const share = $derived(clamped / safeMax);
 </script>
 
 <div
@@ -19,7 +19,8 @@
   aria-valuemax={safeMax}
   aria-valuenow={clamped}
 >
-  <div class="fill" style:width="{percent}%"></div>
+  <!-- The fill is the whole track scaled from its left edge (Phase 15): a change moves on the compositor, not by a new layout; the track's rounded ends clip it. -->
+  <div class="fill" style:--share={share}></div>
 </div>
 
 <style>
@@ -37,8 +38,9 @@
   .fill {
     height: 100%;
     background: var(--progress);
-    border-radius: var(--radius-full);
-    transition: width 300ms ease;
+    transform: scaleX(var(--share, 0));
+    transform-origin: 0 50%;
+    transition: transform var(--motion-duration-base) var(--motion-ease-standard);
   }
 
   @media (prefers-reduced-motion: reduce) {

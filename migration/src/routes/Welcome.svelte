@@ -11,6 +11,7 @@
   import { participant, setTrack, takeEarlierVisit, type ParticipantTrack } from '../lib/participant/session.svelte.js';
   import { visitBegun, visitIdFor } from '../lib/participant/visit-id.js';
   import { APP_NAME } from '../lib/common/app-name.js';
+  import { motion } from '../lib/motion/motion.js';
 
   type StaffTrack = ParticipantTrack & { sharePointUserId?: string | null; visitorId?: string | null };
   /** What Welcome draws from, when it is not today's live experience: Brand Studio's preview of a draft. */
@@ -103,17 +104,17 @@
 <svelte:head>{#if !preview}<title>Welcome | {APP_NAME}</title>{/if}</svelte:head>
 
 <section class="pms-welcome" aria-busy={loading || busy}>
-  <HeroPlate hero={view.heroUrl} logo={view.logoUrl} plate={view.plate} text={view.logoText} name={view.clientName} />
+  <HeroPlate hero={view.heroUrl} logo={view.logoUrl} plate={view.plate} text={view.logoText} name={view.clientName} motion={{ role: 'hero' }} />
 
   {#if loading}
     <p class="pms-line" role="status">Loading your welcome...</p>
   {:else if visitorNeedsQr}
-    <div class="pms-words">
+    <div class="pms-words" use:motion={{ role: 'title' }}>
       <h1 bind:this={heading} tabindex="-1">Scan your visitor QR code</h1>
       <p class="pms-line">Your facilitator will provide your personal check-in code.</p>
     </div>
   {:else}
-    <div class="pms-words">
+    <div class="pms-words" use:motion={{ role: 'title' }}>
       <h1 bind:this={heading} tabindex="-1">{hiLine(name)}</h1>
       <p class="pms-line">{view.welcomeLine || `Welcome to the ${view.clientName} experience.`}</p>
       {#if !preview && !participant.activeSession && !participant.clientTrackId}

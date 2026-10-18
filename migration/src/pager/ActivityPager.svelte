@@ -8,6 +8,7 @@
   import { focusHeading } from '../lib/common/focus.js';
   import { keepInView } from '../lib/participant/keep-in-view.js';
   import { navigateTo } from '../lib/participant/navigation.js';
+  import { motion, setMotionDirection } from '../lib/motion/motion.js';
   import {
     chooseGraded, correctOptionIds, firstTryScore, firstUnansweredIndex, gradedAnnouncement, gradedRecord,
     gradedStateFromRecord, greetingName, isAnswerComplete, isGraded, isGradedResolved, isRecordSettled, normalizeAnswer,
@@ -269,7 +270,7 @@
   async function next() {
     if (!question || saving || demo) return;
     if (preview) {
-      if (!isLast) { index += 1; startStep(); }
+      if (!isLast) { setMotionDirection('forward'); index += 1; startStep(); }
       return;
     }
     if (graded) {
@@ -281,6 +282,7 @@
       recordAnswer(sectionId, ungradedRecord(question, answer, answerRecord(question.id)));
     }
     if (isLast) { await finish(); return; }
+    setMotionDirection('forward');
     index += 1;
     startStep();
   }
@@ -299,6 +301,7 @@
       score = firstTryScore(questions, finalAnswers);
       announcement = '';
       activityComplete();
+      setMotionDirection('jump');
       phase = 'complete';
       checkAllDone();
     } catch (cause) {
@@ -366,11 +369,11 @@
       onhome={goHome}
     />
   {:else}
-    <header class="pms-head">
+    <header class="pms-head" use:motion={{ role: 'title', type: question?.type, count: question?.options.length }}>
       <h1 class="pms-title">{title}</h1>
       {#if description}<p class="pms-description">{description}</p>{/if}
     </header>
-    <Divider />
+    <Divider motion={{ role: 'rule', type: question?.type, count: question?.options.length }} />
 
     {#if phase === 'empty'}
       <p class="pms-status">This activity has no questions yet.</p>
@@ -381,7 +384,7 @@
 
       {#key index}
         <div class="pms-step">
-          <h2 class="pms-question" id={headingId} tabindex="-1" bind:this={heading}>
+          <h2 class="pms-question" id={headingId} tabindex="-1" bind:this={heading} use:motion={{ role: 'question', type: question.type, count: question.options.length }}>
             <span class="pms-number" aria-hidden="true">{index + 1}.</span>
             <span>{question.prompt}</span>
           </h2>
@@ -411,7 +414,7 @@
 
       <ActionBar sticky={!preview}>
         {#if preview}
-          <PillButton variant="secondary" disabled={index === 0} onclick={() => { index -= 1; startStep(); }}>Back</PillButton>
+          <PillButton variant="secondary" disabled={index === 0} onclick={() => { setMotionDirection('back'); index -= 1; startStep(); }}>Back</PillButton>
           <PillButton disabled={isLast} onclick={() => void next()}>Next</PillButton>
         {:else}
           {#if retrying}
@@ -458,7 +461,6 @@
 
   .pms-step {
     margin-top: clamp(1.25rem, 4vw, 2rem);
-    animation: pms-step-in 240ms ease both;
   }
 
   .pms-question {
@@ -500,12 +502,4 @@
     border-radius: 0.5rem;
   }
 
-  @keyframes pms-step-in {
-    from { opacity: 0; transform: translateY(0.5rem); }
-    to { opacity: 1; transform: none; }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .pms-step { animation: none; }
-  }
 </style>

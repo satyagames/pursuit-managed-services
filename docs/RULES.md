@@ -134,7 +134,7 @@ and the brand files (the Open Sans TTFs the font generators read among them).
 
 ## Svelte app conventions (`migration/`)
 
-The Svelte app is the app. The participant page still loads `migration/src/styles/legacy/app.css` and `vfx.css` (the legacy app's sheets, until Phase 10c-1); restyle by overriding
+The Svelte app is the app. The participant page still loads `migration/src/styles/legacy/app.css` (the legacy app's sheet, until Phase 10c-1; its motion sheet `vfx.css` left in Phase 15); restyle by overriding
 in `migration/src/`, not by editing them, so that what the tests measure stays where it is.
 
 - **Product name**: user-visible text uses `APP_NAME` (`migration/src/lib/common/app-name.ts`); the

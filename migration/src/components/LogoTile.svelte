@@ -1,8 +1,9 @@
 <script lang="ts">
   import type { HTMLButtonAttributes } from 'svelte/elements';
   import type { AnswerState } from './types.js';
+  import { motion as move, type MotionParams } from '../lib/motion/motion.js';
 
-  let { src, alt = '', label, state = 'default', announce = true, ...rest }: Omit<HTMLButtonAttributes, 'children'> & {
+  let { src, alt = '', label, state = 'default', announce = true, motion = null, ...rest }: Omit<HTMLButtonAttributes, 'children'> & {
     /** Brand image. Without it the tile shows `label` as text. */
     src?: string;
     /** What the image shows, e.g. the brand name. It becomes the button's accessible name. */
@@ -12,9 +13,12 @@
     state?: AnswerState;
     /** Announce the verdict through the tile's own live region. A screen that announces the outcome itself turns this off. */
     announce?: boolean;
+    /** Its part in the screen's motion (lib/motion/motion.ts): its place among the answers. Its verdict is added from `state`. */
+    motion?: MotionParams | null;
   } = $props();
 
   const verdict = $derived(state === 'correct' ? 'Correct' : state === 'incorrect' ? 'Incorrect' : '');
+  const moving = $derived(motion ? { ...motion, label: label || alt, verdict: state === 'correct' || state === 'incorrect' || state === 'selected' ? state : null } : null);
 
   /**
    * A picture that cannot be loaded (its file was removed, the address is wrong, the library cannot be read) must not leave an
@@ -33,7 +37,7 @@
   }
 </script>
 
-<div class="tile-wrap">
+<div class="tile-wrap" use:move={moving}>
   <button
     type="button"
     class="tile"
@@ -89,7 +93,7 @@
     border: 1px solid var(--surface-border);
     border-radius: var(--tile-radius);
     cursor: pointer;
-    transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+    transition: background-color var(--motion-duration-quick) var(--motion-ease-standard), border-color var(--motion-duration-quick) var(--motion-ease-standard), transform var(--motion-duration-quick) var(--motion-ease-standard);
   }
 
   .tile:active:not(:disabled) {

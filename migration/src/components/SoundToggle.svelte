@@ -60,7 +60,7 @@
     border: 1px solid var(--surface-border);
     border-radius: var(--radius-full);
     cursor: pointer;
-    transition: background-color 160ms ease;
+    transition: background-color var(--motion-duration-quick) var(--motion-ease-standard);
   }
 
   .pms-sound[aria-checked='true'] {

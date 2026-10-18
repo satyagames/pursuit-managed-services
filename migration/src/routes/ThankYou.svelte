@@ -8,6 +8,7 @@
   import { discardPendingAnswers, firstTrySummary, getProgress } from '../lib/participant/participantData.js';
   import { clearTrack, participant } from '../lib/participant/session.svelte.js';
   import { APP_NAME } from '../lib/common/app-name.js';
+  import { motion } from '../lib/motion/motion.js';
 
   // The finale: every activity is finished. Re-checked against the server (a bookmark or a back
   // button must not show it early), unless the pager just handed over what it saved.
@@ -114,7 +115,7 @@
 {#if loading}
   <p class="pms-status" role="status">Checking your progress...</p>
 {:else if error}
-  <section class="pms-final" role="alert">
+  <section class="pms-final" role="alert" use:motion={{ role: 'card' }}>
     <h1>Could not check progress</h1>
     <p class="pms-line">{error}</p>
     <div class="pms-actions">
@@ -123,7 +124,7 @@
     </div>
   </section>
 {:else if allowed}
-  <section class="pms-final">
+  <section class="pms-final" use:motion={{ role: 'card' }}>
     <CheckBadge />
     <h1 bind:this={heading} tabindex="-1">{headline}</h1>
     <p class="pms-line">Your responses have been recorded.</p>

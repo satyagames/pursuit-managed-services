@@ -30,7 +30,7 @@
     border: 1px solid var(--action-border);
     border-radius: 50%;
     cursor: pointer;
-    transition: transform 160ms ease;
+    transition: transform var(--motion-duration-quick) var(--motion-ease-standard);
   }
 
   .home-button:active {

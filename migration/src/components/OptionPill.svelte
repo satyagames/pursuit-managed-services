@@ -1,8 +1,9 @@
 <script lang="ts">
   import type { HTMLButtonAttributes } from 'svelte/elements';
   import type { AnswerState } from './types.js';
+  import { motion as move, type MotionParams } from '../lib/motion/motion.js';
 
-  let { label, letter, state = 'default', announce = true, ...rest }: Omit<HTMLButtonAttributes, 'children'> & {
+  let { label, letter, state = 'default', announce = true, motion = null, ...rest }: Omit<HTMLButtonAttributes, 'children'> & {
     /** The answer text. */
     label: string;
     /** A, B, C ... shown before the text. */
@@ -10,14 +11,17 @@
     state?: AnswerState;
     /** Announce the verdict through the pill's own live region. A screen that announces the outcome itself turns this off. */
     announce?: boolean;
+    /** Its part in the screen's motion (lib/motion/motion.ts): its place among the answers. Its verdict is added from `state`. */
+    motion?: MotionParams | null;
   } = $props();
 
   // Correct and wrong are never colour alone: an icon and a word are printed in the pill too,
   // and the word is announced politely when the state changes.
   const verdict = $derived(state === 'correct' ? 'Correct' : state === 'incorrect' ? 'Incorrect' : '');
+  const moving = $derived(motion ? { ...motion, label, verdict: state === 'correct' || state === 'incorrect' || state === 'selected' ? state : null } : null);
 </script>
 
-<div class="option-pill">
+<div class="option-pill" use:move={moving}>
   <button
     type="button"
     class="pill"
@@ -68,7 +72,7 @@
     border: 1px solid var(--surface-border);
     border-radius: var(--option-radius);
     cursor: pointer;
-    transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+    transition: background-color var(--motion-duration-quick) var(--motion-ease-standard), border-color var(--motion-duration-quick) var(--motion-ease-standard), transform var(--motion-duration-quick) var(--motion-ease-standard);
   }
 
   .pill:active:not(:disabled) {

@@ -3,12 +3,12 @@ import { startPage } from './lib/settings/start.js';
 import { installKiosk } from './lib/common/kiosk.js';
 import { mounted } from './lib/settings/support.js';
 import './styles/legacy/app.css';
-import './styles/legacy/vfx.css';
 import App from './App.svelte';
 import './styles/fonts.css';
 import './styles/fonts-fallback.css';
 import './styles/tokens.css';
 import './styles/base.css';
+import './lib/motion/motion-tokens.css';
 import './app.css';
 
 const target = document.getElementById('app');

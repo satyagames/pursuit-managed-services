@@ -1831,8 +1831,10 @@ describe('the boundaries this phase relies on', () => {
       if (/\b(?:local|session)Storage\b/.test(text)) users.push(file.split(path.sep).join('/'));
       for (const match of text.matchAll(/['"`]((?:cec-[a-z-]+:)|(?:pms\.[a-z]+))/g)) keys.add(match[1]);
     }
-    assert.deepEqual(users.sort(), ['migration/src/App.svelte', 'migration/src/lib/effects/effects.ts', 'migration/src/lib/participant/answer-store.js', 'migration/src/lib/participant/participantData.ts']);
-    assert.deepEqual([...keys].sort(), ['cec-answers:', 'cec-visit-id:', 'cec-visit-logged:', 'pms.sound']);
+    // Phase 15: lib/motion/motion.ts keeps, for this tab's session only, how much this device may move (`pms.motion`, the governor's step and
+    // `?motion=off`): a fact about the device, like the sound choice, never a client, a session, an activity or a theme.
+    assert.deepEqual(users.sort(), ['migration/src/App.svelte', 'migration/src/lib/effects/effects.ts', 'migration/src/lib/motion/motion.ts', 'migration/src/lib/participant/answer-store.js', 'migration/src/lib/participant/participantData.ts']);
+    assert.deepEqual([...keys].sort(), ['cec-answers:', 'cec-visit-id:', 'cec-visit-logged:', 'pms.motion', 'pms.sound']);
     for (const file of ['participant/boot.js', 'participant/experience.svelte.ts', 'brand/client-theme.js']) {
       assert.doesNotMatch(await source('migration/src/lib', file), /Storage\b|indexedDB|caches\./, `${file} keeps nothing`);
     }

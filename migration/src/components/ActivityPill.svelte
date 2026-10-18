@@ -60,7 +60,7 @@
     border: 1px solid var(--surface-border);
     border-radius: var(--pill-radius);
     cursor: pointer;
-    transition: transform 160ms ease, background-color 160ms ease;
+    transition: transform var(--motion-duration-quick) var(--motion-ease-standard), background-color var(--motion-duration-quick) var(--motion-ease-standard);
   }
 
   .activity:active:not([aria-disabled='true']) {

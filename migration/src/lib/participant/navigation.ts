@@ -4,6 +4,7 @@
 // and never change location.hash themselves.
 import { push, replace } from 'svelte-spa-router';
 import { participant } from './session.svelte.js';
+import { setMotionDirection } from '../motion/motion.js';
 
 export type NavigationData = {
   sessionId: string;
@@ -20,8 +21,12 @@ export async function navigateTo(path: string, replaceCurrent = false, routeData
   const query = new URLSearchParams();
   if (participant.clientTrackId) query.set('t', participant.clientTrackId);
   const destination = `${path}${query.toString() ? `?${query}` : ''}`;
+  // A move the person made is a new screen that comes in; a redirect (replace) is not, so its screen is shown as it is.
   if (replaceCurrent) await replace(destination);
-  else await push(destination);
+  else {
+    setMotionDirection('jump');
+    await push(destination);
+  }
 }
 
 export function consumeNavigationData(): NavigationData | null {

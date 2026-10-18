@@ -93,8 +93,8 @@ html:not([data-kiosk]) body {
   border: 0;
 }
 
-/* Reduced motion: migration/src/styles/legacy/vfx.css already switches off the legacy animations and shortens
-   their transitions, element by element. Each component here does the same for itself. A
+/* Reduced motion: lib/motion/motion-tokens.css switches the screens' motion off (and, at the level "none", every transition of
+   the page). Each component here does the same for its own transitions. A
    blanket `* { transition-duration: ... }` is avoided on purpose: it turns the default
    `transition: all` on for every element, layout properties included, so a resize or rotation
    paints one frame late. */

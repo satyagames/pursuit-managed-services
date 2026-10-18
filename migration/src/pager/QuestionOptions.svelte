@@ -2,6 +2,7 @@
   import { LogoTile, OptionPill, PillButton } from '../components/index.js';
   import type { AnswerState } from '../components/index.js';
   import { arrowKeys } from '../lib/participant/roving.js';
+  import { motion } from '../lib/motion/motion.js';
   import {
     MAX_TEXT_LENGTH, gradedOptionState, isGraded, letterFor, showsLetters, usesTiles,
     type Answer, type GradedState, type Question,
@@ -55,6 +56,8 @@
   const rankOf = (optionId: string) => list.indexOf(optionId) + 1;
   const typed = $derived(typeof draft === 'string' ? draft.length : 0);
   const uid = $props.id();
+  /** Each answer's part in the screen's motion: what kind of question, and its place among the answers (lib/motion/motion-plan.js decides the rest). */
+  const moveOf = (index: number) => ({ role: 'options' as const, type: question.type, index, count: question.options.length });
 </script>
 
 {#if question.type === 'open-text-feedback'}
@@ -68,6 +71,7 @@
     disabled={preview}
     value={typeof draft === 'string' ? draft : ''}
     oninput={(event) => ontext(event.currentTarget.value)}
+    use:motion={{ role: 'options', type: question.type }}
   ></textarea>
   {#if !preview}
     <p class="pms-count-text" id="{uid}-count" class:pms-count-full={typed >= MAX_TEXT_LENGTH}>
@@ -90,6 +94,7 @@
           state={stateOf(option.id)}
           announce={false}
           aria-disabled={locked ? 'true' : undefined}
+          motion={moveOf(index)}
           onclick={() => tap(option.id)}
         />
       {:else if question.type === 'ranked-voting'}
@@ -99,6 +104,7 @@
           state={stateOf(option.id)}
           announce={false}
           aria-label={rankOf(option.id) ? `${option.label}, rank ${rankOf(option.id)}` : `${option.label}, not ranked`}
+          motion={moveOf(index)}
           onclick={() => tap(option.id)}
         />
       {:else}
@@ -108,6 +114,7 @@
           state={stateOf(option.id)}
           announce={false}
           aria-disabled={locked ? 'true' : undefined}
+          motion={moveOf(index)}
           onclick={() => tap(option.id)}
         />
       {/if}

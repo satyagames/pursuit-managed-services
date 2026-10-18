@@ -26,6 +26,7 @@ export const PURPOSE = {
   'migration/src/lib/exports': 'The files a leader gets: the leader report (data, counting, layout, PDF writer, fonts) and the Live display\'s summary pack (PDF, PowerPoint) and summary CSV.',
   'migration/src/lib/brand': 'A client\'s look: deriving a readable theme from a colour, the stored theme, Brand Studio\'s rules, picture slots, cropping, compressing and naming.',
   'migration/src/lib/effects': 'Sounds and confetti, behind one door (`effects.ts`): which moment makes which effect, the cues as data, Web Audio, canvas-confetti.',
+  'migration/src/lib/motion': 'The participant screens\' motion, behind one door (`motion.ts`): the plan by kind of question and part of a screen, the tokens and shapes (CSS), the level and the governor.',
   'migration/src/lib/setup': 'The Setup page\'s own modules: the plan and Create, Mark the site as ready, the admins, the seed-file import, the sample clients and their pictures, the self-test\'s probes.',
   'migration/src/admin': 'The admin page\'s screens (Svelte): the five tabs, Brand Studio, dialogs, the Live display, the print sheet, the report buttons.',
   'migration/src/admin/charts': 'The Results charts, drawn by hand in HTML and SVG (no chart library): the card, bars, the scale, the split bar, words, names, the table view, the tooltip.',

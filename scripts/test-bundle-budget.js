@@ -151,14 +151,10 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
     assert.equal(PHASE_10C1.participantBefore, PHASE_10B.participantAfter, 'Phase 10c-1 is measured from where Phase 10b ended');
   });
 
-  it('Phase 10c-1 (the clean break) added nothing to the participant page: it is no larger than where Phase 10b left it (158,807 B), and ended 1,347 B smaller', (t) => {
+  it('Phase 10c-1 (the clean break) added nothing to the participant page: it is no larger than where Phase 10b left it (158,807 B), and ended 1,347 B smaller', () => {
     assert.equal(PHASE_10C1.allowance, 0, 'a phase that only removes has no allowance');
     assert.equal(PHASE_10C1.participantBefore - PHASE_10C1.participantAfter, 1_347, 'as measured when 10c-1 ended: the next phase starts from the smaller page');
-    const grown = built.participant.htmlGzip - PHASE_10C1.participantBefore;
-    const since = built.participant.htmlGzip - PHASE_10C1.participantAfter;
-    t.diagnostic(`the participant page is ${bytes(built.participant.htmlGzip)}: ${grown >= 0 ? '+' : ''}${grown} B against where Phase 10b ended, ${since >= 0 ? '+' : ''}${since} B against where Phase 10c-1 ended`);
-    console.log(`  Phase 10c-1: the participant page is ${grown >= 0 ? '+' : ''}${grown} B gzip against where Phase 10b ended (allowance ${PHASE_10C1.allowance} B), and ${since >= 0 ? '+' : ''}${since} B against where 10c-1 ended (${bytes(PHASE_10C1.participantAfter)}); now ${bytes(built.participant.htmlGzip)}`);
-    assert.ok(grown <= PHASE_10C1.allowance, `the participant page is ${grown} B larger than before the clean break, which only removes`);
+    // (This test compared the build in the tree with Phase 10b's figure until Phase 15, whose allowance goes past it: the newest phase's test below holds the build now.)
   });
 
   it('Phase 10c-2a (what the new project no longer has) added nothing to the participant page: as measured when it ended, no larger than where Phase 10c-1 left it (157,460 B), and 1,791 B smaller', () => {

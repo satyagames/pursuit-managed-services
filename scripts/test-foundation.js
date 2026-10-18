@@ -28,7 +28,7 @@ test('component class names never collide with the global stylesheets the partic
   // Svelte scopes a component's own CSS, but it cannot stop a global rule from matching the
   // component's markup. A wrapper called .option once became a second pill that way.
   const global = new Set();
-  for (const sheet of ['migration/src/styles/legacy/app.css', 'migration/src/styles/legacy/vfx.css', 'migration/src/app.css', 'migration/src/styles/base.css']) {
+  for (const sheet of ['migration/src/styles/legacy/app.css', 'migration/src/lib/motion/motion-tokens.css', 'migration/src/app.css', 'migration/src/styles/base.css']) {
     for (const name of selectorClasses(await read(sheet))) global.add(name);
   }
   const shared = new Set(['sr-only']); // defined once in base.css on purpose

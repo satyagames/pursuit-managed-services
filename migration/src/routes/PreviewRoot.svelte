@@ -4,6 +4,7 @@
   import ActivityPager from '../pager/ActivityPager.svelte';
   import Agenda from './Agenda.svelte';
   import Welcome from './Welcome.svelte';
+  import { setMotionDirection } from '../lib/motion/motion.js';
 
   /**
    * `index.html?preview=<clientId>`: one client's Welcome, activities and read-only questions, in that client's look,
@@ -12,18 +13,20 @@
    * AppSettings. The ribbon says so.
    */
   let screen = $state('welcome');
+  /** A move between the preview's screens comes in as a participant's would. */
+  const show = (next: string) => { setMotionDirection('jump'); screen = next; };
   const pills = $derived(knownActivities().map((activity) => ({ id: activity.id, title: activity.title, state: 'default' as const })));
-  const go = (path: string) => { screen = path.startsWith('/quiz/') ? path.slice(6) : path === '/welcome' ? 'welcome' : screen; };
+  const go = (path: string) => { show(path.startsWith('/quiz/') ? path.slice(6) : path === '/welcome' ? 'welcome' : screen); };
 </script>
 
 <p class="pms-ribbon" role="status">Preview · nothing is saved</p>
 {#if screen === 'welcome'}
-  <Welcome preview={{ view: experience, name: '', onbegin: () => { screen = 'hub'; } }} />
+  <Welcome preview={{ view: experience, name: '', onbegin: () => { show('hub'); } }} />
 {:else if screen === 'hub'}
   <Agenda preview={{ pills, eventTitle: experience.eventTitle, eventSubtitle: experience.eventSubtitle, clientName: experience.clientName, go }} />
 {:else}
   <ActivityPager sectionId={screen} preview />
-  <div class="pms-back"><PillButton variant="secondary" size="md" onclick={() => { screen = 'hub'; }}>Back to activities</PillButton></div>
+  <div class="pms-back"><PillButton variant="secondary" size="md" onclick={() => { show('hub'); }}>Back to activities</PillButton></div>
 {/if}
 
 <style>

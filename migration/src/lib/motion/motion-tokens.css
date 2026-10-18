@@ -1,0 +1,103 @@
+/* The motion tokens and shapes of the participant screens (Phase 15). The ONLY place a duration, a curve or a distance of motion is
+   written: components name these tokens (a transition) or are given a shape by lib/motion/motion.ts (an entrance or a verdict), and
+   lib/motion/motion-plan.js decides which. scripts/test-motion-plan.js holds the values here equal to the plan's TOKENS, and fails if a
+   participant file declares a time or a curve of its own.
+
+   Each shape moves transform and opacity only, so the compositor runs it without a layout. It fills backwards only: during its delay an
+   element shows the first frame, and when it ends, is cancelled or never starts, the element's own style is what shows. Nothing is left
+   to clean up, and a page whose script failed still shows the finished screen. */
+
+:root {
+  --motion-duration-instant: 90ms;
+  --motion-duration-quick: 160ms;
+  --motion-duration-base: 320ms;
+  --motion-duration-slow: 400ms;
+  --motion-ease-enter: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --motion-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --motion-ease-standard: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --motion-ease-pop: cubic-bezier(0.34, 1.4, 0.5, 1);
+  --motion-stagger: 50ms;
+  --motion-stagger-cap: 240ms;
+  --motion-distance-near: clamp(0.5rem, 3vw, 1.25rem);
+  --motion-distance-far: clamp(1rem, 6vw, 2.5rem);
+  --motion-nudge: 0.375rem;
+}
+
+/* motion.ts sets data-motion (the shape) and --m-duration, --m-ease, --m-delay and --m-stretch (in steps of the stagger) and --m-distance, from
+   a recipe. The stretch makes every part of a screen settle on the same frame: each separate end would cost a layout. */
+[data-motion] {
+  animation-duration: calc(var(--m-duration, var(--motion-duration-base)) + var(--m-stretch, 0) * var(--motion-stagger));
+  animation-timing-function: var(--m-ease, var(--motion-ease-enter));
+  animation-delay: calc(var(--m-delay, 0) * var(--motion-stagger));
+  animation-fill-mode: backwards;
+}
+
+[data-motion='rise'] { animation-name: motion-rise; }
+[data-motion='from-left'] { animation-name: motion-from-left; }
+[data-motion='from-right'] { animation-name: motion-from-right; }
+[data-motion='converge-left'] { animation-name: motion-converge-left; }
+[data-motion='converge-right'] { animation-name: motion-converge-right; }
+[data-motion='draw-x'] { animation-name: motion-draw-x; transform-origin: 0 50%; }
+[data-motion='pop'] { animation-name: motion-pop; }
+[data-motion='settle'] { animation-name: motion-settle; }
+[data-motion='nudge'] { animation-name: motion-nudge; }
+[data-motion='fade'] { animation-name: motion-fade; }
+
+@keyframes motion-rise {
+  from { opacity: 0; transform: translateY(var(--m-distance, var(--motion-distance-near))); }
+}
+
+@keyframes motion-from-left {
+  from { opacity: 0; transform: translateX(calc(-1 * var(--m-distance, var(--motion-distance-far)))); }
+}
+
+@keyframes motion-from-right {
+  from { opacity: 0; transform: translateX(var(--m-distance, var(--motion-distance-far))); }
+}
+
+@keyframes motion-converge-left {
+  from { opacity: 0; transform: translateX(calc(-1 * var(--m-distance, var(--motion-distance-near)))) scale(0.96); }
+}
+
+@keyframes motion-converge-right {
+  from { opacity: 0; transform: translateX(var(--m-distance, var(--motion-distance-near))) scale(0.96); }
+}
+
+@keyframes motion-draw-x {
+  from { transform: scaleX(0); }
+}
+
+/* The curve (--motion-ease-pop) overshoots on the way up and settles at the element's own size. */
+@keyframes motion-pop {
+  from { transform: scale(0.94); }
+}
+
+@keyframes motion-settle {
+  from { opacity: 0; transform: scale(0.97); }
+}
+
+/* Sideways and back: a wrong answer is shown by its word, its mark and this nudge, never by a flash of colour. */
+@keyframes motion-nudge {
+  25% { transform: translateX(calc(-1 * var(--motion-nudge))); }
+  60% { transform: translateX(var(--motion-nudge)); }
+  85% { transform: translateX(calc(-0.5 * var(--motion-nudge))); }
+}
+
+@keyframes motion-fade {
+  from { opacity: 0; }
+}
+
+/* Animations off (the client's switch, the device's reduced motion, ?motion=off or the governor at its lowest): the page's own small
+   transitions (a press, a colour change, a picture fading in) go too, so nothing at all moves. motion.ts writes the level on the root of
+   the participant page, and Brand Studio's preview on its frame. */
+[data-motion-level='none'] *,
+[data-motion-level='none'] *::before,
+[data-motion-level='none'] *::after {
+  transition: none !important;
+  animation: none !important;
+}
+
+/* The device asks for reduced motion: the same, whatever script has or has not run yet (Phase 8 pinned that nothing animates then). */
+@media (prefers-reduced-motion: reduce) {
+  [data-motion] { animation: none; }
+}

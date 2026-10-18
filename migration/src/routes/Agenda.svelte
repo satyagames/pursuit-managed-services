@@ -10,6 +10,7 @@
   import { getKnownProgress, loadFailure } from '../lib/participant/participantData.js';
   import { participant } from '../lib/participant/session.svelte.js';
   import { APP_NAME } from '../lib/common/app-name.js';
+  import { motion } from '../lib/motion/motion.js';
 
   // The route is #/agenda; the screen is the Activities hub.
   type Pill = { id: string; title: string; state: ActivityState };
@@ -112,11 +113,11 @@
 <svelte:head>{#if !preview}<title>Activities | {APP_NAME}</title>{/if}</svelte:head>
 
 <section class="pms-hub" aria-busy={loading}>
-  <header class="pms-head">
+  <header class="pms-head" use:motion={{ role: 'title', count: pills.length }}>
     <h1 class="pms-title" bind:this={heading} tabindex="-1">{title}</h1>
     <p class="pms-description">{subtitle}</p>
   </header>
-  <Divider />
+  <Divider motion={{ role: 'rule', count: pills.length }} />
 
   {#if loading && slow}
     <p class="pms-status" role="status">Loading activities...</p>
@@ -129,8 +130,8 @@
     <p class="pms-status">There are no activities available right now.</p>
   {:else}
     <ul class="pms-activities">
-      {#each pills as pill (pill.id)}
-        <li><ActivityPill label={pill.title} state={pill.state} onclick={() => go(`/quiz/${pill.id}`)} /></li>
+      {#each pills as pill, at (pill.id)}
+        <li use:motion={{ role: 'item', index: at, count: pills.length }}><ActivityPill label={pill.title} state={pill.state} onclick={() => go(`/quiz/${pill.id}`)} /></li>
       {/each}
     </ul>
   {/if}

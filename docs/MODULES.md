@@ -22,6 +22,7 @@ flowchart LR
   brand --> data
   brand --> participant
   data --> schema
+  effects --> motion
   exports --> admin
   exports --> brand
   exports --> data
@@ -30,6 +31,7 @@ flowchart LR
   participant --> brand
   participant --> common
   participant --> data
+  participant --> motion
   results --> data
   results --> participant
   results --> schema
@@ -58,6 +60,7 @@ flowchart LR
 | `migration/src/lib/data/` | The data layer: the one module that talks to SharePoint REST (or, on the local server, its JSON API), and grouping of long id lists into short reads. Every page carries it. | 2 |
 | `migration/src/lib/effects/` | Sounds and confetti, behind one door (`effects.ts`): which moment makes which effect, the cues as data, Web Audio, canvas-confetti. | 6 |
 | `migration/src/lib/exports/` | The files a leader gets: the leader report (data, counting, layout, PDF writer, fonts) and the Live display's summary pack (PDF, PowerPoint) and summary CSV. | 7 |
+| `migration/src/lib/motion/` | The participant screens' motion, behind one door (`motion.ts`): the plan by kind of question and part of a screen, the tokens and shapes (CSS), the level and the governor. | 2 |
 | `migration/src/lib/participant/` | The participant page: the boot sequence, the visit, the activities held for the page's life, the pager's rules, saving answers, screen moves. | 13 |
 | `migration/src/lib/results/` | Results counted and shown: the tally, the chart model (every number a chart shows), the palette, the figure on paper, names, the takeaways, where a tooltip goes. | 11 |
 | `migration/src/lib/schema/` | The lists and columns: `pms-schema.js`, the names every page carries, and `pms-schema-meta.js`, everything else about them (Setup, the tests and the generators only). | 2 |
@@ -67,9 +70,9 @@ flowchart LR
 | `migration/src/routes/` | The participant page's screens: Welcome, the Activities hub, the quiz route, the finale, "not live", the preview, and the old addresses that redirect. | 9 |
 | `migration/src/setup/` | Setup's pieces (Svelte): the copy panel, where the lists are, the plan view, and the sample pictures as data. | 4 |
 | `migration/src/unsupported/` | The "needs a recent browser" notice: a page and an ES5 check, put into each HTML shell at build time. | 1 |
-| `scripts/` | Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager. | 109 |
-| `scripts/local-site/` | The local PCOE stand-in (`npm run local:site`), its scenarios and VJR's dummy dataset, the screenshot harness and the measurements. | 10 |
-| `scripts/migration-tests/` | The Playwright specs of `npm run test:migration`, and their harnesses (`admin-local.ts`, `polling-support.ts`, `fixtures.ts`). | 63 |
+| `scripts/` | Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager. | 112 |
+| `scripts/local-site/` | The local PCOE stand-in (`npm run local:site`), its scenarios and VJR's dummy dataset, the screenshot harness and the measurements. | 11 |
+| `scripts/migration-tests/` | The Playwright specs of `npm run test:migration`, and their harnesses (`admin-local.ts`, `polling-support.ts`, `fixtures.ts`). | 65 |
 | `scripts/rehearsal-tests/` | The rehearsal of RUNBOOK.md on the mock with a package's own pages (`npm run test:rehearsal`). | 1 |
 | `scripts/schema-baseline/` | The schema as it was before Phase 10c-2b, and the scripts that translated the request baselines (each baseline names the one that touched it). | 5 |
 | `scripts/styleguide-tests/` | The styleguide's audit (`npm run test:styleguide`). | 1 |
@@ -163,7 +166,7 @@ The data layer: the one module that talks to SharePoint REST (or, on the local s
 
 Sounds and confetti, behind one door (`effects.ts`): which moment makes which effect, the cues as data, Web Audio, canvas-confetti.
 
-- **Imports from:** nothing of the app
+- **Imports from:** `lib/motion`
 - **Imported by:** `src`, `src/components`, `src/dev`, `src/pager`, `src/routes`
 - **Node suites that import it:** `test-effects.js`
 
@@ -194,11 +197,24 @@ The files a leader gets: the leader report (data, counting, layout, PDF writer, 
 | `report-fonts.js` | Open Sans for the leader report's PDF: the two faces made by scripts/build-report-fonts.py, inflated when a report is made, and read just enough (which characters a face has, and how wide each one is) for the layout to measure text itself. | `MISSING`, `readFace`, `loadReportFonts`, `createMeasure`, `binaryString` |
 | `resultsExport.js` | The Live display's files (the summary pack as PDF and PowerPoint, and Summary by activity as CSV). | 15 exports |
 
+## `lib/motion/`
+
+The participant screens' motion, behind one door (`motion.ts`): the plan by kind of question and part of a screen, the tokens and shapes (CSS), the level and the governor.
+
+- **Imports from:** nothing of the app
+- **Imported by:** `lib/effects`, `lib/participant`, `src/components`, `src/pager`, `src/routes`
+- **Node suites that import it:** `test-motion-engine.js`, `test-motion-plan.js`
+
+| Module | What it is (its header) | Exports |
+|---|---|---|
+| `motion-plan.js` | The motion plan of the participant screens (Phase 15): which shape each thing on a screen moves with, for how long, after how much delay and over what distance, as a TABLE keyed by the moment, the kind of question and the part of the screen, never as numbers in a component. | 27 exports |
+| `motion.ts` | The one door to motion on the participant screens (Phase 15). | `motionLevel`, `setMotionEnabled`, `setMotionDirection`, `motion`, `movingCount` |
+
 ## `lib/participant/`
 
 The participant page: the boot sequence, the visit, the activities held for the page's life, the pager's rules, saving answers, screen moves.
 
-- **Imports from:** `lib/brand`, `lib/common`, `lib/data`
+- **Imports from:** `lib/brand`, `lib/common`, `lib/data`, `lib/motion`
 - **Imported by:** `lib/admin`, `lib/brand`, `lib/exports`, `lib/results`, `src`, `src/admin`, `src/pager`, `src/routes`
 - **Node suites that import it:** `test-duplicates.js`, `test-list-namespace.js`, `test-local-site.js`, `test-pager.js`, `test-participant-storage.js`, `test-participant-waits.js`, `test-review-9a.js`, `test-review-9b.js`
 
@@ -246,7 +262,7 @@ The lists and columns: `pms-schema.js`, the names every page carries, and `pms-s
 
 - **Imports from:** nothing of the app
 - **Imported by:** `lib/data`, `lib/results`, `lib/setup`, `server`
-- **Node suites that import it:** `test-bundle-budget.js`, `test-column-names.js`, `test-fake-site.js`, `test-lists-reference.js`, `test-named-reads.js`, `test-provision-prefix.js`, `test-provision.js`, `test-release-docs.js`, `test-request-baseline.js`, `test-schema-upgrade.js`, `test-schema-version.js`, `test-schema.js`, `test-setup-admins.js`, `test-sharepoint.js`, `test-shown-names.js`, `test-site-ready.js`, `test-text-limits.js`
+- **Node suites that import it:** `test-bundle-budget.js`, `test-column-names.js`, `test-fake-site.js`, `test-lists-reference.js`, `test-motion-plan.js`, `test-named-reads.js`, `test-provision-prefix.js`, `test-provision.js`, `test-release-docs.js`, `test-request-baseline.js`, `test-schema-upgrade.js`, `test-schema-version.js`, `test-schema.js`, `test-setup-admins.js`, `test-sharepoint.js`, `test-shown-names.js`, `test-site-ready.js`, `test-text-limits.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|

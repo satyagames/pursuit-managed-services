@@ -3,6 +3,7 @@
   import { PillButton } from '../components/index.js';
   import { APP_NAME } from '../lib/common/app-name.js';
   import { focusHeading } from '../lib/common/focus.js';
+  import { motion } from '../lib/motion/motion.js';
 
   // Shown instead of every participant screen while no client is live: nothing has been started
   // today, the client was archived, or today's session has ended. It names no client and wears
@@ -24,7 +25,7 @@
 
 <svelte:head><title>{APP_NAME}</title></svelte:head>
 
-<section class="pms-notlive">
+<section class="pms-notlive" use:motion={{ role: 'card' }}>
   <h1 bind:this={heading} tabindex="-1">{ended ? 'This session has ended.' : "Today's experience isn't live yet"}</h1>
   <p class="pms-notlive-line">
     {ended ? 'Thank you. Your answers are saved.' : 'Your facilitator will start it shortly. This page will update by itself.'}

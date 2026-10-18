@@ -32,7 +32,7 @@
     border: 1px solid var(--action-border);
     border-radius: var(--radius-full);
     cursor: pointer;
-    transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease;
+    transition: transform var(--motion-duration-quick) var(--motion-ease-standard), background-color var(--motion-duration-quick) var(--motion-ease-standard), border-color var(--motion-duration-quick) var(--motion-ease-standard);
   }
 
   .pill-button[data-size='lg'] {

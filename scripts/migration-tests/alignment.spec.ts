@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { choices, nextButton, openParticipant, settle, themedSite } from './a11y-support.js';
 import { ds, openAdmin, startLocal, stopLocal, today, type Local } from './admin-local.js';
+import { pageUrl, serveSharePoint } from './sharepoint.js';
 
 // Phase 15, part 1: the alignment review's geometry, held (docs/history/ALIGNMENT-REVIEW.md). Each measurement allows 1 px for sub-pixel rounding and the
 // Open Sans fallback metrics. A-01: in a list of answers the words of every answer start at one left edge whatever each answer's state, and picking an
@@ -19,9 +20,9 @@ const MATRIX = [
 const wordEdges = (page: Page) => page.locator('.pms-options .label').evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().left));
 
 /** The open flow (every activity open) to the activity of one of each other kind of question: the first is multiple choice (lettered). */
-async function toTypes(page: Page) {
+async function toTypes(page: Page, search = '') {
   const { fake } = await themedSite({ theme: 'kroger', flow: 'open' });
-  await openParticipant(page, fake);
+  if (search) { await serveSharePoint(page, fake); await page.goto(`${pageUrl('index.html')}${search}`); } else await openParticipant(page, fake);
   await page.getByRole('button', { name: 'Click here to begin' }).click();
   await page.getByRole('button', { name: /^More question types/ }).click();
   await expect(page.getByRole('progressbar', { name: 'Question 1 of 5' })).toBeVisible();
@@ -90,11 +91,12 @@ test.describe('A-02: the admin', () => {
   });
 });
 
-for (const size of MATRIX) {
-  test(`a question at ${size.name}: no sideways scroll, the column in the middle, the answers one width, the action row on one axis`, async ({ page }) => {
+// (Phase 15, part 2: once with the motion run to its end, and once with motion off: alignment and motion must not fight.)
+for (const size of MATRIX) for (const search of ['', '?motion=off']) {
+  test(`a question at ${size.name}${search ? ', motion off' : ''}: no sideways scroll, the column in the middle, the answers one width, the action row on one axis`, async ({ page }) => {
     test.setTimeout(90_000);
     await page.setViewportSize({ width: size.width, height: size.height });
-    await toTypes(page);
+    await toTypes(page, search);
     const geometry = await page.evaluate(() => {
       const doc = document.documentElement;
       const stage = document.querySelector('main.stage')!.getBoundingClientRect();

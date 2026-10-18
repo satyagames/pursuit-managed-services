@@ -94,7 +94,7 @@
     inset: 0;
     pointer-events: none;
     opacity: 0;
-    transition: opacity 400ms ease;
+    transition: opacity var(--motion-duration-slow) var(--motion-ease-standard);
   }
 
   .image {

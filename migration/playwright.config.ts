@@ -11,7 +11,7 @@ const CHROMIUM_ONLY_FILES = [
   // Playwright's clock holds the page's timers and the specs read the requests it makes in the page's own clock.
   { why: "they run on Playwright's clock (the Phase 7 harness; Firefox has not been tried with it)", files: /(?:end-session|polling)\.spec\.ts/ },
   // The DevTools protocol: CPU and network throttling and long tasks.
-  { why: 'it drives Chromium through the DevTools protocol (CPU and network throttling, long tasks)', files: /(?:performance|latency)\.spec\.ts/ },
+  { why: 'it drives Chromium through the DevTools protocol (CPU and network throttling, long tasks)', files: /(?:performance|latency|motion-perf)\.spec\.ts/ },
   // axe-core is run once, in Chromium: it reads the DOM, which is the same in every engine.
   { why: 'axe-core reads the DOM, which is the same in every engine, so it runs once; the keyboard, aria and reflow specs run in all three', files: /a11y\.spec\.ts/ },
   // Pixel arithmetic on a screenshot.

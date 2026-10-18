@@ -1,6 +1,13 @@
 <!-- The thin rule between an activity's heading and its questions: white, or the client's accent
      where that stands out from the whole page gradient (--accent-rule, lib/brand/theme.js). -->
-<hr class="pms-divider" />
+<script lang="ts">
+  import { motion as move, type MotionParams } from '../lib/motion/motion.js';
+
+  /** Its part in the screen's motion (lib/motion/motion.ts): the rule draws from the left. */
+  let { motion = null }: { motion?: MotionParams | null } = $props();
+</script>
+
+<hr class="pms-divider" use:move={motion} />
 
 <style>
   .pms-divider {
