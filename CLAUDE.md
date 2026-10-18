@@ -19,9 +19,11 @@ On the Windows checkout the system Node is 20: run Node 22 from `.local/node22/n
 | What | Command |
 |---|---|
 | Install | `npm install` |
-| Local server (API, pictures, no page) | `npm run dev` |
-| The pages, from Vite (with `npm run dev` running) | `npm run dev:svelte` (5173), `npm run dev:svelte:admin` (5175), `npm run dev:svelte:setup` (5176) |
-| Build the three pages | `npm run build:svelte:release` (into `build-svelte/release/`) |
+| Check this computer (Node, packages, ports) | `npm run doctor` |
+| Run everything locally with dummy data (server + the three pages; data copied to `.local-data/`) | `npm run dev` (`-- --reset`, `-- --only admin`, `-- --open`) |
+| The local server alone / one page alone | `npm run dev:api`; `npm run dev:svelte` (5173), `npm run dev:svelte:admin` (5175), `npm run dev:svelte:setup` (5176) |
+| Build the files to upload (pages + `pms-config.txt` in `build-svelte/upload/`) | `npm run build` (`-- --zip`) |
+| Build the three pages only | `npm run build:svelte:release` (into `build-svelte/release/`) |
 | Fast checks, after every change | `npm run check:svelte`, then `npm test` (about 20 s) |
 | Results and exports | `npm run test:report`, `npm run test:report:mutations`, `npm run oracle -- --seeds 500`, `npm run test:charts` |
 | Browsers | `npm run test:migration` (Chromium, WebKit, Firefox; about 45 min) |

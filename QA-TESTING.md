@@ -35,12 +35,12 @@ requests use `/sites/CreativeExpCOE/_api/`, not `/api` or Microsoft Graph. Test 
 denials and sign-in expiry separately from offline behavior. Follow the remaining
 checklist with SharePoint; no Node process is needed at the venue.
 
-- [ ] `npm run dev` on the host machine (the API; it serves no page since Phase 10c-1), and beside it `npm run dev:svelte` (and `npm run dev:svelte:admin` for the admin). Note the Network address Vite prints: that is the URL for the iPad.
-- [ ] Back up `server/data/` (or run against a scratch copy: `DATA_DIR=/tmp/qa-data npm run dev`),
+- [ ] `npm run dev` on the host machine (the server and the three pages, with dummy data in `.local-data/`). Note the iPad address it prints.
+- [ ] Back up `server/data/` (or run against a scratch copy: `DATA_DIR=/tmp/qa-data npm run dev`; `npm run dev` already works on a copy in `.local-data/`),
       because this pass creates tracks and answers.
 - [ ] On the iPad open the URL in Safari → Share → **Add to Home Screen**, then launch it from the
       icon. **Expect:** no Safari address bar or tabs; content clear of the status bar and home bar.
-- [ ] Have the admin open on a second device (or a second tab): the address `npm run dev:svelte:admin` prints, ending `/admin.html` (on SharePoint: `admin.html` in the same folder).
+- [ ] Have the admin open on a second device (or a second tab): the admin address `npm run dev` prints, ending `/admin.html` (on SharePoint: `admin.html` in the same folder).
 - [ ] Facilitator display (optional): `<url>/admin.html#live-display` (Today → Live display). The old participant address
       `<url>/#/master-results/<sessionId>` is only a notice that points there.
 

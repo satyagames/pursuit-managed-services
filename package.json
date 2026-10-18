@@ -5,7 +5,10 @@
   "description": "Client-facing interactive presentation experience for iPad.",
   "type": "module",
   "scripts": {
-    "dev": "node --watch server/index.js",
+    "dev": "node scripts/dev.js",
+    "build": "node scripts/build.js",
+    "doctor": "node scripts/doctor.js",
+    "dev:api": "node --watch server/index.js",
     "dev:svelte": "vite --config migration/vite.config.ts",
     "dev:svelte:admin": "vite --config migration/vite.admin.config.ts",
     "dev:svelte:setup": "vite --config migration/vite.setup.config.ts",

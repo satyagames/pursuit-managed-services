@@ -115,21 +115,34 @@ PMSAdminUsers**. Facilitators edit the content lists. A site owner runs Setup.
 
 ## Quick start
 
-Clone the repository and open its folder, then (Node 22):
+Clone the repository and open its folder. It needs Node 22.12 or newer (`.nvmrc` says 22). On a computer the project was just moved to, install the
+packages with `npm ci` (never copy `node_modules` from another computer) and check everything with `npm run doctor`:
 
 ```bash
-npm install
+npm ci
 ```
+
+```bash
+npm run doctor
+```
+
+Try it locally, with a dummy database, in one command:
 
 ```bash
 npm run dev
 ```
 
-In a second terminal, the participant page (http://localhost:5173), and likewise `npm run dev:svelte:admin` (5175) and `npm run dev:svelte:setup` (5176):
+This starts the local server (the stand-in for SharePoint) and the three pages: participant http://localhost:5173, admin http://localhost:5175/admin.html,
+Setup http://localhost:5176/setup.html, and prints the address for an iPad. The dummy data is a copy of `server/data` made into `.local-data/` (ignored by git),
+so trying the app never changes a tracked file; `npm run dev -- --reset` starts again from the seed. Pages reload as you edit.
+
+Make the files to upload to SharePoint, from this folder as it is now:
 
 ```bash
-npm run dev:svelte
+npm run build
 ```
+
+That puts `index.html`, `admin.html`, `setup.html` and `pms-config.txt` in `build-svelte/upload/` (`npm run build -- --zip` also makes `upload.zip`).
 
 The seed data's admin PIN is the demo PIN 1234, on the local server only (`server/data/adminusers.json` holds its hash). To try the shipped pages
 against a stand-in of the real site instead (they need `https`), make a package and serve it:
@@ -156,7 +169,7 @@ npm test
 npm run test:migration
 ```
 
-Deploying: `npm run package:release` makes `build-svelte/package/pms-<commit>/` with the pages, `pms-config.txt`, checksums and a `RUNBOOK.md` with
+Deploying the official, checksummed package (from a clean commit): `npm run package:release` makes `build-svelte/package/pms-<commit>/` with the pages, `pms-config.txt`, checksums and a `RUNBOOK.md` with
 every step for the site. Upload to a test folder first. See [docs/SHAREPOINT.md](docs/SHAREPOINT.md#deploying-a-package).
 
 ## Repository layout

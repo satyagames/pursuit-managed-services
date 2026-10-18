@@ -51,15 +51,18 @@ seven sizes.
 - `npm install` — installs the dependencies and runs no script of this package (the `postinstall` that copied
   libraries into `public/vendor/` for the legacy pages left in Phase 10c-1; a `public/vendor/` or `build/` folder
   still on a machine is a leftover that nothing reads).
-- **Running it locally takes two things.** `npm run dev` starts the local server with `node --watch`: the API
-  under `/api` and the uploaded pictures, and **no page**. `npm run dev:svelte` (participant, port 5173),
-  `npm run dev:svelte:admin` (5175) and `npm run dev:svelte:setup` (5176) are the pages, from Vite, which sends `/api`
-  and `/assets` to the server. `npm start` is the server without watch. Known gap: on the local server the admin's
+- **Running it locally is one command.** `npm run dev` ([scripts/dev.js](../scripts/dev.js)) starts the local server (the API under `/api`
+  and the uploaded pictures) and the three pages from Vite (participant 5173, admin 5175, Setup 5176), which sends `/api` and `/assets`
+  to the server, against a copy of `server/data` made into the git-ignored `.local-data/` (`-- --reset` makes it again). `npm run dev:api`
+  is the server alone with `node --watch`, `npm run dev:svelte`, `dev:svelte:admin` and `dev:svelte:setup` are single pages, `npm start` is
+  the server without watch. `npm run doctor` ([scripts/doctor.js](../scripts/doctor.js)) checks Node (22.12 or newer, `.nvmrc`), the install and the ports;
+  [scripts/node-guard.js](../scripts/node-guard.js) gives a plain message, or uses `.local/node22` when it exists, instead of Vite's own error on an older Node. Known gap: on the local server the admin's
   participant link and QR codes point at the server's own port (`lib/admin/admin-links.ts`), where the legacy participant
   page used to be and no page is now; open the participant page at Vite's address instead (CLEAN-BREAK-10C1.md, in git history at `7347c72`).
 - `npm run build:svelte:release` — builds the three standalone pages (`index.html`, `admin.html`, `setup.html`) into
-  `build-svelte/release/`. No subfolders are needed on SharePoint. (`npm run build` and `npm run test:build` were the
-  legacy build and its test; they are gone.)
+  `build-svelte/release/`. No subfolders are needed on SharePoint. `npm run build` ([scripts/build.js](../scripts/build.js)) runs it and
+  gathers the four files to upload (the three pages and `pms-config.txt`) into `build-svelte/upload/` (`-- --zip` for `upload.zip`).
+  The official package with checksums remains `npm run package:release`. (`npm run test:build` was the legacy build's test; it is gone.)
 - `npm test` — the node suites listed in `package.json` (1,330 tests, about 20 seconds); the first is [scripts/test-sessions.js](../scripts/test-sessions.js), which spins up a
   real server against a scratch copy of `server/data/`, and drives it through
   `dataService` to exercise track merge/resume, admin restart, and QR token

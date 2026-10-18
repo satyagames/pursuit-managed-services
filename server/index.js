@@ -67,6 +67,6 @@ app.listen(PORT, (error) => {
     `  api:   http://localhost:${PORT}/api`,
     ...lanUrls().map((url) => `  LAN:   ${url}/api`),
     `  data:  ${DATA_DIR}`,
-    '  pages: none are served here. Run npm run dev:svelte (participant), dev:svelte:admin and dev:svelte:setup.',
+    '  pages: none are served here. Run npm run dev to start the server and the pages together.',
   ].join('\n'));
 });

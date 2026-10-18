@@ -19,3 +19,6 @@ scripts/local-site/.cert/
 scripts/local-site/datasets/images/
 # Screenshots of the UX review (Phase 12): shared as a zip, never committed.
 ux-review/
+
+# Dummy data of `npm run dev` (a copy of server/data): never committed.
+.local-data/
