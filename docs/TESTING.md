@@ -56,7 +56,7 @@ seven sizes.
   to the server, against a copy of `server/data` made into the git-ignored `.local-data/` (`-- --reset` makes it again). `npm run dev:api`
   is the server alone with `node --watch`, `npm run dev:svelte`, `dev:svelte:admin` and `dev:svelte:setup` are single pages, `npm start` is
   the server without watch. `npm run doctor` ([scripts/doctor.js](../scripts/doctor.js)) checks Node (22.12 or newer, `.nvmrc`), the install and the ports;
-  [scripts/node-guard.js](../scripts/node-guard.js) gives a plain message, or uses `.local/node22` when it exists, instead of Vite's own error on an older Node. Known gap: on the local server the admin's
+  [scripts/local-env.js](../scripts/local-env.js) holds what the three share (ports, quiet commands, git info, zip); [scripts/node-guard.js](../scripts/node-guard.js) gives a plain message, or uses `.local/node22` when it exists, instead of Vite's own error on an older Node. Known gap: on the local server the admin's
   participant link and QR codes point at the server's own port (`lib/admin/admin-links.ts`), where the legacy participant
   page used to be and no page is now; open the participant page at Vite's address instead (CLEAN-BREAK-10C1.md, in git history at `7347c72`).
 - `npm run build:svelte:release` — builds the three standalone pages (`index.html`, `admin.html`, `setup.html`) into
