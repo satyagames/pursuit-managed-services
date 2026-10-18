@@ -1,9 +1,10 @@
 import { test, expect, type Page } from '@playwright/test';
 import { choices, nextButton, openParticipant, settle, themedSite } from './a11y-support.js';
+import { ds, openAdmin, startLocal, stopLocal, today, type Local } from './admin-local.js';
 
 // Phase 15, part 1: the alignment review's geometry, held (docs/history/ALIGNMENT-REVIEW.md). Each measurement allows 1 px for sub-pixel rounding and the
 // Open Sans fallback metrics. A-01: in a list of answers the words of every answer start at one left edge whatever each answer's state, and picking an
-// answer does not move its words. And, at
+// answer does not move its words. A-02: the focus ring of a control that fills a card (Results' "Live results" summary) is not cut by the card. And, at
 // the device matrix of devices.spec.ts, on a question: no sideways scroll, the column in the middle of the window, the answers one width, and the
 // action row on one axis. Measured after any motion has ended (settle).
 
@@ -51,6 +52,42 @@ test('A-01: the words of every answer start at one edge whatever its state, and 
   await settle(page);
   const ranked = await wordEdges(page);
   expect(Math.max(...ranked) - Math.min(...ranked), `ranking: one left edge: ${ranked.map((x) => x.toFixed(1))}`).toBeLessThanOrEqual(TOL);
+});
+
+test.describe('A-02: the admin', () => {
+  let local: Local;
+  test.beforeEach(async () => { local = await startLocal(); });
+  test.afterEach(async () => { await stopLocal(local); });
+
+  test('the focus ring of a summary that fills a card is not cut by the card (Results, "Live results")', async ({ page }) => {
+    test.setTimeout(90_000);
+    const { session } = await ds.activateClient('c-kroger', today);
+    void session;
+    await openAdmin(page, local, 'Results');
+    const summary = page.locator('details.tally > summary').first();
+    await expect(summary).toBeVisible();
+    await summary.focus();
+    await page.keyboard.press('Shift+Tab');
+    await page.keyboard.press('Tab');
+    await expect(summary).toBeFocused();
+    const cut = await summary.evaluate((node) => {
+      const style = getComputedStyle(node);
+      const ring = Math.max(0, parseFloat(style.outlineOffset) + parseFloat(style.outlineWidth));
+      // (A computed shadow lists its colour first and `inset` last: "rgb(0, 1, 2) 0px 0px 0px 9px inset". Only an outward one reaches past the control.)
+      const halo = style.boxShadow === 'none' ? [] : style.boxShadow.split(/,(?![^(]*\))/).filter((shadow) => !/\binset\b/.test(shadow))
+        .map((shadow) => Number(/0px 0px 0px (\d+(?:\.\d+)?)px/.exec(shadow)?.[1] ?? 0));
+      const reach = Math.max(ring, ...halo, 0);
+      const rect = node.getBoundingClientRect();
+      for (let parent = node.parentElement; parent; parent = parent.parentElement) {
+        const parentStyle = getComputedStyle(parent);
+        if (parentStyle.overflowX === 'visible' && parentStyle.overflowY === 'visible') continue;
+        const box = parent.getBoundingClientRect();
+        return Math.max(box.left - (rect.left - reach), (rect.right + reach) - box.right, box.top - (rect.top - reach), (rect.bottom + reach) - box.bottom, 0);
+      }
+      return 0;
+    });
+    expect(cut, 'pixels of the ring a clipping ancestor would cut').toBeLessThanOrEqual(TOL);
+  });
 });
 
 for (const size of MATRIX) {

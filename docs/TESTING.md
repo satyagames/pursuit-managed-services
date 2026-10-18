@@ -40,7 +40,11 @@ this machine, before and after every change, in WebKit on Windows: 17 tests of `
 `migration/playwright.config.ts`; nothing is skipped quietly.
 
 **The local site** ([LOCAL-SITE.md](LOCAL-SITE.md)): `npm run local:site -- --open` serves the newest release package's own bytes at a stand-in of PCOE;
-`npm run ux:shoot` photographs every screen on every device size into `ux-review/<date>/`.
+`npm run ux:shoot` photographs every screen on every device size into `ux-review/<date>/`. With `-- --matrix brief` it uses the seven sizes of `devices.spec.ts`, and with
+`-- --measure` it also measures every picture's geometry (`scripts/local-site/align-probe.js`: sideways scroll, small targets, off-centre blocks, unequal widths
+and heights, rings cut by an ancestor, overlaps) into `alignment.json`; `node scripts/local-site/align-report.js --date <date>` groups it (Phase 15,
+[ALIGNMENT-REVIEW.md](history/ALIGNMENT-REVIEW.md)). `alignment.spec.ts` (in `npm run test:migration`) holds what that review fixed and the geometry of a question at those
+seven sizes.
 
 ## Every command, and what it holds
 
