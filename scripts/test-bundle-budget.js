@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
 import { PAGES, ROOT, analyzePage } from './analyze-bundle.js';
-import { BUDGET, FORBIDDEN, PHASE_8, PHASE_9A, PHASE_9B, PHASE_10B, PHASE_10C1, PHASE_10C2A, PHASE_10C2B, PHASE_10C3, PHASE_10F, PHASE_10G, PHASE_10H, PHASE_10I, PHASE_10J, PHASE_11A, PHASE_11A3, PHASE_11B, PHASE_12, PHASE_13, PHASE_14, checkBudgets, utilityClasses } from './bundle-budget.js';
+import { BUDGET, FORBIDDEN, PHASE_8, PHASE_9A, PHASE_9B, PHASE_10B, PHASE_10C1, PHASE_10C2A, PHASE_10C2B, PHASE_10C3, PHASE_10F, PHASE_10G, PHASE_10H, PHASE_10I, PHASE_10J, PHASE_11A, PHASE_11A3, PHASE_11B, PHASE_12, PHASE_13, PHASE_14, PHASE_15, checkBudgets, utilityClasses } from './bundle-budget.js';
 import { SAMPLE_PICTURE_NAMES } from '../migration/src/lib/setup/sample-pictures.js';
 import { pageProblems } from './release-proofs.js';
 
@@ -264,34 +264,39 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
     // (This test compared the build in the tree with those figures until Phase 13: the newest phase's test below holds the build now.)
   });
 
-  it('Phase 13 (the Results exports for leadership) leaves the participant page byte for byte as 12 left it, and grows the admin page by at most 12,000 B gzip over where 12 left it', (t) => {
+  it('Phase 13 (the Results exports for leadership) leaves the participant page byte for byte as 12 left it, and grows the admin page by at most 12,000 B gzip over where 12 left it', () => {
     assert.equal(PHASE_13.participantBefore, PHASE_12.participantAfter, 'Phase 13 is measured from where Phase 12 ended');
     assert.equal(PHASE_13.adminBefore, PHASE_12.adminAfter);
     assert.equal(PHASE_13.participantAllowance, 0);
-    const sha = createHash('sha256').update(built.participant.html).digest('hex');
-    const admin = built.admin.htmlGzip - PHASE_13.adminBefore;
-    t.diagnostic(`participant ${sha.slice(0, 8)}, admin ${admin >= 0 ? '+' : ''}${admin} B against where 12 ended`);
-    console.log(`  Phase 13: the participant page is ${sha === PHASE_13.participantSha256 ? 'byte for byte' : 'NOT'} the page 12 left (${bytes(built.participant.htmlGzip)}); the admin page is ${admin >= 0 ? '+' : ''}${admin} B gzip against where 12 ended (allowance ${PHASE_13.adminAllowance} B), now ${bytes(built.admin.htmlGzip)} of its ${bytes(BUDGET.admin)} budget`);
-    assert.equal(sha, PHASE_13.participantSha256, 'the participant page is the one Phase 12 left, byte for byte');
-    assert.deepEqual(utilityClasses(built.participant.html), [...PHASE_13.participantUtilities], "the participant page's Tailwind rules are the ones it had");
-    assert.ok(admin <= PHASE_13.adminAllowance, `the admin page is ${admin} B larger than where 12 left it`);
-    assert.ok(built.admin.htmlGzip < BUDGET.admin, `the admin page is under its ${bytes(BUDGET.admin)} budget`);
     assert.ok(PHASE_13.adminAfter - PHASE_13.adminBefore <= PHASE_13.adminAllowance, 'the admin page, as measured when 13 ended (562,606 B in this checkout)');
+    // (This test compared the build in the tree with those figures, and the participant page's SHA-256, until Phase 15: the newest phase's test below holds the build now.)
   });
 
-  it('Phase 14 (structure and documents only) left the participant and the admin page byte for byte as Phase 13 left them', (t) => {
+  it('Phase 14 (structure and documents only) left the participant and the admin page byte for byte as Phase 13 left them', () => {
     assert.equal(PHASE_14.participantBefore, PHASE_13.participantAfter, 'Phase 14 is measured from where Phase 13 ended');
     assert.equal(PHASE_14.adminBefore, PHASE_13.adminAfter);
     assert.equal(PHASE_14.participantAllowance, 0);
     assert.equal(PHASE_14.adminAllowance, 0);
-    const participant = createHash('sha256').update(built.participant.html).digest('hex');
-    const admin = createHash('sha256').update(built.admin.html).digest('hex');
-    t.diagnostic(`participant ${participant.slice(0, 8)}, admin ${admin.slice(0, 8)}`);
-    console.log(`  Phase 14: the participant page is ${participant === PHASE_14.participantSha256 ? 'byte for byte' : 'NOT'} the page 13 left; the admin page is ${admin === PHASE_14.adminSha256 ? 'byte for byte' : 'NOT'} the page 13 left`);
-    assert.equal(participant, PHASE_14.participantSha256, 'the participant page is the one Phase 13 left, byte for byte');
-    assert.equal(admin, PHASE_14.adminSha256, 'the admin page is the one Phase 13 left, byte for byte');
+    assert.equal(PHASE_14.participantSha256, PHASE_13.participantSha256);
     assert.equal(PHASE_14.participantAfter, PHASE_13.participantAfter);
     assert.equal(PHASE_14.adminAfter, PHASE_13.adminAfter);
+    // (This test compared the build in the tree with both pages' SHA-256 until Phase 15: the newest phase's test below holds the build now.)
+  });
+
+  it('Phase 15 (alignment, motion, the Animations switch) grew the participant page by at most 2,000 B gzip over 14, to the same Tailwind rules and under its ceiling, and the admin page by at most 8,000 B', (t) => {
+    assert.equal(PHASE_15.participantBefore, PHASE_14.participantAfter, 'Phase 15 is measured from where Phase 14 ended');
+    assert.equal(PHASE_15.adminBefore, PHASE_14.adminAfter);
+    const participant = built.participant.htmlGzip - PHASE_15.participantBefore;
+    const admin = built.admin.htmlGzip - PHASE_15.adminBefore;
+    t.diagnostic(`participant ${participant >= 0 ? '+' : ''}${participant} B, admin ${admin >= 0 ? '+' : ''}${admin} B against where 14 ended`);
+    console.log(`  Phase 15: the participant page is ${participant >= 0 ? '+' : ''}${participant} B gzip against where 14 ended (allowance ${PHASE_15.participantAllowance} B), now ${bytes(built.participant.htmlGzip)}; the admin page ${admin >= 0 ? '+' : ''}${admin} B (allowance ${PHASE_15.adminAllowance} B), now ${bytes(built.admin.htmlGzip)} of its ${bytes(BUDGET.admin)} budget`);
+    assert.ok(participant <= PHASE_15.participantAllowance, `the participant page is ${participant} B larger than where 14 left it`);
+    assert.ok(built.participant.htmlGzip <= BUDGET.participantCeiling, 'and under its ceiling, which is not raised');
+    assert.deepEqual(utilityClasses(built.participant.html), [...PHASE_15.participantUtilities], "the participant page's Tailwind rules are the ones it had");
+    assert.ok(admin <= PHASE_15.adminAllowance, `the admin page is ${admin} B larger than where 14 left it`);
+    assert.ok(built.admin.htmlGzip < BUDGET.admin, `the admin page is under its ${bytes(BUDGET.admin)} budget`);
+    assert.ok(PHASE_15.participantAfter - PHASE_15.participantBefore <= PHASE_15.participantAllowance, 'the participant page, as measured when 15 ended');
+    assert.ok(PHASE_15.adminAfter - PHASE_15.adminBefore <= PHASE_15.adminAllowance, 'the admin page, as measured when 15 ended');
   });
 
   it('the Tailwind rules check can fail: a rule added to the participant page, or one taken away, is found', () => {

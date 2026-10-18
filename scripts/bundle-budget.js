@@ -280,3 +280,16 @@ export const PHASE_14 = Object.freeze({
   adminSha256: '04e64562f598981d3ee6dc1eb846395e1cbf0432c9df69c0cd755023fb230c1b',
   participantAfter: PHASE_13.participantAfter, adminAfter: PHASE_13.adminAfter,
 });
+
+/**
+ * Phase 15 (alignment, the motion system and the client's Animations switch) changed the participant page on purpose: it carries
+ * lib/motion/ (the plan and the engine, about 2.2 kB gzip) and lib/motion/motion-tokens.css, and no longer the legacy motion sheet
+ * (styles/legacy/vfx.css), so its CSS is smaller than before; its Tailwind rules are the ones it had. The admin page carries the same
+ * motion files for Brand Studio's preview, the switch and the client writer. Measured when the phase ended; the next phase starts from
+ * participantAfter and adminAfter.
+ */
+export const PHASE_15 = Object.freeze({
+  participantBefore: PHASE_14.participantAfter, adminBefore: PHASE_14.adminAfter, participantAllowance: 2_000, adminAllowance: 8_000,
+  participantAfter: 157_022, adminAfter: 562_616,
+  participantUtilities: PHASE_11A.participantUtilities,
+});

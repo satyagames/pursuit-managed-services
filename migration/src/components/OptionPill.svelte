@@ -77,7 +77,8 @@
 
   .letter {
     flex: none;
-    min-width: 1.1em;
+    min-width: 1.6em;
+    text-align: center;
   }
 
   .label {
@@ -101,11 +102,9 @@
   }
 
   .pill[data-state='selected'] .letter {
-    min-width: 1.6em;
     color: var(--action);
     font-weight: var(--fw-bold);
     line-height: 1.6;
-    text-align: center;
     background: var(--text);
     border-radius: var(--radius-full);
   }
