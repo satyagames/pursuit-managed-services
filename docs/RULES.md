@@ -1294,8 +1294,8 @@ iPhone or the real site**: QA-TESTING.md items 182 to 187.
   (not ThemeVersion), the write made with If-Match, read and made again once on 412. Brand Studio's save writes through the same function, so a flip and a
   colour saved at the same moment both stay (`scripts/test-motion-switch.js`). Both screens use `admin/MotionSwitch.svelte` (a `role="switch"` button, saved at
   once, put back on a failed save). A participant page picks a change up at its next boot: no request was added.
-- **`PHASE_15`** (`scripts/bundle-budget.js`): participant +1,966 B gzip over 14 (allowance 2,000; its CSS is smaller: the legacy motion sheet `vfx.css` left the
-  page), admin +6,959 B (allowance 8,000). Its Tailwind rules are 11a's.
+- **`PHASE_15`** (`scripts/bundle-budget.js`): participant +1,967 B gzip over 14 (allowance 2,000; its CSS is smaller: the legacy motion sheet `vfx.css` left the
+  page), admin +6,914 B (allowance 8,000). Its Tailwind rules are 11a's.
 
 ## Before finishing a change
 

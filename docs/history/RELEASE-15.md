@@ -28,8 +28,8 @@ header test, one `keyboard.spec.ts` test), 2 the known flakes (`admin-today.spec
 2 of `admin-content.spec.ts` (Chromium :207, WebKit :470) failed before any change of this phase reached them. **Firefox was not exercised**: it does not
 start on this machine (`spawn UNKNOWN`); nor does a headed Chromium.
 
-**Sizes (gzip -9).** Participant 156,998 → **158,964 B** (+1,966; allowance 2,000; ceiling 450,000 not raised); its CSS **smaller**, 115,377 → 111,351 B
-raw (70,535 → 69,107 gzip), because the legacy motion sheet left it; its Tailwind rules unchanged. Admin 562,606 → **569,565 B** (+6,959; allowance 8,000;
+**Sizes (gzip -9).** Participant 156,998 → **158,965 B** (+1,967; allowance 2,000; ceiling 450,000 not raised); its CSS **smaller**, 115,377 → 111,351 B
+raw (70,535 → 69,107 gzip), because the legacy motion sheet left it; its Tailwind rules unchanged. Admin 562,606 → **569,520 B** (+6,914; allowance 8,000;
 budget 700,000): it carries the motion files for Brand Studio's preview, the switch and the writer; its CSS 324,884 → 327,481 B raw. The motion code
 itself is about 2.2 kB gzip (`npm run analyze:bundle`, `lib/motion/`).
 
