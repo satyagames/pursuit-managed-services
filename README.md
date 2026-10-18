@@ -172,6 +172,23 @@ npm run test:migration
 Deploying the official, checksummed package (from a clean commit): `npm run package:release` makes `build-svelte/package/pms-<commit>/` with the pages, `pms-config.txt`, checksums and a `RUNBOOK.md` with
 every step for the site. Upload to a test folder first. See [docs/SHAREPOINT.md](docs/SHAREPOINT.md#deploying-a-package).
 
+### Commands
+
+| Command | What it does |
+|---|---|
+| `npm ci` | Installs the packages exactly as the lock file says. Use it on every new computer; never copy `node_modules` between computers. |
+| `npm run doctor` | Checks this computer (Node version, Vite install, git, free ports) and prints the fix for anything wrong. Changes nothing. |
+| `npm run dev` | Everything for local work: the server plus the participant (5173), admin (5175) and Setup (5176) pages, on a dummy database in `.local-data/`. |
+| `npm run dev -- --reset` | Same, after throwing the dummy data away and copying the seed again. |
+| `npm run dev -- --only admin` | Same, with one page only (`participant`, `admin` or `setup`). Add `--open` to open the browser. |
+| `npm run dev:api` | The local server alone, restarting when its files change. The single pages are `npm run dev:svelte`, `dev:svelte:admin` and `dev:svelte:setup`. |
+| `npm run build` | Builds this folder as it is now and puts the four files to upload in `build-svelte/upload/`. `-- --zip` also makes `build-svelte/upload.zip`. |
+| `npm run package:release` | The official package with checksums and `RUNBOOK.md`, from a clean commit, in `build-svelte/package/`. |
+| `npm run local:site -- --open` | Serves a built package as a stand-in of the real SharePoint site (needs `package:release` first). |
+| `npm run check:svelte`, `npm test` | The fast checks to run after every change. |
+
+Working on another computer after changing code by hand: `npm ci`, `npm run doctor`, `npm run dev` to look at it, `npm run build` to get the files to upload.
+
 ## Repository layout
 
 ```text
@@ -260,6 +277,9 @@ Proposals, not features: nothing below exists yet. Size: S (days), M (a week or 
 
 | Problem | Cause | Fix |
 |---|---|---|
+| `npm run dev` or `npm run build` says Node is too old, or Vite fails on `crypto.hash` | Node older than 22.12. | Install Node 22 (`winget install OpenJS.NodeJS.LTS`, or `nvm install 22`), open a new window, run `npm run doctor`. |
+| `ERR_MODULE_NOT_FOUND`, or Vite cannot find a native file | `node_modules` was copied from another computer or the install was cut short. | Delete `node_modules`, run `npm ci`. |
+| `npm run dev` says a port is in use | An earlier `npm run dev` is still open. | Close it (Ctrl+C), or set `PORT`, `VITE_PORT`, `VITE_ADMIN_PORT` or `VITE_SETUP_PORT`. |
 | "This page cannot start", `PMS-CFG-001` | No `pms-config.txt` beside the pages. | Upload it (RUNBOOK.md step 2). |
 | `PMS-CFG-002` with `page 200` | A web page came back for the settings file: the sign-in page, or "File Not Found" (a `.json` name). | Sign in; the file must be `pms-config.txt`; open its address to check. |
 | `PMS-LST-010` | The site is not marked ready. | Setup: Show the plan, Create, Mark the site as ready. |
