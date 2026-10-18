@@ -534,7 +534,7 @@ in `migration/src/`, not by editing them, so that what the tests measure stays w
   - **Drawn, not rendered.** Rectangles, lines, text, the client's logo as a picture, and two things that are paths: the tick and cross
     beside an answer, and the Deloitte wordmark, whose shapes are read from the mounted `DeloitteWordmark` component (the white letters
     drawn black for a white page, the dot green). Never `doc.html()`, `addSvgAsImage` or html2canvas (the admin build stubs them; a test
-    fails), and never a file from `public/assets/Logos`. The client's colour is an accent only (the title band, the completion bars, rules; since Phase 11b a question's bars are the Results palette's, see "Rules from Phase 11b"):
+    fails), and never a logo file: the report draws the wordmark itself (the folder of logo files was removed from the repository in `c555fef`). The client's colour is an accent only (the title band, the completion bars, rules; since Phase 11b a question's bars are the Results palette's, see "Rules from Phase 11b"):
     `printColours()` darkens it until it has 3:1 on white and puts white or near-black words on it at 4.5:1. Right and wrong are a mark
     and words, never colour alone, so the page prints in greyscale. A logo drawn for the dark plate keeps a dark plate; a client with no
     logo has its name in type and nothing drawn in a logo's place.
