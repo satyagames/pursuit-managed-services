@@ -45,6 +45,10 @@ sequenceDiagram
   P->>S: and the questions and options of every enabled activity, held for the page's life
 ```
 
+**The client's Animations switch** comes with the client in round 2 (ThemeJson `motion`, Phase 15): no request of its own. An open page applies a change at
+its next boot (a reload, or the boot that a restart or a change of what is live makes). Admin writes it on the client as it is at that moment (read with its
+ETag, written with If-Match). The motion level a device settles on is kept for the tab's session only (`pms.motion`).
+
 **Two rounds and 6 requests to the first screen** on the staff link (8 at most, plus the settings file), in `lib/participant/boot.js`. Nothing is kept
 between page loads: browser storage holds only answers not yet saved (`cec-answers:<track>`), this tab's visit-log keys and the sound choice.
 

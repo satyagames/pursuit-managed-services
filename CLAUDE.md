@@ -34,7 +34,7 @@ On the Windows checkout the system Node is 20: run Node 22 from `.local/node22/n
 | Path | What |
 |---|---|
 | `migration/src/main.ts`, `admin-main.ts`, `setup-main.ts` | The three entries; `App.svelte`, `AdminApp.svelte`, `SetupApp.svelte` the apps. |
-| `migration/src/lib/<folder>/` | The modules, by folder: `data`, `schema`, `settings`, `participant`, `common`, `admin`, `results`, `exports`, `brand`, `effects`, `setup`. Every file starts with a header saying what it owns. |
+| `migration/src/lib/<folder>/` | The modules, by folder: `data`, `schema`, `settings`, `participant`, `common`, `admin`, `results`, `exports`, `brand`, `effects`, `motion`, `setup`. Every file starts with a header saying what it owns. |
 | `migration/src/lib/data/dataService.js` | The data layer: the only module that talks to SharePoint (or the local server). Every page carries all of it. |
 | `migration/src/lib/schema/pms-schema.js` | The one place a list or column is named. `pms-schema-meta.js` says everything else about them. |
 | `migration/src/admin/`, `admin/charts/` | The admin page's screens and the hand-drawn Results charts. |
@@ -60,7 +60,8 @@ On the Windows checkout the system Node is 20: run Node 22 from `.local/node22/n
 5. **SharePoint:** every item read names its columns (`selectOf`); a duplicate is 409 for 400, 409 or 500; no column named like a list-item property
    (`DisplayName`); a list title only through `spTitle()` / `sharePointListTitles()`; schema version 3; the settings file is `pms-config.txt`.
 6. **Only `lib/data/dataService.js` fetches** (and `lib/settings/settings-file.js`, the settings file). Sounds and confetti only through
-   `lib/effects/effects.ts`. Saving answers only through `lib/participant/participantData.ts`.
+   `lib/effects/effects.ts`. Saving answers only through `lib/participant/participantData.ts`. Motion only through `lib/motion/motion.ts`, its durations
+   and curves only in `lib/motion/motion-tokens.css`.
 7. **Names are on the facilitator's view only**: never on the wall display, in the Live display's PDF, PowerPoint or summary CSV.
 8. **The counting rules are fixed** (`COUNTING_RULES` in `lib/exports/leader-report.js`, first answers only). Every number a chart shows comes from
    `lib/results/results-chart-model.js`; every chart colour from `migration/src/styles/results-tokens.css`.

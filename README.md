@@ -23,9 +23,9 @@ folder and keeps everything in SharePoint lists: there is no server, nothing to 
 
 | Role | What it can do |
 |---|---|
-| Participant | A welcome in the client's look and words; an Activities hub (one activity at a time, or all open); one question per screen, with Next and Back; a graded question says right or wrong at once, offers one Retry, and reveals the answer after a second wrong pick; progress is saved as each answer is given and a reload picks up where it was; optional sound and confetti; works with the keyboard and a screen reader, in portrait and landscape, from a phone to a desktop. |
+| Participant | A welcome in the client's look and words; an Activities hub (one activity at a time, or all open); one question per screen, with Next and Back; a graded question says right or wrong at once, offers one Retry, and reveals the answer after a second wrong pick; progress is saved as each answer is given and a reload picks up where it was; optional sound and confetti; screens that move by the kind of question (the answers come in from both sides; off with the device's reduced motion or the client's switch); works with the keyboard and a screen reader, in portrait and landscape, from a phone to a desktop. |
 | Facilitator | **Today**: pick a client and date, see what is not ready, Go live (verified), choose staff sign-in or guests with personal QR codes, sequential or open activities, End and Reopen, the participant link and its QR. **Guests and QR**: paste names, generate single-use codes, print a sheet of cards. **Results**: every session with each person's progress, Restart or Remove a visit, the live charts, the **Live display** and its full-screen **wall** for the projector (no names on it). |
-| Admin | **Clients**: names, slugs, archive, a check-in QR for shared iPads. **Brand Studio**: colours checked for contrast, a logo, a hero and a background, cropped and compressed in the browser, previewed on real participant screens at real device sizes. **Content**: a client's activities and questions, copy from another client, duplicate, reorder, picture tiles, a preview. |
+| Admin | **Clients**: names, slugs, archive, a check-in QR for shared iPads. **Brand Studio**: colours checked for contrast, a logo, a hero and a background, cropped and compressed in the browser, previewed on real participant screens at real device sizes; an **Animations** switch per client (also on Today). **Content**: a client's activities and questions, copy from another client, duplicate, reorder, picture tiles, a preview. |
 | Site owner | **Setup**: shows exactly what the site lacks, creates only that (never deletes or renames), checks every list strictly, marks the site ready, adds admins, seeds two sample clients, and a self-test of the site in 11 steps. |
 | Leaders | **Leader report (PDF)**: at a glance on page 1, then each activity on its own pages, every question as a chart, the counting rules on the last page. **Summary pack (PDF and PowerPoint, 16:9)** from the Live display, with speaker notes. **Summary by activity (CSV)** and **All answers (CSV)**. |
 
@@ -86,6 +86,7 @@ every 10 to 15 seconds, the Live display every 12. More: [docs/DATA-FLOW.md](doc
 | `exports/` | the leader report and the summary pack |
 | `brand/` | a client's look, Brand Studio's pictures |
 | `effects/` | sound and confetti |
+| `motion/` | the screens' motion: the plan, the tokens, the one door |
 | `setup/` | Setup's plan, Create, admins, sample clients |
 | `common/` | the product name, focus, kiosk mode, polling |
 
@@ -212,6 +213,8 @@ Proposals, not features: nothing below exists yet. Size: S (days), M (a week or 
 - Retry and Home nearer the answers on an iPad in portrait. S
 - A client's logo on Welcome when it also has a hero. S ◆
 - A lighter scrim for clients with a light background. S ◆
+- A motion profile per activity, chosen in Content (needs a column: schema version 4). M ◆
+- A motion "personality" per client (calmer, livelier) beside the Animations switch. S ◆
 
 **Facilitation and live**
 - A pace panel: who is on which question, and who is stuck. M

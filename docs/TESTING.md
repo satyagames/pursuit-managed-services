@@ -126,6 +126,16 @@ seven sizes.
   `reflow.spec.ts` (viewport tag, pinch, 200% text, 320 px), `contrast.spec.ts` (every piece of text and the focus ring measured from pixels, per look),
   `motion.spec.ts` (reduced motion) and `unsupported.spec.ts`. Reports go to `test-results/a11y/`. `@axe-core/playwright` is a dev dependency and in no page
   (`test:bundle` checks every page for it).
+- **Motion (Phase 15).** `scripts/test-motion-plan.js` (the plan, the budget, the tokens against the CSS, and the guard: no duration or curve outside them),
+  `scripts/test-motion-engine.js` (`lib/motion/motion.ts` on a stand-in page, frame by frame) and `scripts/test-motion-switch.js` (ThemeJson `motion`, the previous
+  build reading it, two admins at once on both backends) are in `npm test`. `motion-types.spec.ts` records every shape the page writes and holds each kind of
+  question's sides, Back against Next, a tap during an entrance, three quick Nexts, no replay on a re-render, compositor properties only and the end geometry
+  against `?motion=off`; `motion-switch.spec.ts` the two switches; `motion.spec.ts` the switch off for a participant. **`motion-perf.spec.ts`** (Chromium, 4x
+  CPU) prints a table per entrance, motion on and off: layouts and style recalculations (`Performance.getMetrics`), script ms, long tasks, layout shift, the
+  tap's event time, frames (p95, longest run of dropped ones); it holds that motion adds at most one layout, no long task and no shift of its own, and that
+  200 presses leave nothing behind. Its style recalculations are inflated by its own frame recorder (any frame callback makes Chromium update running
+  animations on the main thread). `PMS_PAGES=<folder>` measures another build. `node scripts/motion-bench.js` is the micro-benchmark of RELEASE-15.md;
+  `node scripts/local-site/filmstrip.js` photographs the motion every 50 ms. `?motion=off` on the participant address turns motion off for one device.
 - `npm run test:devices` — `devices.spec.ts`: iPhone and iPad in both orientations, iPad Pro, a 1366x768 laptop and a 1440x900 desktop, on every participant
   screen and every admin tab (no sideways scroll, nothing cut off, 44 px on touch, the safe areas on the iPhone: Chromium emulates the insets, the other
   engines show the stylesheets use them) and turning the device over mid-question. `npm run test:perf` — `performance.spec.ts` and `latency.spec.ts`

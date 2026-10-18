@@ -7,7 +7,9 @@
 1. Items **171 to 176** (Phase 13: the summary pack, PowerPoint on a projector, the summary CSV in Excel, the leader report in Edge, Acrobat and black
    and white, one iPad and a switched-off activity, a reader who was not in the room). For Satyadev.
 2. Items **177 to 181** (Phase 14: the restructured build on a test folder, then production). Below item 176.
-3. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
+3. Items **182 to 187** (Phase 15: the motion on an iPad and an iPhone, Reduce Motion, the alignment on a laptop, the Animations switch, then
+   production). Below item 181.
+4. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
    160, 161, 164, 165, 166, 167, 168, 169, 170.
 
 **Decided, no change:** 162 (names stay "Last, First") and 163 (the wall page keeps the admin header), VJR, 16 Oct 2026.
@@ -1303,6 +1305,30 @@ changed. Use a test folder first, never production.
     (Only Setup shows the build; the participant and admin pages do not.)
 181. **Then production, and the push.** *(Still to see.)* If 177 to 180 pass, replace the three pages in `Shared Documents/PMS` and push the branch
     `pms-14`. **Expect** nothing to differ from the earlier build; if anything does, send the screenshot and the text of the browser's console.
+
+### Phase 15 (alignment, the screens' motion, the Animations switch): not verified on a real iPad, iPhone, laptop or the real site
+
+What the browsers showed is in RELEASE-15.md: where each part of a screen comes from, that a tap is taken during the motion, that nothing is left
+moving, the frames, and the cost at four times slower. **How it feels can only be judged by a person, on the device.** Use a test folder first.
+
+182. **The motion on an iPad and an iPhone.** *(Still to see.)* Upload the new package to a **test folder**. In Safari on an iPad and an iPhone, go
+    through one activity of each question type. **Expect** the question to ease in, the answers to arrive from both sides (true or false: from both
+    sides at once; a confidence scale: from the left, in order; a written answer: rising), the first tap to work at once, nothing to stutter, and the
+    device not to get warm. In the preview (`index.html?preview=<client>`), Back brings the question in from the left and Next from the right.
+183. **Reduce Motion.** *(Still to see.)* iOS Settings > Accessibility > Motion > **Reduce Motion** on. **Expect** no movement and no confetti at all
+    (the screens simply appear), with the Animations switch on or off.
+184. **Turning the device and Low Power Mode.** *(Still to see.)* Rotate the iPad in the middle of a question while the answers are coming in.
+    **Expect** nothing to jump or stay half-moved. In Low Power Mode, **expect** it still to be smooth, or to move less after a few screens.
+185. **The alignment on a laptop.** *(Still to see.)* On a Windows laptop at 100% and at 125%: a multiple choice question, pick two answers. **Expect**
+    the words of every answer to start at the same edge, picked or not, and a picked answer's words not to move. Admin: on **Results**, Tab to a
+    session's **Live results**: the green focus ring is whole. Today, Content, Results and Setup line up as before. Screenshot anything that does not.
+186. **The Animations switch.** *(Still to see.)* In Brand Studio set **Animations** to Off for the test client (it saves at once: "Animations are off
+    for <client>"), and open the participant page on an iPad: **expect** no movement and no confetti. Turn it On: **expect** the motion back on the
+    next load of the page (an iPad that was already open keeps what it loaded with until it is reloaded; note how long it took). Repeat from the quick
+    switch on **Today** (under Controls). Check that a second client is unaffected, and that with Reduce Motion on and the switch On there is still no
+    motion.
+187. **Then production, and the push.** *(Still to see.)* If 182 to 186 pass, replace the three pages in `Shared Documents/PMS` and push the branch
+    `pms-15`. Nothing in the lists changes (version 3); a client's ThemeJson gains `"motion": { "enabled": false }` only when someone turns the switch off.
 
 ### Phase 8 (browsers, devices, accessibility, performance, the unsupported-browser page): not verified on a real device, a real screen reader, or the real SharePoint site
 

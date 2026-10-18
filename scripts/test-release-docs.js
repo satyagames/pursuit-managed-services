@@ -158,6 +158,10 @@ describe('RUNBOOK.md', () => {
     assert.match(book, /\| Note 10 \| 177, 178, 179, 180, 181 \|/, 'the smoke test of Phase 14');
     assert.match(book, /\*\*This package \(Phase 14\) changes nothing a person sees\*\*/);
     assert.match(book, /^10\. The smoke test of this package\. /m);
+    // Phase 15: what this package moves and lines up, and its own step: the motion on an iPad and an iPhone, Reduce Motion, the laptop, the switch.
+    assert.match(book, /\| Note 11 \| 182, 183, 184, 185, 186, 187 \|/, 'the motion and the switch of Phase 15');
+    assert.match(book, /\*\*This package \(Phase 15\) moves the participant screens and lines them up\*\*[^\n]*Nothing in the lists changes \(version 3\)/);
+    assert.match(book, /^11\. The motion and the Animations switch \(Phase 15, QA-TESTING\.md items 182 to 187\)\. [^\n]*Reduce Motion[^\n]*\*\*Brand Studio\*\*[^\n]*\*\*Today\*\*/m);
     for (const line of [/Setup: the Build row says/, /Run self-test/, /a guest's QR code/, /Results/, /Leader report \(PDF\)/]) assert.match(book.slice(book.indexOf('The smoke test of this package')), line);
     assert.equal(book.trimEnd().split('\n').at(-1), LAST_LINE);
     assert.match(LAST_LINE, /Steps 1 to 9 of this runbook have run on the real site \(14 Oct 2026, pms-969bf16\), and Go live, a participant's visit and the self-test \(15 Oct 2026, pms-e250a36\), and with pms-da9fc8d the lists of version 3 and a participant's visit \(15 Oct 2026\)/);
@@ -180,7 +184,7 @@ describe('RUNBOOK.md', () => {
     assert.match(note, /With pms-283ad18, \*\*a chart's tooltip could lie over the question, the "got it right first time" line and the Show answer \/ View as table buttons above its mark, and a locked activity's title was too faint to read\*\* \(photographed by Satyadev, 16 Oct 2026\)/);
     assert.match(note, /The participant page changed for the first time since pms-0a1c701: a locked activity's title, and when it looks again after the network comes back\./);
     const items = [...note.matchAll(/^(\d+)\. (.+)$/gm)].map((match) => [Number(match[1]), match[2]]);
-    assert.deepEqual(items.map(([number]) => number), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 'ten steps since Phase 14 (the smoke test)');
+    assert.deepEqual(items.map(([number]) => number), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], 'eleven steps since Phase 15 (the motion and the Animations switch)');
     const said = Object.fromEntries(items);
     assert.match(said[1], /^Replace `index\.html`, `admin\.html` and `setup\.html`[^\n]*Keep `pms-config\.txt` as it is[^\n]*Change nothing else\./);
     assert.ok(said[1].includes(SETTINGS_TEXT), 'the content that stays, exactly');
@@ -260,9 +264,15 @@ describe('RELEASE-NOTES.md', () => {
     // (Phase 13) what changed since pms-d19bd14, newest first; the Phase 12 section is now "in pms-d19bd14", with its sizes recorded.
     // (Phase 14) what changed since pms-757be5c: the code's structure and the documents, nothing a person sees; the Phase 13 section is "in pms-757be5c",
     // with its sizes recorded.
-    assert.match(notes, /## What changed since pms-757be5c \(17 Oct 2026: the code and its documents were rearranged for whoever changes them next; nothing a person sees changed\)/);
-    assert.match(notes, /\*\*Nothing a person sees changed:\*\*[^\n]*The participant page is (not measured|byte for byte pms-757be5c's|[\d,]+ B (larger|smaller) than pms-757be5c's) and the admin page/);
-    assert.ok(notes.indexOf('since pms-757be5c') < notes.indexOf('in pms-757be5c'), 'the newest change first');
+    // (Phase 15) what changed since pms-e470847: the motion, the switch and the alignment; the Phase 14 section is "in pms-e470847".
+    assert.match(notes, /## What changed since pms-e470847 \(18 Oct 2026: a participant's screens appeared all at once, and an answer's words moved sideways when it was picked\)/);
+    assert.match(notes, /\*\*The screens move, by the kind of question\.\*\*/);
+    assert.match(notes, /\*\*An Animations switch for each client\*\*[^\n]*no list or column changes/);
+    assert.match(notes, /\*\*Nothing else changed:\*\*[^\n]*The participant page is (not measured|byte for byte pms-e470847's|[\d,]+ B (larger|smaller) than pms-e470847's) and the admin page/);
+    assert.ok(notes.indexOf('since pms-e470847') < notes.indexOf('in pms-e470847'), 'the newest change first');
+    assert.match(notes, /## What changed in pms-e470847 \(since pms-757be5c, 17 Oct 2026: the code and its documents were rearranged for whoever changes them next; nothing a person sees changed\)/);
+    assert.match(notes, /\*\*Nothing a person sees changed:\*\*[^\n]*The participant page and the admin page were byte for byte pms-757be5c's\./);
+    assert.ok(notes.indexOf('in pms-e470847') < notes.indexOf('in pms-757be5c'), 'the newest change first');
     assert.match(notes, /## What changed in pms-757be5c \(since pms-d19bd14, 17 Oct 2026: the Results files were a small copy of the screen, and a leader who was not in the room could not find the answer\)/);
     assert.match(notes, /The participant page is byte for byte pms-d19bd14's and the admin page 3,480 B larger than pms-d19bd14's \(gzip\)/);
     assert.match(notes, /\*\*The Live display's Export PDF and Export PPT are a summary pack\*\*/);
@@ -288,7 +298,7 @@ describe('RELEASE-NOTES.md', () => {
     assert.match(notes, /\*\*No change, by VJR's decisions of 16 Oct 2026:\*\* names stay "Last, First"/);
     assert.match(notes, /The participant page is 30 B larger than pms-283ad18's and the admin page 32 B larger than pms-283ad18's \(gzip\)\./);
     assert.ok(notes.indexOf('since pms-283ad18') < notes.indexOf('in pms-283ad18'), 'the newest change first');
-    assert.match(notes, /of the branch `pms-14` \(a branch on GitHub, never merged into main\)/);
+    assert.match(notes, /of the branch `pms-15` \(a branch on GitHub, never merged into main\)/);
     // (Phase 11a-2, since 11a-3 the section "in pms-283ad18") what changed since pms-3fb312a.
     assert.match(notes, /## What changed in pms-283ad18 \(since pms-3fb312a, 16 Oct 2026: on a Windows laptop a confidence question in full screen had a scrollbar inside its chart and its tooltip cut off\)/);
     assert.match(notes, /\*\*Nothing inside a chart's card scrolls\.\*\*/);

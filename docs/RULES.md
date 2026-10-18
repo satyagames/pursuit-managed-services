@@ -1264,6 +1264,38 @@ The report is [RELEASE-14.md](../RELEASE-14.md); what was removed, moved and kep
   (QA items 177 to 181).
 - **Found, and left:** see CLEANUP-LOG.md, "Found, and left" and "Proposed, not done".
 
+## Rules from Phase 15 (alignment, the motion system, the Animations switch; keep them holding)
+
+The report is [RELEASE-15.md](history/RELEASE-15.md); the alignment review is [ALIGNMENT-REVIEW.md](history/ALIGNMENT-REVIEW.md). **None of it has met a real iPad,
+iPhone or the real site**: QA-TESTING.md items 182 to 187.
+
+- **Motion is data, then CSS, then one small orchestrator.** `lib/motion/motion-plan.js` is the plan: a table from (moment, kind of question, part of the
+  screen, index, count, direction, level) to a recipe that names a shape and tokens, never a number. `lib/motion/motion-tokens.css` holds the only durations,
+  curves, stagger and distances (`--motion-*`) and the shapes (`@keyframes motion-*`: rise, from-left, from-right, converge-left, converge-right, draw-x,
+  pop, settle, nudge, fade); each moves `transform` and `opacity` only and fills backwards only, so an element's own style is its end state.
+  `lib/motion/motion.ts` is the one door: the action `use:motion={{ role, type, index, count }}` writes the recipe ONCE as `data-motion` and four custom
+  properties; `setMotionDirection` ('forward' on Next, 'back' on Back, 'jump' on a move between screens) opens a moment that closes two frames after its first
+  element, so the page's first screen and anything a refresh adds do not move; a verdict (right, wrong, revealed, picked) moves once per change.
+  `scripts/test-motion-plan.js` fails if any other participant file declares a duration or a curve, or animates with `element.animate()`.
+- **Every part of a screen settles on the same frame** (the recipe's `stretch`): each separate end of a transform animation costs Chromium a layout; with
+  one end the motion adds one layout per entrance (`motion-perf.spec.ts`). Starts stay staggered.
+- **The one level rule:** level = the lowest of the client's switch (ThemeJson `motion.enabled`), the device (`prefers-reduced-motion: reduce`: no motion and
+  no confetti at all, as Phase 8 pinned, whatever the switch says), `?motion=off` on the participant address (kept for the tab's session), and the governor
+  (it watches the frames of the first few entrances, at most 700 ms each, steps `full` to `reduced` (fades only) to `none` on dropped frames, never back up,
+  and stops after three smooth ones). The level is read once per moment and written on the root as `data-motion-level`; at `none` every transition of the
+  page goes too, and `effects.ts` leaves the confetti out. Sound has its own switch and is not touched.
+- **The budget:** an entrance (question and up to 12 answers, any direction) ends within 700 ms (the plan's `entranceLength`); at most 16 things move at once;
+  no long task, no layout shift of its own, a tap handled at once (`pointer-events` are never touched); nothing at idle (no frame callback, timer or observer
+  left), nothing at module load. Three listeners on the document, put there once.
+- **The switch lives in ThemeJson** (`{ "motion": { "enabled": false } }`), no column and schema version 3: absent, damaged or anything but `false` reads as on
+  (`motionEnabled` in `lib/brand/client-theme.js`). Every writer that rebuilds a theme carries it over, and one that never had it writes none. It is written
+  only by `saveClientMotion` (`lib/admin/adminData.ts`) through `dataService.updateClientWith`: the client read with its ETag, `motion` changed and nothing else
+  (not ThemeVersion), the write made with If-Match, read and made again once on 412. Brand Studio's save writes through the same function, so a flip and a
+  colour saved at the same moment both stay (`scripts/test-motion-switch.js`). Both screens use `admin/MotionSwitch.svelte` (a `role="switch"` button, saved at
+  once, put back on a failed save). A participant page picks a change up at its next boot: no request was added.
+- **`PHASE_15`** (`scripts/bundle-budget.js`): participant +1,966 B gzip over 14 (allowance 2,000; its CSS is smaller: the legacy motion sheet `vfx.css` left the
+  page), admin +6,959 B (allowance 8,000). Its Tailwind rules are 11a's.
+
 ## Before finishing a change
 
 - Always: `npm run check:svelte` and `npm test` (the documents, the module map and the project map among it). If you added, moved or renamed a
@@ -1308,6 +1340,9 @@ The report is [RELEASE-14.md](../RELEASE-14.md); what was removed, moved and kep
 - If you touched any markup or CSS a person sees, a focus rule, a heading, a colour or a screen change in `migration/`: run `npm run test:a11y` (axe must find
   nothing: fix it, do not waive it) and `npm run test:devices`, and look at `test-results/a11y/reflow/` and `test-results/devices/`. If you touched an HTML shell,
   `src/unsupported/`, an entry's imports or the Vite configs: run `npm run test:unsupported`, `npm run test:bundle` and look at `test-results/unsupported/`.
+- If you touched `lib/motion/`, a component's `use:motion` or a transition: run `node --test scripts/test-motion-plan.js scripts/test-motion-engine.js` and the
+  `motion*` and `alignment` specs in Chromium and WebKit, read the table `motion-perf.spec.ts` prints, and look at the frames of
+  `node scripts/local-site/filmstrip.js`. If you touched the Animations switch or a writer of ThemeJson: `node --test scripts/test-motion-switch.js`.
 - If you touched `migration/`: run `npm run check:svelte`, `npm run test:foundation` and
   `npm run test:migration`; after changing a component, tokens or `app.css`, also
   `npm run test:styleguide` and look at the screenshots it writes.

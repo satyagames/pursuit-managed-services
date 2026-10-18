@@ -42,6 +42,9 @@ registration, no certificate, no Graph, nothing from a CDN.
 - Words from a fixed set are single lines of text, not Choice columns. Dates show **Date & Time** (a date-only column can read back as the day before).
   Yes/No columns default to No. A single line of text holds 255 characters; the app refuses a longer one before sending it.
 - JSON (ordered id lists, a client's theme, a person's answers) is multiple lines of **plain** text, append-only off: rich text would corrupt it.
+- **A client's theme** (`PMSClients.ThemeJson`): `{ version, primary, accent, plate?, tokens, assets: { hero, logo, background, backgroundFocus?, tile }, copy: {
+  eventTitle, eventSubtitle, welcomeLine, logoText }, sample?, motion? }`. `motion` (Phase 15) is the client's Animations switch, `{ "enabled": false }` when it
+  is off; absent, damaged or anything but `false` means on, and an older page ignores it. Turning it on or off changes nothing else, not `ThemeVersion`.
 - An order is `SortOrder`: SharePoint keeps `Order` for itself.
 - **The version.** The item `default` of PMSAppSettings carries `SchemaVersion`. Setup writes it, last, when the check is clean; every page reads it
   with that item, which it reads first anyway. Missing: `PMS-LST-010`; lower: `PMS-LST-011` (run Setup); higher: `PMS-LST-012` (upload newer pages).
