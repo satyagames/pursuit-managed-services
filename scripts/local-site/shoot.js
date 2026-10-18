@@ -6,6 +6,8 @@
 //   npm run ux:shoot -- --only participant   one flow (participant, admin, setup, states, brand, fonts)
 //   npm run ux:shoot -- --package <folder>   another package's pages
 //   npm run ux:shoot -- --devices laptop-1366,ipad-portrait   only those devices
+//   npm run ux:shoot -- --matrix brief       every flow at the device matrix of devices.spec.ts (Phase 15's alignment review)
+//   npm run ux:shoot -- --measure            also measure every picture's geometry (align-probe.js) into alignment.json
 //
 // Pictures are made the same way every time: the scenario is rebuilt before each flow, the page's clock starts at 16 Oct 2026, 17:00 in India, the
 // API answers with no added latency (the slow profile is a state of its own), fonts are waited for, and animations are switched off for the shot.
@@ -21,6 +23,7 @@ import { fileURLToPath } from 'node:url';
 import { zipSync } from 'fflate';
 import { chromium, firefox, webkit } from '@playwright/test';
 import { startLocalSite } from './server.js';
+import { alignmentProbe } from './align-probe.js';
 import { ADMIN, HOST, NOW, ORIGIN, pageUrl } from './site-shape.js';
 
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
@@ -29,6 +32,8 @@ const option = (name) => { const at = args.indexOf(`--${name}`); return at === -
 const only = option('only')?.split(',') ?? null;
 const devicesWanted = option('devices')?.split(',') ?? null;
 const want = (device) => !devicesWanted || devicesWanted.includes(device);
+const measuring = args.includes('--measure');
+const matrix = option('matrix') === 'brief';
 const date = option('date') ?? new Date().toISOString().slice(0, 10);
 export const OUT = path.join(ROOT, 'ux-review', date);
 
@@ -43,7 +48,19 @@ export const DEVICES = {
   'laptop-1280-150': { engine: 'chromium', viewport: { width: 1280, height: 720 }, scale: 1.5, label: 'Windows laptop 1280x720 at 150%, Chromium' },
   projector: { engine: 'chromium', viewport: { width: 1920, height: 1080 }, scale: 1, label: 'Projector 1920x1080, Chromium' },
   'firefox-1440': { engine: 'firefox', viewport: { width: 1440, height: 900 }, scale: 1, label: 'Desktop 1440x900, Firefox' },
+  // The matrix of scripts/migration-tests/devices.spec.ts (Phase 15): `--matrix brief` runs every flow at these instead of its own list.
+  'm-iphone-portrait': { engine: 'webkit', viewport: { width: 390, height: 844 }, scale: 3, mobile: true, label: 'iPhone 390x844, WebKit' },
+  'm-iphone-landscape': { engine: 'webkit', viewport: { width: 844, height: 390 }, scale: 3, mobile: true, label: 'iPhone 844x390, WebKit' },
+  'm-ipad-portrait': { engine: 'webkit', viewport: { width: 820, height: 1180 }, scale: 2, mobile: true, label: 'iPad 820x1180, WebKit' },
+  'm-ipad-landscape': { engine: 'webkit', viewport: { width: 1180, height: 820 }, scale: 2, mobile: true, label: 'iPad 1180x820, WebKit' },
+  'm-ipad-pro': { engine: 'webkit', viewport: { width: 1024, height: 1366 }, scale: 2, mobile: true, label: 'iPad Pro 1024x1366, WebKit' },
+  'm-laptop-1366': { engine: 'chromium', viewport: { width: 1366, height: 768 }, scale: 1, label: 'Laptop 1366x768, Chromium' },
+  'm-desktop-1440': { engine: 'chromium', viewport: { width: 1440, height: 900 }, scale: 1, label: 'Desktop 1440x900, Chromium' },
 };
+const MATRIX = Object.keys(DEVICES).filter((key) => key.startsWith('m-'));
+/** A flow's devices: its own list, or the brief's matrix with `--matrix brief`; either narrowed by `--devices`. */
+const pick = (list) => (matrix ? [...MATRIX, ...list.filter((device) => device === 'laptop-1536-125')] : list).filter(want);
+const alignment = [];
 
 const manifest = [];
 const problems = [];
@@ -109,6 +126,10 @@ export async function shot(view, { flow, id, title, state = 'default', fullPage 
   const dir = path.join(OUT, flow);
   mkdirSync(dir, { recursive: true });
   const file = `${id}--${device}.png`;
+  if (measuring) {
+    const findings = await page.evaluate(alignmentProbe, { touch: Boolean(DEVICES[device].mobile) }).catch((error) => [{ kind: 'probe-failed', where: '-', measured: 0, detail: String(error?.message ?? error).slice(0, 200), text: '' }]);
+    alignment.push({ flow, id, title, state, device, file: `${flow}/${file}`, findings });
+  }
   await page.screenshot({ path: path.join(dir, file), fullPage, animations: 'disabled', caret: 'hide' });
   const since = view.logAt ?? 0;
   const requests = running.site.log.slice(since);
@@ -740,29 +761,29 @@ const safely = (run) => async (device, ...rest) => {
 };
 const FLOWS = {
   participant: async () => {
-    for (const device of ['ipad-portrait', 'ipad-landscape', 'iphone-15', 'laptop-1366'].filter(want)) await safely(participantWalk)(device);
-    for (const device of ['ipad-pro-11', 'firefox-1440'].filter(want)) await safely(participantWalk)(device, { full: false });
-    for (const device of ['ipad-portrait', 'iphone-15'].filter(want)) await safely(guestFlow)(device);
-    for (const device of ['ipad-portrait', 'laptop-1366'].filter(want)) await safely(participantStates)(device);
-    if (want('laptop-1366')) await safely(keyboardFocus)('laptop-1366');
+    for (const device of pick(['ipad-portrait', 'ipad-landscape', 'iphone-15', 'laptop-1366'])) await safely(participantWalk)(device);
+    for (const device of pick(['ipad-pro-11', 'firefox-1440'])) await safely(participantWalk)(device, { full: false });
+    for (const device of pick(['ipad-portrait', 'iphone-15'])) await safely(guestFlow)(device);
+    for (const device of pick(['ipad-portrait', 'laptop-1366'])) await safely(participantStates)(device);
+    for (const device of pick(['laptop-1366'])) await safely(keyboardFocus)(device);
   },
   tiles: async () => {
-    for (const device of ['ipad-portrait', 'iphone-15', 'laptop-1366'].filter(want)) await safely(tiles)(device);
+    for (const device of pick(['ipad-portrait', 'iphone-15', 'laptop-1366'])) await safely(tiles)(device);
   },
   admin: async () => {
-    for (const device of ['laptop-1366', 'laptop-1536-125', 'laptop-1280-150', 'ipad-landscape', 'firefox-1440'].filter(want)) await safely(adminFlow)(device);
-    for (const device of ['laptop-1366', 'ipad-landscape'].filter(want)) await safely(adminStates)(device);
-    for (const device of ['projector', 'laptop-1536-125', 'ipad-landscape'].filter(want)) await safely(liveDisplay)(device);
+    for (const device of pick(['laptop-1366', 'laptop-1536-125', 'laptop-1280-150', 'ipad-landscape', 'firefox-1440'])) await safely(adminFlow)(device);
+    for (const device of pick(['laptop-1366', 'ipad-landscape'])) await safely(adminStates)(device);
+    for (const device of pick(['projector', 'laptop-1536-125', 'ipad-landscape'])) await safely(liveDisplay)(device);
   },
   setup: async () => {
-    for (const device of ['laptop-1366', 'ipad-portrait'].filter(want)) await safely(setupFlow)(device);
+    for (const device of pick(['laptop-1366', 'ipad-portrait'])) await safely(setupFlow)(device);
   },
   brand: async () => {
-    for (const device of ['ipad-portrait', 'ipad-landscape', 'iphone-15', 'laptop-1366', 'projector'].filter(want)) await safely(brandMatrix)(device);
-    if (want('laptop-1366')) await safely(brandStudioUploads)('laptop-1366');
+    for (const device of pick(['ipad-portrait', 'ipad-landscape', 'iphone-15', 'laptop-1366', 'projector'])) await safely(brandMatrix)(device);
+    for (const device of pick(['laptop-1366'])) await safely(brandStudioUploads)(device);
   },
   mockups: async () => {
-    for (const device of ['ipad-portrait', 'iphone-15'].filter(want)) await safely(revealMockup)(device);
+    if (!matrix) for (const device of pick(['ipad-portrait', 'iphone-15'])) await safely(revealMockup)(device);
   },
   fonts: async () => { if (option('font-variant')) await fontsFlow(); },
 };
@@ -786,6 +807,7 @@ export async function main() {
   manifest.unshift(...kept);
   writeFileSync(path.join(OUT, 'shots.json'), JSON.stringify({ pages: running.site.pages.name, shots: manifest, problems }, null, 2));
   writeFileSync(path.join(OUT, 'index.html'), contactSheet());
+  if (measuring) writeFileSync(path.join(OUT, 'alignment.json'), JSON.stringify({ pages: running.site.pages.name, matrix: matrix ? MATRIX : null, shots: alignment }, null, 2));
   zipFolder();
   console.log(`\n${manifest.length} pictures, ${problems.length} problems. Contact sheet: ${path.join(OUT, 'index.html')}`);
 }
