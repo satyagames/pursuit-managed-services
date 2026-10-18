@@ -13,7 +13,7 @@
     OPEN_PAGES_NOTE, PRESETS, brandReport, changesForSave, cloneDraft, copyColoursFrom, draftFromClient, parseColour, resetColours, sameDraft,
     type Draft, type LogoStats,
   } from '../lib/brand/brand-studio.js';
-  import { resolveClientTheme } from '../lib/brand/client-theme.js';
+  import { motionEnabled, resolveClientTheme } from '../lib/brand/client-theme.js';
   import { DEFAULT_PRIMARY } from '../lib/brand/theme.js';
   import { copyText, participantPageUrl, qrImage } from '../lib/admin/admin-links.js';
   import { mayLeave, setLeaveGuard } from '../lib/admin/unsaved.js';
@@ -21,6 +21,7 @@
   import BrandPreview from './BrandPreview.svelte';
   import ConfirmDialog from './ConfirmDialog.svelte';
   import CopyBrandDialog from './CopyBrandDialog.svelte';
+  import MotionSwitch from './MotionSwitch.svelte';
 
   type Client = {
     id: string; name: string; slug?: string; status?: string; logoUrl?: string | null; primaryColor?: string; secondaryColor?: string;
@@ -77,7 +78,7 @@
   const words = $derived(resolveClientTheme(record).copy);
   const look = $state<Look>({
     scene: 'welcome', clientName: '', eventTitle: '', eventSubtitle: '', welcomeLine: '', logoText: '', heroUrl: null, logoUrl: null,
-    plate: 'light', backgroundUrl: null, backgroundFocus: null,
+    plate: 'light', backgroundUrl: null, backgroundFocus: null, motion: true,
   });
   $effect(() => {
     look.scene = sceneId;
@@ -91,6 +92,7 @@
     look.plate = draft.plate;
     look.backgroundUrl = display(draft.assets.background);
     look.backgroundFocus = draft.assets.background ? draft.focus ?? { x: 50, y: 50 } : null;
+    look.motion = motionEnabled(record.theme);
   });
 
   // How light or dark the logo is, for the plate advice. Measured again when the logo changes.
@@ -228,9 +230,14 @@
         uploaded.push(stored.url);
         next.assets[slot] = stored.url;
       }
-      const changes = changesForSave(fresh, next, saved);
+      // Written on the client as it is at this moment, not as it was read before the uploads (Phase 15): an Animations switch flipped
+      // meanwhile, on Today or here, is kept (changesForSave carries the stored `motion` and `sample` over).
+      let changes = changesForSave(fresh, next, saved);
       try {
-        await dataService.updateClient(record.id, changes);
+        await (dataService.updateClientWith as (id: string, change: (latest: Client) => Record<string, unknown>) => Promise<Client>)(record.id, (latest) => {
+          changes = changesForSave(latest, next, saved);
+          return changes;
+        });
       } catch (cause) {
         for (const url of uploaded) await (dataService.removeClientAsset as (url: string) => Promise<boolean>)(url);
         throw cause;
@@ -372,6 +379,11 @@
             onfocus={slot === 'background' ? (point) => { draft.focus = point; touched(); } : undefined}
           />
         {/each}
+      </section>
+
+      <section class="card brand__card" aria-labelledby="brand-motion">
+        <h3 id="brand-motion">Animations</h3>
+        <MotionSwitch client={record} help onSaved={(written) => { record = { ...record, theme: written.theme }; onSaved(record); }} {onToast} />
       </section>
 
       <div class="brand__actions card" role="group" aria-label="Save">

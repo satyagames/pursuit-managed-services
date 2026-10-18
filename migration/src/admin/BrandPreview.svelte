@@ -3,6 +3,8 @@
   import preflightCss from 'tailwindcss/preflight.css?inline';
   import tokensCss from '../styles/tokens.css?inline';
   import baseCss from '../styles/base.css?inline';
+  import motionCss from '../lib/motion/motion-tokens.css?inline';
+  import { setMotionEnabled } from '../lib/motion/motion.js';
   import type { Look } from '../lib/brand/brand-look.js';
   import { applyTheme, resetTheme } from '../lib/brand/theme.js';
   import { fitToWidth, type Device } from '../lib/brand/brand-devices.js';
@@ -58,7 +60,7 @@
     if (!doc || instance) return;
     const style = doc.createElement('style');
     // Preflight is in a layer, as the participant page's is (Tailwind puts it in `base`), so every rule outside a layer beats it.
-    style.textContent = `@layer base {\n${preflightCss}\n}\n${tokensCss}\n${baseCss}\n#app { display: block; }`;
+    style.textContent = `@layer base {\n${preflightCss}\n}\n${tokensCss}\n${baseCss}\n${motionCss}\n#app { display: block; }`;
     doc.head.append(style);
     const faces = doc.createElement('style');
     doc.head.append(faces);
@@ -87,6 +89,13 @@
       if (instance) void unmount(instance);
       instance = undefined;
     };
+  });
+
+  // The client's Animations switch, on the frame's <html> as a participant's page has it (so 'none' stops every transition in the frame,
+  // and nothing on the admin page itself).
+  $effect(() => {
+    const root = frame?.contentDocument?.documentElement;
+    if (ready && root) setMotionEnabled(look.motion, root);
   });
 
   // The draft's colours, put on the frame the way a participant's page has them on <html>.

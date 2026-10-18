@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { ds, openAdmin, startLocal, stopLocal, today, type Local } from './admin-local.js';
-import { openParticipant, themedSite, THEMES, walkParticipant } from './a11y-support.js';
+import { onSite, openParticipant, themedSite, THEMES, walkParticipant } from './a11y-support.js';
 
 // Phase 8, part C: prefers-reduced-motion. With the setting on:
 //   - the participant page draws no confetti at all (not one canvas is ever added), for a first-try right answer, an activity done and the finale;
@@ -50,6 +50,43 @@ for (const reduced of [true, false]) {
     }
   });
 }
+
+// Phase 15, part 3: the client's Animations switch (ThemeJson `motion.enabled`), as a participant meets it.
+const switchOff = (fake: Awaited<ReturnType<typeof themedSite>>['fake'], enabled: boolean) => onSite(fake, async (site) => {
+  const client = await site.getClient(THEMES.kroger.clientId) as { theme?: Record<string, unknown> };
+  await site.updateClient(THEMES.kroger.clientId, { theme: { ...(client.theme ?? {}), motion: { enabled } } });
+});
+
+test('the client\'s Animations switch off: through every kind of question, the hub and the finale nothing animates, no confetti, the same taps', async ({ page }) => {
+  test.setTimeout(120_000);
+  await recordMotion(page);
+  const { fake, pack } = await themedSite({ theme: 'kroger' });
+  await switchOff(fake, false);
+  await openParticipant(page, fake);
+  await walkParticipant(page, { pack, clientId: THEMES.kroger.clientId }, async () => {
+    expect(await page.locator('[data-motion]').count(), 'no part of a screen is given a shape').toBe(0);
+  });
+  await page.waitForTimeout(400);
+  const seen = await motion(page);
+  expect(seen.canvases, 'not one confetti canvas').toBe(0);
+  expect(seen.animations, 'no animation or transition longer than 20 ms ever ran').toEqual([]);
+  expect(await page.evaluate(() => document.documentElement.dataset.motionLevel)).toBe('none');
+});
+
+test('the switch flipped while a page is open reaches it at its next load (the theme is read at boot, with no request of its own)', async ({ page }) => {
+  test.setTimeout(90_000);
+  const { fake } = await themedSite({ theme: 'kroger' });
+  await openParticipant(page, fake);
+  await expect(page.getByRole('button', { name: 'Click here to begin' })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.dataset.motionLevel)).toBe('full');
+  await switchOff(fake, false);
+  await page.getByRole('button', { name: 'Click here to begin' }).click();
+  await expect(page.locator('.pms-activities li').first()).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.dataset.motionLevel), 'an open page keeps what it booted with').toBe('full');
+  await page.reload();
+  await expect(page.locator('.pms-activities li, .pms-welcome').first()).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.dataset.motionLevel), 'after the next load, off').toBe('none');
+});
 
 test.describe('the Live display, Auto-advance, with reduced motion', () => {
   let local: Local;

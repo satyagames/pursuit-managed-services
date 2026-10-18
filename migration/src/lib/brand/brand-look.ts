@@ -14,4 +14,6 @@ export type Look = {
   plate: 'light' | 'dark';
   backgroundUrl: string | null;
   backgroundFocus: { x: number; y: number } | null;
+  /** The client's Animations switch (ThemeJson `motion.enabled`): the preview moves as a participant's page would, or not at all. */
+  motion: boolean;
 };

@@ -4,10 +4,12 @@
 // The stored shape (PMS-IMPLEMENTATION-PLAN.md 4.2 and 4.4, in git history at 7347c72), written by the seeds now and by Brand
 // Studio later:
 //   { version, primary, accent, plate, tokens, assets: { hero, logo, background, backgroundFocus, tile },
-//     copy: { eventTitle, eventSubtitle, welcomeLine, logoText } }
+//     copy: { eventTitle, eventSubtitle, welcomeLine, logoText }, motion?: { enabled } }
 // `plate` is 'dark' for the plate a white logo needs; absent means the light plate. `backgroundFocus` is the
 // point of the background picture that stays in view, { x, y } as percentages, present only with a background.
-// `assets.tile` is reserved and unused.
+// `assets.tile` is reserved and unused. `motion` (Phase 15) is the client's Animations switch: `{ enabled: false }` turns the
+// participant screens' motion and confetti off; absent, or anything but `false`, means on, so every theme stored before it still reads
+// as it did and a damaged value never stops the page. Only the writers below and withMotion() write it.
 // `tokens` are the resolved custom properties (deriveTheme output). Nothing here trusts the stored
 // value: tokens go through applyTheme's own name and value checks, and anything missing or
 // unusable is derived again from the stored `primary` and `accent`. A client with no stored theme
@@ -33,6 +35,7 @@ import { CONTROL_TOKENS, DEFAULT_PRIMARY, applyTheme, deriveTheme } from './them
  * @property {ThemeCopy} copy
  * @property {ThemeAssets} assets
  * @property {'light' | 'dark'} plate The plate behind a logo.
+ * @property {{ enabled: boolean }} motion The client's Animations switch (on unless stored as false).
  */
 
 const text = (value) => (typeof value === 'string' ? value.trim() : '');
@@ -66,6 +69,25 @@ export function safeFocus(value) {
 
 /** @param {unknown} value @returns {'light' | 'dark'} */
 export const safePlate = (value) => (value === 'dark' ? 'dark' : 'light');
+
+/**
+ * The Animations switch a stored theme holds: off only for `motion: { enabled: false }`, on for anything else (absent, damaged, a string).
+ * @param {unknown} stored The ThemeJson value, or nothing. @returns {boolean}
+ */
+export function motionEnabled(stored) {
+  const motion = stored && typeof stored === 'object' && !Array.isArray(stored) ? /** @type {Record<string, any>} */ (stored).motion : null;
+  return !(motion && typeof motion === 'object' && motion.enabled === false);
+}
+
+/**
+ * A stored theme with the Animations switch set and NOTHING else changed (not its tokens, its version, its pictures or its words): what the
+ * Today screen's quick switch writes, on a copy of the theme read just before. A theme that is not an object is kept as an empty one.
+ * @param {unknown} stored @param {boolean} enabled
+ */
+export function withMotion(stored, enabled) {
+  const old = stored && typeof stored === 'object' && !Array.isArray(stored) ? /** @type {Record<string, any>} */ (stored) : {};
+  return { ...old, motion: { enabled: enabled !== false } };
+}
 
 /** Runs the tokens through applyTheme's checks without touching the page. @param {unknown} tokens */
 function usableTokens(tokens) {
@@ -123,6 +145,7 @@ export function resolveClientTheme(client) {
     tokens: { ...painted, ...controlsFor(painted, base) },
     source: tokens ? 'stored' : fallback ? 'derived' : 'default',
     version,
+    motion: { enabled: motionEnabled(stored) },
     copy: {
       eventTitle: text(copy.eventTitle),
       eventSubtitle: text(copy.eventSubtitle),
@@ -145,9 +168,11 @@ export function resolveClientTheme(client) {
  * resolved here, at save time (plan 4.4), so they are stored already contrast-checked.
  * `sample` is the marker lib/admin/sample-notice.js reads ("made by Seed sample clients", and who confirmed it and when): written only when there is one, and
  * carried over by every writer that rebuilds a theme, so an edit does not wipe it. Nothing that paints a page reads it.
- * @param {{ primary: string, accent?: string | null, plate?: 'light' | 'dark', version?: number, copy?: Partial<ThemeCopy>, assets?: Partial<ThemeAssets>, sample?: Record<string, any> }} choices
+ * `motion` is the Animations switch: written only when given (a theme that never had one is stored exactly as before Phase 15), and carried
+ * over by every writer that rebuilds a theme, like `sample`.
+ * @param {{ primary: string, accent?: string | null, plate?: 'light' | 'dark', version?: number, copy?: Partial<ThemeCopy>, assets?: Partial<ThemeAssets>, sample?: Record<string, any>, motion?: unknown }} choices
  */
-export function buildClientTheme({ primary, accent = null, plate = 'light', version = 1, copy = {}, assets = {}, sample = undefined }) {
+export function buildClientTheme({ primary, accent = null, plate = 'light', version = 1, copy = {}, assets = {}, sample = undefined, motion = undefined }) {
   const theme = deriveTheme(primary, accent ?? undefined, { plate: safePlate(plate) });
   return {
     version,
@@ -166,6 +191,7 @@ export function buildClientTheme({ primary, accent = null, plate = 'light', vers
       eventTitle: copy.eventTitle ?? '', eventSubtitle: copy.eventSubtitle ?? '', welcomeLine: copy.welcomeLine ?? '', logoText: copy.logoText ?? '',
     },
     ...(sample && typeof sample === 'object' && !Array.isArray(sample) ? { sample } : {}),
+    ...(motion && typeof motion === 'object' && !Array.isArray(motion) ? { motion: { enabled: motionEnabled({ motion }) } } : {}),
   };
 }
 
@@ -180,7 +206,7 @@ export function buildClientTheme({ primary, accent = null, plate = 'light', vers
  */
 export function reviseClientTheme(stored, { version, copy }) {
   const old = stored && typeof stored === 'object' && !Array.isArray(stored) ? /** @type {Record<string, any>} */ (stored) : {};
-  const choices = { version, copy, assets: old.assets && typeof old.assets === 'object' ? old.assets : {}, sample: old.sample };
+  const choices = { version, copy, assets: old.assets && typeof old.assets === 'object' ? old.assets : {}, sample: old.sample, motion: old.motion };
   try {
     return buildClientTheme({ primary: old.primary ?? DEFAULT_PRIMARY, accent: old.accent ?? null, plate: safePlate(old.plate), ...choices });
   } catch {

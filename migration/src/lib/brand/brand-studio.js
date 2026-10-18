@@ -241,6 +241,7 @@ export function changesForSave(client, draft, saved) {
     version,
     copy: stored.copy && typeof stored.copy === 'object' ? stored.copy : {},
     sample: stored.sample,
+    motion: stored.motion,
     assets: {
       hero: draft.assets.hero,
       logo: legacyOnly ? null : draft.assets.logo,

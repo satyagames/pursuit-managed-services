@@ -720,6 +720,28 @@ export const getClient = (id) => getItem('clients', id);
 export const listClients = () => listItems('clients');
 export const createClient = (fields) => createItem('clients', fields);
 export const updateClient = (id, changes) => updateItem('clients', id, changes);
+
+/**
+ * Changes a client from what it holds NOW (Phase 15): reads it with its version, asks `change(client)` for the fields to write, and writes them
+ * only if nobody changed the client meanwhile (If-Match on the item's ETag, on SharePoint and on the local server alike); if somebody did, it
+ * reads again and asks again, once. So two admins at once both keep their change: the Animations switch and a Brand Studio save each start
+ * from the other's result. Two requests on SharePoint (the item, the merge), as `updateClient` makes. Resolves to the client as written.
+ * `change` may throw to stop before anything is written.
+ * @param {string} id @param {(client: any) => Record<string, unknown>} change
+ */
+export async function updateClientWith(id, change) {
+  for (let attempt = 0; ; attempt += 1) {
+    const read = sharePoint ? await spFind('clients', id) : await getItemWithVersion('clients', id);
+    if (!read) throw Object.assign(new Error('That client no longer exists.'), { status: 404, code: 'item-missing' });
+    const changes = fits('clients', change(read.item));
+    try {
+      if (sharePoint) return await spMerge('clients', read, changes);
+      return { ...read.item, ...(await updateItemIfUnchanged('clients', id, changes, read.etag)) };
+    } catch (error) {
+      if (error?.status !== 412 || attempt >= 1) throw error;
+    }
+  }
+}
 export const deleteClient = (id) => deleteItem('clients', id);
 
 // ---- Sessions: session.sectionIds lists its sections in order ---------------

@@ -19,6 +19,7 @@ import { resolveClientTheme } from '../brand/client-theme.js';
 import type { Question } from './pager-logic.js';
 import { sessionHasEnded } from '../common/poll-schedule.js';
 import { applyTheme, resetTheme } from '../brand/theme.js';
+import { setMotionEnabled } from '../motion/motion.js';
 
 export type Activity = {
   id: string;
@@ -138,6 +139,9 @@ export function adoptExperience(live: LiveExperience, { themed = true } = {}) {
   const own = themed && isLive && theme.source !== 'default';
   resetTheme();
   if (own) applyTheme(theme.tokens);
+  // The client's Animations switch (ThemeJson `motion`, Phase 15): read with the theme, so it costs no request; it reaches a page that is
+  // already open at its next boot (a reload, or the boot a restart or a change of what is live makes).
+  setMotionEnabled(isLive ? theme.motion.enabled : true);
   root().dataset.client = isLive ? live.client!.id : '';
   root().dataset.themeSource = own ? theme.source : 'default';
   if (theme.version === null) delete root().dataset.themeVersion;

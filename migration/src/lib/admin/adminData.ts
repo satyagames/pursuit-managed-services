@@ -1,6 +1,7 @@
 import * as dataService from '../data/dataService.js';
 import { readSessionResults } from '../results/session-results.js';
 import { confirmedTheme } from './sample-notice.js';
+import { withMotion } from '../brand/client-theme.js';
 
 /**
  * One participant's answer to one question, as dataService.readSessionResponses() returns it from
@@ -65,6 +66,17 @@ export async function confirmSampleClient(clientId: string, adminName: string): 
   const fresh = await dataService.getClient(clientId) as { theme?: unknown } | null;
   if (!fresh) throw new Error('That client no longer exists.');
   await dataService.updateClient(clientId, { theme: confirmedTheme(fresh.theme, { by: await confirmedBy(adminName) }) });
+}
+
+/**
+ * The client's Animations switch (Phase 15): ThemeJson `motion.enabled`, and nothing else in the theme, written on the client as it is at that
+ * moment (dataService.updateClientWith: read, change, write if unchanged, once more if not), so a Brand Studio save made meanwhile is kept, and
+ * the theme's version is not touched (nothing that paints a page changed). Brand Studio and Today both write it through here.
+ */
+export async function saveClientMotion<T>(clientId: string, enabled: boolean): Promise<T> {
+  return await (dataService.updateClientWith as (id: string, change: (client: { theme?: unknown }) => Record<string, unknown>) => Promise<T>)(
+    clientId, (client) => ({ theme: withMotion(client.theme, enabled) }),
+  );
 }
 
 /** Removes a visit with no answers (Phase 9b, DI-9); it refuses, in words, when an answer has arrived, the session has ended or the visit's answers cannot be read. */

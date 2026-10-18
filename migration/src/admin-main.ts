@@ -8,6 +8,7 @@ import './styles/fonts-admin.css';
 import './styles/fonts-fallback.css';
 import './styles/admin-tokens.css';
 import './styles/results-tokens.css';
+import './lib/motion/motion-tokens.css';
 import AdminApp from './AdminApp.svelte';
 import './admin.css';
 

@@ -1749,7 +1749,7 @@ describe('the boundaries this phase relies on', () => {
     'readParticipantWatch', 'readSessionResponses', 'readSessionResponsesChecked', 'recordParticipantVisit', 'recordUserVisit', 'removeClientAsset',
     'removeEmptyVisit', 'reopenSession', 'requireConfiguration', 'responseOwner', 'restartParticipantTrack',
     'resumeClientTrack', 'runPaced', 'runParticipantSelfTest', 'saveParticipantResponses', 'sendToSharePoint', 'sessionIdFor',
-    'setSessionParticipationMode', 'setVisitorEnabled', 'sharePointListTitles', 'slugify', 'updateAppSettings', 'updateClient', 'updateOption',
+    'setSessionParticipationMode', 'setVisitorEnabled', 'sharePointListTitles', 'slugify', 'updateAppSettings', 'updateClient', 'updateClientWith', 'updateOption',
     'updateQrToken', 'updateQuestion', 'updateSection', 'updateSession', 'updateVisitor', 'uploadClientAsset',
   ];
   // The seven that no page called, and which tests of the pages used as set-up or as a reference until those tests were given the calls the
@@ -1771,8 +1771,8 @@ describe('the boundaries this phase relies on', () => {
   it('dataService exports exactly what is listed here; what only the legacy pages, only tests, or nothing called is gone', () => {
     assert.deepEqual(Object.keys(ds).sort(), EXPORTS);
     // (Phase 10c-3: sendToSharePoint, the Setup page's one way to write to the site itself, for lib/setup/provision.js, and addAdminUser came; the seed-file
-    // import, Setup's alone, went to migration/src/lib/setup/setup-import.js. Still 103. Phase 10j: prepareWrites, 104.)
-    assert.equal(EXPORTS.length, 104);
+    // import, Setup's alone, went to migration/src/lib/setup/setup-import.js. Still 103. Phase 10j: prepareWrites, 104. Phase 15: updateClientWith, 105.)
+    assert.equal(EXPORTS.length, 105);
     assert.equal(GONE.length, 30);
     for (const name of GONE) assert.ok(!(name in ds), `${name} is back`);
   });

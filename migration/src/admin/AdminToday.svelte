@@ -7,6 +7,7 @@
   } from '../lib/admin/admin-today.js';
   import { copyText, participantPageUrl, qrImage } from '../lib/admin/admin-links.js';
   import ConfirmDialog from './ConfirmDialog.svelte';
+  import MotionSwitch from './MotionSwitch.svelte';
 
   type Client = { id: string; name: string; status?: string; logoUrl?: string | null; theme?: { assets?: { logo?: string | null; hero?: string | null } } | null };
   type Session = { id: string; clientId: string; date?: string; status?: string; participationMode?: string; activityFlow?: string };
@@ -77,6 +78,8 @@
   const targetId = $derived(client && dateValid ? dataService.sessionIdFor(client, date) as string : '');
   const target = $derived(sessions.find((session) => session.id === targetId) ?? null);
   const controlSession = $derived(sessions.find((session) => session.id === settings?.activeSessionId) ?? null);
+  /** The live session's client, for the Animations switch. */
+  const controlClient = $derived(controlSession ? clients.find((entry) => entry.id === controlSession.clientId) ?? null : null);
   const rows = $derived(evaluateReadiness({
     client, date: dateValid ? date : today, today, sections, questions, options, sessions, clients, target, roster, schema,
   } as never));
@@ -501,6 +504,9 @@
                 <label class="choice"><input type="radio" name="flow" checked={(controlSession.activityFlow ?? 'sequential') === flow.id} onchange={() => void setFlow(flow.id)} /><span>{flow.title}</span><span class="muted small">{flow.hint}</span></label>
               {/each}
             </fieldset>
+            {#if controlClient}
+              <MotionSwitch client={controlClient} compact onSaved={(written) => { clients = clients.map((entry) => (entry.id === written.id ? { ...entry, theme: written.theme as Client['theme'] } : entry)); }} {onToast} />
+            {/if}
             <div class="controls__end">
               {#if controlSession.status === 'completed'}
                 <button class="btn" type="button" onclick={() => void reopenIt(controlSession)} disabled={controlsBusy}>Reopen session</button>
