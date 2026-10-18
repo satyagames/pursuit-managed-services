@@ -238,6 +238,7 @@ describe('the motion engine', () => {
     entrance();
     assert.equal(page.calls.frames - before, 2, 'just the two frames that close the moment');
     assert.equal(engine.motionLevel(), 'full');
+    assert.equal(page.storage.size, 0, 'a device that moves smoothly keeps nothing in storage (the ?preview= page keeps nothing)');
   });
 
   it('?motion=off: no motion for the session, even after the address changes', async () => {

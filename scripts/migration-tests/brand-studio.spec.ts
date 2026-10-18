@@ -1004,6 +1004,8 @@ test('the preview frame and the real participant page lay Welcome and the hub ou
   await sceneButton(page, 'Activities').click();
   await expect(preview.locator('button.activity').first()).toBeVisible();
   const hubSelectors = ['.pms-title', '.pms-description', 'hr.pms-divider', 'button.activity', '.pms-actions .pill-button, .pms-actions button'];
+  // (Phase 15: the real hub's title, rule and activities rise in when it opens; they are compared where they settle, as the question above is shot settled.)
+  await guest.page.evaluate(() => Promise.all(document.getAnimations().map((animation) => animation.finished.catch(() => {}))));
   const realHub = await rects(guest.page, hubSelectors);
   const shownHub = await rects(preview, hubSelectors);
   for (const selector of hubSelectors) same(realHub[selector], shownHub[selector], `Hub ${selector}`);

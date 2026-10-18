@@ -213,14 +213,24 @@ test('keyboard: arrows move between answers, Enter picks one, and focus follows 
   await expect(page.getByRole('heading', { level: 2, name: /self-service/ })).toBeFocused();
 });
 
-test('reduced motion switches the step animation off', async ({ page }) => {
-  await flowFixture(page);
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto(appPath('#/quiz/section-history?t=track-a'));
-  await expect(page.locator('.pms-step')).toBeVisible();
-  expect(await page.locator('.pms-step').evaluate((element) => getComputedStyle(element).animationName)).toBe('none');
-  await page.emulateMedia({ reducedMotion: 'no-preference' });
-  expect(await page.locator('.pms-step').evaluate((element) => getComputedStyle(element).animationName)).not.toBe('none');
+test('reduced motion switches the step animation off', async ({ browser }) => {
+  // (Phase 15: the step's motion is the motion plan's, lib/motion/: the next question comes in by Next with a shape of its own; until then it was a
+  // keyframe on .pms-step. The question is read at once after Next, while it is still coming in. Each pass is a fresh visit in a browser of its own.)
+  const nextStep = async (reducedMotion: 'reduce' | 'no-preference') => {
+    const context = await browser.newContext({ reducedMotion });
+    const page = await context.newPage();
+    await flowFixture(page);
+    await page.goto(appPath('#/quiz/section-history?t=track-a'));
+    await choice(page, 1).click();
+    await next(page).click();
+    await expect(page.locator('.pms-question')).not.toContainText('1.');
+    const name = await page.locator('.pms-question').evaluate((element) => getComputedStyle(element).animationName);
+    const shapes = await page.locator('[data-motion]').count();
+    await context.close();
+    return { name, shapes };
+  };
+  expect((await nextStep('no-preference')).name, 'it does animate when motion is welcome (so the check can fail)').toMatch(/^motion-/);
+  expect(await nextStep('reduce')).toEqual({ name: 'none', shapes: 0 });
 });
 
 // ---- Saving and resume -------------------------------------------------------------------------

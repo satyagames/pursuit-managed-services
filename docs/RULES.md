@@ -1281,7 +1281,8 @@ iPhone or the real site**: QA-TESTING.md items 182 to 187.
   one end the motion adds one layout per entrance (`motion-perf.spec.ts`). Starts stay staggered.
 - **The one level rule:** level = the lowest of the client's switch (ThemeJson `motion.enabled`), the device (`prefers-reduced-motion: reduce`: no motion and
   no confetti at all, as Phase 8 pinned, whatever the switch says), `?motion=off` on the participant address (kept for the tab's session), and the governor
-  (it watches the frames of the first few entrances, at most 700 ms each, steps `full` to `reduced` (fades only) to `none` on dropped frames, never back up,
+  (it watches the frames of the first few entrances, at most 700 ms each, steps `full` to `reduced` (fades only) to `none` on dropped frames, never back up, keeps
+  a step down for the tab's session (nothing else is stored, so the `?preview=` page keeps nothing),
   and stops after three smooth ones). The level is read once per moment and written on the root as `data-motion-level`; at `none` every transition of the
   page goes too, and `effects.ts` leaves the confetti out. Sound has its own switch and is not touched.
 - **The budget:** an entrance (question and up to 12 answers, any direction) ends within 700 ms (the plan's `entranceLength`); at most 16 things move at once;

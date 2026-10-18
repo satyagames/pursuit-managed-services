@@ -11,7 +11,7 @@
  *   device's reduced motion, `?motion=off` and the governor. It is read once at the start of a moment. It is written on the page's root
  *   as `data-motion-level` (or on a preview's frame) so that 'none' also stops the page's own small transitions.
  * - The governor watches the frames of the first few entrances (a requestAnimationFrame window of at most WATCH_WINDOW ms each, never at
- *   idle) and steps the level down for the session (sessionStorage `pms.motion`) on a device that keeps dropping them.
+ *   idle) and steps the level down for the session (sessionStorage `pms.motion`, written only when it steps down) on a device that keeps dropping them.
  * - At most MAX_CONCURRENT elements move at once; past it, an element simply appears. When an animation ends or is cancelled its
  *   attribute is taken away; a hidden tab finishes everything at once; an element that leaves the page is forgotten.
  *
@@ -179,8 +179,8 @@ function watch(): void {
     watching = false;
     const before = governorState().level;
     governor = governorStep(governorState(), deltas);
-    write(KEY, JSON.stringify(governor));
-    if (governor.level !== before) publish();
+    // Kept for the session only when it stepped down: a device that moves smoothly leaves nothing in storage (a preview page keeps nothing).
+    if (governor.level !== before) { write(KEY, JSON.stringify(governor)); publish(); }
   };
   requestAnimationFrame(step);
 }

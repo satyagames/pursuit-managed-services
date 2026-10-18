@@ -9,13 +9,8 @@
   import Agenda from '../routes/Agenda.svelte';
   import ThankYou from '../routes/ThankYou.svelte';
   import Welcome from '../routes/Welcome.svelte';
-  import { setMotionDirection } from '../lib/motion/motion.js';
 
   let { look }: { look: Look } = $props();
-
-  // A screen picked in Brand Studio comes in as it would on a participant's page (when the client's animations are on).
-  const sceneShown = $derived(look.scene);
-  $effect.pre(() => { void sceneShown; setMotionDirection('jump'); });
 
   const view = $derived({
     heroUrl: look.heroUrl, logoUrl: look.logoUrl, plate: look.plate, logoText: look.logoText, clientName: look.clientName, welcomeLine: look.welcomeLine,
