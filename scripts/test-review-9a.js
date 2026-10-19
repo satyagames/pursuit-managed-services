@@ -144,8 +144,9 @@ describe('an answer tile whose picture is gone still says what the answer is (S-
   // What "still shows it" means, and that it is found without a filter on the picture's address, is held on both adapters by
   // scripts/test-admin-content.js ("which pictures an answer still shows"). Here: that the editor asks before it removes.
   it('the question editor asks who else shows a picture before it removes the file, and leaves every file when it cannot tell', async () => {
-    const editor = await source('migration/src/admin/ContentQuestions.svelte');
-    const tidy = editor.slice(editor.indexOf('async function tidy('), editor.indexOf('function closeEditor()'));
+    // (Phase 16: the editor moved out of ContentQuestions.svelte, which opens it in place, and its Cancel is discard().)
+    const editor = await source('migration/src/admin/QuestionEditor.svelte');
+    const tidy = editor.slice(editor.indexOf('async function tidy('), editor.indexOf('export function discard()'));
     assert.match(tidy, /const shown = await picturesStillShown\(dataService, candidates\);/);
     assert.ok(tidy.indexOf('picturesStillShown(') < tidy.indexOf('removeClientAsset'), 'asked first');
     assert.match(tidy, /if \(shown\) for \(const url of candidates\) \{\s*if \(shown\.has\(url\)\) continue;/, 'null is "cannot tell": nothing is removed');

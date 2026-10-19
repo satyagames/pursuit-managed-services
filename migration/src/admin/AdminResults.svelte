@@ -35,6 +35,8 @@
   let chosen = $state<Record<string, string | null>>({});
   let restartTrack = $state<TrackRow | null>(null);
   let restartSectionId = $state<string | null | undefined>(undefined);
+  /** The id of the Restart form (one is open at a time). */
+  const RESTART_FORM = 'restart-form';
   let busy = $state(false);
   /** The session whose data the person is about to delete (Phase 16): the numbers the warning shows, and where the delete has got to. */
   type Deleting = { card: SessionCard; counts: ReturnType<typeof cardCounts>; working: boolean; status: string; error: string; failed: boolean };
@@ -110,9 +112,31 @@
     return `${count('unused')} unused · ${count('used')} scanned · ${count('expired')} expired`;
   }
 
+  /**
+   * Restart... opens its form under the iPad's own row (Phase 16: it opened at the foot of the page), one at a time; pressed again, it closes.
+   * Focus goes to the first choice, and back to the row's Restart... button when the form closes.
+   */
   function openRestart(row: TrackRow, sectionId: string | null | undefined = undefined) {
+    if (restartTrack?.track.id === row.track.id) { closeRestart(); return; }
     restartTrack = row;
     restartSectionId = sectionId;
+    void tick().then(() => {
+      const form = document.getElementById(RESTART_FORM);
+      form?.scrollIntoView({ block: 'nearest', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      form?.querySelector<HTMLElement>('input')?.focus({ preventScroll: true });
+    });
+  }
+
+  function closeRestart() {
+    const id = restartTrack?.track.id;
+    restartTrack = null;
+    restartSectionId = undefined;
+    if (id) void focusRestartButton(id);
+  }
+
+  async function focusRestartButton(trackId: string) {
+    await tick();
+    document.querySelector<HTMLElement>(`[data-restart="${CSS.escape(trackId)}"]`)?.focus();
   }
 
   function answeredIn(trackId: string, section: SessionSection) {
@@ -208,6 +232,7 @@
   async function confirmRestart() {
     if (!restartTrack || restartSectionId === undefined || busy) return;
     const targetName = restartTrack.name;
+    const targetId = restartTrack.track.id;
     busy = true;
     requestVersion += 1;
     try {
@@ -217,6 +242,7 @@
       restartSectionId = undefined;
       onToast(`${targetName} restarted · ${result.removed} answers removed`, 'success');
       await refreshNow();
+      void focusRestartButton(targetId);
     } catch (cause) {
       if (active) onToast(cause instanceof Error ? cause.message : 'Could not restart this track.', 'error');
     } finally {
@@ -336,11 +362,13 @@
           <ul class="rows rows--flat">
             {#each card.tracks as row (row.track.id)}
               {@const notes = `${row.answered} of ${row.total} questions answered · joined ${row.track.createdAt ? new Date(row.track.createdAt).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}) : ''} via ${row.track.joinedVia === 'qr' ? 'QR code' : 'manual select'}${row.track.resumeCount ? ` · resumed ${row.track.resumeCount}×` : ''}${row.track.restartedAt ? ` · restarted ${new Date(row.track.restartedAt).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}` : ''}`}
-              <li class="row">
+              {@const restarting = restartTrack?.track.id === row.track.id}
+              <li class="row" class:row--open={restarting}>
                 <div class="row__main"><span class="row__title">{row.name}</span><span class="muted">{notes}</span></div>
                 <span class={statusClass(row.status)}>{statusText(row.status)}</span>
                 {#if canRemoveVisit(row, session)}<button class="btn btn--small" type="button" onclick={() => void removeVisit(row)} disabled={busy}>Remove...</button>{/if}
-                <button class="btn btn--small" type="button" onclick={() => openRestart(row)} disabled={busy || row.status === 'unreadable'} title={row.status === 'unreadable' ? `Its saved answers cannot be read, so they cannot be restarted. Correct or delete the damaged item in the ${dataService.sharePointListTitles().responses} list.` : undefined}>Restart...</button>
+                <button class="btn btn--small" type="button" data-restart={row.track.id} aria-expanded={restarting} aria-controls={restarting ? RESTART_FORM : undefined} onclick={() => openRestart(row)} disabled={busy || row.status === 'unreadable'} title={row.status === 'unreadable' ? `Its saved answers cannot be read, so they cannot be restarted. Correct or delete the damaged item in the ${dataService.sharePointListTitles().responses} list.` : undefined}>Restart...</button>
+                {#if restarting && restartTrack}{@render restartForm(restartTrack)}{/if}
               </li>
             {/each}
           </ul>
@@ -361,25 +389,38 @@
     </ConfirmDialog>
   {/if}
 
-  {#if restartTrack}
-    <section class="content-editor" aria-labelledby="restart-title">
-      <h3 id="restart-title">Restart {restartTrack.name}</h3>
-      <p class="muted">Choose the restart point. Only this track's answers from that point are removed.</p>
-      <fieldset class="field">
-        <legend class="field__label">Restart from</legend>
-        <label class="choice"><input type="radio" name="restart-from" checked={restartSectionId === null} onchange={() => { restartSectionId = null; }} /><span>The very beginning</span><span class="muted small">removes all of its answers</span></label>
-        {#each restartTrack.track.sessionId ? cards.find((card) => card.results.session.id === restartTrack?.track.sessionId)?.results.sections ?? [] : [] as section (section.id)}
-          <label class="choice"><input type="radio" name="restart-from" checked={restartSectionId === section.id} onchange={() => { restartSectionId = section.id; }} /><span>{section.title}</span><span class="muted small">{answeredIn(restartTrack.track.id, section)} of {section.questions.length} answered{section.enabled ? '' : ' · not live'}</span></label>
-        {/each}
-      </fieldset>
-      <div class="dialog__actions"><button class="btn" type="button" onclick={() => { restartTrack = null; restartSectionId = undefined; }} disabled={busy}>Cancel</button><button class="btn btn--danger" type="button" onclick={() => void confirmRestart()} disabled={busy || restartSectionId === undefined}>{busy ? 'Restarting...' : 'Restart'}</button></div>
-    </section>
-  {/if}
 </section>
+
+<!-- The Restart form, under the row of the iPad it restarts (Phase 16). Escape closes it, as Cancel does. -->
+{#snippet restartForm(target: TrackRow)}
+  <!-- svelte-ignore a11y_no_noninteractive_element_interactions (Escape is a shortcut for Cancel; the button stays the way to do it) -->
+  <section class="content-editor restart-inline" id={RESTART_FORM} aria-labelledby="restart-title" onkeydown={(event) => { if (event.key === 'Escape' && !busy) { event.preventDefault(); closeRestart(); } }}>
+    <h3 id="restart-title">Restart {target.name}</h3>
+    <p class="muted">Choose the restart point. Only this track's answers from that point are removed.</p>
+    <fieldset class="field">
+      <legend class="field__label">Restart from</legend>
+      <label class="choice"><input type="radio" name="restart-from" checked={restartSectionId === null} onchange={() => { restartSectionId = null; }} /><span>The very beginning</span><span class="muted small">removes all of its answers</span></label>
+      {#each target.track.sessionId ? cards.find((card) => card.results.session.id === target.track.sessionId)?.results.sections ?? [] : [] as section (section.id)}
+        <label class="choice"><input type="radio" name="restart-from" checked={restartSectionId === section.id} onchange={() => { restartSectionId = section.id; }} /><span>{section.title}</span><span class="muted small">{answeredIn(target.track.id, section)} of {section.questions.length} answered{section.enabled ? '' : ' · not live'}</span></label>
+      {/each}
+    </fieldset>
+    <div class="dialog__actions"><button class="btn" type="button" onclick={closeRestart} disabled={busy}>Cancel</button><button class="btn btn--danger" type="button" onclick={() => void confirmRestart()} disabled={busy || restartSectionId === undefined}>{busy ? 'Restarting...' : 'Restart'}</button></div>
+  </section>
+{/snippet}
 
 <style>
   /* Each session card's "Live results" (Phase 11a): the charts of admin/charts/ResultCard.svelte, a grid of cards under each activity. Here and not in
      src/admin.css, which the Setup page loads too. */
+  /* (Phase 16) The row of the iPad being restarted holds its form under it: the row wraps, and the form takes the whole width. */
+  .row--open {
+    flex-wrap: wrap;
+  }
+
+  .restart-inline {
+    flex: 1 0 100%;
+    margin-top: 0.75rem;
+  }
+
   .delete-keep {
     display: grid;
     gap: 0.4rem;
