@@ -70,9 +70,9 @@ flowchart LR
 | `migration/src/routes/` | The participant page's screens: Welcome, the Activities hub, the quiz route, the finale, "not live", the preview, and the old addresses that redirect. | 9 |
 | `migration/src/setup/` | Setup's pieces (Svelte): the copy panel, where the lists are, the plan view, and the sample pictures as data. | 4 |
 | `migration/src/unsupported/` | The "needs a recent browser" notice: a page and an ES5 check, put into each HTML shell at build time. | 1 |
-| `scripts/` | Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager. | 118 |
+| `scripts/` | Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager. | 119 |
 | `scripts/local-site/` | The local PCOE stand-in (`npm run local:site`), its scenarios and VJR's dummy dataset, the screenshot harness and the measurements. | 11 |
-| `scripts/migration-tests/` | The Playwright specs of `npm run test:migration`, and their harnesses (`admin-local.ts`, `polling-support.ts`, `fixtures.ts`). | 66 |
+| `scripts/migration-tests/` | The Playwright specs of `npm run test:migration`, and their harnesses (`admin-local.ts`, `polling-support.ts`, `fixtures.ts`). | 67 |
 | `scripts/rehearsal-tests/` | The rehearsal of RUNBOOK.md on the mock with a package's own pages (`npm run test:rehearsal`). | 1 |
 | `scripts/schema-baseline/` | The schema as it was before Phase 10c-2b, and the scripts that translated the request baselines (each baseline names the one that touched it). | 5 |
 | `scripts/styleguide-tests/` | The styleguide's audit (`npm run test:styleguide`). | 1 |
@@ -84,7 +84,7 @@ The admin page's rules and data: Today, Clients, Content, Guests and QR, Results
 
 - **Imports from:** `lib/brand`, `lib/common`, `lib/data`, `lib/participant`, `lib/results`
 - **Imported by:** `lib/exports`, `lib/setup`, `src`, `src/admin`
-- **Node suites that import it:** `test-admin-content.js`, `test-admin-today.js`, `test-column-names.js`, `test-duplicates.js`, `test-live-display.js`, `test-local-site.js`, `test-motion-switch.js`, `test-named-reads.js`, `test-participant-names.js`, `test-results-chart-model.js`, `test-results-wall.js`, `test-review-9a.js`, `test-review-9b.js`, `test-sample-pictures.js`, `test-schema-upgrade.js`, `test-setup-admins.js`, `test-sharepoint.js`, `test-text-limits.js`, `test-ux-12.js`
+- **Node suites that import it:** `test-admin-content.js`, `test-admin-results.js`, `test-admin-today.js`, `test-column-names.js`, `test-duplicates.js`, `test-live-display.js`, `test-local-site.js`, `test-motion-switch.js`, `test-named-reads.js`, `test-participant-names.js`, `test-results-chart-model.js`, `test-results-wall.js`, `test-review-9a.js`, `test-review-9b.js`, `test-sample-pictures.js`, `test-schema-upgrade.js`, `test-setup-admins.js`, `test-sharepoint.js`, `test-text-limits.js`, `test-ux-12.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
@@ -92,7 +92,7 @@ The admin page's rules and data: Today, Clients, Content, Guests and QR, Results
 | `admin-content.js` | What the admin's Content and Guests screens decide: which activities belong where, in what order, what a pasted list of names means, what each guest's status is, what the CSV and the print sheet hold. | 37 exports |
 | `admin-links.ts` | Links the facilitator hands out, and the QR image of one. | `participantPageUrl`, `qrImage`, `copyText` |
 | `admin-pin.js` | The admin page's PIN check (AdminApp.svelte). | `hashPin`, `login` |
-| `admin-results.js` | What Admin → Results works out for each iPad of a session: the name it shows, and where it has got to. | `RECENT_MS`, `MAX_LOOKS`, `REMOVE_VISIT_CONFIRM`, `REMOVE_VISIT_REFUSED`, `canRemoveVisit`, `hasOwnName`, `sessionsNeedingNames`, `readNameSources`, `holdNameSources`, `heldNameSources`, `resultRows`, `rowsToLookForAgain` |
+| `admin-results.js` | What Admin → Results works out for each iPad of a session: the name it shows, and where it has got to. | 18 exports |
 | `admin-today.js` | What the admin's Today screen reads, decides and says. | 17 exports |
 | `admin-unlock.js` | What the admin page's PIN screen says when it could not check a PIN (Phase 12, F-02). | `unlockFailureText` |
 | `adminData.ts` | One participant's answer to one question, as dataService.readSessionResponses() returns it from either storage shape. | `getSessionResults`, `readSessionResponses`, `restartClientTrack`, `confirmedBy`, `confirmSampleClient`, `saveClientMotion`, `removeEmptyVisit`, `endSession`, `reopenSession`, `answersToQuestions`, `orphanNote`, `loadGuestState`, `refreshGuestState` |
@@ -159,7 +159,7 @@ The data layer: the one module that talks to SharePoint REST (or, on the local s
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
-| `dataService.js` | dataService.js: the ONLY module that talks to the backend. | 105 exports |
+| `dataService.js` | dataService.js: the ONLY module that talks to the backend. | 107 exports |
 | `read-groups.js` | Reads in groups of 20 ids to an address (Phase 9b), so that no request address grows with what a session holds. | `READ_CHUNK`, `groupsOf`, `sectionQueries` |
 
 ## `lib/effects/`

@@ -191,3 +191,8 @@ export const rowsToLookForAgain = (rows, lookedFor, now = Date.now()) => rows.fi
   const joined = Date.parse(String(row.track.createdAt ?? ''));
   return row.unnamed && (lookedFor.get(row.track.id) ?? 0) < MAX_LOOKS && Number.isFinite(joined) && now - joined < RECENT_MS;
 });
+
+/** Forgets what was read for a session that has been deleted (Phase 16): the Live display must not name anyone from it. @param {string} sessionId */
+export function forgetNameSources(sessionId) {
+  heldSources.delete(String(sessionId));
+}

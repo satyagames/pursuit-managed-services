@@ -293,3 +293,16 @@ export const PHASE_15 = Object.freeze({
   participantAfter: 158_965, adminAfter: 569_520,
   participantUtilities: PHASE_11A.participantUtilities,
 });
+
+/**
+ * Phase 16 (Results newest first, Delete session..., questions edited in place) is admin work. The participant page carries every export of the
+ * data service, which no build leaves out, so the two small generic calls Delete session needs (dataService.listItemKeys and deleteByKey) are on
+ * it too, about 130 B gzip: the rules of the delete (lib/admin/session-delete.js) and every screen change are the admin page's alone. Its
+ * Tailwind rules are the ones it had, and the ceiling is not raised. Measured when the phase ended; the next phase starts from participantAfter
+ * and adminAfter.
+ */
+export const PHASE_16 = Object.freeze({
+  participantBefore: PHASE_15.participantAfter, adminBefore: PHASE_15.adminAfter, participantAllowance: 200, adminAllowance: 12_000,
+  participantAfter: 159_093, adminAfter: 573_288,
+  participantUtilities: PHASE_11A.participantUtilities,
+});

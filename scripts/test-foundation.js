@@ -149,7 +149,7 @@ test('a heading is focused by script only through lib/common/focus.ts, and only 
     }
   }
   assert.deepEqual(offenders, []);
-  assert.equal(focused, 8, 'NotLive, ThankYou, ActivityComplete, ActivityPager, (Phase 8) Welcome, the hub (Agenda) and the admin shell, and (Phase 10b) the stop screen of lib/settings/start.ts; add a new one to scripts/migration-tests/focus.spec.ts and keyboard.spec.ts');
+  assert.equal(focused, 9, 'NotLive, ThankYou, ActivityComplete, ActivityPager, (Phase 8) Welcome, the hub (Agenda) and the admin shell, (Phase 10b) the stop screen of lib/settings/start.ts, and (Phase 16) Results, after the last session is deleted (session-delete.spec.ts); add a new one to scripts/migration-tests/focus.spec.ts and keyboard.spec.ts');
   const base = await read('migration/src/styles/base.css');
   assert.match(base, /:where\(h1, h2, h3, h4, h5, h6\)\[tabindex='-1'\]:focus \{\s*outline: none;\s*box-shadow: none;\s*\}/);
   assert.match(base, /\[tabindex='-1'\]\[data-keyboard-focus\]:focus \{\s*outline: 3px solid var\(--focus\);/);

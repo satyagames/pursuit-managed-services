@@ -1,16 +1,22 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, type Snippet } from 'svelte';
 
   // A confirmation the facilitator reads before anything changes. A real <dialog> opened with
   // showModal(): the page behind is inert, Escape cancels, and focus starts on Cancel so that Enter
-  // never confirms by accident.
-  let { title, lead, points = [], confirmLabel, cancelLabel = 'Cancel', busy = false, onConfirm, onCancel }: {
+  // never confirms by accident. Phase 16 (Delete session... on Results) added what an action with no undo needs, each optional so the
+  // other uses are as they were: `tone` 'danger' for the confirming button, `status` (progress, in a status region), `error` (in an alert),
+  // and `children`, shown under the points (Results puts the leader report's buttons there).
+  let { title, lead, points = [], confirmLabel, cancelLabel = 'Cancel', busy = false, tone = 'primary', status = '', error = '', children, onConfirm, onCancel }: {
     title: string;
     lead: string;
     points?: string[];
     confirmLabel: string;
     cancelLabel?: string;
     busy?: boolean;
+    tone?: 'primary' | 'danger';
+    status?: string;
+    error?: string;
+    children?: Snippet;
     onConfirm: () => void;
     onCancel: () => void;
   } = $props();
@@ -34,9 +40,12 @@
         {#each points as point}<li>{point}</li>{/each}
       </ul>
     {/if}
+    {@render children?.()}
+    {#if error}<p class="confirm__error" role="alert">{error}</p>{/if}
+    {#if status}<p class="confirm__status" role="status">{status}</p>{/if}
     <div class="confirm__actions">
       <button bind:this={cancel} class="btn" type="button" onclick={onCancel} disabled={busy}>{cancelLabel}</button>
-      <button class="btn btn--primary" type="button" onclick={onConfirm} disabled={busy}>{busy ? 'Working...' : confirmLabel}</button>
+      <button class={tone === 'danger' ? 'btn btn--danger-solid' : 'btn btn--primary'} type="button" onclick={onConfirm} disabled={busy}>{busy ? 'Working...' : confirmLabel}</button>
     </div>
   </div>
 </dialog>
@@ -83,6 +92,27 @@
     padding-left: 1.25rem;
     color: var(--adm-muted);
     line-height: 1.45;
+  }
+
+  /* The button of an action that cannot be undone: white on the fixed "wrong" red, 5.0:1 (styles/tokens.css). */
+  .btn--danger-solid {
+    border-color: var(--danger);
+    background: var(--danger);
+    color: #fff;
+  }
+
+  .btn--danger-solid:hover:not(:disabled) {
+    filter: brightness(0.93);
+  }
+
+  .confirm__error {
+    margin: 0;
+    color: var(--danger);
+    font-weight: var(--fw-semibold);
+  }
+
+  .confirm__status {
+    margin: 0;
   }
 
   .confirm__actions {

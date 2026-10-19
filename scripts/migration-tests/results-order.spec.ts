@@ -65,7 +65,8 @@ test('Results shows the newest session first, the newest joiner first, and Refre
 test('a visit to an older session does not move it above a newer one, and the exports keep their own order (Phase 16)', async ({ page }) => {
   const { fake, live } = await threeDays();
   // A late visit to the 10-01 session: its date still puts it last.
-  await onSite(fake, (ds) => ds.beginVisit(crypto.randomUUID(), 'kroger-2026-10-01', 'c-kroger'));
+  // (Put in by hand: a page would not begin a visit in a session that is not live.)
+  fake.add('tracks', { AppId: 'late-visit', Title: 'late-visit', SessionId: 'kroger-2026-10-01', ClientId: 'c-kroger', CreatedAt: '2026-10-19T09:00:00.000Z', JoinedVia: 'manual' });
   await openResults(page, fake);
   await expect(card(page, live)).toBeVisible();
   await expect.poll(() => cardIds(page)).toEqual(['dominos-2026-10-15', 'kroger-2026-10-09', 'kroger-2026-10-01']);

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
   import { restartClientTrack, getSessionResults, removeEmptyVisit } from '../lib/admin/adminData.js';
   import type { SessionResults, SessionTrack, SessionSection } from '../lib/admin/adminData.js';
@@ -7,8 +7,11 @@
   import { namesByVisit, unreadableNotice } from '../lib/results/unreadable.js';
   import { createPageWatcher, type PageWatcher } from '../lib/common/page-watch.js';
   import { adminDelay } from '../lib/common/poll-schedule.js';
-  import { REMOVE_VISIT_CONFIRM, canRemoveVisit, holdNameSources, keepShownOrder, newestFirst, readNameSources, resultRows, rowsInOrder, rowsToLookForAgain, sessionsNeedingNames, type NameSources } from '../lib/admin/admin-results.js';
+  import { REMOVE_VISIT_CONFIRM, canRemoveVisit, forgetNameSources, holdNameSources, keepShownOrder, newestFirst, readNameSources, resultRows, rowsInOrder, rowsToLookForAgain, sessionsNeedingNames, type NameSources } from '../lib/admin/admin-results.js';
   import { answerCounts, answersFrom, answersOf, chartsOf, namesFor } from '../lib/results/results-chart-model.js';
+  import { DELETE_SESSION, cardCounts, deleteSessionData, deleteSessionWarning, deletedText, progressText, refusedText, stoppedText } from '../lib/admin/session-delete.js';
+  import { focusHeading } from '../lib/common/focus.js';
+  import ConfirmDialog from './ConfirmDialog.svelte';
   import ReportExports from './ReportExports.svelte';
   import ResultCard from './charts/ResultCard.svelte';
 
@@ -33,6 +36,10 @@
   let restartTrack = $state<TrackRow | null>(null);
   let restartSectionId = $state<string | null | undefined>(undefined);
   let busy = $state(false);
+  /** The session whose data the person is about to delete (Phase 16): the numbers the warning shows, and where the delete has got to. */
+  type Deleting = { card: SessionCard; counts: ReturnType<typeof cardCounts>; working: boolean; status: string; error: string; failed: boolean };
+  let deleting = $state<Deleting | null>(null);
+  let pageHeading = $state<HTMLElement>();
   let active = false;
   let refreshing = false;
   let requestVersion = 0;
@@ -130,6 +137,74 @@
     if (active) await refreshNow().catch((cause) => { error = cause instanceof Error ? cause.message : 'Could not load results.'; });
   }
 
+  /** Opens the warning. Nothing is read or written: the numbers are the card's, and they are read again when the person confirms. */
+  function openDelete(card: SessionCard) {
+    if (busy) return;
+    deleting = { card, counts: cardCounts(card), working: false, status: '', error: '', failed: false };
+  }
+
+  function closeDelete() {
+    if (!deleting || deleting.working) return;
+    const id = deleting.card.results.session.id;
+    deleting = null;
+    void tick().then(() => document.querySelector<HTMLElement>(`article[data-session="${CSS.escape(id)}"] [data-delete-session]`)?.focus());
+  }
+
+  /** What the screen holds of a session that has gone: its card, its open panel, its chosen answers and its names. */
+  function forgetSession(id: string) {
+    cards = cards.filter((card) => card.results.session.id !== id);
+    openResults = openResults.filter((open) => open !== id);
+    chosen = Object.fromEntries(Object.entries(chosen).filter(([key]) => !key.startsWith(`${id}/`)));
+    sourcesHeld = new Map([...sourcesHeld].filter(([sessionId]) => sessionId !== id));
+    forgetNameSources(id);
+  }
+
+  /**
+   * Deletes the session's data for good (Phase 16), once, from the confirming button only: lib/admin/session-delete.js reads it all again first and
+   * refuses the live session and numbers that changed while the dialog was open. A delete that stops part way keeps the card, says what is left, and
+   * the button becomes Try again, which removes only what is left.
+   */
+  async function confirmDelete() {
+    const held = deleting;
+    if (!held || held.working || busy) return;
+    const session = held.card.results.session;
+    const label = { clientName: held.card.clientName || held.card.owner, date: session.date };
+    const at = cards.findIndex((card) => card.results.session.id === session.id);
+    deleting = { ...held, working: true, error: '', status: '' };
+    busy = true;
+    requestVersion += 1;
+    let refresh = false;
+    let gone = false;
+    try {
+      // (Try again, after a delete that stopped part way, removes what is left: the person has confirmed, and the numbers are smaller now.)
+      const result = await deleteSessionData(session.id, { expected: held.failed ? null : held.counts, onProgress: (step) => { if (deleting) deleting = { ...deleting, status: progressText(step) }; } });
+      if (!active) return;
+      if (result.left > 0) {
+        deleting = { ...held, working: false, failed: true, status: '', error: result.refused ? refusedText(result.refused) : stoppedText(result.left) };
+        refresh = true;
+      } else gone = true;
+    } catch (cause) {
+      if (!active) return;
+      const failure = cause as { code?: string; counts?: Deleting['counts']; message?: string };
+      // Numbers that changed while the dialog was open: the new ones are shown, and the person presses again.
+      deleting = { ...held, ...(failure.code === 'session-changed' && failure.counts ? { counts: failure.counts } : {}), working: false, status: '', failed: failure.code !== 'session-changed' && failure.code !== 'session-live', error: failure.message || 'Could not delete this session.' };
+      refresh = failure.code !== 'session-changed' && failure.code !== 'session-live';
+    } finally {
+      busy = false;
+    }
+    if (gone && active) {
+      for (const track of held.card.results.tracks) lookedFor.delete(track.id);
+      forgetSession(session.id);
+      deleting = null;
+      onToast(deletedText(label), 'success');
+      await tick();
+      const next = document.querySelectorAll<HTMLElement>('article[data-session] [data-card-title]')[Math.min(at, cards.length - 1)];
+      focusHeading(cards.length ? next : pageHeading);
+    }
+    // What is there now, after a delete that stopped: the card stays, with what is left.
+    if (refresh && active) await refreshNow().catch(() => {});
+  }
+
   async function confirmRestart() {
     if (!restartTrack || restartSectionId === undefined || busy) return;
     const targetName = restartTrack.name;
@@ -224,17 +299,19 @@
 </script>
 
 <section class="panel sessions-panel" aria-busy={loading || busy}>
-  <header class="panel__head"><div><h2>Results</h2><p class="muted">Each iPad is its own client track. Answers merge into live results as submitted. The live session refreshes by itself every {local ? 'few seconds' : '15 seconds'}; Refresh reads every session again. To end or reopen a session, use Today.</p></div><span class="muted small">{updated}</span><button class="btn btn--small" type="button" onclick={() => refreshAll()} disabled={busy}>Refresh</button></header>
+  <header class="panel__head"><div><h2 bind:this={pageHeading} tabindex="-1">Results</h2><p class="muted">Each iPad is its own client track. Answers merge into live results as submitted. The live session refreshes by itself every {local ? 'few seconds' : '15 seconds'}; Refresh reads every session again. To end or reopen a session, use Today.</p></div><span class="muted small">{updated}</span><button class="btn btn--small" type="button" onclick={() => refreshAll()} disabled={busy}>Refresh</button></header>
   {#if loading}<p role="status">Loading results...</p>
   {:else if error}<p class="error" role="alert">{error}</p>
   {:else if cards.length === 0}<p class="muted">No sessions yet.</p>
   {:else}
     {#each cards as card (card.results.session.id)}
       {@const session = card.results.session}
-      <article class="card" data-session={session.id}>
+      <article class="card" data-session={session.id} aria-busy={deleting?.working && deleting.card.results.session.id === session.id}>
         <header class="card__head">
-          <strong>{card.owner}</strong><span class="muted">{session.date ?? ''}</span><span class="tag">Session: {session.status ?? 'unknown'}</span><span class="card__spacer"></span>
+          <strong data-card-title tabindex="-1">{card.owner}</strong><span class="muted">{session.date ?? ''}</span><span class="tag">Session: {session.status ?? 'unknown'}</span><span class="card__spacer"></span>
           <button class="btn btn--small" type="button" onclick={() => onLiveDisplay(session.id)}>Live display</button>
+          <!-- (Phase 16: after Live display, never beside the export buttons. It opens a warning; only its "Delete permanently" deletes.) -->
+          <button class="btn btn--small btn--danger" type="button" data-delete-session onclick={() => openDelete(card)} disabled={busy}>{DELETE_SESSION.button}</button>
         </header>
         <ReportExports sessionId={session.id} clientName={card.clientName} {onToast} />
         {#if card.unreadable}<p class="notice card__unreadable" role="status" data-testid="unreadable-notice"><strong>{card.unreadable}</strong></p>{/if}
@@ -273,6 +350,17 @@
     {/each}
   {/if}
 
+  {#if deleting}
+    {@const warning = deleteSessionWarning({ clientName: deleting.card.clientName || deleting.card.owner, date: deleting.card.results.session.date, status: deleting.card.results.session.status }, deleting.counts)}
+    <ConfirmDialog title={DELETE_SESSION.title} lead={warning.lead} points={warning.points} confirmLabel={deleting.failed ? DELETE_SESSION.retry : DELETE_SESSION.confirm} cancelLabel={DELETE_SESSION.cancel}
+      tone="danger" busy={deleting.working} status={deleting.status} error={deleting.error} onConfirm={() => void confirmDelete()} onCancel={closeDelete}>
+      <div class="delete-keep">
+        <p class="muted">{DELETE_SESSION.keepFirst}</p>
+        <ReportExports sessionId={deleting.card.results.session.id} clientName={deleting.card.clientName} {onToast} />
+      </div>
+    </ConfirmDialog>
+  {/if}
+
   {#if restartTrack}
     <section class="content-editor" aria-labelledby="restart-title">
       <h3 id="restart-title">Restart {restartTrack.name}</h3>
@@ -292,6 +380,15 @@
 <style>
   /* Each session card's "Live results" (Phase 11a): the charts of admin/charts/ResultCard.svelte, a grid of cards under each activity. Here and not in
      src/admin.css, which the Setup page loads too. */
+  .delete-keep {
+    display: grid;
+    gap: 0.4rem;
+  }
+
+  .delete-keep p {
+    margin: 0;
+  }
+
   .tally__charts {
     display: flex;
     flex-direction: column;
