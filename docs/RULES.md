@@ -1335,7 +1335,7 @@ The report is [RELEASE-16.md](history/RELEASE-16.md). **None of it has met the r
   a clean one switches at once. Delete is off for the row being edited. A question deleted elsewhere while open is said in words and its text offered back
   as a new question. Results' Restart... opens its form under its iPad's row by the same rules.
 - **`PHASE_16`** (`scripts/bundle-budget.js`): participant +128 B gzip over 15 (allowance 200: the participant page carries every export of the data service,
-  so the two calls the delete needs are on it; the rules are the admin page's alone), admin within 12,000 B. Its Tailwind rules are 11a's.
+  so the two calls the delete needs are on it; the rules are the admin page's alone), admin +6,759 B (allowance 12,000). Its Tailwind rules are 11a's.
 
 ## Before finishing a change
 
