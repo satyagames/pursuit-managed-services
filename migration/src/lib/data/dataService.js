@@ -42,6 +42,7 @@ import {
   spDecode, spDigest, spEntityType, spEntityTypeAhead, spFind, spHttp, spItems, spListPath, spMade, spMerge, spMetadata, spPages, spReadOrBatch,
   spReadTogether, spRefs, spSite, spTitle, unfinishedScan, updateItem, updateItemIfUnchanged,
 } from './core.js';
+import { PACE, localFilter, runPaced, spAllRows, spItemsAddress, spOne, spWrite } from './common.js';
 
 /** A column's type in the words SharePoint's own "Add column" dialog uses. */
 const spTypeNames = { Text: 'Single line of text', Note: 'Multiple lines of text, plain text', Number: 'Number', DateTime: 'Date and Time', Boolean: 'Yes/No' };
@@ -1132,22 +1133,6 @@ export async function noteTrackResumed(track) {
 
 // ---- The check-in --------------------------------------------------------------------------------
 
-/** The one item in an AppId query's payload as { item, etag, ref }, or null: what spFind() makes of the same read. */
-function spOne(list, id, data) {
-  const rows = data?.results ?? data?.value ?? [];
-  if (rows.length > 1) throw new Error(`Duplicate ${ID} ${id} in ${spTitle(list)}.`);
-  if (rows.length === 0) return null;
-  const found = spDecode(list, rows[0]);
-  return { item: found.item, etag: found.etag, ref: { id: found.numericId, type: found.type } };
-}
-
-/** A write to an item whose numeric id, type and (where it matters) version a read has already given. */
-const spWrite = async (list, found, method, etag, changes) => spHttp('POST', `${spListPath(list)}/items(${found.ref.id})`, {
-  idempotent: true,
-  headers: { 'X-HTTP-Method': method, 'If-Match': etag },
-  ...(changes ? { body: { __metadata: { type: found.ref.type ?? await spEntityType(list) }, ...spEncode(list, changes) } } : {}),
-});
-
 // The two backends, as the same six operations. A read resolves to { item, etag, ref }.
 const spScan = {
   /** Asks for the write token alongside the first reads: the batched reads need it, and so do the writes that follow. */
@@ -1435,21 +1420,6 @@ export async function prepareWrites(wanted) {
 // migration/src/lib/admin/admin-today.js and admin-clients.js). No new SharePoint column is used: every figure the screens
 // show (participants, live since, last live date, activity counts) is derived from what exists.
 
-/** The address of a list read with equality filters, as spSend() builds it for a plain list GET (`top` items to a page). */
-function spItemsAddress(list, where = {}, top = 200) {
-  const columns = columnsOf(list);
-  const clauses = Object.entries(where).map(([key, values]) => {
-    if (!columns[key]) throw new Error(`Unsupported filter: ${key}`);
-    return `(${[values].flat().map((value) => `${columns[key]} eq ${spLiteral(value)}`).join(' or ')})`;
-  });
-  return spItems(list, `$top=${top}${clauses.length ? `&$filter=${clauses.join(' and ')}` : ''}`);
-}
-
-const localFilter = (where = {}) => {
-  const query = new URLSearchParams(Object.entries(where).flatMap(([key, values]) => [values].flat().map((value) => [key, String(value)]))).toString();
-  return query ? `?${query}` : '';
-};
-
 /**
  * Several list reads, answered together. `queries` is [{ list, where? }], where `where` holds the
  * same equality filters queryItems() takes: a value matches itself, an array matches any of its
@@ -1535,50 +1505,9 @@ export async function activateSession(sessionId) {
 /** @typedef {{ id: string, type: string, prompt: string, sectionId?: string, optionIds?: string[], order?: number, layout?: string | null }} QuestionRecord */
 /** @typedef {{ id: string, questionId: string, label: string, value?: any, correct?: boolean | null, imageUrl?: string | null }} OptionRecord */
 /** @typedef {{ sections: SectionRecord[], questions: QuestionRecord[], options: OptionRecord[] }} ActivityContent */
-/** @typedef {{ concurrency?: number, gapMs?: number | null, signal?: AbortSignal | null }} PaceOptions */
-/** How many writes are in flight at once, and the pause between one lane's writes on SharePoint. */
-const PACE = { concurrency: 3, sharePointGapMs: 120 };
 
 /** One name, as the guest list compares it: Unicode-normalised, whitespace collapsed, case ignored. */
 export const guestNameKey = (name) => String(name ?? '').normalize('NFC').replace(/\s+/g, ' ').trim().toLowerCase();
-
-/**
- * Runs `worker(item, index)` over `items`, `concurrency` at a time. A failure is recorded, not
- * thrown: the result for each item is `{ ok: true, value }`, `{ ok: false, error }`, or undefined
- * for an item that was never started (the run stopped first). The run stops starting new items
- * after `stopAfterFailures` failures in a row, or when `signal` is aborted; items already started
- * finish. On SharePoint each lane waits `gapMs` (default 120) between its items.
- * @template T
- * @param {T[]} items
- * @param {(item: T, index: number) => Promise<any> | any} worker
- * @param {PaceOptions & { stopAfterFailures?: number }} [settings]
- * @returns {Promise<{ results: ({ ok: true, value: any } | { ok: false, error: any } | undefined)[], stopped: 'failures' | 'aborted' | null }>}
- */
-export async function runPaced(items, worker, { concurrency = PACE.concurrency, gapMs = null, stopAfterFailures = 3, signal = null } = {}) {
-  const gap = gapMs ?? (sharePoint ? PACE.sharePointGapMs : 0);
-  const results = Array.from({ length: items.length }, () => undefined); // not a sparse array: some() and find() must see the gaps
-  let next = 0;
-  let streak = 0;
-  let stopped = null;
-  const lane = async () => {
-    while (next < items.length && !stopped) {
-      if (signal?.aborted) { stopped = 'aborted'; return; }
-      const index = next;
-      next += 1;
-      try {
-        results[index] = { ok: true, value: await worker(items[index], index) };
-        streak = 0;
-      } catch (error) {
-        results[index] = { ok: false, error };
-        streak += 1;
-        if (streak >= stopAfterFailures) stopped = 'failures';
-      }
-      if (gap && next < items.length) await pause(gap);
-    }
-  };
-  await Promise.all(Array.from({ length: Math.max(1, Math.min(concurrency, items.length)) }, lane));
-  return { results, stopped };
-}
 
 /**
  * The questions and options of some activities, in the fewest reads: one $batch on SharePoint
@@ -2073,12 +2002,6 @@ export async function removeClientAsset(url) {
 // A busy answer (429, 503, 504) is not retried here and is not turned into plain reads: it throws, with
 // `retryAfter` when SharePoint gave one, so the caller's timer can back off for as long as it was asked.
 
-/** The rows of a list read (its first page's payload), with any further pages read after it. */
-async function spAllRows(payload) {
-  const next = payload.__next ?? payload['@odata.nextLink'] ?? payload['odata.nextLink'];
-  return [...(payload.results ?? payload.value ?? []), ...(next ? await spPages(next) : [])];
-}
-
 /**
  * What an open participant page checks on its timer: AppSettings (did the facilitator change what is
  * live?), the session (has it ended? did its flow change?), the page's own track (was it restarted?) and,
@@ -2257,3 +2180,6 @@ export const sharePointListTitles = (settings = sharePoint) => ({
 export {
   configure, requireConfiguration, isUnreachable, isSharePointMode,
 } from './core.js';
+export {
+  runPaced,
+} from './common.js';
