@@ -16,6 +16,7 @@
 // pms-local.test are passed to the local site by the harness (page.route) and its answers handed back: known, and harmless here, except that
 // Playwright's WebKit drops the boundary of such a $batch answer (migration/playwright.config.ts says so), so a WebKit page reads its lists one by one.
 
+import '../fresh-page.js';
 import { mkdirSync, readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs';
 import https from 'node:https';
 import path from 'node:path';

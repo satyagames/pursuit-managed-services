@@ -7,6 +7,7 @@
 // Like the storage suite this proves the adapter sends the requests it should, in the numbers it should.
 // It is not the real tenant: whether a participant's browser can read a file in ClientLogos is something
 // only the test site can show (QA-TESTING.md section 9).
+import './fresh-page.js';
 import assert from 'node:assert/strict';
 import { freePort } from './free-port.js';
 import { spawn } from 'node:child_process';

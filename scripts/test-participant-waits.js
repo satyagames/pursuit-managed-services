@@ -18,6 +18,7 @@
 // the rounds and requests measured at c7848e5 (before) and now.
 //
 // What it cannot show: how long one round takes on the real site. That is RUNBOOK.md's timing check. Run: node --test scripts/test-participant-waits.js
+import './fresh-page.js';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { cp, mkdtemp, readFile, rm } from 'node:fs/promises';

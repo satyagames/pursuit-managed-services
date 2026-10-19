@@ -5,6 +5,7 @@
 // either: a request that goes to the set that is not the test's own succeeds, as it would on a real site with two copies of the
 // app, and is recorded as a stray. So "no stray" here is the proof that a page with a prefix never touches the lists without one.
 // It is not the real tenant: what a real site does with these titles has not been seen.
+import './fresh-page.js';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';

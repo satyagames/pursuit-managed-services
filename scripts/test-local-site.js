@@ -5,6 +5,7 @@
 //
 //   npm run test:local-site        (Node 22; the browser step needs Playwright's Chromium)
 
+import './fresh-page.js';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';

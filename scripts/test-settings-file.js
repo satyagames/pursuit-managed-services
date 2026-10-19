@@ -4,6 +4,7 @@
 //
 // The reader is tried on a stand-in for fetch: what a real SharePoint library answers for a file, for a missing one and for a signed-out
 // browser has not been seen. The browser side is scripts/migration-tests/settings-file.spec.ts.
+import './fresh-page.js';
 import assert from 'node:assert/strict';
 import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';

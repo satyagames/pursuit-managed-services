@@ -5,6 +5,7 @@
 // What this can and cannot show: that the adapter sends the requests it should, in the numbers it
 // should, and copes with the answers a list can give. It is not the real tenant. The setup page's
 // self-test is how the real lists are checked.
+import './fresh-page.js';
 import assert from 'node:assert/strict';
 import { freePort } from './free-port.js';
 import { spawn } from 'node:child_process';

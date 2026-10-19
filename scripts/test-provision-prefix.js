@@ -4,6 +4,7 @@
 // The whole of scripts/test-provision.js is also run a second time on Test lists by scripts/test-list-namespace.js, which fails if any request names a
 // list without the prefix. These two tests name the prefix themselves, so they are kept out of that suite (whose recorded requests a second run on
 // Test lists must match with the prefix taken off) and are not recorded in a request baseline.
+import './fresh-page.js';
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { LISTS } from '../migration/src/lib/schema/pms-schema.js';

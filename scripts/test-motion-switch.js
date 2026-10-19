@@ -8,6 +8,7 @@
 // mocked SharePoint REST and on the real local server, two admins at once (one saves a colour, one flips the switch, in either order and in the
 // middle of each other's save) both keep their change; a failed save changes nothing.
 
+import './fresh-page.js';
 import assert from 'node:assert/strict';
 import { execFileSync, spawn } from 'node:child_process';
 import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';

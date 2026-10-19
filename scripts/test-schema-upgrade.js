@@ -6,6 +6,7 @@
 // names the two new columns and nothing else (and the old DisplayName columns under what it will not touch, as harmless), Create adds them and
 // only adds, and Mark the site as ready, once the check of version 3 is clean, raises the version from 2 to 3 and says so. Then the pages work.
 // It never lowers a higher version. Against the mocked SharePoint REST in its PCOE modes; the real site is QA-TESTING.md's to see.
+import './fresh-page.js';
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import * as admin from '../migration/src/lib/data/dataService.js';

@@ -6,6 +6,7 @@
 // never stored, sent, logged or shown, and the page lists the admins by name only. The import of a seed file leaves its admins out, so the demo PIN
 // 1234 cannot reach a new site that way. On the mocked SharePoint REST and the real local server, which must leave the same record. How a PIN is
 // hashed and compared is decision 10's and does not change.
+import './fresh-page.js';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { cp, mkdtemp, readFile, rm } from 'node:fs/promises';

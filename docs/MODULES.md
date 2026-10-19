@@ -70,7 +70,7 @@ flowchart LR
 | `migration/src/routes/` | The participant page's screens: Welcome, the Activities hub, the quiz route, the finale, "not live", the preview, and the old addresses that redirect. | 9 |
 | `migration/src/setup/` | Setup's pieces (Svelte): the copy panel, where the lists are, the plan view, and the sample pictures as data. | 4 |
 | `migration/src/unsupported/` | The "needs a recent browser" notice: a page and an ES5 check, put into each HTML shell at build time. | 1 |
-| `scripts/` | Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager. | 120 |
+| `scripts/` | Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager. | 123 |
 | `scripts/local-site/` | The local PCOE stand-in (`npm run local:site`), its scenarios and VJR's dummy dataset, the screenshot harness and the measurements. | 11 |
 | `scripts/migration-tests/` | The Playwright specs of `npm run test:migration`, and their harnesses (`admin-local.ts`, `polling-support.ts`, `fixtures.ts`). | 70 |
 | `scripts/rehearsal-tests/` | The rehearsal of RUNBOOK.md on the mock with a package's own pages (`npm run test:rehearsal`). | 1 |
@@ -156,7 +156,7 @@ The data layer: the one module that talks to SharePoint REST (or, on the local s
 
 - **Imports from:** `lib/schema`
 - **Imported by:** `lib/admin`, `lib/brand`, `lib/exports`, `lib/participant`, `lib/results`, `lib/settings`, `lib/setup`, `src`, `src/admin`, `src/pager`, `src/routes`
-- **Node suites that import it:** `test-admin-content.js`, `test-admin-today.js`, `test-brand-storage.js`, `test-column-names.js`, `test-deploy-settings.js`, `test-duplicates.js`, `test-leader-report-pdf.js`, `test-live-display.js`, `test-local-site.js`, `test-motion-switch.js`, `test-named-reads.js`, `test-participant-names.js`, `test-participant-storage.js`, `test-participant-waits.js`, `test-review-9a.js`, `test-schema-upgrade.js`, `test-seeds.js`, `test-session-delete.js`, `test-sessions.js`, `test-setup-admins.js`, `test-sharepoint.js`
+- **Node suites that import it:** `test-admin-content.js`, `test-admin-today.js`, `test-brand-storage.js`, `test-column-names.js`, `test-data-surface.js`, `test-deploy-settings.js`, `test-duplicates.js`, `test-leader-report-pdf.js`, `test-live-display.js`, `test-local-site.js`, `test-motion-switch.js`, `test-named-reads.js`, `test-participant-names.js`, `test-participant-storage.js`, `test-participant-waits.js`, `test-review-9a.js`, `test-schema-upgrade.js`, `test-seeds.js`, `test-session-delete.js`, `test-sessions.js`, `test-setup-admins.js`, `test-sharepoint.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|

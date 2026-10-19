@@ -2,6 +2,7 @@
 // (The counting fixes are held by scripts/test-oracle.js, the pager's by scripts/test-pager.js, and the data service's by
 // scripts/test-participant-storage.js; this file has the rest.)
 
+import './fresh-page.js';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { describe, it } from 'node:test';

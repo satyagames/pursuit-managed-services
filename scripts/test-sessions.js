@@ -5,6 +5,7 @@
 // Since Phase 10c-2a every step is one a page takes: a visit begins with beginVisit (Welcome) or openQrScan (a scanned code),
 // an answer is the participant's own item (saveParticipantResponses), the tally is readSessionResults (Results and the exports),
 // and a restart is restartParticipantTrack. Until then this suite drove the calls the legacy pages made, which are gone.
+import './fresh-page.js';
 import assert from 'node:assert/strict';
 import { freePort } from './free-port.js';
 import { spawn, spawnSync } from 'node:child_process';

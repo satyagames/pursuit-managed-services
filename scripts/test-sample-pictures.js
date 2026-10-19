@@ -6,6 +6,7 @@
 // real local server: put a client's three pictures in the picture library BEFORE the client that points at them, never send a file that is
 // there already, write the two themes (and LogoUrl) with the files' addresses, and send nothing at all on a second run. A recorded suite: it
 // is run a second time on `Test` lists by scripts/test-list-namespace.js, so it names no prefix itself.
+import './fresh-page.js';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
