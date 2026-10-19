@@ -82,9 +82,10 @@ pins them.
 page writes it, so the permissions table in SHAREPOINT-LISTS.md and RUNBOOK.md says so). No list's permissions were changed. A 403 names the list in
 words and leaves the session to delete again (`session-delete.spec.ts`).
 
-**Permanent, and the recycle bin: ASSUMED.** The owner decided (19 Oct 2026) that the data is deleted for good. The app sends SharePoint's item DELETE
-(`X-HTTP-Method: DELETE`, the same call the earlier deletes use), not `recycle()`; that is understood to remove the item without the site's recycle bin.
-Not checked on a real site: docs/SHAREPOINT.md says so, and QA item 190 asks Satyadev to look. Nothing was added to restore an item or empty the bin.
+**Permanent, and the recycle bin.** The owner decided (19 Oct 2026) that the data is deleted for good. The app sends SharePoint's item DELETE
+(`X-HTTP-Method: DELETE`, the same call the earlier deletes use), not `recycle()`. Written as ASSUMED in the package; then **seen on PCOE** (19 Oct 2026,
+Satyadev, after the push of `pms-16`): neither the site's Recycle bin nor its second-stage recycle bin held any item of the deleted session. Nothing was
+added to restore an item.
 
 **The screen.** **Delete session...** in the card's head, after Live display, never among the export buttons. It opens `ConfirmDialog.svelte` (a real
 `<dialog>`, now with an optional danger tone, a status, an error and extra content; its other uses unchanged) and writes nothing: the title "Delete this

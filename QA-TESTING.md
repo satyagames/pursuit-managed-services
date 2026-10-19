@@ -1345,7 +1345,8 @@ facilitator's own rights allow, can only be seen there.** Use a test folder firs
 190. **Delete session: the delete.** *(Still to see.)* Press **Delete permanently**. **Expect** progress, then the card gone and "<client> <date> deleted".
     In SharePoint, filter PMSParticipantAnswers, PMSVisitLog, PMSParticipants, PMSGuestList and PMSGuestQRCodes by the session's SessionId, and
     PMSClientSessions by its AppId: **expect** no item. The client, its activities and questions are as they were. Open the site's **Recycle bin**: note
-    whether the deleted items are there (docs/SHAREPOINT.md says ASSUMED: the app's delete does not put them there).
+    whether the deleted items are there. *(Seen on PCOE, 19 Oct 2026, Satyadev: neither the Recycle bin nor the second-stage recycle bin held any item
+    of the deleted session; the delete is permanent. docs/SHAREPOINT.md says so.)*
 191. **The live session, and a facilitator's rights.** *(Still to see.)* Try **Delete session...** on the live session: **expect** "This session is live.
     End it in Today first." and nothing deleted. With a facilitator account that has Contribute on the content lists but only Read on PMSVisitLog,
     delete a scratch session: **expect** the message to name PMSVisitLog and the session to stay on Results; with Contribute there, Try again finishes.
