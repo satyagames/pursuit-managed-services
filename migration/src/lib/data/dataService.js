@@ -32,10 +32,8 @@
  * the pages use, and expected values written out (DROPS-10C2A.md, in git history at 7347c72).
  */
 
-import { ID, LIBRARY, LISTS, VERSION, selectOf } from '../schema/pms-schema.js';
-
-const indexById = (items) => new Map(items.map((item) => [String(item.id), item]));
-const pick = (index, ids = []) => ids.map((id) => index.get(String(id))).filter(Boolean);
+import { ID, LISTS, VERSION, selectOf } from '../schema/pms-schema.js';
+import { READ_CHUNK, RESPONSE, chunked, columnsOf, distinct, fieldsOf, indexById, kindOf, pause, pick, retryAfterMs, spEncode, spError, spLibraryIn, spLiteral, spParseObject, spTitleIn } from './encoding.js';
 
 // ============================================================================
 // 1. Backend adapter
@@ -88,29 +86,7 @@ function assertConfigured() {
   // (The code is the whole message: its words, like every problem's, are in migration/src/lib/settings/deploy-problems.js.)
   if (mustConfigure) throw Object.assign(new Error('PMS-CFG-003'), { code: 'PMS-CFG-003' });
 }
-
-// The lists and their columns are migration/src/lib/schema/pms-schema.js's (Phase 10c-2b): a list's title before any prefix, and for each field of a
-// record the column that holds it and its kind. Nothing below spells a list or a column. Every column must exist (schema v2): a list
-// that lacks one is refused before anything is written to it (spMetadata).
-const fieldsOf = (list) => LISTS[list].fields;
-/** list -> { field: column }, made once. */
-const columnMaps = Object.fromEntries(Object.entries(LISTS).map(([list, { fields }]) => [list,
-  Object.fromEntries(Object.entries(fields).map(([key, { column }]) => [key, column]))]));
-/** Every field of a list the adapter can read or write, and its column. */
-const columnsOf = (list) => columnMaps[list];
-const kindOf = (list, key) => LISTS[list].fields[key]?.kind;
-/** The columns of a participant's own Responses item, which the fast paths below read and write by hand. */
-const RESPONSE = columnsOf('responses');
-const spError = (status, message) => Object.assign(new Error(message), { status });
-const pause = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
-const spLiteral = (value) => `'${encodeURIComponent(String(value).replace(/'/g, "''"))}'`;
-// A list's title on this site (Phase 10b). Several copies of the app can share a site, each with lists of its own: the settings
-// may put a prefix in front of every title (`listPrefix`) and may name any one list outright (`lists`, by key). A page whose
-// settings have neither gets the usual title, so its requests are character for character what they were before Phase 10b.
-const spTitleIn = (settings, list) => settings?.lists?.[list] ?? (settings?.listPrefix ?? '') + LISTS[list].title;
 const spTitle = (list) => spTitleIn(sharePoint, list);
-/** The picture library's title: the one the settings name, else the prefix and its usual name. */
-const spLibraryIn = (settings) => settings?.logoLibrary ?? `${settings?.listPrefix ?? ''}${LIBRARY}`;
 const spListPath = (list) => `/web/lists/getbytitle(${spLiteral(spTitle(list))})`;
 // Every item read names its columns (Phase 10h): the real site left ClientId out of a read that did not, and returned it to one that did.
 /** The address of an item read of `list` with the query `query`, naming the list's columns. */
@@ -124,13 +100,6 @@ function spSite() {
     throw new Error('SharePoint mode requires an HTTPS site on the same origin as this page.');
   }
   return site.href.replace(/\/+$/, '');
-}
-
-/** A Retry-After header (seconds, or an HTTP date) as milliseconds from now: undefined without one, NaN for one that can't be read. */
-function retryAfterMs(response) {
-  const retry = response.headers.get('Retry-After');
-  if (retry === null) return undefined;
-  return /^\d+$/.test(retry) ? Number(retry) * 1000 : Math.max(0, Date.parse(retry) - Date.now());
 }
 
 // `idempotent` marks a write that is safe to send twice (it replaces a whole value, or a repeat is
@@ -212,15 +181,6 @@ async function spPages(resource) {
   return items;
 }
 
-/** A JSON object stored as text. Anything unreadable is null: a damaged theme must not stop its client loading. */
-function spParseObject(text) {
-  if (typeof text !== 'string' || text.trim() === '') return null;
-  try {
-    const value = JSON.parse(text);
-    return value && typeof value === 'object' && !Array.isArray(value) ? value : null;
-  } catch { return null; }
-}
-
 function spDecode(list, raw) {
   if (!raw[ID]) throw new Error(`${spTitle(list)} contains an item without ${ID}.`);
   const item = {};
@@ -238,26 +198,6 @@ function spDecode(list, raw) {
   const type = raw.__metadata?.type;
   if (type) listTypes.set(list, type);
   return { item, numericId: raw.Id, etag: raw.__metadata?.etag ?? raw['@odata.etag'] ?? raw['odata.etag'], type };
-}
-
-function spEncode(list, record) {
-  const fields = {};
-  const columns = columnsOf(list);
-  for (const [key, value] of Object.entries(record)) {
-    if (value === undefined) continue;
-    const column = columns[key];
-    if (!column) throw new Error(`Unsupported field ${list}.${key}.`);
-    const kind = kindOf(list, key);
-    fields[column] = kind === 'array' ? JSON.stringify(value ?? [])
-      : kind === 'object' ? value === null ? null : JSON.stringify(value)
-      : kind === 'yesno' ? value === true
-      : kind === 'date' ? value ? key === 'date' ? `${value.slice(0, 10)}T00:00:00Z` : value : null
-      : key === 'value' && value !== null ? String(value) : value;
-    if (typeof fields[column] === 'string' && fields[column].length > 60_000) {
-      throw new Error(`${column} exceeds the supported text size. Start a new session before collecting more answers.`);
-    }
-  }
-  return fields;
 }
 
 // The properties of a column the check below reads, and only those (Phase 10j): a real list answers a read of its columns that names none
@@ -2092,11 +2032,6 @@ export async function activateSession(sessionId) {
 /** @typedef {{ id: string, questionId: string, label: string, value?: any, correct?: boolean | null, imageUrl?: string | null }} OptionRecord */
 /** @typedef {{ sections: SectionRecord[], questions: QuestionRecord[], options: OptionRecord[] }} ActivityContent */
 /** @typedef {{ concurrency?: number, gapMs?: number | null, signal?: AbortSignal | null }} PaceOptions */
-
-const chunked = (list, size) => Array.from({ length: Math.ceil(list.length / size) }, (_, index) => list.slice(index * size, (index + 1) * size));
-const distinct = (list) => [...new Set(list)];
-/** Ids per read, so one read's address stays well under 2,000 characters. */
-const READ_CHUNK = 20;
 /** How many writes are in flight at once, and the pause between one lane's writes on SharePoint. */
 const PACE = { concurrency: 3, sharePointGapMs: 120 };
 
