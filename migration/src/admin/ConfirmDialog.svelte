@@ -5,8 +5,9 @@
   // showModal(): the page behind is inert, Escape cancels, and focus starts on Cancel so that Enter
   // never confirms by accident. Phase 16 (Delete session... on Results) added what an action with no undo needs, each optional so the
   // other uses are as they were: `tone` 'danger' for the confirming button, `status` (progress, in a status region), `error` (in an alert),
-  // and `children`, shown under the points (Results puts the leader report's buttons there).
-  let { title, lead, points = [], confirmLabel, cancelLabel = 'Cancel', busy = false, tone = 'primary', status = '', error = '', children, onConfirm, onCancel }: {
+  // and `children`, shown under the points (Results puts the leader report's buttons there). `confirmText`, when given, must be typed
+  // before the confirming button works: more friction for an action with no undo, off unless a screen asks for it (DECISIONS.md).
+  let { title, lead, points = [], confirmLabel, cancelLabel = 'Cancel', busy = false, tone = 'primary', status = '', error = '', confirmText = '', children, onConfirm, onCancel }: {
     title: string;
     lead: string;
     points?: string[];
@@ -17,12 +18,15 @@
     status?: string;
     error?: string;
     children?: Snippet;
+    confirmText?: string;
     onConfirm: () => void;
     onCancel: () => void;
   } = $props();
 
   let dialog = $state<HTMLDialogElement>();
   let cancel = $state<HTMLButtonElement>();
+  let typed = $state('');
+  const typedOk = $derived(!confirmText || typed.trim() === confirmText);
 
   onMount(() => {
     dialog?.showModal();
@@ -41,11 +45,12 @@
       </ul>
     {/if}
     {@render children?.()}
+    {#if confirmText}<label class="field"><span class="field__label">Type {confirmText} to confirm</span><input class="input" bind:value={typed} autocomplete="off" disabled={busy} /></label>{/if}
     {#if error}<p class="confirm__error" role="alert">{error}</p>{/if}
     {#if status}<p class="confirm__status" role="status">{status}</p>{/if}
     <div class="confirm__actions">
       <button bind:this={cancel} class="btn" type="button" onclick={onCancel} disabled={busy}>{cancelLabel}</button>
-      <button class={tone === 'danger' ? 'btn btn--danger-solid' : 'btn btn--primary'} type="button" onclick={onConfirm} disabled={busy}>{busy ? 'Working...' : confirmLabel}</button>
+      <button class={tone === 'danger' ? 'btn btn--danger-solid' : 'btn btn--primary'} type="button" onclick={onConfirm} disabled={busy || !typedOk}>{busy ? 'Working...' : confirmLabel}</button>
     </div>
   </div>
 </dialog>

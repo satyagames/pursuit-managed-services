@@ -9,7 +9,9 @@
 2. Items **177 to 181** (Phase 14: the restructured build on a test folder, then production). Below item 176.
 3. Items **182 to 187** (Phase 15: the motion on an iPad and an iPhone, Reduce Motion, the alignment on a laptop, the Animations switch, then
    production). Below item 181.
-4. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
+4. Items **188 to 194** (Phase 16: Results newest first, Delete session on a scratch session and on the live one, a facilitator's rights, the
+   recycle bin, a deleted session's guest code, a question edited in place, then production). Below item 187.
+5. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
    160, 161, 164, 165, 166, 167, 168, 169, 170.
 
 **Decided, no change:** 162 (names stay "Last, First") and 163 (the wall page keeps the admin header), VJR, 16 Oct 2026.
@@ -1329,6 +1331,32 @@ moving, the frames, and the cost at four times slower. **How it feels can only b
     motion.
 187. **Then production, and the push.** *(Still to see.)* If 182 to 186 pass, replace the three pages in `Shared Documents/PMS` and push the branch
     `pms-15`. Nothing in the lists changes (version 3); a client's ThemeJson gains `"motion": { "enabled": false }` only when someone turns the switch off.
+
+### Phase 16 (Results newest first, Delete session, editing a question in place): not verified on the real site or an iPad
+
+What the browsers showed against the mocked SharePoint is in RELEASE-16.md. **Whether the real site keeps a deleted item in its recycle bin, and what a
+facilitator's own rights allow, can only be seen there.** Use a test folder first, and a scratch session nobody needs.
+
+188. **Newest first.** *(Still to see.)* On a test folder, make a scratch client session for today, join with two iPads, answer a few questions, end it.
+    **Expect** it at the top of **Results**, above older sessions, the second iPad above the first; press **Refresh**: the order stays.
+189. **Delete session: the warning.** *(Still to see.)* **Delete session...** on the scratch session. **Expect** "Delete this session's data
+    permanently?", the client, the date and the right numbers (iPads, answers, guest codes), and the word permanent. **Cancel** changes nothing;
+    **Leader report (PDF)** in the warning downloads the report.
+190. **Delete session: the delete.** *(Still to see.)* Press **Delete permanently**. **Expect** progress, then the card gone and "<client> <date> deleted".
+    In SharePoint, filter PMSParticipantAnswers, PMSVisitLog, PMSParticipants, PMSGuestList and PMSGuestQRCodes by the session's SessionId, and
+    PMSClientSessions by its AppId: **expect** no item. The client, its activities and questions are as they were. Open the site's **Recycle bin**: note
+    whether the deleted items are there (docs/SHAREPOINT.md says ASSUMED: the app's delete does not put them there).
+191. **The live session, and a facilitator's rights.** *(Still to see.)* Try **Delete session...** on the live session: **expect** "This session is live.
+    End it in Today first." and nothing deleted. With a facilitator account that has Contribute on the content lists but only Read on PMSVisitLog,
+    delete a scratch session: **expect** the message to name PMSVisitLog and the session to stay on Results; with Contribute there, Try again finishes.
+192. **A deleted session's guest code.** *(Still to see.)* Scan a printed guest code of the deleted session on an iPad. **Expect** "This QR code isn't
+    recognized. Ask your facilitator for a new one." and no error screen.
+193. **Edit in place.** *(Still to see.)* In **Content**, an activity with ten questions or more: **Edit** on the last. **Expect** the form right under it,
+    the Question field ready; **Save** returns to the row. Type in one, press **Edit** on another: **expect** to be asked (Keep editing / Discard changes).
+    On an iPad, landscape and portrait, a question with eight picture tiles: **expect** Save and Cancel in reach at the foot of the screen while you scroll.
+    On **Results**, **Restart...** opens its form under that iPad's row.
+194. **Then production, and the push.** *(Still to see.)* If 188 to 193 pass, replace the three pages in `Shared Documents/PMS` and push the branch
+    `pms-16`. Nothing in the lists changes (version 3).
 
 ### Phase 8 (browsers, devices, accessibility, performance, the unsupported-browser page): not verified on a real device, a real screen reader, or the real SharePoint site
 

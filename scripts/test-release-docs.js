@@ -184,8 +184,9 @@ describe('RUNBOOK.md', () => {
     assert.match(note, /With pms-283ad18, \*\*a chart's tooltip could lie over the question, the "got it right first time" line and the Show answer \/ View as table buttons above its mark, and a locked activity's title was too faint to read\*\* \(photographed by Satyadev, 16 Oct 2026\)/);
     assert.match(note, /The participant page changed for the first time since pms-0a1c701: a locked activity's title, and when it looks again after the network comes back\./);
     const items = [...note.matchAll(/^(\d+)\. (.+)$/gm)].map((match) => [Number(match[1]), match[2]]);
-    assert.deepEqual(items.map(([number]) => number), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], 'eleven steps since Phase 15 (the motion and the Animations switch)');
+    assert.deepEqual(items.map(([number]) => number), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], 'twelve steps since Phase 16 (Results, Delete session and editing in place)');
     const said = Object.fromEntries(items);
+    assert.match(said[12], /^Results, Delete session and editing in place \(Phase 16, QA-TESTING\.md items 188 to 194\)[^\n]*\*\*Delete permanently\*\*[^\n]*refused, in words[^\n]*\*Send back:\*[^\n]*recycle bin/);
     assert.match(said[1], /^Replace `index\.html`, `admin\.html` and `setup\.html`[^\n]*Keep `pms-config\.txt` as it is[^\n]*Change nothing else\./);
     assert.ok(said[1].includes(SETTINGS_TEXT), 'the content that stays, exactly');
     assert.match(said[1], /Delete `pms-config\.json` if it is still there[^\n]*does not serve `\.json` files/);
@@ -264,12 +265,19 @@ describe('RELEASE-NOTES.md', () => {
     // (Phase 13) what changed since pms-d19bd14, newest first; the Phase 12 section is now "in pms-d19bd14", with its sizes recorded.
     // (Phase 14) what changed since pms-757be5c: the code's structure and the documents, nothing a person sees; the Phase 13 section is "in pms-757be5c",
     // with its sizes recorded.
-    // (Phase 15) what changed since pms-e470847: the motion, the switch and the alignment; the Phase 14 section is "in pms-e470847".
-    assert.match(notes, /## What changed since pms-e470847 \(18 Oct 2026: a participant's screens appeared all at once, and an answer's words moved sideways when it was picked\)/);
+    // (Phase 15) what changed in pms-b643f1b, since pms-e470847: the motion, the switch and the alignment; the Phase 14 section is "in pms-e470847".
+    // (Phase 16) what changed since pms-b643f1b: Results newest first, Delete session, editing in place; the Phase 15 section is "in pms-b643f1b", with its sizes.
+    assert.match(notes, /## What changed since pms-b643f1b \(19 Oct 2026: today's session was at the bottom of Results, a session's data could not be deleted, and a question's editor opened below the whole list\)/);
+    assert.match(notes, /\*\*Results shows the newest session first\*\*/);
+    assert.match(notes, /\*\*Delete session\.\.\.\*\*[^\n]*for good[^\n]*never touched/);
+    assert.match(notes, /\*\*A question is edited where it is\.\*\*/);
+    assert.match(notes, /\*\*Nothing else changed:\*\* no list or column \(version 3\)[^\n]*The participant page is (not measured|byte for byte pms-b643f1b's|[\d,]+ B (larger|smaller) than pms-b643f1b's) \(it carries/);
+    assert.ok(notes.indexOf('since pms-b643f1b') < notes.indexOf('in pms-b643f1b'), 'the newest change first');
+    assert.match(notes, /## What changed in pms-b643f1b \(since pms-e470847, 18 Oct 2026: a participant's screens appeared all at once, and an answer's words moved sideways when it was picked\)/);
     assert.match(notes, /\*\*The screens move, by the kind of question\.\*\*/);
     assert.match(notes, /\*\*An Animations switch for each client\*\*[^\n]*no list or column changes/);
-    assert.match(notes, /\*\*Nothing else changed:\*\*[^\n]*The participant page is (not measured|byte for byte pms-e470847's|[\d,]+ B (larger|smaller) than pms-e470847's) and the admin page/);
-    assert.ok(notes.indexOf('since pms-e470847') < notes.indexOf('in pms-e470847'), 'the newest change first');
+    assert.match(notes, /\*\*Nothing else changed:\*\*[^\n]*The participant page was 1,938 B larger and the admin page 6,914 B larger than pms-e470847's \(gzip\)\./);
+    assert.ok(notes.indexOf('in pms-b643f1b') < notes.indexOf('in pms-e470847'), 'the newest change first');
     assert.match(notes, /## What changed in pms-e470847 \(since pms-757be5c, 17 Oct 2026: the code and its documents were rearranged for whoever changes them next; nothing a person sees changed\)/);
     assert.match(notes, /\*\*Nothing a person sees changed:\*\*[^\n]*The participant page and the admin page were byte for byte pms-757be5c's\./);
     assert.ok(notes.indexOf('in pms-e470847') < notes.indexOf('in pms-757be5c'), 'the newest change first');
@@ -298,7 +306,7 @@ describe('RELEASE-NOTES.md', () => {
     assert.match(notes, /\*\*No change, by VJR's decisions of 16 Oct 2026:\*\* names stay "Last, First"/);
     assert.match(notes, /The participant page is 30 B larger than pms-283ad18's and the admin page 32 B larger than pms-283ad18's \(gzip\)\./);
     assert.ok(notes.indexOf('since pms-283ad18') < notes.indexOf('in pms-283ad18'), 'the newest change first');
-    assert.match(notes, /of the branch `pms-15` \(a branch on GitHub, never merged into main\)/);
+    assert.match(notes, /of the branch `pms-16` \(a branch on GitHub, never merged into main\)/);
     // (Phase 11a-2, since 11a-3 the section "in pms-283ad18") what changed since pms-3fb312a.
     assert.match(notes, /## What changed in pms-283ad18 \(since pms-3fb312a, 16 Oct 2026: on a Windows laptop a confidence question in full screen had a scrollbar inside its chart and its tooltip cut off\)/);
     assert.match(notes, /\*\*Nothing inside a chart's card scrolls\.\*\*/);

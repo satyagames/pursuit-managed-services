@@ -1297,6 +1297,46 @@ iPhone or the real site**: QA-TESTING.md items 182 to 187.
 - **`PHASE_15`** (`scripts/bundle-budget.js`): participant +1,967 B gzip over 14 (allowance 2,000; its CSS is smaller: the legacy motion sheet `vfx.css` left the
   page), admin +6,914 B (allowance 8,000). Its Tailwind rules are 11a's.
 
+## Rules from Phase 16 (Results newest first, Delete session, editing in place; keep them holding)
+
+The report is [RELEASE-16.md](history/RELEASE-16.md). **None of it has met the real site or an iPad**: QA-TESTING.md items 188 to 194.
+
+- **Results' order is one rule, in `lib/admin/admin-results.js`.** `newestFirst` sorts the sessions by `session.date`, newest first (a date compared as a
+  date, never as words; a missing or unreadable one last, never a throw); on the same day by the most recent visit (`createdAt` of the session's tracks); then
+  by the later item of the list. `keepShownOrder` keeps every card already on the screen where it is on any refresh (a new visit never moves a card under
+  the person's hands; an open Live results panel, chosen answers and scroll stay), and puts a session that newly appears at its sorted place. Inside a card
+  `rowsInOrder` puts the newest joiner first (`ROW_ORDER`; `'join-order'` puts them back); the names are still worked out in join order, as the report's.
+  Only Results uses them: the leader report, the CSVs, the Live display and the oracle keep their own order (`scripts/test-admin-results.js`).
+- **Delete session... deletes a session's data for good, and nothing else.** `lib/admin/session-delete.js` holds the rules: `SESSION_OWNED` names each list
+  and its key (`responses`, `uservisitlogs`, `tracks`, `visitorroster`, `qrtokens` by `sessionId`, then `sessions` by `id`) in the order they are deleted,
+  children first and the session item last; `KEPT` names a list that holds a session id and is never written (`appsettings`, which is only read); a list with
+  a session id column in neither fails `scripts/test-session-delete.js`. The client, its activities, questions, options, pictures, Brand settings, the admins
+  and the settings item are never touched, and no report already downloaded can be.
+- **It refuses in the rules, not in the screen.** `deleteSessionData` reads everything again first, the settings item last (immediately before the first
+  delete): the live session is refused ("This session is live. End it in Today first."); a session in progress that is not live may be deleted; numbers that
+  differ from the ones the person confirmed are refused with the new numbers (`session-changed`), and the dialog asks again. Every item keyed by the id goes,
+  so a session Today makes again under the same `<client>-<date>` starts empty.
+- **Paced, one request an item, and safe to run again.** The deletes go through `dataService.runPaced` (three at a time, 120 ms apart on SharePoint), each one
+  `dataService.deleteByKey` (one request, by the SharePoint ID that `listItemKeys` read, which decodes nothing, so a damaged answers item is deleted too); a 404
+  is done. It stops at the first list where something could not be deleted and keeps the session item, so the session stays on Results and Try again removes
+  only what is left; a 403 names the list ("Your account may not delete items in ..."). The requests are pinned for 0, 1, 60 and 200 iPads: the reads (one
+  for each list, another for every 200 items more, the answers once for the numbers, the settings item) and one write for each item.
+- **The dialog of an action with no undo.** `ConfirmDialog.svelte` with `tone="danger"`: the warning first, built from the session by `deleteSessionWarning`
+  (never typed in per client), "permanently", what is kept, the leader report's buttons to keep the results first; Cancel has the focus and Escape; the
+  button says **Delete permanently**; opening it reads and writes nothing; a second press while it runs does nothing; progress in a status region. On success
+  the card goes with its open panel, chosen answers and names (`forgetNameSources`), a toast says "<client> <date> deleted", and focus moves to the next
+  card's title or the page heading. The words are `DELETE_SESSION` and the functions beside it; plain words, never "purge" or "cascade".
+- **A question is edited where it is.** `ContentQuestions.svelte` keeps the list and one `editingId` (a question's id, `'new'`, or none);
+  `QuestionEditor.svelte` is the form, moved, not rewritten (its saving, option fields, layout and picture tidying are what they were). Edit opens it inside the
+  row (Add question: a new row at the end); one at a time; Edit is a disclosure (`aria-expanded`, `aria-controls`) and the editor a region named by the
+  question. On open it comes into view only if it is not (`block: 'nearest'`; an editor taller than the window by its top; smooth unless reduced motion; the
+  sticky tab row is `--adm-sticky-room`) and the Question field takes focus; Save or Cancel gives focus back to that row's Edit. Save and Cancel are sticky at
+  the editor's foot, above the safe area. "Unsaved changes" shows; a switch, Escape or leaving the tab with changes asks once (Keep editing / Discard changes);
+  a clean one switches at once. Delete is off for the row being edited. A question deleted elsewhere while open is said in words and its text offered back
+  as a new question. Results' Restart... opens its form under its iPad's row by the same rules.
+- **`PHASE_16`** (`scripts/bundle-budget.js`): participant +128 B gzip over 15 (allowance 200: the participant page carries every export of the data service,
+  so the two calls the delete needs are on it; the rules are the admin page's alone), admin within 12,000 B. Its Tailwind rules are 11a's.
+
 ## Before finishing a change
 
 - Always: `npm run check:svelte` and `npm test` (the documents, the module map and the project map among it). If you added, moved or renamed a
@@ -1321,6 +1361,10 @@ iPhone or the real site**: QA-TESTING.md items 182 to 187.
   `node --test scripts/test-shown-names.js`.
 - If you touched `migration/src/lib/results/results-chart-model.js`, `admin/charts/`, `styles/results-tokens.css`, `LiveDisplay.svelte` or `AdminResults.svelte`: run `npm run test:charts`,
   `npm run test:bundle` (the participant page's Tailwind rules) and the `results-charts-*` and `live-display*` specs in all three engines, and look at `test-results/charts/`.
+- If you touched `lib/admin/session-delete.js`, `dataService.listItemKeys` or `deleteByKey`, or added a list or column that holds a session id: run
+  `node --test scripts/test-session-delete.js` (it fails until the list is in `SESSION_OWNED` or `KEPT`) and `session-delete.spec.ts` in Chromium and WebKit.
+  If you touched Results' order: `node --test scripts/test-admin-results.js` and `results-order.spec.ts`. If you touched Content's question editor or
+  Results' Restart form: `content-edit-in-place.spec.ts`, `results-restart-inline.spec.ts` and `admin-content.spec.ts`.
 - If you touched any `server/data/*.json` by hand: run `npm run validate:data`.
 - If you touched Setup's plan, Create, Mark the site as ready, Add an admin, the seed-file import or the fake's site building: run `npm run test:provision`,
   `npm run test:baseline`, `npm run test:namespace` and `npm run test:bundle`, then `setup-provision.spec.ts` and `setup.spec.ts` in all three engines, and see

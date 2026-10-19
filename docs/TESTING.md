@@ -94,6 +94,15 @@ seven sizes.
   server; `admin-local.ts` is their shared harness, one scratch server per test, uploads in the scratch folder too) and
   `admin-content-sharepoint.spec.ts` (budgets against the fake, the QR address in SharePoint mode, and a smoke test that also runs
   on WebKit); it writes the measured counts to `test-results/budget/admin-content-sharepoint.json`.
+- `node --test scripts/test-admin-results.js` (also part of `npm test`, Phase 16): Results' order (`newestFirst`, `keepShownOrder`, `rowsInOrder` in
+  `migration/src/lib/admin/admin-results.js`): dates, ties, missing dates, stability, no change to the input, and that the leader report, the CSVs, the
+  Live display and the oracle do not use it. The browser side is `results-order.spec.ts`.
+- `node --test scripts/test-session-delete.js` (also part of `npm test`, Phase 16): Delete session (`migration/src/lib/admin/session-delete.js`) on the mocked
+  SharePoint and the real local server: every list with a session id is in `SESSION_OWNED` or `KEPT` (and the check can fail), the order, the words, the
+  live session refused, numbers read again, a second run, a stop at each list that leaves a session to delete again, a 403, the same id made again, and the
+  requests for sessions of 0, 1, 60 and 200 iPads. The browser side is `session-delete.spec.ts` (the warning, Cancel, Escape, a double click, the live
+  session, a 403 and Try again, axe, focus, a participant page and a guest code of the deleted session). Content's question editor in place and Results'
+  Restart under its row are `content-edit-in-place.spec.ts` and `results-restart-inline.spec.ts` (the SharePoint mock, Chromium and WebKit).
 - `npm run check:svelte` — type and accessibility diagnostics for the Svelte app in
   `migration/`. `npm run test:foundation` runs the theme and design-foundation unit tests
   (also part of `npm test`); `npm run test:migration` rebuilds and runs the built-page
