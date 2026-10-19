@@ -43,7 +43,7 @@ export const DELETE_SESSION = Object.freeze({
   missing: 'This session is already gone.',
 });
 
-/** The live session is never deleted: the data service is asked again just before anything is removed. */
+/** A refusal: an Error with a code the screen can tell apart, and the words it shows. */
 const failure = (code, message, extra = {}) => Object.assign(new Error(message), { code, ...extra });
 
 const plural = (count, one, many = `${one}s`) => `${count} ${count === 1 ? one : many}`;
@@ -136,7 +136,6 @@ export async function deleteSessionData(sessionId, { expected = null, onProgress
   onProgress({ done, total: plan.total });
   for (const { list } of SESSION_OWNED) {
     const found = plan.items[list];
-    if (list === 'sessions' && leftovers.length > 0) break;
     if (found.length === 0) continue;
     console.info(`Results: delete session, ${list}`, found.length);
     const { results } = await data.runPaced(found, async (/** @type {{ key: unknown }} */ item) => {
