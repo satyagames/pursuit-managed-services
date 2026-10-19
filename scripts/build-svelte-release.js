@@ -1,7 +1,13 @@
 import { copyFile, mkdir, readdir, rm } from 'node:fs/promises';
 import path from 'node:path';
-import { build } from 'vite';
+import { ensureInstalled, ensureNode } from './node-guard.js';
 import { builtSettings } from './site-override.js';
+
+// Vite 8 needs Node 22.12 or newer. Say so in plain words (or use the project's own Node 22) instead of failing inside Vite. Vite is loaded
+// only after this check, because loading it is what fails on an older Node.
+ensureNode(import.meta.filename);
+ensureInstalled();
+const { build } = await import('vite');
 
 const root = path.join(import.meta.dirname, '..');
 const release = path.join(root, 'build-svelte', 'release');
