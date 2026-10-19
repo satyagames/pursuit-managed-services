@@ -135,4 +135,20 @@ real iPad's keyboard and safe area, and Firefox. Those are QA-TESTING.md items 1
 
 ## The package
 
-(Below, once the package is made from the committed tree.)
+`pms-07eb42b` (`build-svelte/package/pms-07eb42b/`, `build-svelte/package/pms-07eb42b.zip`), made by `npm run package:release` from the committed tree
+in a fresh checkout of `07eb42b`; `shasum -a 256 -c` passes in the folder (7 OK) and in a fresh unzip (7 OK), and `sha256sum -c SHA256SUMS.txt` again by
+hand (7 OK). RUNBOOK.md's note says what Phase 16 changes (no list or column; Contribute on PMSVisitLog) and adds step 12 (QA 188 to 194);
+RELEASE-NOTES.md has what changed since pms-b643f1b.
+
+| File | Bytes | gzip -9 | SHA-256 |
+|---|---:|---:|---|
+| index.html | 381,090 | 159,093 | `78afd7e61e35fe22e0c4c3bbef72b2a7b949e94bdee7efab598f3bb0397d150a` |
+| admin.html | 1,584,647 | 576,279 | `427e65fc20f70855cdb4a2bfde7981afdbcd390bb106e3bdc0c1b2adf4e037c3` |
+| setup.html | 1,174,049 | 789,238 | `6a8b02c929e64ed11f71ac2541f18851938f2f00d62e3c22a02b5db41b8be69a` |
+| pms-config.txt | 54 | | `04426124f56abad3973d69fb4a8608e673d86745419bf1cc41c5a70441cc607f` |
+| THIRD-PARTY-NOTICES.txt | 40,835 | | `e4ecfa86a85da94926f3f25b9f2b99791c38cc3ea100c5454bb333e620ec1eb4` |
+| RELEASE-NOTES.md | 34,315 | | `ee57f33bfc1661a48b10c59f9450c9e8a3bcc63adf230cb8868ade62ab8f9816` |
+| RUNBOOK.md | 38,508 | | `f0710ead52123ce6c51ff512c6e753a185314aa234ada32babe757c69c6e523f` |
+| **pms-07eb42b.zip** | 1,563,364 | | `59fdab6a960f8be14a9d1fc7ad4d5bb6c17131013e136c136aa927eb39397d01` |
+
+The node gates were run again on the commit that adds this section (`build-svelte/baseline-16/final/`): the same results as the "after" column.
