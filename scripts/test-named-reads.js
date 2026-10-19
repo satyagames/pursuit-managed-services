@@ -233,7 +233,7 @@ describe('every item read the data layer and Setup can send names its columns', 
     // (A probe's query that names its own columns is sent as it is; one that names none is given the list's: probeSharePointRead.)
     const named = (line) => /selectOf\(|PARTICIPANT_SELECT|\/\\\$select=\/\.test\(query\) \? .*: spItems\(list, query\)/.test(line);
     assert.deepEqual(found.filter((entry) => !named(entry.line)).map((entry) => `${entry.where}: ${entry.line}`), []);
-    assert.ok(found.some((entry) => entry.where.startsWith('migration/src/lib/data/dataService.js') && /selectOf\(/.test(entry.line)), 'the data layer builds its item reads with selectOf');
+    assert.ok(found.some((entry) => entry.where.startsWith('migration/src/lib/data/') && /selectOf\(/.test(entry.line)), 'the data layer builds its item reads with selectOf');
     assert.equal(found.filter((entry) => entry.where.startsWith('migration/src/lib/setup/provision.js')).length, 2, 'Setup\'s two reads of the settings item');
     // The one read that names no columns on purpose: Setup's probe of what a site leaves out (one item, `$top=1`, which the strict mock answers).
     const checks = await readFile(path.join(ROOT, 'migration', 'src', 'lib', 'setup', 'setup-checks.js'), 'utf8');

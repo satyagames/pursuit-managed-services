@@ -14,6 +14,7 @@ import { bootParticipant } from '../migration/src/lib/participant/boot.js';
 import { samplePack } from '../migration/src/lib/setup/sample-clients.js';
 import { seedPack } from '../migration/src/lib/setup/seed.js';
 import { schemaSpecs } from '../migration/src/lib/setup/setup-checks.js';
+import { dataLayerSource } from './data-layer-source.js';
 import { NODE_SUITES, differences, readBaseline, recordSuite } from './request-baseline.js';
 import { LIBRARY_KEY, OTHER_PREFIX, TITLE, createSharePointFake } from './sharepoint-fake.js';
 
@@ -184,7 +185,7 @@ describe('what the app says names the list a person will find on the site', () =
   });
 
   it('a claim with no version to hold names the codes list by its title (read from the source: the fake always gives a version)', async () => {
-    const source = await readFile(path.join(ROOT, 'migration/src/lib/data/dataService.js'), 'utf8');
+    const source = await dataLayerSource();
     assert.match(source, /SharePoint did not return an ETag for \$\{spTitle\('qrtokens'\)\}\./);
     for (const spelled of ["list: 'Sections'", 'for Responses.AppId', 'an ETag for QRTokens', 'in the Responses list first']) {
       assert.ok(!source.includes(spelled), `the data layer still spells a title out: ${spelled}`);

@@ -1804,7 +1804,7 @@ describe('the boundaries this phase relies on', () => {
       // The boot sequence reads the visit's item (alongside its other reads) and hands it to participantData; it never writes.
       const isBoot = name.endsWith('lib/participant/boot.js');
       // The data layer is where the saves go (it was in public/js, outside this check, until Phase 14).
-      if (name.endsWith('lib/data/dataService.js')) continue;
+      if (name.includes('lib/data/')) continue;
       if (!isDoor && /from ['"][^'"]*answer-store(\.js)?['"]/.test(text)) offenders.push(`${name} imports the answer store`);
       if (!isDoor && !isStore && /\b(saveParticipantResponses|saveResponses?)\b/.test(text)) offenders.push(`${name} writes answers itself`);
       if (!isDoor && !isStore && !isBoot && /\bgetParticipantResponses\b/.test(text)) offenders.push(`${name} reads answers itself`);
