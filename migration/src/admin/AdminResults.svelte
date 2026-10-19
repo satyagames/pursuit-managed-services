@@ -7,7 +7,7 @@
   import { namesByVisit, unreadableNotice } from '../lib/results/unreadable.js';
   import { createPageWatcher, type PageWatcher } from '../lib/common/page-watch.js';
   import { adminDelay } from '../lib/common/poll-schedule.js';
-  import { REMOVE_VISIT_CONFIRM, canRemoveVisit, holdNameSources, readNameSources, resultRows, rowsToLookForAgain, sessionsNeedingNames, type NameSources } from '../lib/admin/admin-results.js';
+  import { REMOVE_VISIT_CONFIRM, canRemoveVisit, holdNameSources, keepShownOrder, newestFirst, readNameSources, resultRows, rowsInOrder, rowsToLookForAgain, sessionsNeedingNames, type NameSources } from '../lib/admin/admin-results.js';
   import { answerCounts, answersFrom, answersOf, chartsOf, namesFor } from '../lib/results/results-chart-model.js';
   import ReportExports from './ReportExports.svelte';
   import ResultCard from './charts/ResultCard.svelte';
@@ -152,7 +152,8 @@
   /** One session's card, from its results: each iPad's row, its status, and the codes. */
   function cardOf(result: SessionResults): SessionCard {
     const sources = sourcesHeld.get(result.session.id);
-    const tracks = resultRows(result, sources);
+    // (Phase 16: the newest joiner first, lib/admin/admin-results.js ROW_ORDER; the names are the report's, worked out in the order they joined.)
+    const tracks = rowsInOrder(resultRows(result, sources));
     // The charts of the session's live activities (Phase 11a), with each answer's names: the same rule as the rows, over what was read for them.
     const charts = chartsOf({ sections: result.sections.filter((section) => section.enabled) }, { names: namesFor({ tracks: result.tracks, answers: answersOf(result), ...(sources ?? {}) }) });
     // What could not be read (Phase 9b, DI-6), said beside the export buttons, with each person's name the way their row has it.
@@ -191,7 +192,8 @@
     holdNameSources(sources);
     for (const result of results) if (needing.includes(result.session.id)) for (const track of result.tracks) if (!track.participantName?.trim()) lookedFor.set(track.id, Math.max(lookedFor.get(track.id) ?? 0, 1));
     liveHeld = held;
-    cards = results.map(cardOf);
+    // Newest first (Phase 16), and a card already on the screen keeps its place: a refresh never moves one under the person's hands.
+    cards = keepShownOrder(cards.map((card) => card.results.session.id), newestFirst(results.map(cardOf), (card) => card.results), (card) => card.results);
     updated = `Updated ${new Date().toLocaleTimeString()}`;
     error = '';
   }

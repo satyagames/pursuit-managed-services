@@ -100,6 +100,86 @@ export function resultRows(result, sources = EMPTY) {
   });
 }
 
+// ---- The order of the screen (Phase 16) ---------------------------------------------------------------------------------------
+// Results shows the newest session first, and in each session the newest joiner first, so the session of today and who just arrived are at
+// the top. Only Results: the leader report, the CSVs, the Live display and the oracle keep their own order (scripts/test-admin-results.js).
+
+/** The order of the sessions on Results: by date, newest first; a tie by the latest visit, then by the later item of the list. */
+export const SESSION_ORDER = 'newest-first';
+/** The order of the iPads in a session: 'newest-first' (the latest joiner at the top), or 'join-order' as it was before Phase 16. */
+export const ROW_ORDER = 'newest-first';
+
+const DAY = /^\d{4}-\d{2}-\d{2}/;
+/** A time as a number to compare, or -Infinity for a missing or unreadable one (it sorts last). @param {unknown} value */
+const instant = (value) => {
+  const time = typeof value === 'string' && value !== '' ? Date.parse(value) : Number.NaN;
+  return Number.isFinite(time) ? time : Number.NEGATIVE_INFINITY;
+};
+/** A session's day, from its `date` (its first ten characters: a date with a time is its day). @param {unknown} value */
+const dayOf = (value) => (typeof value === 'string' && DAY.test(value) ? instant(value.slice(0, 10)) : Number.NEGATIVE_INFINITY);
+/** The latest `createdAt` of a session's visits. @param {{ tracks?: { createdAt?: unknown }[] }} result */
+const latestVisit = (result) => Math.max(Number.NEGATIVE_INFINITY, ...(result.tracks ?? []).map((track) => instant(track?.createdAt)));
+/** Newer first: the larger number first; two missing ones are equal. @param {number} a @param {number} b */
+const newer = (a, b) => (a === b ? 0 : b > a ? 1 : -1);
+
+/**
+ * The sessions newest first (SESSION_ORDER): by `session.date`; on the same day, by the most recent visit in the session; then by the later item
+ * of `list` (a later item is newer). A missing or unreadable date sorts last. A new array: `list` is not changed.
+ * @template T
+ * @param {T[]} list
+ * @param {(item: T) => { session?: { date?: unknown }, tracks?: { createdAt?: unknown }[] }} [resultOf] what each item's session is read from
+ * @returns {T[]}
+ */
+export function newestFirst(list, resultOf = (item) => /** @type {any} */ (item)) {
+  return list
+    .map((item, index) => {
+      const result = resultOf(item) ?? {};
+      return { item, index, day: dayOf(result.session?.date), latest: latestVisit(result) };
+    })
+    .sort((a, b) => newer(a.day, b.day) || newer(a.latest, b.latest) || b.index - a.index)
+    .map((entry) => entry.item);
+}
+
+/**
+ * The newly read cards in the order the screen already shows them (Phase 16): a card on the screen keeps its place, however a new visit
+ * would sort it now, so a refresh never moves a card under the person's hands; a session that newly appears is put at its sorted place; one that
+ * has gone is dropped. `sorted` is newestFirst()'s order; `shown` the ids on the screen, in their order.
+ * @template T
+ * @param {string[]} shown
+ * @param {T[]} sorted
+ * @param {(item: T) => { session: { id: string } }} resultOf
+ * @returns {T[]}
+ */
+export function keepShownOrder(shown, sorted, resultOf) {
+  const idOf = (/** @type {T} */ item) => String(resultOf(item).session.id);
+  const place = new Map(shown.map((id, index) => [String(id), index]));
+  const rank = new Map(sorted.map((item, index) => [idOf(item), index]));
+  /** @type {T[]} */
+  const out = sorted.filter((item) => place.has(idOf(item))).sort((a, b) => /** @type {number} */ (place.get(idOf(a))) - /** @type {number} */ (place.get(idOf(b))));
+  for (const item of sorted) {
+    if (place.has(idOf(item))) continue;
+    const before = out.findIndex((other) => /** @type {number} */ (rank.get(idOf(other))) > /** @type {number} */ (rank.get(idOf(item))));
+    out.splice(before === -1 ? out.length : before, 0, item);
+  }
+  return out;
+}
+
+/**
+ * A session's iPad rows in ROW_ORDER: newest joiner first (by the track's `createdAt`; a tie or a missing time by the later row of the join
+ * order), or the join order resultRows() gives. A new array.
+ * @template {{ track: { createdAt?: unknown } }} R
+ * @param {R[]} rows in the order they joined
+ * @param {string} [order]
+ * @returns {R[]}
+ */
+export function rowsInOrder(rows, order = ROW_ORDER) {
+  if (order !== 'newest-first') return [...rows];
+  return rows
+    .map((row, index) => ({ row, index, joined: instant(row.track?.createdAt) }))
+    .sort((a, b) => newer(a.joined, b.joined) || b.index - a.index)
+    .map((entry) => entry.row);
+}
+
 /**
  * The rows whose name is worth looking for again on a refresh of the live session: a person with no recorded name who joined in the last
  * two minutes (their sign-in may not be written yet) and has been looked for fewer than twice. Anyone else with no name has none to find.
