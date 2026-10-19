@@ -49,5 +49,21 @@ async function write(name, data) {
   const file = fileFor(name);
   const temp = `${file}.${process.pid}.tmp`;
   await writeFile(temp, `${JSON.stringify(data, null, 2)}\n`);
-  await rename(temp, file);
+  await replace(temp, file);
+}
+
+// Windows refuses to rename over a file that is open, and every read of a list opens its file: a write that met a read of the same list
+// (two iPads at once) failed with EPERM (Phase 17, scripts/test-store.js). It is tried again every few milliseconds, the moment between two
+// reads being short, for up to two seconds; any other error, or a file that stays open, is thrown as before.
+const BUSY = new Set(['EPERM', 'EACCES', 'EBUSY']);
+async function replace(temp, file) {
+  const until = Date.now() + 2_000;
+  for (;;) {
+    try {
+      return await rename(temp, file);
+    } catch (error) {
+      if (!BUSY.has(error.code) || Date.now() >= until) throw error;
+      await new Promise((resolve) => { setTimeout(resolve, 5); });
+    }
+  }
 }
