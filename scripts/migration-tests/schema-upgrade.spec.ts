@@ -92,7 +92,8 @@ test('Setup brings the PCOE site from version 2 to version 3: the plan, Create, 
   // Results names them; the visit of before keeps its name only in the old column, which the site will not return, so it is unnamed.
   await unlock(page, '#results');
   const titles = page.locator(`article[data-session="${session.id}"] .row__title`);
-  await expect(titles).toHaveText(['Unnamed participant 1', 'Casey Example']);
+  // (Since Phase 16 the newest joiner is first: lib/admin/admin-results.js ROW_ORDER.)
+  await expect(titles).toHaveText(['Casey Example', 'Unnamed participant 1']);
 
   // A named guest is added and gets a code (as Guests and QR does), and checks in by QR.
   const code = await onSite(fake, async (ds) => {

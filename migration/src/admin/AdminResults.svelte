@@ -37,6 +37,8 @@
   let restartSectionId = $state<string | null | undefined>(undefined);
   /** The id of the Restart form (one is open at a time). */
   const RESTART_FORM = 'restart-form';
+  /** The card whose row holds the open Restart form: a visit is one row of one card, so the form opens under that row only. */
+  let restartIn = $state<string | null>(null);
   let busy = $state(false);
   /** The session whose data the person is about to delete (Phase 16): the numbers the warning shows, and where the delete has got to. */
   type Deleting = { card: SessionCard; counts: ReturnType<typeof cardCounts>; working: boolean; status: string; error: string; failed: boolean };
@@ -116,10 +118,11 @@
    * Restart... opens its form under the iPad's own row (Phase 16: it opened at the foot of the page), one at a time; pressed again, it closes.
    * Focus goes to the first choice, and back to the row's Restart... button when the form closes.
    */
-  function openRestart(row: TrackRow, sectionId: string | null | undefined = undefined) {
-    if (restartTrack?.track.id === row.track.id) { closeRestart(); return; }
+  function openRestart(row: TrackRow, sessionId: string) {
+    if (restartTrack?.track.id === row.track.id && restartIn === sessionId) { closeRestart(); return; }
     restartTrack = row;
-    restartSectionId = sectionId;
+    restartIn = sessionId;
+    restartSectionId = undefined;
     void tick().then(() => {
       const form = document.getElementById(RESTART_FORM);
       form?.scrollIntoView({ block: 'nearest', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
@@ -129,14 +132,16 @@
 
   function closeRestart() {
     const id = restartTrack?.track.id;
+    const sessionId = restartIn;
     restartTrack = null;
+    restartIn = null;
     restartSectionId = undefined;
-    if (id) void focusRestartButton(id);
+    if (id && sessionId) void focusRestartButton(id, sessionId);
   }
 
-  async function focusRestartButton(trackId: string) {
+  async function focusRestartButton(trackId: string, sessionId: string) {
     await tick();
-    document.querySelector<HTMLElement>(`[data-restart="${CSS.escape(trackId)}"]`)?.focus();
+    document.querySelector<HTMLElement>(`article[data-session="${CSS.escape(sessionId)}"] [data-restart="${CSS.escape(trackId)}"]`)?.focus();
   }
 
   function answeredIn(trackId: string, section: SessionSection) {
@@ -233,16 +238,18 @@
     if (!restartTrack || restartSectionId === undefined || busy) return;
     const targetName = restartTrack.name;
     const targetId = restartTrack.track.id;
+    const targetIn = restartIn;
     busy = true;
     requestVersion += 1;
     try {
       const result = await restartClientTrack(restartTrack.track.id, { sectionId: restartSectionId });
       if (!active) return;
       restartTrack = null;
+      restartIn = null;
       restartSectionId = undefined;
       onToast(`${targetName} restarted · ${result.removed} answers removed`, 'success');
       await refreshNow();
-      void focusRestartButton(targetId);
+      if (targetIn) void focusRestartButton(targetId, targetIn);
     } catch (cause) {
       if (active) onToast(cause instanceof Error ? cause.message : 'Could not restart this track.', 'error');
     } finally {
@@ -362,12 +369,12 @@
           <ul class="rows rows--flat">
             {#each card.tracks as row (row.track.id)}
               {@const notes = `${row.answered} of ${row.total} questions answered · joined ${row.track.createdAt ? new Date(row.track.createdAt).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}) : ''} via ${row.track.joinedVia === 'qr' ? 'QR code' : 'manual select'}${row.track.resumeCount ? ` · resumed ${row.track.resumeCount}×` : ''}${row.track.restartedAt ? ` · restarted ${new Date(row.track.restartedAt).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}` : ''}`}
-              {@const restarting = restartTrack?.track.id === row.track.id}
+              {@const restarting = restartTrack?.track.id === row.track.id && restartIn === session.id}
               <li class="row" class:row--open={restarting}>
                 <div class="row__main"><span class="row__title">{row.name}</span><span class="muted">{notes}</span></div>
                 <span class={statusClass(row.status)}>{statusText(row.status)}</span>
                 {#if canRemoveVisit(row, session)}<button class="btn btn--small" type="button" onclick={() => void removeVisit(row)} disabled={busy}>Remove...</button>{/if}
-                <button class="btn btn--small" type="button" data-restart={row.track.id} aria-expanded={restarting} aria-controls={restarting ? RESTART_FORM : undefined} onclick={() => openRestart(row)} disabled={busy || row.status === 'unreadable'} title={row.status === 'unreadable' ? `Its saved answers cannot be read, so they cannot be restarted. Correct or delete the damaged item in the ${dataService.sharePointListTitles().responses} list.` : undefined}>Restart...</button>
+                <button class="btn btn--small" type="button" data-restart={row.track.id} aria-expanded={restarting} aria-controls={restarting ? RESTART_FORM : undefined} onclick={() => openRestart(row, session.id)} disabled={busy || row.status === 'unreadable'} title={row.status === 'unreadable' ? `Its saved answers cannot be read, so they cannot be restarted. Correct or delete the damaged item in the ${dataService.sharePointListTitles().responses} list.` : undefined}>Restart...</button>
                 {#if restarting && restartTrack}{@render restartForm(restartTrack)}{/if}
               </li>
             {/each}
