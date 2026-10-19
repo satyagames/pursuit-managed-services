@@ -29,6 +29,12 @@ One line each: the decision, why, and what enforces it (a test fails if it is br
 | `PMSAdminUsers` is unreadable to participant accounts. | It holds unsalted PIN hashes; the PIN is not authorization. | By hand (RUNBOOK.md step 11); the local site models it |
 | The PIN check stays a mock: SHA-256, no lockout (decision 10 of the architecture). | Real sign-in would be SharePoint groups or Entra; out of scope until decided. | `lib/admin/admin-pin.js` (unchanged since Phase 10c-1) |
 
+## The data layer
+
+| Decision | Why | Enforced by |
+|---|---|---|
+| `lib/data/dataService.js` is the data layer's one door. Its public surface, 107 names (each with its kind and its arity), is listed in `scripts/data-surface.json`; a name added, taken away or renamed is a decision, recorded here with the new count in the same commit. | 39 files of the app and 70 scripts import it: work behind it must not reach them (Phase 17). | `scripts/test-data-surface.js` |
+
 ## The participant page
 
 | Decision | Why | Enforced by |
