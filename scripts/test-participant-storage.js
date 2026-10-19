@@ -1737,13 +1737,13 @@ describe('the boundaries this phase relies on', () => {
   const EXPORTS = [
     'COPY_SEPARATOR', 'MAX_ANSWER_TEXT', 'MAX_RESPONSES_JSON', 'activateClient', 'activateSession', 'addAdminUser', 'addGuests', 'addSectionsToLiveSession',
     'beginVisit', 'checkSharePointLists', 'checkSharePointSchema', 'configure', 'copyActivities',
-    'copyIdFor', 'copyTitle', 'createClient', 'createOption', 'createQuestion', 'createSection', 'createSession', 'createVisitor', 'deleteActivity',
+    'copyIdFor', 'copyTitle', 'createClient', 'createOption', 'createQuestion', 'createSection', 'createSession', 'createVisitor', 'deleteActivity', 'deleteByKey',
     'deleteClient', 'deleteOption', 'deleteParticipantResponses', 'deleteQuestion', 'deleteSession', 'duplicateActivity',
     'endSession', 'findOpenSession', 'getAppSettings', 'getClient', 'getClientActivities', 'getClientTrack', 'getCurrentUser', 'getLanUrls',
     'getLiveExperience', 'getOption', 'getParticipantResponses', 'getQrToken', 'getQuestion', 'getSection', 'getSectionContent',
     'getSectionQuestions', 'getSession', 'getSessionActivities', 'getVisitor',
     'guestNameKey', 'isSharePointMode', 'isUnreachable', 'listAdminUsers', 'listClientSections',
-    'listClientTracks', 'listClients', 'listOptions', 'listQrTokens', 'listQuestions', 'listSections', 'listSessionParticipants', 'listSessions',
+    'listClientTracks', 'listClients', 'listItemKeys', 'listOptions', 'listQrTokens', 'listQuestions', 'listSections', 'listSessionParticipants', 'listSessions',
     'mergeAnswerRecords', 'noteTrackResumed', 'openQrScan', 'planCopy', 'prepareWrites', 'probeSharePointRead',
     'provisionGuestCodes', 'provisionQrToken', 'qrTokenFromSearch', 'qrTokenStatus', 'qrUrl', 'readActivityContent', 'readLists', 'readLiveFeed',
     'readParticipantWatch', 'readSessionResponses', 'readSessionResponsesChecked', 'recordParticipantVisit', 'recordUserVisit', 'removeClientAsset',
@@ -1771,8 +1771,9 @@ describe('the boundaries this phase relies on', () => {
   it('dataService exports exactly what is listed here; what only the legacy pages, only tests, or nothing called is gone', () => {
     assert.deepEqual(Object.keys(ds).sort(), EXPORTS);
     // (Phase 10c-3: sendToSharePoint, the Setup page's one way to write to the site itself, for lib/setup/provision.js, and addAdminUser came; the seed-file
-    // import, Setup's alone, went to migration/src/lib/setup/setup-import.js. Still 103. Phase 10j: prepareWrites, 104. Phase 15: updateClientWith, 105.)
-    assert.equal(EXPORTS.length, 105);
+    // import, Setup's alone, went to migration/src/lib/setup/setup-import.js. Still 103. Phase 10j: prepareWrites, 104. Phase 15: updateClientWith, 105. Phase 16: listItemKeys and deleteByKey, for
+    // lib/admin/session-delete.js, 107.)
+    assert.equal(EXPORTS.length, 107);
     assert.equal(GONE.length, 30);
     for (const name of GONE) assert.ok(!(name in ds), `${name} is back`);
   });

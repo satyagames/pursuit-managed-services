@@ -27,7 +27,7 @@ registration, no certificate, no Graph, nothing from a CDN.
 | `qrtokens` | PMSGuestQRCodes | One item for each single-use QR code. | participant, admin, setup | admin, participant |
 | `appsettings` | PMSAppSettings | One item, `default`: which session and client are live, and the version of the lists. Every page reads it first. Setup writes it when it makes the lists; nobody makes it by hand. | participant, admin, setup | admin, setup |
 | `visitorroster` | PMSGuestList | The guest list: one item for each named guest of a session. | participant, admin | admin |
-| `uservisitlogs` | PMSVisitLog | The visit log: one row for each browser tab that opened the participant page. Results read it for names. | admin | participant |
+| `uservisitlogs` | PMSVisitLog | The visit log: one row for each browser tab that opened the participant page. Results read it for names, and Delete session removes a session's rows. | admin | participant, admin |
 | `adminusers` | PMSAdminUsers | The facilitators who may unlock the admin page: a name and a hash of a PIN each. | admin | setup |
 | `responses` | PMSParticipantAnswers | The answers: one item for each visit, holding all of that person's answers. | participant, admin | participant, admin, setup |
 | (library) | PMSClientImages | The clients' pictures (hero badge, logo, background, answer tiles), each stored once under a name made from its content. | participant, admin, setup | admin, setup |
