@@ -47,7 +47,7 @@ The code, the screens and the lists use different words for some lists.
 | `qrtokens` | PMSGuestQRCodes | One item for each single-use QR code. | participant, admin, setup | admin, participant | up to 60 in guest mode | up to 6,000 |
 | `appsettings` | PMSAppSettings | One item, `default`: which session and client are live, and the version of the lists. Every page reads it first. Setup writes it when it makes the lists; nobody makes it by hand. | participant, admin, setup | admin, setup | 0 | 1 in total |
 | `visitorroster` | PMSGuestList | The guest list: one item for each named guest of a session. | participant, admin | admin | up to 60 in guest mode | up to 6,000 |
-| `uservisitlogs` | PMSVisitLog | The visit log: one row for each browser tab that opened the participant page. Results read it for names. | admin | participant | 60 or more | 6,000 to 9,000 |
+| `uservisitlogs` | PMSVisitLog | The visit log: one row for each browser tab that opened the participant page. Results read it for names, and Delete session removes a session's rows. | admin | participant, admin | 60 or more | 6,000 to 9,000 |
 | `adminusers` | PMSAdminUsers | The facilitators who may unlock the admin page: a name and a hash of a PIN each. | admin | setup | 0 | a handful in total |
 | `responses` | PMSParticipantAnswers | The answers: one item for each visit, holding all of that person's answers. | participant, admin | participant, admin, setup | 60 | 6,000 |
 
@@ -189,21 +189,21 @@ Key `visitorroster` (on the local server, `server/data/visitorroster.json`). The
 
 ## PMSVisitLog
 
-Key `uservisitlogs` (on the local server, `server/data/uservisitlogs.json`). The visit log: one row for each browser tab that opened the participant page. Results read it for names. Read by admin; written by participant.
+Key `uservisitlogs` (on the local server, `server/data/uservisitlogs.json`). The visit log: one row for each browser tab that opened the participant page. Results read it for names, and Delete session removes a session's rows. Read by admin; written by participant, admin.
 
 | Column | Type | Must exist | Indexed | Unique | Required | Allowed values | Longest | Default | Personal data | What it holds | Read by | Written by |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `AppId` | Single line of text | yes | yes | yes | yes |  | 255 |  | no | The record's own id: the tab's visit key: a retry never makes a second row. | admin | participant |
-| `SessionId` | Single line of text | yes | yes | no | no |  | 255 |  | no | The session (a Sessions.AppId). | admin | participant |
-| `ClientId` | Single line of text | yes | no | no | no |  | 255 |  | no | The client (a Clients.AppId); not read back. | nobody | participant |
-| `Page` | Single line of text | yes | no | no | no |  | 255 |  | no | The page that was opened: participant. Not read back. | nobody | participant |
-| `EntryMode` | Single line of text | yes | no | no | no | `staff`, `client-visit` | 255 |  | no | How the person was identified. Not read back. | nobody | participant |
-| `SharePointUserId` | Single line of text | yes | no | no | no |  | 255 |  | **yes** | The number SharePoint gives the signed-in account. | admin | participant |
-| `SignedInName` | Single line of text | yes | no | no | no |  | 255 |  | **yes** | The signed-in account's name, in staff mode: how Results and the leader report name a member of staff. Called DisplayName until version 3: SharePoint gives every list item a property of that name, and the real site refused every read of this list that named it (15 Oct 2026). | admin | participant |
-| `VisitorId` | Single line of text | yes | no | no | no |  | 255 |  | no | The guest (a VisitorRoster.AppId), in guest mode. | admin | participant |
-| `VisitorName` | Single line of text | yes | no | no | no |  | 255 |  | **yes** | The guest's name, in guest mode. | admin | participant |
-| `TrackId` | Single line of text | yes | no | no | no |  | 255 |  | no | The visit (a Tracks.AppId). | admin | participant |
-| `VisitedAt` | Date and Time, shown as Date & Time | yes | no | no | no |  |  |  | no | When the page was opened, by the device's clock. Not read back. | nobody | participant |
+| `AppId` | Single line of text | yes | yes | yes | yes |  | 255 |  | no | The record's own id: the tab's visit key: a retry never makes a second row. | admin | participant, admin |
+| `SessionId` | Single line of text | yes | yes | no | no |  | 255 |  | no | The session (a Sessions.AppId). | admin | participant, admin |
+| `ClientId` | Single line of text | yes | no | no | no |  | 255 |  | no | The client (a Clients.AppId); not read back. | nobody | participant, admin |
+| `Page` | Single line of text | yes | no | no | no |  | 255 |  | no | The page that was opened: participant. Not read back. | nobody | participant, admin |
+| `EntryMode` | Single line of text | yes | no | no | no | `staff`, `client-visit` | 255 |  | no | How the person was identified. Not read back. | nobody | participant, admin |
+| `SharePointUserId` | Single line of text | yes | no | no | no |  | 255 |  | **yes** | The number SharePoint gives the signed-in account. | admin | participant, admin |
+| `SignedInName` | Single line of text | yes | no | no | no |  | 255 |  | **yes** | The signed-in account's name, in staff mode: how Results and the leader report name a member of staff. Called DisplayName until version 3: SharePoint gives every list item a property of that name, and the real site refused every read of this list that named it (15 Oct 2026). | admin | participant, admin |
+| `VisitorId` | Single line of text | yes | no | no | no |  | 255 |  | no | The guest (a VisitorRoster.AppId), in guest mode. | admin | participant, admin |
+| `VisitorName` | Single line of text | yes | no | no | no |  | 255 |  | **yes** | The guest's name, in guest mode. | admin | participant, admin |
+| `TrackId` | Single line of text | yes | no | no | no |  | 255 |  | no | The visit (a Tracks.AppId). | admin | participant, admin |
+| `VisitedAt` | Date and Time, shown as Date & Time | yes | no | no | no |  |  |  | no | When the page was opened, by the device's clock. Not read back. | nobody | participant, admin |
 
 ## PMSAdminUsers
 
@@ -259,7 +259,7 @@ Worked out from who reads and writes each list (the `reads` and `writes` of pms-
 | PMSGuestQRCodes | One item for each single-use QR code. | Contribute (add and edit items) | Contribute (add and edit items) |
 | PMSAppSettings | One item, `default`: which session and client are live, and the version of the lists. Every page reads it first. Setup writes it when it makes the lists; nobody makes it by hand. | Read | Contribute (add and edit items) |
 | PMSGuestList | The guest list: one item for each named guest of a session. | Read | Contribute (add and edit items) |
-| PMSVisitLog | The visit log: one row for each browser tab that opened the participant page. Results read it for names. | Contribute (add and edit items) | Read |
+| PMSVisitLog | The visit log: one row for each browser tab that opened the participant page. Results read it for names, and Delete session removes a session's rows. | Contribute (add and edit items) | Contribute (add and edit items) |
 | PMSAdminUsers | The facilitators who may unlock the admin page: a name and a hash of a PIN each. | **No access** | Read |
 | PMSParticipantAnswers | The answers: one item for each visit, holding all of that person's answers. | Contribute (add and edit items) | Contribute (add and edit items) |
 | PMSClientImages | The clients' pictures (hero badge, logo, background, answer tiles), each stored once under a name made from its content. | Read | Contribute (add and recycle files) |

@@ -41,7 +41,9 @@ h2 {
 /* The tab row sticks to the top of the window, so a control that the keyboard scrolls into view must stop BELOW it, not under it (Phase 8: on Results the
    first Tab scrolled "Refresh" under the sticky row, with half of its ring hidden). The row is 62 px high and the ring reaches 9 px beyond a control. */
 html {
-  scroll-padding-top: 5.5rem;
+  /* (Phase 16: named, so what scrolls into view in place, such as a question's editor, allows for it too.) */
+  --adm-sticky-room: 5.5rem;
+  scroll-padding-top: var(--adm-sticky-room);
 }
 
 /* Visible keyboard focus on every control: the Deloitte-green ring with a band of navy on each side of it, as on the participant page. On the admin's white

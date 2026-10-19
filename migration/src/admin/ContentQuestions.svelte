@@ -1,20 +1,14 @@
 <script lang="ts">
-  import { onMount, untrack } from 'svelte';
+  import { onMount, tick, untrack } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
   import { answersToQuestions, orphanNote } from '../lib/admin/adminData.js';
-  import { LAYOUTS, MAX_OPTION_TEXT, imageUrlProblem, layoutApplies, optionTextProblem, optionValueFrom, orderedContent, picturesStillShown } from '../lib/admin/admin-content.js';
-  import { assetFileName, isOwnUpload } from '../lib/brand/asset-names.js';
-  import type { Prepared } from '../lib/brand/asset-image.js';
-  import { SLOTS } from '../lib/brand/asset-specs.js';
+  import { layoutApplies, orderedContent } from '../lib/admin/admin-content.js';
+  import { setLeaveGuard } from '../lib/admin/unsaved.js';
   import { questionLayout } from '../lib/participant/pager-logic.js';
-  import AssetUploader from './AssetUploader.svelte';
+  import ConfirmDialog from './ConfirmDialog.svelte';
+  import QuestionEditor, { QUESTION_SPECS, type Draft, type Option, type Question, type QuestionType } from './QuestionEditor.svelte';
 
   type Section = { id: string; title: string; clientId?: string | null; questionIds?: string[] };
-  type Question = { id: string; sectionId: string; type: string; prompt: string; optionIds?: string[]; order?: number; layout?: string | null };
-  type Option = { id: string; questionId: string; label: string; value: string | number | boolean; correct?: boolean | null; imageUrl?: string | null };
-  type OptionDraft = { key: string; id?: string; label: string; correct: boolean; imageUrl: string; storedImage: string | null };
-  type QuestionType = 'single-select' | 'multi-select' | 'true-false' | 'confidence-continuum' | 'ranked-voting' | 'open-text-feedback';
-  type Layout = 'text-list' | 'image-grid';
 
   let { section, clientSlug, onToast, onChanged }: {
     section: Section;
@@ -31,45 +25,50 @@
   const sectionId = untrack(() => section.id);
   let alive = true;
 
-  const specs: Record<QuestionType, { label: string; options: 'free' | 'fixed' | 'none'; correct: boolean; min: number; hint: string }> = {
-    'single-select': { label: 'Single choice (poll or MCQ)', options: 'free', correct: true, min: 2, hint: 'Leave Correct off for a poll; mark one option for a multiple-choice question.' },
-    'multi-select': { label: 'Multiple choice (select all)', options: 'free', correct: false, min: 2, hint: 'Participants can choose more than one option.' },
-    'true-false': { label: 'True / False', options: 'fixed', correct: true, min: 2, hint: 'Optionally mark the correct answer.' },
-    'confidence-continuum': { label: 'Confidence continuum (scale)', options: 'free', correct: false, min: 2, hint: 'Scale points from lowest to highest.' },
-    'ranked-voting': { label: 'Ranked voting', options: 'free', correct: false, min: 2, hint: 'Participants rank options from most to least important.' },
-    'open-text-feedback': { label: 'Open text feedback', options: 'none', correct: false, min: 0, hint: '' },
-  };
-  const types = Object.keys(specs) as QuestionType[];
+  const specs = QUESTION_SPECS;
 
   let questions = $state<Question[]>([]);
   let optionsByQuestion = $state<Record<string, Option[]>>({});
   let loading = $state(true);
   let busy = $state(false);
   let error = $state('');
-  let editorOpen = $state(false);
-  let editing = $state<Question | null>(null);
-  let prompt = $state('');
-  let type = $state<QuestionType>('single-select');
-  let layout = $state<Layout>('text-list');
-  let optionDrafts = $state<OptionDraft[]>([]);
-  let editorHeading = $state<HTMLElement>();
-  /** Pictures uploaded while this question is being edited, and the ones it began with. A picture is uploaded the moment it is chosen. */
-  let uploadedNow = $state<string[]>([]);
-  let storedAtOpen = $state<string[]>([]);
-  let uploadNotice = $state<Record<string, string>>({});
 
-  const currentSpec = $derived(specs[type]);
-  const showsLayout = $derived(layoutApplies(type));
-  const tiles = $derived(showsLayout && layout === 'image-grid');
-  const pictured = $derived(optionDrafts.filter((option) => option.imageUrl.trim()).length);
+  // ---- The editor, in place (Phase 16) ------------------------------------------------------------------------------------------
+  // Edit opens the question's editor inside its own row, under its text, and Add question in a new row at the end of the list, where the
+  // question will appear: one at a time. The draft is the editor's (QuestionEditor.svelte), so a refresh of the list never resets it.
+  /** The new question's slot. */
+  const NEW = 'new';
+  /** Which question is being edited: its id, NEW, or nothing. */
+  let editingId = $state<string | null>(null);
+  let editorBusy = $state(false);
+  let dirty = $state(false);
+  let editor = $state<QuestionEditor>();
+  /** What was typed, last time the editor said: offered back if its question is deleted elsewhere. */
+  let typed: Draft | null = null;
+  /** A new question's starting point: a draft offered back. */
+  let seed = $state<Draft | null>(null);
+  /** The text of a question that was deleted elsewhere while it was being edited, until the person takes it or dismisses it. */
+  let gone = $state<Draft | null>(null);
+  /** A switch or close that waits for "keep editing" or "discard": where the person wanted to go. */
+  let asking = $state<{ next: string | null } | null>(null);
+  /** Leaving the tab (or locking the page) with unsaved changes: the shell waits for the answer. */
+  let leaving = $state<((go: boolean) => void) | null>(null);
 
-  const newOption = (label = ''): OptionDraft => ({ key: crypto.randomUUID(), label, correct: false, imageUrl: '', storedImage: null });
-  const draftOf = (option: Option): OptionDraft => ({ key: option.id, id: option.id, label: option.label, correct: option.correct === true, imageUrl: option.imageUrl ?? '', storedImage: option.imageUrl ?? null });
+  const editorId = (id: string) => `question-editor-${id}`;
 
   onMount(() => {
     void refresh().catch((cause) => { if (alive) error = cause instanceof Error ? cause.message : 'Could not load the questions.'; })
       .finally(() => { if (alive) loading = false; });
     return () => { alive = false; };
+  });
+
+  // Unsaved changes, as Brand Studio: the shell asks before it switches tab or locks, and the browser before the page is closed.
+  $effect(() => {
+    if (!dirty) return;
+    const remove = setLeaveGuard(() => new Promise<boolean>((resolve) => { leaving = resolve; }));
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => { remove(); window.removeEventListener('beforeunload', warn); };
   });
 
   /** One read for the activity's questions and options (one $batch on SharePoint). */
@@ -82,6 +81,8 @@
     const ordered = orderedContent(held, content.questions, content.options) as (Question & { options: Option[] })[];
     questions = ordered.map(({ options: _options, ...question }) => question);
     optionsByQuestion = Object.fromEntries(ordered.map((question) => [question.id, question.options]));
+    // The question being edited was deleted elsewhere: say so, and keep what was typed.
+    if (editingId && editingId !== NEW && !questions.some((question) => question.id === editingId)) questionGone(typed);
   }
 
   function questionKind(question: Question): string {
@@ -90,216 +91,55 @@
     return specs[question.type as QuestionType]?.label ?? question.type;
   }
 
-  async function openEditor(question: Question | null) {
-    editing = question;
-    prompt = question?.prompt ?? '';
-    type = (question?.type as QuestionType) ?? 'single-select';
-    const held = question ? optionsByQuestion[question.id] ?? [] : [];
-    layout = question ? questionLayout({ ...question, options: held } as never) : 'text-list';
-    optionDrafts = held.map(draftOf);
-    storedAtOpen = held.map((option) => option.imageUrl ?? '').filter(Boolean);
-    uploadedNow = [];
-    uploadNotice = {};
-    if (!question) applyTypeDefaults(true);
-    else normalizeOptions();
-    error = '';
-    editorOpen = true;
-    await Promise.resolve();
-    editorHeading?.scrollIntoView({ block: 'nearest' });
+  /** Focus back on what opened the editor: the row's Edit button, or Add question. */
+  async function focusOpener(id: string) {
+    await tick();
+    document.querySelector<HTMLElement>(id === NEW ? '[data-add-question]' : `[data-edit-question="${CSS.escape(id)}"]`)?.focus();
   }
 
-  function applyTypeDefaults(seed = false) {
-    if (specs[type].options === 'none') {
-      optionDrafts = [];
-    } else if (specs[type].options === 'fixed') {
-      optionDrafts = ['True', 'False'].map((label, index) => ({ key: optionDrafts[index]?.key ?? crypto.randomUUID(), id: optionDrafts[index]?.id, label, correct: optionDrafts[index]?.correct ?? false, imageUrl: optionDrafts[index]?.imageUrl ?? '', storedImage: optionDrafts[index]?.storedImage ?? null }));
-    } else if (!specs[type].correct) {
-      optionDrafts = optionDrafts.map((option) => ({ ...option, correct: false }));
-    }
-    if (specs[type].options === 'free' && (!optionDrafts.length || seed)) {
-      const labels = type === 'confidence-continuum' ? ['Not confident', 'Moderately confident', 'Very confident'] : ['', ''];
-      optionDrafts = labels.map((label, index) => optionDrafts[index] ?? newOption(label));
-    }
+  function forgetEditor() {
+    editingId = null;
+    dirty = false;
+    typed = null;
+    seed = null;
   }
 
-  function normalizeOptions() {
-    if (specs[type].options === 'none') optionDrafts = [];
-    else if (specs[type].options === 'fixed') {
-      optionDrafts = ['True', 'False'].map((label, index) => ({ key: optionDrafts[index]?.key ?? crypto.randomUUID(), id: optionDrafts[index]?.id, label, correct: optionDrafts[index]?.correct ?? false, imageUrl: optionDrafts[index]?.imageUrl ?? '', storedImage: optionDrafts[index]?.storedImage ?? null }));
-    } else if (!specs[type].correct) optionDrafts = optionDrafts.map((option) => ({ ...option, correct: false }));
+  /** Edit (or Add question) pressed: open that editor, close it when it is the one open, and ask first when the open one has changes. */
+  function request(next: string) {
+    if (editorBusy) return;
+    const target = next === editingId ? null : next;
+    if (editingId && dirty) { asking = { next: target }; return; }
+    go(target);
   }
 
-  function changeType(event: Event) {
-    type = (event.currentTarget as HTMLSelectElement).value as QuestionType;
-    applyTypeDefaults();
+  /** Closes the open editor (the pictures it uploaded and nobody saved are tidied) and opens `next`, or none. */
+  function go(next: string | null) {
+    const was = editingId;
+    if (was) editor?.discard();
+    const keep = next === NEW ? seed : null;
+    forgetEditor();
+    seed = keep;
+    editingId = next;
+    if (next === null && was) void focusOpener(was);
   }
 
-  function markCorrect(key: string) {
-    const next = !optionDrafts.find((option) => option.key === key)?.correct;
-    optionDrafts = optionDrafts.map((option) => ({ ...option, correct: option.key === key && next }));
+  async function saved(id: string) {
+    forgetEditor();
+    await refresh();
+    await focusOpener(id);
   }
 
-  function moveOption(index: number, direction: -1 | 1) {
-    const target = index + direction;
-    if (target < 0 || target >= optionDrafts.length) return;
-    const next = [...optionDrafts];
-    [next[index], next[target]] = [next[target], next[index]];
-    optionDrafts = next;
+  function cancelled(ask: boolean) {
+    if (ask) { asking = { next: null }; return; }
+    const was = editingId;
+    forgetEditor();
+    if (was) void focusOpener(was);
   }
 
-  /**
-   * Removes pictures this client uploaded that no option uses any more: the ones just replaced, and (on Cancel) the ones
-   * just uploaded and never saved. Best effort, and only ever this client's own uploads (a pasted link or a seeded picture is never touched).
-   */
-  async function tidy(keep: Set<string>) {
-    const candidates = [...new Set([...storedAtOpen, ...uploadedNow])].filter((url) => !keep.has(url) && isOwnUpload(url, clientSlug));
-    // Forgotten before the first wait: an editor opened again while the reads below are on their way keeps its own lists.
-    storedAtOpen = [];
-    uploadedNow = [];
-    // A duplicate of this activity, or a copy made for another client, shows the same file: ask which of these an answer still
-    // shows, and leave every file when that cannot be told. (Removing one used to leave their tiles with no picture.)
-    const shown = await picturesStillShown(dataService, candidates);
-    if (shown) for (const url of candidates) {
-      if (shown.has(url)) continue;
-      await (dataService.removeClientAsset as (url: string) => Promise<boolean>)(url);
-    }
-  }
-
-  function closeEditor() {
-    editorOpen = false;
-    error = '';
-    void tidy(new Set(storedAtOpen));
-  }
-
-  /** A picture chosen for an answer tile: stored at once under its flat name, and its address put in the field. */
-  async function uploadTile(option: OptionDraft, prepared: Prepared) {
-    try {
-      const bytes = new Uint8Array(await prepared.blob.arrayBuffer());
-      const stored = await (dataService.uploadClientAsset as (file: Blob, name: string) => Promise<{ url: string }>)(prepared.blob, assetFileName(clientSlug, 'tile', bytes, prepared.mime));
-      const previous = option.imageUrl.trim();
-      option.imageUrl = stored.url;
-      uploadedNow = [...uploadedNow, stored.url];
-      uploadNotice = { ...uploadNotice, [option.key]: '' };
-      // The picture it replaces, if it was an upload of this editing session, is no longer wanted.
-      if (previous && previous !== stored.url && uploadedNow.includes(previous) && !storedAtOpen.includes(previous)) {
-        void (dataService.removeClientAsset as (url: string) => Promise<boolean>)(previous);
-        uploadedNow = uploadedNow.filter((url) => url !== previous);
-      }
-    } catch (cause) {
-      uploadNotice = { ...uploadNotice, [option.key]: cause instanceof Error ? cause.message : 'The picture could not be uploaded.' };
-    } finally {
-      URL.revokeObjectURL(prepared.url);
-    }
-  }
-
-  function readDraft() {
-    const questionPrompt = prompt.trim();
-    if (!questionPrompt) throw new Error('Enter the question text.');
-    const draftOptions = optionDrafts.map((option) => ({ ...option, label: option.label.trim() })).filter((option) => option.label);
-    if (draftOptions.length < specs[type].min) throw new Error(`Add at least ${specs[type].min} options.`);
-    if (new Set(draftOptions.map((option) => option.label.toLowerCase())).size !== draftOptions.length) throw new Error('Option texts must be different from each other.');
-    for (const [index, option] of draftOptions.entries()) {
-      const problem = optionTextProblem(option.label);
-      if (problem) throw new Error(`Option ${index + 1}: ${problem}`);
-    }
-    if (showsLayout && layout === 'image-grid') {
-      for (const [index, option] of draftOptions.entries()) {
-        const problem = imageUrlProblem(option.imageUrl);
-        if (problem) throw new Error(`Option ${index + 1} (${option.label}): ${problem}`);
-      }
-    }
-    return { prompt: questionPrompt, type, layout, options: draftOptions };
-  }
-
-  function makeOptionFields(draft: ReturnType<typeof readDraft>) {
-    const taken = new Set<string>();
-    const hasCorrect = specs[draft.type].correct && draft.options.some((option) => option.correct);
-    return draft.options.map((option, index) => {
-      let value: string | number | boolean;
-      if (draft.type === 'confidence-continuum') value = index + 1;
-      else if (draft.type === 'true-false') value = index === 0;
-      else {
-        value = optionValueFrom(option.label, taken);
-        taken.add(value);
-      }
-      const picture = option.imageUrl.trim();
-      return {
-        label: option.label, value, correct: specs[draft.type].correct ? (hasCorrect ? option.correct : null) : null,
-        // A picture is written when there is one, or to clear one that was stored; never otherwise,
-        // so a list without the ImageUrl column is not asked to hold something it never had.
-        ...(picture ? { imageUrl: picture } : option.storedImage ? { imageUrl: null } : {}),
-      };
-    });
-  }
-
-  /** Layout is written when it is a choice that is set to tiles, or already had a stored layout. */
-  function layoutFields(draft: ReturnType<typeof readDraft>, question: Question | null) {
-    if (!layoutApplies(draft.type)) return {};
-    return draft.layout !== 'text-list' || question?.layout ? { layout: draft.layout } : {};
-  }
-
-  async function saveQuestion(event: SubmitEvent) {
-    event.preventDefault();
-    if (busy) return;
-    busy = true;
-    error = '';
-    try {
-      const draft = readDraft();
-      if (editing) await updateQuestion(editing, draft);
-      else await createQuestion(draft);
-      editorOpen = false;
-      void tidy(new Set(draft.options.map((option) => option.imageUrl.trim()).filter(Boolean)));
-      onToast('Saved', 'success');
-      await refresh();
-    } catch (cause) {
-      error = cause instanceof Error ? cause.message : 'Could not save this question.';
-    } finally {
-      busy = false;
-    }
-  }
-
-  async function createQuestion(draft: ReturnType<typeof readDraft>) {
-    const created: { kind: 'question' | 'option'; id: string }[] = [];
-    try {
-      const existing = await dataService.listQuestions(sectionId) as Question[];
-      const question = await dataService.createQuestion({
-        sectionId, type: draft.type, prompt: draft.prompt, optionIds: [], order: Math.max(0, ...existing.map((item) => item.order ?? 0)) + 1, ...layoutFields(draft, null),
-      }) as Question;
-      created.push({ kind: 'question', id: question.id });
-      const savedOptions: Option[] = [];
-      for (const fields of makeOptionFields(draft)) {
-        const option = await dataService.createOption({ questionId: question.id, ...fields }) as Option;
-        created.push({ kind: 'option', id: option.id });
-        savedOptions.push(option);
-      }
-      await dataService.updateQuestion(question.id, { optionIds: savedOptions.map((option) => option.id) });
-      const current = await dataService.getSection(sectionId) as Section | null;
-      const questionIds = [...(current?.questionIds ?? []), question.id];
-      await dataService.updateSection(sectionId, { questionIds });
-      onChanged(sectionId, questionIds);
-    } catch (cause) {
-      for (const item of created.reverse()) {
-        await (item.kind === 'option' ? dataService.deleteOption(item.id) : dataService.deleteQuestion(item.id)).catch(() => {});
-      }
-      throw cause;
-    }
-  }
-
-  async function updateQuestion(question: Question, draft: ReturnType<typeof readDraft>) {
-    const fields = makeOptionFields(draft);
-    const keptIds = new Set(draft.options.map((option) => option.id).filter(Boolean));
-    const optionIds: string[] = [];
-    for (const [index, option] of draft.options.entries()) {
-      if (option.id) {
-        await dataService.updateOption(option.id, fields[index]);
-        optionIds.push(option.id);
-      } else {
-        const created = await dataService.createOption({ questionId: question.id, ...fields[index] }) as Option;
-        optionIds.push(created.id);
-      }
-    }
-    await dataService.updateQuestion(question.id, { type: draft.type, prompt: draft.prompt, optionIds, ...layoutFields(draft, question) });
-    for (const id of question.optionIds ?? []) if (!keptIds.has(id)) await dataService.deleteOption(id);
+  function questionGone(draft: Draft | null) {
+    forgetEditor();
+    gone = draft;
+    if (!draft) onToast('That question was deleted by someone else.', 'info');
   }
 
   async function deleteQuestion(question: Question) {
@@ -326,89 +166,92 @@
   }
 </script>
 
-<div class="questions" aria-busy={loading || busy}>
+{#snippet editorFor(question: Question | null)}
+  {@const key = question?.id ?? NEW}
+  <QuestionEditor bind:this={editor} bind:busy={editorBusy} {question} held={question ? optionsByQuestion[question.id] ?? [] : []} {sectionId} {clientSlug}
+    id={editorId(key)} labelledBy={question ? `${editorId(key)}-heading question-title-${key}` : `${editorId(key)}-heading`} seed={question ? null : seed}
+    {onToast} {onChanged} onSaved={saved} onCancel={cancelled} onDirty={(now, draft) => { dirty = now; typed = draft; }} onGone={questionGone} />
+{/snippet}
+
+<div class="questions" aria-busy={loading || busy || editorBusy}>
   <div class="panel__head questions__head">
     <div>
       <h3 id="questions-heading">Questions</h3>
       <p class="muted small">{section.title}. Changes to a live activity are live for participants.</p>
     </div>
-    <button class="btn btn--primary" type="button" onclick={() => void openEditor(null)} disabled={busy || loading}>Add question</button>
+    <button class="btn btn--primary" type="button" data-add-question aria-expanded={editingId === NEW} aria-controls={editingId === NEW ? editorId(NEW) : undefined} onclick={() => request(NEW)} disabled={busy || loading || editorBusy}>Add question</button>
   </div>
 
+  {#if gone}
+    <div class="notice questions__gone" role="status" data-testid="question-gone">
+      <p>This question was deleted by someone else while you were editing it, so your changes were not saved{gone.prompt.trim() ? `. You wrote: "${gone.prompt.trim()}"` : ''}.</p>
+      <div class="dialog__actions"><button class="btn" type="button" onclick={() => { gone = null; }}>Dismiss</button><button class="btn btn--primary" type="button" onclick={() => { const draft = gone; gone = null; seed = draft; request(NEW); }} disabled={busy || editorBusy}>Add it as a new question</button></div>
+    </div>
+  {/if}
+
   {#if loading}<p role="status">Loading content...</p>
-  {:else if error && !editorOpen}<p class="error" role="alert">{error}</p>
-  {:else if questions.length === 0}<p class="muted">This activity has no questions yet.</p>
+  {:else if error}<p class="error" role="alert">{error}</p>
+  {:else if questions.length === 0 && editingId !== NEW}<p class="muted">This activity has no questions yet.</p>
   {:else}
     <ul class="rows" aria-labelledby="questions-heading">
       {#each questions as question (question.id)}
         {@const questionOptions = optionsByQuestion[question.id] ?? []}
-        <li class="row">
-          <div class="row__main"><span class="row__title">{question.prompt}</span><span class="muted"><span class="tag">{questionKind(question)}</span> {specs[question.type as QuestionType]?.options === 'none' ? '' : `${questionOptions.length} options`}{questionLayout({ ...question, options: questionOptions } as never) === 'image-grid' && layoutApplies(question.type) ? ' · picture tiles' : ''}</span></div>
-          <button class="btn" type="button" onclick={() => void openEditor(question)} disabled={busy}>Edit</button>
-          <button class="btn btn--danger" type="button" onclick={() => void deleteQuestion(question)} disabled={busy}>Delete</button>
+        {@const open = editingId === question.id}
+        <li class="row" class:row--open={open} data-question={question.id}>
+          <div class="row__main"><span class="row__title" id={`question-title-${question.id}`}>{question.prompt}</span><span class="muted"><span class="tag">{questionKind(question)}</span> {specs[question.type as QuestionType]?.options === 'none' ? '' : `${questionOptions.length} options`}{questionLayout({ ...question, options: questionOptions } as never) === 'image-grid' && layoutApplies(question.type) ? ' · picture tiles' : ''}</span></div>
+          <button class="btn" type="button" data-edit-question={question.id} aria-expanded={open} aria-controls={open ? editorId(question.id) : undefined} onclick={() => request(question.id)} disabled={busy || editorBusy}>Edit</button>
+          <button class="btn btn--danger" type="button" onclick={() => void deleteQuestion(question)} disabled={busy || editorBusy || open}>Delete</button>
+          {#if open}{@render editorFor(question)}{/if}
         </li>
       {/each}
+      {#if editingId === NEW}
+        <li class="row row--open row--new" data-question="new">{@render editorFor(null)}</li>
+      {/if}
     </ul>
   {/if}
-
-  {#if editorOpen}
-    <section class="content-editor" aria-labelledby="editor-heading">
-      <h3 id="editor-heading" bind:this={editorHeading}>{editing ? 'Edit question' : 'Add question'}</h3>
-      <form class="editor-form" onsubmit={saveQuestion}>
-        <label class="field"><span class="field__label">Type</span><select class="select" value={type} onchange={changeType} disabled={busy}>{#each types as questionType}<option value={questionType}>{specs[questionType].label}</option>{/each}</select></label>
-        <label class="field"><span class="field__label">Question</span><textarea class="input" rows="2" bind:value={prompt} disabled={busy}></textarea></label>
-        {#if showsLayout}
-          <label class="field">
-            <span class="field__label">Layout</span>
-            <select class="select" bind:value={layout} disabled={busy} aria-describedby="layout-help">
-              {#each LAYOUTS as entry}<option value={entry.value}>{entry.label}</option>{/each}
-            </select>
-            <span id="layout-help" class="muted small">{tiles ? 'Each option is a tile with its picture. An option with no picture is shown as a text tile.' : 'Each option is a row of text.'}</span>
-          </label>
-        {/if}
-        {#if currentSpec.options !== 'none'}
-          <fieldset class="field">
-            <legend class="field__label">Options</legend>
-            <p class="muted small">{currentSpec.hint}</p>
-            <ul class="opts">
-              {#each optionDrafts as option, index (option.key)}
-                <li class="opt" class:opt--tile={tiles}>
-                  <div class="opt__line">
-                    <input class="input" aria-label={`Option ${index + 1} text`} placeholder="Option text" bind:value={option.label} maxlength={MAX_OPTION_TEXT} readonly={currentSpec.options === 'fixed'} disabled={busy} />
-                    {#if currentSpec.correct}<button class:btn--on={option.correct} class="btn btn--small" type="button" aria-pressed={option.correct} onclick={() => markCorrect(option.key)} disabled={busy}>✓ Correct</button>{/if}
-                    {#if currentSpec.options === 'free'}
-                      <button class="btn btn--small" type="button" aria-label="Move up" onclick={() => moveOption(index, -1)} disabled={busy || index === 0}>▲</button>
-                      <button class="btn btn--small" type="button" aria-label="Move down" onclick={() => moveOption(index, 1)} disabled={busy || index === optionDrafts.length - 1}>▼</button>
-                      <button class="btn btn--small btn--danger" type="button" aria-label="Remove option" onclick={() => { optionDrafts = optionDrafts.filter((item) => item.key !== option.key); }} disabled={busy}>✕</button>
-                    {/if}
-                  </div>
-                  {#if option.label.length >= MAX_OPTION_TEXT}<p class="muted small" data-testid="option-limit">{MAX_OPTION_TEXT} characters: the most an answer's text can hold.</p>{/if}
-                  {#if tiles}
-                    <div class="opt__picture">
-                      <input class="input" aria-label={`Option ${index + 1} picture address`} placeholder="https://... or /assets/..." bind:value={option.imageUrl} disabled={busy} inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" />
-                      <div class="opt__preview" data-empty={!option.imageUrl.trim() || undefined}>
-                        {#if option.imageUrl.trim() && !imageUrlProblem(option.imageUrl)}
-                          <img src={option.imageUrl.trim()} alt={`Preview of the picture for ${option.label || `option ${index + 1}`}`} onerror={(event) => { (event.currentTarget as HTMLImageElement).hidden = true; }} onload={(event) => { (event.currentTarget as HTMLImageElement).hidden = false; }} />
-                        {:else}
-                          <span class="muted small">{imageUrlProblem(option.imageUrl) || 'A text tile will be used'}</span>
-                        {/if}
-                      </div>
-                      <div class="opt__upload" data-option={index + 1}>
-                        <AssetUploader compact spec={SLOTS.tile} url={option.imageUrl.trim() || null} disabled={busy} onpick={(prepared) => void uploadTile(option, prepared)} />
-                        {#if uploadNotice[option.key]}<p class="error small" role="alert">{uploadNotice[option.key]}</p>{/if}
-                      </div>
-                    </div>
-                  {/if}
-                </li>
-              {/each}
-            </ul>
-            {#if currentSpec.options === 'free'}<button class="btn btn--small" type="button" onclick={() => { optionDrafts = [...optionDrafts, newOption()]; }} disabled={busy}>+ Add option</button>{/if}
-            {#if tiles}<p class="muted small" data-testid="tile-hint">A text tile will be used for any option with no picture{pictured === 0 ? ' (none has one yet, so every tile shows text)' : ''}. Upload a picture (it is cropped to 480 × 320 px here) or paste a link.</p>{/if}
-          </fieldset>
-        {/if}
-        {#if error}<p class="error" role="alert">{error}</p>{/if}
-        <div class="dialog__actions"><button class="btn" type="button" onclick={closeEditor} disabled={busy}>Cancel</button><button class="btn btn--primary" type="submit" disabled={busy}>{busy ? 'Saving...' : 'Save'}</button></div>
-      </form>
-    </section>
-  {/if}
 </div>
+
+{#if asking}
+  <ConfirmDialog
+    title="Discard your changes to this question?"
+    lead="You have changes that are not saved."
+    points={['Discarding them closes the editor. Nothing has been changed for participants.']}
+    confirmLabel="Discard changes"
+    cancelLabel="Keep editing"
+    onConfirm={() => { const next = asking?.next ?? null; asking = null; go(next); }}
+    onCancel={() => { asking = null; void tick().then(() => editor?.focusField()); }}
+  />
+{/if}
+
+{#if leaving}
+  <ConfirmDialog
+    title="Leave without saving this question?"
+    lead="You have changes that are not saved."
+    points={['Leaving now discards them. Nothing has been changed for participants.']}
+    confirmLabel="Leave without saving"
+    cancelLabel="Keep editing"
+    onConfirm={() => { const done = leaving; leaving = null; go(null); done?.(true); }}
+    onCancel={() => { const done = leaving; leaving = null; done?.(false); void tick().then(() => editor?.focusField()); }}
+  />
+{/if}
+
+<style>
+  /* (Phase 16) The row of the question being edited holds its editor under its text: the row wraps, and the editor takes the whole width. */
+  .row--open {
+    flex-wrap: wrap;
+  }
+
+  .row--new {
+    display: block;
+  }
+
+  .questions__gone {
+    display: grid;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .questions__gone p {
+    margin: 0;
+  }
+</style>

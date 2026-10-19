@@ -210,8 +210,9 @@ test('Results names people by the leader report\'s rule, and looks once more for
   await openAdmin(page, fake, '#results');
   const card = page.locator(`article[data-session="${session.id}"]`);
   const titles = card.locator('.row__title');
-  // The three iPads have no name anywhere: "Unnamed participant N", never the client's name and never "Visit 1".
-  await expect(titles).toHaveText(['Unnamed participant 1', 'Unnamed participant 2', 'Unnamed participant 3']);
+  // The three iPads have no name anywhere: "Unnamed participant N", never the client's name and never "Visit 1". (Since Phase 16 the newest joiner is
+  // first, lib/admin/admin-results.js ROW_ORDER; the numbers are still given in the order they joined, as the report gives them.)
+  await expect(titles).toHaveText(['Unnamed participant 3', 'Unnamed participant 2', 'Unnamed participant 1']);
   await freezeClock(page, fake);
   const namesReads = () => looks(fake).filter((entry) => partsOf(entry).sort().join() === ['uservisitlogs', 'visitorroster'].join()).length;
   const feeds = () => looks(fake).filter((entry) => partsOf(entry).sort().join() === ['responses', 'sections', 'sessions', 'tracks'].sort().join()).length;
@@ -220,7 +221,7 @@ test('Results names people by the leader report\'s rule, and looks once more for
   await onSite(fake, (ds) => ds.beginVisit(crypto.randomUUID(), session.id, 'c-kroger', { sharePointUserId: '17' }));
   fake.reset();
   await advance(page, 16_000);
-  await expect(titles).toHaveText(['Unnamed participant 1', 'Unnamed participant 2', 'Unnamed participant 3', 'Unnamed participant 4']);
+  await expect(titles).toHaveText(['Unnamed participant 4', 'Unnamed participant 3', 'Unnamed participant 2', 'Unnamed participant 1']);
   expect(feeds(), 'the refresh').toBe(1);
   expect(namesReads(), 'and one look for the new person\'s name, which is not written yet').toBe(1);
 
@@ -229,7 +230,7 @@ test('Results names people by the leader report\'s rule, and looks once more for
   }));
   fake.reset();
   await advance(page, 15_000);
-  await expect(titles).toHaveText(['Unnamed participant 1', 'Unnamed participant 2', 'Unnamed participant 3', 'Priya Shah']);
+  await expect(titles).toHaveText(['Priya Shah', 'Unnamed participant 3', 'Unnamed participant 2', 'Unnamed participant 1']);
   expect(namesReads(), 'the second look finds it').toBe(1);
 
   // And then it stops looking: nobody else is new, so a refresh is the feed alone.

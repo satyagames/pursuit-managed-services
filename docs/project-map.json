@@ -209,7 +209,7 @@
       {
         "key": "uservisitlogs",
         "title": "PMSVisitLog",
-        "purpose": "The visit log: one row for each browser tab that opened the participant page. Results read it for names."
+        "purpose": "The visit log: one row for each browser tab that opened the participant page. Results read it for names, and Delete session removes a session's rows."
       },
       {
         "key": "adminusers",

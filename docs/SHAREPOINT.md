@@ -27,7 +27,7 @@ registration, no certificate, no Graph, nothing from a CDN.
 | `qrtokens` | PMSGuestQRCodes | One item for each single-use QR code. | participant, admin, setup | admin, participant |
 | `appsettings` | PMSAppSettings | One item, `default`: which session and client are live, and the version of the lists. Every page reads it first. Setup writes it when it makes the lists; nobody makes it by hand. | participant, admin, setup | admin, setup |
 | `visitorroster` | PMSGuestList | The guest list: one item for each named guest of a session. | participant, admin | admin |
-| `uservisitlogs` | PMSVisitLog | The visit log: one row for each browser tab that opened the participant page. Results read it for names. | admin | participant |
+| `uservisitlogs` | PMSVisitLog | The visit log: one row for each browser tab that opened the participant page. Results read it for names, and Delete session removes a session's rows. | admin | participant, admin |
 | `adminusers` | PMSAdminUsers | The facilitators who may unlock the admin page: a name and a hash of a PIN each. | admin | setup |
 | `responses` | PMSParticipantAnswers | The answers: one item for each visit, holding all of that person's answers. | participant, admin | participant, admin, setup |
 | (library) | PMSClientImages | The clients' pictures (hero badge, logo, background, answer tiles), each stored once under a name made from its content. | participant, admin, setup | admin, setup |
@@ -56,7 +56,15 @@ The table, list by list, is in [SHAREPOINT-LISTS.md](../SHAREPOINT-LISTS.md#perm
 
 - **Participant accounts** (the iPads, and anyone who opens the participant page) need Contribute on PMSClientSessions, PMSParticipants,
   PMSGuestQRCodes, PMSVisitLog and PMSParticipantAnswers, Read on the rest and on PMSClientImages, and **no access at all to PMSAdminUsers**.
-- **Facilitators** (the admin page) need Contribute on the content lists and the library, and Read on PMSVisitLog and PMSAdminUsers.
+- **Facilitators** (the admin page) need Contribute on the content lists and the library, and on PMSVisitLog (Phase 16: Delete session removes a
+  session's visit log), and Read on PMSAdminUsers.
+- **Delete session** (Results, Phase 16) deletes items in six lists, which needs Contribute (it includes deleting) on each: PMSParticipantAnswers,
+  PMSVisitLog, PMSParticipants, PMSGuestList, PMSGuestQRCodes and PMSClientSessions. An account refused in one (403) is told which list, in words; what
+  came before it in that order is gone, the rest and the session item stay, and the session stays on Results to be deleted again once the right is
+  given. The app changes no list's permissions.
+- **What a delete leaves on the site: nothing, as seen on PCOE (19 Oct 2026, Satyadev).** The app sends SharePoint's item DELETE
+  (`X-HTTP-Method: DELETE`), not the `recycle()` call. After a Delete session on PCOE, neither the site's Recycle bin (Site contents, Recycle bin) nor
+  its second-stage recycle bin held any item of the session: the delete is permanent, as the warning says. The app has nothing to restore an item.
 - **Setup** is run by a site owner (Full Control): it creates lists and columns, writes the version, adds admins and uploads the sample pictures.
 - **PMSAdminUsers holds the facilitators' PIN hashes** (unsalted SHA-256) and the whole list reaches the admin page, so its permission is the real lock:
   break its inheritance and remove every group the participant accounts are in. The PIN gates the admin page's screens; it is not authorization.

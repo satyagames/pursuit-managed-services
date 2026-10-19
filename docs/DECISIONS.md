@@ -25,6 +25,7 @@ One line each: the decision, why, and what enforces it (a test fails if it is br
 | A duplicate is 409 whether SharePoint says 400, 409 or 500. | PCOE says 500. | `scripts/test-duplicates.js` |
 | Setup only adds: it never deletes, renames or retypes a column. | A site owner's data and hand-made columns are safe. | `scripts/test-provision.js` |
 | The request baselines are never re-recorded to make a test pass; they change only by `--amend` or a proved translation. | A changed request is a finding. | `scripts/test-request-baseline.js` |
+| Facilitators need Contribute on PMSVisitLog (it includes deleting), for Delete session; the app changes no list's permissions. | Phase 16: a session's visit log is deleted with it. | `scripts/permissions.js` (the table in SHAREPOINT-LISTS.md and RUNBOOK.md) |
 | `PMSAdminUsers` is unreadable to participant accounts. | It holds unsalted PIN hashes; the PIN is not authorization. | By hand (RUNBOOK.md step 11); the local site models it |
 | The PIN check stays a mock: SHA-256, no lockout (decision 10 of the architecture). | Real sign-in would be SharePoint groups or Entra; out of scope until decided. | `lib/admin/admin-pin.js` (unchanged since Phase 10c-1) |
 
@@ -34,6 +35,7 @@ One line each: the decision, why, and what enforces it (a test fails if it is br
 |---|---|---|
 | The participant page may not grow beyond where the newest phase left it (each phase records its sizes); the target is 400 KB gzip, the ceiling 450 KB. | iPads on venue Wi-Fi; it is the page that matters. | `scripts/bundle-budget.js` (`PHASE_*`), `npm run test:bundle` |
 | It carries no export library, chart, report or Setup module. | Size, and the admin's code is not the participant's. | `FORBIDDEN` in `scripts/bundle-budget.js` |
+| Delete session's rules live in `lib/admin/session-delete.js`; the data service gains only two generic calls (`listItemKeys`, `deleteByKey`), about 130 B on the participant page. | Every page carries every export of the data service; the rules are the admin's alone. | `PHASE_16` in `scripts/bundle-budget.js`, `scripts/test-participant-storage.js` (the exports) |
 | Nothing is cached between page loads; browser storage holds only unsaved answers, visit-log keys, the sound choice and, for the tab's session, how much the device may move (`pms.motion`). | A shared iPad must not show yesterday's data. | `scripts/test-participant-storage.js` |
 | It never waits on a read for something it already holds; each moment's rounds are pinned. | PCOE was slow (15 Oct 2026). | `scripts/test-participant-waits.js` |
 | Saving goes through `participantData.ts` only; a first answer is never rewritten; Next never waits. | Scores use the first try; a slow save must not stop a person. | `scripts/test-participant-storage.js` |
@@ -62,6 +64,13 @@ One line each: the decision, why, and what enforces it (a test fails if it is br
 | A CSV cell never starts a formula. | Excel formula injection. | `scripts/test-review-9a.js`, `scripts/test-results-csv.js` |
 | A poll (no answer marked right) is never a readiness blocker. | Content saves "not correct" as No (Phase 12). | `scripts/test-ux-12.js` |
 | The blues of the palette (D3) are VJR's to decide. | Not in the 2025 brand guide. | Open |
+| Results shows the newest session first (by date, then the latest visit, then the later item), and a refresh never moves a card that is on the screen. | Today's session was at the bottom (Phase 16). | `scripts/test-admin-results.js`, `results-order.spec.ts` |
+| In a Results card the newest iPad is first, so the live session shows who just arrived; `ROW_ORDER` in `lib/admin/admin-results.js` flips it back to join order. | Phase 16; VJR may prefer join order. | `scripts/test-admin-results.js` |
+| Delete session deletes a session's data permanently: no soft delete, archive or undo in the app. | The owner, 19 Oct 2026. | `scripts/test-session-delete.js` |
+| It deletes every item keyed by the session's id in the lists of `SESSION_OWNED`, children first and the session item last, and stops at the first list it could not finish. | A stopped delete leaves a session that is still on Results and can be deleted again, never items nobody can see. | `scripts/test-session-delete.js` |
+| The live session is refused; a session in progress that is not live may be deleted. | Test sessions are often left in progress. | `scripts/test-session-delete.js`, `session-delete.spec.ts` |
+| The warning plus a button that says what it does ("Delete permanently") is the confirming step: no typed confirmation. One prop of `ConfirmDialog.svelte`, `confirmText`, adds one if the owner wants more friction. | Phase 16, as agreed. | `session-delete.spec.ts` |
+| A deleted session's printed guest code says "This QR code isn't recognized." as any unknown code does: no words of its own. | Its own words would grow the participant page. | `session-delete.spec.ts` |
 
 ## The codebase
 
@@ -70,4 +79,5 @@ One line each: the decision, why, and what enforces it (a test fails if it is br
 | One app: the legacy vanilla app is not brought back. | Phase 10c-1's clean break. | `scripts/test-foundation.js` (the legacy files stay gone) |
 | Modules live in folders by module under `migration/src/lib`, each with a header. | An unfamiliar developer or model finds the right file in minutes. | `scripts/test-module-headers.js`, `scripts/test-modules-map.js` |
 | The documents name only what is there. | Documents that drift mislead. | `scripts/check-docs.js` (`npm test`) |
+| An editor opens where its item is: Content's question editor inside the question's row (Add question: a new row at the end), Results' Restart form under its iPad's row; one at a time, focus in and back. Clients' and Guests' editors still open below their list (RELEASE-16.md, proposed). | With ten questions the form was off the screen and the person lost their place (Phase 16). | `content-edit-in-place.spec.ts`, `results-restart-inline.spec.ts` |
 | A failing test first, never loosened; no new dependency without asking; never commit to `main`; the owner pushes. | Every change is proved; the owner controls what ships. | By hand |

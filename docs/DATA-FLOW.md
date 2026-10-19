@@ -103,6 +103,27 @@ counting rules it prints on its last page), lays out with `lib/exports/leader-re
 (PDF and PowerPoint) and Summary by activity (CSV) are `lib/exports/resultsExport.js`, from the same chart model and `lib/results/export-summary.js`.
 All of them are made in the browser on demand and stored nowhere.
 
+### Deleting a session's data (Results, Phase 16)
+
+```mermaid
+sequenceDiagram
+  participant R as Results (admin page)
+  participant D as lib/admin/session-delete.js
+  participant S as SharePoint REST
+  R-->>R: Delete session...: the warning, from the card's own numbers (no request)
+  R->>D: Delete permanently: deleteSessionData(id, expected numbers)
+  D->>S: listItemKeys for each list of SESSION_OWNED (one read each, another per 200 items), the answers for the numbers
+  D->>S: PMSAppSettings, last, just before anything is removed
+  D-->>R: refused: the live session, or numbers that changed (the dialog shows them and asks again)
+  D->>S: deleteByKey, one request an item, paced (3 at a time): answers, visit log, iPads, guest list, guest codes
+  D->>S: the session item, only when everything else is gone
+  D-->>R: { deleted, left, leftovers, refused }: the card goes, or stays with "Stopped: N items are left" and Try again
+```
+
+The lists and their order are `SESSION_OWNED`; nothing else is read for writing, and the client, its content, the admins and the settings item are never
+written. A participant page open on that session is at Welcome already (a session that can be deleted is not the live one); a printed guest code of it
+is no longer recognised; the Live display open on it says "That session no longer exists."
+
 ## How often each open page looks
 
 | Page | Every | Notes |

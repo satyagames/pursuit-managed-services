@@ -46,6 +46,7 @@ export const RECORDED_LATER = Object.freeze({
   'test-text-limits': 'the end of Phase 10c-3 part F (inputs respect the lists\' text limits), when the suite was first recorded',
   'test-sample-pictures': 'the end of Phase 10f part B (the sample clients get VJR\'s pictures), when the suite was first recorded',
   'test-named-reads': 'the end of Phase 10h part A (every item read names its columns), when the suite was first recorded',
+  'test-session-delete': 'Phase 16 part 2 (Delete session on Results), when the suite was first recorded',
 });
 
 /**
@@ -56,7 +57,7 @@ export const RECORDED_LATER = Object.freeze({
 export const NODE_SUITES = [
   'test-sharepoint', 'test-participant-storage', 'test-admin-today', 'test-admin-content', 'test-brand-storage', 'test-live-display',
   'test-participant-names', 'test-leader-report-pdf', 'test-seeds', 'test-review-9a', 'test-provision', 'test-site-ready', 'test-setup-admins', 'test-text-limits',
-  'test-sample-pictures', 'test-named-reads',
+  'test-sample-pictures', 'test-named-reads', 'test-session-delete',
 ];
 
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;

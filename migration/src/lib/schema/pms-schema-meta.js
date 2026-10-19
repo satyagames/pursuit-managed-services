@@ -165,8 +165,9 @@ export const META = {
     },
   },
   uservisitlogs: {
-    purpose: 'The visit log: one row for each browser tab that opened the participant page. Results read it for names.',
-    reads: [ADMIN], writes: [PARTICIPANT],
+    purpose: 'The visit log: one row for each browser tab that opened the participant page. Results read it for names, and Delete session removes a session\'s rows.',
+    // (Phase 16: the admin page deletes a session's rows, Results → Delete session..., so facilitators need Contribute here, which includes deleting.)
+    reads: [ADMIN], writes: [PARTICIPANT, ADMIN],
     growth: { perEvent: '60 or more', perYear: '6,000 to 9,000' },
     columns: {
       AppId: id('the tab\'s visit key: a retry never makes a second row'),

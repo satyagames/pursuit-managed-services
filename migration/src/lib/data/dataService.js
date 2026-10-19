@@ -2806,6 +2806,29 @@ export async function removeEmptyVisit(trackId) {
   return { removed: true, leftovers };
 }
 
+/**
+ * Admin (Phase 16, lib/admin/session-delete.js, which holds the rules): the items of `list` that readLists() would find with `where`, as
+ * [{ id, key }]: `id` is the item's AppId and `key` what deleteByKey() takes. The answers list too, and an item whose saved answers cannot be
+ * read: nothing of an item is decoded.
+ */
+export async function listItemKeys(list, where) {
+  if (!sharePoint) return (await request('GET', `/${localName(list)}${localFilter(where)}`)).map((item) => ({ id: String(item.id), key: item.id }));
+  return (await spPages(spItemsAddress(list, where))).map((row) => ({ id: String(row[ID]), key: row.Id }));
+}
+
+/** Admin (Phase 16): deletes an item listItemKeys() found, in one request. An item that is already gone counts as deleted. */
+export async function deleteByKey(list, key) {
+  try {
+    await (sharePoint
+      ? spHttp('POST', `${spListPath(list)}/items(${key})`, { headers: { 'X-HTTP-Method': 'DELETE', 'If-Match': '*' } })
+      : request('DELETE', itemPath(localName(list), key)));
+  } catch (error) {
+    if (error.status !== 404) throw error;
+  }
+}
+/** The local server keeps the answers in participantresponses (server/api.js). */
+const localName = (list) => (list === 'responses' ? 'participantresponses' : list);
+
 // ============================================================================
 // 10. Which lists are this copy's (Phase 10b)
 // ============================================================================

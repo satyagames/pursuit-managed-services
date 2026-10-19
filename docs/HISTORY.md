@@ -25,6 +25,7 @@ built the deployed `pms-283ad18` byte for byte. Phases up to 11a-2 are in VJR's 
 | 13 | `pms-757be5c` | `518e6dc`..`1ab63bd` | The files a leader gets, redesigned: At a glance, an activity per page, the summary pack, Summary by activity (CSV), takeaways from one model. [Report](history/RELEASE-13.md) |
 | 14 | see [RELEASE-14.md](../RELEASE-14.md) | from `1ab63bd` | Structure only: `lib/` in folders by module, the shared code out of `public/`, a header on every module, the documents rewritten and checked against the code (`scripts/check-docs.js`). The pages behave as before. |
 | 15 | see [RELEASE-15.md](history/RELEASE-15.md) | from `6aaa87e` | The alignment review (two fixes); the participant screens move by the kind of question (plan, tokens, one door; compositor only); an Animations switch per client in ThemeJson. |
+| 16 | see [RELEASE-16.md](history/RELEASE-16.md) | from `620b760` (main) | Results newest first; Delete session (a session's data, permanently, after a warning; never the live one); a question edited in place, and Restart under its row. |
 
 ## What has met the real site
 
