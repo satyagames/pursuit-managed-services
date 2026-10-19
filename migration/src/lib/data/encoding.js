@@ -71,4 +71,7 @@ const distinct = (list) => [...new Set(list)];
 const READ_CHUNK = 20;
 
 // Shared with the other parts of lib/data (dataService.js does not pass these on).
-export { READ_CHUNK, RESPONSE, chunked, columnsOf, distinct, fieldsOf, indexById, kindOf, pause, pick, retryAfterMs, spEncode, spError, spLibraryIn, spLiteral, spParseObject, spTitleIn };
+export {
+  READ_CHUNK, RESPONSE, chunked, columnsOf, distinct, fieldsOf, indexById, kindOf, pause, pick, retryAfterMs, spEncode, spError, spLibraryIn,
+  spLiteral, spParseObject, spTitleIn,
+};
