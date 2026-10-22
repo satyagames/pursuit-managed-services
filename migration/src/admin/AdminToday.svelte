@@ -11,6 +11,7 @@
   } from '../lib/admin/today-view.js';
   import ConfirmDialog from './ConfirmDialog.svelte';
   import MotionSwitch from './MotionSwitch.svelte';
+  import TodayGoLive from './TodayGoLive.svelte';
 
   type Client = { id: string; name: string; status?: string; logoUrl?: string | null; theme?: { assets?: { logo?: string | null; hero?: string | null } } | null };
   type Session = { id: string; clientId: string; date?: string; status?: string; participationMode?: string; activityFlow?: string };
@@ -420,26 +421,10 @@
         <!-- Go live -->
         <section class="card-panel" aria-labelledby="golive-heading">
           <h3 id="golive-heading">Go live</h3>
-          {#if pickable.length === 0}
-            <p class="muted">There are no active clients yet. <button class="link" type="button" onclick={() => onNavigate('clients')}>Add one on Clients</button>.</p>
-          {:else}
-            <div class="picker">
-              <div class="field"><label class="field__label" for="today-client">Client</label>
-                <select id="today-client" class="select" value={clientId} onchange={pickClient} disabled={busy}>
-                  {#each pickable as entry (entry.id)}<option value={entry.id}>{entry.name}{entry.status === 'archived' ? ' (archived)' : ''}</option>{/each}
-                </select>
-              </div>
-              <div class="field"><label class="field__label" for="today-date">Date</label>
-                <input id="today-date" class="input" type="date" bind:value={date} onchange={() => void pickDate()} disabled={busy} />
-              </div>
-              <button class="btn btn--primary btn--go" type="button" onclick={() => void attempt(goLiveWanted())} disabled={!canGo}>
-                {goLiveLabel({ goingLive, checking, alreadyLive })}
-              </button>
-            </div>
-            {#if why}<p class="why" role="status" data-testid="go-live-why">{why}</p>{/if}
-            {#if verified}<p class="verified" role="status">{verified}</p>{/if}
-            {#if problem}<p class="error" role="alert">{problem}</p>{/if}
-          {/if}
+          <TodayGoLive
+            {pickable} {clientId} bind:date {busy} {canGo} label={goLiveLabel({ goingLive, checking, alreadyLive })} {why} {verified} {problem}
+            onPickClient={pickClient} onPickDate={() => void pickDate()} onGo={() => void attempt(goLiveWanted())} {onNavigate}
+          />
         </section>
 
         <!-- Readiness -->
@@ -683,59 +668,6 @@
     font-size: 0.95em;
   }
 
-  /* Go live */
-  .picker {
-    display: grid;
-    grid-template-columns: minmax(0, 2fr) minmax(10.5rem, 1fr) auto;
-    gap: 0.9rem;
-    align-items: end;
-  }
-
-  .picker .select,
-  .picker .input {
-    width: 100%;
-    min-width: 0;
-    max-width: none;
-  }
-
-  .btn--go {
-    min-width: 8rem;
-    min-height: 3rem;
-    font-weight: var(--fw-bold);
-  }
-
-  @media (max-width: 640px) {
-    .picker {
-      grid-template-columns: 1fr;
-    }
-
-    .btn--go {
-      width: 100%;
-    }
-  }
-
-  .why {
-    margin: 0;
-    color: var(--adm-muted);
-  }
-
-  .verified {
-    margin: 0;
-    padding: 0.6rem 0.9rem;
-    border-radius: 0.6rem;
-    color: var(--adm-ok-ink);
-    background: var(--adm-ok-bg);
-    font-weight: var(--fw-semibold);
-  }
-
-  .error {
-    margin: 0;
-    padding: 0.6rem 0.9rem;
-    border-radius: 0.6rem;
-    color: var(--adm-bad-ink);
-    background: var(--adm-bad-bg);
-  }
-
   /* Readiness */
   .ready__head {
     display: flex;
@@ -903,16 +835,6 @@
   .others summary {
     min-height: 2.75rem;
     font-weight: var(--fw-semibold);
-    cursor: pointer;
-  }
-
-  .link {
-    padding: 0;
-    border: 0;
-    background: none;
-    color: var(--adm-primary);
-    font: inherit;
-    text-decoration: underline;
     cursor: pointer;
   }
 </style>
