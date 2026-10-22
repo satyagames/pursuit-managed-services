@@ -33,6 +33,8 @@
     onready?: () => void;
   } = $props();
 
+  // The pane's width, kept while the pane is out of sight (Phase 18: Brand is a view of Content, hidden while another view shows, where it
+  // measures 0): the frame keeps its size then, and is not made small and large again, which WebKit reports as a ResizeObserver loop.
   let pane = $state(0);
   let frame = $state<HTMLIFrameElement>();
   let instance: ReturnType<typeof mount> | undefined;
@@ -107,7 +109,7 @@
   });
 </script>
 
-<div class="bprev" bind:clientWidth={pane}>
+<div class="bprev" bind:clientWidth={null, (width) => { if (width) pane = width; }}>
   <div class="bprev__box" style:width="{fit.width}px" style:height="{fit.height}px" data-scale={fit.scale.toFixed(3)}>
     <iframe
       bind:this={frame}

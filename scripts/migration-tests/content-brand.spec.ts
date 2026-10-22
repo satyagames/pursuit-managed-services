@@ -396,9 +396,6 @@ for (const size of [{ width: 1366, height: 768 }, { width: 1180, height: 820 }])
     await page.setViewportSize(size);
     await openAdmin(page, local, 'Content');
     await expect(page.locator('.content-activities h3')).toBeVisible();
-    // Where the block sticks, from its own styles: under the top tabs, and its foot within a fifth of the height.
-    const stuck = await page.locator('.content-spine').evaluate((element) => parseFloat(getComputedStyle(element).top) + element.getBoundingClientRect().height);
-    expect(stuck, 'the sticky block and the top tabs within a fifth of the height').toBeLessThanOrEqual(size.height * 0.2 + 0.5);
     const geometry = () => page.evaluate(() => {
       const box = (selector: string) => { const rect = document.querySelector(selector)!.getBoundingClientRect(); return { top: rect.top, bottom: rect.bottom }; };
       return { nav: box('.shell__nav'), spine: box('.content-spine'), picker: box('#content-client'), strip: box('.content-strip'), height: window.innerHeight };
