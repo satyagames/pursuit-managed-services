@@ -21,6 +21,7 @@
 
   type Admin = { id: string; name?: string };
   type Tab = 'today' | 'clients' | 'content' | 'guests' | 'results';
+  type ContentRows = { settings: unknown[]; clients: unknown[]; sections: unknown[] };
 
   // The day's work first. Content is the old Activities and Content tabs in one, scoped by client (Phase 5b).
   const tabs: { id: Tab; title: string }[] = [
@@ -51,8 +52,9 @@
   let liveDisplay = $state<string | null>(null);
   /** Content's view (lib/admin/admin-content-views.js): it is in the address, #content or #content/<view>. */
   let contentView = $state(DEFAULT_VIEW);
-  /** A client for Content to open on, once (Clients' Brand button). */
+  /** A client for Content to open on, once (Clients' Brand button), and the rows Clients read, which Content takes instead of reading them again. */
   let contentClient = $state<string | null>(null);
+  let contentRows = $state<ContentRows | null>(null);
   /** The Live display as the wall (Phase 11a: `#live-display/<id>/wall`, what "Open in a new tab" opens): the charts with no names in the page. */
   let wallPage = $state(false);
 
@@ -66,8 +68,6 @@
 
   // Content's addresses (#content, #content/brand, the old #sections of the Activities tab) are its views' (lib/admin/admin-content-views.js).
   const tabFromHash = (): Tab | null => (viewOfHash(window.location.hash) !== null ? 'content' : tabs.find((tab) => `#${tab.id}` === window.location.hash)?.id ?? null);
-  /** This browser tab's sessionStorage, or nothing where it is refused. */
-  const tabStorage = (): Storage | null => { try { return window.sessionStorage; } catch { return null; } };
   /** The address of a tab: Content's carries its view. */
   const hashOf = (tab: Tab) => (tab === 'content' ? hashOfView(contentView) : `#${tab}`);
 
@@ -163,10 +163,10 @@
     try { window.history.replaceState(window.history.state, '', '#guests'); } catch { /* the tab still shows */ }
   }
 
-  /** Content's view changed (its strip, an address, the tab opened): kept for the browser tab and in the address. */
+  /** Content's view changed (its strip, an address, the tab opened): kept for the visit and in the address. */
   function setContentView(view: string) {
     contentView = viewOfHash(hashOfView(view)) ?? DEFAULT_VIEW;
-    rememberView(contentView, tabStorage());
+    rememberView(contentView);
     if (activeTab === 'content' && liveDisplay === null) {
       try { window.history.replaceState(window.history.state, '', hashOfView(contentView)); } catch { /* the view still switches */ }
     }
@@ -174,9 +174,10 @@
 
   /**
    * Opens a tab; the address keeps it, so a reload (after the PIN) comes back to the same screen. False when the person chose to stay (unsaved
-   * changes). Content opens on `to.view`, else the view this browser tab last showed, and on `to.clientId` when given (Clients' Brand button).
+   * changes). Content opens on `to.view`, else the view last shown this visit, and on `to.clientId` when given (Clients' Brand button), with
+   * the rows Clients has just read (`to.rows`), so that it reads nothing more.
    */
-  async function open(tab: string, to: { view?: string; clientId?: string } = {}): Promise<boolean> {
+  async function open(tab: string, to: { view?: string; clientId?: string; rows?: ContentRows } = {}): Promise<boolean> {
     const next = tabs.find((entry) => entry.id === tab)?.id;
     if (!next) return false;
     if (next !== activeTab && !(await mayLeave())) return false;
@@ -185,9 +186,9 @@
     liveDisplay = null;
     wallPage = false;
     if (next === 'content') {
-      if (entering) contentClient = to.clientId ?? null;
-      contentView = to.view ?? (entering ? lastView(tabStorage()) : contentView);
-      rememberView(contentView, tabStorage());
+      if (entering) { contentClient = to.clientId ?? null; contentRows = to.rows ?? null; }
+      contentView = to.view ?? (entering ? lastView() : contentView);
+      rememberView(contentView);
     }
     try { window.history.replaceState(window.history.state, '', hashOf(next)); } catch { /* the tab still switches */ }
     await tick();
@@ -265,9 +266,9 @@
       {#if activeTab === 'today'}
         <AdminToday onToast={showToast} onNavigate={(tab) => void open(tab)} onLiveDisplay={(sessionId) => void openLiveDisplay(sessionId)} />
       {:else if activeTab === 'clients'}
-        <AdminClients onToast={showToast} adminName={admin.name ?? ''} />
+        <AdminClients onToast={showToast} adminName={admin.name ?? ''} onNavigate={(tab, to) => void open(tab, to)} />
       {:else if activeTab === 'content'}
-        <AdminContent onToast={showToast} adminName={admin.name ?? ''} view={contentView} clientRequest={contentClient} onView={setContentView} />
+        <AdminContent onToast={showToast} adminName={admin.name ?? ''} view={contentView} clientRequest={contentClient} rows={contentRows} onView={setContentView} />
       {:else if activeTab === 'guests'}
         <AdminGuests onToast={showToast} onNavigate={(tab) => void open(tab)} onPrint={openPrintSheet} />
       {:else if activeTab === 'results'}

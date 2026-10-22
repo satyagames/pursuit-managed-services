@@ -56,7 +56,7 @@ test('opening Brand Studio costs no request of its own; Save costs 1 read and 1 
   // Open: the client is already on the page from the list, the preview needs no data, the fonts are in the page.
   fake.reset();
   await page.locator('.row').filter({ hasText: 'Kroger' }).getByRole('button', { name: 'Brand' }).click();
-  await expect(page.getByRole('heading', { name: /Brand Studio · Kroger/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Brand · Kroger/ })).toBeVisible();
   await expect(page.frameLocator('iframe[data-device]').getByRole('heading', { name: 'Hi Jane Doe!' })).toBeVisible();
   await page.frameLocator('iframe[data-device]').locator('.shell').evaluate(() => document.fonts.ready);
   await quiet(page);

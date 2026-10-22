@@ -1,20 +1,13 @@
 // Phase 18: the Content tab's views (lib/admin/admin-content-views.js). Content is one client's workspace with two views, Activities and Brand,
 // listed in one table that the strip, its keyboard, the address and the badges read. These cases hold the table complete, the address
 // round trip (#content, #content/brand, the old #sections), what an unknown address falls back to, the badges' words, the keyboard's steps and
-// the remembered view, with storage absent or refusing.
+// the remembered view (in memory for the visit, as the last client is: the admin page writes nothing to browser storage).
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   CONTENT_VIEWS, DEFAULT_VIEW, hashOfView, lastView, lookWord, rememberView, stepView, viewBadge, viewById, viewOfHash,
 } from '../migration/src/lib/admin/admin-content-views.js';
 
-/** A storage that keeps what it is given, as sessionStorage does. */
-function memoryStorage() {
-  const items = new Map();
-  return { getItem: (key) => (items.has(key) ? items.get(key) : null), setItem: (key, value) => { items.set(key, String(value)); } };
-}
-/** A storage that refuses every call, as a blocked one does. */
-const refusing = { getItem() { throw new Error('blocked'); }, setItem() { throw new Error('blocked'); } };
 
 describe('Content views (Phase 18)', () => {
   it('the table is complete: every view has an id, a label, an address segment and a component key, and exactly one is the default', () => {
@@ -93,18 +86,23 @@ describe('Content views (Phase 18)', () => {
     assert.equal(stepView('ArrowDown', 0), null);
   });
 
-  it('the last view is remembered for the browser tab; absent or refusing storage falls back to the default', () => {
-    const storage = memoryStorage();
-    assert.equal(lastView(storage), 'activities', 'nothing remembered yet');
-    rememberView('brand', storage);
-    assert.equal(lastView(storage), 'brand');
-    rememberView('activities', storage);
-    assert.equal(lastView(storage), 'activities');
-    storage.setItem('pms.contentView', 'gone');
-    assert.equal(lastView(storage), 'activities', 'a view that is no longer in the table is the default');
-    assert.doesNotThrow(() => rememberView('brand', refusing));
-    assert.equal(lastView(refusing), 'activities');
-    assert.doesNotThrow(() => rememberView('brand', null));
-    assert.equal(lastView(null), 'activities');
+  it('the last view is remembered for the visit, in memory: no browser storage is touched; a view not in the table is the default', () => {
+    const touched = [];
+    const spy = { getItem: (key) => { touched.push(key); return null; }, setItem: (key) => { touched.push(key); } };
+    globalThis.sessionStorage = spy;
+    globalThis.localStorage = spy;
+    try {
+      assert.equal(lastView(), 'activities', 'nothing remembered yet');
+      rememberView('brand');
+      assert.equal(lastView(), 'brand');
+      rememberView('activities');
+      assert.equal(lastView(), 'activities');
+      rememberView('gone');
+      assert.equal(lastView(), 'activities', 'a view that is no longer in the table is the default');
+      assert.deepEqual(touched, [], 'no browser storage');
+    } finally {
+      delete globalThis.sessionStorage;
+      delete globalThis.localStorage;
+    }
   });
 });

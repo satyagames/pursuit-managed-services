@@ -16,13 +16,18 @@
   type Section = { id: string; title: string; enabled: boolean; order?: number; questionIds?: string[]; clientId?: string | null; description?: string | null };
   type Settings = { id: string; activeSessionId?: string | null; activeClientId?: string | null };
 
-  let { onToast, adminName = '', view = DEFAULT_VIEW, clientRequest = null, onView = () => {} }: {
+  let { onToast, adminName = '', view = DEFAULT_VIEW, clientRequest = null, rows = null, onView = () => {} }: {
     onToast: (message: string, kind?: 'info' | 'success' | 'error') => void;
     adminName?: string;
     /** The view showing (CONTENT_VIEWS); the shell keeps it in the address. */
     view?: string;
     /** A client to open on, once (Clients' Brand button), before the one remembered. */
     clientRequest?: string | null;
+    /**
+     * The rows of the three lists Content reads, as Clients has just read them (its Brand button): taken instead of reading them again, so
+     * opening a client's Brand from Clients costs no request, as Brand Studio on Clients did not (brand-studio-sharepoint.spec.ts).
+     */
+    rows?: { settings: unknown[]; clients: unknown[]; sections: unknown[] } | null;
     /** The person chose another view on the strip. */
     onView?: (view: string) => void;
   } = $props();
@@ -77,9 +82,11 @@
     return () => { active = false; };
   });
 
-  /** One batch on SharePoint: who is live, the clients, and every activity. */
+  /** One batch on SharePoint: who is live, the clients, and every activity (or the same three as Clients has just read them). */
   async function load() {
-    const [settingRows, clientRows, sectionRows] = await dataService.readLists([{ list: 'appsettings' }, { list: 'clients' }, { list: 'sections' }]) as unknown as [Settings[], Client[], Section[]];
+    const given = untrack(() => rows);
+    const [settingRows, clientRows, sectionRows] = (given ? [given.settings, given.clients, given.sections]
+      : await dataService.readLists([{ list: 'appsettings' }, { list: 'clients' }, { list: 'sections' }])) as unknown as [Settings[], Client[], Section[]];
     const settings = settingRows.find((row) => row.id === 'default');
     // (The live client is the one AppSettings names: Go live writes it beside the session.)
     const live = settings?.activeSessionId ? settings.activeClientId ?? null : null;
@@ -213,7 +220,7 @@
                     </select>
                     <button class="btn" type="button" disabled={brandDirty || !bridgeSection} aria-describedby="content-bridge-why" onclick={() => { bridgePreview = bridgeSection; }}>Preview</button>
                   </div>
-                  <p id="content-bridge-why" class="muted" data-testid="content-bridge-why">{brandDirty ? 'Save to preview your activities in this look.' : `Shows ${client.name}'s saved look (not unsaved changes), with the activity's real questions.`}</p>
+                  <p id="content-bridge-why" class="muted" data-testid="content-bridge-why">{brandDirty ? 'Save to preview your activities in this look.' : 'Opens the activity with its real questions, in the saved look (not unsaved changes).'}</p>
                 {/if}
               </section>
             {/if}

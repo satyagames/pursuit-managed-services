@@ -22,7 +22,7 @@ test.afterEach(async () => { await stopLocal(local); });
 export async function openBrand(page: Page, name = 'Kroger') {
   await openAdmin(page, local, 'Clients');
   await page.locator('.row').filter({ hasText: name }).getByRole('button', { name: 'Brand' }).click();
-  await expect(page.getByRole('heading', { name: new RegExp(`Brand Studio · ${name}`) })).toBeVisible();
+  await expect(page.getByRole('heading', { name: new RegExp(`Brand · ${name}`) })).toBeVisible();
 }
 
 const slotInput = (page: Page, slot: string) => page.locator(`input[type="file"][data-slot="${slot}"]`);
@@ -78,7 +78,7 @@ test('Brand Studio opens from a client row, with the controls and the real previ
   const [controls, preview] = await Promise.all([page.locator('.brand__controls').boundingBox(), page.locator('.brand__preview').boundingBox()]);
   expect(preview!.x).toBeGreaterThan(controls!.x + controls!.width - 1);
   // Back to the list.
-  await page.getByRole('button', { name: '← Clients' }).click();
+  await page.getByRole('tab', { name: 'Clients', exact: true }).click(); // (Phase 18: Brand is a view of Content; no Back button)
   await expect(page.getByRole('heading', { name: 'Clients', exact: true })).toBeVisible();
 });
 
@@ -741,7 +741,7 @@ test('the unsaved-changes guard: leaving by tab, by Back or by Lock asks first; 
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Keep editing' })).toBeFocused();
   await dialog.getByRole('button', { name: 'Keep editing' }).click();
-  await expect(page.getByRole('tab', { name: 'Clients' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('tab', { name: 'Content' }), '(Phase 18: Brand is a view of Content)').toHaveAttribute('aria-selected', 'true');
   await expect(page.getByLabel('Primary', { exact: true })).toHaveValue('#8B2F6F');
 
   await page.getByRole('button', { name: 'Lock' }).click();
@@ -749,14 +749,15 @@ test('the unsaved-changes guard: leaving by tab, by Back or by Lock asks first; 
   await dialog.getByRole('button', { name: 'Keep editing' }).click();
   await expect(page.getByRole('button', { name: 'Lock' })).toBeVisible();
 
-  await page.getByRole('button', { name: '← Clients' }).click();
+  // (Phase 18: Brand is a view of Content, with no Back button: the Clients tab and another top tab are the ways out.)
+  await page.getByRole('tab', { name: 'Clients', exact: true }).click();
   await expect(dialog).toBeVisible();
   await dialog.getByRole('button', { name: 'Keep editing' }).click();
-  await expect(page.getByRole('heading', { name: /Brand Studio/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Brand · Kroger/ })).toBeVisible();
 
-  await page.getByRole('tab', { name: 'Content' }).click();
+  await page.getByRole('tab', { name: 'Today' }).click();
   await dialog.getByRole('button', { name: 'Leave without saving' }).click();
-  await expect(page.getByRole('tab', { name: 'Content' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('tab', { name: 'Today' })).toHaveAttribute('aria-selected', 'true');
   expect((await ds.getClient('c-kroger')).theme.primary, 'nothing was saved').toBe('#045BCC');
   // And once saved there is nothing to ask.
   await page.getByRole('tab', { name: 'Clients' }).click();

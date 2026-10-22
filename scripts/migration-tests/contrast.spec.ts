@@ -298,7 +298,7 @@ test.describe('admin: text and the focus ring', () => {
       await page.getByRole('button', { name: `Brand: ${name}` }).click();
       await expect(page.getByRole('heading', { name: /Brand/ }).first()).toBeVisible();
       await look(`Brand Studio, ${theme}`);
-      await page.getByRole('button', { name: '← Clients' }).click();
+      await page.getByRole('tab', { name: 'Clients', exact: true }).click(); // (Phase 18: Brand is a view of Content; no Back button)
     }
     for (const theme of THEME_KEYS) {
       await page.evaluate((hash) => { location.hash = hash; }, `#live-display/${sessions[theme].id}`);

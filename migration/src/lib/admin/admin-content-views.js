@@ -44,8 +44,8 @@ export const DEFAULT_VIEW = /** @type {string} */ (CONTENT_VIEWS.find((view) => 
 const TAB = 'content';
 /** Phase 5b's address of the old Activities tab, which lands on Content. */
 const OLD_HASH = '#sections';
-/** Where the last view is kept for the browser tab. */
-const KEY = 'pms.contentView';
+/** The view last shown during this visit to the admin page. */
+let remembered = DEFAULT_VIEW;
 
 /** A view by id; the default for anything else. @param {string | null | undefined} id */
 export const viewById = (id) => CONTENT_VIEWS.find((view) => view.id === id) ?? /** @type {typeof CONTENT_VIEWS[number]} */ (CONTENT_VIEWS.find((view) => view.isDefault));
@@ -88,19 +88,13 @@ export function stepView(key, index) {
 }
 
 /**
- * Keeps the view for this browser tab, so the Content tab comes back to it. Storage that is missing or refuses (a private window, a policy) is
- * passed over: the view still opens.
- * @param {string} id @param {{ setItem: (key: string, value: string) => void } | null | undefined} storage sessionStorage on the page
+ * Keeps the view for this visit to the admin page, so the Content tab comes back to it; in memory, as the last client is (admin-content.js
+ * rememberClient): the admin page writes nothing to browser storage, and a reload keeps the view through the address (#content/brand).
+ * @param {string} id
  */
-export function rememberView(id, storage) {
-  try { storage?.setItem(KEY, viewById(id).id); } catch { /* not kept */ }
+export function rememberView(id) {
+  remembered = viewById(id).id;
 }
 
-/**
- * The view this browser tab last showed, or the default when nothing is kept, storage refuses, or the kept view is no longer in the list.
- * @param {{ getItem: (key: string) => string | null } | null | undefined} storage
- * @returns {string}
- */
-export function lastView(storage) {
-  try { return viewById(storage?.getItem(KEY) ?? null).id; } catch { return DEFAULT_VIEW; }
-}
+/** The view last shown during this visit, or the default. @returns {string} */
+export const lastView = () => remembered;
