@@ -12,12 +12,13 @@
   import { heldNameSources } from '../lib/admin/admin-results.js';
   import { wallAddress } from '../lib/admin/live-wall.js';
   import {
-    liveBrand, pagerStep, presentScaleFor, sectionTitleOf, sessionLabel, shownIndex, stepFrom, unreadableText as unreadableTextOf,
+    liveBrand, pagerStep, presentScaleFor, sectionTitleOf, shownIndex, stepFrom, unreadableText as unreadableTextOf,
   } from '../lib/admin/live-view.js';
   import { nextFit, scaleOf } from '../lib/results/present-fit.js';
   import { answerCounts, answersFrom, answersOf, chartsOf, namesFor } from '../lib/results/results-chart-model.js';
   import { RESULTS_PALETTE } from '../lib/results/results-palette-source.js';
   import LiveHead from './LiveHead.svelte';
+  import LiveNotReady from './LiveNotReady.svelte';
   import LiveSections from './LiveSections.svelte';
   import LiveStage from './LiveStage.svelte';
 
@@ -498,20 +499,8 @@
       {#if questions.length === 0}<p class="live__status">This session has no live questions yet.</p>{/if}
       <LiveSections {chartSections} {wall} {withNames} {revealed} {selected} {scale} onToggleAnswer={toggleAnswer} onSelect={select} />
     {/if}
-  {:else if phase === 'picker'}
-    <p class="live__status" role="status">{message}</p>
-    {#if sessions.length}
-      <ul class="live__picker">
-        {#each sessions as session (session.id)}
-          <li><button class="btn" type="button" onclick={() => onOpen(session.id)}>{sessionLabel(session, clients)}</button></li>
-        {/each}
-      </ul>
-    {/if}
-  {:else if phase === 'loading'}
-    <p class="live__status" role="status">Loading results...</p>
   {:else}
-    <p class="live__status live__status--error" role="alert">{message}</p>
-    <div class="live__actions"><button class="btn" type="button" onclick={() => location.reload()}>Try again</button></div>
+    <LiveNotReady {phase} {message} {sessions} {clients} {onOpen} />
   {/if}
 </section>
 
@@ -534,34 +523,12 @@
     border-bottom: 3px solid var(--brand-primary);
   }
 
-  .live__actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
   .live__status {
     margin: 0;
     padding: 0.75rem 1rem;
     background: var(--adm-card);
     border: 1px solid var(--adm-line);
     border-radius: 0.5rem;
-  }
-
-  .live__status--error {
-    color: var(--adm-bad-ink);
-    background: var(--adm-bad-bg);
-    border-color: var(--adm-bad-line);
-  }
-
-  .live__picker {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
   }
 
   .live__names {
