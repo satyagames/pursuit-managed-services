@@ -26,7 +26,7 @@ built the deployed `pms-283ad18` byte for byte. Phases up to 11a-2 are in VJR's 
 | 14 | see [RELEASE-14.md](../RELEASE-14.md) | from `1ab63bd` | Structure only: `lib/` in folders by module, the shared code out of `public/`, a header on every module, the documents rewritten and checked against the code (`scripts/check-docs.js`). The pages behave as before. |
 | 15 | see [RELEASE-15.md](history/RELEASE-15.md) | from `6aaa87e` | The alignment review (two fixes); the participant screens move by the kind of question (plan, tokens, one door; compositor only); an Animations switch per client in ThemeJson. |
 | 16 | see [RELEASE-16.md](history/RELEASE-16.md) | from `620b760` (main) | Results newest first; Delete session (a session's data, permanently, after a warning; never the live one); a question edited in place, and Restart under its row. |
-| 17 | see [RELEASE-17.md](history/RELEASE-17.md) | from `c7ad1f5` (pms-16) | Structure only: `lib/data/dataService.js` a facade over sixteen parts (state in `core.js`, every function moved unchanged); 72 dead CSS selectors removed by measurement; the local server's Windows rename race fixed. The admin screens' split was left for later. |
+| 17 | see [RELEASE-17.md](history/RELEASE-17.md) | from `c7ad1f5` (pms-16) | Structure only: `lib/data/dataService.js` a facade over sixteen parts (state in `core.js`, every function moved unchanged); 72 dead CSS selectors removed by measurement; the local server's Windows rename race fixed; Part 2 cut `AdminToday`, `LiveDisplay` and `BrandStudio` into child components (13 of them) with their rules in `lib/admin/today-view.js`, `live-view.js` and `brand-studio-view.js`, and un-exported 31 exports nothing named. |
 
 ## What has met the real site
 

@@ -311,14 +311,15 @@ export const PHASE_16 = Object.freeze({
  * Phase 17 (a refactor with no change of behaviour) may not grow the participant page: its allowance is 0. lib/data/dataService.js became a facade
  * over sixteen parts, every function moved unchanged; the bundler lays the same code out in another order, which cost 40 B gzip on the
  * participant page (22 B raw: core.js's holdScan() and the seams between the parts). The 72 selectors that nothing can match left
- * styles/legacy/app.css (participant), styles/legacy/admin.css and src/admin.css (admin, Setup): measured when the phase ended, the participant
- * page is 701 B smaller than Phase 16 left it, the admin page 186 B, Setup 315 B. Its Tailwind rules are the ones it had, and the ceiling is
- * not raised. Its Part 2 cut the admin's Today, Live display and Brand Studio screens into child components: each component is a function of
- * its own with its own scoped styles, about 200 B gzip apiece on the admin page, which only the admin page carries (adminAllowance). The next
- * phase starts from participantAfter and adminAfter.
+ * styles/legacy/app.css (participant), styles/legacy/admin.css and src/admin.css (admin, Setup): with Parts 1 and 3 (pms-7417da3) the participant
+ * page was 701 B smaller than Phase 16 left it, the admin page 186 B, Setup 315 B. Its Tailwind rules are the ones it had, and the ceiling is
+ * not raised. Its Part 2 cut the admin's Today, Live display and Brand Studio screens into thirteen child components: each is a function of its
+ * own with its own scoped styles (a few rules in two of them, word for word), 2,108 B gzip in all on the admin page, which alone carries them
+ * (adminAllowance); the participant page stayed byte for byte as it was. Measured when the phase ended: participantAfter and adminAfter, where
+ * the next phase starts.
  */
 export const PHASE_17 = Object.freeze({
-  participantBefore: PHASE_16.participantAfter, adminBefore: PHASE_16.adminAfter, participantAllowance: 0, adminAllowance: 3_000,
-  participantAfter: 158_392, adminAfter: 576_093,
+  participantBefore: PHASE_16.participantAfter, adminBefore: PHASE_16.adminAfter, participantAllowance: 0, adminAllowance: 2_000,
+  participantAfter: 158_392, adminAfter: 578_201,
   participantUtilities: PHASE_11A.participantUtilities,
 });

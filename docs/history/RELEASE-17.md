@@ -1,14 +1,14 @@
-# Release 17: the data layer in parts, and the stylesheets' dead rules removed
+# Release 17: the data layer in parts, the stylesheets' dead rules removed, and three admin screens in parts
 
 Branch `pms-17`, from `pms-16` at `c7ad1f5` plus the hardening of 19 Oct 2026, which was uncommitted on `pms-16` and is this branch's first commit
 (`362b095`: `npm audit` at zero through the `image-size` override, the Node guard in `build-svelte-release.js`, `.editorconfig`). **Not pushed.** A
 refactor with no change of behaviour: no data, list, column, setting, request or word changed. Nothing of it has met the real site or an iPad:
 QA-TESTING.md items 195 to 197.
 
-**Done:** Part 1 (`dataService.js` cut into sixteen parts behind it, the flaky QR-scan test hardened) and Part 3 (dead CSS removed by measurement).
-**Not done:** Part 2 (slimming `AdminToday.svelte`, `LiveDisplay.svelte` and `BrandStudio.svelte`, and un-exporting the exports that no other file
-uses) was left for later by the owner, part way through `AdminToday.svelte`; its drafts are in git-ignored `build-svelte/p17-part2-wip/`, and nothing of
-it is in the tree.
+**Done:** Part 1 (`dataService.js` cut into sixteen parts behind it, the flaky QR-scan test hardened) and Part 3 (dead CSS removed by measurement),
+in the package `pms-7417da3`; then Part 2 (slimming `AdminToday.svelte`, `LiveDisplay.svelte` and `BrandStudio.svelte`, and un-exporting the exports
+that no other file uses), which the owner first left for later and then asked for: its own section, [Part 2](#part-2-three-admin-screens-in-parts), and
+its own package. The sections down to "The package" are Parts 1 and 3 as they were reported for `pms-7417da3`.
 
 Commits, one cause each: `56b47ae` the surface test; `52a2e9b` the fresh-page hook; `a031b64` the source-reading tests read all of `lib/data`; `e808aad`,
 `f50b0d9`, `299f9b0` steps 1 to 3 of the split (`encoding.js`, `core.js`, `common.js`); `8905cd0` the local server's Windows rename race; `1545e25`, `9a82d5f`, `2aac600` steps 4 to 6 (`schema-check.js`, `records.js`,
@@ -166,3 +166,118 @@ pms-07eb42b.
 | **pms-7417da3.zip** | 1,562,569 | | `02f7e0fac62f0e85070df06580d8cfe2f2a81576fc0e8d6547e7664d90e3b14d` |
 
 The pages of this package are byte for byte those of the commit after it, which adds only this section.
+
+## Part 2: three admin screens in parts
+
+Asked for by the owner after `pms-7417da3`, on the same branch, from `9edd383`. A refactor with no change of behaviour, like Parts 1 and 3: no markup
+order, authored class name, `aria-*`, `data-testid` or word changed, every state write stayed in the screen that owns the state (a child is given
+handlers; `$bindable` only where the screen had `bind:`: Go live's date, the Live display's stage and the height of its foot), and every CSS rule moved
+with the elements it styles. Commits `fc4b098` to `e23a0d6`, one move each, each passing `npm run check:svelte` and `npm test` (but the known race,
+below), then the documents and this section.
+
+| Screen | Lines before | Lines after | Its parts (child components) | Its rules with no DOM (new, with tests) |
+|---|---:|---:|---|---|
+| `AdminToday.svelte` | 930 | 527 | `TodayStatus` (119), `TodayGoLive` (108), `TodayReadiness` (117), `TodayControls` (106), `TodayShare` (59), `TodaySessions` (42) | `lib/admin/today-view.js`, 9 tests |
+| `LiveDisplay.svelte` | 855 | 563 | `LiveHead` (136), `LiveNotices` (71), `LiveStage` (161), `LiveSections` (54), `LiveNotReady` (67) | `lib/admin/live-view.js`, 8 tests |
+| `BrandStudio.svelte` | 792 | 455 | `BrandColours` (313), `BrandPreviewPanel` (109) | `lib/admin/brand-studio-view.js`, 8 tests |
+
+**How the cards were cut.** Each card's own element (`<section class="card-panel">`, `<header class="live__head">`, the Live display's `<details>`'s
+summary, Brand Studio's `<aside>`) and, where it opens the card, its heading stay in the screen, so the rules on them (`.card-panel`, `.status--live`,
+`.brand__preview` and its narrow-window rule) were not copied; the child draws the card's body. Where a body uses a rule the screen also needs
+(`.mono`, `.error`, `.live__status`, `.live__auto-state`, `.brand__colour`), the rule is in both, word for word. The Live display's full-screen rules
+hang on the display's own state (`.live--present`, `.live--spill`, its idle flag), so in a child they name it as their ancestor
+(`:global(.live--present) .live__client`): Svelte 5 adds its scoping class once, so each such rule has exactly the specificity it had, as the built page
+shows (`.live--present .live__client.svelte-a8u76e` against `.live--present.svelte-mwxdb2 .live__client:where(.svelte-mwxdb2)`).
+
+**What moved to plain functions** (tests written first and seen to fail: `ERR_MODULE_NOT_FOUND`, then the missing `liveBrand`): Today's "Live since",
+the Go live button's words and the reason it is off, the readiness line, the counts of blockers and warnings, the clients the picker offers, the order
+of "All sessions", how a changed session joins the list, and what a failure says; the Live display's look of the client (its name, logo and colours),
+which question full screen shows and where Previous and Next take it, the type size a window asks for, which keys move it, the heading over the
+question, the notice of answers that could not be read, and a session's words in the picker; Brand Studio's look for the preview, a picture's address
+as the page shows it, the strip's gradient, whether a typed colour is wrong, the contrast check's words, what each picture slot says, the device
+preview's address and what a save says. Reading, full screen, the fit, the timers and the exports stay in the screens, with their state.
+
+**Not to about 500 lines:** `LiveDisplay.svelte` is 563 and `AdminToday.svelte` 527. What is left in each is its state and what writes it: the
+Live display's reading and polling, full screen, the fit of a long question (effects that measure the stage) and the exports; Today's loading,
+polling, going live and the controls' writes. Moving those would move state writes out of the screen, which this part was not to do.
+
+**Found on the way.** `.notice p` in `AdminToday.svelte` matched nothing (no `.notice` holds a `<p>`); Svelte kept it only because the readiness row's
+`class="check check--{row.level}"` might, for all it knew, be `notice`. Once the rows moved to `TodayReadiness`, `svelte-check` reported it unused, and it
+was removed. Tests that read source by path follow the move: `test-motion-switch.js` finds Today's `<MotionSwitch` in `TodayControls.svelte`,
+`test-review-9b.js` the Live display's retired-logo rule in `live-view.js`, and `test-seeds.js` counts `BrandColours.svelte` among the admin's readers of
+the accent (each assertion as strict as before).
+
+**Un-exported** (found by a script that looks for each exported name as a word in every other file of `migration/src`, `scripts`, `server`, `docs` and
+the root documents; none of them is named anywhere else), 31 names in 13 files:
+
+| File | Un-exported |
+|---|---|
+| `lib/admin/admin-content.js` | `GUEST_STATUS_LABEL`, `liveCode`, `liveSessionNote` |
+| `lib/admin/admin-results.js` | `RECENT_MS`, `MAX_LOOKS` |
+| `lib/admin/adminData.ts` (types) | `AdminResponse`, `AdminOption`, `AdminQuestion`, `GuestSession`, `GuestClient`, `GuestTrack`, `GuestVisit`, `GuestSection` |
+| `lib/brand/brand-studio.js` | `VERY_LIGHT`, `VERY_DARK`, `luminanceOfRgb` |
+| `lib/effects/effects.ts`, `lib/effects/sound-engine.ts` (types) | `SoundState`, `ScheduledCue` |
+| `lib/participant/navigation.ts`, `participantData.ts` (types) | `NavigationData`, `AnswerInput` |
+| `lib/participant/pager-logic.js` | `isImageGrid` |
+| `lib/results/results-chart-model.js` | `MIN_COMMENTS`, `MIN_LETTERS`, `MAX_TONES` |
+| `lib/settings/start.ts`, `lib/setup/setupData.ts` (types) | `SettingsRead`, `SetupListCheck` |
+| `lib/setup/provision.js` | `FIELD_OPTIONS`, `BUILT_IN`, `SITE_LISTS`, `descriptionOf`, `NOT_ALLOWED` |
+
+**Kept exported, though nothing else names them:** `GlobalOptions` in `canvas-confetti.d.ts` (it describes the library's own module), and
+`motion-plan.js`'s `LONG_FRAME`, `LONG_FRAMES_PER_BAD_ENTRANCE`, `BAD_ENTRANCES_PER_STEP` and `CLEAN_ENTRANCES_TO_STOP`: as plain constants the bundler
+inlines them and the participant page grew 28 B gzip, which this phase may not. The data layer's names were not touched (`scripts/data-surface.json`
+pins all 107).
+
+### Before and after
+
+"Before" is `9edd383` (the package `pms-7417da3`): its browser specs ran in the separate worktree `pms17-before`, checked out at that commit, and
+its pictures were taken from the package. "After" is `e23a0d6`, the last code commit: the specs from this checkout, the pictures from its three
+pages built once (`build-svelte/p17p2-after-pages/`, with `pms-7417da3`'s `pms-config.txt`). The logs and pictures are in git-ignored
+`build-svelte/evidence-17p2/`, `ux-review/p17p2-before/` and `ux-review/p17p2-after/`.
+
+| Gate | Before (`9edd383`) | After (`e23a0d6` and the documents) |
+|---|---|---|
+| `npm run check:svelte` | 0 errors, 0 warnings | 0 errors, 0 warnings |
+| `npm test` | 1,476 pass in 1 run of 3; the other 2 failed only `test-store.js` (2 tests) | 1,501 pass (new: `test-today-view.js` 9, `test-live-view.js` 8, `test-brand-studio-view.js` 8); 4 runs before it failed only `test-store.js` |
+| `npm run test:bundle` | 42 pass | 42 pass (`PHASE_17`: participant allowance 0, admin 2,000 B) |
+| Playwright, Chromium and WebKit (`admin-smoke`, `admin-today`, `admin-content*`, `admin-sharepoint`, `live-display*`, `brand-studio*`, `a11y`, `keyboard`, `reflow`, `devices`) | 247 passed, 3 failed, 7 skipped (17.1 min) | 248 passed, 2 failed, 7 skipped (16.7 min) |
+
+**The browser failures.** The 2 after are 2 of the 3 before, with the same messages: WebKit `keyboard.spec.ts:314` (its Tab walk never reaches
+"Open participant view", this machine's known WebKit fault) and Chromium `brand-studio.spec.ts:1065` (an answer tile's picture in **Content**, a
+screen Part 2 did not touch: the option keeps the fourth upload's address, not the fifth's). The third before, Chromium `admin-today.spec.ts:421`
+(slugs), passed after. **Firefox was not exercised**: it does not start on this machine.
+
+**`test-store.js`** (the local server's Windows rename race, Part 1) fails now and then in a full `npm test` on this machine, before and after
+alike: on the untouched `9edd383`, 2 runs of 3 with nothing else running; after, 5 of the last 6 (and in most of the runs between the commits, beside the browser runs); alone, never. It is the local stand-in for
+SharePoint, in no page. Nothing else failed in any run.
+
+**Sizes (gzip -9).** The participant page is **byte for byte** `pms-7417da3`'s (sha256 `1ed02967…`, 158,392 B): no word in the new files became a
+Tailwind rule (one did, "table" in a comment, and was reworded before the commit; `test:bundle` caught it), and un-exporting changed nothing in it.
+The admin page is 576,093 → **578,201 B** (+2,108; +1,922 against Phase 16's 576,279), its raw size +9,176 B: thirteen component functions and the
+few rules two components both need. Setup is unchanged but for its build name.
+
+**The pictures, before and after.** `npm run ux:shoot -- --only admin,brand --matrix brief`, 408 pictures each, compared file by file and pixel by
+pixel. To know the noise, an earlier run of the same admin and brand pages (`ux-review/p17-before-a`, from Part 3, whose pictures matched
+`pms-7417da3`'s) was compared with the before run too.
+
+| Flow | Same | Different | Why the different ones differ |
+|---|---:|---:|---|
+| admin | 62 | 0 | |
+| admin states | 49 | 0 | |
+| brand | 83 | 1 | Domino's finale on the 1440 desktop: its confetti (two runs of the same pages differ on the same picture, the same box) |
+| Live display | 117 | 3 | full screen on an iPhone and the wall on an iPad Pro: where a chart's tooltip sits (the same two pictures and boxes differ between two runs of the same pages); question 6 on an iPad Pro: "updated 5:00:13 PM" against "5:00:01 PM", the moment a refresh landed |
+| Brand Studio | 40 | 44 (9 missing on each side) | its crop flow picks sample pictures at random: two runs of the same pages differ on 43 (14 missing) |
+
+No pixel moved because of Part 2. Both runs reported the same problems: the iPhone admin flow stops at a picture taller than a browser can take, and
+the browser's "ResizeObserver loop" notice six or seven times, on devices that change from run to run (before: iPhone ×2, iPad portrait, iPad Pro ×3;
+after: the same and once on iPad landscape, where Part 3's after run had it too).
+
+**Rules held.** No dependency added; no request baseline re-recorded or amended (`test:baseline` is in `npm test`); no test that guards behaviour
+loosened or deleted (the three that read source by path read the file the code moved to); every new test seen to fail first. One slip: `fc4b098`
+added `today-view.js` without regenerating `docs/MODULES.md`, so `test-modules-map.js` failed on it until `186881e`, two commits later.
+`npm run docs:modules` and `node scripts/check-docs.js` were run after the last move. QA-TESTING.md item 195 now asks for every control of the three
+screens once, since what a tester sees is meant to be unchanged and these are the screens whose code moved.
+
+### The package of Part 2
+
+Made by `npm run package:release` from the commit that added this section; its name, sizes and checksums are added by the commit after it, which changes no page.

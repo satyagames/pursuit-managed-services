@@ -343,7 +343,8 @@ in `migration/src/`, not by editing them, so that what the tests measure stays w
   surfaces and status tints, every text pair held to 4.5:1 by `scripts/test-admin-today.js`) over
   `migration/src/styles/legacy/admin.css`, which was the legacy admin's sheet and is left as it is; `src/admin.css` overrides it. The bar is navy because the
   Deloitte wordmark is white. Targets are 44px, focus is the green ring with a navy halo, no page scrolls sideways at 390 wide.
-- **Today** (`admin/AdminToday.svelte`, logic in `lib/admin/admin-today.js`, no DOM, unit-tested): the status panel, the
+- **Today** (`admin/AdminToday.svelte`, which holds its state and draws its cards through `TodayStatus`, `TodayGoLive`, `TodayReadiness`, `TodayControls`,
+  `TodayShare` and `TodaySessions` since Phase 17; logic in `lib/admin/admin-today.js` and `lib/admin/today-view.js`, no DOM, unit-tested): the status panel, the
   picker (active clients; the date starts as today in the browser's local time), Go live, readiness, controls on the live session
   (identification mode, activity flow, End session, Reopen), the participant link and its QR, and "All sessions" (any session
   whose id is not `<slug>-<date>`, made live through `activateSession`). Rules that must keep holding:
@@ -379,7 +380,8 @@ in `migration/src/`, not by editing them, so that what the tests measure stays w
   the check-in dialog lists the newest six codes of the session the code joins (`recentCodes()`, one read by `SessionId`). **Colours, the logo, hero art and the background are Brand Studio's** (next bullet): the form has the
   name, slug and words only, and each row has a **Brand** button. A new client's older colour fields come from the default palette
   (`legacyColours`).
-- **Brand Studio** (`admin/BrandStudio.svelte`, opened from a client's row on Clients; rules in `lib/brand/brand-studio.js`, `lib/brand/legacy-colours.js`,
+- **Brand Studio** (`admin/BrandStudio.svelte`, opened from a client's row on Clients, drawing its Colours card through `BrandColours` and its preview side
+  through `BrandPreviewPanel` since Phase 17; rules in `lib/admin/brand-studio-view.js`, `lib/brand/brand-studio.js`, `lib/brand/legacy-colours.js`,
   `lib/asset-*.js`, `lib/brand/crop-math.js`, `lib/brand/image-sniff.js`, `lib/brand/brand-devices.js`, `lib/brand/brand-sample.js`, `lib/brand/scrim.js`, all plain JS
   with unit tests; `lib/brand/asset-image.ts` is the only part that needs a canvas). Rules that must keep holding:
   - **The stored shape** is `ThemeJson { version, primary, accent, plate?, tokens, assets: { hero, logo, background, backgroundFocus?, tile },
@@ -480,7 +482,8 @@ in `migration/src/`, not by editing them, so that what the tests measure stays w
   refreshed, none for a session of guests with QR names**, and, on the live session's timer, one more look for someone who joined in the last two
   minutes and is still unnamed (their sign-in is written a moment after their first screen), twice at most for each person
   (`rowsToLookForAgain`). Status, "joined ... via ...", the QR counts and Restart are as they were.
-- **Live display** (`admin/LiveDisplay.svelte`, the charts in `admin/charts/` since Phase 11a; loading in `lib/admin/live-session.js`, the tally in `lib/results/results-tally.js`,
+- **Live display** (`admin/LiveDisplay.svelte`, which holds its state, full screen and the fit and draws through `LiveHead`, `LiveNotices`, `LiveStage`,
+  `LiveSections` and `LiveNotReady` since Phase 17, its rules with no DOM in `lib/admin/live-view.js`; the charts in `admin/charts/` since Phase 11a; loading in `lib/admin/live-session.js`, the tally in `lib/results/results-tally.js`,
   both plain JS) is what the participant page's Master screen was, in the admin page: a chart for each question of the session's
   enabled activities, the answer count and the iPad count, the client's colours in its header (`masterColours`, set on the display's own element and
   not on the admin page; since Phase 11a the charts themselves are in Deloitte's colours), **Full screen**, and the CSV, PDF and PowerPoint exports (`adminData.getSessionResults`, which is `readSessionResults`, so `readSessionResponsesChecked`;
@@ -1367,7 +1370,7 @@ The report is [RELEASE-16.md](history/RELEASE-16.md). **None of it has met the r
   new recording (see "Rules from Phase 10i").
 - If you touched a sentence a page shows that names a list: take the title from `sharePointListTitles()` (or `listTitles()` on Setup), never spell it; run
   `node --test scripts/test-shown-names.js`.
-- If you touched `migration/src/lib/results/results-chart-model.js`, `admin/charts/`, `styles/results-tokens.css`, `LiveDisplay.svelte` or `AdminResults.svelte`: run `npm run test:charts`,
+- If you touched `migration/src/lib/results/results-chart-model.js`, `admin/charts/`, `styles/results-tokens.css`, `LiveDisplay.svelte` (or its parts `LiveStage`, `LiveSections`) or `AdminResults.svelte`: run `npm run test:charts`,
   `npm run test:bundle` (the participant page's Tailwind rules) and the `results-charts-*` and `live-display*` specs in all three engines, and look at `test-results/charts/`.
 - If you touched `lib/admin/session-delete.js`, `dataService.listItemKeys` or `deleteByKey`, or added a list or column that holds a session id: run
   `node --test scripts/test-session-delete.js` (it fails until the list is in `SESSION_OWNED` or `KEPT`) and `session-delete.spec.ts` in Chromium and WebKit.
