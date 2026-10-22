@@ -16,7 +16,7 @@ export const MODULES_FILE = path.join(ROOT, 'docs', 'MODULES.md');
 /** What each folder is for: the only words of the map written by hand. A folder with code and no line here fails the test. */
 export const PURPOSE = {
   'migration/src': 'The three entries (`main.ts`, `admin-main.ts`, `setup-main.ts`), the three apps (`App.svelte`, `AdminApp.svelte`, `SetupApp.svelte`) and their page-wide CSS. The HTML shells are `migration/index.html`, `admin.html` and `setup.html`.',
-  'migration/src/lib/data': 'The data layer: the one module that talks to SharePoint REST (or, on the local server, its JSON API), and grouping of long id lists into short reads. Every page carries it.',
+  'migration/src/lib/data': 'The data layer: dataService.js, the door every page imports, over its parts (core.js holds the state and alone talks to SharePoint REST or, on the local server, its JSON API), and grouping of long id lists into short reads. Every page carries it.',
   'migration/src/lib/schema': 'The lists and columns: `pms-schema.js`, the names every page carries, and `pms-schema-meta.js`, everything else about them (Setup, the tests and the generators only).',
   'migration/src/lib/settings': 'How a page starts: the browser check, where its settings come from (`pms-config.txt`, the build, its address), which site and lists are its own, and the stop screen.',
   'migration/src/lib/participant': 'The participant page: the boot sequence, the visit, the activities held for the page\'s life, the pager\'s rules, saving answers, screen moves.',

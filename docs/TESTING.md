@@ -63,10 +63,17 @@ seven sizes.
   `build-svelte/release/`. No subfolders are needed on SharePoint. `npm run build` ([scripts/build.js](../scripts/build.js)) runs it and
   gathers the four files to upload (the three pages and `pms-config.txt`) into `build-svelte/upload/` (`-- --zip` for `upload.zip`).
   The official package with checksums remains `npm run package:release`. (`npm run test:build` was the legacy build's test; it is gone.)
-- `npm test` — the node suites listed in `package.json` (1,330 tests, about 20 seconds); the first is [scripts/test-sessions.js](../scripts/test-sessions.js), which spins up a
+- `npm test` — the node suites listed in `package.json` (1,475 tests, about 20 seconds); the first is [scripts/test-sessions.js](../scripts/test-sessions.js), which spins up a
   real server against a scratch copy of `server/data/`, and drives it through
   `dataService` to exercise track merge/resume, admin restart, and QR token
-  lifecycle. Run this after touching `server/`, `dataService.js`, or session/track logic.
+  lifecycle. Run this after touching `server/`, `lib/data/`, or session/track logic.
+- **Phase 17's suites** (all part of `npm test`): [scripts/test-data-surface.js](../scripts/test-data-surface.js) holds the data service's 107 public names, each
+  with its kind and arity, to `scripts/data-surface.json` and its count in DECISIONS.md; [scripts/test-data-modules.js](../scripts/test-data-modules.js) holds the shape
+  of `lib/data/` (one state instance per page, only `core.js` keeps state and fetches, the facade passes on exactly the surface, no app file imports a part,
+  no import cycle under `migration/src`, `core.js` imports only `encoding.js`, no part over 600 lines, a header on each); [scripts/test-store.js](../scripts/test-store.js)
+  holds the local server's store to a write that meets a read of the same list (Windows refuses a rename over an open file). A suite that opens fresh pages
+  (`dataService.js?page=N`) imports [scripts/fresh-page.js](../scripts/fresh-page.js) first, an in-thread resolve hook that gives each page its own copy of every
+  part; [scripts/data-layer-source.js](../scripts/data-layer-source.js) is the data layer's source for the suites that read it as text.
 - `npm run validate:data` — runs [scripts/validate-data.js](../scripts/validate-data.js):
   checks `server/data/*.json` for duplicate IDs, dangling references, bidirectional
   section/question links, and valid enum values. Run after hand-editing any seed JSON.
@@ -75,7 +82,7 @@ seven sizes.
   parity, activation, the schema check and self-test, and the sample-client seeds, against the mocked
   SharePoint REST in [scripts/sharepoint-fake.js](../scripts/sharepoint-fake.js) and the real local
   server on a scratch data directory. It prints the measured request counts. Run it after touching
-  `dataService.js`, `server/`, or `migration/src/lib/participant/` (`boot`, `answer-store`, `participantData`), `lib/setup/` (`seed`, `sample-clients`) or `lib/brand/client-theme.js`.
+  `lib/data/`, `server/`, or `migration/src/lib/participant/` (`boot`, `answer-store`, `participantData`), `lib/setup/` (`seed`, `sample-clients`) or `lib/brand/client-theme.js`.
 - `npm run go-live -- <clientId> [YYYY-MM-DD]` — makes a client today's client on the running local
   server (`activateClient`); with no argument it lists the clients. A local shortcut: the admin's
   **Today** screen does the same for a facilitator (Phase 5), on SharePoint too.
@@ -88,7 +95,7 @@ seven sizes.
   (Chromium and WebKit); `npm run test:migration` runs them.
 - `npm run test:content` — runs [scripts/test-admin-content.js](../scripts/test-admin-content.js) (also part of `npm test`): the
   Content and Guests rules (`migration/src/lib/admin/admin-content.js`: grouping, order, pasted names, guest status, CSV, the print sheet,
-  what a copy is) and `dataService.js` section 6 (copy, duplicate, assign, delete, bulk guests, bulk codes) against the mocked
+  what a copy is) and section 6 of the data layer, `lib/data/content-copy.js` and `guests.js` (copy, duplicate, assign, delete, bulk guests, bulk codes) against the mocked
   SharePoint REST (request counts, pacing, injected failures) and the real local server, which must leave the same records. Run it
   after touching section 6 or `admin-content.js`. The browser side is `admin-content.spec.ts` and `admin-guests.spec.ts` (local
   server; `admin-local.ts` is their shared harness, one scratch server per test, uploads in the scratch folder too) and
@@ -119,7 +126,7 @@ seven sizes.
   `brand-studio-sharepoint.spec.ts` (request budgets, written to `test-results/budget/brand-studio-sharepoint.json`); screenshots of
   every device and screen are in `test-results/admin/brand-*.png`. Run it after touching `migration/src/lib/brand/` (the asset, crop,
   sniffing, scrim, brand, colour and theme modules), `migration/src/admin/{BrandStudio,BrandPreview*,AssetUploader,
-  CropDialog,CopyBrandDialog}`, `HeroPlate`, `AppShell` or section 7 of `dataService.js`.
+  CropDialog,CopyBrandDialog}`, `HeroPlate`, `AppShell` or `lib/data/pictures.js`.
 - `npm run test:effects` — rebuilds the release page and runs the sound and confetti specs
   (`scripts/migration-tests/effects*.spec.ts`) on Chromium and WebKit. WebKit is installed once with
   `node node_modules/playwright/cli.js install webkit`. The audio spec writes every cue as a WAV to

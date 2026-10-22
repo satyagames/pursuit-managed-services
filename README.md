@@ -77,7 +77,7 @@ every 10 to 15 seconds, the Live display every 12. More: [docs/DATA-FLOW.md](doc
 
 | Module (`migration/src/lib/`) | What it holds |
 |---|---|
-| `data/` | the data layer: the only code that talks to SharePoint |
+| `data/` | the data layer: `dataService.js`, the door, over its parts (`core.js` holds its state and is the only code that talks to SharePoint) |
 | `schema/` | the lists and columns, named once |
 | `settings/` | how a page starts and finds its settings |
 | `participant/` | the boot sequence, the visit, the pager's rules, saving answers |
