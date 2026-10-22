@@ -13,6 +13,7 @@
   import TodayControls from './TodayControls.svelte';
   import TodayGoLive from './TodayGoLive.svelte';
   import TodayReadiness from './TodayReadiness.svelte';
+  import TodaySessions from './TodaySessions.svelte';
   import TodayShare from './TodayShare.svelte';
 
   type Client = { id: string; name: string; status?: string; logoUrl?: string | null; theme?: { assets?: { logo?: string | null; hero?: string | null } } | null };
@@ -453,21 +454,10 @@
     {#if otherSessions.length > 0}
       <details class="card-panel others">
         <summary>All sessions ({otherSessions.length})</summary>
-        <p class="muted small">Sessions made by Go live are found by client and date above. This list is for any other session, and to reopen one that has ended.</p>
-        <ul class="rows rows--flat">
-          {#each (allSessions ? otherSessions : otherSessions.slice(0, 8)) as session (session.id)}
-            {@const wanted = sessionWanted(session)}
-            <li class="row">
-              <div class="row__main"><span class="row__title">{nameOf(session.clientId)} · {session.date ?? 'Undated'}</span><span class="muted small mono">{session.id} · {session.status ?? 'not-started'}</span></div>
-              {#if session.status === 'completed'}
-                <button class="btn btn--small" type="button" onclick={() => void reopenIt(session)} disabled={busy}>Reopen</button>
-              {:else}
-                <button class="btn btn--small" type="button" onclick={() => void attempt(wanted)} disabled={busy || !wanted}>Make live</button>
-              {/if}
-            </li>
-          {/each}
-        </ul>
-        {#if otherSessions.length > 8 && !allSessions}<button class="btn btn--small" type="button" onclick={() => { allSessions = true; }}>Show all</button>{/if}
+        <TodaySessions
+          sessions={otherSessions} all={allSessions} {busy} {nameOf} canMakeLive={(session) => sessionWanted(session as Session) !== null}
+          onReopen={(session) => void reopenIt(session as Session)} onMakeLive={(session) => void attempt(sessionWanted(session as Session))} onShowAll={() => { allSessions = true; }}
+        />
       </details>
     {/if}
   {/if}
