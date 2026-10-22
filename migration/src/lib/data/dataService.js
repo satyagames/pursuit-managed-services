@@ -1,26 +1,37 @@
 /**
- * dataService.js: the ONLY module that talks to the backend. (One exception: migration/src/lib/settings/settings-file.js reads the page's
- * settings file, which has to happen before this module knows where to look.)
+ * dataService.js: the data layer's one door. Every page, shared module and test imports the data service from here, and nothing else under
+ * migration/src talks to the backend. (One exception: migration/src/lib/settings/settings-file.js reads the page's settings file, which has to
+ * happen before the data layer knows where to look.)
+ *
+ * Since Phase 17 this file holds no code: it passes on the public calls of the parts of lib/data, which Phase 17 cut out of it without changing
+ * a line of their bodies (docs/DECISIONS.md, "The data layer"). Every name it passed on before, it passes on now, and nothing else
+ * (scripts/test-data-surface.js). The parts, in the order they depend on each other (a part imports only parts above it):
+ *
+ *    encoding.js      the schema's columns as the adapter reads and writes them, and other helpers with no state
+ *    core.js          section 1, the backend adapter: ALL of the data layer's state, configure(), the requests (one SharePoint REST call, the
+ *                     write token, retries, $batch) and the generic item calls of both backends
+ *    common.js        what several parts share: an item from a read, a write to a known item, a filtered address, paced bulk work
+ *    schema-check.js  the check of a site's lists and columns (section 1's end)
+ *    records.js       section 2, the records: clients, sessions, activities, questions, options, visits, QR codes, the roster, admin users
+ *    today.js         section 3, today's client
+ *    responses.js     section 3, answers kept one item per participant
+ *    self-test.js     section 3, the Setup page's probes and self-test
+ *    qr-scan.js       section 4, a first QR scan in few requests, and a visit begun from Welcome
+ *    today-clients.js section 5, the admin's Today and Clients screens
+ *    content-copy.js  section 6, content per client and copying activities
+ *    guests.js        section 6, guests in bulk
+ *    pictures.js      section 7, pictures for a client's look
+ *    watch.js         section 8, what a page that stays open reads on a timer
+ *    removal.js       section 9, removing a visit that has no answers, and deleting by key
+ *    list-titles.js   section 10, which lists are this copy's
  *
  * Since Phase 10c-1 it belongs to the pages in migration/ alone. Until then the legacy pages were built from this same file, so it
  * was only ever allowed to grow; they left the branch (the tag legacy-final holds them), that rule went with them, and so did the
- * exports that only they, or nothing, called. All of this file is carried by the participant page, so whatever is added here is paid
- * for there: logic that only the admin or Setup needs belongs in a module under migration/src/lib that is handed this one
- * (lib/admin/admin-today.js is the pattern).
+ * exports that only they, or nothing, called. Every page carries every name passed on here (the participant page imports the data
+ * service as a whole), so whatever is added is paid for there: logic that only the admin or Setup needs belongs in a module under
+ * migration/src/lib that is handed this one (lib/admin/admin-today.js is the pattern).
  *
- * Screens import the functions exported below and never call fetch() themselves. The parts:
- *
- *    1. Backend adapter: the local Express server, or same-origin SharePoint REST using the browser's own SharePoint sign-in.
- *    2. Public API, the records: clients, sessions, activities, questions, options, visits, QR codes, the roster and admin
- *       users. Built only on the adapter.
- *    3. Today's client, and answers kept one item per participant.
- *    4. A first QR scan in few requests, and a visit begun from Welcome.
- *    5. The admin's Today and Clients screens.
- *    6. Content per client, copying activities, and guests in bulk.
- *    7. Pictures for a client's look.
- *    8. What a page that stays open reads on a timer.
- *    9. Removing a visit that has no answers.
- *   10. Which lists are this copy's.
+ * Screens import the functions passed on below and never call fetch() themselves.
  *
  * Contract of the public API:
  *   - Records are plain objects with a string `id`, never raw backend payloads.
@@ -32,26 +43,6 @@
  * the pages use, and expected values written out (DROPS-10C2A.md, in git history at 7347c72).
  */
 
-import { LISTS } from '../schema/pms-schema.js';
-import { spLibraryIn, spTitleIn } from './encoding.js';
-import { sharePoint } from './core.js';
-
-// ============================================================================
-// 10. Which lists are this copy's (Phase 10b)
-// ============================================================================
-
-/**
- * The title of each list, by its key, and of the picture library (`logoLibrary`), as this page's requests spell them: under the
- * settings it was configured with, or under `settings` when some are given (nothing is asked of the site either way). The setup
- * page shows them; a test holds migration/src/lib/settings/deploy-settings.js to the same twelve keys and titles.
- * @returns {Record<string, string>}
- */
-export const sharePointListTitles = (settings = sharePoint) => ({
-  ...Object.fromEntries(Object.keys(LISTS).map((list) => [list, spTitleIn(settings, list)])),
-  logoLibrary: spLibraryIn(settings),
-});
-
-// Passed on from the parts already cut out of this file (Phase 17).
 export {
   configure, requireConfiguration, isUnreachable, isSharePointMode,
 } from './core.js';
@@ -101,3 +92,6 @@ export {
 export {
   removeEmptyVisit, listItemKeys, deleteByKey,
 } from './removal.js';
+export {
+  sharePointListTitles,
+} from './list-titles.js';

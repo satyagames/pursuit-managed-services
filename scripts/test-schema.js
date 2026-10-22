@@ -14,6 +14,7 @@ import { describe, it } from 'node:test';
 import { ID, LIBRARY, LISTS } from '../migration/src/lib/schema/pms-schema.js';
 import { LIBRARY_META, LOCAL_FILE, META, columnsOf } from '../migration/src/lib/schema/pms-schema-meta.js';
 import { schemaSpecs } from '../migration/src/lib/setup/setup-checks.js';
+import { dataLayerFiles } from './data-layer-source.js';
 import { BASELINE_DIR } from './request-baseline.js';
 import { readSnapshot, readTables } from './schema-snapshot.js';
 import { createSharePointFake } from './sharepoint-fake.js';
@@ -257,8 +258,10 @@ describe('every reader is built on the schema file', () => {
   });
 
   it('no hand-kept table is left: each reader that had one has none, and spells no list title, old or new', async () => {
+    // (The data layer was dataService.js alone until Phase 17 cut it into parts: each of them is held to what it was held to.)
+    const dataLayer = /\bconst (?:spLists|spAdded|spColumns|spArrays|spObjects|spBooleans|spDates|spBaseTypes|spBaseSpec)\b/;
     const tables = {
-      'migration/src/lib/data/dataService.js': /\bconst (?:spLists|spAdded|spColumns|spArrays|spObjects|spBooleans|spDates|spBaseTypes|spBaseSpec)\b/,
+      ...Object.fromEntries((await dataLayerFiles()).map((file) => [path.relative(ROOT, file).split(path.sep).join('/'), dataLayer])),
       'migration/src/lib/setup/setup-checks.js': /\bconst (?:PROVISIONED|STRICT)\b/,
       'scripts/sharepoint-fake.js': /\b(?:const|export const) (?:SCHEMA|CHOICES|ADDED_COLUMNS)\b/,
       'server/api.js': /\bconst LISTS = \[/,
