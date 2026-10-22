@@ -8,13 +8,15 @@
   import { getSessionResults, type SessionResults } from '../lib/admin/adminData.js';
   import { masterColours } from '../lib/brand/legacy-colours.js';
   import { withoutRetiredLogo } from '../lib/brand/retired-logos.js';
-  import { namesByVisit, unreadableNotice, wallUnreadableNotice } from '../lib/results/unreadable.js';
   import { loadLiveStructure, readLive, type LiveRead, type LiveStructure } from '../lib/admin/live-session.js';
   import { withStoredColours } from '../lib/admin/master-brand.js';
   import { createPageWatcher, type PageWatcher } from '../lib/common/page-watch.js';
   import { adminDelay } from '../lib/common/poll-schedule.js';
   import { heldNameSources } from '../lib/admin/admin-results.js';
   import { wallAddress } from '../lib/admin/live-wall.js';
+  import {
+    pagerStep, presentScaleFor, sectionTitleOf, sessionLabel, shownIndex, stepFrom, unreadableText as unreadableTextOf,
+  } from '../lib/admin/live-view.js';
   import { nextFit, scaleOf } from '../lib/results/present-fit.js';
   import { answerCounts, answersFrom, answersOf, chartsOf, namesFor } from '../lib/results/results-chart-model.js';
   import { RESULTS_PALETTE } from '../lib/results/results-palette-source.js';
@@ -119,21 +121,14 @@
   const chartSections = $derived(results ? chartsOf({ sections }, { names }) : []);
   const charts = $derived(new Map(chartSections.flatMap((section) => section.charts.map((chart) => [chart.id, chart]))));
   // Who, if some saved answers could not be read: by the name on their visit, else the visit id. On the wall, how many and nothing else.
-  const unreadableText = $derived.by(() => {
-    if (!results || !(results.unreadable ?? []).length) return '';
-    if (wall) return wallUnreadableNotice(results.unreadable?.length ?? 0);
-    return unreadableNotice(results.unreadable, namesByVisit(results.tracks.map((track) => ({ id: track.id, name: track.participantName ?? '' }))));
-  });
-  const at = $derived.by(() => {
-    const found = questions.findIndex((question) => question.id === shownId);
-    return found >= 0 ? found : Math.min(shownAt, Math.max(0, count - 1));
-  });
+  const unreadableText = $derived(unreadableTextOf(results, wall));
+  const at = $derived(shownIndex(questions, shownId, shownAt));
   const current = $derived(questions[at]);
   /** The question on screen, by its id: a refresh hands the page new objects for the same question, and the effects below must not take that for a
    *  new question (Phase 11a-2: each refresh put the type back to full size and, once the screen could scroll, the screen back to its top). */
   const currentId = $derived(current?.id ?? '');
   const currentChart = $derived(current ? charts.get(current.id) ?? null : null);
-  const currentTitle = $derived(sections.find((section) => section.questions.some((question) => question.id === current?.id))?.title ?? '');
+  const currentTitle = $derived(sectionTitleOf(sections, current?.id));
   // The type, and the steps that make it smaller for a card that does not fit, are lib/results/present-fit.js (Phase 11a-3): never below SMALLEST, and past
   // it the card spills.
   const scale = $derived(presenting ? scaleOf(presentScale, fitFactor) : 1);
@@ -248,7 +243,7 @@
   /** Moves to the previous (-1) or the next (1) question, and round again at either end. */
   function go(step: number) {
     if (count === 0) return;
-    const next = (at + step + count) % count;
+    const next = stepFrom(at, step, count);
     shownAt = next;
     shownId = questions[next].id;
     fitFactor = 1;
@@ -298,10 +293,11 @@
 
   function onKeydown(event: KeyboardEvent) {
     if (!presenting) return;
+    const step = pagerStep(event);
     if (event.key === 'Escape') leave();
-    else if ((event.key === 'ArrowRight' || event.key === 'ArrowLeft') && !event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+    else if (step !== null) {
       event.preventDefault();
-      go(event.key === 'ArrowRight' ? 1 : -1);
+      go(step);
     }
   }
 
@@ -316,7 +312,7 @@
     if (!presenting) return;
     // Larger type for a projector: 1.2 on a laptop, up to 2.4 on a wide screen.
     const measure = () => {
-      presentScale = Math.round(Math.min(2.4, Math.max(1.2, window.innerWidth / 1000)) * 20) / 20;
+      presentScale = presentScaleFor(window.innerWidth);
       viewHeight = window.innerHeight;
     };
     measure();
@@ -563,7 +559,7 @@
     {#if sessions.length}
       <ul class="live__picker">
         {#each sessions as session (session.id)}
-          <li><button class="btn" type="button" onclick={() => onOpen(session.id)}>{clients.find((client) => client.id === session.clientId)?.name ?? session.clientId} · {session.date ?? ''} · {session.status ?? ''}</button></li>
+          <li><button class="btn" type="button" onclick={() => onOpen(session.id)}>{sessionLabel(session, clients)}</button></li>
         {/each}
       </ul>
     {/if}
