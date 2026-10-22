@@ -6,6 +6,9 @@
     needsSwitchConfirmation, notLiveText, pollToday, switchDialog,
   } from '../lib/admin/admin-today.js';
   import { copyText, participantPageUrl, qrImage } from '../lib/admin/admin-links.js';
+  import {
+    failureText as failed, goLiveLabel, goLiveWhy, levelCounts, otherSessionsOf, pickableClients, readinessSummary, sinceText, upsertSession as upsert,
+  } from '../lib/admin/today-view.js';
   import ConfirmDialog from './ConfirmDialog.svelte';
   import MotionSwitch from './MotionSwitch.svelte';
 
@@ -83,32 +86,17 @@
   const rows = $derived(evaluateReadiness({
     client, date: dateValid ? date : today, today, sections, questions, options, sessions, clients, target, roster, schema,
   } as never));
-  const blockers = $derived(rows.filter((row) => row.level === 'blocker').length);
-  const warnings = $derived(rows.filter((row) => row.level === 'warning').length);
+  const counts = $derived(levelCounts(rows));
+  const blockers = $derived(counts.blockers);
+  const warnings = $derived(counts.warnings);
   const alreadyLive = $derived(status.live && status.session?.id === targetId);
   const busy = $derived(checking || goingLive || controlsBusy);
-  const why = $derived(
-    !loaded ? '' : !client ? 'Add a client first.' : !dateValid ? 'Choose a date.' : inputsBusy ? 'Checking that everything is ready...'
-      : blockers > 0 ? (blockedReason(rows) ?? '') : alreadyLive ? `${client.name} is already live for ${date}.` : '',
-  );
+  const why = $derived(goLiveWhy({ loaded, client, dateValid, inputsBusy, blockers, reason: blockers > 0 ? blockedReason(rows) : null, alreadyLive, date }));
   const canGo = $derived(loaded && Boolean(client) && dateValid && !inputsBusy && blockers === 0 && !alreadyLive && !busy);
-  const pickable = $derived(clients.filter((entry) => entry.status !== 'archived' || entry.id === clientId).sort((a, b) => a.name.localeCompare(b.name)));
-  const otherSessions = $derived([...sessions].filter((session) => session.id !== settings?.activeSessionId || !status.live)
-    .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '') || b.id.localeCompare(a.id)));
+  const pickable = $derived(pickableClients(clients, clientId));
+  const otherSessions = $derived(otherSessionsOf(sessions, settings?.activeSessionId, status.live));
 
   const nameOf = (id: string) => clients.find((entry) => entry.id === id)?.name ?? id;
-  const upsert = (list: Session[], next: Session) => list.some((item) => item.id === next.id) ? list.map((item) => item.id === next.id ? { ...item, ...next } : item) : [...list, next];
-  const failed = (cause: unknown, fallback: string) => cause instanceof Error ? cause.message : fallback;
-
-  function sinceText(iso: string | null) {
-    if (!iso) return 'not recorded';
-    const moment = new Date(iso);
-    if (Number.isNaN(moment.getTime())) return 'not recorded';
-    return localDate(moment) === today
-      ? moment.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
-      : moment.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-  }
-
   onMount(() => {
     void reload();
     const tick = () => { if (!document.hidden) void poll(); };
@@ -421,7 +409,7 @@
               <div><dt>Date</dt><dd>{status.session.date ?? 'Undated'}</dd></div>
               <div><dt>Session</dt><dd class="mono">{status.session.id}</dd></div>
               <div><dt>Participants</dt><dd data-testid="participants">{participants}</dd></div>
-              <div><dt>Live since</dt><dd>{sinceText(status.since)}</dd></div>
+              <div><dt>Live since</dt><dd>{sinceText(status.since, today)}</dd></div>
             </dl>
           {:else}
             <p class="status__text">{notLiveText(status)}</p>
@@ -445,7 +433,7 @@
                 <input id="today-date" class="input" type="date" bind:value={date} onchange={() => void pickDate()} disabled={busy} />
               </div>
               <button class="btn btn--primary btn--go" type="button" onclick={() => void attempt(goLiveWanted())} disabled={!canGo}>
-                {goingLive ? 'Going live...' : checking ? 'Checking...' : alreadyLive ? 'Already live' : 'Go live'}
+                {goLiveLabel({ goingLive, checking, alreadyLive })}
               </button>
             </div>
             {#if why}<p class="why" role="status" data-testid="go-live-why">{why}</p>{/if}
@@ -461,7 +449,7 @@
             <button class="btn btn--small" type="button" onclick={() => void recheckInputs({ everything: true })} disabled={busy || inputsBusy}>Re-check</button>
           </div>
           <p class="muted ready__summary" data-testid="readiness-summary">
-            {#if inputsBusy}Checking...{:else if blockers > 0}{blockers} blocker{blockers === 1 ? '' : 's'}{warnings ? `, ${warnings} warning${warnings === 1 ? '' : 's'}` : ''}{:else if warnings > 0}Ready to go live, with {warnings} warning{warnings === 1 ? '' : 's'}{:else}Ready to go live{/if}
+            {readinessSummary({ inputsBusy, blockers, warnings })}
           </p>
           <ul class="checks">
             {#each rows as row (row.id)}
