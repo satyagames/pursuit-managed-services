@@ -485,7 +485,7 @@ describe('no control is filled with the accent, or with anything near the wrong-
     // Brand Studio (the admin's editor of a client's look) and its libraries read the accent too: it is what they edit. No
     // participant screen or component does.
     assert.deepEqual(accentReaders.sort(), [
-      'migration/src/admin/BrandStudio.svelte', 'migration/src/admin/CopyBrandDialog.svelte', 'migration/src/dev/Styleguide.svelte',
+      'migration/src/admin/BrandColours.svelte', 'migration/src/admin/BrandStudio.svelte', 'migration/src/admin/CopyBrandDialog.svelte', 'migration/src/dev/Styleguide.svelte',
       'migration/src/lib/brand/brand-studio.js', 'migration/src/lib/brand/client-theme.js', 'migration/src/lib/brand/legacy-colours.js',
     ]);
     assert.deepEqual(accentReaders.filter((file) => /^migration\/src\/(components|routes|pager)\//.test(file)), [], 'no participant screen or component reads an accent');
