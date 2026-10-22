@@ -51,7 +51,7 @@ export function questionLayout(question) {
 }
 
 /** @param {Question} question */
-export const isImageGrid = (question) => questionLayout(question) === 'image-grid';
+const isImageGrid = (question) => questionLayout(question) === 'image-grid';
 
 /** Choice questions can be shown as a 2x2 grid of logo tiles; ranking and typing cannot. @param {Question} question */
 export const usesTiles = (question) => isImageGrid(question) && CHOICE_TYPES.includes(question.type);

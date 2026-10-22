@@ -33,8 +33,8 @@ export const PRESETS = Object.freeze([
 ]);
 
 /** The colours of a very light or very dark primary start warning here (relative luminance, 0 to 1). */
-export const VERY_LIGHT = 0.45;
-export const VERY_DARK = 0.012;
+const VERY_LIGHT = 0.45;
+const VERY_DARK = 0.012;
 
 /**
  * @typedef {object} Draft
@@ -167,7 +167,7 @@ export function brandReport(draft, { logo = null } = {}) {
 
 const lut = Array.from({ length: 256 }, (_, value) => { const unit = value / 255; return unit <= 0.04045 ? unit / 12.92 : ((unit + 0.055) / 1.055) ** 2.4; });
 /** WCAG relative luminance of an 8-bit colour. */
-export const luminanceOfRgb = (red, green, blue) => 0.2126 * lut[red] + 0.7152 * lut[green] + 0.0722 * lut[blue];
+const luminanceOfRgb = (red, green, blue) => 0.2126 * lut[red] + 0.7152 * lut[green] + 0.0722 * lut[blue];
 
 /** A drawn pixel at least this light (relative luminance) counts as "very light"; at most DARK_PIXEL as "very dark". */
 export const LIGHT_PIXEL = 0.72;

@@ -21,9 +21,9 @@ const responseOwner = /** @type {(response: any) => string | null} */ (/** @type
 const CHUNK = 20; // session ids to a read, as readActivityContent() does for activities
 const EMPTY = Object.freeze({ visits: [], roster: [] });
 /** A page records a staff sign-in a moment after it draws its first screen, so someone who joined a moment ago may not be in the visit log yet. */
-export const RECENT_MS = 120_000;
+const RECENT_MS = 120_000;
 /** How many times a person's name is looked for in all: when the session is read, and once more on the next refresh. */
-export const MAX_LOOKS = 2;
+const MAX_LOOKS = 2;
 
 /** What Results asks before it removes a visit (Phase 9b, DI-9), and says when an answer arrived first. The data service refuses in the same words. */
 export const REMOVE_VISIT_CONFIRM = "Remove this visit? It has no answers. If it was made by a guest's code, that code stays used: issue a replacement code if the guest needs to start again.";

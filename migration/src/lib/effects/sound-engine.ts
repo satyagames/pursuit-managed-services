@@ -54,7 +54,7 @@ function noiseBuffer(ctx: BaseAudioContext): AudioBuffer {
   return buffer;
 }
 
-export interface ScheduledCue {
+interface ScheduledCue {
   /** Seconds on the context clock when the last note has fallen silent. */
   end: number;
   /** Fades the cue out quickly (used when a fourth cue needs the room). */

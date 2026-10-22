@@ -38,7 +38,7 @@ export const TEMPLATE = Object.freeze({ list: 100, library: 101 });
  * The options a column is created with (SP.AddFieldOptions): AddToDefaultContentType (1), AddFieldInternalNameHint (8: make the internal name
  * the Name asked for, not one made from the display name) and AddFieldToDefaultView (16, so a person looking at the list sees it).
  */
-export const FIELD_OPTIONS = 1 | 8 | 16;
+const FIELD_OPTIONS = 1 | 8 | 16;
 
 // ---- The site as it is: one read of its lists, one read of each existing list's columns -----------------------------------------------
 
@@ -47,14 +47,14 @@ export const FIELD_OPTIONS = 1 | 8 | 16;
  * is that column (pms-schema-meta.js), so it is never created, and the app writes a Title into every item it makes, so its being required is
  * harmless.
  */
-export const BUILT_IN = 'Title';
+const BUILT_IN = 'Title';
 
 /** OData quotes a quote by doubling it, and the title is then encoded as part of the address. */
 const literal = (text) => `'${encodeURIComponent(String(text).replace(/'/g, "''"))}'`;
 /** The address of a list by its title, as the data layer spells it. */
 export const listAddress = (title) => `/web/lists/getbytitle(${literal(title)})`;
 /** What a plan reads of the site's lists: the title, the template, and what Setup may have set. */
-export const SITE_LISTS = '/web/lists?$select=Id,Title,BaseTemplate,Hidden,Description,EnableAttachments,EnableModeration,EnableVersioning';
+const SITE_LISTS = '/web/lists?$select=Id,Title,BaseTemplate,Hidden,Description,EnableAttachments,EnableModeration,EnableVersioning';
 const results = (data) => data?.results ?? data?.value ?? [];
 const nextOf = (data) => data?.__next ?? data?.['@odata.nextLink'] ?? data?.['odata.nextLink'] ?? null;
 const lower = (text) => String(text).toLowerCase();
@@ -146,7 +146,7 @@ export function listSettings(key, { versioning = false } = {}) {
 }
 
 /** A list's description: what it is for, then that Setup made it (and, until its settings are made, that they are still to come). */
-export const descriptionOf = (key, pending = true) => `${key === LIBRARY_KEY ? LIBRARY_META.purpose : META[key].purpose} ${pending && key !== LIBRARY_KEY ? SETTINGS_PENDING : MADE_BY}`;
+const descriptionOf = (key, pending = true) => `${key === LIBRARY_KEY ? LIBRARY_META.purpose : META[key].purpose} ${pending && key !== LIBRARY_KEY ? SETTINGS_PENDING : MADE_BY}`;
 
 const SETTING_WORDS = { EnableAttachments: 'attachments off', EnableModeration: 'content approval off', EnableVersioning: 'version history off' };
 const count = (number, one, many = `${one}s`) => `${number} ${number === 1 ? one : many}`;
@@ -301,7 +301,7 @@ export const FIELD_CHANGES = Object.freeze(['Indexed', 'EnforceUniqueValues']);
 /** What Create may change of a list Setup made: its attachments, content approval, version history and description (never its title). */
 export const LIST_CHANGES = Object.freeze(['EnableAttachments', 'EnableModeration', 'EnableVersioning', 'Description']);
 /** What a person reads when SharePoint refuses a write for lack of permission (a 403), wherever it was. */
-export const NOT_ALLOWED = 'Your account cannot create lists on this site. A site owner must press Create, or create the lists by hand from SHAREPOINT-LISTS.md.';
+const NOT_ALLOWED = 'Your account cannot create lists on this site. A site owner must press Create, or create the lists by hand from SHAREPOINT-LISTS.md.';
 const AGAIN = 'Press Show the plan, then Create, to carry on from there.';
 
 const only = (changes, allowed) => Object.fromEntries(Object.entries(changes).filter(([name]) => allowed.includes(name)));
