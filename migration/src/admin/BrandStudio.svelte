@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
-  import { embeddedAssetUrl } from '../lib/brand/assets.js';
   import { effectiveSlug } from '../lib/admin/admin-clients.js';
   import { assetFileName, isOwnUpload } from '../lib/brand/asset-names.js';
   import { measureLogo, type Prepared } from '../lib/brand/asset-image.js';
@@ -17,6 +16,9 @@
   import { DEFAULT_PRIMARY } from '../lib/brand/theme.js';
   import { copyText, participantPageUrl, qrImage } from '../lib/admin/admin-links.js';
   import { mayLeave, setLeaveGuard } from '../lib/admin/unsaved.js';
+  import {
+    colourInvalid, contrastResult, displayUrl as display, lookOf, pageGradient, previewAddress, savedMessage, slotStatus,
+  } from '../lib/admin/brand-studio-view.js';
   import AssetUploader from './AssetUploader.svelte';
   import BrandPreview from './BrandPreview.svelte';
   import ConfirmDialog from './ConfirmDialog.svelte';
@@ -71,8 +73,7 @@
   const report = $derived(brandReport(draft, { logo: logoStats }));
   const device = $derived(deviceById(deviceId));
   const scene = $derived(SCENES.find((entry) => entry.id === sceneId) ?? SCENES[0]);
-  const gradient = $derived(`linear-gradient(to bottom, ${report.theme.tokens['--bg-top']} 0%, ${report.theme.tokens['--bg-mid']} 58%, ${report.theme.tokens['--bg-bottom']} 100%)`);
-  const display = (url: string | null) => (url ? embeddedAssetUrl(url) ?? url : null);
+  const gradient = $derived(pageGradient(report.theme.tokens));
 
   // The words are the client's own, as a participant's page resolves them.
   const words = $derived(resolveClientTheme(record).copy);
@@ -81,18 +82,7 @@
     plate: 'light', backgroundUrl: null, backgroundFocus: null, motion: true,
   });
   $effect(() => {
-    look.scene = sceneId;
-    look.clientName = record.name;
-    look.eventTitle = words.eventTitle;
-    look.eventSubtitle = words.eventSubtitle;
-    look.welcomeLine = words.welcomeLine;
-    look.logoText = words.logoText;
-    look.heroUrl = display(draft.assets.hero);
-    look.logoUrl = display(draft.assets.logo);
-    look.plate = draft.plate;
-    look.backgroundUrl = display(draft.assets.background);
-    look.backgroundFocus = draft.assets.background ? draft.focus ?? { x: 50, y: 50 } : null;
-    look.motion = motionEnabled(record.theme);
+    Object.assign(look, lookOf({ scene: sceneId, clientName: record.name, words, draft, motion: motionEnabled(record.theme) }));
   });
 
   // How light or dark the logo is, for the plate advice. Measured again when the logo changes.
@@ -108,9 +98,7 @@
 
   onMount(() => {
     void participantPageUrl().then((base) => {
-      const url = new URL(base);
-      url.searchParams.set('preview', client.id);
-      deviceUrl = url.href;
+      deviceUrl = previewAddress(base, client.id);
     });
     const remove = setLeaveGuard(() => (dirty ? new Promise<boolean>((resolve) => { leaving = resolve; }) : true));
     return () => {
@@ -258,7 +246,8 @@
       accentTyped = null;
       justSaved = true;
       onSaved(record);
-      onToast(kept > 0 ? `Saved. ${kept === 1 ? 'An old picture' : `${kept} old pictures`} could not be removed and can be deleted from the library by hand.` : 'Saved', kept > 0 ? 'info' : 'success');
+      const said = savedMessage(kept);
+      onToast(said.message, said.kind as 'info' | 'success');
     } catch (cause) {
       error = cause instanceof Error ? cause.message : 'Could not save this look.';
     } finally {
@@ -270,7 +259,7 @@
     try { deviceQr = await qrImage(deviceUrl); } catch (cause) { onToast(cause instanceof Error ? cause.message : 'Could not draw the QR code.', 'error'); }
   }
 
-  const statusFor = (slot: Slot) => (pending[slot] ? 'Not saved yet' : draft.assets[slot] ? (saved.assets[slot] ? 'Saved' : 'Not saved yet') : 'Not set');
+  const statusFor = (slot: Slot) => slotStatus({ pending: pending[slot], current: draft.assets[slot], saved: saved.assets[slot] });
   const FRAME = 'Preview of the';
 </script>
 
@@ -295,11 +284,11 @@
         <div class="field">
           <label class="field__label" for="brand-primary">Primary</label>
           <div class="brand__colour">
-            <input id="brand-primary" class="input mono" value={primaryTyped ?? draft.primary} oninput={(event) => typePrimary(event.currentTarget.value)} onblur={() => { primaryTyped = null; }} autocapitalize="off" autocorrect="off" spellcheck="false" aria-describedby="brand-primary-help" aria-invalid={primaryTyped !== null && parseColour(primaryTyped) === null} />
+            <input id="brand-primary" class="input mono" value={primaryTyped ?? draft.primary} oninput={(event) => typePrimary(event.currentTarget.value)} onblur={() => { primaryTyped = null; }} autocapitalize="off" autocorrect="off" spellcheck="false" aria-describedby="brand-primary-help" aria-invalid={colourInvalid(primaryTyped)} />
             <input class="color" type="color" aria-label="Primary colour picker" value={draft.primary.toLowerCase()} oninput={(event) => setPrimary(parseColour(event.currentTarget.value) ?? draft.primary)} />
           </div>
-          <span id="brand-primary-help" class="small" class:muted={primaryTyped === null || parseColour(primaryTyped) !== null} class:error={primaryTyped !== null && parseColour(primaryTyped) === null}>
-            {#if primaryTyped !== null && parseColour(primaryTyped) === null}Enter a colour like #045BCC.{:else}The page, the buttons, the pills and the tiles follow this colour.{/if}
+          <span id="brand-primary-help" class="small" class:muted={!colourInvalid(primaryTyped)} class:error={colourInvalid(primaryTyped)}>
+            {#if colourInvalid(primaryTyped)}Enter a colour like #045BCC.{:else}The page, the buttons, the pills and the tiles follow this colour.{/if}
           </span>
           <div class="brand__presets" role="group" aria-label="Preset colours">
             {#each PRESETS as preset (preset.hex)}
@@ -311,7 +300,7 @@
         <div class="field">
           <label class="field__label" for="brand-accent">Accent (optional)</label>
           <div class="brand__colour">
-            <input id="brand-accent" class="input mono" value={accentTyped ?? draft.accent ?? ''} placeholder="None" oninput={(event) => typeAccent(event.currentTarget.value)} onblur={() => { accentTyped = null; }} autocapitalize="off" autocorrect="off" spellcheck="false" aria-describedby="brand-accent-help" aria-invalid={accentTyped !== null && accentTyped.trim() !== '' && parseColour(accentTyped) === null} />
+            <input id="brand-accent" class="input mono" value={accentTyped ?? draft.accent ?? ''} placeholder="None" oninput={(event) => typeAccent(event.currentTarget.value)} onblur={() => { accentTyped = null; }} autocapitalize="off" autocorrect="off" spellcheck="false" aria-describedby="brand-accent-help" aria-invalid={colourInvalid(accentTyped, { blankIsNone: true })} />
             <input class="color" type="color" aria-label="Accent colour picker" value={(draft.accent ?? '#ffffff').toLowerCase()} oninput={(event) => setAccent(parseColour(event.currentTarget.value))} />
             <button class="btn" type="button" disabled={draft.accent === null} onclick={() => setAccent(null)}>No accent</button>
           </div>
@@ -350,7 +339,7 @@
                 <th scope="row"><span class="brand__sample" style:background={row.background} aria-hidden="true"><span class="brand__sample-ink" style:background={row.foreground}></span></span>{row.label}</th>
                 <td>{row.ratio.toFixed(1)}:1</td>
                 <td>{row.need}:1</td>
-                <td>{row.pass ? '✓ Pass' : row.id.startsWith('accent') ? '✕ Not drawn' : '✕ Fails'}</td>
+                <td>{contrastResult(row)}</td>
               </tr>
             {/each}
           </tbody>
