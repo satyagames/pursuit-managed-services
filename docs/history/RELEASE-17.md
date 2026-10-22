@@ -147,4 +147,22 @@ the Live display, every export, Brand Studio, Delete session; the network tab fo
 
 ## The package
 
-Made by `npm run package:release` from the commit that adds this report; its name, checksums and proofs are added below in the next commit.
+`pms-7417da3` (`build-svelte/package/pms-7417da3/`, `build-svelte/package/pms-7417da3.zip`), made by `npm run package:release` from the committed tree
+in a fresh checkout of `7417da3` (the commit that added this report); `shasum -a 256 -c` passes in the folder (7 OK) and in a fresh unzip (7 OK), and
+`sha256sum -c SHA256SUMS.txt` again by hand (7 OK); no page holds a site address, a folder name, a PIN hash, the demo PIN, `p_cec_` or `CreativeExpCOE`.
+`npm run test:local-site` on it: 26 of 26 (26 before). RUNBOOK.md's note says this package changes nothing a person sees ("no data, list, setting or
+behaviour changed, and the pages were rebuilt from the restructured source") and adds step 13 (QA 195 to 197); RELEASE-NOTES.md has what changed since
+pms-07eb42b.
+
+| File | Bytes | gzip -9 | SHA-256 |
+|---|---:|---:|---|
+| index.html | 377,583 | 158,392 | `1ed02967a5e1df6f9e515025a12962e870e2f58163887d4a76a9594f39af4ea2` |
+| admin.html | 1,583,302 | 576,093 | `d0095fd80cb76ee0e95cd5cb9dece0ce5814ca49da6041302df8a1665e91bb9a` |
+| setup.html | 1,172,703 | 788,919 | `0cf21480292b2f384798a4e2a567448e01bc2ccdd2db8feec99533f2d8aa62ce` |
+| pms-config.txt | 54 | | `04426124f56abad3973d69fb4a8608e673d86745419bf1cc41c5a70441cc607f` |
+| THIRD-PARTY-NOTICES.txt | 40,835 | | `e4ecfa86a85da94926f3f25b9f2b99791c38cc3ea100c5454bb333e620ec1eb4` |
+| RELEASE-NOTES.md | 35,417 | | `35794eeb4d2ee4fcd2717a2097d70715dcac378ac80c38893376f8abd787db31` |
+| RUNBOOK.md | 39,504 | | `4046d0cd3d753769b5a8295e4b467304e5e62876de9e4033e49311fbf52d16a2` |
+| **pms-7417da3.zip** | 1,562,569 | | `02f7e0fac62f0e85070df06580d8cfe2f2a81576fc0e8d6547e7664d90e3b14d` |
+
+The pages of this package are byte for byte those of the commit after it, which adds only this section.
