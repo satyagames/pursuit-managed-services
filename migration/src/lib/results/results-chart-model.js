@@ -32,9 +32,9 @@ export const WORDS_HEADING = 'Words that came up most';
 /** The words shown for written answers, at most. */
 export const TOP_WORDS = 8;
 /** A word must be in at least this many different comments to be shown. */
-export const MIN_COMMENTS = 2;
+const MIN_COMMENTS = 2;
 /** Shorter words are left out. */
-export const MIN_LETTERS = 3;
+const MIN_LETTERS = 3;
 /** How many comments are shown before "Show more". */
 export const FIRST_COMMENTS = 20;
 
@@ -292,7 +292,7 @@ function headlineOf(kind, rows, leaders, answered, scale) {
 // ---- A confidence scale ---------------------------------------------------------------------------------------------------------------
 
 /** The colour steps of a scale: up to 5; a longer scale shares them out in order (Phase 11a: the blue ramp has five steps at most). */
-export const MAX_TONES = 5;
+const MAX_TONES = 5;
 
 /**
  * Which third of the scale a step is in, by its place: 0 the lowest third, 1 the middle, 2 the top. With three steps each step is a band;

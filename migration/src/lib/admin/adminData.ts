@@ -7,7 +7,7 @@ import { withMotion } from '../brand/client-theme.js';
  * One participant's answer to one question, as dataService.readSessionResponses() returns it from
  * either storage shape. `answer` is the one that counts (the first try for a graded question).
  */
-export type AdminResponse = {
+type AdminResponse = {
   questionId: string;
   clientId?: string | null;
   clientTrackId?: string | null;
@@ -18,8 +18,8 @@ export type AdminResponse = {
   correct?: boolean | null;
   timestamp?: string | null;
 };
-export type AdminOption = { id: string; label: string; count: number; score?: number };
-export type AdminQuestion = { id: string; prompt: string; type: string; respondents: number; responses: AdminResponse[]; options: AdminOption[] };
+type AdminOption = { id: string; label: string; count: number; score?: number };
+type AdminQuestion = { id: string; prompt: string; type: string; respondents: number; responses: AdminResponse[]; options: AdminOption[] };
 export type SessionSection = { id: string; title: string; enabled: boolean; questions: AdminQuestion[] };
 export type SessionTrack = { id: string; clientId: string; sessionId: string; visitorId?: string | null; participantName?: string | null; sharePointUserId?: string | null; createdAt?: string; joinedVia?: string; resumeCount?: number; restartedAt?: string | null };
 /** A participant's answer item that could not be read, and so is not counted (Phase 9b, DI-6): `id` is their visit id. */
@@ -113,13 +113,13 @@ export function orphanNote({ answers, unreadable }: { answers: number; unreadabl
 
 // ---- Guests and QR: the live session's roster, codes, tracks and answers -----------------------------
 
-export type GuestSession = { id: string; clientId: string; date?: string; status: string; participationMode?: string };
-export type GuestClient = { id: string; name: string };
+type GuestSession = { id: string; clientId: string; date?: string; status: string; participationMode?: string };
+type GuestClient = { id: string; name: string };
 export type GuestVisitor = { id: string; sessionId: string; displayName: string; enabled?: boolean };
 export type GuestToken = { id: string; sessionId: string; visitorId?: string | null; used?: boolean; expiredAt?: string | null; createdAt?: string };
-export type GuestTrack = { id: string; visitorId?: string | null; createdAt?: string };
-export type GuestVisit = { id: string; sessionId?: string | null; entryMode?: string; displayName?: string; visitorName?: string; visitedAt?: string };
-export type GuestSection = { id: string; enabled?: boolean; questionIds?: string[] };
+type GuestTrack = { id: string; visitorId?: string | null; createdAt?: string };
+type GuestVisit = { id: string; sessionId?: string | null; entryMode?: string; displayName?: string; visitorName?: string; visitedAt?: string };
+type GuestSection = { id: string; enabled?: boolean; questionIds?: string[] };
 export type GuestState = {
   activeSessionId: string;
   session: GuestSession | null;

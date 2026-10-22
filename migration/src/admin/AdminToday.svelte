@@ -2,12 +2,20 @@
   import { onMount } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
   import {
-    POLL_MS, STAFF_MODE_WARNING, blockedReason, evaluateReadiness, goLive, isCalendarDate, isStaffMode, liveStatus, loadReadinessInputs, loadToday, localDate, makeSessionLive,
-    needsSwitchConfirmation, notLiveText, pollToday, switchDialog,
+    POLL_MS, blockedReason, evaluateReadiness, goLive, isCalendarDate, liveStatus, loadReadinessInputs, loadToday, localDate, makeSessionLive,
+    needsSwitchConfirmation, pollToday, switchDialog,
   } from '../lib/admin/admin-today.js';
-  import { copyText, participantPageUrl, qrImage } from '../lib/admin/admin-links.js';
+  import { participantPageUrl, qrImage } from '../lib/admin/admin-links.js';
+  import {
+    failureText as failed, goLiveLabel, goLiveWhy, levelCounts, otherSessionsOf, pickableClients, readinessSummary, sinceText, upsertSession as upsert,
+  } from '../lib/admin/today-view.js';
   import ConfirmDialog from './ConfirmDialog.svelte';
-  import MotionSwitch from './MotionSwitch.svelte';
+  import TodayControls from './TodayControls.svelte';
+  import TodayGoLive from './TodayGoLive.svelte';
+  import TodayReadiness from './TodayReadiness.svelte';
+  import TodaySessions from './TodaySessions.svelte';
+  import TodayShare from './TodayShare.svelte';
+  import TodayStatus from './TodayStatus.svelte';
 
   type Client = { id: string; name: string; status?: string; logoUrl?: string | null; theme?: { assets?: { logo?: string | null; hero?: string | null } } | null };
   type Session = { id: string; clientId: string; date?: string; status?: string; participationMode?: string; activityFlow?: string };
@@ -29,10 +37,6 @@
   } = $props();
 
   const today = localDate();
-  const flowChoices = [
-    { id: 'sequential', title: 'Sequential', hint: 'Each activity unlocks when the one before it is finished.' },
-    { id: 'open', title: 'Open', hint: 'Every activity is open from the start, in any order.' },
-  ];
 
   // What the page holds (all of it read fresh on load; nothing is kept between page loads).
   let loaded = $state(false);
@@ -63,7 +67,6 @@
   let pollError = $state('');
   let shareUrl = $state('');
   let shareQr = $state('');
-  let shareField = $state<HTMLInputElement>();
   let allSessions = $state(false);
 
   let alive = true;
@@ -83,32 +86,17 @@
   const rows = $derived(evaluateReadiness({
     client, date: dateValid ? date : today, today, sections, questions, options, sessions, clients, target, roster, schema,
   } as never));
-  const blockers = $derived(rows.filter((row) => row.level === 'blocker').length);
-  const warnings = $derived(rows.filter((row) => row.level === 'warning').length);
+  const counts = $derived(levelCounts(rows));
+  const blockers = $derived(counts.blockers);
+  const warnings = $derived(counts.warnings);
   const alreadyLive = $derived(status.live && status.session?.id === targetId);
   const busy = $derived(checking || goingLive || controlsBusy);
-  const why = $derived(
-    !loaded ? '' : !client ? 'Add a client first.' : !dateValid ? 'Choose a date.' : inputsBusy ? 'Checking that everything is ready...'
-      : blockers > 0 ? (blockedReason(rows) ?? '') : alreadyLive ? `${client.name} is already live for ${date}.` : '',
-  );
+  const why = $derived(goLiveWhy({ loaded, client, dateValid, inputsBusy, blockers, reason: blockers > 0 ? blockedReason(rows) : null, alreadyLive, date }));
   const canGo = $derived(loaded && Boolean(client) && dateValid && !inputsBusy && blockers === 0 && !alreadyLive && !busy);
-  const pickable = $derived(clients.filter((entry) => entry.status !== 'archived' || entry.id === clientId).sort((a, b) => a.name.localeCompare(b.name)));
-  const otherSessions = $derived([...sessions].filter((session) => session.id !== settings?.activeSessionId || !status.live)
-    .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '') || b.id.localeCompare(a.id)));
+  const pickable = $derived(pickableClients(clients, clientId));
+  const otherSessions = $derived(otherSessionsOf(sessions, settings?.activeSessionId, status.live));
 
   const nameOf = (id: string) => clients.find((entry) => entry.id === id)?.name ?? id;
-  const upsert = (list: Session[], next: Session) => list.some((item) => item.id === next.id) ? list.map((item) => item.id === next.id ? { ...item, ...next } : item) : [...list, next];
-  const failed = (cause: unknown, fallback: string) => cause instanceof Error ? cause.message : fallback;
-
-  function sinceText(iso: string | null) {
-    if (!iso) return 'not recorded';
-    const moment = new Date(iso);
-    if (Number.isNaN(moment.getTime())) return 'not recorded';
-    return localDate(moment) === today
-      ? moment.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
-      : moment.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-  }
-
   onMount(() => {
     void reload();
     const tick = () => { if (!document.hidden) void poll(); };
@@ -382,11 +370,6 @@
     return { sessionId: session.id, client: owner, date: session.date ?? '', run: () => makeSessionLive(dataService, session.id) as ReturnType<Wanted['run']> };
   }
 
-  async function copyLink() {
-    await copyText(shareUrl, shareField);
-    onToast('Link copied', 'success');
-  }
-
   function rowAction(row: { go?: { tab?: string; action?: string } }) {
     if (row.go?.action === 'reopen' && target) void reopenIt(target).then(() => recheckInputs());
     else if (row.go?.tab) onNavigate(row.go.tab);
@@ -411,47 +394,16 @@
       <div class="today__main">
         <!-- Status -->
         <section class="card-panel status" class:status--live={status.live} aria-labelledby="status-heading" data-live={status.live}>
-          <div class="status__head">
-            <h3 id="status-heading" class="sr-only">Status</h3>
-            <span class="badge" class:badge--live={status.live}><span class="badge__dot" aria-hidden="true"></span>{status.live ? 'LIVE' : 'NOT LIVE'}</span>
-            {#if status.live && status.client}<p class="status__client">{status.client.name}</p>{/if}
-          </div>
-          {#if status.live && status.session}
-            <dl class="facts">
-              <div><dt>Date</dt><dd>{status.session.date ?? 'Undated'}</dd></div>
-              <div><dt>Session</dt><dd class="mono">{status.session.id}</dd></div>
-              <div><dt>Participants</dt><dd data-testid="participants">{participants}</dd></div>
-              <div><dt>Live since</dt><dd>{sinceText(status.since)}</dd></div>
-            </dl>
-          {:else}
-            <p class="status__text">{notLiveText(status)}</p>
-          {/if}
-          {#if pollError}<p class="muted small" role="status">Could not refresh just now ({pollError}). Trying again in a few seconds.</p>{/if}
+          <TodayStatus {status} {participants} since={sinceText(status.since, today)} {pollError} />
         </section>
 
         <!-- Go live -->
         <section class="card-panel" aria-labelledby="golive-heading">
           <h3 id="golive-heading">Go live</h3>
-          {#if pickable.length === 0}
-            <p class="muted">There are no active clients yet. <button class="link" type="button" onclick={() => onNavigate('clients')}>Add one on Clients</button>.</p>
-          {:else}
-            <div class="picker">
-              <div class="field"><label class="field__label" for="today-client">Client</label>
-                <select id="today-client" class="select" value={clientId} onchange={pickClient} disabled={busy}>
-                  {#each pickable as entry (entry.id)}<option value={entry.id}>{entry.name}{entry.status === 'archived' ? ' (archived)' : ''}</option>{/each}
-                </select>
-              </div>
-              <div class="field"><label class="field__label" for="today-date">Date</label>
-                <input id="today-date" class="input" type="date" bind:value={date} onchange={() => void pickDate()} disabled={busy} />
-              </div>
-              <button class="btn btn--primary btn--go" type="button" onclick={() => void attempt(goLiveWanted())} disabled={!canGo}>
-                {goingLive ? 'Going live...' : checking ? 'Checking...' : alreadyLive ? 'Already live' : 'Go live'}
-              </button>
-            </div>
-            {#if why}<p class="why" role="status" data-testid="go-live-why">{why}</p>{/if}
-            {#if verified}<p class="verified" role="status">{verified}</p>{/if}
-            {#if problem}<p class="error" role="alert">{problem}</p>{/if}
-          {/if}
+          <TodayGoLive
+            {pickable} {clientId} bind:date {busy} {canGo} label={goLiveLabel({ goingLive, checking, alreadyLive })} {why} {verified} {problem}
+            onPickClient={pickClient} onPickDate={() => void pickDate()} onGo={() => void attempt(goLiveWanted())} {onNavigate}
+          />
         </section>
 
         <!-- Readiness -->
@@ -460,25 +412,7 @@
             <h3 id="ready-heading">Readiness{client ? ` for ${client.name}` : ''}</h3>
             <button class="btn btn--small" type="button" onclick={() => void recheckInputs({ everything: true })} disabled={busy || inputsBusy}>Re-check</button>
           </div>
-          <p class="muted ready__summary" data-testid="readiness-summary">
-            {#if inputsBusy}Checking...{:else if blockers > 0}{blockers} blocker{blockers === 1 ? '' : 's'}{warnings ? `, ${warnings} warning${warnings === 1 ? '' : 's'}` : ''}{:else if warnings > 0}Ready to go live, with {warnings} warning{warnings === 1 ? '' : 's'}{:else}Ready to go live{/if}
-          </p>
-          <ul class="checks">
-            {#each rows as row (row.id)}
-              <li class="check check--{row.level}" data-level={row.level} data-check={row.id}>
-                <span class="check__word">{row.level === 'blocker' ? 'Blocker' : row.level === 'warning' ? 'Warning' : 'Ready'}</span>
-                <div class="check__body">
-                  <strong>{row.title}</strong>
-                  <p>{row.detail}</p>
-                  {#if row.fix}<p class="check__fix">{row.fix}</p>{/if}
-                  {#if row.go}
-                    {#if row.go.href}<a class="btn btn--small" href={row.go.href}>{row.go.label}</a>
-                    {:else}<button class="btn btn--small" type="button" onclick={() => rowAction(row)} disabled={busy}>{row.go.label}</button>{/if}
-                  {/if}
-                </div>
-              </li>
-            {/each}
-          </ul>
+          <TodayReadiness {rows} summary={readinessSummary({ inputsBusy, blockers, warnings })} {busy} onRowAction={rowAction} />
         </section>
       </div>
 
@@ -486,50 +420,18 @@
         <!-- Controls -->
         <section class="card-panel" aria-labelledby="controls-heading">
           <h3 id="controls-heading">Controls</h3>
-          {#if !controlSession}
-            <p class="muted">Go live first. These apply to the live session.</p>
-          {:else}
-            <p class="muted small">For {nameOf(controlSession.clientId)}, {controlSession.date ?? 'undated'}{status.live ? '' : ' (not live)'}.</p>
-            <fieldset class="field" disabled={controlsBusy || controlSession.status === 'completed'}>
-              <legend class="field__label">How people are identified</legend>
-              <label class="choice"><input type="radio" name="identification" checked={controlSession.participationMode === 'client-visit'} onchange={() => void setMode('client-visit')} /><span>Guests scan a personal QR</span><span class="muted small">Each guest has a single-use code (Guests and QR).</span></label>
-              <label class="choice"><input type="radio" name="identification" checked={controlSession.participationMode !== 'client-visit'} onchange={() => void setMode('staff')} /><span>Staff sign in</span><span class="muted small">Greeted by their signed-in SharePoint name.</span></label>
-            </fieldset>
-            {#if isStaffMode(controlSession) && controlSession.status !== 'completed'}
-              <p class="notice" role="note" data-testid="staff-mode-warning">{STAFF_MODE_WARNING}</p>
-            {/if}
-            <fieldset class="field" disabled={controlsBusy || controlSession.status === 'completed'}>
-              <legend class="field__label">Activity flow</legend>
-              {#each flowChoices as flow (flow.id)}
-                <label class="choice"><input type="radio" name="flow" checked={(controlSession.activityFlow ?? 'sequential') === flow.id} onchange={() => void setFlow(flow.id)} /><span>{flow.title}</span><span class="muted small">{flow.hint}</span></label>
-              {/each}
-            </fieldset>
-            {#if controlClient}
-              <MotionSwitch client={controlClient} compact onSaved={(written) => { clients = clients.map((entry) => (entry.id === written.id ? { ...entry, theme: written.theme as Client['theme'] } : entry)); }} {onToast} />
-            {/if}
-            <div class="controls__end">
-              {#if controlSession.status === 'completed'}
-                <button class="btn" type="button" onclick={() => void reopenIt(controlSession)} disabled={controlsBusy}>Reopen session</button>
-              {:else}
-                <button class="btn btn--danger" type="button" onclick={() => void endIt(controlSession)} disabled={controlsBusy}>End session</button>
-              {/if}
-            </div>
-          {/if}
+          <TodayControls
+            {controlSession} {controlClient} owner={controlSession ? nameOf(controlSession.clientId) : ''} live={status.live} {controlsBusy}
+            onSetMode={(mode) => void setMode(mode)} onSetFlow={(flow) => void setFlow(flow)} onEnd={(session) => void endIt(session)} onReopen={(session) => void reopenIt(session)}
+            onMotionSaved={(written) => { clients = clients.map((entry) => (entry.id === written.id ? { ...entry, theme: written.theme as Client['theme'] } : entry)); }} {onToast}
+          />
         </section>
 
         <!-- Share -->
         {#if status.live && status.session}
           <section class="card-panel" aria-labelledby="share-heading">
             <h3 id="share-heading">Participant link</h3>
-            <div class="share__link">
-              <input bind:this={shareField} class="input mono" readonly value={shareUrl} aria-label="Participant link" />
-              <button class="btn" type="button" onclick={() => void copyLink()} disabled={!shareUrl}>Copy</button>
-            </div>
-            {#if shareQr}<img class="share__qr" src={shareQr} alt={`QR code for the participant link`} />{/if}
-            <div class="share__actions">
-              <a class="btn btn--primary" href={shareUrl || './index.html'} target="_blank" rel="noopener">Open participant view</a>
-              <button class="btn" type="button" onclick={() => onLiveDisplay(status.session!.id)}>Live display</button>
-            </div>
+            <TodayShare {shareUrl} {shareQr} onLive={() => onLiveDisplay(status.session!.id)} {onToast} />
           </section>
         {/if}
       </div>
@@ -538,21 +440,10 @@
     {#if otherSessions.length > 0}
       <details class="card-panel others">
         <summary>All sessions ({otherSessions.length})</summary>
-        <p class="muted small">Sessions made by Go live are found by client and date above. This list is for any other session, and to reopen one that has ended.</p>
-        <ul class="rows rows--flat">
-          {#each (allSessions ? otherSessions : otherSessions.slice(0, 8)) as session (session.id)}
-            {@const wanted = sessionWanted(session)}
-            <li class="row">
-              <div class="row__main"><span class="row__title">{nameOf(session.clientId)} · {session.date ?? 'Undated'}</span><span class="muted small mono">{session.id} · {session.status ?? 'not-started'}</span></div>
-              {#if session.status === 'completed'}
-                <button class="btn btn--small" type="button" onclick={() => void reopenIt(session)} disabled={busy}>Reopen</button>
-              {:else}
-                <button class="btn btn--small" type="button" onclick={() => void attempt(wanted)} disabled={busy || !wanted}>Make live</button>
-              {/if}
-            </li>
-          {/each}
-        </ul>
-        {#if otherSessions.length > 8 && !allSessions}<button class="btn btn--small" type="button" onclick={() => { allSessions = true; }}>Show all</button>{/if}
+        <TodaySessions
+          sessions={otherSessions} all={allSessions} {busy} {nameOf} canMakeLive={(session) => sessionWanted(session as Session) !== null}
+          onReopen={(session) => void reopenIt(session as Session)} onMakeLive={(session) => void attempt(sessionWanted(session as Session))} onShowAll={() => { allSessions = true; }}
+        />
       </details>
     {/if}
   {/if}
@@ -614,140 +505,6 @@
     border-left-color: var(--focus);
   }
 
-  .status__head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.75rem 1rem;
-  }
-
-  .status__client {
-    margin: 0;
-    font-size: clamp(1.4rem, 3vw, 1.9rem);
-    font-weight: var(--fw-bold);
-    line-height: 1.2;
-    overflow-wrap: anywhere;
-  }
-
-  .status__text {
-    margin: 0;
-    color: var(--adm-muted);
-  }
-
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    min-height: 2rem;
-    padding: 0 0.85rem;
-    border-radius: var(--radius-full);
-    color: var(--adm-idle-ink);
-    background: var(--adm-idle-bg);
-    font-size: 0.95rem;
-    font-weight: var(--fw-bold);
-    letter-spacing: 0.04em;
-  }
-
-  .badge__dot {
-    width: 0.6rem;
-    height: 0.6rem;
-    border-radius: 50%;
-    background: currentColor;
-    opacity: 0.55;
-  }
-
-  .badge--live {
-    color: var(--adm-ok-ink);
-    background: var(--adm-ok-bg);
-  }
-
-  .badge--live .badge__dot {
-    background: var(--focus);
-    opacity: 1;
-    box-shadow: 0 0 0 0.2rem rgb(134 188 37 / 0.3);
-  }
-
-  .facts {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
-    gap: 0.9rem 1.25rem;
-    margin: 0;
-  }
-
-  .facts div {
-    min-width: 0;
-  }
-
-  dt {
-    color: var(--adm-muted);
-    font-size: 0.85rem;
-    font-weight: var(--fw-semibold);
-  }
-
-  dd {
-    margin: 0.1rem 0 0;
-    font-weight: var(--fw-semibold);
-    overflow-wrap: anywhere;
-  }
-
-  .mono {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 0.95em;
-  }
-
-  /* Go live */
-  .picker {
-    display: grid;
-    grid-template-columns: minmax(0, 2fr) minmax(10.5rem, 1fr) auto;
-    gap: 0.9rem;
-    align-items: end;
-  }
-
-  .picker .select,
-  .picker .input {
-    width: 100%;
-    min-width: 0;
-    max-width: none;
-  }
-
-  .btn--go {
-    min-width: 8rem;
-    min-height: 3rem;
-    font-weight: var(--fw-bold);
-  }
-
-  @media (max-width: 640px) {
-    .picker {
-      grid-template-columns: 1fr;
-    }
-
-    .btn--go {
-      width: 100%;
-    }
-  }
-
-  .why {
-    margin: 0;
-    color: var(--adm-muted);
-  }
-
-  .verified {
-    margin: 0;
-    padding: 0.6rem 0.9rem;
-    border-radius: 0.6rem;
-    color: var(--adm-ok-ink);
-    background: var(--adm-ok-bg);
-    font-weight: var(--fw-semibold);
-  }
-
-  .error {
-    margin: 0;
-    padding: 0.6rem 0.9rem;
-    border-radius: 0.6rem;
-    color: var(--adm-bad-ink);
-    background: var(--adm-bad-bg);
-  }
-
   /* Readiness */
   .ready__head {
     display: flex;
@@ -755,156 +512,6 @@
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
-  }
-
-  .ready__summary {
-    margin: 0;
-  }
-
-  .checks {
-    display: grid;
-    gap: 0.6rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .check {
-    display: grid;
-    grid-template-columns: 5.2rem minmax(0, 1fr);
-    gap: 0.75rem;
-    padding: 0.75rem 0.85rem;
-    border-radius: 0.7rem;
-    border: 1px solid transparent;
-  }
-
-  .check p {
-    margin: 0.15rem 0 0;
-    overflow-wrap: anywhere;
-  }
-
-  .check__fix {
-    font-weight: var(--fw-semibold);
-  }
-
-  .check__body {
-    display: grid;
-    justify-items: start;
-    min-width: 0;
-    gap: 0.1rem;
-  }
-
-  .check__body .btn {
-    margin-top: 0.5rem;
-  }
-
-  .check__word {
-    align-self: start;
-    padding: 0.15rem 0.5rem;
-    border-radius: var(--radius-full);
-    background: var(--adm-card);
-    font-size: 0.8rem;
-    font-weight: var(--fw-bold);
-    text-align: center;
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
-  }
-
-  .check--pass {
-    padding-block: 0.55rem;
-    color: var(--adm-ok-ink);
-    background: var(--adm-ok-bg);
-  }
-
-  .check--warning {
-    color: var(--adm-warn-ink);
-    background: var(--adm-warn-bg);
-  }
-
-  .check--blocker {
-    color: var(--adm-bad-ink);
-    background: var(--adm-bad-bg);
-    border-color: var(--adm-bad-line);
-  }
-
-  @media (max-width: 480px) {
-    .check {
-      grid-template-columns: 1fr;
-      gap: 0.4rem;
-    }
-
-    .check__word {
-      justify-self: start;
-    }
-  }
-
-  /* Controls and sharing */
-  .controls__end {
-    display: flex;
-    gap: 0.6rem;
-  }
-
-  fieldset.field {
-    display: grid;
-    gap: 0.5rem;
-    min-width: 0;
-  }
-
-  /* An option and its one-line hint: the radio beside both, the hint under the name. */
-  .choice {
-    display: grid;
-    grid-template-columns: 1.5rem minmax(0, 1fr);
-    column-gap: 0.75rem;
-    row-gap: 0.1rem;
-    align-items: start;
-  }
-
-  .choice input {
-    grid-row: 1 / span 2;
-    margin: 0.15rem 0 0;
-  }
-
-  .choice span:nth-of-type(2) {
-    grid-column: 2;
-  }
-
-  fieldset.field:disabled {
-    opacity: 0.6;
-  }
-
-  .share__link {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 0.5rem;
-  }
-
-  .share__qr {
-    justify-self: center;
-    width: min(14rem, 60vw);
-    aspect-ratio: 1;
-    background: #fff;
-    border: 1px solid var(--adm-line);
-    border-radius: 0.75rem;
-  }
-
-  .share__actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.6rem;
-  }
-
-  .notice {
-    display: grid;
-    justify-items: start;
-    gap: 0.4rem;
-    padding: 1rem 1.25rem;
-    color: var(--adm-warn-ink);
-    background: var(--adm-warn-bg);
-    border-radius: 0.9rem;
-  }
-
-  .notice p {
-    margin: 0;
   }
 
   .others {
@@ -915,16 +522,6 @@
   .others summary {
     min-height: 2.75rem;
     font-weight: var(--fw-semibold);
-    cursor: pointer;
-  }
-
-  .link {
-    padding: 0;
-    border: 0;
-    background: none;
-    color: var(--adm-primary);
-    font: inherit;
-    text-decoration: underline;
     cursor: pointer;
   }
 </style>

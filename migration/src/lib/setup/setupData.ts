@@ -10,7 +10,7 @@ import { create, makePlan, markReady, showPlan, siteApi } from './provision.js';
 import { addAdmin, adminNames } from './setup-admins.js';
 import { adminsInSeed, importSeed } from './setup-import.js';
 
-export type SetupListCheck = { list: string; status: string };
+type SetupListCheck = { list: string; status: string };
 export type SetupImportResult = { list: string; id: string; status: string };
 /** One list of the schema check: `problems` names every column to fix, with its internal name and type. */
 export type SchemaList = {

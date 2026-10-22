@@ -125,7 +125,7 @@ seven sizes.
   (Chromium; generated test images in `brand-images.ts`), `brand-smoke.spec.ts` (Chromium and WebKit) and
   `brand-studio-sharepoint.spec.ts` (request budgets, written to `test-results/budget/brand-studio-sharepoint.json`); screenshots of
   every device and screen are in `test-results/admin/brand-*.png`. Run it after touching `migration/src/lib/brand/` (the asset, crop,
-  sniffing, scrim, brand, colour and theme modules), `migration/src/admin/{BrandStudio,BrandPreview*,AssetUploader,
+  sniffing, scrim, brand, colour and theme modules), `migration/src/admin/{BrandStudio,BrandColours,BrandPreview*,AssetUploader,
   CropDialog,CopyBrandDialog}`, `HeroPlate`, `AppShell` or `lib/data/pictures.js`.
 - `npm run test:effects` — rebuilds the release page and runs the sound and confetti specs
   (`scripts/migration-tests/effects*.spec.ts`) on Chromium and WebKit. WebKit is installed once with

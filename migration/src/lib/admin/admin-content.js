@@ -240,14 +240,14 @@ export function pasteSummary(parsed) {
 
 // ---- Guests: status --------------------------------------------------------------------------------
 
-export const GUEST_STATUS_LABEL = Object.freeze({ none: 'No code', waiting: 'Not scanned', joined: 'Joined', completed: 'Completed', disabled: 'Disabled' });
+const GUEST_STATUS_LABEL = Object.freeze({ none: 'No code', waiting: 'Not scanned', joined: 'Joined', completed: 'Completed', disabled: 'Disabled' });
 
 /**
  * The newest code of a guest that has not expired (scanned or not), or null.
  * @template {{ id: string, visitorId?: string | null, used?: boolean, expiredAt?: string | null, createdAt?: string }} T
  * @param {T[]} tokens @param {string} visitorId @returns {T | null}
  */
-export const liveCode = (tokens, visitorId) => tokens.filter((token) => token.visitorId === visitorId && !token.expiredAt)
+const liveCode = (tokens, visitorId) => tokens.filter((token) => token.visitorId === visitorId && !token.expiredAt)
   .sort((a, b) => String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? '')))[0] ?? null;
 
 /**
@@ -366,7 +366,7 @@ export function copyTotalsText({ activities, questions, options }) {
 }
 
 /** What to tell when the activities are made or assigned but the live session could not be updated to count them. */
-export const liveSessionNote = (clientName) => `${clientName} is live, and its results may not count the new activities until you press Go live again.`;
+const liveSessionNote = (clientName) => `${clientName} is live, and its results may not count the new activities until you press Go live again.`;
 
 /**
  * What a copy did, in words: a headline, a level for its colour, and the lines under it. Nothing is

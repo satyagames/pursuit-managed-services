@@ -44,7 +44,7 @@ export type AnswerRecord = {
   answeredAt: string;
 };
 
-export type AnswerInput = Omit<AnswerRecord, 'answeredAt'>;
+type AnswerInput = Omit<AnswerRecord, 'answeredAt'>;
 
 type Visit = { trackId: string; sessionId: string; clientId: string | null; restartedAt: string | null };
 type SavedItem = { responses: AnswerRecord[]; ref: unknown } | null;

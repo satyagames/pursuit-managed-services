@@ -304,7 +304,7 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
     assert.ok(PHASE_16.adminAfter - PHASE_16.adminBefore <= PHASE_16.adminAllowance, 'the admin page, as measured when 16 ended');
   });
 
-  it('Phase 17 (the data layer cut into parts, dead CSS removed) grew neither page: the participant page is no larger than 16 left it, to the same Tailwind rules, and the admin page no larger', (t) => {
+  it('Phase 17 (the data layer cut into parts, dead CSS removed) grew no page but the admin page: the participant page is no larger than 16 left it, to the same Tailwind rules, and the admin page (the child components of Part 2) within its allowance', (t) => {
     assert.equal(PHASE_17.participantBefore, PHASE_16.participantAfter, 'Phase 17 is measured from where Phase 16 ended');
     assert.equal(PHASE_17.adminBefore, PHASE_16.adminAfter);
     const participant = built.participant.htmlGzip - PHASE_17.participantBefore;

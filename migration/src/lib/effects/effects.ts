@@ -24,7 +24,7 @@ export type { ConfettiSize, CueName };
 
 // ---- Sound state ------------------------------------------------------------------------------------
 
-export interface SoundState {
+interface SoundState {
   /** Sound is on right now. */
   on: boolean;
   /** This browser can make sound. False disables the switch. */

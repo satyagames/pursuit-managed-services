@@ -6,7 +6,7 @@ import { push, replace } from 'svelte-spa-router';
 import { participant } from './session.svelte.js';
 import { setMotionDirection } from '../motion/motion.js';
 
-export type NavigationData = {
+type NavigationData = {
   sessionId: string;
   clientTrackId: string;
   answeredQuestionIds?: string[];

@@ -1,24 +1,27 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
-  import { embeddedAssetUrl } from '../lib/brand/assets.js';
   import { loadBrand } from '../lib/brand/branding.js';
   import { downloadCsv, downloadPdf, downloadPptx, liveSections } from '../lib/exports/resultsExport.js';
   import { APP_NAME } from '../lib/common/app-name.js';
   import { getSessionResults, type SessionResults } from '../lib/admin/adminData.js';
-  import { masterColours } from '../lib/brand/legacy-colours.js';
-  import { withoutRetiredLogo } from '../lib/brand/retired-logos.js';
-  import { namesByVisit, unreadableNotice, wallUnreadableNotice } from '../lib/results/unreadable.js';
   import { loadLiveStructure, readLive, type LiveRead, type LiveStructure } from '../lib/admin/live-session.js';
   import { withStoredColours } from '../lib/admin/master-brand.js';
   import { createPageWatcher, type PageWatcher } from '../lib/common/page-watch.js';
   import { adminDelay } from '../lib/common/poll-schedule.js';
   import { heldNameSources } from '../lib/admin/admin-results.js';
   import { wallAddress } from '../lib/admin/live-wall.js';
+  import {
+    liveBrand, pagerStep, presentScaleFor, sectionTitleOf, shownIndex, stepFrom, unreadableText as unreadableTextOf,
+  } from '../lib/admin/live-view.js';
   import { nextFit, scaleOf } from '../lib/results/present-fit.js';
   import { answerCounts, answersFrom, answersOf, chartsOf, namesFor } from '../lib/results/results-chart-model.js';
   import { RESULTS_PALETTE } from '../lib/results/results-palette-source.js';
-  import ResultCard from './charts/ResultCard.svelte';
+  import LiveHead from './LiveHead.svelte';
+  import LiveNotReady from './LiveNotReady.svelte';
+  import LiveNotices from './LiveNotices.svelte';
+  import LiveSections from './LiveSections.svelte';
+  import LiveStage from './LiveStage.svelte';
 
   // The facilitator's live results display (it was the participant page's Master screen until Phase 7): a live tally for each
   // question of the session, the number of answers and of iPads, in the client's own colours, and a Full screen view for projecting
@@ -96,16 +99,7 @@
   const local = !dataService.isSharePointMode();
 
   // The client's colours as the Master screen has always taken them: the stored theme's when it has one, the older fields otherwise.
-  const brand = $derived.by(() => {
-    const client = structure?.client ?? null;
-    const colours = masterColours(client);
-    return {
-      name: (typeof client?.name === 'string' && client.name.trim()) || APP_NAME,
-      logoUrl: embeddedAssetUrl(typeof client?.logoUrl === 'string' && client.logoUrl.trim() ? withoutRetiredLogo(client.logoUrl.trim()) : null) as string | null,
-      primary: colours.primaryColor ?? '#0f172a',
-      secondary: colours.secondaryColor ?? '#64748b',
-    };
-  });
+  const brand = $derived(liveBrand(structure?.client ?? null, APP_NAME));
   const sections = $derived(results ? liveSections(results) as SessionResults['sections'] : []);
   const questions = $derived(sections.flatMap((section) => section.questions));
   /** "N answers from M iPads": the visits that answered (Phase 11a-2), over the questions on the display. */
@@ -119,21 +113,14 @@
   const chartSections = $derived(results ? chartsOf({ sections }, { names }) : []);
   const charts = $derived(new Map(chartSections.flatMap((section) => section.charts.map((chart) => [chart.id, chart]))));
   // Who, if some saved answers could not be read: by the name on their visit, else the visit id. On the wall, how many and nothing else.
-  const unreadableText = $derived.by(() => {
-    if (!results || !(results.unreadable ?? []).length) return '';
-    if (wall) return wallUnreadableNotice(results.unreadable?.length ?? 0);
-    return unreadableNotice(results.unreadable, namesByVisit(results.tracks.map((track) => ({ id: track.id, name: track.participantName ?? '' }))));
-  });
-  const at = $derived.by(() => {
-    const found = questions.findIndex((question) => question.id === shownId);
-    return found >= 0 ? found : Math.min(shownAt, Math.max(0, count - 1));
-  });
+  const unreadableText = $derived(unreadableTextOf(results, wall));
+  const at = $derived(shownIndex(questions, shownId, shownAt));
   const current = $derived(questions[at]);
   /** The question on screen, by its id: a refresh hands the page new objects for the same question, and the effects below must not take that for a
    *  new question (Phase 11a-2: each refresh put the type back to full size and, once the screen could scroll, the screen back to its top). */
   const currentId = $derived(current?.id ?? '');
   const currentChart = $derived(current ? charts.get(current.id) ?? null : null);
-  const currentTitle = $derived(sections.find((section) => section.questions.some((question) => question.id === current?.id))?.title ?? '');
+  const currentTitle = $derived(sectionTitleOf(sections, current?.id));
   // The type, and the steps that make it smaller for a card that does not fit, are lib/results/present-fit.js (Phase 11a-3): never below SMALLEST, and past
   // it the card spills.
   const scale = $derived(presenting ? scaleOf(presentScale, fitFactor) : 1);
@@ -248,7 +235,7 @@
   /** Moves to the previous (-1) or the next (1) question, and round again at either end. */
   function go(step: number) {
     if (count === 0) return;
-    const next = (at + step + count) % count;
+    const next = stepFrom(at, step, count);
     shownAt = next;
     shownId = questions[next].id;
     fitFactor = 1;
@@ -298,10 +285,11 @@
 
   function onKeydown(event: KeyboardEvent) {
     if (!presenting) return;
+    const step = pagerStep(event);
     if (event.key === 'Escape') leave();
-    else if ((event.key === 'ArrowRight' || event.key === 'ArrowLeft') && !event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+    else if (step !== null) {
       event.preventDefault();
-      go(event.key === 'ArrowRight' ? 1 : -1);
+      go(step);
     }
   }
 
@@ -316,7 +304,7 @@
     if (!presenting) return;
     // Larger type for a projector: 1.2 on a laptop, up to 2.4 on a wide screen.
     const measure = () => {
-      presentScale = Math.round(Math.min(2.4, Math.max(1.2, window.innerWidth / 1000)) * 20) / 20;
+      presentScale = presentScaleFor(window.innerWidth);
       viewHeight = window.innerHeight;
     };
     measure();
@@ -486,92 +474,26 @@
   style:--chart-scale={scale}
 >
   <header class="live__head">
-    <div class="live__brand">
-      {#if brand.logoUrl && failedLogo !== brand.logoUrl}<span class="live__logo"><img src={brand.logoUrl} alt={brand.name} onerror={() => { failedLogo = brand.logoUrl ?? ''; }} /></span>{/if}
-      <strong class="live__client">{structure ? brand.name : APP_NAME}</strong>
-    </div>
-    <div class="live__title">
-      <h2>Live results{wallPage ? ' · Wall display' : ''}</h2>
-      <p class="live__meta" aria-live="off">{results ? `${answersFrom(answered)} · updated ${updated}` : message}</p>
-    </div>
-    <div class="live__actions">
-      {#if phase === 'display' && !presenting}
-        <button class="btn btn--primary" type="button" onclick={() => void exportCurrent('csv')} disabled={!!exporting}>{exporting === 'csv' ? 'Exporting...' : 'Export CSV'}</button>
-        <button class="btn" type="button" onclick={() => void exportCurrent('pdf')} disabled={!!exporting}>{exporting === 'pdf' ? 'Exporting...' : 'Export PDF'}</button>
-        <button class="btn" type="button" onclick={() => void exportCurrent('pptx')} disabled={!!exporting}>{exporting === 'pptx' ? 'Exporting...' : 'Export PPT'}</button>
-        <button class="btn" type="button" onclick={refreshStructure} title="Read the questions and answers again now">Refresh</button>
-        <a class="btn" href={newTabAddress} target="_blank" rel="noopener" title="The wall display: the charts with no names">Open in a new tab</a>
-        <button class="btn btn--primary" type="button" onclick={() => void enter()}>Full screen</button>
-      {/if}
-      {#if presenting}
-        <button class="btn live__exit" type="button" onclick={() => leave()}>Exit full screen</button>
-      {:else}
-        <button class="btn" type="button" onclick={onBack}>← Results</button>
-      {/if}
-    </div>
+    <LiveHead
+      {brand} {failedLogo} clientName={structure ? brand.name : APP_NAME} {wallPage} meta={results ? `${answersFrom(answered)} · updated ${updated}` : message}
+      {phase} {presenting} {exporting} {newTabAddress} onLogoFailed={() => { failedLogo = brand.logoUrl ?? ''; }} onExport={(kind) => void exportCurrent(kind)}
+      onRefresh={refreshStructure} onEnter={() => void enter()} onLeave={() => leave()} {onBack}
+    />
   </header>
 
   {#if phase === 'display'}
-    {#if message}<p class="live__status" role="status">{message}</p>{/if}
-    {#if unreadableText}<p class="notice live__unreadable" class:live__unreadable--wall={wall} role="status" data-testid="unreadable-notice"><strong>{unreadableText}</strong></p>{/if}
-    {#if exportMessage && !presenting}<p class="live__status" role="status">{exportMessage}</p>{/if}
-    {#if !wall}
-      <div class="live__names">
-        <button class="btn live__auto" type="button" role="switch" aria-checked={namesShown} onclick={() => { namesShown = !namesShown; }}>Names shown <span class="live__auto-state" aria-hidden="true">{namesShown ? 'On' : 'Off'}</span></button>
-        <span class="live__names-note">{namesShown ? 'Press a bar to see who picked it. Hide the names before you share this screen.' : 'Names are hidden.'}</span>
-      </div>
-    {/if}
+    <LiveNotices {message} {unreadableText} {wall} {exportMessage} {presenting} {namesShown} onToggleNames={() => { namesShown = !namesShown; }} />
     {#if presenting}
-      <div class="live__stage" bind:this={stage}>
-        {#if current}
-          <p class="live__eyebrow">{currentTitle ? `${currentTitle} · ` : ''}Question {at + 1} of {count}</p>
-          {#key current.id}
-            {#if currentChart}<ResultCard chart={currentChart} wall marked={!!revealed[currentChart.id]} onToggleAnswer={() => toggleAnswer(current.id)} selected={selected[current.id] ?? null} onSelect={(id) => select(current.id, id)} {scale} fit {spill} level={3} />{/if}
-          {/key}
-        {:else}
-          <p class="live__status">This session has no live questions yet.</p>
-        {/if}
-      </div>
-      {#if count > 0}
-        <div class="live__foot" bind:clientHeight={footHeight}>
-          <!-- (It floats over the page just above the controls and takes no room, so nothing moves under the pointer when it goes.) -->
-          {#if spill}<p class="live__more" data-testid="more-below" style:visibility={atEnd ? 'hidden' : null}>More below <span aria-hidden="true">↓</span></p>{/if}
-          <div class="live__pager" role="group" aria-label="Question controls">
-            <button class="btn" type="button" aria-label="Previous question" onclick={() => go(-1)} disabled={count < 2}>← Previous</button>
-            <button class="btn" type="button" aria-label="Next question" onclick={() => go(1)} disabled={count < 2}>Next →</button>
-            <button class="btn live__auto" type="button" role="switch" aria-checked={autoAdvance} onclick={() => { autoAdvance = !autoAdvance; }} disabled={count < 2}>Auto-advance every 15 s <span class="live__auto-state" aria-hidden="true">{autoAdvance ? 'On' : 'Off'}</span></button>
-          </div>
-        </div>
-      {/if}
+      <LiveStage
+        bind:stage bind:footHeight {current} {currentChart} {currentTitle} {at} {count} {revealed} {selected} {scale} {spill} {atEnd} {autoAdvance}
+        onToggleAnswer={toggleAnswer} onSelect={select} onGo={go} onToggleAuto={() => { autoAdvance = !autoAdvance; }}
+      />
     {:else}
       {#if questions.length === 0}<p class="live__status">This session has no live questions yet.</p>{/if}
-      <div class="live__sections">
-        {#each chartSections as section (section.id)}
-          <section class="live-section">
-            <h3 class="live-section__title">{section.title}</h3>
-            <div class="live-section__grid">
-              {#each section.charts as chart (chart.id)}
-                <ResultCard {chart} {wall} {withNames} marked={!wall || !!revealed[chart.id]} onToggleAnswer={() => toggleAnswer(chart.id)} selected={selected[chart.id] ?? null} onSelect={(id) => select(chart.id, id)} {scale} level={4} />
-              {/each}
-            </div>
-          </section>
-        {/each}
-      </div>
+      <LiveSections {chartSections} {wall} {withNames} {revealed} {selected} {scale} onToggleAnswer={toggleAnswer} onSelect={select} />
     {/if}
-  {:else if phase === 'picker'}
-    <p class="live__status" role="status">{message}</p>
-    {#if sessions.length}
-      <ul class="live__picker">
-        {#each sessions as session (session.id)}
-          <li><button class="btn" type="button" onclick={() => onOpen(session.id)}>{clients.find((client) => client.id === session.clientId)?.name ?? session.clientId} · {session.date ?? ''} · {session.status ?? ''}</button></li>
-        {/each}
-      </ul>
-    {/if}
-  {:else if phase === 'loading'}
-    <p class="live__status" role="status">Loading results...</p>
   {:else}
-    <p class="live__status live__status--error" role="alert">{message}</p>
-    <div class="live__actions"><button class="btn" type="button" onclick={() => location.reload()}>Try again</button></div>
+    <LiveNotReady {phase} {message} {sessions} {clients} {onOpen} />
   {/if}
 </section>
 
@@ -594,54 +516,6 @@
     border-bottom: 3px solid var(--brand-primary);
   }
 
-  .live__brand {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .live__logo {
-    display: inline-flex;
-    padding: 0.35rem 0.6rem;
-    background: #fff;
-    border: 1px solid var(--adm-line);
-    border-radius: 0.6rem;
-  }
-
-  /* A definite height, so that a picture with only a viewBox (an SVG logo) still gets a width from its shape. */
-  .live__logo img {
-    display: block;
-    width: auto;
-    max-width: 12rem;
-    height: 2.5rem;
-    object-fit: contain;
-  }
-
-  .live__client {
-    font-size: 1.1rem;
-  }
-
-  .live__title {
-    flex: 1 1 14rem;
-    min-width: 0;
-  }
-
-  .live__title h2 {
-    margin: 0;
-    font-size: 1.4rem;
-  }
-
-  .live__meta {
-    margin: 0.15rem 0 0;
-    color: var(--adm-muted);
-  }
-
-  .live__actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
   .live__status {
     margin: 0;
     padding: 0.75rem 1rem;
@@ -650,70 +524,7 @@
     border-radius: 0.5rem;
   }
 
-  .live__status--error {
-    color: var(--adm-bad-ink);
-    background: var(--adm-bad-bg);
-    border-color: var(--adm-bad-line);
-  }
-
-  .live__picker {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .live__names {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem 1rem;
-  }
-
-  .live__names-note {
-    color: var(--adm-muted);
-  }
-
-  .live__sections {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-  }
-
-  .live-section__title {
-    margin: 0 0 0.75rem;
-    font-size: 1.3rem;
-    color: var(--adm-ink);
-  }
-
-  /* Each card keeps its own height, at the top of its row (Phase 11a-2: a card stretched to the height of its neighbour whose names were open). */
-  .live-section__grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
-    align-items: start;
-    gap: 1.25rem;
-  }
-
-  /* The way out is shown in full screen, and fades (and the pointer hides) after a few idle seconds; any movement, touch, key or focus brings it back.
-     It stays in the page for the keyboard and the screen reader the whole time. */
-  .live__exit,
-  .live__pager {
-    transition: opacity 160ms ease;
-  }
-
   /* ---- Full screen: the display covers the window; the type is large; ONE question at a time, sized to fit ----------------------- */
-
-  .live__unreadable--wall {
-    margin: 0;
-    padding: 0;
-    border: 0;
-    background: none;
-    color: inherit;
-    font-size: 0.875em;
-  }
 
   .live--present {
     --live-gap: calc(0.9rem * var(--chart-scale, 1));
@@ -732,124 +543,21 @@
     flex: 0 0 auto;
   }
 
-  /* The room for the card: what is left between the heading and the controls. */
-  .live__stage {
-    display: flex;
-    flex: 1 1 0;
-    flex-direction: column;
-    gap: calc(0.5rem * var(--chart-scale, 1));
-    min-height: 0;
-  }
-
-  .live__eyebrow {
-    flex: 0 0 auto;
-    margin: 0;
-    color: rgb(255 255 255 / 0.92);
-    font-size: calc(1.1rem * var(--chart-scale, 1));
-    font-weight: 600;
-  }
-
-  .live__foot {
-    display: flex;
-    flex: 0 0 auto;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  /* A question too long for the screen: the screen scrolls as one page, the controls stay at its foot, and "More below" says there is more. */
+  /* A question too long for the screen: the screen scrolls as one page (its stage and controls, LiveStage.svelte). */
   .live--present.live--spill {
     overflow-y: auto;
-  }
-
-  .live--spill .live__stage {
-    flex: 0 0 auto;
-  }
-
-  /* Solid, so that the card's words do not show through behind the controls, and down to the screen's edge (a sticky box keeps clear of its scroller's
-     padding unless told otherwise). */
-  .live--spill .live__foot {
-    position: sticky;
-    bottom: calc(-1 * var(--live-pad));
-    padding: 0.5rem 0;
-    background: #000102;
-    border-radius: 0.6rem;
-  }
-
-  .live__more {
-    position: absolute;
-    bottom: calc(100% + 0.5rem);
-    margin: 0;
-    padding: 0.25rem 0.9rem;
-    color: #fff;
-    font-size: calc(1rem * var(--chart-scale, 1));
-    font-weight: 700;
-    white-space: nowrap;
-    background: #000102;
-    border: 1px solid rgb(255 255 255 / 0.7);
-    border-radius: 999px;
-    box-shadow: 0 2px 10px rgb(0 0 0 / 0.3);
-    pointer-events: none;
-  }
-
-  .live__pager {
-    display: flex;
-    flex: 0 0 auto;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-  }
-
-  .live__auto-state {
-    display: inline-block;
-    min-width: 2.2rem;
-    margin-left: 0.4rem;
-    padding: 0.1rem 0.5rem;
-    font-weight: 700;
-    text-align: center;
-    border: 1px solid currentcolor;
-    border-radius: 999px;
   }
 
   .live--present[data-idle='true'] {
     cursor: none;
   }
 
-  .live--present[data-idle='true'] .live__exit:not(:focus-visible),
-  .live--present[data-idle='true'] .live__pager:not(:has(:focus-visible)) {
-    opacity: 0;
-  }
-
   .live--present .live__head {
     border-bottom-color: rgb(255 255 255 / 0.55);
-  }
-
-  .live--present .live__client {
-    font-size: calc(1.1rem * var(--chart-scale, 1));
-  }
-
-  .live--present .live__logo img {
-    height: calc(2.5rem * var(--chart-scale, 1));
-    max-width: calc(12rem * var(--chart-scale, 1));
-  }
-
-  .live--present .live__title h2 {
-    font-size: calc(1.4rem * var(--chart-scale, 1));
-  }
-
-  .live--present .live__meta {
-    color: rgb(255 255 255 / 0.92);
-    font-size: calc(1rem * var(--chart-scale, 1));
   }
 
   .live--present .live__status {
     color: var(--adm-ink);
     font-size: calc(1rem * var(--chart-scale, 1));
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .live__exit,
-    .live__pager { transition: none; }
   }
 </style>

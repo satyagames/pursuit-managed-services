@@ -245,7 +245,7 @@ describe('SAM-1: Kroger has no logo until a real one is uploaded, on a fresh sit
   });
 
   it('the Live display and the Clients list read a client\'s logo through the same rule', async () => {
-    for (const file of ['migration/src/admin/LiveDisplay.svelte', 'migration/src/admin/AdminClients.svelte', 'migration/src/lib/admin/master-brand.ts', 'migration/src/lib/admin/admin-today.js', 'migration/src/lib/brand/client-theme.js', 'migration/src/lib/brand/brand-studio.js']) {
+    for (const file of ['migration/src/lib/admin/live-view.js', 'migration/src/admin/AdminClients.svelte', 'migration/src/lib/admin/master-brand.ts', 'migration/src/lib/admin/admin-today.js', 'migration/src/lib/brand/client-theme.js', 'migration/src/lib/brand/brand-studio.js']) {
       assert.match(await source(file), /withoutRetiredLogo|isRetiredLogo/, file);
     }
   });

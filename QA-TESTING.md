@@ -1363,13 +1363,19 @@ facilitator's own rights allow, can only be seen there.** Use a test folder firs
 
 ### Phase 17 (the data layer cut into parts, dead CSS removed): not verified on the real site or an iPad
 
-No behaviour, list, setting or word changed: the pages were rebuilt from restructured source, and 72 CSS selectors that nothing could match left the
-three stylesheets (RELEASE-17.md). What only the real site and a real iPad can show is that this is so there too. Use a test folder first.
+No behaviour, list, setting or word changed: the pages were rebuilt from restructured source, 72 CSS selectors that nothing could match left the
+three stylesheets, and the admin's Today, Live display and Brand Studio were cut into parts (RELEASE-17.md). What only the real site and a real iPad
+can show is that this is so there too. Use a test folder first.
 
 195. **One full pass on a test folder.** *(Still to see.)* Upload the new package to a test folder and run Setup's self-test: **expect** 11 of 11. Then
     join with an iPad by QR code and by manual select, answer every kind of question, open Results and the Live display, make an export of each
     kind (leader report PDF, participant CSV, summary pack PDF and PowerPoint, summary CSV), save a picture in Brand Studio, and **Delete session** on a
-    scratch session. **Expect** everything as with `pms-07eb42b` (Phase 16), screen for screen.
+    scratch session. **Expect** everything as with `pms-07eb42b` (Phase 16), screen for screen. The three screens cut into parts in Part 2 deserve
+    every control once: on **Today**, Go live and its reason line, Re-check and a readiness row's button, both identification modes, both activity
+    flows, Animations, End session and Reopen, the participant link's Copy and QR, and Make live in "All sessions"; on the **Live display**, the
+    exports, Refresh, Names shown, Full screen with Previous, Next, the arrow keys, Auto-advance, Show answer and "More below" on a long question;
+    in **Brand Studio**, a typed, a picked and a preset colour, the accent and No accent, both plates, Auto-fix, Copy brand, every device and screen
+    of the preview, and the real-iPad address's Copy, Open and QR.
 196. **The first QR scan's requests.** *(Still to see.)* On an iPad (or Edge with the network tab open), scan a guest code of a session that has
     already started. **Expect** 8 requests to the first screen beside the settings file (9 for the session's first device), as
     `scripts/test-participant-storage.js` counts them.

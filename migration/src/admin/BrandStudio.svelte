@@ -1,24 +1,27 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
-  import { embeddedAssetUrl } from '../lib/brand/assets.js';
   import { effectiveSlug } from '../lib/admin/admin-clients.js';
   import { assetFileName, isOwnUpload } from '../lib/brand/asset-names.js';
   import { measureLogo, type Prepared } from '../lib/brand/asset-image.js';
   import { BRAND_SLOTS, slotSpec } from '../lib/brand/asset-specs.js';
   import type { Look } from '../lib/brand/brand-look.js';
-  import { DEVICES, deviceById } from '../lib/brand/brand-devices.js';
+  import { deviceById } from '../lib/brand/brand-devices.js';
   import { SCENES } from '../lib/brand/brand-sample.js';
   import {
-    OPEN_PAGES_NOTE, PRESETS, brandReport, changesForSave, cloneDraft, copyColoursFrom, draftFromClient, parseColour, resetColours, sameDraft,
+    OPEN_PAGES_NOTE, brandReport, changesForSave, cloneDraft, copyColoursFrom, draftFromClient, parseColour, resetColours, sameDraft,
     type Draft, type LogoStats,
   } from '../lib/brand/brand-studio.js';
   import { motionEnabled, resolveClientTheme } from '../lib/brand/client-theme.js';
   import { DEFAULT_PRIMARY } from '../lib/brand/theme.js';
-  import { copyText, participantPageUrl, qrImage } from '../lib/admin/admin-links.js';
+  import { participantPageUrl, qrImage } from '../lib/admin/admin-links.js';
   import { mayLeave, setLeaveGuard } from '../lib/admin/unsaved.js';
+  import {
+    displayUrl as display, lookOf, pageGradient, previewAddress, savedMessage, slotStatus,
+  } from '../lib/admin/brand-studio-view.js';
   import AssetUploader from './AssetUploader.svelte';
-  import BrandPreview from './BrandPreview.svelte';
+  import BrandColours from './BrandColours.svelte';
+  import BrandPreviewPanel from './BrandPreviewPanel.svelte';
   import ConfirmDialog from './ConfirmDialog.svelte';
   import CopyBrandDialog from './CopyBrandDialog.svelte';
   import MotionSwitch from './MotionSwitch.svelte';
@@ -71,8 +74,7 @@
   const report = $derived(brandReport(draft, { logo: logoStats }));
   const device = $derived(deviceById(deviceId));
   const scene = $derived(SCENES.find((entry) => entry.id === sceneId) ?? SCENES[0]);
-  const gradient = $derived(`linear-gradient(to bottom, ${report.theme.tokens['--bg-top']} 0%, ${report.theme.tokens['--bg-mid']} 58%, ${report.theme.tokens['--bg-bottom']} 100%)`);
-  const display = (url: string | null) => (url ? embeddedAssetUrl(url) ?? url : null);
+  const gradient = $derived(pageGradient(report.theme.tokens));
 
   // The words are the client's own, as a participant's page resolves them.
   const words = $derived(resolveClientTheme(record).copy);
@@ -81,18 +83,7 @@
     plate: 'light', backgroundUrl: null, backgroundFocus: null, motion: true,
   });
   $effect(() => {
-    look.scene = sceneId;
-    look.clientName = record.name;
-    look.eventTitle = words.eventTitle;
-    look.eventSubtitle = words.eventSubtitle;
-    look.welcomeLine = words.welcomeLine;
-    look.logoText = words.logoText;
-    look.heroUrl = display(draft.assets.hero);
-    look.logoUrl = display(draft.assets.logo);
-    look.plate = draft.plate;
-    look.backgroundUrl = display(draft.assets.background);
-    look.backgroundFocus = draft.assets.background ? draft.focus ?? { x: 50, y: 50 } : null;
-    look.motion = motionEnabled(record.theme);
+    Object.assign(look, lookOf({ scene: sceneId, clientName: record.name, words, draft, motion: motionEnabled(record.theme) }));
   });
 
   // How light or dark the logo is, for the plate advice. Measured again when the logo changes.
@@ -108,9 +99,7 @@
 
   onMount(() => {
     void participantPageUrl().then((base) => {
-      const url = new URL(base);
-      url.searchParams.set('preview', client.id);
-      deviceUrl = url.href;
+      deviceUrl = previewAddress(base, client.id);
     });
     const remove = setLeaveGuard(() => (dirty ? new Promise<boolean>((resolve) => { leaving = resolve; }) : true));
     return () => {
@@ -258,7 +247,8 @@
       accentTyped = null;
       justSaved = true;
       onSaved(record);
-      onToast(kept > 0 ? `Saved. ${kept === 1 ? 'An old picture' : `${kept} old pictures`} could not be removed and can be deleted from the library by hand.` : 'Saved', kept > 0 ? 'info' : 'success');
+      const said = savedMessage(kept);
+      onToast(said.message, said.kind as 'info' | 'success');
     } catch (cause) {
       error = cause instanceof Error ? cause.message : 'Could not save this look.';
     } finally {
@@ -270,8 +260,7 @@
     try { deviceQr = await qrImage(deviceUrl); } catch (cause) { onToast(cause instanceof Error ? cause.message : 'Could not draw the QR code.', 'error'); }
   }
 
-  const statusFor = (slot: Slot) => (pending[slot] ? 'Not saved yet' : draft.assets[slot] ? (saved.assets[slot] ? 'Saved' : 'Not saved yet') : 'Not set');
-  const FRAME = 'Preview of the';
+  const statusFor = (slot: Slot) => slotStatus({ pending: pending[slot], current: draft.assets[slot], saved: saved.assets[slot] });
 </script>
 
 <section class="brand" aria-labelledby="brand-title" aria-busy={busy}>
@@ -291,76 +280,12 @@
       <!-- Colours -->
       <section class="card brand__card" aria-labelledby="brand-colours">
         <h3 id="brand-colours">Colours</h3>
-
-        <div class="field">
-          <label class="field__label" for="brand-primary">Primary</label>
-          <div class="brand__colour">
-            <input id="brand-primary" class="input mono" value={primaryTyped ?? draft.primary} oninput={(event) => typePrimary(event.currentTarget.value)} onblur={() => { primaryTyped = null; }} autocapitalize="off" autocorrect="off" spellcheck="false" aria-describedby="brand-primary-help" aria-invalid={primaryTyped !== null && parseColour(primaryTyped) === null} />
-            <input class="color" type="color" aria-label="Primary colour picker" value={draft.primary.toLowerCase()} oninput={(event) => setPrimary(parseColour(event.currentTarget.value) ?? draft.primary)} />
-          </div>
-          <span id="brand-primary-help" class="small" class:muted={primaryTyped === null || parseColour(primaryTyped) !== null} class:error={primaryTyped !== null && parseColour(primaryTyped) === null}>
-            {#if primaryTyped !== null && parseColour(primaryTyped) === null}Enter a colour like #045BCC.{:else}The page, the buttons, the pills and the tiles follow this colour.{/if}
-          </span>
-          <div class="brand__presets" role="group" aria-label="Preset colours">
-            {#each PRESETS as preset (preset.hex)}
-              <button class="brand__preset" type="button" style:background={preset.hex} aria-label="{preset.name} {preset.hex}" title="{preset.name} {preset.hex}" aria-pressed={draft.primary.toUpperCase() === preset.hex} onclick={() => setPrimary(preset.hex)}></button>
-            {/each}
-          </div>
-        </div>
-
-        <div class="field">
-          <label class="field__label" for="brand-accent">Accent (optional)</label>
-          <div class="brand__colour">
-            <input id="brand-accent" class="input mono" value={accentTyped ?? draft.accent ?? ''} placeholder="None" oninput={(event) => typeAccent(event.currentTarget.value)} onblur={() => { accentTyped = null; }} autocapitalize="off" autocorrect="off" spellcheck="false" aria-describedby="brand-accent-help" aria-invalid={accentTyped !== null && accentTyped.trim() !== '' && parseColour(accentTyped) === null} />
-            <input class="color" type="color" aria-label="Accent colour picker" value={(draft.accent ?? '#ffffff').toLowerCase()} oninput={(event) => setAccent(parseColour(event.currentTarget.value))} />
-            <button class="btn" type="button" disabled={draft.accent === null} onclick={() => setAccent(null)}>No accent</button>
-          </div>
-          <span id="brand-accent-help" class="small muted">Decoration only: a thin rule under titles and a ring on the logo plate. It never colours a button, and it only shows where it stands out enough.</span>
-        </div>
-
-        <fieldset class="field brand__plate">
-          <legend class="field__label">Logo plate</legend>
-          <div class="brand__plates" role="radiogroup">
-            <label class="brand__radio"><input type="radio" name="plate" value="light" checked={draft.plate === 'light'} onchange={() => { draft.plate = 'light'; touched(); }} /> <span class="brand__chip brand__chip--light" aria-hidden="true"></span> Light plate</label>
-            <label class="brand__radio"><input type="radio" name="plate" value="dark" checked={draft.plate === 'dark'} onchange={() => { draft.plate = 'dark'; touched(); }} /> <span class="brand__chip brand__chip--dark" aria-hidden="true"></span> Dark plate</label>
-          </div>
-          <span class="small muted">The plate behind the logo (or the name in type) on Welcome. Many logos are white on a transparent background and need the dark one.</span>
-        </fieldset>
-
-        <!-- What the colours do -->
-        <div class="brand__strip" style:background={gradient} aria-label="The page gradient for this primary" role="img">
-          <span class="brand__strip-pill">Answer pill</span>
-          <span class="brand__strip-button" style:background={report.theme.tokens['--action']}>Button</span>
-          <span class="brand__strip-hex">{report.theme.tokens['--bg-top']} → {report.theme.tokens['--bg-mid']} → {report.theme.tokens['--bg-bottom']}</span>
-        </div>
-
-        {#if report.adjusted}
-          <div class="brand__adjusted" role="status" data-testid="adjusted">
-            <p><strong>Adjusted for readability.</strong> White words need a darker page than {report.adjusted.from}. Participants will see <span class="brand__swatch" style:background={report.adjusted.to} aria-hidden="true"></span><span class="mono">{report.adjusted.to}</span> instead of <span class="brand__swatch" style:background={report.adjusted.from} aria-hidden="true"></span><span class="mono">{report.adjusted.from}</span>.</p>
-            <button class="btn" type="button" onclick={() => setPrimary(report.adjusted!.to)}>Auto-fix: use {report.adjusted.to}</button>
-          </div>
-        {/if}
-
-        <table class="brand__contrast">
-          <caption class="small muted">Contrast of each pairing, as participants will see it. Words need 4.5:1; the accent needs 3:1 where it is drawn.</caption>
-          <thead><tr><th scope="col">Pairing</th><th scope="col">Contrast</th><th scope="col">Needs</th><th scope="col">Result</th></tr></thead>
-          <tbody>
-            {#each report.rows as row (row.id)}
-              <tr data-pass={row.pass}>
-                <th scope="row"><span class="brand__sample" style:background={row.background} aria-hidden="true"><span class="brand__sample-ink" style:background={row.foreground}></span></span>{row.label}</th>
-                <td>{row.ratio.toFixed(1)}:1</td>
-                <td>{row.need}:1</td>
-                <td>{row.pass ? '✓ Pass' : row.id.startsWith('accent') ? '✕ Not drawn' : '✕ Fails'}</td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-
-        {#if report.warnings.length > 0}
-          <ul class="brand__warnings" aria-label="Warnings">
-            {#each report.warnings as warning (warning.id)}<li data-warning={warning.id}><span aria-hidden="true">⚠</span> {warning.message}</li>{/each}
-          </ul>
-        {/if}
+        <BrandColours
+          {draft} {primaryTyped} {accentTyped} {report} {gradient}
+          onTypePrimary={typePrimary} onPrimaryBlur={() => { primaryTyped = null; }} onSetPrimary={setPrimary}
+          onTypeAccent={typeAccent} onAccentBlur={() => { accentTyped = null; }} onSetAccent={setAccent}
+          onPlate={(plate) => { draft.plate = plate; touched(); }}
+        />
       </section>
 
       <!-- Pictures -->
@@ -400,30 +325,10 @@
     </div>
 
     <aside class="brand__preview" aria-label="Preview">
-      <div class="brand__switch" role="group" aria-label="Device">
-        {#each DEVICES as entry (entry.id)}
-          <button class="btn brand__tab" type="button" aria-pressed={deviceId === entry.id} onclick={() => { deviceId = entry.id; }}>{entry.label}</button>
-        {/each}
-      </div>
-      <div class="brand__switch" role="group" aria-label="Screen">
-        {#each SCENES as entry (entry.id)}
-          <button class="btn brand__tab" type="button" aria-pressed={sceneId === entry.id} onclick={() => { sceneId = entry.id as Look['scene']; }}>{entry.label}</button>
-        {/each}
-      </div>
-      <BrandPreview {look} tokens={report.theme.tokens} {device} label="{FRAME} {scene.label} screen on {device.label}, {device.width} by {device.height} pixels" />
-      <p class="muted small brand__caption">{scene.label} on {device.label}: {device.width} × {device.height} px, the real screen with sample content. Read-only.</p>
-
-      <section class="card brand__device" aria-labelledby="brand-device">
-        <h3 id="brand-device">Check it on a real iPad</h3>
-        <p class="muted small">This address shows {record.name}'s <strong>saved</strong> look (not unsaved changes) on any device, even before the client is live: its Welcome and read-only activities, marked Preview, saving nothing. Save first.</p>
-        <div class="brand__colour">
-          <input id="brand-device-url" class="input mono" value={deviceUrl} readonly aria-label="Preview address for a device" />
-          <button class="btn" type="button" disabled={!deviceUrl} onclick={() => { void copyText(deviceUrl, document.querySelector<HTMLInputElement>('#brand-device-url')).then(() => onToast('Link copied', 'success')); }}>Copy</button>
-          <a class="btn" href={deviceUrl || undefined} target="_blank" rel="noopener">Open</a>
-          <button class="btn" type="button" disabled={!deviceUrl} onclick={() => void showDeviceQr()}>Show QR code</button>
-        </div>
-        {#if deviceQr}<img class="brand__qr" src={deviceQr} alt="QR code for the preview address" />{/if}
-      </section>
+      <BrandPreviewPanel
+        {look} tokens={report.theme.tokens} {device} {scene} {deviceId} {sceneId} clientName={record.name} {deviceUrl} {deviceQr}
+        onDevice={(id) => { deviceId = id; }} onScene={(id) => { sceneId = id; }} onShowQr={() => void showDeviceQr()} {onToast}
+      />
     </aside>
   </div>
 </section>
@@ -505,211 +410,6 @@
     margin: 0;
   }
 
-  .brand__colour {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .brand__colour .input {
-    flex: 1 1 8rem;
-    min-width: 0;
-    min-height: var(--target-min);
-    padding: 0 0.75rem;
-  }
-
-  .brand__colour .color {
-    flex: none;
-    width: var(--target-min);
-    height: var(--target-min);
-    padding: 2px;
-  }
-
-  .brand__presets {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-  }
-
-  .brand__preset {
-    width: var(--target-min);
-    height: var(--target-min);
-    border: 2px solid var(--adm-line);
-    border-radius: 50%;
-    cursor: pointer;
-  }
-
-  .brand__preset[aria-pressed='true'] {
-    border-color: var(--adm-ink);
-    box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--adm-ink);
-  }
-
-  .brand__plate {
-    margin: 0;
-    padding: 0;
-    border: 0;
-    min-width: 0;
-  }
-
-  .brand__plates {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem 1.25rem;
-  }
-
-  .brand__radio {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    min-height: var(--target-min);
-  }
-
-  .brand__radio input {
-    width: 1.25rem;
-    height: 1.25rem;
-  }
-
-  .brand__chip {
-    display: inline-block;
-    width: 1.5rem;
-    height: 1.5rem;
-    border: 1px solid var(--adm-ink);
-    border-radius: 50%;
-  }
-
-  .brand__chip--light { background: #fff; }
-  .brand__chip--dark { background: #0b1f3a; }
-
-  .brand__strip {
-    position: relative;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.75rem;
-    min-height: 5rem;
-    padding: 1rem;
-    color: #fff;
-    border-radius: 0.65rem;
-  }
-
-  .brand__strip-pill {
-    padding: 0.5rem 1rem;
-    background: rgb(255 255 255 / 0.14);
-    border: 1px solid #fff;
-    border-radius: 999px;
-  }
-
-  .brand__strip-button {
-    padding: 0.5rem 1.25rem;
-    border: 1px solid rgb(255 255 255 / 0.7);
-    border-radius: 999px;
-    font-weight: var(--fw-semibold);
-  }
-
-  .brand__strip-hex {
-    margin-left: auto;
-    font: 0.8125rem/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
-    text-shadow: 0 1px 2px rgb(0 0 0 / 0.6);
-  }
-
-  .brand__adjusted {
-    display: grid;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    color: var(--adm-warn-ink);
-    background: var(--adm-warn-bg);
-    border-radius: 0.65rem;
-  }
-
-  .brand__adjusted p {
-    margin: 0;
-  }
-
-  .brand__adjusted .btn {
-    justify-self: start;
-  }
-
-  .brand__swatch {
-    display: inline-block;
-    width: 1rem;
-    height: 1rem;
-    margin: 0 0.25rem 0 0.15rem;
-    vertical-align: -0.15rem;
-    border: 1px solid var(--adm-ink);
-    border-radius: 3px;
-  }
-
-  .brand__contrast {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.9375rem;
-  }
-
-  .brand__contrast caption {
-    padding-bottom: 0.4rem;
-    text-align: left;
-  }
-
-  .brand__contrast th,
-  .brand__contrast td {
-    padding: 0.4rem 0.5rem;
-    text-align: left;
-    border-top: 1px solid var(--adm-line);
-    vertical-align: middle;
-  }
-
-  .brand__contrast thead th {
-    border-top: 0;
-    color: var(--adm-muted);
-    font-size: 0.8125rem;
-  }
-
-  .brand__contrast tbody th {
-    font-weight: var(--fw-regular);
-  }
-
-  .brand__contrast tr[data-pass='false'] td:last-child {
-    color: var(--adm-bad-ink);
-    font-weight: var(--fw-semibold);
-  }
-
-  /* A swatch of the pairing: the words' colour as a bar on the background colour. It used to be the letters "Aa" in those colours, which for a pair that
-     fails is, by design, text nobody can read (axe rightly reports it): the ratio and the result are in words beside it, so the swatch is a picture only. */
-  .brand__sample {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.4rem;
-    height: 1.5rem;
-    margin-right: 0.5rem;
-    vertical-align: middle;
-    border: 1px solid var(--adm-line);
-    border-radius: 4px;
-  }
-
-  .brand__sample-ink {
-    width: 1.1rem;
-    height: 0.5rem;
-    border-radius: 0.25rem;
-  }
-
-  .brand__warnings {
-    display: grid;
-    gap: 0.4rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .brand__warnings li {
-    padding: 0.5rem 0.75rem;
-    color: var(--adm-warn-ink);
-    background: var(--adm-warn-bg);
-    border-radius: 0.5rem;
-  }
-
   .brand__actions {
     display: grid;
     gap: 0.6rem;
@@ -732,43 +432,6 @@
     display: grid;
     gap: 0.6rem;
     min-width: 0;
-  }
-
-  .brand__switch {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-  }
-
-  .brand__tab[aria-pressed='true'] {
-    color: #fff;
-    background: var(--adm-ink);
-    border-color: var(--adm-ink);
-  }
-
-  .brand__caption {
-    margin: 0;
-  }
-
-  .brand__device {
-    display: grid;
-    gap: 0.6rem;
-    padding: 1rem;
-  }
-
-  .brand__device h3,
-  .brand__device p {
-    margin: 0;
-  }
-
-  .brand__qr {
-    width: 9rem;
-    height: 9rem;
-    background: #fff;
-  }
-
-  .mono {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   }
 
   .error {

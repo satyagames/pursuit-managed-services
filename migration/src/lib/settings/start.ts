@@ -26,7 +26,7 @@ export type Deployment = {
   known?: Record<string, unknown>;
 };
 /** What a page started from: the settings file as it was read (or why it was not), and what the build put into the page. */
-export type SettingsRead = { file?: unknown; fileError?: { kind: string; status?: number }; built: Record<string, unknown> };
+type SettingsRead = { file?: unknown; fileError?: { kind: string; status?: number }; built: Record<string, unknown> };
 
 let found: Deployment | null = null;
 /** What the page does when the data layer finds the site's lists are not this build's (PMS-LST-010 to 012): set by startPage; none for Setup. */
