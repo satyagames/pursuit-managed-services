@@ -12,6 +12,7 @@
   import ConfirmDialog from './ConfirmDialog.svelte';
   import MotionSwitch from './MotionSwitch.svelte';
   import TodayGoLive from './TodayGoLive.svelte';
+  import TodayReadiness from './TodayReadiness.svelte';
 
   type Client = { id: string; name: string; status?: string; logoUrl?: string | null; theme?: { assets?: { logo?: string | null; hero?: string | null } } | null };
   type Session = { id: string; clientId: string; date?: string; status?: string; participationMode?: string; activityFlow?: string };
@@ -433,25 +434,7 @@
             <h3 id="ready-heading">Readiness{client ? ` for ${client.name}` : ''}</h3>
             <button class="btn btn--small" type="button" onclick={() => void recheckInputs({ everything: true })} disabled={busy || inputsBusy}>Re-check</button>
           </div>
-          <p class="muted ready__summary" data-testid="readiness-summary">
-            {readinessSummary({ inputsBusy, blockers, warnings })}
-          </p>
-          <ul class="checks">
-            {#each rows as row (row.id)}
-              <li class="check check--{row.level}" data-level={row.level} data-check={row.id}>
-                <span class="check__word">{row.level === 'blocker' ? 'Blocker' : row.level === 'warning' ? 'Warning' : 'Ready'}</span>
-                <div class="check__body">
-                  <strong>{row.title}</strong>
-                  <p>{row.detail}</p>
-                  {#if row.fix}<p class="check__fix">{row.fix}</p>{/if}
-                  {#if row.go}
-                    {#if row.go.href}<a class="btn btn--small" href={row.go.href}>{row.go.label}</a>
-                    {:else}<button class="btn btn--small" type="button" onclick={() => rowAction(row)} disabled={busy}>{row.go.label}</button>{/if}
-                  {/if}
-                </div>
-              </li>
-            {/each}
-          </ul>
+          <TodayReadiness {rows} summary={readinessSummary({ inputsBusy, blockers, warnings })} {busy} onRowAction={rowAction} />
         </section>
       </div>
 
@@ -677,87 +660,6 @@
     gap: 0.75rem;
   }
 
-  .ready__summary {
-    margin: 0;
-  }
-
-  .checks {
-    display: grid;
-    gap: 0.6rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .check {
-    display: grid;
-    grid-template-columns: 5.2rem minmax(0, 1fr);
-    gap: 0.75rem;
-    padding: 0.75rem 0.85rem;
-    border-radius: 0.7rem;
-    border: 1px solid transparent;
-  }
-
-  .check p {
-    margin: 0.15rem 0 0;
-    overflow-wrap: anywhere;
-  }
-
-  .check__fix {
-    font-weight: var(--fw-semibold);
-  }
-
-  .check__body {
-    display: grid;
-    justify-items: start;
-    min-width: 0;
-    gap: 0.1rem;
-  }
-
-  .check__body .btn {
-    margin-top: 0.5rem;
-  }
-
-  .check__word {
-    align-self: start;
-    padding: 0.15rem 0.5rem;
-    border-radius: var(--radius-full);
-    background: var(--adm-card);
-    font-size: 0.8rem;
-    font-weight: var(--fw-bold);
-    text-align: center;
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
-  }
-
-  .check--pass {
-    padding-block: 0.55rem;
-    color: var(--adm-ok-ink);
-    background: var(--adm-ok-bg);
-  }
-
-  .check--warning {
-    color: var(--adm-warn-ink);
-    background: var(--adm-warn-bg);
-  }
-
-  .check--blocker {
-    color: var(--adm-bad-ink);
-    background: var(--adm-bad-bg);
-    border-color: var(--adm-bad-line);
-  }
-
-  @media (max-width: 480px) {
-    .check {
-      grid-template-columns: 1fr;
-      gap: 0.4rem;
-    }
-
-    .check__word {
-      justify-self: start;
-    }
-  }
-
   /* Controls and sharing */
   .controls__end {
     display: flex;
@@ -821,10 +723,6 @@
     color: var(--adm-warn-ink);
     background: var(--adm-warn-bg);
     border-radius: 0.9rem;
-  }
-
-  .notice p {
-    margin: 0;
   }
 
   .others {
