@@ -19,6 +19,7 @@
   import { RESULTS_PALETTE } from '../lib/results/results-palette-source.js';
   import LiveHead from './LiveHead.svelte';
   import LiveNotReady from './LiveNotReady.svelte';
+  import LiveNotices from './LiveNotices.svelte';
   import LiveSections from './LiveSections.svelte';
   import LiveStage from './LiveStage.svelte';
 
@@ -481,15 +482,7 @@
   </header>
 
   {#if phase === 'display'}
-    {#if message}<p class="live__status" role="status">{message}</p>{/if}
-    {#if unreadableText}<p class="notice live__unreadable" class:live__unreadable--wall={wall} role="status" data-testid="unreadable-notice"><strong>{unreadableText}</strong></p>{/if}
-    {#if exportMessage && !presenting}<p class="live__status" role="status">{exportMessage}</p>{/if}
-    {#if !wall}
-      <div class="live__names">
-        <button class="btn live__auto" type="button" role="switch" aria-checked={namesShown} onclick={() => { namesShown = !namesShown; }}>Names shown <span class="live__auto-state" aria-hidden="true">{namesShown ? 'On' : 'Off'}</span></button>
-        <span class="live__names-note">{namesShown ? 'Press a bar to see who picked it. Hide the names before you share this screen.' : 'Names are hidden.'}</span>
-      </div>
-    {/if}
+    <LiveNotices {message} {unreadableText} {wall} {exportMessage} {presenting} {namesShown} onToggleNames={() => { namesShown = !namesShown; }} />
     {#if presenting}
       <LiveStage
         bind:stage bind:footHeight {current} {currentChart} {currentTitle} {at} {count} {revealed} {selected} {scale} {spill} {atEnd} {autoAdvance}
@@ -531,27 +524,7 @@
     border-radius: 0.5rem;
   }
 
-  .live__names {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem 1rem;
-  }
-
-  .live__names-note {
-    color: var(--adm-muted);
-  }
-
   /* ---- Full screen: the display covers the window; the type is large; ONE question at a time, sized to fit ----------------------- */
-
-  .live__unreadable--wall {
-    margin: 0;
-    padding: 0;
-    border: 0;
-    background: none;
-    color: inherit;
-    font-size: 0.875em;
-  }
 
   .live--present {
     --live-gap: calc(0.9rem * var(--chart-scale, 1));
@@ -573,17 +546,6 @@
   /* A question too long for the screen: the screen scrolls as one page (its stage and controls, LiveStage.svelte). */
   .live--present.live--spill {
     overflow-y: auto;
-  }
-
-  .live__auto-state {
-    display: inline-block;
-    min-width: 2.2rem;
-    margin-left: 0.4rem;
-    padding: 0.1rem 0.5rem;
-    font-weight: 700;
-    text-align: center;
-    border: 1px solid currentcolor;
-    border-radius: 999px;
   }
 
   .live--present[data-idle='true'] {
