@@ -57,7 +57,7 @@ flowchart LR
 | `migration/src/lib/admin/` | The admin page's rules and data: Today, Clients, Content, Guests and QR, Results, the Live display's session, the PIN check. | 15 |
 | `migration/src/lib/brand/` | A client's look: deriving a readable theme from a colour, the stored theme, Brand Studio's rules, picture slots, cropping, compressing and naming. | 18 |
 | `migration/src/lib/common/` | Shared by the pages: the product name, the heading focus rule, kiosk lock-down, the polling schedule and its one timer, the admin page's address. | 6 |
-| `migration/src/lib/data/` | The data layer: the one module that talks to SharePoint REST (or, on the local server, its JSON API), and grouping of long id lists into short reads. Every page carries it. | 5 |
+| `migration/src/lib/data/` | The data layer: the one module that talks to SharePoint REST (or, on the local server, its JSON API), and grouping of long id lists into short reads. Every page carries it. | 6 |
 | `migration/src/lib/effects/` | Sounds and confetti, behind one door (`effects.ts`): which moment makes which effect, the cues as data, Web Audio, canvas-confetti. | 6 |
 | `migration/src/lib/exports/` | The files a leader gets: the leader report (data, counting, layout, PDF writer, fonts) and the Live display's summary pack (PDF, PowerPoint) and summary CSV. | 7 |
 | `migration/src/lib/motion/` | The participant screens' motion, behind one door (`motion.ts`): the plan by kind of question and part of a screen, the tokens and shapes (CSS), the level and the governor. | 2 |
@@ -165,6 +165,7 @@ The data layer: the one module that talks to SharePoint REST (or, on the local s
 | `dataService.js` | dataService.js: the ONLY module that talks to the backend. | 107 exports |
 | `encoding.js` | The schema's lists and columns as the data layer reads and writes them, and the small helpers that hold no state (Phase 17: cut out of dataService.js section 1 and 6 unchanged). | 17 exports |
 | `read-groups.js` | Reads in groups of 20 ids to an address (Phase 9b), so that no request address grows with what a session holds. | `READ_CHUNK`, `groupsOf`, `sectionQueries` |
+| `schema-check.js` | The check of a site's lists and columns (dataService.js section 1's end; Phase 17 cut it out unchanged): checkSharePointLists() for Setup's list of lists, checkSharePointSchema() for the admin's Today screen and Setup. | `checkSharePointLists`, `checkSharePointSchema` |
 
 ## `lib/effects/`
 
