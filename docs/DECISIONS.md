@@ -29,6 +29,16 @@ One line each: the decision, why, and what enforces it (a test fails if it is br
 | `PMSAdminUsers` is unreadable to participant accounts. | It holds unsalted PIN hashes; the PIN is not authorization. | By hand (RUNBOOK.md step 11); the local site models it |
 | The PIN check stays a mock: SHA-256, no lockout (decision 10 of the architecture). | Real sign-in would be SharePoint groups or Entra; out of scope until decided. | `lib/admin/admin-pin.js` (unchanged since Phase 10c-1) |
 
+## The data layer
+
+| Decision | Why | Enforced by |
+|---|---|---|
+| `lib/data/dataService.js` is the data layer's one door. Its public surface, 107 names (each with its kind and its arity), is listed in `scripts/data-surface.json`; a name added, taken away or renamed is a decision, recorded here with the new count in the same commit. | 39 files of the app and 70 scripts import it: work behind it must not reach them (Phase 17). | `scripts/test-data-surface.js` |
+| `dataService.js` holds no code: it passes on the public names of the parts of `lib/data` (`encoding.js`, `core.js`, `common.js`, `schema-check.js`, `records.js`, `today.js`, `responses.js`, `self-test.js`, `qr-scan.js`, `today-clients.js`, `content-copy.js`, `guests.js`, `pictures.js`, `watch.js`, `removal.js`, `list-titles.js`), and no file of the app imports a part directly. | One file of 2,845 lines held every record type, the requests and the self-test; a reader had to load all of it to change any of it (Phase 17). | `scripts/test-data-modules.js` |
+| All of the data layer's state (the backend, the write token, the lists' types and columns, whether `$batch` works, the request count, a QR scan not yet known to have landed) lives in `lib/data/core.js`, the only part that calls `fetch()`; no other part declares a variable or a cache at its top, and `openQrScan` writes its held scan through `holdScan()`. | One `configure()` resets everything, and a page is one instance of the data layer. | `scripts/test-data-modules.js`, `scripts/test-settings-file.js` |
+| A part imports only parts before it (`core.js` only `encoding.js`), nothing under `migration/src` imports in a cycle, and no part is over 600 lines. A part's functions were moved, not rewritten. | One-way layers stay readable; 600 lines is one sitting. | `scripts/test-data-modules.js` |
+| A test opens a fresh page by importing `dataService.js?<tag>`; `scripts/fresh-page.js` (an in-thread resolve hook) hands the tag on to every part, so each page has its own state as it had its own single file. | Node gives each address its own module; untagged, the parts would be shared between test pages. | `scripts/test-data-modules.js` |
+
 ## The participant page
 
 | Decision | Why | Enforced by |
@@ -80,4 +90,6 @@ One line each: the decision, why, and what enforces it (a test fails if it is br
 | Modules live in folders by module under `migration/src/lib`, each with a header. | An unfamiliar developer or model finds the right file in minutes. | `scripts/test-module-headers.js`, `scripts/test-modules-map.js` |
 | The documents name only what is there. | Documents that drift mislead. | `scripts/check-docs.js` (`npm test`) |
 | An editor opens where its item is: Content's question editor inside the question's row (Add question: a new row at the end), Results' Restart form under its iPad's row; one at a time, focus in and back. Clients' and Guests' editors still open below their list (RELEASE-16.md, proposed). | With ten questions the form was off the screen and the person lost their place (Phase 16). | `content-edit-in-place.spec.ts`, `results-restart-inline.spec.ts` |
+| `npm audit` is kept at zero: `overrides` holds `image-size` at `^2.0.4` (it came in through `pptxgenjs`, whose Node-only image reader it is; the browser build leaves it out and no page contains it), and `vite-plugin-singlefile` is at a version without `braces`. A bundler (`vite`, `rolldown`) is changed only on purpose, because it changes the pages. | A site's security scan reads the lock file, not the pages. | `npm audit` and `npm run test:bundle` (by hand before a release) |
+| Every build command that loads Vite first checks Node 22.12 or newer (`scripts/node-guard.js`: `npm run dev`, `build`, `doctor`, `build:svelte:release`). | Vite 8 fails inside itself on an older Node with a message that does not name the cause. | By hand (`npm run doctor`) |
 | A failing test first, never loosened; no new dependency without asking; never commit to `main`; the owner pushes. | Every change is proved; the owner controls what ships. | By hand |

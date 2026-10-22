@@ -37,7 +37,7 @@ On the Windows checkout the system Node is 20: run Node 22 from `.local/node22/n
 |---|---|
 | `migration/src/main.ts`, `admin-main.ts`, `setup-main.ts` | The three entries; `App.svelte`, `AdminApp.svelte`, `SetupApp.svelte` the apps. |
 | `migration/src/lib/<folder>/` | The modules, by folder: `data`, `schema`, `settings`, `participant`, `common`, `admin`, `results`, `exports`, `brand`, `effects`, `motion`, `setup`. Every file starts with a header saying what it owns. |
-| `migration/src/lib/data/dataService.js` | The data layer: the only module that talks to SharePoint (or the local server). Every page carries all of it. |
+| `migration/src/lib/data/dataService.js` | The data layer's door, which every importer uses: it passes on the calls of the parts of `lib/data/` (Phase 17). `core.js` holds all its state and sends every request to SharePoint (or the local server); `records.js`, `today.js`, `responses.js`, `qr-scan.js`, `watch.js` and the rest are one job each (the list is at the top of `dataService.js`). Every page carries all of it. |
 | `migration/src/lib/schema/pms-schema.js` | The one place a list or column is named. `pms-schema-meta.js` says everything else about them. |
 | `migration/src/admin/`, `admin/charts/` | The admin page's screens and the hand-drawn Results charts. |
 | `migration/src/routes/`, `pager/`, `components/` | The participant page's screens, the one-question-per-screen pager, its building blocks. |
@@ -61,7 +61,7 @@ On the Windows checkout the system Node is 20: run Node 22 from `.local/node22/n
    behaviour; never re-record a request baseline to make it pass (`--amend` only, see [docs/TESTING.md](docs/TESTING.md)).
 5. **SharePoint:** every item read names its columns (`selectOf`); a duplicate is 409 for 400, 409 or 500; no column named like a list-item property
    (`DisplayName`); a list title only through `spTitle()` / `sharePointListTitles()`; schema version 3; the settings file is `pms-config.txt`.
-6. **Only `lib/data/dataService.js` fetches** (and `lib/settings/settings-file.js`, the settings file). Sounds and confetti only through
+6. **Only the data layer fetches** (`lib/data/core.js`; everything else imports `lib/data/dataService.js`), and `lib/settings/settings-file.js`, the settings file. Sounds and confetti only through
    `lib/effects/effects.ts`. Saving answers only through `lib/participant/participantData.ts`. Motion only through `lib/motion/motion.ts`, its durations
    and curves only in `lib/motion/motion-tokens.css`.
 7. **Names are on the facilitator's view only**: never on the wall display, in the Live display's PDF, PowerPoint or summary CSV.
@@ -89,6 +89,8 @@ On the Windows checkout the system Node is 20: run Node 22 from `.local/node22/n
   budget (`scripts/test-admin-today.js` and the `*-sharepoint.spec.ts` specs count them), a timer only through `lib/common/page-watch.ts`.
 - **An export:** build on the chart model and `lib/results/export-summary.js`; draw with primitives (no `doc.html()`, no html2canvas); load the
   library with `import()` in the admin page only; add read-back tests and mutations; look at the pages (`npm run look:exports`).
+- **A data call:** a function in the part of `lib/data/` it belongs to (state only in `core.js`, no part over 600 lines), passed on by `dataService.js`;
+  a new public name changes `scripts/data-surface.json` and the count in [docs/DECISIONS.md](docs/DECISIONS.md#the-data-layer) together.
 - **A module:** put it in the right folder of `migration/src/lib/` with a header comment, then `npm run docs:modules`.
 
 ## When something fails

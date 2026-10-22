@@ -57,7 +57,7 @@ flowchart LR
 | `migration/src/lib/admin/` | The admin page's rules and data: Today, Clients, Content, Guests and QR, Results, the Live display's session, the PIN check. | 15 |
 | `migration/src/lib/brand/` | A client's look: deriving a readable theme from a colour, the stored theme, Brand Studio's rules, picture slots, cropping, compressing and naming. | 18 |
 | `migration/src/lib/common/` | Shared by the pages: the product name, the heading focus rule, kiosk lock-down, the polling schedule and its one timer, the admin page's address. | 6 |
-| `migration/src/lib/data/` | The data layer: the one module that talks to SharePoint REST (or, on the local server, its JSON API), and grouping of long id lists into short reads. Every page carries it. | 2 |
+| `migration/src/lib/data/` | The data layer: dataService.js, the door every page imports, over its parts (core.js holds the state and alone talks to SharePoint REST or, on the local server, its JSON API), and grouping of long id lists into short reads. Every page carries it. | 18 |
 | `migration/src/lib/effects/` | Sounds and confetti, behind one door (`effects.ts`): which moment makes which effect, the cues as data, Web Audio, canvas-confetti. | 6 |
 | `migration/src/lib/exports/` | The files a leader gets: the leader report (data, counting, layout, PDF writer, fonts) and the Live display's summary pack (PDF, PowerPoint) and summary CSV. | 7 |
 | `migration/src/lib/motion/` | The participant screens' motion, behind one door (`motion.ts`): the plan by kind of question and part of a screen, the tokens and shapes (CSS), the level and the governor. | 2 |
@@ -70,7 +70,7 @@ flowchart LR
 | `migration/src/routes/` | The participant page's screens: Welcome, the Activities hub, the quiz route, the finale, "not live", the preview, and the old addresses that redirect. | 9 |
 | `migration/src/setup/` | Setup's pieces (Svelte): the copy panel, where the lists are, the plan view, and the sample pictures as data. | 4 |
 | `migration/src/unsupported/` | The "needs a recent browser" notice: a page and an ES5 check, put into each HTML shell at build time. | 1 |
-| `scripts/` | Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager. | 120 |
+| `scripts/` | Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager. | 126 |
 | `scripts/local-site/` | The local PCOE stand-in (`npm run local:site`), its scenarios and VJR's dummy dataset, the screenshot harness and the measurements. | 11 |
 | `scripts/migration-tests/` | The Playwright specs of `npm run test:migration`, and their harnesses (`admin-local.ts`, `polling-support.ts`, `fixtures.ts`). | 70 |
 | `scripts/rehearsal-tests/` | The rehearsal of RUNBOOK.md on the mock with a package's own pages (`npm run test:rehearsal`). | 1 |
@@ -152,16 +152,32 @@ Shared by the pages: the product name, the heading focus rule, kiosk lock-down, 
 
 ## `lib/data/`
 
-The data layer: the one module that talks to SharePoint REST (or, on the local server, its JSON API), and grouping of long id lists into short reads. Every page carries it.
+The data layer: dataService.js, the door every page imports, over its parts (core.js holds the state and alone talks to SharePoint REST or, on the local server, its JSON API), and grouping of long id lists into short reads. Every page carries it.
 
 - **Imports from:** `lib/schema`
 - **Imported by:** `lib/admin`, `lib/brand`, `lib/exports`, `lib/participant`, `lib/results`, `lib/settings`, `lib/setup`, `src`, `src/admin`, `src/pager`, `src/routes`
-- **Node suites that import it:** `test-admin-content.js`, `test-admin-today.js`, `test-brand-storage.js`, `test-column-names.js`, `test-deploy-settings.js`, `test-duplicates.js`, `test-leader-report-pdf.js`, `test-live-display.js`, `test-local-site.js`, `test-motion-switch.js`, `test-named-reads.js`, `test-participant-names.js`, `test-participant-storage.js`, `test-participant-waits.js`, `test-review-9a.js`, `test-schema-upgrade.js`, `test-seeds.js`, `test-session-delete.js`, `test-sessions.js`, `test-setup-admins.js`, `test-sharepoint.js`
+- **Node suites that import it:** `test-admin-content.js`, `test-admin-today.js`, `test-brand-storage.js`, `test-column-names.js`, `test-data-surface.js`, `test-deploy-settings.js`, `test-duplicates.js`, `test-leader-report-pdf.js`, `test-live-display.js`, `test-local-site.js`, `test-motion-switch.js`, `test-named-reads.js`, `test-participant-names.js`, `test-participant-storage.js`, `test-participant-waits.js`, `test-review-9a.js`, `test-schema-upgrade.js`, `test-seeds.js`, `test-session-delete.js`, `test-sessions.js`, `test-setup-admins.js`, `test-sharepoint.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
-| `dataService.js` | dataService.js: the ONLY module that talks to the backend. | 107 exports |
+| `common.js` | What several parts of the data layer share (Phase 17: cut out of dataService.js sections 4, 5, 6 and 8 unchanged): an item from an AppId read, a write to an item a read has already found, a list address with equality filters, every page of a list read, and paced bulk work (runPaced). | `runPaced`, `PACE`, `localFilter`, `spAllRows`, `spItemsAddress`, `spOne`, `spWrite` |
+| `content-copy.js` | Content per client and copying activities (dataService.js section 6; Phase 17 cut it out unchanged): an activity's questions and options in the fewest reads, the plan of a copy, copying, duplicating and deleting activities, and adding activities to the live session. | `readActivityContent`, `COPY_SEPARATOR`, `copyIdFor`, `copyTitle`, `planCopy`, `addSectionsToLiveSession`, `copyActivities`, `duplicateActivity`, `deleteActivity` |
+| `core.js` | The backend adapter (dataService.js section 1; Phase 17 cut it out of that file unchanged): | 48 exports |
+| `dataService.js` | dataService.js: the data layer's one door. | 107 exports |
+| `encoding.js` | The schema's lists and columns as the data layer reads and writes them, and the small helpers that hold no state (Phase 17: cut out of dataService.js section 1 and 6 unchanged). | 17 exports |
+| `guests.js` | Guests in bulk (dataService.js section 6; Phase 17 cut it out unchanged): adding guests to a session's list and making their QR codes, paced (common.js runPaced), with the name a guest list compares. | `guestNameKey`, `addGuests`, `provisionGuestCodes` |
+| `list-titles.js` | Which lists are this copy's (dataService.js section 10; Phase 17 cut it out unchanged): every list's title on this site, and the picture library's, from the page's settings. | `sharePointListTitles` |
+| `pictures.js` | Pictures for a client's look (dataService.js section 7; Phase 17 cut it out unchanged): storing a picture under its own name, in the picture library's folder on SharePoint or the local server's uploads folder, and removing one by name. | `uploadClientAsset`, `removeClientAsset` |
+| `qr-scan.js` | A first QR scan in few requests, and a visit begun from Welcome (dataService.js section 4; Phase 17 cut it out unchanged but for its five writes of the held scan, which go through core.js's holdScan(), where that state lives). | `openQrScan`, `beginVisit`, `prepareWrites` |
 | `read-groups.js` | Reads in groups of 20 ids to an address (Phase 9b), so that no request address grows with what a session holds. | `READ_CHUNK`, `groupsOf`, `sectionQueries` |
+| `records.js` | The records (dataService.js section 2; Phase 17 cut it out unchanged): clients, sessions, activities, questions, options, visits, QR codes, the roster and admin users, as plain objects with a string id, and the lists' version check that every page's first read makes (PMS-LST-010 to 012). | 56 exports |
+| `removal.js` | Removing a visit that has no answers, and deleting by key (dataService.js section 9; Phase 17 cut it out unchanged): removeEmptyVisit for Results, and the two generic calls of Delete session (listItemKeys, deleteByKey), whose rules are lib/admin/session-delete.js's. | `removeEmptyVisit`, `listItemKeys`, `deleteByKey` |
+| `responses.js` | Answers, kept one item per participant (dataService.js section 3; Phase 17 cut it out unchanged): the item's shape and limits, the blind save, the read of a session's answers (and of a damaged item, named instead of stopping), a restart, and the list of a session's visits. | 20 exports |
+| `schema-check.js` | The check of a site's lists and columns (dataService.js section 1's end; Phase 17 cut it out unchanged): checkSharePointLists() for Setup's list of lists, checkSharePointSchema() for the admin's Today screen and Setup. | `checkSharePointLists`, `checkSharePointSchema` |
+| `self-test.js` | The Setup page's own calls on a real site (dataService.js section 3; Phase 17 cut them out unchanged): a read-only probe, one REST request for lib/setup/provision.js, and the participant self-test, which makes a throwaway answers item, checks the writes and the $batch the participant page relies on, and deletes everything it made. | `probeSharePointRead`, `sendToSharePoint`, `runParticipantSelfTest` |
+| `today-clients.js` | The admin's Today and Clients screens (dataService.js section 5; Phase 17 cut it out unchanged): several list reads in one request (readLists, which the content and guest parts use too) and making a session the live one (activateSession). | `readLists`, `activateSession` |
+| `today.js` | Today's client (dataService.js section 3; Phase 17 cut it out unchanged): making a client today's (activateClient), what the participant page shows for it (getLiveExperience), an activity's questions, and the stamps of a visit (recordParticipantVisit, noteTrackResumed). | `slugify`, `listClientSections`, `sessionIdFor`, `activateClient`, `getLiveExperience`, `getSessionActivities`, `getClientActivities`, `recordParticipantVisit`, `getSectionQuestions`, `noteTrackResumed`, `inOrder`, `liveExperienceOf` |
+| `watch.js` | What a page that stays open reads on a timer (dataService.js section 8; Phase 17 cut it out unchanged): the participant page's one look (readParticipantWatch) and the Live display's feed (readLiveFeed), each one request where the site can batch, saying what it cost. | `readParticipantWatch`, `readLiveFeed` |
 
 ## `lib/effects/`
 

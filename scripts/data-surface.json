@@ -1,0 +1,534 @@
+[
+  {
+    "name": "COPY_SEPARATOR",
+    "kind": "string"
+  },
+  {
+    "name": "MAX_ANSWER_TEXT",
+    "kind": "number"
+  },
+  {
+    "name": "MAX_RESPONSES_JSON",
+    "kind": "number"
+  },
+  {
+    "name": "activateClient",
+    "kind": "async function",
+    "arity": 2
+  },
+  {
+    "name": "activateSession",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "addAdminUser",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "addGuests",
+    "kind": "async function",
+    "arity": 2
+  },
+  {
+    "name": "addSectionsToLiveSession",
+    "kind": "async function",
+    "arity": 2
+  },
+  {
+    "name": "beginVisit",
+    "kind": "async function",
+    "arity": 3
+  },
+  {
+    "name": "checkSharePointLists",
+    "kind": "async function",
+    "arity": 0
+  },
+  {
+    "name": "checkSharePointSchema",
+    "kind": "async function",
+    "arity": 0
+  },
+  {
+    "name": "configure",
+    "kind": "function",
+    "arity": 0
+  },
+  {
+    "name": "copyActivities",
+    "kind": "async function",
+    "arity": 0
+  },
+  {
+    "name": "copyIdFor",
+    "kind": "function",
+    "arity": 2
+  },
+  {
+    "name": "copyTitle",
+    "kind": "function",
+    "arity": 2
+  },
+  {
+    "name": "createClient",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "createOption",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "createQuestion",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "createSection",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "createSession",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "createVisitor",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "deleteActivity",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "deleteByKey",
+    "kind": "async function",
+    "arity": 2
+  },
+  {
+    "name": "deleteClient",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "deleteOption",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "deleteParticipantResponses",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "deleteQuestion",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "deleteSession",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "duplicateActivity",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "endSession",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "findOpenSession",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "getAppSettings",
+    "kind": "async function",
+    "arity": 0
+  },
+  {
+    "name": "getClient",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "getClientActivities",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "getClientTrack",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "getCurrentUser",
+    "kind": "async function",
+    "arity": 0
+  },
+  {
+    "name": "getLanUrls",
+    "kind": "function",
+    "arity": 0
+  },
+  {
+    "name": "getLiveExperience",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "getOption",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "getParticipantResponses",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "getQrToken",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "getQuestion",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "getSection",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "getSectionContent",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "getSectionQuestions",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "getSession",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "getSessionActivities",
+    "kind": "async function",
+    "arity": 2
+  },
+  {
+    "name": "getVisitor",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "guestNameKey",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "isSharePointMode",
+    "kind": "function",
+    "arity": 0
+  },
+  {
+    "name": "isUnreachable",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "listAdminUsers",
+    "kind": "function",
+    "arity": 0
+  },
+  {
+    "name": "listClientSections",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "listClientTracks",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "listClients",
+    "kind": "function",
+    "arity": 0
+  },
+  {
+    "name": "listItemKeys",
+    "kind": "async function",
+    "arity": 2
+  },
+  {
+    "name": "listOptions",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "listQrTokens",
+    "kind": "function",
+    "arity": 0
+  },
+  {
+    "name": "listQuestions",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "listSections",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "listSessionParticipants",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "listSessions",
+    "kind": "function",
+    "arity": 0
+  },
+  {
+    "name": "mergeAnswerRecords",
+    "kind": "function",
+    "arity": 2
+  },
+  {
+    "name": "noteTrackResumed",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "openQrScan",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "planCopy",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "prepareWrites",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "probeSharePointRead",
+    "kind": "async function",
+    "arity": 2
+  },
+  {
+    "name": "provisionGuestCodes",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "provisionQrToken",
+    "kind": "async function",
+    "arity": 2
+  },
+  {
+    "name": "qrTokenFromSearch",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "qrTokenStatus",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "qrUrl",
+    "kind": "function",
+    "arity": 2
+  },
+  {
+    "name": "readActivityContent",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "readLists",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "readLiveFeed",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "readParticipantWatch",
+    "kind": "async function",
+    "arity": 0
+  },
+  {
+    "name": "readSessionResponses",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "readSessionResponsesChecked",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "recordParticipantVisit",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "recordUserVisit",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "removeClientAsset",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "removeEmptyVisit",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "reopenSession",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "requireConfiguration",
+    "kind": "function",
+    "arity": 0
+  },
+  {
+    "name": "responseOwner",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "restartParticipantTrack",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "resumeClientTrack",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "runPaced",
+    "kind": "async function",
+    "arity": 2
+  },
+  {
+    "name": "runParticipantSelfTest",
+    "kind": "async function",
+    "arity": 0
+  },
+  {
+    "name": "saveParticipantResponses",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "sendToSharePoint",
+    "kind": "async function",
+    "arity": 4
+  },
+  {
+    "name": "sessionIdFor",
+    "kind": "function",
+    "arity": 2
+  },
+  {
+    "name": "setSessionParticipationMode",
+    "kind": "async function",
+    "arity": 2
+  },
+  {
+    "name": "setVisitorEnabled",
+    "kind": "async function",
+    "arity": 2
+  },
+  {
+    "name": "sharePointListTitles",
+    "kind": "function",
+    "arity": 0
+  },
+  {
+    "name": "slugify",
+    "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "updateAppSettings",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "updateClient",
+    "kind": "function",
+    "arity": 2
+  },
+  {
+    "name": "updateClientWith",
+    "kind": "async function",
+    "arity": 2
+  },
+  {
+    "name": "updateOption",
+    "kind": "function",
+    "arity": 2
+  },
+  {
+    "name": "updateQrToken",
+    "kind": "function",
+    "arity": 2
+  },
+  {
+    "name": "updateQuestion",
+    "kind": "function",
+    "arity": 2
+  },
+  {
+    "name": "updateSection",
+    "kind": "function",
+    "arity": 2
+  },
+  {
+    "name": "updateSession",
+    "kind": "function",
+    "arity": 2
+  },
+  {
+    "name": "updateVisitor",
+    "kind": "function",
+    "arity": 2
+  },
+  {
+    "name": "uploadClientAsset",
+    "kind": "async function",
+    "arity": 2
+  }
+]

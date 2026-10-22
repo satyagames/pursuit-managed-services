@@ -306,3 +306,17 @@ export const PHASE_16 = Object.freeze({
   participantAfter: 159_093, adminAfter: 576_279,
   participantUtilities: PHASE_11A.participantUtilities,
 });
+
+/**
+ * Phase 17 (a refactor with no change of behaviour) may not grow either page: its allowance is 0. lib/data/dataService.js became a facade
+ * over sixteen parts, every function moved unchanged; the bundler lays the same code out in another order, which cost 40 B gzip on the
+ * participant page (22 B raw: core.js's holdScan() and the seams between the parts). The 72 selectors that nothing can match left
+ * styles/legacy/app.css (participant), styles/legacy/admin.css and src/admin.css (admin, Setup): measured when the phase ended, the participant
+ * page is 701 B smaller than Phase 16 left it, the admin page 186 B, Setup 315 B. Its Tailwind rules are the ones it had, and the ceiling is
+ * not raised. The next phase starts from participantAfter and adminAfter.
+ */
+export const PHASE_17 = Object.freeze({
+  participantBefore: PHASE_16.participantAfter, adminBefore: PHASE_16.adminAfter, participantAllowance: 0, adminAllowance: 0,
+  participantAfter: 158_392, adminAfter: 576_093,
+  participantUtilities: PHASE_11A.participantUtilities,
+});

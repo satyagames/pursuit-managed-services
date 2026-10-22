@@ -10,7 +10,7 @@ script, link and list title in this file is held to the repository by `scripts/c
 [history/](history/), and [HISTORY.md](HISTORY.md) says what each phase left behind.
 
 **Since Phase 14** the modules are in folders under `migration/src/lib/` ([MODULES.md](MODULES.md)), and the shared modules that were in `public/js`
-are there too: the data layer is `migration/src/lib/data/dataService.js`, the schema `migration/src/lib/schema/`, the Live display's files
+are there too: the data layer is `migration/src/lib/data/` (its door `dataService.js`, its parts behind it since Phase 17), the schema `migration/src/lib/schema/`, the Live display's files
 `migration/src/lib/exports/resultsExport.js`, the brand helpers `migration/src/lib/brand/branding.js` and `assets.js`, and the legacy sheets
 `migration/src/styles/legacy/`. A rule below that says "`lib/<name>.js`" means the file of that name in its folder.
 
@@ -47,7 +47,7 @@ The commands and what each test proves are [TESTING.md](TESTING.md); the short l
   local file, `responses.json`, is gone with its routes.)
 - **Pictures** (`POST /api/uploads/logo`): without `?name=` it is exactly what it always was (a generated `upload-<time>-<id>` name, any
   of PNG, JPEG, GIF, WebP or SVG: the legacy admin used it, no page does now, and a test still makes an older-style upload with it). Brand Studio sends `?name=<slug>-<slot>-<10 hex>.<ext>`, the flat name
-  SharePoint's ClientLogos library gets (`ASSET_NAME` in `server/api.js`, the same pattern as `dataService.js` and
+  SharePoint's ClientLogos library gets (`ASSET_NAME` in `server/api.js`, the same pattern as `lib/data/pictures.js` and
   `lib/brand/asset-names.js`; a test says so): a named upload must be a PNG, JPEG or WebP whose extension is what it really is. `DELETE
   /api/uploads/logo/<name>` removes a file of that shape and nothing else (never a seeded logo or an older upload). Files go to
   `UPLOAD_DIR` when set, and a name with a hash is served `immutable`.
@@ -62,11 +62,19 @@ Until Phase 14 these were in `public/` (`js/dataService.js`, `pms-schema.js`, `p
 `migration/src/styles/legacy/` with their code unchanged. `public/` now holds only the pictures the local server serves (`public/assets/images/clients/`)
 and the brand files (the Open Sans TTFs the font generators read among them).
 
-- **`dataService.js` is the only file allowed to call `fetch()` or know a backend
-  exists.** Screens and admin panels import its functions and never see a URL. Add
-  new backend needs as functions there, not inline fetches in screens. (One exception, since
+- **The data layer is the only code allowed to call `fetch()` or know a backend
+  exists, and in it only `lib/data/core.js` sends (Phase 17).** Screens and admin panels import the functions of `lib/data/dataService.js` and never see a URL. Add
+  new backend needs as functions in the part of `lib/data/` they belong to, passed on by `dataService.js`, not inline fetches in screens. (One exception, since
   Phase 10b: `migration/src/lib/settings/settings-file.js` reads `pms-config.txt`, which has to happen before the data layer knows
   where to look. A test fails if any other file under `migration/src` fetches.)
+- **`dataService.js` is a facade over the parts of `lib/data/` (Phase 17).** It holds no code: it passes on the public names of `encoding.js`, `core.js`,
+  `common.js`, `schema-check.js`, `records.js`, `today.js`, `responses.js`, `self-test.js`, `qr-scan.js`, `today-clients.js`, `content-copy.js`, `guests.js`,
+  `pictures.js`, `watch.js`, `removal.js` and `list-titles.js` (the ten numbered sections of the file it was, section 3 in three and section 6 in two),
+  107 names, `scripts/data-surface.json`. Every file of the app imports `dataService.js`, never a part. All of the data layer's state is `core.js`'s (the
+  backend, the write token, the lists' types and columns, whether `$batch` works, the request count, a QR scan not yet known to have landed, which
+  `qr-scan.js` writes through `holdScan()`); no other part keeps state or calls `fetch()`. A part imports only the parts before it in that list, nothing
+  under `migration/src` imports in a cycle, and no part is over 600 lines (`scripts/test-data-modules.js`, `scripts/test-data-surface.js`). A test that
+  opens a fresh page imports `dataService.js?<tag>`; `scripts/fresh-page.js` hands the tag on to every part.
 - **`dataService.js` no longer "only grows" (Phase 10c-1).** That rule existed because the legacy pages were built
   from the same file; they are gone, and so are the 16 exports that only they, or nothing, called (`requestCount`,
   `getActiveSessionContext`, `setActiveSession`, `saveResponses`, `uploadClientLogo`, `assignActivitiesToClient`,
@@ -84,12 +92,12 @@ and the brand files (the Open Sans TTFs the font generators read among them).
   scan with `(await openQrScan(id)).claim()`, an answer with `saveParticipantResponses`, and holds a result to numbers
   written out in the test or to the oracle: never to a copy of removed code. (`deleteClientTrack`, which no page called, left in
   Phase 10c-2b: a visit is removed with `removeEmptyVisit`.)
-- **Section 5 of `dataService.js` (Phase 5) is the admin's:** `readLists([{ list, where }])` answers several list
+- **Section 5 of the data layer, `lib/data/today-clients.js` (Phase 5), is the admin's:** `readLists([{ list, where }])` answers several list
   reads as ONE `$batch` request on SharePoint (reads only; plain reads where the site cannot batch; plain parallel reads
   locally; an empty `where` array matches nothing and sends nothing), `activateSession(sessionId)` makes an existing
   session live (it sets `ActiveClientId` too; the legacy setter that did not, `setActiveSession`, left in Phase 10c-1), and
   `checkSharePointSchema({ batch: true })` reads every list's columns in one request. No new SharePoint column.
-- **Section 6 of `dataService.js` (Phase 5b) is Content's and Guests':** all of it is built from the generic list calls both
+- **Section 6, `lib/data/content-copy.js` and `lib/data/guests.js` (Phase 5b), is Content's and Guests':** all of it is built from the generic list calls both
   adapters implement, so the local Express adapter and SharePoint take the same path, and `scripts/test-admin-content.js` runs each
   on both and compares the records. `runPaced(items, worker, { concurrency: 3, gapMs })` is the one way bulk writes are done
   (3 in flight, 120 ms between one lane's writes on SharePoint, a failure recorded not thrown, stop after 3 in a row; the
@@ -108,14 +116,14 @@ and the brand files (the Open Sans TTFs the font generators read among them).
   guests scan a personal QR) where `provisionQrToken` checks per guest, and make a code only for an enabled guest with no code that
   has not expired: pressing it twice, or after a failure, makes only what is missing. `guestNameKey` is the roster's comparison
   (`lib/admin/admin-content.js` `guestKey` must agree; a test says so). No new SharePoint column.
-- **Section 7 of `dataService.js` (Phase 6) is the pictures':** `uploadClientAsset(blob, name)` stores a finished PNG, JPEG or WebP under
+- **Section 7, `lib/data/pictures.js` (Phase 6), is the pictures':** `uploadClientAsset(blob, name)` stores a finished PNG, JPEG or WebP under
   its flat content-hashed name (`<slug>-<slot>-<hash>.<ext>`) and resolves `{ url, name }`; `removeClientAsset(url)` removes one of ours,
   best effort, and never throws. On SharePoint the file goes to the ClientLogos library (`Files/add(..., overwrite=true)`, safe to
   repeat because the same name is the same bytes; the library folder is asked for once per page, beside the write token; SVG is refused
   here as well as in the screen) and a removal is `recycle()`, into the recycle bin, and only for a file in that folder whose name is
   ours; locally it is the existing upload endpoint with `?name=`. The legacy `uploadClientLogo()` left in Phase 10c-1; the `uploads` route is untouched.
   No SharePoint column. Both adapters, with a parity test (`scripts/test-brand-storage.js`).
-- **Section 8 of `dataService.js` (Phase 7) is what a page that stays open reads on a timer:** `readParticipantWatch({ sessionId, trackId,
+- **Section 8, `lib/data/watch.js` (Phase 7), is what a page that stays open reads on a timer:** `readParticipantWatch({ sessionId, trackId,
   clientId })` (AppSettings, the session, the page's own track and, for the hub, the client's activities) and `readLiveFeed(sessionId,
   { sectionIds })` (the session, its tracks, every participant's answers, merged by the same `combineAnswers` that `readSessionResponses`
   uses, and the session's activities). Each is ONE `$batch` request on SharePoint (plain reads side by side locally), each returns
@@ -242,7 +250,7 @@ in `migration/src/`, not by editing them, so that what the tests measure stays w
   **Nothing is cached between page loads**: browser storage holds only unsaved answers, this tab's
   visit-log keys and the sound choice, and a test fails if that grows.
 - **A first QR scan is inside the same budget: 8 requests, 9 for a session's first device.** The
-  page calls `openQrScan(tokenId)` (dataService, section 4), (`claimQrToken()`, the
+  page calls `openQrScan(tokenId)` (dataService, section 4: `lib/data/qr-scan.js`), (`claimQrToken()`, the
   legacy pages' way in 14 requests, left in Phase 10c-2a). The rounds: the code and AppSettings
   beside the write token; ONE `$batch` request for Session, Client, Sections, the visitor (or the
   signed-in user, for a staff code) and the Tracks item type; the new Track beside the read of every
@@ -639,7 +647,7 @@ in `migration/src/`, not by editing them, so that what the tests measure stays w
   its answer in words (`LogoTile`: done on the elements, because that component has a prop called `state` and so cannot hold a `$state` rune).
 - **A `Retry-After` is obeyed for 15 minutes at most** (`POLL.maxRetryAfterMs`).
 - **The participant page may grow by 2,048 B gzip over where Phase 8 left it** (`PHASE_9A` in `scripts/bundle-budget.js`; it is 156,606 B, +1,212). All of
-  `dataService.js` is in that page, so every byte added to it counts there.
+  the whole data layer (`dataService.js` and its parts) is in that page, so every byte added to it counts there.
 - **A `\uXXXX` escape typed into a tool call arrives as the character itself**, in a heredoc as well as in a written file: build such characters with
   `String.fromCharCode` (JS) or `chr()` (a Python patch file), and check new files for invisible characters.
 - The leader report's mutation list has 30 entries (`npm run test:report:mutations`).
@@ -707,7 +715,7 @@ reads another copy's lists and works.
 - **`dataService.requireConfiguration()`** (opt-in; the three Svelte entries call it before anything else): until `configure()` is called, anything that
   would send a request, and `isSharePointMode()`, throws `PMS-CFG-003` and sends nothing. A test that configures the service itself never calls it. A new module that asks for data
   as it is imported will meet it in the tests, which is the point.
-- **A list's title comes from one function.** In `dataService.js`, `spTitle(list)` is `settings.lists?.[key] ?? (settings.listPrefix ?? '') + <usual title>`;
+- **A list's title comes from one function.** In the data layer (`lib/data/core.js`, on `encoding.js`'s `spTitleIn`), `spTitle(list)` is `settings.lists?.[key] ?? (settings.listPrefix ?? '') + <usual title>`;
   every address (`spListPath`) and every message uses it, and the picture library defaults to `<prefix>PMSClientImages` (`spLibraryIn`; `<prefix>ClientLogos` until Phase 10c-2b). Never spell a list
   title in a message or build `getbytitle(` anywhere else (a test counts them). Settings with no prefix give the usual titles, so the requests
   are character for character what they were before Phase 10b: `scripts/request-baseline/` holds them, and **a baseline is never regenerated to make a comparison pass**.
@@ -945,7 +953,7 @@ The real site (PCOE, `pms-969bf16`, steps 1 to 9 of the runbook on 14 Oct 2026) 
 
 - **Every item read names its columns.** That site left `ClientId` out of every PMSActivities item read that did not say which columns to return (`items?$top=200`) and returned it to one
   that did; why, and what else it leaves out, is not known (the self-test's third probe asks it, QA item 139). `migration/src/lib/schema/pms-schema.js` `selectOf(key)` is the `$select` of a list (`Id`,
-  `AppId` and every column the schema maps, once), and in `dataService.js` every item read's address is made by `spItems(list, query)`, which ends with it (`spFind`, the list GET of
+  `AppId` and every column the schema maps, once), and in the data layer every item read's address is made by `spItems(list, query)`, which ends with it (`spFind`, the list GET of
   `spSend`, `spByAppId`, `spItemsAddress` and so `readLists`, and `probeSharePointRead` when its query names none). `PARTICIPANT_SELECT` was named before and is kept as it is.
   Setup's reads of items name theirs too (`provision.js`). `scripts/test-named-reads.js` checks the source (every `/items?` address names its columns) and walks the pages on the
   strict mock. The one read that names no columns on purpose is the probe's `$top=1` (`setup-checks.js`).
@@ -1342,16 +1350,16 @@ The report is [RELEASE-16.md](history/RELEASE-16.md). **None of it has met the r
 - Always: `npm run check:svelte` and `npm test` (the documents, the module map and the project map among it). If you added, moved or renamed a
   module or a file a document names: `npm run docs:modules`, `npm run docs:project-map`, and `npm run docs:check` (see "Rules from Phase 14").
 - If you touched session/track/response flow: run `npm test`.
-- If you touched `migration/src/lib/data/dataService.js`: all of it is in the participant page, and every mocked suite sends its requests through it, so also run
-  `npm run test:bundle`, `npm run test:baseline` and `npm run test:migration`. If you removed or changed a test on purpose, or changed on purpose what the code sends, see `--amend`, `--code` and `--explain` under `npm run test:baseline`.
-- If you touched how a page starts, its settings, a `PMS_` build value, or anything in `migration/src/lib/data/dataService.js` that builds an address or spells a list
+- If you touched the data layer (`migration/src/lib/data/`): all of it is in the participant page, and every mocked suite sends its requests through it, so also run
+  `npm run test:bundle`, `npm run test:baseline` and `npm run test:migration` (`scripts/test-data-modules.js` and `scripts/test-data-surface.js`, in `npm test`, hold its shape). If you removed or changed a test on purpose, or changed on purpose what the code sends, see `--amend`, `--code` and `--explain` under `npm run test:baseline`.
+- If you touched how a page starts, its settings, a `PMS_` build value, or anything in `migration/src/lib/data/` that builds an address or spells a list
   title: run `npm run test:settings`, `npm run test:namespace`, `npm run test:baseline` and `npm run test:bundle` (the participant page has no allowance of its own
   to spend: it may not grow beyond where the newest phase left it, `PHASE_10J`), then `settings-file.spec.ts`, `setup-deployment.spec.ts` and `request-baseline.spec.ts` in
   all three engines.
 - If you touched what the participant page reads or writes, when it reads it, or what a screen waits for (`lib/participant/boot.js`, `lib/participant/activity-content.js`, `experience.svelte.ts`,
-  `participantData.ts`, `answer-store.js`, `App.svelte`, `Welcome.svelte`, `Agenda.svelte`, `ActivityPager.svelte`, or a participant path of `migration/src/lib/data/dataService.js`): run
+  `participantData.ts`, `answer-store.js`, `App.svelte`, `Welcome.svelte`, `Agenda.svelte`, `ActivityPager.svelte`, or a participant path of `migration/src/lib/data/`): run
   `node --test scripts/test-participant-waits.js` and read its table; a moment that takes another round needs a reason (see "Rules from Phase 10j").
-- If you added or changed an item read (in `migration/src/lib/data/dataService.js`, or anywhere under `migration/src`): it must name its columns, through `selectOf` (see "Rules from Phase 10h"); run
+- If you added or changed an item read (in `migration/src/lib/data/`, or anywhere under `migration/src`): it must name its columns, through `selectOf` (see "Rules from Phase 10h"); run
   `node --test scripts/test-named-reads.js`, `npm run test:baseline` and `npm run test:namespace`, and the strict mock will refuse it in every suite if it does not.
 - If you touched `spHttp`'s reading of a refusal, or a caller of 409: run `node --test scripts/test-duplicates.js` and `npm test`.
 - If you named a new column, or renamed one: no column may be named like a SharePoint list-item property (`npm run test:schema` lists them); a rename is a new `VERSION`, an entry in
@@ -1375,7 +1383,7 @@ The report is [RELEASE-16.md](history/RELEASE-16.md). **None of it has met the r
   `npm run test:namespace` and `npm run test:bundle`, then `sample-pictures.spec.ts`, `setup.spec.ts` and `brand-studio.spec.ts`.
 - If you touched the release package, its documents or the permissions: run `npm run test:release-package`, then `npm run package:release` and
   `npm run test:rehearsal` on a committed tree.
-- If you touched Brand Studio, a picture slot, `HeroPlate`, `AppShell`, `theme.js`, `client-theme.js` or section 7 of `dataService.js`: run
+- If you touched Brand Studio, a picture slot, `HeroPlate`, `AppShell`, `theme.js`, `client-theme.js` or `lib/data/pictures.js`: run
   `npm run test:brand` and `npm run test:migration`, and look at the screenshots `brand-*.png` in `test-results/admin/`.
 - If you touched the leader report, its fonts or the participant CSV: run `npm run test:report`, `npm run test:report:mutations`,
   `npm run test:bundle` and `npm run test:migration`, and look at the pictures in `test-results/report/`.

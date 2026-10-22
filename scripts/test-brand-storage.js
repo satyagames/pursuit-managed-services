@@ -7,6 +7,7 @@
 // Like the storage suite this proves the adapter sends the requests it should, in the numbers it should.
 // It is not the real tenant: whether a participant's browser can read a file in ClientLogos is something
 // only the test site can show (QA-TESTING.md section 9).
+import './fresh-page.js';
 import assert from 'node:assert/strict';
 import { freePort } from './free-port.js';
 import { spawn } from 'node:child_process';
@@ -19,6 +20,7 @@ import { ASSET_NAME } from '../server/api.js';
 import { assetFileName } from '../migration/src/lib/brand/asset-names.js';
 import { SAMPLE_PICTURE_NAMES } from '../migration/src/lib/setup/sample-pictures.js';
 import { STRAYS, TITLE, UNINDEXED, createSharePointFake } from './sharepoint-fake.js';
+import { dataLayerSource } from './data-layer-source.js';
 
 const ROOT = path.join(import.meta.dirname, '..');
 const realFetch = globalThis.fetch;
@@ -40,7 +42,7 @@ async function freshPage(settings) {
 
 describe('the picture names the adapter and the local server accept are the same', () => {
   it('one pattern in dataService.js, the server and asset-names.js', async () => {
-    const service = await readFile(path.join(ROOT, 'migration', 'src', 'lib', 'data', 'dataService.js'), 'utf8');
+    const service = await dataLayerSource();
     const inService = /const ASSET_NAME = (\/.*\/);/.exec(service)?.[1];
     assert.equal(inService, String(ASSET_NAME));
     const good = ['kroger-hero-0123456789.png', 'my-co-background-abcdef0123.jpg', 'a-tile-0000000000.webp', 'x1-logo-ffffffffff.webp'];

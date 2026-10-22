@@ -11,7 +11,9 @@
    production). Below item 181.
 4. Items **188 to 194** (Phase 16: Results newest first, Delete session on a scratch session and on the live one, a facilitator's rights, the
    recycle bin, a deleted session's guest code, a question edited in place, then production). Below item 187.
-5. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
+5. Items **195 to 197** (Phase 17: the restructured data layer and the removed CSS on a test folder, one full pass, the first QR scan's requests,
+   then production). Below item 194.
+6. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
    160, 161, 164, 165, 166, 167, 168, 169, 170.
 
 **Decided, no change:** 162 (names stay "Last, First") and 163 (the wall page keeps the admin header), VJR, 16 Oct 2026.
@@ -1358,6 +1360,21 @@ facilitator's own rights allow, can only be seen there.** Use a test folder firs
     On **Results**, **Restart...** opens its form under that iPad's row.
 194. **Then production, and the push.** *(Still to see.)* If 188 to 193 pass, replace the three pages in `Shared Documents/PMS` and push the branch
     `pms-16`. Nothing in the lists changes (version 3).
+
+### Phase 17 (the data layer cut into parts, dead CSS removed): not verified on the real site or an iPad
+
+No behaviour, list, setting or word changed: the pages were rebuilt from restructured source, and 72 CSS selectors that nothing could match left the
+three stylesheets (RELEASE-17.md). What only the real site and a real iPad can show is that this is so there too. Use a test folder first.
+
+195. **One full pass on a test folder.** *(Still to see.)* Upload the new package to a test folder and run Setup's self-test: **expect** 11 of 11. Then
+    join with an iPad by QR code and by manual select, answer every kind of question, open Results and the Live display, make an export of each
+    kind (leader report PDF, participant CSV, summary pack PDF and PowerPoint, summary CSV), save a picture in Brand Studio, and **Delete session** on a
+    scratch session. **Expect** everything as with `pms-07eb42b` (Phase 16), screen for screen.
+196. **The first QR scan's requests.** *(Still to see.)* On an iPad (or Edge with the network tab open), scan a guest code of a session that has
+    already started. **Expect** 8 requests to the first screen beside the settings file (9 for the session's first device), as
+    `scripts/test-participant-storage.js` counts them.
+197. **Then production, and the push.** *(Still to see.)* If 195 and 196 match the previous package, replace the three pages in `Shared Documents/PMS`,
+    merge to `main` and push the branch `pms-17`. Nothing in the lists changes (version 3).
 
 ### Phase 8 (browsers, devices, accessibility, performance, the unsupported-browser page): not verified on a real device, a real screen reader, or the real SharePoint site
 

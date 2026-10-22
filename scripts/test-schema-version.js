@@ -6,6 +6,7 @@
 // PMS-LST-012, from every read of that item (getAppSettings, readLists, readParticipantWatch) and at no extra request; the data layer
 // hands the code to the page's stop handler (lib/settings/start.ts) and throws it; the local server has no version. What it does not hold: what
 // the real site answers. A page opened on the real site before Setup has run is QA-TESTING.md's to see.
+import './fresh-page.js';
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { VERSION } from '../migration/src/lib/schema/pms-schema.js';

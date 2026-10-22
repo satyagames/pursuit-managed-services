@@ -352,22 +352,6 @@ input[type='date']:focus-within {
   gap: 1rem;
 }
 
-.logo-edit {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.logo-edit .input {
-  flex: 1;
-  min-width: 0;
-}
-
-.logo--preview {
-  flex: none;
-  border: 1px solid var(--line);
-}
-
 .sr-only-file {
   position: absolute;
   width: 1px;
@@ -532,25 +516,12 @@ input[type='date']:focus-within {
     grid-template-columns: 1fr;
   }
 
-  .logo-edit {
-    flex-wrap: wrap;
-  }
-
   .qr__url {
     grid-template-columns: 1fr auto;
   }
 
   .qr__url a {
     grid-column: 1 / -1;
-  }
-
-  .tally__row {
-    grid-template-columns: 1fr auto;
-  }
-
-  .tally__bar {
-    grid-column: 1 / -1;
-    order: 3;
   }
 
   .row {
@@ -759,12 +730,6 @@ input[type='date']:focus-within {
 .adm-dialog__body h2 {
   margin: 0;
   font-size: 1.35rem;
-}
-
-.adm-dialog__list {
-  margin: 0;
-  padding-left: 1.25rem;
-  color: var(--adm-muted);
 }
 
 .copy-list {

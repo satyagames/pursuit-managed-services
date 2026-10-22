@@ -9,6 +9,7 @@
 // it makes and stops at once, naming it, when SharePoint made something else; a 403 stops it with words a person can act on and the list of what
 // was made; a run stopped part-way is finished by running it again. The request log is the proof, with every trap of ARCHITECTURE-10.md 6.3 (in git history at 7347c72) the
 // fake can spring turned on.
+import './fresh-page.js';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';

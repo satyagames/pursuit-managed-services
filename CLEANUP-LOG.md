@@ -120,3 +120,31 @@ New: `CLAUDE.md`, `llms.txt`, `docs/SHAREPOINT.md`, `docs/DATA-FLOW.md`, `docs/M
 `docs/HISTORY.md`, `docs/project-map.json` (generated), and the checks `scripts/check-docs.js`, `scripts/test-check-docs.js`,
 `scripts/build-modules-map.js` with `scripts/test-modules-map.js`, `scripts/build-project-map.js` with `scripts/test-project-map.js`, and the lists at a
 glance in `docs/SHAREPOINT.md` from `scripts/build-lists-reference.js`. Each test failed before what it checks was written.
+
+## Phase 17: dead CSS, by measurement
+
+**What was removed:** 72 selectors of the three stylesheets that nothing in the app can match: 7 of `migration/src/admin.css`, 20 of
+`migration/src/styles/legacy/admin.css` and 45 of `migration/src/styles/legacy/app.css` (the list, with each selector's line and the class it
+names that is nowhere, is `build-svelte/evidence-17/css-removed.json` on the machine that made it; the commit `81159d7` is the diff). They are the
+legacy app's results screen (`master-*`, `results__*`), its agenda (`section-list`, `section-item__*`), question form, option lists, thank-you screen
+and brand header (`brand__logo`, `brand__name`, whose `content:` fallback was the last "Pursuits CEC" in a stylesheet, see Stage 1's "Found, and left"),
+the legacy admin's tally rows (`tally__*` but `.tally` and `.tally summary`), QR code list (`qr__codes`), logo editor (`logo-edit`, `logo--preview`),
+dialog form, preview's empty state and user-setup controls, and their copies in `src/admin.css` (`adm-dialog__list` among them). A rule that also
+had a live selector keeps it; four comments that described only removed rules went with them.
+
+**The evidence (a selector was removed only when every check said no one could match it):**
+
+- Not a token of any `.svelte`, `.ts`, `.js` or HTML shell under `migration/` (194 files, comments and `<style>` blocks left out), and not a class a
+  piece could build (`check--{level}`, `btn--${kind}`, `'tile--' + kind`: 27 such prefixes, every class starting with one counted as used).
+- Not in the DOM of any of the 955 screens and states that the local site's harness photographs (`npm run ux:shoot -- --matrix brief`, the seven
+  sizes of `devices.spec.ts`): participant, guest, states, keyboard, tiles, admin, admin states, Live display, Setup, brand and Brand Studio, with
+  `document.querySelectorAll('*')`'s classes and ids recorded at each picture (a throwaway change to the harness, reverted). 536 distinct names.
+- Not named by a document as a contract, nor by a test: `.divider` (three selectors) is named in `docs/RULES.md` as a global class, and stays.
+- No candidate was inside `@media print` or a `prefers-*` block; no custom property was touched.
+
+**The proof that it was neutral:** the three pages' screenshots on the whole matrix, before (`pms-362b095`) and after (`pms-81159d7`), compared
+picture by picture (RELEASE-17.md); `npm test` 1,475 of 1,475; the participant page 701 B gzip smaller, the admin page 186 B, Setup 315 B.
+
+**`styles/legacy/` keeps its name.** What is left in it is still the legacy app's two sheets, overridden by `src/app.css` and `src/admin.css` rather
+than edited, and several of their rules are live on every page (`:root`'s first tokens, `.btn`, `.field`, `.row`, `.pill`, `.option`, `.divider`).
+Renaming the folder would change three entries' imports and the documents for no gain while that is so.

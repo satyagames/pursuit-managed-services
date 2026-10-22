@@ -18,6 +18,7 @@
 // the rounds and requests measured at c7848e5 (before) and now.
 //
 // What it cannot show: how long one round takes on the real site. That is RUNBOOK.md's timing check. Run: node --test scripts/test-participant-waits.js
+import './fresh-page.js';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { cp, mkdtemp, readFile, rm } from 'node:fs/promises';
@@ -32,6 +33,7 @@ import { samplePack } from '../migration/src/lib/setup/sample-clients.js';
 import { seedPack } from '../migration/src/lib/setup/seed.js';
 import { freePort } from './free-port.js';
 import { REFUSED_BY_NAME, STRAYS, TITLE, UNINDEXED, UNNAMED, createSharePointFake } from './sharepoint-fake.js';
+import { dataLayerSource } from './data-layer-source.js';
 
 const ROOT = path.join(import.meta.dirname, '..');
 // (Imported when first used: Phase 10j part D's tests of the boot were run against the last commit, which had no such module, to see them fail.)
@@ -935,7 +937,7 @@ describe('the column check reads only what it checks (part B)', () => {
   });
 
   it('the check reads exactly the properties it names (a source check of spMetadata)', async () => {
-    const source = await readFile(path.join(ROOT, 'migration', 'src', 'lib', 'data', 'dataService.js'), 'utf8');
+    const source = await dataLayerSource();
     const body = /async function spMetadata\(list\) \{[\s\S]*?\n\}\n/.exec(source)?.[0];
     assert.ok(body, 'spMetadata is where it was');
     const read = new Set([...body.matchAll(/\b(?:field|appId|extra)\??\.([A-Z]\w+)/g)].map(([, property]) => property));

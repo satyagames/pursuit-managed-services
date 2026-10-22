@@ -6,6 +6,7 @@
 // Like the storage suite this proves the adapter sends the requests it should, in the numbers it
 // should. It is not the real tenant: whether SharePoint accepts a batch of 12 column reads is what
 // the browser tests against the fake can only assume (QA-TESTING.md section 9).
+import './fresh-page.js';
 import assert from 'node:assert/strict';
 import { freePort } from './free-port.js';
 import { spawn } from 'node:child_process';

@@ -23,8 +23,8 @@ flowchart LR
   Setup[Setup page<br/>setup.html] -->|creates lists, version, admins| Settings
 ```
 
-Every arrow into a list is a REST request from the browser, with the person's own sign-in, through `lib/data/dataService.js` (the only module that
-fetches, beside the settings reader). On the local server the same calls go to `server/` instead, which keeps the same records in JSON files.
+Every arrow into a list is a REST request from the browser, with the person's own sign-in, through `lib/data/dataService.js` (the data layer's door; behind it
+`lib/data/core.js` is the only module that fetches, beside the settings reader). On the local server the same calls go to `server/` instead, which keeps the same records in JSON files.
 
 ## A page starts
 

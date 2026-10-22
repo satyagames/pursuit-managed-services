@@ -6,6 +6,7 @@
 // result oracle stores them (scripts/oracle-results.js toRows): sixty iPads' worth of pressing would add nothing but time, and the rows are the
 // shape the pages read. Every person here is invented.
 
+import '../fresh-page.js';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';

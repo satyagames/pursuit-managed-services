@@ -53,9 +53,6 @@ textarea.input { resize: vertical; }
 .pill--completed { background: #dcfce7; color: #166534; }
 .pill--unused { background: #dbeafe; color: #1e40af; }
 .pill--expired { background: #fee2e2; color: #991b1b; }
-.logo-edit { display: flex; align-items: center; gap: .5rem; }
-.logo-edit .input { flex: 1; min-width: 0; }
-.logo--preview { flex: none; border: 1px solid var(--line); }
 .logo { width: 44px; height: 44px; object-fit: contain; border-radius: 8px; background: #f8fafc; }
 .swatch { display: inline-block; width: 14px; height: 14px; border-radius: 4px; vertical-align: -2px; border: 1px solid rgba(0,0,0,.15); }
 
@@ -73,12 +70,10 @@ textarea.input { resize: vertical; }
 .dialog { width: min(640px, calc(100vw - 2rem)); max-height: calc(100vh - 2rem); padding: 0; border: 0; border-radius: 16px; box-shadow: 0 20px 60px rgba(15, 23, 42, .35); }
 .dialog::backdrop { background: rgba(15, 23, 42, .5); }
 .dialog--wide { width: min(860px, calc(100vw - 2rem)); }
-.dialog__form { display: grid; gap: 1rem; padding: 1.5rem; }
 .dialog__actions { display: flex; justify-content: flex-end; gap: .5rem; }
 .field { display: grid; gap: .25rem; border: 0; padding: 0; margin: 0; min-width: 0; }
 .field__label { font-weight: 600; font-size: .9rem; }
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-.user-setup__controls { grid-template-columns: minmax(16rem, 2fr) minmax(14rem, 1fr) auto; align-items: end; }
 .user-setup__roster, .user-setup__visits { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--line); }
 .user-setup__qr { max-width: 34rem; }
 .opts { list-style: none; margin: .5rem 0; padding: 0; display: grid; gap: .5rem; }
@@ -90,7 +85,6 @@ textarea.input { resize: vertical; }
 .preview__banner { display: flex; gap: .75rem; align-items: center; padding: .6rem 1rem; background: #fef3c7; color: #78350f; }
 .preview__banner .pill { margin-left: auto; }
 .preview__frame { max-height: 65vh; overflow: auto; border-top: 1px solid var(--line); }
-.preview__empty { padding: 2rem 1rem; text-align: center; }
 .preview__foot { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .75rem 1rem; border-top: 1px solid var(--line); }
 .preview__actions { display: flex; gap: .5rem; align-items: center; }
 
@@ -109,15 +103,6 @@ textarea.input { resize: vertical; }
 .field:has(.choice) { gap: .5rem; }
 .tally { border-top: 1px solid var(--line); }
 .tally summary { padding: .75rem 1rem; font-weight: 600; cursor: pointer; min-height: 44px; }
-.tally__question { padding: .5rem 1rem 1rem; }
-.tally__head { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; margin-bottom: .35rem; }
-.tally__bars, .tally__comments { list-style: none; margin: 0; padding: 0; display: grid; gap: .3rem; }
-.tally__row { display: grid; grid-template-columns: minmax(8rem, 14rem) 1fr auto; align-items: center; gap: .75rem; }
-.tally__label { overflow-wrap: anywhere; }
-.tally__bar { height: 14px; border-radius: 7px; background: #e2e8f0; overflow: hidden; }
-.tally__fill { display: block; height: 100%; background: var(--accent); transition: width .25s; }
-.tally__count { min-width: 2ch; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
-.tally__comments li { padding: .4rem .6rem; background: #f8fafc; border-radius: 8px; overflow-wrap: anywhere; }
 
 /* QR dialog */
 .qr { display: grid; justify-items: center; gap: .75rem; }
@@ -126,11 +111,8 @@ textarea.input { resize: vertical; }
 .qr__url .input { font: 1rem/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; min-width: 0; }
 .qr__warn { margin: 0; padding: .5rem .75rem; border-radius: 10px; background: #fef3c7; color: #78350f; font-size: .9rem; width: 100%; }
 .qr .field { width: 100%; }
-.qr__codes { width: 100%; }
-.qr__codes h4 { margin: .5rem 0 .25rem; }
-.qr__codes .row { padding: .4rem .75rem; }
 
-@media (max-width: 720px) { .row { flex-wrap: wrap; } .field-row, .user-setup__controls { grid-template-columns: 1fr; } }
+@media (max-width: 720px) { .row { flex-wrap: wrap; } .field-row { grid-template-columns: 1fr; } }
 a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 
 /* Panel that failed to load: friendly retry instead of a blank area. */

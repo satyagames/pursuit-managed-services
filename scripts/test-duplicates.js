@@ -10,6 +10,7 @@
 // Held here: which refusal is a duplicate (spHttp, through the data layer's own calls, on a stand-in that answers exactly what each case says), and,
 // with the mock answering a duplicate as that site does (500, its words), each of those paths ending as it always did. Run: node --test
 // scripts/test-duplicates.js (also part of npm test).
+import './fresh-page.js';
 import assert from 'node:assert/strict';
 import { after, describe, it } from 'node:test';
 import * as ds from '../migration/src/lib/data/dataService.js';

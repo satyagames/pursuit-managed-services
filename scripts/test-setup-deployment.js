@@ -4,6 +4,7 @@
 // The panel's rows are made from the resolver's own answer, so they are tested from it: nothing here builds a row by hand. Whether a
 // real site answers `web/GetList`, or `$expand=RootFolder`, the way the mock does has not been seen: that is what the rows and the
 // probe are for, on the first visit to a real site (QA-TESTING.md, item 92).
+import './fresh-page.js';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';

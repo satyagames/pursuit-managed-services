@@ -137,7 +137,7 @@ Then **Moving content made on another copy** (the seed-file import from `npm run
 
 ## What SharePoint does, as this project found it
 
-Each of these is handled in `migration/src/lib/data/dataService.js` and modelled by the mocked SharePoint (`scripts/sharepoint-fake.js`) and the local
+Each of these is handled in the data layer (`migration/src/lib/data/`) and modelled by the mocked SharePoint (`scripts/sharepoint-fake.js`) and the local
 PCOE stand-in ([LOCAL-SITE.md](LOCAL-SITE.md)), so a test fails if the handling goes.
 
 | What happens | Seen on | How the app handles it |

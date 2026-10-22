@@ -5,6 +5,7 @@
 // What this can and cannot show: that the adapter sends the requests it should, in the numbers it
 // should, and copes with the answers a list can give. It is not the real tenant. The setup page's
 // self-test is how the real lists are checked.
+import './fresh-page.js';
 import assert from 'node:assert/strict';
 import { freePort } from './free-port.js';
 import { spawn } from 'node:child_process';
@@ -267,6 +268,21 @@ describe('a first QR scan: 8 requests to the first screen, and 9 for the device 
     return { boot, sent: fake.requests.map(shape) };
   }
   const batched = (fake) => fake.requests.find((entry) => entry.parts).parts.map(shape);
+  /**
+   * A scan's requests by round, from what each one waits for rather than from where it falls in the list (Phase 17): round 1 is everything sent
+   * before the $batch (which needs the write token round 1 asks for), round 2 the $batch, round 4 the writes that need the new track (the claim
+   * and, for a session's first device, the session moved on), round 3 the rest (the track and the activities' content, which wait for the batch).
+   * Requests of one round go out at the same moment, so their order within it is not held; that every round-4 write follows the track is.
+   * @param {string[]} sent
+   */
+  function roundsOf(sent) {
+    const batch = sent.indexOf('POST /$batch');
+    const later = sent.slice(batch + 1);
+    const needsTrack = (request) => request.startsWith('MERGE ');
+    const track = sent.indexOf('POST tracks');
+    assert.ok(sent.every((request, at) => !needsTrack(request) || at > track), `every write that needs the track follows it: ${sent.join(', ')}`);
+    return [sorted(sent.slice(0, batch)), sent.slice(batch, batch + 1), sorted(later.filter((request) => !needsTrack(request))), sorted(later.filter(needsTrack))];
+  }
 
   it("a visitor's code: the code beside AppSettings, one batch of reads, the track beside the first activity, then the claim", async () => {
     const { fake, session } = await liveSharePoint();
@@ -275,10 +291,11 @@ describe('a first QR scan: 8 requests to the first screen, and 9 for the device 
     // The session's first device also moves the session to in-progress.
     const opening = await scan(fake, first);
     assert.equal(opening.boot.claimed, true);
-    assert.deepEqual(sorted(opening.sent.slice(0, 3)), ['GET appsettings', 'GET qrtokens', 'POST /contextinfo']);
-    assert.equal(opening.sent[3], 'POST /$batch');
-    assert.deepEqual(sorted(opening.sent.slice(4, 7)), ['GET options', 'GET questions', 'POST tracks']);
-    assert.deepEqual(sorted(opening.sent.slice(7)), ['MERGE qrtokens', 'MERGE sessions']);
+    const [one, two, three, four] = roundsOf(opening.sent);
+    assert.deepEqual(one, ['GET appsettings', 'GET qrtokens', 'POST /contextinfo']);
+    assert.deepEqual(two, ['POST /$batch']);
+    assert.deepEqual(three, ['GET options', 'GET questions', 'POST tracks']);
+    assert.deepEqual(four, ['MERGE qrtokens', 'MERGE sessions']);
     assert.equal(opening.sent.length, 9);
     assert.equal(fake.item('sessions', session.id).Status, 'in-progress');
     assert.equal(opening.boot.experience.session.status, 'in-progress', 'and the page was told');
@@ -286,14 +303,15 @@ describe('a first QR scan: 8 requests to the first screen, and 9 for the device 
 
     // Every device after it.
     const { boot, sent } = await scan(fake, second);
-    assert.deepEqual(sorted(sent.slice(0, 3)), ['GET appsettings', 'GET qrtokens', 'POST /contextinfo'], 'round 1: the code, AppSettings and the write token, side by side');
-    assert.equal(sent[3], 'POST /$batch', 'round 2: one request');
+    const rounds = roundsOf(sent);
+    assert.deepEqual(rounds[0], ['GET appsettings', 'GET qrtokens', 'POST /contextinfo'], 'round 1: the code, AppSettings and the write token, side by side');
+    assert.deepEqual(rounds[1], ['POST /$batch'], 'round 2: one request');
     // (The first 'GET Tracks' is Phase 9a's look for a track an earlier, cut-off try of this code left: one more read in the same request.)
     assert.deepEqual(batched(fake), ['GET sessions', 'GET clients', 'GET sections', 'GET tracks', 'GET visitorroster', 'GET tracks']);
     assert.match(fake.requests[3].parts[3].query, /QrTokenId eq/, 'the look for earlier tries of this code');
     assert.match(fake.requests[3].parts[5].url, /ListItemEntityTypeFullName/, 'the type a new Tracks item must name, asked once');
-    assert.deepEqual(sorted(sent.slice(4, 7)), ['GET options', 'GET questions', 'POST tracks'], 'round 3: the track, beside the first activity');
-    assert.deepEqual(sent.slice(7), ['MERGE qrtokens'], 'round 4: the claim');
+    assert.deepEqual(rounds[2], ['GET options', 'GET questions', 'POST tracks'], 'round 3: the track, beside the first activity');
+    assert.deepEqual(rounds[3], ['MERGE qrtokens'], 'round 4: the claim');
     assert.equal(sent.length, 8);
     measured.push(['boot, first QR scan (a visitor code): Welcome, with the activities read beside the track', sent.length, 8]);
 
@@ -323,6 +341,14 @@ describe('a first QR scan: 8 requests to the first screen, and 9 for the device 
     assert.equal(reads.length, 10, 'nine, and the look for earlier tries of the code (Phase 9a), which rides in the batch');
     assert.equal(new Set(reads).size, 10, 'nothing is read twice');
     assert.equal(fake.count((entry) => Boolean(entry.faulted)), 0);
+  });
+
+  it('the rounds are read from what each request waits for: a claim landing between the content reads is still round 4; a claim before its track fails', () => {
+    // As the page could send them on a busy machine: the track is answered before the second content read goes out.
+    const interleaved = ['GET qrtokens', 'POST /contextinfo', 'GET appsettings', 'POST /$batch', 'GET questions', 'POST tracks', 'MERGE qrtokens', 'GET options'];
+    assert.deepEqual(roundsOf(interleaved), [['GET appsettings', 'GET qrtokens', 'POST /contextinfo'], ['POST /$batch'], ['GET options', 'GET questions', 'POST tracks'], ['MERGE qrtokens']]);
+    assert.notDeepEqual(sorted(interleaved.slice(4, 7)), ['GET options', 'GET questions', 'POST tracks'], 'which the slices by position (until Phase 17) would have refused');
+    assert.throws(() => roundsOf(['GET qrtokens', 'GET appsettings', 'POST /contextinfo', 'POST /$batch', 'MERGE qrtokens', 'POST tracks', 'GET questions', 'GET options']), /follows it/);
   });
 
   it('a staff code costs the same: the signed-in user rides in the batch in place of the visitor', async () => {
@@ -1803,7 +1829,7 @@ describe('the boundaries this phase relies on', () => {
       // The boot sequence reads the visit's item (alongside its other reads) and hands it to participantData; it never writes.
       const isBoot = name.endsWith('lib/participant/boot.js');
       // The data layer is where the saves go (it was in public/js, outside this check, until Phase 14).
-      if (name.endsWith('lib/data/dataService.js')) continue;
+      if (name.includes('lib/data/')) continue;
       if (!isDoor && /from ['"][^'"]*answer-store(\.js)?['"]/.test(text)) offenders.push(`${name} imports the answer store`);
       if (!isDoor && !isStore && /\b(saveParticipantResponses|saveResponses?)\b/.test(text)) offenders.push(`${name} writes answers itself`);
       if (!isDoor && !isStore && !isBoot && /\bgetParticipantResponses\b/.test(text)) offenders.push(`${name} reads answers itself`);

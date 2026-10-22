@@ -4,6 +4,7 @@
 //
 // The reader is tried on a stand-in for fetch: what a real SharePoint library answers for a file, for a missing one and for a signed-out
 // browser has not been seen. The browser side is scripts/migration-tests/settings-file.spec.ts.
+import './fresh-page.js';
 import assert from 'node:assert/strict';
 import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
@@ -221,8 +222,8 @@ describe('the three entries find their settings before anything asks for data', 
     const files = (await readdir(path.join(ROOT, 'migration', 'src'), { recursive: true })).filter((name) => /\.(ts|js|svelte)$/.test(name));
     for (const file of files) {
       // (Phase 14: the data layer, in public/js until then and outside this check, still takes its first values from those globals, which no page
-      // sets: RELEASE-14.md, "Found, and left".)
-      if (/lib[\\/]data[\\/]dataService\.js$/.test(file)) continue;
+      // sets: RELEASE-14.md, "Found, and left". Since Phase 17 those first values are lib/data/core.js's, the part of the data layer that holds its state.)
+      if (/lib[\\/]data[\\/]core\.js$/.test(file)) continue;
       const code = (await source(path.join('migration', 'src', file))).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
       assert.doesNotMatch(code, /public\/config\.js|CEC_SHAREPOINT|CEC_API_BASE/, file);
     }
@@ -237,8 +238,8 @@ describe('the three entries find their settings before anything asks for data', 
       const code = (await source(path.join('migration', 'src', file))).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
       if (/\bfetch\b|XMLHttpRequest|sendBeacon/.test(code)) fetching.push(file.split(path.sep).join('/'));
     }
-    // The data layer itself is in migration/src since Phase 14 (it was public/js/dataService.js).
-    assert.deepEqual(fetching.sort(), ['lib/data/dataService.js', 'lib/settings/settings-file.js']);
+    // The data layer itself is in migration/src since Phase 14 (it was public/js/dataService.js); its requests are lib/data/core.js's since Phase 17.
+    assert.deepEqual(fetching.sort(), ['lib/data/core.js', 'lib/settings/settings-file.js']);
     const reader = await source('migration/src/lib/settings/settings-file.js');
     assert.equal([...reader.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '').matchAll(/\bfetch\(/g)].length, 1, 'one request, to one address');
     assert.match(reader, /fetch\(new URL\(SETTINGS_FILE, pageUrl\)\.href, \{ cache: 'no-store', signal: AbortSignal\.timeout\(8000\) \}\)/);

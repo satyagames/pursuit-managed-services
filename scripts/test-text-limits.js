@@ -5,6 +5,7 @@
 // input takes the limit of pms-schema-meta.js (the admin page cannot carry that file, so its constants are held equal to it here), with a plain message
 // at the limit; and the data layer refuses a longer single line before anything is sent, in both adapters, for every list. Every other single-line
 // text a person types is checked against META's maximum below.
+import './fresh-page.js';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { cp, mkdtemp, rm } from 'node:fs/promises';

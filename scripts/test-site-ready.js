@@ -5,6 +5,7 @@
 // `default` with Title `default` and SchemaVersion (this build's VERSION: 3 since Phase 10i; the other columns left empty), or SchemaVersion alone on an item that has none. A half-built or
 // wrong site never claims to be ready. Before it, every page of the app stops with PMS-LST-010; after it, they work. Against the mocked SharePoint REST;
 // what the real site answers is QA-TESTING.md's to see.
+import './fresh-page.js';
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { ID, LISTS, VERSION } from '../migration/src/lib/schema/pms-schema.js';
