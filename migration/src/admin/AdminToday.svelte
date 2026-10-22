@@ -5,7 +5,7 @@
     POLL_MS, blockedReason, evaluateReadiness, goLive, isCalendarDate, liveStatus, loadReadinessInputs, loadToday, localDate, makeSessionLive,
     needsSwitchConfirmation, notLiveText, pollToday, switchDialog,
   } from '../lib/admin/admin-today.js';
-  import { copyText, participantPageUrl, qrImage } from '../lib/admin/admin-links.js';
+  import { participantPageUrl, qrImage } from '../lib/admin/admin-links.js';
   import {
     failureText as failed, goLiveLabel, goLiveWhy, levelCounts, otherSessionsOf, pickableClients, readinessSummary, sinceText, upsertSession as upsert,
   } from '../lib/admin/today-view.js';
@@ -13,6 +13,7 @@
   import TodayControls from './TodayControls.svelte';
   import TodayGoLive from './TodayGoLive.svelte';
   import TodayReadiness from './TodayReadiness.svelte';
+  import TodayShare from './TodayShare.svelte';
 
   type Client = { id: string; name: string; status?: string; logoUrl?: string | null; theme?: { assets?: { logo?: string | null; hero?: string | null } } | null };
   type Session = { id: string; clientId: string; date?: string; status?: string; participationMode?: string; activityFlow?: string };
@@ -64,7 +65,6 @@
   let pollError = $state('');
   let shareUrl = $state('');
   let shareQr = $state('');
-  let shareField = $state<HTMLInputElement>();
   let allSessions = $state(false);
 
   let alive = true;
@@ -368,11 +368,6 @@
     return { sessionId: session.id, client: owner, date: session.date ?? '', run: () => makeSessionLive(dataService, session.id) as ReturnType<Wanted['run']> };
   }
 
-  async function copyLink() {
-    await copyText(shareUrl, shareField);
-    onToast('Link copied', 'success');
-  }
-
   function rowAction(row: { go?: { tab?: string; action?: string } }) {
     if (row.go?.action === 'reopen' && target) void reopenIt(target).then(() => recheckInputs());
     else if (row.go?.tab) onNavigate(row.go.tab);
@@ -449,15 +444,7 @@
         {#if status.live && status.session}
           <section class="card-panel" aria-labelledby="share-heading">
             <h3 id="share-heading">Participant link</h3>
-            <div class="share__link">
-              <input bind:this={shareField} class="input mono" readonly value={shareUrl} aria-label="Participant link" />
-              <button class="btn" type="button" onclick={() => void copyLink()} disabled={!shareUrl}>Copy</button>
-            </div>
-            {#if shareQr}<img class="share__qr" src={shareQr} alt={`QR code for the participant link`} />{/if}
-            <div class="share__actions">
-              <a class="btn btn--primary" href={shareUrl || './index.html'} target="_blank" rel="noopener">Open participant view</a>
-              <button class="btn" type="button" onclick={() => onLiveDisplay(status.session!.id)}>Live display</button>
-            </div>
+            <TodayShare {shareUrl} {shareQr} onLive={() => onLiveDisplay(status.session!.id)} {onToast} />
           </section>
         {/if}
       </div>
@@ -630,28 +617,6 @@
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
-  }
-
-  /* Sharing */
-  .share__link {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 0.5rem;
-  }
-
-  .share__qr {
-    justify-self: center;
-    width: min(14rem, 60vw);
-    aspect-ratio: 1;
-    background: #fff;
-    border: 1px solid var(--adm-line);
-    border-radius: 0.75rem;
-  }
-
-  .share__actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.6rem;
   }
 
   .others {
