@@ -21,6 +21,7 @@
   import { answerCounts, answersFrom, answersOf, chartsOf, namesFor } from '../lib/results/results-chart-model.js';
   import { RESULTS_PALETTE } from '../lib/results/results-palette-source.js';
   import ResultCard from './charts/ResultCard.svelte';
+  import LiveSections from './LiveSections.svelte';
 
   // The facilitator's live results display (it was the participant page's Master screen until Phase 7): a live tally for each
   // question of the session, the number of answers and of iPads, in the client's own colours, and a Full screen view for projecting
@@ -541,18 +542,7 @@
       {/if}
     {:else}
       {#if questions.length === 0}<p class="live__status">This session has no live questions yet.</p>{/if}
-      <div class="live__sections">
-        {#each chartSections as section (section.id)}
-          <section class="live-section">
-            <h3 class="live-section__title">{section.title}</h3>
-            <div class="live-section__grid">
-              {#each section.charts as chart (chart.id)}
-                <ResultCard {chart} {wall} {withNames} marked={!wall || !!revealed[chart.id]} onToggleAnswer={() => toggleAnswer(chart.id)} selected={selected[chart.id] ?? null} onSelect={(id) => select(chart.id, id)} {scale} level={4} />
-              {/each}
-            </div>
-          </section>
-        {/each}
-      </div>
+      <LiveSections {chartSections} {wall} {withNames} {revealed} {selected} {scale} onToggleAnswer={toggleAnswer} onSelect={select} />
     {/if}
   {:else if phase === 'picker'}
     <p class="live__status" role="status">{message}</p>
@@ -671,26 +661,6 @@
 
   .live__names-note {
     color: var(--adm-muted);
-  }
-
-  .live__sections {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-  }
-
-  .live-section__title {
-    margin: 0 0 0.75rem;
-    font-size: 1.3rem;
-    color: var(--adm-ink);
-  }
-
-  /* Each card keeps its own height, at the top of its row (Phase 11a-2: a card stretched to the height of its neighbour whose names were open). */
-  .live-section__grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
-    align-items: start;
-    gap: 1.25rem;
   }
 
   /* The way out is shown in full screen, and fades (and the pointer hides) after a few idle seconds; any movement, touch, key or focus brings it back.
