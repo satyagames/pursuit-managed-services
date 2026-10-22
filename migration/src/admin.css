@@ -43,9 +43,6 @@ h2 {
 html {
   /* (Phase 16: named, so what scrolls into view in place, such as a question's editor, allows for it too.) */
   --adm-sticky-room: 5.5rem;
-  /* The top tabs' row as it sticks: a tab, the ring's room above and below it (.tabs), and the row's rule (Phase 18: what sticks under it
-     starts here). Content adds its header and strip to the room (AdminContent.svelte). */
-  --adm-nav-height: calc(var(--target-min) + 18px + 1px);
   scroll-padding-top: var(--adm-sticky-room);
 }
 
@@ -587,14 +584,6 @@ input[type='date']:focus-within {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.6rem;
-}
-
-.content-look {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 0;
 }
 
 .content-working {

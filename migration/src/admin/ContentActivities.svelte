@@ -310,3 +310,13 @@
 {#if copyOpen}
   <CopyActivitiesDialog target={client} {clients} {sections} onDone={copied} onClose={() => { copyOpen = false; }} />
 {/if}
+
+<style>
+  .content-look {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+  }
+</style>

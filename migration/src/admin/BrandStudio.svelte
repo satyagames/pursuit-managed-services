@@ -450,7 +450,6 @@
 
   .brand__preview {
     position: sticky;
-    /* Below what sticks above it: nothing on its own, Content's header and strip as a view (--adm-sticky-top, Phase 18). */
     top: calc(var(--adm-sticky-top, 0px) + 0.5rem);
     display: grid;
     gap: 0.6rem;

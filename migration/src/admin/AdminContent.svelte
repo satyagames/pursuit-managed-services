@@ -32,6 +32,13 @@
     onView?: (view: string) => void;
   } = $props();
 
+  // Its styles (below, with no comments: a comment in a component's styles is carried into the page): on a window wide and tall enough
+  // (1100 by 700 CSS pixels) the client header and the strip are one row that sticks under the top tabs; elsewhere only the strip sticks.
+  // The top tabs' row sticks at --adm-nav-height (a tab, the ring's room above and below it, as .tabs in admin.css has it, and its rule).
+  // The sticky height is --adm-content-sticky on the page, so the scroll padding (--adm-sticky-room) and Brand's sticky preview
+  // (--adm-sticky-top) allow for it; with the top tabs it takes at most a fifth of the window at 1366 by 768 and 1180 by 820
+  // (content-brand.spec.ts). The strip is a second level, so it does not look like the top tabs (a line under the chosen one): a segmented
+  // control, the chosen view raised in white and in bold.
   // One client's workspace (Phase 18). The client header (its logo or initial, the picker, Live now or Archived) and the strip of views stay
   // at the top; under them, the views of CONTENT_VIEWS: Activities (ContentActivities.svelte) and Brand (BrandStudio.svelte). A view is made
   // the first time it is opened and then kept, out of sight, while another one shows, so a switch loses nothing and asks nothing; both are
@@ -237,12 +244,8 @@
 </section>
 
 <style>
-  /* The sticky part of the workspace (Phase 18): on a window wide and tall enough, the client header and the strip in one row under the top
-     tabs; elsewhere only the strip. Its height is a custom property on the page, so the page's scroll padding and Brand's sticky preview allow
-     for it (admin.css: --adm-nav-height, --adm-sticky-room). With the top tabs it takes at most a fifth of the window at 1366 by 768 and 1180
-     by 820 (content-brand.spec.ts measures it). */
   :global(html:has(.content-spine)) {
-    /* The strip alone: its track (a target and 3px round it) and the ring's room above and below, as the top tabs have it. */
+    --adm-nav-height: calc(var(--target-min) + 18px + 1px);
     --adm-content-sticky: calc(var(--target-min) + 6px + 18px);
     --adm-sticky-top: calc(var(--adm-nav-height) + var(--adm-content-sticky));
     --adm-sticky-room: calc(5.5rem + var(--adm-content-sticky));
@@ -303,8 +306,6 @@
     background: var(--adm-bg);
   }
 
-  /* A second level, so it does not look like the top tabs (a line under the chosen one): a segmented control, the chosen view raised in
-     white and in bold. */
   .content-strip__track {
     display: flex;
     gap: 3px;
@@ -387,7 +388,6 @@
     max-width: 100%;
   }
 
-  /* Wide and tall enough: the header and the strip in one row, which sticks as one. */
   @media (min-width: 1100px) and (min-height: 700px) {
     :global(html:has(.content-spine)) {
       --adm-content-sticky: calc(var(--target-min) + 6px + 0.75rem + 1px);
