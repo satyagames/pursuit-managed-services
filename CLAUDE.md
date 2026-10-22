@@ -39,7 +39,7 @@ On the Windows checkout the system Node is 20: run Node 22 from `.local/node22/n
 | `migration/src/lib/<folder>/` | The modules, by folder: `data`, `schema`, `settings`, `participant`, `common`, `admin`, `results`, `exports`, `brand`, `effects`, `motion`, `setup`. Every file starts with a header saying what it owns. |
 | `migration/src/lib/data/dataService.js` | The data layer's door, which every importer uses: it passes on the calls of the parts of `lib/data/` (Phase 17). `core.js` holds all its state and sends every request to SharePoint (or the local server); `records.js`, `today.js`, `responses.js`, `qr-scan.js`, `watch.js` and the rest are one job each (the list is at the top of `dataService.js`). Every page carries all of it. |
 | `migration/src/lib/schema/pms-schema.js` | The one place a list or column is named. `pms-schema-meta.js` says everything else about them. |
-| `migration/src/admin/`, `admin/charts/` | The admin page's screens and the hand-drawn Results charts. |
+| `migration/src/admin/`, `admin/charts/` | The admin page's screens and the hand-drawn Results charts. Content is one client's workspace whose views (Activities, Brand Studio) are listed in `lib/admin/admin-content-views.js`. |
 | `migration/src/routes/`, `pager/`, `components/` | The participant page's screens, the one-question-per-screen pager, its building blocks. |
 | `migration/src/styles/` | Tokens, the focus ring, fonts, `results-tokens.css` (the chart palette), `legacy/` (old sheets: override, never edit). |
 | `server/` | The local stand-in for SharePoint (`server/data/*.json` is committed seed data; only `server/store.js` touches it). |

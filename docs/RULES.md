@@ -378,9 +378,9 @@ in `migration/src/`, not by editing them, so that what the tests measure stays w
   needs the client to be live. Delete reads what uses the client through `clientUsage()` (`lib/admin/admin-clients.js`: AppSettings and the client's sessions by `ClientId` in
   one request, then those sessions' visits and codes by `SessionId`, 15 sessions to a read, in one more; the answers of those sessions only; never a whole list), and
   the check-in dialog lists the newest six codes of the session the code joins (`recentCodes()`, one read by `SessionId`). **Colours, the logo, hero art and the background are Brand Studio's** (next bullet): the form has the
-  name, slug and words only, and each row has a **Brand** button. A new client's older colour fields come from the default palette
+  name, slug and words only, and each row has a **Brand** button, which opens Content's Brand view on that client (Phase 18). A new client's older colour fields come from the default palette
   (`legacyColours`).
-- **Brand Studio** (`admin/BrandStudio.svelte`, opened from a client's row on Clients, drawing its Colours card through `BrandColours` and its preview side
+- **Brand Studio** (`admin/BrandStudio.svelte`, Content's Brand view since Phase 18 (`embedded`), reached from the strip or a client's row on Clients, drawing its Colours card through `BrandColours` and its preview side
   through `BrandPreviewPanel` since Phase 17; rules in `lib/admin/brand-studio-view.js`, `lib/brand/brand-studio.js`, `lib/brand/legacy-colours.js`,
   `lib/asset-*.js`, `lib/brand/crop-math.js`, `lib/brand/image-sniff.js`, `lib/brand/brand-devices.js`, `lib/brand/brand-sample.js`, `lib/brand/scrim.js`, all plain JS
   with unit tests; `lib/brand/asset-image.ts` is the only part that needs a canvas). Rules that must keep holding:
@@ -1347,6 +1347,35 @@ The report is [RELEASE-16.md](history/RELEASE-16.md). **None of it has met the r
   as a new question. Results' Restart... opens its form under its iPad's row by the same rules.
 - **`PHASE_16`** (`scripts/bundle-budget.js`): participant +128 B gzip over 15 (allowance 200: the participant page carries every export of the data service,
   so the two calls the delete needs are on it; the rules are the admin page's alone), admin +6,759 B (allowance 12,000). Its Tailwind rules are 11a's.
+
+## Rules from Phase 18 (Brand Studio in the Content tab; keep them holding)
+
+The report is [RELEASE-18.md](history/RELEASE-18.md); the design and its sources are in [DECISIONS.md](DECISIONS.md#the-content-tab-phase-18).
+**None of it has met the real site or an iPad**: QA-TESTING.md items 198 to 204.
+
+- **Content is one client's workspace.** `AdminContent.svelte` reads AppSettings, the clients and every activity in one batch (or takes the
+  same three from Clients, when a row's **Brand** opens it, and reads nothing), and draws a client header (the logo through
+  `withoutRetiredLogo` and `embeddedAssetUrl`, or the name's initial; the picker `#content-client` in name order; Live now or Archived) and
+  the strip of views. A change of client asks the guards first (`mayLeave()`), then makes both views afresh and says "Showing <client>".
+- **The views are one list**, `CONTENT_VIEWS` in `lib/admin/admin-content-views.js` (id, label, address segment, component key, heading id,
+  badge, one default). The strip, its keys (Left, Right, Home, End), the address and the badges read only it; a third view is one row.
+  `#content` is Activities, `#content/brand` Brand; `#sections` and an unknown segment are Activities. The view last shown is remembered in
+  memory for the visit (`rememberView`, as `rememberClient`): **the admin page writes nothing to browser storage**.
+- **A view is kept once opened.** `ContentView.svelte` is a view's tab panel, put out of sight with the `hidden` attribute; Activities
+  (`ContentActivities.svelte`, moved unchanged from `AdminContent.svelte`) and Brand (`BrandStudio`, `embedded`) keep their state across a
+  switch, and a switch asks nothing. The activities' 15-second read waits while Activities is out of sight.
+- **The guards are a list** (`lib/admin/unsaved.ts`), asked in turn; a guard inside a view out of sight brings its view into sight first
+  (`provideReveal`, `revealer`): a dialog under a `hidden` element opens with no size and blocks the page. Brand's guard, its
+  `beforeunload` and the question editor's are the screens' own, as before.
+- **The badges are words** worked out from what is in memory: "<activities> · <live> live"; "Standard look" or "Custom look"
+  (`resolveClientTheme(client).source`), and "Unsaved changes" with a mark while Brand holds unsaved work.
+- **The bridge reuses what is there.** "Look: <Standard|Custom>" with **Open Brand** on Activities; under Brand, "Preview an activity in this
+  look..." opens `ActivityPreview` (the saved look), so it is off, with the reason in words, while Brand has unsaved changes. Brand's own
+  preview keeps `brand-sample.js`'s client-neutral words.
+- **The sticky part has a measured budget**: from 1100 by 700 CSS pixels the header and the strip are one row under the top tabs; elsewhere
+  only the strip sticks. Its heights are `--adm-nav-height` and `--adm-content-sticky`; `--adm-sticky-top` (Brand's sticky preview) and
+  `--adm-sticky-room` (the scroll padding) are worked out from them. With the top tabs it takes at most a fifth of the window at 1366 by 768
+  and 1180 by 820 (`content-brand.spec.ts`).
 
 ## Before finishing a change
 

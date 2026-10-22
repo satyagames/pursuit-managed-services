@@ -110,6 +110,13 @@ seven sizes.
   requests for sessions of 0, 1, 60 and 200 iPads. The browser side is `session-delete.spec.ts` (the warning, Cancel, Escape, a double click, the live
   session, a 403 and Try again, axe, focus, a participant page and a guest code of the deleted session). Content's question editor in place and Results'
   Restart under its row are `content-edit-in-place.spec.ts` and `results-restart-inline.spec.ts` (the SharePoint mock, Chromium and WebKit).
+- `node --test scripts/test-admin-content-views.js` (also part of `npm test`, Phase 18): Content's views list (`migration/src/lib/admin/admin-content-views.js`):
+  every view complete with one default, the address round trip, `#content`, `#sections` and unknown segments, no other tab's address claimed, the
+  badges' words, the strip's keys, and the remembered view in memory with no browser storage touched. `node --test scripts/test-brand-studio-embedded.js`
+  (also part of `npm test`) renders Brand Studio on the server through Vite and compares it on its own with `scripts/brand-studio-markup.html`
+  (recorded from Phase 17's file; `PMS_RECORD_MARKUP=1` records it again, for a deliberate change only), and embedded with its level 3 heading and no
+  Back button. The browser side is `content-brand.spec.ts` (the strip, the address, Clients' Brand, a switch that keeps both views, the guards from a
+  view out of sight, the bridge, the keyboard, requests, timers and memory, the sticky budget at 1366 by 768 and 1180 by 820, axe and reflow).
 - `npm run check:svelte` — type and accessibility diagnostics for the Svelte app in
   `migration/`. `npm run test:foundation` runs the theme and design-foundation unit tests
   (also part of `npm test`); `npm run test:migration` rebuilds and runs the built-page
