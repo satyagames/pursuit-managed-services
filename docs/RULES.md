@@ -671,7 +671,7 @@ in `migration/src/`, not by editing them, so that what the tests measure stays w
 - **Staff mode says its rule (DI-1):** `STAFF_MODE_WARNING` in `lib/admin/admin-today.js`, beside "How people are identified" and as the readiness row `staff-signin`
   (a warning: it never blocks Go live). `boot.js` and how a staff device finds its earlier visit are unchanged.
 - **Sample content (SAM-1, SAM-2).** `lib/brand/retired-logos.js`: the drawn Kroger address counts as no logo wherever a logo is read (`withoutRetiredLogo` in `client-theme.js`,
-  `brand-studio.js`, `admin-today.js`, `master-brand.ts`, `LiveDisplay`, `AdminClients`); the file itself left with the legacy app in Phase 10c-1, and so did the three modules
+  `brand-studio.js`, `admin-today.js`, `master-brand.ts`, `live-view.js` (the Live display), `AdminClients`); the file itself left with the legacy app in Phase 10c-1, and so did the three modules
   that inlined pictures from `public/assets/images` into the pages (`test:bundle` fails if the stand-in is in a built page, and a test fails if a module globs `public/assets` again). `lib/admin/sample-notice.js`: a client is a sample
   when `theme.sample` exists or its id and `createdAt` are the seeds' (`SAMPLE_ORIGINS`); `Mark as confirmed` (`adminData.confirmSampleClient`) writes `theme.sample.confirmedBy`
   and `confirmedAt` into `Clients.ThemeJson` after re-reading the client (no new column, no version bump), and **`buildClientTheme` carries `sample` over, so every writer that

@@ -5,9 +5,13 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  pagerStep, presentScaleFor, sectionTitleOf, sessionLabel, shownIndex, stepFrom, unreadableText,
+  liveBrand, pagerStep, presentScaleFor, sectionTitleOf, sessionLabel, shownIndex, stepFrom, unreadableText,
 } from '../migration/src/lib/admin/live-view.js';
 import { unreadableNotice, wallUnreadableNotice } from '../migration/src/lib/results/unreadable.js';
+import { masterColours } from '../migration/src/lib/brand/legacy-colours.js';
+
+/** The product's name, as lib/common/app-name.ts spells it (the display hands it in). */
+const APP_NAME = 'Pursuit Managed Services';
 
 describe('the Live display, worked out before it draws (Phase 17)', () => {
   const questions = [{ id: 'q1' }, { id: 'q2' }, { id: 'q3' }];
@@ -65,6 +69,21 @@ describe('the Live display, worked out before it draws (Phase 17)', () => {
     assert.equal(unreadableText({ unreadable: [], tracks: [] }, false), '');
     assert.equal(unreadableText({ tracks: [] }, true), '');
     assert.equal(unreadableText(null, false), '');
+  });
+
+  it("the client's look on the display: its name (else the product's), its logo unless retired, its colours (stored theme first), defaults", () => {
+    assert.deepEqual(liveBrand(null, APP_NAME), { name: APP_NAME, logoUrl: null, primary: '#0f172a', secondary: '#64748b' });
+    assert.deepEqual(liveBrand({ name: '  ', logoUrl: '   ' }, APP_NAME), { name: APP_NAME, logoUrl: null, primary: '#0f172a', secondary: '#64748b' });
+    const client = { name: ' Kroger ', logoUrl: ' assets/kroger.png ', primaryColor: '#123456', secondaryColor: '#abcdef' };
+    const look = liveBrand(client, APP_NAME);
+    assert.equal(look.name, 'Kroger');
+    assert.equal(look.logoUrl, 'assets/kroger.png');
+    const colours = masterColours(client);
+    assert.equal(look.primary, colours.primaryColor ?? '#0f172a');
+    assert.equal(look.secondary, colours.secondaryColor ?? '#64748b');
+    const themed = { name: 'Harbour', theme: { colors: { primary: '#0a7d32' } } };
+    assert.equal(liveBrand(themed, APP_NAME).primary, masterColours(themed).primaryColor ?? '#0f172a');
+    assert.equal(liveBrand({ name: 'X', logoUrl: 'assets/images/clients/kroger-logo.svg' }, APP_NAME).logoUrl, null, 'a retired logo is dropped, as everywhere else');
   });
 
   it("a session in the picker: its client's name (else the id), its date and its status", () => {

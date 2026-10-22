@@ -1,13 +1,10 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
-  import { embeddedAssetUrl } from '../lib/brand/assets.js';
   import { loadBrand } from '../lib/brand/branding.js';
   import { downloadCsv, downloadPdf, downloadPptx, liveSections } from '../lib/exports/resultsExport.js';
   import { APP_NAME } from '../lib/common/app-name.js';
   import { getSessionResults, type SessionResults } from '../lib/admin/adminData.js';
-  import { masterColours } from '../lib/brand/legacy-colours.js';
-  import { withoutRetiredLogo } from '../lib/brand/retired-logos.js';
   import { loadLiveStructure, readLive, type LiveRead, type LiveStructure } from '../lib/admin/live-session.js';
   import { withStoredColours } from '../lib/admin/master-brand.js';
   import { createPageWatcher, type PageWatcher } from '../lib/common/page-watch.js';
@@ -15,7 +12,7 @@
   import { heldNameSources } from '../lib/admin/admin-results.js';
   import { wallAddress } from '../lib/admin/live-wall.js';
   import {
-    pagerStep, presentScaleFor, sectionTitleOf, sessionLabel, shownIndex, stepFrom, unreadableText as unreadableTextOf,
+    liveBrand, pagerStep, presentScaleFor, sectionTitleOf, sessionLabel, shownIndex, stepFrom, unreadableText as unreadableTextOf,
   } from '../lib/admin/live-view.js';
   import { nextFit, scaleOf } from '../lib/results/present-fit.js';
   import { answerCounts, answersFrom, answersOf, chartsOf, namesFor } from '../lib/results/results-chart-model.js';
@@ -100,16 +97,7 @@
   const local = !dataService.isSharePointMode();
 
   // The client's colours as the Master screen has always taken them: the stored theme's when it has one, the older fields otherwise.
-  const brand = $derived.by(() => {
-    const client = structure?.client ?? null;
-    const colours = masterColours(client);
-    return {
-      name: (typeof client?.name === 'string' && client.name.trim()) || APP_NAME,
-      logoUrl: embeddedAssetUrl(typeof client?.logoUrl === 'string' && client.logoUrl.trim() ? withoutRetiredLogo(client.logoUrl.trim()) : null) as string | null,
-      primary: colours.primaryColor ?? '#0f172a',
-      secondary: colours.secondaryColor ?? '#64748b',
-    };
-  });
+  const brand = $derived(liveBrand(structure?.client ?? null, APP_NAME));
   const sections = $derived(results ? liveSections(results) as SessionResults['sections'] : []);
   const questions = $derived(sections.flatMap((section) => section.questions));
   /** "N answers from M iPads": the visits that answered (Phase 11a-2), over the questions on the display. */

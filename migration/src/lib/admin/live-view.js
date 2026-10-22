@@ -1,9 +1,28 @@
-// What the Live display works out for itself before it draws: which question full screen shows and where Previous and Next take it, the type
+// What the Live display works out for itself before it draws: the client's look, which question full screen shows and where Previous and Next take it, the type
 // size a window asks for, which keys move it, the heading over the question, the notice of answers that could not be read, and the words of a
 // session in the picker. Plain JS with JSDoc and no DOM or Svelte (scripts/test-live-view.js). Phase 17 moved these out of LiveDisplay.svelte
 // unchanged; reading, full screen and the exports stay there. Reads nothing and writes nothing.
 
+import { embeddedAssetUrl } from '../brand/assets.js';
+import { masterColours } from '../brand/legacy-colours.js';
+import { withoutRetiredLogo } from '../brand/retired-logos.js';
 import { namesByVisit, unreadableNotice, wallUnreadableNotice } from '../results/unreadable.js';
+
+/**
+ * The client's colours as the Master screen has always taken them: the stored theme's when it has one, the older fields otherwise; its name
+ * (else `fallbackName`, the product's) and its logo (none when it is blank or retired).
+ * @param {Record<string, unknown> | null} client @param {string} fallbackName
+ * @returns {{ name: string, logoUrl: string | null, primary: string, secondary: string }}
+ */
+export function liveBrand(client, fallbackName) {
+  const colours = masterColours(client);
+  return {
+    name: (typeof client?.name === 'string' && client.name.trim()) || fallbackName,
+    logoUrl: embeddedAssetUrl(typeof client?.logoUrl === 'string' && client.logoUrl.trim() ? withoutRetiredLogo(client.logoUrl.trim()) : null),
+    primary: colours.primaryColor ?? '#0f172a',
+    secondary: colours.secondaryColor ?? '#64748b',
+  };
+}
 
 /**
  * The place of the question full screen shows: the one with `shownId`, else `shownAt` kept inside the list (a question that has gone).
