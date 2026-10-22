@@ -6,7 +6,7 @@
   import { measureLogo, type Prepared } from '../lib/brand/asset-image.js';
   import { BRAND_SLOTS, slotSpec } from '../lib/brand/asset-specs.js';
   import type { Look } from '../lib/brand/brand-look.js';
-  import { DEVICES, deviceById } from '../lib/brand/brand-devices.js';
+  import { deviceById } from '../lib/brand/brand-devices.js';
   import { SCENES } from '../lib/brand/brand-sample.js';
   import {
     OPEN_PAGES_NOTE, brandReport, changesForSave, cloneDraft, copyColoursFrom, draftFromClient, parseColour, resetColours, sameDraft,
@@ -14,14 +14,14 @@
   } from '../lib/brand/brand-studio.js';
   import { motionEnabled, resolveClientTheme } from '../lib/brand/client-theme.js';
   import { DEFAULT_PRIMARY } from '../lib/brand/theme.js';
-  import { copyText, participantPageUrl, qrImage } from '../lib/admin/admin-links.js';
+  import { participantPageUrl, qrImage } from '../lib/admin/admin-links.js';
   import { mayLeave, setLeaveGuard } from '../lib/admin/unsaved.js';
   import {
     displayUrl as display, lookOf, pageGradient, previewAddress, savedMessage, slotStatus,
   } from '../lib/admin/brand-studio-view.js';
   import AssetUploader from './AssetUploader.svelte';
   import BrandColours from './BrandColours.svelte';
-  import BrandPreview from './BrandPreview.svelte';
+  import BrandPreviewPanel from './BrandPreviewPanel.svelte';
   import ConfirmDialog from './ConfirmDialog.svelte';
   import CopyBrandDialog from './CopyBrandDialog.svelte';
   import MotionSwitch from './MotionSwitch.svelte';
@@ -261,7 +261,6 @@
   }
 
   const statusFor = (slot: Slot) => slotStatus({ pending: pending[slot], current: draft.assets[slot], saved: saved.assets[slot] });
-  const FRAME = 'Preview of the';
 </script>
 
 <section class="brand" aria-labelledby="brand-title" aria-busy={busy}>
@@ -326,30 +325,10 @@
     </div>
 
     <aside class="brand__preview" aria-label="Preview">
-      <div class="brand__switch" role="group" aria-label="Device">
-        {#each DEVICES as entry (entry.id)}
-          <button class="btn brand__tab" type="button" aria-pressed={deviceId === entry.id} onclick={() => { deviceId = entry.id; }}>{entry.label}</button>
-        {/each}
-      </div>
-      <div class="brand__switch" role="group" aria-label="Screen">
-        {#each SCENES as entry (entry.id)}
-          <button class="btn brand__tab" type="button" aria-pressed={sceneId === entry.id} onclick={() => { sceneId = entry.id as Look['scene']; }}>{entry.label}</button>
-        {/each}
-      </div>
-      <BrandPreview {look} tokens={report.theme.tokens} {device} label="{FRAME} {scene.label} screen on {device.label}, {device.width} by {device.height} pixels" />
-      <p class="muted small brand__caption">{scene.label} on {device.label}: {device.width} × {device.height} px, the real screen with sample content. Read-only.</p>
-
-      <section class="card brand__device" aria-labelledby="brand-device">
-        <h3 id="brand-device">Check it on a real iPad</h3>
-        <p class="muted small">This address shows {record.name}'s <strong>saved</strong> look (not unsaved changes) on any device, even before the client is live: its Welcome and read-only activities, marked Preview, saving nothing. Save first.</p>
-        <div class="brand__colour">
-          <input id="brand-device-url" class="input mono" value={deviceUrl} readonly aria-label="Preview address for a device" />
-          <button class="btn" type="button" disabled={!deviceUrl} onclick={() => { void copyText(deviceUrl, document.querySelector<HTMLInputElement>('#brand-device-url')).then(() => onToast('Link copied', 'success')); }}>Copy</button>
-          <a class="btn" href={deviceUrl || undefined} target="_blank" rel="noopener">Open</a>
-          <button class="btn" type="button" disabled={!deviceUrl} onclick={() => void showDeviceQr()}>Show QR code</button>
-        </div>
-        {#if deviceQr}<img class="brand__qr" src={deviceQr} alt="QR code for the preview address" />{/if}
-      </section>
+      <BrandPreviewPanel
+        {look} tokens={report.theme.tokens} {device} {scene} {deviceId} {sceneId} clientName={record.name} {deviceUrl} {deviceQr}
+        onDevice={(id) => { deviceId = id; }} onScene={(id) => { sceneId = id; }} onShowQr={() => void showDeviceQr()} {onToast}
+      />
     </aside>
   </div>
 </section>
@@ -431,20 +410,6 @@
     margin: 0;
   }
 
-  .brand__colour {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .brand__colour .input {
-    flex: 1 1 8rem;
-    min-width: 0;
-    min-height: var(--target-min);
-    padding: 0 0.75rem;
-  }
-
   .brand__actions {
     display: grid;
     gap: 0.6rem;
@@ -467,43 +432,6 @@
     display: grid;
     gap: 0.6rem;
     min-width: 0;
-  }
-
-  .brand__switch {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-  }
-
-  .brand__tab[aria-pressed='true'] {
-    color: #fff;
-    background: var(--adm-ink);
-    border-color: var(--adm-ink);
-  }
-
-  .brand__caption {
-    margin: 0;
-  }
-
-  .brand__device {
-    display: grid;
-    gap: 0.6rem;
-    padding: 1rem;
-  }
-
-  .brand__device h3,
-  .brand__device p {
-    margin: 0;
-  }
-
-  .brand__qr {
-    width: 9rem;
-    height: 9rem;
-    background: #fff;
-  }
-
-  .mono {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   }
 
   .error {
