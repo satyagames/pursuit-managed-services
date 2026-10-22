@@ -20,6 +20,7 @@
   import { nextFit, scaleOf } from '../lib/results/present-fit.js';
   import { answerCounts, answersFrom, answersOf, chartsOf, namesFor } from '../lib/results/results-chart-model.js';
   import { RESULTS_PALETTE } from '../lib/results/results-palette-source.js';
+  import LiveHead from './LiveHead.svelte';
   import LiveSections from './LiveSections.svelte';
   import LiveStage from './LiveStage.svelte';
 
@@ -483,29 +484,11 @@
   style:--chart-scale={scale}
 >
   <header class="live__head">
-    <div class="live__brand">
-      {#if brand.logoUrl && failedLogo !== brand.logoUrl}<span class="live__logo"><img src={brand.logoUrl} alt={brand.name} onerror={() => { failedLogo = brand.logoUrl ?? ''; }} /></span>{/if}
-      <strong class="live__client">{structure ? brand.name : APP_NAME}</strong>
-    </div>
-    <div class="live__title">
-      <h2>Live results{wallPage ? ' · Wall display' : ''}</h2>
-      <p class="live__meta" aria-live="off">{results ? `${answersFrom(answered)} · updated ${updated}` : message}</p>
-    </div>
-    <div class="live__actions">
-      {#if phase === 'display' && !presenting}
-        <button class="btn btn--primary" type="button" onclick={() => void exportCurrent('csv')} disabled={!!exporting}>{exporting === 'csv' ? 'Exporting...' : 'Export CSV'}</button>
-        <button class="btn" type="button" onclick={() => void exportCurrent('pdf')} disabled={!!exporting}>{exporting === 'pdf' ? 'Exporting...' : 'Export PDF'}</button>
-        <button class="btn" type="button" onclick={() => void exportCurrent('pptx')} disabled={!!exporting}>{exporting === 'pptx' ? 'Exporting...' : 'Export PPT'}</button>
-        <button class="btn" type="button" onclick={refreshStructure} title="Read the questions and answers again now">Refresh</button>
-        <a class="btn" href={newTabAddress} target="_blank" rel="noopener" title="The wall display: the charts with no names">Open in a new tab</a>
-        <button class="btn btn--primary" type="button" onclick={() => void enter()}>Full screen</button>
-      {/if}
-      {#if presenting}
-        <button class="btn live__exit" type="button" onclick={() => leave()}>Exit full screen</button>
-      {:else}
-        <button class="btn" type="button" onclick={onBack}>← Results</button>
-      {/if}
-    </div>
+    <LiveHead
+      {brand} {failedLogo} clientName={structure ? brand.name : APP_NAME} {wallPage} meta={results ? `${answersFrom(answered)} · updated ${updated}` : message}
+      {phase} {presenting} {exporting} {newTabAddress} onLogoFailed={() => { failedLogo = brand.logoUrl ?? ''; }} onExport={(kind) => void exportCurrent(kind)}
+      onRefresh={refreshStructure} onEnter={() => void enter()} onLeave={() => leave()} {onBack}
+    />
   </header>
 
   {#if phase === 'display'}
@@ -563,48 +546,6 @@
     border-bottom: 3px solid var(--brand-primary);
   }
 
-  .live__brand {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .live__logo {
-    display: inline-flex;
-    padding: 0.35rem 0.6rem;
-    background: #fff;
-    border: 1px solid var(--adm-line);
-    border-radius: 0.6rem;
-  }
-
-  /* A definite height, so that a picture with only a viewBox (an SVG logo) still gets a width from its shape. */
-  .live__logo img {
-    display: block;
-    width: auto;
-    max-width: 12rem;
-    height: 2.5rem;
-    object-fit: contain;
-  }
-
-  .live__client {
-    font-size: 1.1rem;
-  }
-
-  .live__title {
-    flex: 1 1 14rem;
-    min-width: 0;
-  }
-
-  .live__title h2 {
-    margin: 0;
-    font-size: 1.4rem;
-  }
-
-  .live__meta {
-    margin: 0.15rem 0 0;
-    color: var(--adm-muted);
-  }
-
   .live__actions {
     display: flex;
     flex-wrap: wrap;
@@ -644,12 +585,6 @@
 
   .live__names-note {
     color: var(--adm-muted);
-  }
-
-  /* The way out is shown in full screen, and fades (and the pointer hides) after a few idle seconds; any movement, touch, key or focus brings it back.
-     It stays in the page for the keyboard and the screen reader the whole time. (The controls at the foot do the same: LiveStage.svelte.) */
-  .live__exit {
-    transition: opacity 160ms ease;
   }
 
   /* ---- Full screen: the display covers the window; the type is large; ONE question at a time, sized to fit ----------------------- */
@@ -700,38 +635,12 @@
     cursor: none;
   }
 
-  .live--present[data-idle='true'] .live__exit:not(:focus-visible) {
-    opacity: 0;
-  }
-
   .live--present .live__head {
     border-bottom-color: rgb(255 255 255 / 0.55);
-  }
-
-  .live--present .live__client {
-    font-size: calc(1.1rem * var(--chart-scale, 1));
-  }
-
-  .live--present .live__logo img {
-    height: calc(2.5rem * var(--chart-scale, 1));
-    max-width: calc(12rem * var(--chart-scale, 1));
-  }
-
-  .live--present .live__title h2 {
-    font-size: calc(1.4rem * var(--chart-scale, 1));
-  }
-
-  .live--present .live__meta {
-    color: rgb(255 255 255 / 0.92);
-    font-size: calc(1rem * var(--chart-scale, 1));
   }
 
   .live--present .live__status {
     color: var(--adm-ink);
     font-size: calc(1rem * var(--chart-scale, 1));
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .live__exit { transition: none; }
   }
 </style>
