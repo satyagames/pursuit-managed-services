@@ -9,6 +9,7 @@
   import { APP_NAME } from './lib/common/app-name.js';
   import { deployment } from './lib/settings/start.js';
   import { mayLeave } from './lib/admin/unsaved.js';
+  import { DEFAULT_VIEW, hashOfView, lastView, rememberView, viewOfHash } from './lib/admin/admin-content-views.js';
   import DeloitteWordmark from './components/DeloitteWordmark.svelte';
   import AdminClients from './admin/AdminClients.svelte';
   import AdminContent from './admin/AdminContent.svelte';
@@ -48,6 +49,10 @@
   let printing = $state(false);
   /** The Live display is a view of Results (the tab stays Results; Back returns to its list). null: not showing; '': the session that is live now; else a session id. */
   let liveDisplay = $state<string | null>(null);
+  /** Content's view (lib/admin/admin-content-views.js): it is in the address, #content or #content/<view>. */
+  let contentView = $state(DEFAULT_VIEW);
+  /** A client for Content to open on, once (Clients' Brand button). */
+  let contentClient = $state<string | null>(null);
   /** The Live display as the wall (Phase 11a: `#live-display/<id>/wall`, what "Open in a new tab" opens): the charts with no names in the page. */
   let wallPage = $state(false);
 
@@ -59,8 +64,12 @@
     return live === null ? null : { sessionId: live, wall: false };
   }
 
-  // An old address (#sections, the Activities tab) lands on Content, where its capabilities now are.
-  const tabFromHash = (): Tab | null => (window.location.hash === '#sections' ? 'content' : tabs.find((tab) => `#${tab.id}` === window.location.hash)?.id ?? null);
+  // Content's addresses (#content, #content/brand, the old #sections of the Activities tab) are its views' (lib/admin/admin-content-views.js).
+  const tabFromHash = (): Tab | null => (viewOfHash(window.location.hash) !== null ? 'content' : tabs.find((tab) => `#${tab.id}` === window.location.hash)?.id ?? null);
+  /** This browser tab's sessionStorage, or nothing where it is refused. */
+  const tabStorage = (): Storage | null => { try { return window.sessionStorage; } catch { return null; } };
+  /** The address of a tab: Content's carries its view. */
+  const hashOf = (tab: Tab) => (tab === 'content' ? hashOfView(contentView) : `#${tab}`);
 
   async function unlock(event: SubmitEvent) {
     event.preventDefault();
@@ -80,6 +89,7 @@
       liveDisplay = view?.sessionId ?? null;
       wallPage = view?.wall ?? false;
       activeTab = printing ? 'guests' : liveDisplay !== null ? 'results' : tabFromHash() ?? 'today';
+      if (activeTab === 'content') setContentView(viewOfHash(window.location.hash) ?? DEFAULT_VIEW);
       pin = '';
       void newScreen();
     } catch (cause) {
@@ -153,15 +163,33 @@
     try { window.history.replaceState(window.history.state, '', '#guests'); } catch { /* the tab still shows */ }
   }
 
-  /** Opens a tab; the address keeps it, so a reload (after the PIN) comes back to the same screen. False when the person chose to stay (unsaved changes). */
-  async function open(tab: string): Promise<boolean> {
+  /** Content's view changed (its strip, an address, the tab opened): kept for the browser tab and in the address. */
+  function setContentView(view: string) {
+    contentView = viewOfHash(hashOfView(view)) ?? DEFAULT_VIEW;
+    rememberView(contentView, tabStorage());
+    if (activeTab === 'content' && liveDisplay === null) {
+      try { window.history.replaceState(window.history.state, '', hashOfView(contentView)); } catch { /* the view still switches */ }
+    }
+  }
+
+  /**
+   * Opens a tab; the address keeps it, so a reload (after the PIN) comes back to the same screen. False when the person chose to stay (unsaved
+   * changes). Content opens on `to.view`, else the view this browser tab last showed, and on `to.clientId` when given (Clients' Brand button).
+   */
+  async function open(tab: string, to: { view?: string; clientId?: string } = {}): Promise<boolean> {
     const next = tabs.find((entry) => entry.id === tab)?.id;
     if (!next) return false;
     if (next !== activeTab && !(await mayLeave())) return false;
+    const entering = next !== activeTab || liveDisplay !== null;
     activeTab = next;
     liveDisplay = null;
     wallPage = false;
-    try { window.history.replaceState(window.history.state, '', `#${next}`); } catch { /* the tab still switches */ }
+    if (next === 'content') {
+      if (entering) contentClient = to.clientId ?? null;
+      contentView = to.view ?? (entering ? lastView(tabStorage()) : contentView);
+      rememberView(contentView, tabStorage());
+    }
+    try { window.history.replaceState(window.history.state, '', hashOf(next)); } catch { /* the tab still switches */ }
     await tick();
     document.getElementById(`admin-tab-${next}`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     return true;
@@ -173,6 +201,12 @@
     const view = liveOfHash(window.location.hash);
     if (view !== null) { if (view.sessionId !== liveDisplay || view.wall !== wallPage) void openLiveDisplay(view.sessionId, view.wall); return; }
     const tab = tabFromHash();
+    if (tab === 'content') {
+      const view = viewOfHash(window.location.hash) ?? DEFAULT_VIEW;
+      if (activeTab !== 'content' || liveDisplay !== null) void open(tab, { view });
+      else if (view !== contentView) setContentView(view);
+      return;
+    }
     if (tab && (tab !== activeTab || liveDisplay !== null)) void open(tab);
   }
 
@@ -233,7 +267,7 @@
       {:else if activeTab === 'clients'}
         <AdminClients onToast={showToast} adminName={admin.name ?? ''} />
       {:else if activeTab === 'content'}
-        <AdminContent onToast={showToast} adminName={admin.name ?? ''} />
+        <AdminContent onToast={showToast} adminName={admin.name ?? ''} view={contentView} clientRequest={contentClient} onView={setContentView} />
       {:else if activeTab === 'guests'}
         <AdminGuests onToast={showToast} onNavigate={(tab) => void open(tab)} onPrint={openPrintSheet} />
       {:else if activeTab === 'results'}

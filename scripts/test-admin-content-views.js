@@ -5,7 +5,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  CONTENT_VIEWS, DEFAULT_VIEW, hashOfView, lastView, rememberView, stepView, viewBadge, viewById, viewOfHash,
+  CONTENT_VIEWS, DEFAULT_VIEW, hashOfView, lastView, lookWord, rememberView, stepView, viewBadge, viewById, viewOfHash,
 } from '../migration/src/lib/admin/admin-content-views.js';
 
 /** A storage that keeps what it is given, as sessionStorage does. */
@@ -20,8 +20,8 @@ describe('Content views (Phase 18)', () => {
   it('the table is complete: every view has an id, a label, an address segment and a component key, and exactly one is the default', () => {
     assert.ok(CONTENT_VIEWS.length >= 2);
     for (const view of CONTENT_VIEWS) {
-      for (const key of ['id', 'label', 'component']) assert.equal(typeof view[key], 'string', `${view.id}: ${key}`);
-      assert.ok(view.id && view.label && view.component, `${view.id}: nothing empty`);
+      for (const key of ['id', 'label', 'component', 'heading']) assert.equal(typeof view[key], 'string', `${view.id}: ${key}`);
+      assert.ok(view.id && view.label && view.component && view.heading, `${view.id}: nothing empty`);
       assert.equal(typeof view.segment, 'string', `${view.id}: segment`);
       assert.equal(typeof view.badge, 'function', `${view.id}: badge`);
       assert.equal(typeof view.isDefault, 'boolean', `${view.id}: isDefault`);
@@ -78,6 +78,8 @@ describe('Content views (Phase 18)', () => {
     assert.deepEqual(viewBadge('brand', { client: custom, brandDirty: false }), { text: 'Custom look', flag: null });
     assert.deepEqual(viewBadge('brand', { client: custom, brandDirty: true }), { text: 'Custom look', flag: 'Unsaved changes' });
     assert.deepEqual(viewBadge('brand', { client: null }), { text: 'Standard look', flag: null });
+    assert.equal(lookWord(standard), 'Standard', 'the line on Activities that leads to Brand');
+    assert.equal(lookWord(custom), 'Custom');
   });
 
   it('the strip keyboard: Left and Right wrap, Home and End go to the ends, any other key is not the strip\'s', () => {
