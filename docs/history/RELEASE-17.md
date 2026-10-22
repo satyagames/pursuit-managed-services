@@ -280,4 +280,22 @@ screens once, since what a tester sees is meant to be unchanged and these are th
 
 ### The package of Part 2
 
-Made by `npm run package:release` from the commit that added this section; its name, sizes and checksums are added by the commit after it, which changes no page.
+`pms-f59fcde` (`build-svelte/package/pms-f59fcde/`, `build-svelte/package/pms-f59fcde.zip`), made by `npm run package:release` from the committed tree
+in a fresh checkout of `f59fcde` (the commit that added this section); `shasum -a 256 -c` passes in the folder (7 OK) and in a fresh unzip (7 OK), and
+`sha256sum -c SHA256SUMS.txt` again by hand (7 OK); no page holds a site address, a folder name, a PIN hash, the demo PIN, `p_cec_` or `CreativeExpCOE`.
+`npm run test:local-site` on it: 26 of 26. Its participant page is `pms-7417da3`'s, byte for byte; its admin page is the one the "after" pictures were
+taken from, byte for byte. RELEASE-NOTES.md adds "Three admin screens are in parts" to what changed since pms-07eb42b, and RUNBOOK.md's note for this
+package says so in a sentence; its steps are as they were (13, QA 195 to 197).
+
+| File | Bytes | gzip -9 | SHA-256 |
+|---|---:|---:|---|
+| index.html | 377,583 | 158,392 | `1ed02967a5e1df6f9e515025a12962e870e2f58163887d4a76a9594f39af4ea2` |
+| admin.html | 1,592,478 | 578,201 | `126dc3bc638ae98252e6c3ecd296c007a94be50f9d2ef75dd2a1dea58e1b47fd` |
+| setup.html | 1,172,705 | 788,935 | `0668808e46ebb850fa8d65c47ffd9ad586bace1dfa37000419dfc3f995d74236` |
+| pms-config.txt | 54 | | `04426124f56abad3973d69fb4a8608e673d86745419bf1cc41c5a70441cc607f` |
+| THIRD-PARTY-NOTICES.txt | 40,835 | | `e4ecfa86a85da94926f3f25b9f2b99791c38cc3ea100c5454bb333e620ec1eb4` |
+| RELEASE-NOTES.md | 35,860 | | `b8f2c3a2756daac81a2b1f366f4843221342a5dade1aa5ec9b4f73069cc1b706` |
+| RUNBOOK.md | 39,628 | | `84a73086352acd665049439d506bee94ce0014e14098b7c8ac81d5d47dbbc3e3` |
+| **pms-f59fcde.zip** | 1,565,671 | | `6590a954e503b62ffe68402be1141b1bba64a72a011ca4ac3796e9564296ec49` |
+
+The pages of this package are byte for byte those of the commit after it, which adds only this paragraph and the table.
