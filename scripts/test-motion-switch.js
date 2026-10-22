@@ -270,7 +270,8 @@ describe('the admin page writes the switch only one way', () => {
     assert.match(control, /role="switch"/);
     assert.match(control, /aria-checked=\{on\}/);
     assert.match(control, /saveClientMotion/);
-    for (const screen of ['BrandStudio.svelte', 'AdminToday.svelte']) assert.match(await readFile(path.join(ROOT, 'migration/src/admin', screen), 'utf8'), /<MotionSwitch /, screen);
+    // Today's switch is in its Controls card (TodayControls.svelte, since Phase 17).
+    for (const screen of ['BrandStudio.svelte', 'TodayControls.svelte']) assert.match(await readFile(path.join(ROOT, 'migration/src/admin', screen), 'utf8'), /<MotionSwitch /, screen);
     const studio = await readFile(path.join(ROOT, 'migration/src/admin/BrandStudio.svelte'), 'utf8');
     assert.match(studio, /updateClientWith[\s\S]*?changesForSave\(latest, next, saved\)/, 'Brand Studio writes on the client as it is at the write');
   });

@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
   import {
-    POLL_MS, STAFF_MODE_WARNING, blockedReason, evaluateReadiness, goLive, isCalendarDate, isStaffMode, liveStatus, loadReadinessInputs, loadToday, localDate, makeSessionLive,
+    POLL_MS, blockedReason, evaluateReadiness, goLive, isCalendarDate, liveStatus, loadReadinessInputs, loadToday, localDate, makeSessionLive,
     needsSwitchConfirmation, notLiveText, pollToday, switchDialog,
   } from '../lib/admin/admin-today.js';
   import { copyText, participantPageUrl, qrImage } from '../lib/admin/admin-links.js';
@@ -10,7 +10,7 @@
     failureText as failed, goLiveLabel, goLiveWhy, levelCounts, otherSessionsOf, pickableClients, readinessSummary, sinceText, upsertSession as upsert,
   } from '../lib/admin/today-view.js';
   import ConfirmDialog from './ConfirmDialog.svelte';
-  import MotionSwitch from './MotionSwitch.svelte';
+  import TodayControls from './TodayControls.svelte';
   import TodayGoLive from './TodayGoLive.svelte';
   import TodayReadiness from './TodayReadiness.svelte';
 
@@ -34,10 +34,6 @@
   } = $props();
 
   const today = localDate();
-  const flowChoices = [
-    { id: 'sequential', title: 'Sequential', hint: 'Each activity unlocks when the one before it is finished.' },
-    { id: 'open', title: 'Open', hint: 'Every activity is open from the start, in any order.' },
-  ];
 
   // What the page holds (all of it read fresh on load; nothing is kept between page loads).
   let loaded = $state(false);
@@ -442,35 +438,11 @@
         <!-- Controls -->
         <section class="card-panel" aria-labelledby="controls-heading">
           <h3 id="controls-heading">Controls</h3>
-          {#if !controlSession}
-            <p class="muted">Go live first. These apply to the live session.</p>
-          {:else}
-            <p class="muted small">For {nameOf(controlSession.clientId)}, {controlSession.date ?? 'undated'}{status.live ? '' : ' (not live)'}.</p>
-            <fieldset class="field" disabled={controlsBusy || controlSession.status === 'completed'}>
-              <legend class="field__label">How people are identified</legend>
-              <label class="choice"><input type="radio" name="identification" checked={controlSession.participationMode === 'client-visit'} onchange={() => void setMode('client-visit')} /><span>Guests scan a personal QR</span><span class="muted small">Each guest has a single-use code (Guests and QR).</span></label>
-              <label class="choice"><input type="radio" name="identification" checked={controlSession.participationMode !== 'client-visit'} onchange={() => void setMode('staff')} /><span>Staff sign in</span><span class="muted small">Greeted by their signed-in SharePoint name.</span></label>
-            </fieldset>
-            {#if isStaffMode(controlSession) && controlSession.status !== 'completed'}
-              <p class="notice" role="note" data-testid="staff-mode-warning">{STAFF_MODE_WARNING}</p>
-            {/if}
-            <fieldset class="field" disabled={controlsBusy || controlSession.status === 'completed'}>
-              <legend class="field__label">Activity flow</legend>
-              {#each flowChoices as flow (flow.id)}
-                <label class="choice"><input type="radio" name="flow" checked={(controlSession.activityFlow ?? 'sequential') === flow.id} onchange={() => void setFlow(flow.id)} /><span>{flow.title}</span><span class="muted small">{flow.hint}</span></label>
-              {/each}
-            </fieldset>
-            {#if controlClient}
-              <MotionSwitch client={controlClient} compact onSaved={(written) => { clients = clients.map((entry) => (entry.id === written.id ? { ...entry, theme: written.theme as Client['theme'] } : entry)); }} {onToast} />
-            {/if}
-            <div class="controls__end">
-              {#if controlSession.status === 'completed'}
-                <button class="btn" type="button" onclick={() => void reopenIt(controlSession)} disabled={controlsBusy}>Reopen session</button>
-              {:else}
-                <button class="btn btn--danger" type="button" onclick={() => void endIt(controlSession)} disabled={controlsBusy}>End session</button>
-              {/if}
-            </div>
-          {/if}
+          <TodayControls
+            {controlSession} {controlClient} owner={controlSession ? nameOf(controlSession.clientId) : ''} live={status.live} {controlsBusy}
+            onSetMode={(mode) => void setMode(mode)} onSetFlow={(flow) => void setFlow(flow)} onEnd={(session) => void endIt(session)} onReopen={(session) => void reopenIt(session)}
+            onMotionSaved={(written) => { clients = clients.map((entry) => (entry.id === written.id ? { ...entry, theme: written.theme as Client['theme'] } : entry)); }} {onToast}
+          />
         </section>
 
         <!-- Share -->
@@ -660,40 +632,7 @@
     gap: 0.75rem;
   }
 
-  /* Controls and sharing */
-  .controls__end {
-    display: flex;
-    gap: 0.6rem;
-  }
-
-  fieldset.field {
-    display: grid;
-    gap: 0.5rem;
-    min-width: 0;
-  }
-
-  /* An option and its one-line hint: the radio beside both, the hint under the name. */
-  .choice {
-    display: grid;
-    grid-template-columns: 1.5rem minmax(0, 1fr);
-    column-gap: 0.75rem;
-    row-gap: 0.1rem;
-    align-items: start;
-  }
-
-  .choice input {
-    grid-row: 1 / span 2;
-    margin: 0.15rem 0 0;
-  }
-
-  .choice span:nth-of-type(2) {
-    grid-column: 2;
-  }
-
-  fieldset.field:disabled {
-    opacity: 0.6;
-  }
-
+  /* Sharing */
   .share__link {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -713,16 +652,6 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.6rem;
-  }
-
-  .notice {
-    display: grid;
-    justify-items: start;
-    gap: 0.4rem;
-    padding: 1rem 1.25rem;
-    color: var(--adm-warn-ink);
-    background: var(--adm-warn-bg);
-    border-radius: 0.9rem;
   }
 
   .others {
