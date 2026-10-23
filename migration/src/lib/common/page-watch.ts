@@ -58,7 +58,9 @@ export function createPageWatcher({ check, mode = () => 'idle', enabled = () => 
 
   function run(): Promise<void> {
     if (running) return running;
-    running = (async () => {
+    // A look that awaits nothing (enabled() false) ends before this returns: it must not be left as the look on its way, or no other ever starts.
+    let ended = false;
+    const look = (async () => {
       try {
         if (enabled()) {
           const result = await check();
@@ -71,6 +73,7 @@ export function createPageWatcher({ check, mode = () => 'idle', enabled = () => 
         const asked = (cause as { retryAfter?: number } | null)?.retryAfter;
         retryAfterMs = typeof asked === 'number' && Number.isFinite(asked) ? asked : 0;
       } finally {
+        ended = true;
         running = null;
         lastEnd = now();
         const again = lookAgain;
@@ -78,7 +81,8 @@ export function createPageWatcher({ check, mode = () => 'idle', enabled = () => 
         schedule(again && retryAfterMs === 0 ? 0 : delay()); // (a Retry-After is still a floor)
       }
     })();
-    return running;
+    if (!ended) running = look;
+    return look;
   }
 
   /** Check now unless one ran less than POLL.minGapMs ago, in which case wait out the rest of that gap. */
