@@ -451,7 +451,7 @@ done once on the site.
    another client's work, *Copy from another client...*: choose the source, tick the activities, read the counts (and which will
    be skipped because the client has them), *Copy*. The copies start switched off. A copy that cannot be finished is removed again, and
    *Run it again* copies only what is missing.
-3. **The client's look** (colours, logo, hero art, background): **Clients → Brand**, see "Setting up a new client's look" below.
+3. **The client's look** (colours, logo, hero art, background): **Content → Brand** (or **Brand** on the client's row on Clients), see "Setting up a new client's look" below.
    With no picture at all, participants see the name in type on a white plate.
 4. **Guests** (needs the client live, so the day before is fine if you Go live then and End session after, or on the day): see
    "Guests, codes and the print sheet" below.
@@ -551,7 +551,7 @@ done once on the site.
 
 ### Setting up a new client's look (Brand Studio, Phase 6)
 
-Allow ten minutes, and do it before the day. Everything is on **Clients → Brand** (the button on the client's row); nothing a participant
+Allow ten minutes, and do it before the day. Everything is on **Content → Brand** (pick the client at the top; **Brand** on its row on Clients opens the same); nothing a participant
 sees changes until you press **Save**.
 
 **What to prepare**
@@ -1381,6 +1381,29 @@ can show is that this is so there too. Use a test folder first.
     `scripts/test-participant-storage.js` counts them.
 197. **Then production, and the push.** *(Still to see.)* If 195 and 196 match the previous package, replace the three pages in `Shared Documents/PMS`,
     merge to `main` and push the branch `pms-17`. Nothing in the lists changes (version 3).
+
+### Phase 18 (Brand Studio in the Content tab): not verified on the real site or an iPad
+
+Brand Studio moved from a Clients row into Content, beside the client's activities (RELEASE-18.md). No data, list, column or setting changed;
+what Brand Studio does and saves is as it was. Use a test folder first.
+
+198. **The workspace.** *(Still to see.)* Upload the package to a test folder. Open Admin → **Content**. **Expect** the client header (the logo
+    chip, the picker, Live now) and the strip **Activities | Brand** with their words (the activities and how many are live; Standard look or
+    Custom look). Pick a client, press **Brand**, then **Activities**: **expect** no prompt, and words that match what you see.
+199. **From Clients.** *(Still to see.)* On **Clients**, press **Brand** on a client's row: **expect** Content → Brand for that client. The same for
+    an archived client (Add activity stays off for it under Activities).
+200. **The address and the iPad.** *(Still to see.)* Reload on `#content/brand`: **expect** Brand again after the PIN. On an iPad, portrait and
+    landscape: the picker, the strip and the three-device preview can be used with one hand, and nothing is hidden under the sticky bars.
+201. **Kept while you switch.** *(Still to see.)* In **Brand** change a colour (do not save), press **Activities**, open a question's **Edit** and
+    type, press **Brand**. **Expect** the colour still changed, no prompt, and the Brand tab saying "Unsaved changes" meanwhile; back on
+    Activities, the typed text still there. Then **Save** the colour and use **Preview an activity in this look...**: **expect** the activity in
+    the new colour.
+202. **Another client.** *(Still to see.)* With the strip on Brand, change the client. **Expect** that client's look on the page, and the live
+    client's participant page still in its saved look.
+203. **Room on an iPad.** *(Still to see.)* On an iPad in landscape: the sticky client header and strip leave room for a long question list and for
+    Brand's preview.
+204. **Then production, and the push.** *(Still to see.)* If 198 to 203 pass, replace the three pages in `Shared Documents/PMS` and push the branch
+    `pms-18`. Nothing in the lists changes (version 3).
 
 ### Phase 8 (browsers, devices, accessibility, performance, the unsupported-browser page): not verified on a real device, a real screen reader, or the real SharePoint site
 

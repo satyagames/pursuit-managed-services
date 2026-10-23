@@ -148,3 +148,15 @@ picture by picture (RELEASE-17.md); `npm test` 1,475 of 1,475; the participant p
 **`styles/legacy/` keeps its name.** What is left in it is still the legacy app's two sheets, overridden by `src/app.css` and `src/admin.css` rather
 than edited, and several of their rules are live on every page (`:root`'s first tokens, `.btn`, `.field`, `.row`, `.pill`, `.option`, `.divider`).
 Renaming the folder would change three entries' imports and the documents for no gain while that is so.
+
+## Phase 18: what the move left unused
+
+Brand Studio moved from a Clients row into the Content tab (docs/DECISIONS.md, "The Content tab"). Only what the move made unused was removed:
+
+| What | Where | Evidence | Commit |
+|---|---|---|---|
+| The Brand Studio mount: `brandClient`, its `{#key}` block, the `BrandStudio` import, and the `onSaved` bookkeeping that put a saved look back into the list | `migration/src/admin/AdminClients.svelte` | The row's Brand button now opens Content's Brand view (`onNavigate`); `brandClient` had no other reader. The bookkeeping lives in `AdminContent.svelte`, which keeps the clients Brand saves into. | `70bd893` |
+| The "← Clients" button, when Brand Studio is a view of Content | `migration/src/admin/BrandStudio.svelte` (`embedded`) | The strip and the top tabs are the ways out. Without `embedded` the button is there as before (`scripts/test-brand-studio-embedded.js`). | `71bcd4e` |
+
+Kept: `BrandStudio`'s `onClose` prop and its Back button for the screen on its own (Setup does not mount it today; a test may), and the leave
+dialog's title "Leave Brand Studio?" (the tool keeps its name inside the Brand view).

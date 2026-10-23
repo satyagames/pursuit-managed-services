@@ -423,6 +423,10 @@ async function adminFlow(deviceKey) {
   await page.goto(pageUrl('admin.html#content'));
   await page.waitForTimeout(2500);
   await shot(view, { flow, id: '05-content', title: 'Content (the live client)' });
+  // (Phase 18: Brand is a view of Content; an address that names it, as a reload would. Before Phase 18 it shows Content as 05 does.)
+  await page.goto(pageUrl('admin.html#content/brand'));
+  await page.waitForTimeout(2500);
+  await shot(view, { flow, id: '05b-content-brand', title: 'Content, the Brand view (the live client)' });
   await tab(page, 'Guests and QR');
   await shot(view, { flow, id: '06-guests', title: 'Guests and QR' });
   await tab(page, 'Results');

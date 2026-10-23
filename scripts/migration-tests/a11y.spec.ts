@@ -176,7 +176,7 @@ test.describe('admin', () => {
         await page.getByRole('button', { name: `Brand: ${name}` }).click();
         await expect(page.getByRole('heading', { name: /Brand/ }).first()).toBeVisible();
         findings.push(...await check(page, `admin ${at}: Brand Studio, ${theme} look`));
-        await page.getByRole('button', { name: '← Clients' }).click();
+        await page.getByRole('tab', { name: 'Clients', exact: true }).click(); // (Phase 18: Brand is a view of Content; no Back button)
       }
 
       // Content with its dialogs.

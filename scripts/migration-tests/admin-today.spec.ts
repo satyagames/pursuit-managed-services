@@ -618,7 +618,7 @@ test.describe('capabilities that moved', () => {
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await expect.poll(async () => (await ds.getClient('c-dominos')).logoUrl).toMatch(/^\/assets\/images\/clients\/dominos-logo-[0-9a-f]{10}\.(webp|png)$/);
     await expect(page.getByTestId('brand-status')).toHaveText('All changes saved');
-    await page.getByRole('button', { name: '← Clients' }).click();
+    await page.getByRole('tab', { name: 'Clients', exact: true }).click(); // (Phase 18: Brand is a view of Content; no Back button)
     // A client nothing refers to is deleted after a confirmation.
     const spare = await addClient('Spare Co');
     await page.getByRole('tab', { name: 'Today' }).click();

@@ -276,9 +276,9 @@ test('smoke: Content, a new activity, the copy dialog, and Guests with its print
   page.on('console', (message) => { if (message.type() === 'error') problems.push(`console: ${message.text()}`); });
   const fake = await site('c-kroger', 14);
   const served = await openOn(page, fake);
-  await expect(page.getByRole('tab')).toHaveText(['Today', 'Clients', 'Content', 'Guests and QR', 'Results']);
+  await expect(page.getByRole('navigation', { name: 'Admin sections' }).getByRole('tab')).toHaveText(['Today', 'Clients', 'Content', 'Guests and QR', 'Results']);
   await expect(page.getByLabel('Client', { exact: true })).toHaveValue('c-kroger');
-  await expect(page.locator('.content-bar .pill--live')).toHaveText('LIVE NOW');
+  await expect(page.locator('.content-client .pill--live')).toHaveText('LIVE NOW');
   await page.getByLabel('Client', { exact: true }).selectOption({ label: "Domino's" });
   await expect(titles(page)).toHaveText(["Domino's History", 'Guess the Innovation']);
   await page.getByRole('button', { name: 'Add activity' }).click();

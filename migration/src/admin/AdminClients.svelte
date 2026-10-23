@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
   import { embeddedAssetUrl } from '../lib/brand/assets.js';
-  import BrandStudio from './BrandStudio.svelte';
+  import { viewById } from '../lib/admin/admin-content-views.js';
   import SampleNotice from './SampleNotice.svelte';
   import { confirmSampleClient, readSessionResponses } from '../lib/admin/adminData.js';
   import { withoutRetiredLogo } from '../lib/brand/retired-logos.js';
@@ -23,13 +23,22 @@
   type Token = { id: string; clientId: string; sessionId: string; used?: boolean; expiredAt?: string | null; createdAt?: string };
   type CreatedToken = { id: string; sessionId: string };
 
-  let { onToast, adminName = '' }: { onToast: (message: string, kind?: 'info' | 'success' | 'error') => void; adminName?: string } = $props();
+  let { onToast, adminName = '', onNavigate = () => {} }: {
+    onToast: (message: string, kind?: 'info' | 'success' | 'error') => void;
+    adminName?: string;
+    /** Opens another tab: Brand opens Content's Brand view on that client (Phase 18). */
+    onNavigate?: (tab: string, to?: { view?: string; clientId?: string; rows?: { settings: unknown[]; clients: unknown[]; sections: unknown[] } }) => void;
+  } = $props();
+  /** Content's view of a client's look, which Brand opens. */
+  const brand = viewById('brand');
   const localHosts = ['localhost', '127.0.0.1', '[::1]'];
 
   let clients = $state<Client[]>([]);
   let sessions = $state<Session[]>([]);
   let sections = $state<Section[]>([]);
   let liveClientId = $state<string | null>(null);
+  /** AppSettings as last read: handed to Content with the clients and the activities when Brand opens a client there. */
+  let settingsRows = $state<unknown[]>([]);
   let loading = $state(true);
   let busy = $state(false);
   let error = $state('');
@@ -44,8 +53,6 @@
   let titleTouched = $state(false);
   let submitted = $state(false);
   let formError = $state('');
-  /** The client whose Brand Studio is open; the list is replaced by it while it is. */
-  let brandClient = $state<Client | null>(null);
   let qrClient = $state<Client | null>(null);
   let qrToken = $state<CreatedToken | null>(null);
   let qrBase = $state('');
@@ -74,6 +81,7 @@
       { list: 'appsettings' }, { list: 'clients' }, { list: 'sessions' }, { list: 'sections' },
     ]) as [{ id: string; activeSessionId?: string; activeClientId?: string }[], Client[], Session[], Section[]];
     clients = clientRowsRead;
+    settingsRows = settingRows;
     sessions = sessionRows;
     sections = sectionRows;
     const settings = settingRows.find((row) => row.id === 'default') ?? null;
@@ -262,22 +270,11 @@
   function statusOf(token: Token) { return dataService.qrTokenStatus(token); }
 </script>
 
-{#if brandClient}
-  {#key brandClient.id}
-    <BrandStudio
-      client={brandClient}
-      {clients}
-      onClose={() => { brandClient = null; }}
-      onSaved={(record) => { clients = clients.map((entry) => (entry.id === record.id ? record : entry)); }}
-      {onToast}
-    />
-  {/key}
-{:else}
 <section class="panel clients-panel" aria-busy={loading || busy}>
   <header class="panel__head">
     <div>
       <h2>Clients</h2>
-      <p class="muted">Add, edit and archive clients, with each one's event title, subtitle, welcome line. <strong>Brand</strong> opens Brand Studio: the colours, logo, hero art and background, with a preview on a phone, an iPad and a desktop. A new client starts with the standard blue. Check-in codes for iPads (staff sign-in) are made here; personal codes for guests are under Guests and QR.</p>
+      <p class="muted">Add, edit and archive clients, with each one's event title, subtitle, welcome line. <strong>{brand.label}</strong> opens the client's {brand.label} view in Content, beside its activities: the colours, logo, hero art and background, with a preview on a phone, an iPad and a desktop. A new client starts with the standard blue. Check-in codes for iPads (staff sign-in) are made here; personal codes for guests are under Guests and QR.</p>
     </div>
     <button class="btn btn--primary" type="button" onclick={() => openEditor(null)} disabled={busy}>Add client</button>
   </header>
@@ -299,7 +296,7 @@
             <SampleNotice {client} {busy} onConfirm={() => void confirmSample(client)} />
           </div>
           <div class="row__actions">
-            <button class="btn" type="button" onclick={() => { brandClient = client; }} disabled={busy} aria-label="Brand: {client.name}">Brand</button>
+            <button class="btn" type="button" onclick={() => onNavigate('content', { view: brand.id, clientId: client.id, rows: { settings: settingsRows, clients, sections } })} disabled={busy} aria-label="{brand.label}: {client.name}">{brand.label}</button>
             <button class="btn" type="button" onclick={() => void generateQr(client)} disabled={busy || row.archived}>Generate QR</button>
             <button class="btn" type="button" onclick={() => openEditor(client)} disabled={busy}>Edit</button>
             {#if row.archived}
@@ -358,7 +355,6 @@
     </section>
   {/if}
 </section>
-{/if}
 
 <style>
   .client-row {

@@ -15,7 +15,8 @@
   import { motionEnabled, resolveClientTheme } from '../lib/brand/client-theme.js';
   import { DEFAULT_PRIMARY } from '../lib/brand/theme.js';
   import { participantPageUrl, qrImage } from '../lib/admin/admin-links.js';
-  import { mayLeave, setLeaveGuard } from '../lib/admin/unsaved.js';
+  import { mayLeave, revealer, setLeaveGuard } from '../lib/admin/unsaved.js';
+  import { viewById } from '../lib/admin/admin-content-views.js';
   import {
     displayUrl as display, lookOf, pageGradient, previewAddress, savedMessage, slotStatus,
   } from '../lib/admin/brand-studio-view.js';
@@ -32,15 +33,24 @@
   };
   type Slot = (typeof BRAND_SLOTS)[number];
 
-  let { client, clients, onClose, onSaved, onToast }: {
+  let { client, clients, embedded = false, onClose = () => {}, onSaved, onToast, onDirty }: {
     client: Client;
     /** Every client, to copy a look from. */
     clients: Client[];
-    onClose: () => void;
+    /**
+     * Drawn as a view of Content (Phase 18): its heading is a level 3 under Content's, "Brand · <client>", and it has no Back button (the
+     * strip is the way out). Off, it is the screen it was.
+     */
+    embedded?: boolean;
+    onClose?: () => void;
     /** The record as saved, so the list behind can show it. */
     onSaved: (record: Client) => void;
     onToast: (message: string, kind?: 'info' | 'success' | 'error') => void;
+    /** Whether there are unsaved changes, each time that changes: Content's strip says so while another view is showing. */
+    onDirty?: (dirty: boolean) => void;
   } = $props();
+  /** Brings this screen into sight before it asks to leave (Content's Brand view may be out of sight then). */
+  const reveal = revealer();
 
   // Read once, when Brand Studio opens for this client (the screen is made afresh for each).
   function open() {
@@ -101,12 +111,13 @@
     void participantPageUrl().then((base) => {
       deviceUrl = previewAddress(base, client.id);
     });
-    const remove = setLeaveGuard(() => (dirty ? new Promise<boolean>((resolve) => { leaving = resolve; }) : true));
+    const remove = setLeaveGuard(() => (dirty ? reveal().then(() => new Promise<boolean>((resolve) => { leaving = resolve; })) : true));
     return () => {
       remove();
       for (const slot of BRAND_SLOTS) if (pending[slot]) URL.revokeObjectURL(pending[slot]!.url);
     };
   });
+  $effect(() => { onDirty?.(dirty); });
   $effect(() => {
     if (!dirty) return;
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
@@ -264,12 +275,18 @@
 </script>
 
 <section class="brand" aria-labelledby="brand-title" aria-busy={busy}>
-  <header class="brand__head">
-    <div>
-      <button class="btn" type="button" onclick={() => void back()} disabled={busy}>← Clients</button>
-    </div>
+  <header class="brand__head" class:brand__head--embedded={embedded}>
+    {#if !embedded}
+      <div>
+        <button class="btn" type="button" onclick={() => void back()} disabled={busy}>← Clients</button>
+      </div>
+    {/if}
     <div class="brand__title">
-      <h2 id="brand-title">Brand Studio · {record.name}</h2>
+      {#if embedded}
+        <h3 id="brand-title">{viewById('brand').label} · {record.name}</h3>
+      {:else}
+        <h2 id="brand-title">Brand Studio · {record.name}</h2>
+      {/if}
       <p class="muted">Colours, logo, hero art and background for what this client's participants see. The preview shows the real screens, from your unsaved changes.</p>
     </div>
     <span class="pill" class:pill--in-progress={dirty} class:pill--completed={!dirty} data-testid="brand-status">{dirty ? 'Unsaved changes' : 'All changes saved'}</span>
@@ -375,7 +392,12 @@
     gap: 0.75rem 1rem;
   }
 
+  .brand__head--embedded {
+    grid-template-columns: 1fr auto;
+  }
+
   .brand__title h2,
+  .brand__title h3,
   .brand__title p {
     margin: 0;
   }
@@ -428,7 +450,7 @@
 
   .brand__preview {
     position: sticky;
-    top: 0.5rem;
+    top: calc(var(--adm-sticky-top, 0px) + 0.5rem);
     display: grid;
     gap: 0.6rem;
     min-width: 0;

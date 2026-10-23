@@ -79,9 +79,9 @@ test('it opens on the live client; a client picked this visit stays picked while
   await ds.activateClient('c-kroger', today);
   await openAdmin(page, local, 'Content');
   await expect(page.getByLabel('Client', { exact: true })).toHaveValue('c-kroger');
-  await expect(page.locator('.content-bar .pill--live')).toHaveText('LIVE NOW');
+  await expect(page.locator('.content-client .pill--live')).toHaveText('LIVE NOW');
   await pickClient(page, "Domino's");
-  await expect(page.locator('.content-bar .pill--live')).toHaveCount(0);
+  await expect(page.locator('.content-client .pill--live')).toHaveCount(0);
   await page.getByRole('tab', { name: 'Today', exact: true }).click();
   await page.getByRole('tab', { name: 'Content', exact: true }).click();
   await expect(page.getByLabel('Client', { exact: true })).toHaveValue('c-dominos');
@@ -460,7 +460,7 @@ test('an archived client is not the first choice, and cannot have activities add
   await openAdmin(page, local, 'Content');
   await expect(page.getByLabel('Client', { exact: true })).toHaveValue('c-kroger'); // the archived one is not the first choice
   await pickClient(page, "Domino's");
-  await expect(page.locator('.content-bar .pill--archived')).toHaveText('Archived');
+  await expect(page.locator('.content-client .pill--archived')).toHaveText('Archived');
   await expect(page.getByRole('button', { name: 'Add activity' })).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Copy from another client...' })).toBeDisabled();
 });
@@ -471,7 +471,7 @@ test('every capability of the old Activities tab is in Content: the list, the li
   // One of Kroger's that is switched off, to switch on and off again.
   await ds.createSection({ id: 'loose', title: 'Loose activity', order: 9, enabled: false, industryTags: [], questionIds: ['q-trivia-1'], clientId: 'c-kroger' });
   await openAdmin(page, local);
-  await expect(page.getByRole('tab')).toHaveText(['Today', 'Clients', 'Content', 'Guests and QR', 'Results']);
+  await expect(page.getByRole('navigation', { name: 'Admin sections' }).getByRole('tab')).toHaveText(['Today', 'Clients', 'Content', 'Guests and QR', 'Results']);
   // The old address for the Activities tab lands on Content.
   await page.evaluate(() => { window.location.hash = '#sections'; });
   await page.reload();
@@ -566,7 +566,8 @@ test('keyboard: the controls come in reading order and show the green ring, dial
   await page.getByLabel('Client', { exact: true }).focus();
   await page.keyboard.press('Shift+Tab');
   await page.keyboard.press('Tab');
-  for (let step = 0; step < 13; step += 1) {
+  // (Phase 18: the strip's chosen view and the line that opens Brand come after the client picker; two more stops keep the rest as they were.)
+  for (let step = 0; step < 15; step += 1) {
     const focused = await page.evaluate(() => {
       const element = document.activeElement as HTMLElement;
       const style = getComputedStyle(element);
@@ -579,7 +580,7 @@ test('keyboard: the controls come in reading order and show the green ring, dial
   expect(rings, 'every stop draws the 3px green ring with its halo').toEqual([]);
   expect(order).toEqual([
     // (Phase 9b, SAM-2: Domino's is a sample client, so "Mark as confirmed" is the next stop after the two buttons, before the activities.)
-    'content-client', 'Add activity', 'Copy from another client...', 'Mark as confirmed', expect.stringContaining("Domino's History"), "Set Domino's History live", "Preview Domino's History",
+    'content-client', expect.stringContaining('Activities'), 'Open Brand', 'Add activity', 'Copy from another client...', 'Mark as confirmed', expect.stringContaining("Domino's History"), "Set Domino's History live", "Preview Domino's History",
     "Rename or describe Domino's History", "Duplicate Domino's History", "Move Domino's History down", "Delete Domino's History", expect.stringContaining('Guess the Innovation'), 'Set Guess the Innovation live',
   ]);
 

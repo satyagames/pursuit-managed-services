@@ -56,7 +56,7 @@ test.describe('on the local server (server/data and its uploads)', () => {
     for (const client of CLIENTS) {
       await openAdmin(page, local, 'Clients');
       await page.locator('.row').filter({ hasText: client.name }).getByRole('button', { name: 'Brand' }).click();
-      await expect(page.getByRole('heading', { name: new RegExp(`Brand Studio · ${client.name}`) })).toBeVisible();
+      await expect(page.getByRole('heading', { name: new RegExp(`Brand · ${client.name}`) })).toBeVisible();
       for (const slot of SLOTS) {
         const card = page.locator(`section.asset[data-slot="${slot}"]`);
         await expect(card.getByTestId(`${slot}-status`)).toHaveText('Saved');

@@ -16,7 +16,7 @@ const stored = async (clientId = 'c-kroger') => ((await ds.getClient(clientId)) 
 async function openBrand(page: Page, name = 'Kroger') {
   await openAdmin(page, local, 'Clients');
   await page.locator('.row').filter({ hasText: name }).getByRole('button', { name: 'Brand' }).click();
-  await expect(page.getByRole('heading', { name: new RegExp(`Brand Studio · ${name}`) })).toBeVisible();
+  await expect(page.getByRole('heading', { name: new RegExp(`Brand · ${name}`) })).toBeVisible();
 }
 
 test('Today and Brand Studio flip the same stored value, by keyboard as well as by tap, and say so', async ({ page }) => {

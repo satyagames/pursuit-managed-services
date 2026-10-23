@@ -323,3 +323,18 @@ export const PHASE_17 = Object.freeze({
   participantAfter: 158_392, adminAfter: 578_201,
   participantUtilities: PHASE_11A.participantUtilities,
 });
+
+/**
+ * Phase 18 (Brand Studio moves into the Content tab: one client's workspace) is admin work, and the participant page may not change: its
+ * allowance is 0, its Tailwind rules the ones it had, the ceiling not raised. The admin page carries what is new: the client header, the strip
+ * of views with their words, "Preview an activity in this look..." and their styles (AdminContent.svelte), the views list
+ * (lib/admin/admin-content-views.js), a view's panel (ContentView.svelte), the guards' list in lib/admin/unsaved.ts and BrandStudio's
+ * embedded heading. The activities moved unchanged into ContentActivities.svelte, which costs a component's own overhead. The brief guessed a
+ * few hundred bytes; measured, it is about 4.7 kB gzip, nearly all of it new markup, logic and styles, so the allowance is 5,000 B. Setup is
+ * byte for byte as it was but for its build stamp. Measured when the phase ended: participantAfter and adminAfter, where the next phase starts.
+ */
+export const PHASE_18 = Object.freeze({
+  participantBefore: PHASE_17.participantAfter, adminBefore: PHASE_17.adminAfter, participantAllowance: 0, adminAllowance: 5_000,
+  participantAfter: 158_392, adminAfter: 582_903,
+  participantUtilities: PHASE_11A.participantUtilities,
+});

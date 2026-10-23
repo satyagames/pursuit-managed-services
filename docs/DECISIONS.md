@@ -82,6 +82,34 @@ One line each: the decision, why, and what enforces it (a test fails if it is br
 | The warning plus a button that says what it does ("Delete permanently") is the confirming step: no typed confirmation. One prop of `ConfirmDialog.svelte`, `confirmText`, adds one if the owner wants more friction. | Phase 16, as agreed. | `session-delete.spec.ts` |
 | A deleted session's printed guest code says "This QR code isn't recognized." as any unknown code does: no words of its own. | Its own words would grow the participant page. | `session-delete.spec.ts` |
 
+## The Content tab (Phase 18)
+
+A designer works on one client at a time and goes back and forth between what its participants read (activities, questions, options) and how
+it looks (colours, logo, hero art, background, animations). Brand Studio moved from a Clients row into the Content tab, beside the client's
+activities. Nothing it does, saves or asks changed. The sources, as the Phase 18 brief summed them up on 22 Oct 2026 (not read again for this
+record): Nielsen Norman Group, *Tabs vs. Accordions* (tabs for a few long sections, accordions for many short ones);
+designmonks.co, *nested tab UI* (two levels at most, the second styled differently, switching never wipes input, focus moves to the new
+panel); saasui.design, *workspace organization switcher UX patterns* (one place to switch, the current context's name and logo, the last one
+remembered, a stable order, everything switches together); Shopify's changelog, *Redesigned theme editor navigation* (the preview stays in
+front, with as little chrome as possible).
+
+| Option | Verdict |
+|---|---|
+| A. Activities and Brand stacked on one scrolling page, or as accordions | Rejected: several screens long, with content hidden behind clicks. |
+| **B. One client workspace: a client header, then two views (Activities, Brand) as tabs; a view stays open once opened** | **Chosen.** Two long sections, two levels at most, no lost work, both views' state shown at once. |
+| C. A sidebar inside Content | Rejected for now: heavy for two sections, and it takes width from Brand's preview. A third view is one more row of the views list. |
+| D. One screen with a permanent preview of the client's real questions in the draft look | Proposed, not done: a new feature (a preview that mixes the draft look with real content). |
+
+| Decision | Why | Enforced by |
+|---|---|---|
+| Content's views are one list (`CONTENT_VIEWS` in `lib/admin/admin-content-views.js`: id, label, address segment, component key, badge, one default). The strip, its keys, the address and the badges read only it. | A third view is one row; no label, order or address is typed twice. | `scripts/test-admin-content-views.js` |
+| `#content` is Activities, `#content/brand` is Brand; `#sections` and an unknown segment land on Activities. The Content tab comes back to the view last shown this visit, kept in memory as the last client is (the admin page writes nothing to browser storage). | Reload keeps the view through the address, as the top tabs do. | `scripts/test-admin-content-views.js`, `content-brand.spec.ts` |
+| A view is mounted the first time it is opened and then kept, hidden with the `hidden` attribute, until the client changes or Content is left. Switching views asks nothing. | Designers switch all day; a prompt on every switch, or a lost draft, would both be wrong. | `content-brand.spec.ts` |
+| The guards are the screens' own (`setLeaveGuard`), and more than one can be open at once (`lib/admin/unsaved.ts` asks each in turn). A guard in a hidden view shows its view before it asks. Changing client asks them too. | A dialog inside a hidden view opens at 0 by 0 and blocks the page (measured in Chromium and WebKit, 22 Oct 2026). | `content-brand.spec.ts` |
+| A hidden view does no timed work: the activities' 15-second read of the live switches waits while Brand is showing. | Opening, switching and keeping a view make no request that Brand Studio on Clients did not make. | `content-brand.spec.ts` (request count) |
+| The client header and the strip are one sticky block on a wide, tall enough window (from 1100 by 700 CSS pixels: one row); elsewhere only the strip sticks. With the top tabs the sticky part takes at most a fifth of the window's height at 1366 by 768 and 1180 by 820. Its heights are custom properties (`--adm-nav-height`, `--adm-content-sticky`) that Brand's sticky preview and the scroll padding allow for. | The picker and the strip stay in reach without taking the room of a long question list or the preview. | `content-brand.spec.ts` (geometry) |
+| Brand's own preview keeps client-neutral sample words; "Preview an activity in this look..." opens the existing activity preview, which shows the saved look, so it is off while Brand has unsaved changes and says why. | No screen shows another client's words, and no preview mixes a draft with saved content. | `content-brand.spec.ts` |
+
 ## The codebase
 
 | Decision | Why | Enforced by |

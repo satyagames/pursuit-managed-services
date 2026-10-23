@@ -3,7 +3,7 @@
   import * as dataService from '../lib/data/dataService.js';
   import { answersToQuestions, orphanNote } from '../lib/admin/adminData.js';
   import { layoutApplies, orderedContent } from '../lib/admin/admin-content.js';
-  import { setLeaveGuard } from '../lib/admin/unsaved.js';
+  import { revealer, setLeaveGuard } from '../lib/admin/unsaved.js';
   import { questionLayout } from '../lib/participant/pager-logic.js';
   import ConfirmDialog from './ConfirmDialog.svelte';
   import QuestionEditor, { QUESTION_SPECS, type Draft, type Option, type Question, type QuestionType } from './QuestionEditor.svelte';
@@ -55,6 +55,8 @@
   let leaving = $state<((go: boolean) => void) | null>(null);
 
   const editorId = (id: string) => `question-editor-${id}`;
+  /** Brings this screen into sight before it asks to leave (Content's Activities view may be out of sight then: Phase 18). */
+  const reveal = revealer();
 
   onMount(() => {
     void refresh().catch((cause) => { if (alive) error = cause instanceof Error ? cause.message : 'Could not load the questions.'; })
@@ -65,7 +67,7 @@
   // Unsaved changes, as Brand Studio: the shell asks before it switches tab or locks, and the browser before the page is closed.
   $effect(() => {
     if (!dirty) return;
-    const remove = setLeaveGuard(() => new Promise<boolean>((resolve) => { leaving = resolve; }));
+    const remove = setLeaveGuard(() => reveal().then(() => new Promise<boolean>((resolve) => { leaving = resolve; })));
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
     window.addEventListener('beforeunload', warn);
     return () => { remove(); window.removeEventListener('beforeunload', warn); };
