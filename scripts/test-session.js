@@ -344,3 +344,120 @@ describe('the words', () => {
     assert.equal(TITLE.clients, 'PMSClients');
   });
 });
+
+describe('the admin page\'s keep-alive (lib/common/session-keepalive.ts on the real lib/common/page-watch.ts)', () => {
+  // (The two modules, made plain JS by Vite's esbuild, with a stand-in window and document whose timers run only when the test says so,
+  // as scripts/test-page-watch.js does.)
+  let folder;
+  let createKeepAlive;
+  let keepAliveWait;
+  const IDLE = 600_000;
+
+  beforeEach(async () => {
+    if (createKeepAlive) return;
+    const { transformWithEsbuild } = await import('vite');
+    const { mkdtemp, writeFile } = await import('node:fs/promises');
+    const os = await import('node:os');
+    const path = await import('node:path');
+    const { pathToFileURL } = await import('node:url');
+    const ROOT = path.join(import.meta.dirname, '..');
+    folder = await mkdtemp(path.join(os.tmpdir(), 'pms-keepalive-'));
+    const url = (file) => pathToFileURL(path.join(ROOT, file)).href;
+    for (const [name, rewrite] of [
+      ['page-watch', (code) => code.replace(/from ['"]\.\/poll-schedule\.js['"]/, `from '${url('migration/src/lib/common/poll-schedule.js')}'`)],
+      ['session-keepalive', (code) => code.replace(/from ['"]\.\/page-watch\.js['"]/, `from '${pathToFileURL(path.join(folder, 'page-watch.mjs')).href}'`)
+        .replace(/from ['"]\.\/poll-schedule\.js['"]/, `from '${url('migration/src/lib/common/poll-schedule.js')}'`)
+        .replace(/from ['"]\.\.\/data\/session\.js['"]/, `from '${url('migration/src/lib/data/session.js')}'`)],
+    ]) {
+      const source = await readFile(path.join(ROOT, `migration/src/lib/common/${name}.ts`), 'utf8');
+      const { code } = await transformWithEsbuild(source, `${name}.ts`, { loader: 'ts', format: 'esm' });
+      await writeFile(path.join(folder, `${name}.mjs`), rewrite(code));
+    }
+    ({ createKeepAlive, keepAliveWait } = await import(pathToFileURL(path.join(folder, 'session-keepalive.mjs')).href));
+  });
+
+  /** A stand-in window and document; `clock.now` is the time the watcher sees. */
+  function stage() {
+    const listeners = new Map();
+    const timers = new Map();
+    let next = 1;
+    const on = (name, fn) => listeners.set(name, [...(listeners.get(name) ?? []), fn]);
+    const off = (name, fn) => listeners.set(name, (listeners.get(name) ?? []).filter((entry) => entry !== fn));
+    globalThis.window = { setTimeout: (fn, wait) => { const id = next++; timers.set(id, { fn, wait }); return id; }, clearTimeout: (id) => { timers.delete(id); }, addEventListener: on, removeEventListener: off };
+    globalThis.document = { hidden: false, addEventListener: on, removeEventListener: off };
+    return {
+      fire: (name) => { for (const fn of listeners.get(name) ?? []) fn(); },
+      timers,
+      runAll: () => { for (const [id, timer] of [...timers]) { timers.delete(id); timer.fn(); } },
+    };
+  }
+  const settle = () => new Promise((resolve) => { setImmediate(resolve); });
+  afterEach(() => { delete globalThis.window; delete globalThis.document; });
+
+  it('waits for the rest of the idle time, never less than the minimum gap', () => {
+    assert.equal(keepAliveWait(1_000_000, 1_000_000, IDLE), IDLE);
+    assert.equal(keepAliveWait(1_000_000, 1_000_000 - 400_000, IDLE), 200_000);
+    assert.equal(keepAliveWait(1_000_000, 0, IDLE), 5_000, 'idle already: the minimum gap');
+    assert.equal(SESSION_LIMITS.idleMs, IDLE, 'ten minutes');
+  });
+
+  it('a busy page adds nothing: every answer resets the idle time, so the timer finds nothing to do', async () => {
+    const page = stage();
+    const clock = { now: 0 };
+    let checks = 0;
+    const api = { lastAnswerAt: () => clock.now, checkSession: async () => { checks += 1; return { requests: 1 }; } };
+    const keepAlive = createKeepAlive(api, { idleMs: IDLE, now: () => clock.now });
+    keepAlive.start();
+    for (let round = 0; round < 5; round += 1) { clock.now += 60_000; page.runAll(); await settle(); }
+    assert.equal(checks, 0);
+    keepAlive.stop();
+  });
+
+  it('a page with no answer for the idle time checks once, and a failed check waits a whole idle time before the next', async () => {
+    const page = stage();
+    const clock = { now: 0 };
+    const asked = [];
+    let fail = false;
+    const api = { lastAnswerAt: () => 0, checkSession: async () => { asked.push(clock.now); if (fail) throw Object.assign(new Error('x'), { code: 'session-lost' }); return { requests: 1 }; } };
+    const keepAlive = createKeepAlive(api, { idleMs: IDLE, now: () => clock.now });
+    keepAlive.start();
+    assert.equal([...page.timers.values()][0].wait, IDLE, 'the first wait is the idle time');
+    clock.now = IDLE;
+    page.runAll();
+    await settle();
+    assert.deepEqual(asked, [IDLE]);
+    fail = true;
+    page.runAll();
+    await settle();
+    assert.equal(asked.length, 2);
+    assert.equal([...page.timers.values()][0].wait, IDLE, 'after a failure: a whole idle time');
+    keepAlive.stop();
+  });
+
+  it('no timer while the tab is hidden; shown again after the idle time it checks at once, shown again sooner it does not', async () => {
+    const page = stage();
+    const clock = { now: 0 };
+    let last = 0;
+    let checks = 0;
+    const api = { lastAnswerAt: () => last, checkSession: async () => { checks += 1; last = clock.now; return { requests: 1 }; } };
+    const keepAlive = createKeepAlive(api, { idleMs: IDLE, now: () => clock.now });
+    keepAlive.start();
+    globalThis.document.hidden = true;
+    page.fire('visibilitychange');
+    assert.equal(page.timers.size, 0, 'hidden: no timer at all');
+    clock.now = 60_000;
+    globalThis.document.hidden = false;
+    page.fire('visibilitychange');
+    await settle();
+    assert.equal(checks, 0, 'shown again after a minute: nothing');
+    globalThis.document.hidden = true;
+    page.fire('visibilitychange');
+    clock.now = 60_000 + IDLE + 1;
+    globalThis.document.hidden = false;
+    page.fire('visibilitychange');
+    await settle();
+    assert.equal(checks, 1, `shown again after the idle time: one check, at once (${page.timers.size} timers)`);
+    keepAlive.stop();
+    assert.equal(page.timers.size, 0);
+  });
+});

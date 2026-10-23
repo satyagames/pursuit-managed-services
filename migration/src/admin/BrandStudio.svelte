@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { errorText } from '../lib/admin/session-notice.js';
   import { onMount } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
   import { effectiveSlug } from '../lib/admin/admin-clients.js';
@@ -111,7 +112,7 @@
     void participantPageUrl().then((base) => {
       deviceUrl = previewAddress(base, client.id);
     });
-    const remove = setLeaveGuard(() => (dirty ? reveal().then(() => new Promise<boolean>((resolve) => { leaving = resolve; })) : true));
+    const remove = setLeaveGuard(() => (dirty ? reveal().then(() => new Promise<boolean>((resolve) => { leaving = resolve; })) : true), () => dirty);
     return () => {
       remove();
       for (const slot of BRAND_SLOTS) if (pending[slot]) URL.revokeObjectURL(pending[slot]!.url);
@@ -261,7 +262,7 @@
       const said = savedMessage(kept);
       onToast(said.message, said.kind as 'info' | 'success');
     } catch (cause) {
-      error = cause instanceof Error ? cause.message : 'Could not save this look.';
+      error = errorText(cause, 'Could not save this look.');
     } finally {
       busy = false;
     }

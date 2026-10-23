@@ -18,6 +18,7 @@
 </script>
 
 <script lang="ts">
+  import { errorText } from '../lib/admin/session-notice.js';
   import { onMount, untrack } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
   import { LAYOUTS, MAX_OPTION_TEXT, imageUrlProblem, layoutApplies, optionTextProblem, optionValueFrom, picturesStillShown } from '../lib/admin/admin-content.js';
@@ -263,7 +264,7 @@
     } catch (cause) {
       // Deleted by someone else while it was open (the first write finds it gone, 404, on either adapter): nothing of it was saved.
       if (editing && (cause as { status?: number })?.status === 404) { busy = false; onGone($state.snapshot(typed) as Draft); return; }
-      error = cause instanceof Error ? cause.message : 'Could not save this question.';
+      error = errorText(cause, 'Could not save this question.');
     } finally {
       busy = false;
     }

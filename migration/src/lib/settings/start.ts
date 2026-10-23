@@ -12,6 +12,7 @@ import { BUILT } from './built-settings.js';
 import { resolveSettings } from './deploy-settings.js';
 import { focusHeading } from '../common/focus.js';
 import { readSettingsFile } from './settings-file.js';
+import { frameRenewer } from '../common/session-renewer.js';
 
 dataService.requireConfiguration();
 
@@ -44,6 +45,8 @@ export async function findSettings(): Promise<Deployment> {
   found = resolveSettings({ pageUrl, built: BUILT, ...read }) as Deployment;
   // (The data layer tells the page, through onStop, when the lists turn out not to be this build's: Phase 10c-2b.)
   if (!found.problems.length) dataService.configure({ sharePoint: found.settings, onStop: (code: string) => stopForLists?.(code) });
+  // (Step B of the sign-in ladder, on SharePoint only: a refused sign-in is renewed by a hidden frame, Prompt 19.)
+  if (!found.problems.length && found.settings) dataService.setSessionRenewer(frameRenewer(pageUrl));
   return found;
 }
 

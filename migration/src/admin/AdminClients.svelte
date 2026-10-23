@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { errorText } from '../lib/admin/session-notice.js';
   import { onMount } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
   import { embeddedAssetUrl } from '../lib/brand/assets.js';
@@ -70,7 +71,7 @@
 
   onMount(() => {
     let active = true;
-    void refresh().catch((cause) => { if (active) error = cause instanceof Error ? cause.message : 'Could not load clients.'; })
+    void refresh().catch((cause) => { if (active) error = errorText(cause, 'Could not load clients.'); })
       .finally(() => { if (active) loading = false; });
     return () => { active = false; };
   });

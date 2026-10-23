@@ -9,6 +9,7 @@ import { problem } from '../settings/deploy-problems.js';
 import { create, makePlan, markReady, showPlan, siteApi } from './provision.js';
 import { addAdmin, adminNames } from './setup-admins.js';
 import { adminsInSeed, importSeed } from './setup-import.js';
+import { evidenceLine } from '../data/session.js';
 
 type SetupListCheck = { list: string; status: string };
 export type SetupImportResult = { list: string; id: string; status: string };
@@ -51,6 +52,12 @@ export const seedSampleClients = (siteUrl: string | null, onProgress: (result: S
 export const runParticipantSelfTest = (onStep: (step: SelfTestStep) => void) => (dataService.runParticipantSelfTest as unknown as (
   onStep: (step: SelfTestStep) => void, extraSteps: { name: string; run: () => Promise<string> }[],
 ) => Promise<SelfTestStep[]>)(onStep, selfTestProbes(dataService.probeSharePointRead as never, listTitles()));
+
+/**
+ * The sign-in refusals this page has seen (Prompt 19: the data layer's evidence, at most 20, in memory only), one line each, for the self-test's
+ * output: the SPRequestGuid in each is what a site owner gives IT or Microsoft. Nothing is asked of the site.
+ */
+export const sessionRefusals = (): string[] => dataService.sessionEvidence().map(evidenceLine as (entry: unknown) => string);
 
 /** The title of every list, by key, and of the picture library (`logoLibrary`) under some settings. Nothing is asked of the site. */
 /**

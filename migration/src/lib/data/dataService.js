@@ -25,7 +25,7 @@
  *    removal.js       section 9, removing a visit that has no answers, and deleting by key
  *    list-titles.js   section 10, which lists are this copy's
  *    session-calls.js section 11 (Prompt 19), the page's SharePoint sign-in: its renewer, lost and back, the evidence, the keep-alive's read
- *                     (session.js, which core.js imports, holds the table of refusals and the ladder's rules; it has no public names)
+ *                     (session.js, which core.js imports, holds the rule book of refusals and the ladder's rules; it has no public names)
  *
  * Since Phase 10c-1 it belongs to the pages in migration/ alone. Until then the legacy pages were built from this same file, so it
  * was only ever allowed to grow; they left the branch (the tag legacy-final holds them), that rule went with them, and so did the

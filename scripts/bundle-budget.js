@@ -338,3 +338,17 @@ export const PHASE_18 = Object.freeze({
   participantAfter: 158_392, adminAfter: 582_903,
   participantUtilities: PHASE_11A.participantUtilities,
 });
+
+/**
+ * Prompt 19 (SharePoint session resilience) changes the one request layer every page carries, so the participant page grows, for the first time
+ * since Phase 16: lib/data/session.js (the table of refusals, the ladder's single flight and cooldown, the evidence), the ladder in core.js,
+ * lib/data/session-calls.js and lib/common/session-renewer.ts (Step B's hidden frame, which lib/settings/start.ts installs on every page). Its
+ * Tailwind rules are the ones it had, and the ceiling is not raised. The admin page carries the same, and the banner (admin/SessionBanner.svelte,
+ * which Setup shows too), lib/admin/session-notice.js and the keep-alive (lib/common/session-keepalive.ts). Measured: participantAfter and
+ * adminAfter, where the next phase starts.
+ */
+export const PHASE_19 = Object.freeze({
+  participantBefore: PHASE_18.participantAfter, adminBefore: PHASE_18.adminAfter, participantAllowance: 2_500, adminAllowance: 3_500,
+  participantAfter: 160_375, adminAfter: 585_262,
+  participantUtilities: PHASE_11A.participantUtilities,
+});

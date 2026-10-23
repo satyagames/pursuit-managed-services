@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { errorText } from '../lib/admin/session-notice.js';
   import { onMount, tick, untrack } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
   import { activitiesOfClient, defaultClientId, lastClientId, rememberClient } from '../lib/admin/admin-content.js';
@@ -84,7 +85,7 @@
 
   onMount(() => {
     let active = true;
-    void load().catch((cause) => { if (active) loadError = cause instanceof Error ? cause.message : 'Could not load content.'; })
+    void load().catch((cause) => { if (active) loadError = errorText(cause, 'Could not load content.'); })
       .finally(() => { if (active) loading = false; });
     return () => { active = false; };
   });

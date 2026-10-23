@@ -1,5 +1,5 @@
 // What a refused SharePoint request means, and the rules of recovering from it (Prompt 19). Plain JS with no DOM and no state of its own: the
-// table every 401, 403 and sign-in page is classified by (REFUSALS, classifyRefusal), the waits (SESSION_LIMITS), the shape of the in-memory
+// rule book every 401, 403 and sign-in page is classified by (REFUSALS, classifyRefusal), the waits (SESSION_LIMITS), the shape of the in-memory
 // evidence of a refusal (refusalEvidence, evidenceLine), and the ladder's single flight and cooldown (recoverSession), which work on the state
 // object core.js holds (newSessionState). core.js runs the ladder on every request it sends; nothing here sends one.
 //
