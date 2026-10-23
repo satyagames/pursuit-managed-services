@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { errorText } from '../lib/admin/session-notice.js';
   import { onMount } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
   import { loadGuestState, refreshGuestState, type GuestState, type GuestToken, type GuestVisitor } from '../lib/admin/adminData.js';
@@ -44,7 +45,7 @@
   onMount(() => {
     let active = true;
     let polling = false;
-    void load().catch((cause) => { if (active) error = cause instanceof Error ? cause.message : 'Could not load Guests and QR.'; })
+    void load().catch((cause) => { if (active) error = errorText(cause, 'Could not load Guests and QR.'); })
       .finally(() => { if (active) loading = false; });
 
     // Who has joined, and who has finished, while the tab is on show: the roster, the codes and the
@@ -70,7 +71,7 @@
   function explain(cause: unknown, fallback: string) {
     const code = (cause as { code?: string } | null)?.code;
     if (code === 'session-not-active') return 'This session is no longer the live one. Go live with it on Today before creating codes.';
-    return cause instanceof Error ? cause.message : fallback;
+    return errorText(cause, fallback);
   }
 
   const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;

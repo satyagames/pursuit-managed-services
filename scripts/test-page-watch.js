@@ -6,7 +6,9 @@
 // way (and had read the track before the restart was stamped), lib/common/page-watch.ts dropped the 'online' as "a check already running is not doubled",
 // and the page learned of the restart only at the next look. On a real iPad the same: a network that comes back while a look is waiting (likely to
 // fail, and then to back off) was ignored. Now a look that the network coming back asks for while another is on its way is made as soon as that one
-// ends. This drives the real lib/common/page-watch.ts (made plain JS by Vite's esbuild) with a stand-in window and its own timers.
+// ends. Phase 19: a timer that found the page not to be checked (`enabled()` false: a preview, still starting, an error screen, a Live display not
+// on show) skipped the look without awaiting anything, so the look ended before `running` was set to it and stayed "on its way" for good: no look
+// and no timer after it. This drives the real lib/common/page-watch.ts (made plain JS by Vite's esbuild) with a stand-in window and its own timers.
 
 import assert from 'node:assert/strict';
 import { readFile, writeFile, mkdtemp, rm } from 'node:fs/promises';
@@ -90,6 +92,25 @@ describe('the page watcher and the network coming back', () => {
     await settle();
     assert.equal(pending.length, 2, 'and only one: after it the usual wait');
     assert.deepEqual([...page.timers.values()].map((timer) => timer.wait), [60_000]);
+    watcher.stop();
+  });
+
+  it('a look skipped while the page cannot be checked leaves the timer running: the next one looks', async () => {
+    const page = stage();
+    let checks = 0;
+    let enabled = false;
+    const watcher = createPageWatcher({ check: async () => { checks += 1; }, enabled: () => enabled, wait: () => 60_000 });
+    watcher.start();
+    page.runDue(60_000); // still starting: skipped
+    await settle();
+    assert.equal(checks, 0);
+    assert.deepEqual([...page.timers.values()].map((timer) => timer.wait), [60_000], 'the skipped look schedules the next');
+    enabled = true;
+    page.runDue(60_000);
+    await settle();
+    assert.equal(checks, 1, 'the next timer looks');
+    await watcher.checkNow();
+    assert.equal(checks, 2, 'and so does a look asked for');
     watcher.stop();
   });
 });

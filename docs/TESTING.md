@@ -117,6 +117,16 @@ seven sizes.
   (recorded from Phase 17's file; `PMS_RECORD_MARKUP=1` records it again, for a deliberate change only), and embedded with its level 3 heading and no
   Back button. The browser side is `content-brand.spec.ts` (the strip, the address, Clients' Brand, a switch that keeps both views, the guards from a
   view out of sight, the bridge, the keyboard, requests, timers and memory, the sticky budget at 1366 by 768 and 1180 by 820, axe and reflow).
+- `node --test scripts/test-session.js` (also part of `npm test`, Prompt 19): the rule book of refusals (`REFUSALS` in
+  `migration/src/lib/data/session.js`, each row against its own case, and nothing of a stale write token or a busy site taken for a sign-in), and the
+  ladder on the mocked SharePoint with a renewer the test supplies: a stale token as before, a sign-in mended at Step A, one that needs Step B, one
+  that is never renewed (the typed error, the banner's words, Details), a list refused with the sign-in proven (a permission, not tried again), ten
+  refused reads and one renewal (single flight), the cooldown, a write sent at most twice and never after a part of a `$batch` was refused, a page
+  with no renewer and the local server sending what they always did, 429 and 503 as before, the evidence (20 at most, no item id); and the admin
+  page's keep-alive on the real `page-watch.ts` with a stand-in window. `scripts/sharepoint-fake.js` gives every suite `fake.expireSession()` and
+  `fake.renewSession()`. The browser side is `session.spec.ts` (Chromium and WebKit: Step B with a real frame against the built admin page, the banner,
+  Details with the SPRequestGuid, "Reconnected.", Reload, unsaved Brand changes kept, axe and the keyboard) and `session-keepalive.spec.ts`
+  (Playwright's clock: one light read after ten idle minutes, none on a screen that refreshes, none while hidden).
 - `npm run check:svelte` — type and accessibility diagnostics for the Svelte app in
   `migration/`. `npm run test:foundation` runs the theme and design-foundation unit tests
   (also part of `npm test`); `npm run test:migration` rebuilds and runs the built-page

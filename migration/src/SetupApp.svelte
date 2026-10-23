@@ -5,7 +5,7 @@
   import { BUILD } from './lib/settings/built-settings.js';
   import {
     addAnAdmin, adminsInSeed, checkSharePointSchema, createFromPlan, importSharePointSeed, listAdminNames, listTitles, markSiteReady, planSite, readListsVersion,
-    readResource, replan, runParticipantSelfTest, seedSampleClients, type CreateResult, type ReadyResult, type SchemaList, type SelfTestStep, type SetupImportResult, type SiteRead, type SitePlan,
+    readResource, replan, runParticipantSelfTest, seedSampleClients, sessionRefusals, type CreateResult, type ReadyResult, type SchemaList, type SelfTestStep, type SetupImportResult, type SiteRead, type SitePlan,
   } from './lib/setup/setupData.js';
   import { BUSY_LISTS } from './lib/setup/provision.js';
   import { problem } from './lib/settings/deploy-problems.js';
@@ -15,6 +15,7 @@
   import CopyPanel from './setup/CopyPanel.svelte';
   import ListAddresses from './setup/ListAddresses.svelte';
   import PlanView from './setup/PlanView.svelte';
+  import SessionBanner from './admin/SessionBanner.svelte';
 
   // What this page worked out about itself as it started (lib/settings/start.ts): which site and lists are its own, or why it cannot tell.
   // It is worked out once, as the page loads, and does not change while the page is open: everything below is read from it once.
@@ -113,6 +114,8 @@
   // The self-test.
   let steps = $state<SelfTestStep[]>([]);
   let selfTestStatus = $state('');
+  /** The sign-in refusals this page saw, shown after the self-test (Prompt 19). */
+  let refusals = $state<string[]>([]);
 
   const statusKind = $derived(status.startsWith('List configuration') || status.startsWith('Could not') ? 'error' : status.startsWith('All list schemas') ? 'success' : 'info');
   const kindOf = (text: string) => (/stopped|failed|could not/i.test(text) ? 'error' : /^(complete|passed|done)/i.test(text) ? 'success' : 'info');
@@ -288,6 +291,7 @@
       selfTestStatus = `Self-test could not run: ${message(cause)}`;
     } finally {
       busy = false;
+      refusals = sessionRefusals();
     }
   }
 </script>
@@ -296,6 +300,7 @@
 
 <main class="setup-shell">
   <h1>{APP_NAME} SharePoint Setup</h1>
+  <SessionBanner />
   <p class="muted">The steps to prepare a site for this copy of the app, in order. Steps 1 to 3 are needed on a new site; 4 and 5 are optional.</p>
   <CopyPanel rows={copy} {trouble} {ways} />
 
@@ -437,6 +442,10 @@
           {/each}
         </tbody>
       </table>
+    {/if}
+    {#if refusals.length > 0}
+      <p>Sign-in refusals this page saw (the SPRequestGuid is what IT or Microsoft can look up):</p>
+      <ul data-testid="session-refusals">{#each refusals as line, index (index)}<li>{line}</li>{/each}</ul>
     {/if}
   </section>
 

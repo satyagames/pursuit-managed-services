@@ -4,6 +4,7 @@
 // rules of readiness and going live stay in admin-today.js. Reads nothing and writes nothing.
 
 import { localDate } from './admin-today.js';
+import { errorText } from './session-notice.js';
 
 /**
  * "Live since": the time on today's date, the date and time on another, "not recorded" when there is none or it cannot be read.
@@ -63,5 +64,8 @@ export const otherSessionsOf = (sessions, activeSessionId, live) => [...sessions
  */
 export const upsertSession = (list, next) => list.some((item) => item.id === next.id) ? list.map((item) => item.id === next.id ? { ...item, ...next } : item) : [...list, next];
 
-/** What a failure says on the screen: the error's own words, else `fallback`. @param {unknown} cause @param {string} fallback */
-export const failureText = (cause, fallback) => cause instanceof Error ? cause.message : fallback;
+/**
+ * What a failure says on the screen: the error's own words, else `fallback`; a lost sign-in or a permission as lib/admin/session-notice.js says them.
+ * @param {unknown} cause @param {string} fallback
+ */
+export const failureText = (cause, fallback) => errorText(cause, fallback);

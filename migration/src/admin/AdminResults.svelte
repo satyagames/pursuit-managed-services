@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { errorText } from '../lib/admin/session-notice.js';
   import { onMount, tick } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
   import { restartClientTrack, getSessionResults, removeEmptyVisit } from '../lib/admin/adminData.js';
@@ -79,7 +80,7 @@
         else if (liveHeld) await refreshLive();
         // else nothing is live, so nothing changes by itself: Refresh reads every session again.
       } catch (cause) {
-        if (active && version === requestVersion) error = cause instanceof Error ? cause.message : 'Could not load results.';
+        if (active && version === requestVersion) error = errorText(cause, 'Could not load results.');
         throw cause;
       } finally {
         refreshing = false;
@@ -163,7 +164,7 @@
       busy = false;
     }
     // Whatever happened, show what is there now: a visit that gained an answer, or was already gone.
-    if (active) await refreshNow().catch((cause) => { error = cause instanceof Error ? cause.message : 'Could not load results.'; });
+    if (active) await refreshNow().catch((cause) => { error = errorText(cause, 'Could not load results.'); });
   }
 
   /** Opens the warning. Nothing is read or written: the numbers are the card's, and they are read again when the person confirms. */

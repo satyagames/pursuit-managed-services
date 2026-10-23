@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { errorText } from '../lib/admin/session-notice.js';
   import { onMount, tick, untrack } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
   import { answersToQuestions, orphanNote } from '../lib/admin/adminData.js';
@@ -59,7 +60,7 @@
   const reveal = revealer();
 
   onMount(() => {
-    void refresh().catch((cause) => { if (alive) error = cause instanceof Error ? cause.message : 'Could not load the questions.'; })
+    void refresh().catch((cause) => { if (alive) error = errorText(cause, 'Could not load the questions.'); })
       .finally(() => { if (alive) loading = false; });
     return () => { alive = false; };
   });

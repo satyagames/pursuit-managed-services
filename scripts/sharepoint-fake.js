@@ -69,6 +69,11 @@
 // (PCOE, 14 Oct 2026) said it with status 500, so the fake does by default; `duplicateStatus: 400` is what the fake said until Phase 10h (and
 // what SharePoint is documented to say). `duplicateCode: true` adds SharePoint's error code for it, DUPLICATE_CODE, which is ASSUMED: the
 // tenant's own `error.code` was not captured (QA-TESTING.md item 142).
+//
+// A sign-in SharePoint no longer accepts (Prompt 19). `fake.expireSession()` refuses every /_api request from then on, reads and the write token
+// too, with 403, ACCESS_DENIED and SESSION_REFUSED_CODE, until `fake.renewSession()`: what the PCOE site answered an admin tab left open a while
+// (the words were seen; the code is ASSUMED until QA-TESTING.md's capture). `GET /_api/web?$select=Id` is the site itself, the data layer's light
+// proof that a sign-in works. Every answer carries an SPRequestGuid header, as SharePoint's do, so a refusal can be traced.
 
 import { LIBRARY, LISTS, VERSION } from '../migration/src/lib/schema/pms-schema.js';
 import { columnNamesAt, columnsOf } from '../migration/src/lib/schema/pms-schema-meta.js';
@@ -157,6 +162,8 @@ function knownKey(key) {
 
 /** SharePoint's words when an account may not do what it asked (a 403): what `fake.forbid()` answers. */
 export const ACCESS_DENIED = 'Access denied. You do not have permission to perform this action or access this resource.';
+/** SharePoint's error code for a refused identity (System.UnauthorizedAccessException): what `fake.expireSession()` answers with. ASSUMED. */
+export const SESSION_REFUSED_CODE = '-2147024891, System.UnauthorizedAccessException';
 /** What the fake answers for uniqueness asked of a column with no index (the `uniqueNeedsIndex` trap). */
 export const UNIQUE_NEEDS_INDEX = 'This field must be indexed to enforce unique values.';
 /** What the fake answers for an index and uniqueness asked in one step (the `uniqueApart` trap). */
@@ -285,6 +292,9 @@ export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Ca
   const writeFaults = [];
   let writesSeen = 0;
   let nextFieldId = 1;
+  /** expireSession() was called and renewSession() has not been since: every /_api request is refused (Prompt 19). */
+  let sessionExpired = false;
+  let nextGuid = 1;
 
   // SharePoint makes a list's item type from the name the list was created under: for a prefixed list, with the prefix.
   const typeOf = (title) => `SP.Data.${title}ListItem`;
@@ -379,7 +389,15 @@ export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Ca
     const headers = lower(request.headers);
     const entry = describe(request, headers);
     requests.push(entry);
-    return answer(request, headers, entry);
+    const guid = `fa${String(nextGuid++).padStart(6, '0')}-0000-4000-8000-000000000019`;
+    entry.guid = guid;
+    if (sessionExpired) {
+      entry.faulted = 403;
+      entry.refusedSession = true;
+      return error(403, ACCESS_DENIED, { SPRequestGuid: guid }, SESSION_REFUSED_CODE);
+    }
+    const result = await answer(request, headers, entry);
+    return { ...result, headers: { ...result.headers, SPRequestGuid: guid } };
   }
 
   /**
@@ -454,6 +472,8 @@ export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Ca
     if (path.endsWith('/contextinfo')) return ok({ GetContextWebInformation: { FormDigestValue: 'digest-token', FormDigestTimeoutSeconds: 1800 } });
     // (`user` may be a function, asked on every request: the local site's personas, Phase 12.)
     if (path.endsWith('/web/currentuser')) return ok(typeof user === 'function' ? user() : user);
+    // The site itself: the light read that proves a sign-in works (Prompt 19).
+    if (/\/_api\/web$/.test(path) && method === 'GET') return ok({ Id: idOf(siteUrl) });
     // The site's lists (Phase 10c-3): what Setup's plan reads, and where Create makes a list or the library.
     if (/\/web\/lists$/.test(path)) return method === 'GET' ? ok({ results: siteTitles().map(siteEntry) }) : createList(request, headers, entry);
     if (list === LIBRARY_KEY && !entry.stray && !libraryPresent) return error(404, 'List does not exist. The page you selected contains a list that does not exist. It may have been deleted by another user.');
@@ -768,6 +788,11 @@ export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Ca
     failWrite({ at = 1, status = 500, message = 'Something went wrong. (an injected failure)' } = {}) { writeFaults.push({ at: writesSeen + at, status, message }); },
     /** Every write of the log: no read, no write token, no $batch of reads. */
     writes: () => requests.filter(isWrite),
+    /** From now on every /_api request is refused as a sign-in SharePoint no longer accepts: 403, ACCESS_DENIED, SESSION_REFUSED_CODE (Prompt 19). */
+    expireSession() { sessionExpired = true; },
+    /** The sign-in is good again (what a page navigation does on the real site, ASSUMED). */
+    renewSession() { sessionExpired = false; },
+    get sessionExpired() { return sessionExpired; },
     /** A list's settings as SharePoint reports them (attachments, content approval, version history, description), by key; the library's by `logoLibrary`. */
     listSettings: (key) => {
       const title = knownKey(key) === LIBRARY_KEY ? libraryTitle : titleOf(key);

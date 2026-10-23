@@ -185,12 +185,16 @@ describe('RUNBOOK.md', () => {
     assert.match(note, /With pms-283ad18, \*\*a chart's tooltip could lie over the question, the "got it right first time" line and the Show answer \/ View as table buttons above its mark, and a locked activity's title was too faint to read\*\* \(photographed by Satyadev, 16 Oct 2026\)/);
     assert.match(note, /The participant page changed for the first time since pms-0a1c701: a locked activity's title, and when it looks again after the network comes back\./);
     const items = [...note.matchAll(/^(\d+)\. (.+)$/gm)].map((match) => [Number(match[1]), match[2]]);
-    assert.deepEqual(items.map(([number]) => number), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14], 'fourteen steps since Phase 18 (Brand Studio in the Content tab)');
+    assert.deepEqual(items.map(([number]) => number), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], 'fifteen steps since Prompt 19 (SharePoint session resilience)');
     const said = Object.fromEntries(items);
     // (Phase 18) Brand Studio in Content: its own step, and the note says what moved and that no data, list or setting changed.
     assert.match(said[14], /^Brand Studio in the Content tab \(Phase 18, QA-TESTING\.md items 198 to 204\)[^\n]*\*\*Content\*\*[^\n]*Activities \| Brand[^\n]*\*\*Brand\*\* on a client's row[^\n]*#content\/brand[^\n]*Unsaved changes[^\n]*Preview an activity in this look\.\.\.[^\n]*\*Send back:\*/);
     assert.match(note, /\*\*This package \(Phase 18\) moves Brand Studio into the Content tab\*\*[^\n]*no data, list, column or setting changed/);
-    assert.match(note, /step 13 is Phase 17's; step 14 is this package's\./);
+    assert.match(note, /step 13 is Phase 17's; step 14 is Phase 18's; step 15 is this package's\./);
+    // (Prompt 19) the sign-in that runs out: its own step, and the note says what changed and that no data, list, column or setting did.
+    assert.match(said[15], /^The sign-in that runs out \(Prompt 19, QA-TESTING\.md items 205 to 210\)[^\n]*F12[^\n]*SPRequestGuid[^\n]*sleep[^\n]*Your SharePoint sign-in needs refreshing[^\n]*\*\*Reload\*\*[^\n]*unsaved[^\n]*Idle session sign-out[^\n]*\*Send back:\*/);
+    assert.match(note, /\*\*This package \(Prompt 19\) renews a SharePoint sign-in that stops being accepted, or says so plainly\*\*[^\n]*no data, list, column or setting changed/);
+    assert.match(book, /\| Note 15 \| 205, 206, 207, 208, 209, 210 \|/, 'the steps of Prompt 19');
     assert.match(book, /\| Note 14 \| 198, 199, 200, 201, 202, 203, 204 \|/, 'the steps of Phase 18');
     assert.match(said[13], /^One full pass of the package \(Phase 17, QA-TESTING\.md items 195 to 197\)[^\n]*11 of 11[^\n]*by QR code and by manual select[^\n]*every kind of question[^\n]*\*\*Delete session\*\*[^\n]*8 requests[^\n]*\*Send back:\*/);
     assert.match(note, /\*\*This package \(Phase 17\) changes nothing a person sees\*\*: the data layer was cut into parts and stylesheet rules that nothing could match were removed; no data, list, setting or behaviour changed, and the pages were rebuilt from the restructured source\./);
@@ -277,6 +281,12 @@ describe('RELEASE-NOTES.md', () => {
     // (Phase 16) what changed since pms-b643f1b: Results newest first, Delete session, editing in place; the Phase 15 section is "in pms-b643f1b", with its sizes.
     // (Phase 17) what changed since pms-07eb42b: the structure of the code and the dead CSS, nothing a person sees; the Phase 16 section is "in pms-07eb42b", with its sizes.
     // (Phase 18) what changed since pms-f59fcde: Brand Studio in the Content tab; the Phase 17 section is "in pms-f59fcde", with its sizes.
+    // (Prompt 19) what changed since the Phase 18 build, which was not packaged: the sign-in ladder and the banner, newest first.
+    assert.match(notes, /## What changed since the Phase 18 build \(23 Oct 2026: the admin page showed SharePoint's raw "403 Access denied" after it had been open a while\)/);
+    assert.match(notes, /\*\*A sign-in SharePoint stops accepting is renewed by the page itself\.\*\*/);
+    assert.match(notes, /\*\*When it cannot be renewed, one banner says so in words\.\*\*/);
+    assert.match(notes, /\*\*Nothing else changed:\*\* no data, list, column or setting[^\n]*The participant page is (not measured|[\d,]+ B (larger|smaller) than pms-f59fcde's) and the admin page/);
+    assert.ok(notes.indexOf('since the Phase 18 build') < notes.indexOf('since pms-f59fcde'), 'the newest change first');
     assert.match(notes, /## What changed since pms-f59fcde \(22 Oct 2026: a client's look was one screen and its activities another, reached from different tabs\)/);
     assert.match(notes, /\*\*Content is one client's workspace\.\*\*/);
     assert.match(notes, /\*\*Brand on a client's row on Clients\*\*/);
@@ -326,7 +336,7 @@ describe('RELEASE-NOTES.md', () => {
     assert.match(notes, /\*\*No change, by VJR's decisions of 16 Oct 2026:\*\* names stay "Last, First"/);
     assert.match(notes, /The participant page is 30 B larger than pms-283ad18's and the admin page 32 B larger than pms-283ad18's \(gzip\)\./);
     assert.ok(notes.indexOf('since pms-283ad18') < notes.indexOf('in pms-283ad18'), 'the newest change first');
-    assert.match(notes, /of the branch `pms-18` \(a branch on GitHub, never merged into main\)/);
+    assert.match(notes, /of the branch `pms-19` \(a branch on GitHub, never merged into main\)/);
     // (Phase 11a-2, since 11a-3 the section "in pms-283ad18") what changed since pms-3fb312a.
     assert.match(notes, /## What changed in pms-283ad18 \(since pms-3fb312a, 16 Oct 2026: on a Windows laptop a confidence question in full screen had a scrollbar inside its chart and its tooltip cut off\)/);
     assert.match(notes, /\*\*Nothing inside a chart's card scrolls\.\*\*/);

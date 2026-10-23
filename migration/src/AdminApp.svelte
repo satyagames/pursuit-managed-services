@@ -18,6 +18,8 @@
   import AdminToday from './admin/AdminToday.svelte';
   import LiveDisplay from './admin/LiveDisplay.svelte';
   import PrintSheet from './admin/PrintSheet.svelte';
+  import SessionBanner from './admin/SessionBanner.svelte';
+  import { createKeepAlive } from './lib/common/session-keepalive.js';
 
   type Admin = { id: string; name?: string };
   type Tab = 'today' | 'clients' | 'content' | 'guests' | 'results';
@@ -57,6 +59,14 @@
   let contentRows = $state<ContentRows | null>(null);
   /** The Live display as the wall (Phase 11a: `#live-display/<id>/wall`, what "Open in a new tab" opens): the charts with no names in the page. */
   let wallPage = $state(false);
+
+  // The sign-in keep-alive (Prompt 19, lib/common/session-keepalive.ts), on SharePoint and while the admin is in: one light read after a long idle.
+  $effect(() => {
+    if (!admin || !dataService.isSharePointMode()) return;
+    const keepAlive = createKeepAlive(dataService);
+    keepAlive.start();
+    return () => keepAlive.stop();
+  });
 
   /** The Live display a hash asks for, and whether it is the wall; null when the hash is not the Live display's. */
   function liveOfHash(hash: string): { sessionId: string; wall: boolean } | null {
@@ -261,6 +271,7 @@
         {/each}
       </div>
     </nav>
+    <SessionBanner onBack={() => showToast('Reconnected.', 'success')} />
 
     <div id="admin-panel" class="shell__body" role="tabpanel" aria-labelledby={`admin-tab-${activeTab}`} tabindex="0">
       {#if activeTab === 'today'}

@@ -146,10 +146,52 @@ minutes; a 429 or 503's `Retry-After` is a floor (15 minutes at most). One timer
 |---|---|---|
 | Wi-Fi drops while answering | Nothing at first: Next never waits. Completion waits, then offers Retry. | Answers in memory and in `sessionStorage`; sent when the network returns. |
 | SharePoint is busy (429, 503) | Slower; the timers back off. | Everything. |
-| The sign-in expires | "Your sign-in has expired. Reload this page to sign in again." | Unsaved answers, sent after the reload. |
+| The sign-in expires, or SharePoint stops accepting it while a tab is open | Usually nothing: the ladder (below) renews it. If it cannot: the participant page says "Your sign-in has expired. Reload this page to sign in again."; the admin page and Setup show "Your SharePoint sign-in needs refreshing. Reload this page to carry on." with Reload and Details. | Unsaved answers, sent after the reload; on the admin page, unsaved work stays until the person reloads (the banner warns first). |
+| A list refuses an account that is signed in (403 with the sign-in proven) | "Your account cannot read <list>. Ask the site owner for Contribute access to the PMS lists." | Everything. |
 | The facilitator goes live with another client | The page returns to Welcome of the new client. | Saved answers stay in the old session, which is not ended. |
 | The facilitator restarts a participant | The device drops the answers and rewrites its item (a save already on its way cannot bring them back). | Nothing of the earlier answers. |
 | The session is ended | Welcome and the hub say it has ended; an activity under way is finished and saved first. | Everything. |
 | A visit is removed in Results (only one with no answers) | "This visit is no longer on record." and what to do. | Nothing to keep. |
 | One answer item is damaged (a hand edit) | Results, the Live display and the report name it and count the rest. | The rest of the session. |
 | A QR claim's answer is lost | The device asks the code whose it is; "Try again" carries on with the visit it made. | The visit, in memory. |
+
+## A refused sign-in: the ladder
+
+Prompt 19 ([SHAREPOINT.md](SHAREPOINT.md#sessions-tokens-and-the-403) says why and what it cannot do). Every 401, 403 and sign-in page is classified
+by `REFUSALS` in `lib/data/session.js`; a stale write token and a busy site are handled as before, a refused sign-in goes up this ladder in
+`lib/data/core.js`, once for all the requests refused meanwhile. On the local server none of it runs.
+
+```mermaid
+sequenceDiagram
+  participant S as Screen
+  participant D as Data layer (core.js)
+  participant R as SharePoint REST
+  participant F as Hidden frame (session-renewer.ts)
+  S->>D: a read (or a write)
+  D->>R: GET .../items
+  R-->>D: 403 "Access denied" (SPRequestGuid)
+  D->>D: evidence: status, code, guid, list key, time since the last answer
+  Note over D: single flight: every request refused now waits for this one recovery
+  D->>R: Step A: pause 0.25 to 0.75 s, POST /contextinfo (a fresh write token)
+  alt the sign-in works
+    R-->>D: 200
+    D->>R: the read once more (a write is not: the account may not)
+    R-->>D: 200, or 403 again: a permission, said with the list's title
+  else refused too
+    R-->>D: 403
+    D->>F: Step B: navigate to pms-config.txt (10 s at most), then remove it
+    D->>R: GET /_api/web?$select=Id
+    alt renewed
+      R-->>D: 200
+      D->>R: the request once more (a write too: refused whole, it never ran)
+      R-->>D: 200
+      D-->>S: the answer, nothing said
+    else not renewed
+      R-->>D: 403
+      D-->>S: Step C: session-lost (401): the banner; 5 s cooldown
+    end
+  end
+```
+
+**The admin page also checks by itself** (`lib/common/session-keepalive.ts`): after 10 minutes with no answer, one `GET /_api/web?$select=Id`, at
+once when the tab is shown again after that long, never while it is hidden; a screen that refreshes adds nothing.

@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
 import { PAGES, ROOT, analyzePage } from './analyze-bundle.js';
-import { BUDGET, FORBIDDEN, PHASE_8, PHASE_9A, PHASE_9B, PHASE_10B, PHASE_10C1, PHASE_10C2A, PHASE_10C2B, PHASE_10C3, PHASE_10F, PHASE_10G, PHASE_10H, PHASE_10I, PHASE_10J, PHASE_11A, PHASE_11A3, PHASE_11B, PHASE_12, PHASE_13, PHASE_14, PHASE_15, PHASE_16, PHASE_17, PHASE_18, checkBudgets, utilityClasses } from './bundle-budget.js';
+import { BUDGET, FORBIDDEN, PHASE_8, PHASE_9A, PHASE_9B, PHASE_10B, PHASE_10C1, PHASE_10C2A, PHASE_10C2B, PHASE_10C3, PHASE_10F, PHASE_10G, PHASE_10H, PHASE_10I, PHASE_10J, PHASE_11A, PHASE_11A3, PHASE_11B, PHASE_12, PHASE_13, PHASE_14, PHASE_15, PHASE_16, PHASE_17, PHASE_18, PHASE_19, checkBudgets, utilityClasses } from './bundle-budget.js';
 import { SAMPLE_PICTURE_NAMES } from '../migration/src/lib/setup/sample-pictures.js';
 import { pageProblems } from './release-proofs.js';
 
@@ -304,22 +304,31 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
     // (This test compared the build in the tree with those figures until Phase 18: the newest phase's test below holds the build now.)
   });
 
-  it('Phase 18 (Brand Studio in the Content tab) grew no page but the admin page: the participant page is no larger than 17 left it, to the same Tailwind rules and under its ceiling, and the admin page within its allowance and its budget', (t) => {
+  it('Phase 18 (Brand Studio in the Content tab) grew no page but the admin page, as measured when it ended', () => {
     assert.equal(PHASE_18.participantBefore, PHASE_17.participantAfter, 'Phase 18 is measured from where Phase 17 ended');
     assert.equal(PHASE_18.adminBefore, PHASE_17.adminAfter);
-    const participant = built.participant.htmlGzip - PHASE_18.participantBefore;
-    const admin = built.admin.htmlGzip - PHASE_18.adminBefore;
-    t.diagnostic(`participant ${participant >= 0 ? '+' : ''}${participant} B, admin ${admin >= 0 ? '+' : ''}${admin} B against where 17 ended`);
-    console.log(`  Phase 18: the participant page is ${participant >= 0 ? '+' : ''}${participant} B gzip against where 17 ended (allowance ${PHASE_18.participantAllowance} B), now ${bytes(built.participant.htmlGzip)}; the admin page ${admin >= 0 ? '+' : ''}${admin} B (allowance ${PHASE_18.adminAllowance} B), now ${bytes(built.admin.htmlGzip)} of its ${bytes(BUDGET.admin)} budget`);
     assert.equal(PHASE_18.participantAllowance, 0, 'the participant page is not touched');
-    assert.ok(participant <= PHASE_18.participantAllowance, `the participant page is ${participant} B larger than where 17 left it`);
-    assert.ok(built.participant.htmlGzip <= BUDGET.participantCeiling, 'and under its ceiling, which is not raised');
-    assert.equal(BUDGET.participantCeiling, 450_000, 'the ceiling is not raised');
-    assert.deepEqual(utilityClasses(built.participant.html), [...PHASE_18.participantUtilities], "the participant page's Tailwind rules are the ones it had");
-    assert.ok(admin <= PHASE_18.adminAllowance, `the admin page is ${admin} B larger than where 17 left it`);
-    assert.ok(built.admin.htmlGzip < BUDGET.admin, `the admin page is under its ${bytes(BUDGET.admin)} budget`);
     assert.ok(PHASE_18.participantAfter - PHASE_18.participantBefore <= PHASE_18.participantAllowance, 'the participant page, as measured when 18 ended');
     assert.ok(PHASE_18.adminAfter - PHASE_18.adminBefore <= PHASE_18.adminAllowance, 'the admin page, as measured when 18 ended');
+    // (This test compared the build in the tree with those figures until Prompt 19: the newest phase's test below holds the build now.)
+  });
+
+  it('Prompt 19 (SharePoint session resilience) grew the participant page within its allowance, to the same Tailwind rules and under its ceiling, and the admin page within its allowance and its budget', (t) => {
+    assert.equal(PHASE_19.participantBefore, PHASE_18.participantAfter, 'Prompt 19 is measured from where Phase 18 ended');
+    assert.equal(PHASE_19.adminBefore, PHASE_18.adminAfter);
+    const participant = built.participant.htmlGzip - PHASE_19.participantBefore;
+    const admin = built.admin.htmlGzip - PHASE_19.adminBefore;
+    t.diagnostic(`participant ${participant >= 0 ? '+' : ''}${participant} B, admin ${admin >= 0 ? '+' : ''}${admin} B against where 18 ended`);
+    console.log(`  Prompt 19: the participant page is ${participant >= 0 ? '+' : ''}${participant} B gzip against where 18 ended (allowance ${PHASE_19.participantAllowance} B), now ${bytes(built.participant.htmlGzip)}; the admin page ${admin >= 0 ? '+' : ''}${admin} B (allowance ${PHASE_19.adminAllowance} B), now ${bytes(built.admin.htmlGzip)} of its ${bytes(BUDGET.admin)} budget`);
+    assert.ok(PHASE_19.participantAllowance <= 2_500, 'the request layer every page carries, and no more');
+    assert.ok(participant <= PHASE_19.participantAllowance, `the participant page is ${participant} B larger than where 18 left it`);
+    assert.ok(built.participant.htmlGzip <= BUDGET.participantCeiling, 'and under its ceiling, which is not raised');
+    assert.equal(BUDGET.participantCeiling, 450_000, 'the ceiling is not raised');
+    assert.deepEqual(utilityClasses(built.participant.html), [...PHASE_19.participantUtilities], "the participant page's Tailwind rules are the ones it had");
+    assert.ok(admin <= PHASE_19.adminAllowance, `the admin page is ${admin} B larger than where 18 left it`);
+    assert.ok(built.admin.htmlGzip < BUDGET.admin, `the admin page is under its ${bytes(BUDGET.admin)} budget`);
+    assert.ok(PHASE_19.participantAfter - PHASE_19.participantBefore <= PHASE_19.participantAllowance, 'the participant page, as measured when 19 ended');
+    assert.ok(PHASE_19.adminAfter - PHASE_19.adminBefore <= PHASE_19.adminAllowance, 'the admin page, as measured when 19 ended');
   });
 
   it('the Tailwind rules check can fail: a rule added to the participant page, or one taken away, is found', () => {

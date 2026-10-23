@@ -13,12 +13,19 @@ import { getContext, setContext } from 'svelte';
 type Guard = () => Promise<boolean> | boolean;
 
 let guards: Guard[] = [];
+const holding = new Map<Guard, () => boolean>();
 
-/** Registers a guard (null registers none). Returns a function that removes this guard. */
-export function setLeaveGuard(next: Guard | null): () => void {
-  if (next) guards = [...guards, next];
-  return () => { guards = guards.filter((guard) => guard !== next); };
+/**
+ * Registers a guard (null registers none). Returns a function that removes this guard. `dirty` says, without asking anything, whether the
+ * screen holds unsaved work now (Prompt 19: the sign-in banner warns before a reload); a guard registered only while dirty needs none.
+ */
+export function setLeaveGuard(next: Guard | null, dirty: () => boolean = () => true): () => void {
+  if (next) { guards = [...guards, next]; holding.set(next, dirty); }
+  return () => { guards = guards.filter((guard) => guard !== next); if (next) holding.delete(next); };
 }
+
+/** Does any screen hold unsaved work now? Asks nothing. */
+export const hasUnsaved = (): boolean => guards.some((guard) => holding.get(guard)?.() ?? true);
 
 /** May the person leave this screen? True when nothing is unsaved, or they chose to leave anyway at every guard. */
 export async function mayLeave(): Promise<boolean> {
