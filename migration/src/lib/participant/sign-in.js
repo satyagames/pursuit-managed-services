@@ -2,7 +2,8 @@
 //
 // When it has, SharePoint answers a request with its sign-in page (or a 401), and the data service says so with status 401 and the
 // words "sign-in page". That is not a lost connection: waiting does not mend it, the person has to load the page again and sign in.
-// The participant page used to show nothing for it on Welcome and the hub, and "check the connection" on a save.
+// The participant page used to show nothing for it on Welcome and the hub, and "check the connection" on a save. Since Prompt 19 the data
+// layer first tries to renew the sign-in (lib/data/session.js); a sign-in it could not renew is `code: 'session-lost'`, with status 401.
 
 /**
  * @param {unknown} error What a data service call threw.
@@ -10,8 +11,8 @@
  * connection at all are not that.
  */
 export const isSignedOut = (error) => {
-  const failure = /** @type {{ status?: number, message?: string } | null | undefined} */ (error);
-  return failure?.status === 401 || /sign-in page/i.test(String(failure?.message ?? ''));
+  const failure = /** @type {{ status?: number, code?: string, message?: string } | null | undefined} */ (error);
+  return failure?.status === 401 || failure?.code === 'session-lost' || /sign-in page/i.test(String(failure?.message ?? ''));
 };
 
 /**

@@ -21,8 +21,11 @@ const DATA = path.join(SRC, 'lib', 'data');
 const DATA_URL = new URL('../migration/src/lib/data/', import.meta.url);
 /** The longest a part of lib/data may be: a reader (or a model) loads only the part they change, and 600 lines is one sitting (Phase 17). */
 export const MAX_LINES = 600;
-/** The files of lib/data that are not parts of the data service: read-groups.js is a helper the admin's reads import (Phase 9b). */
-const NOT_PARTS = ['read-groups.js'];
+/**
+ * The files of lib/data that are not parts of the data service: read-groups.js is a helper the admin's reads import (Phase 9b); session.js is
+ * the table of refusals and the ladder's rules (Prompt 19), plain functions with no state that core.js runs and the tests read.
+ */
+const NOT_PARTS = ['read-groups.js', 'session.js'];
 
 const text = (file) => readFile(file, 'utf8').then((value) => value.replace(/\r\n/g, '\n'));
 const parts = async () => (await readdir(DATA)).filter((name) => name.endsWith('.js') && name !== 'dataService.js' && !NOT_PARTS.includes(name)).sort();
@@ -140,7 +143,9 @@ describe('the data layer is a facade over parts, with its state in core.js (Phas
     assert.ok(graph.size > 140, `${graph.size} files read`);
     assert.deepEqual(cyclesOf(graph), []);
     const coreImports = Object.keys(partImportsOf(await text(path.join(DATA, 'core.js'))));
-    assert.deepEqual(coreImports, ['encoding.js'], 'core.js imports only the part with no state');
+    // (Prompt 19 added session.js, the table of refusals and the ladder's rules: no state of its own, and it imports no part at all.)
+    assert.deepEqual(coreImports, ['encoding.js', 'session.js'], 'core.js imports only the parts with no state');
+    assert.deepEqual(Object.keys(partImportsOf(await text(path.join(DATA, 'session.js')))), [], 'session.js imports no part of lib/data');
     // The cycle check can fail.
     assert.equal(cyclesOf(new Map([['a', ['b']], ['b', ['c']], ['c', ['a']]])).length, 1);
     assert.deepEqual(cyclesOf(new Map([['a', ['b']], ['b', []]])), []);

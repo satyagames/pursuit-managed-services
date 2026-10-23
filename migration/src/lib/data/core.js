@@ -1,14 +1,16 @@
 // The backend adapter (dataService.js section 1; Phase 17 cut it out of that file unchanged): ALL of the data layer's state, and the only
 // code of the app that sends a request to the backend. It holds which backend this page uses (configure(), requireConfiguration()), the
-// SharePoint write token, the lists' item types and columns once read, whether $batch works here, the request count and a QR scan not
-// yet known to have landed; it makes every request (one SharePoint REST call with its retries, a $batch of reads, the local server's
-// fetch) and offers the generic item calls both backends implement. No other part keeps state or calls fetch(); this part imports
-// nothing of the parts that use it (scripts/test-data-modules.js holds both).
+// SharePoint write token, the lists' item types and columns once read, whether $batch works here, the request count, a QR scan not yet
+// known to have landed and the sign-in ladder's state (Prompt 19); it makes every request (one SharePoint REST call with its retries and
+// the ladder of lib/data/session.js for a refused sign-in, a $batch of reads, the local server's fetch) and offers the generic item calls
+// both backends implement. No other part keeps state or calls fetch(); this part imports only the parts with none, encoding.js and
+// session.js (scripts/test-data-modules.js holds both).
 
 import { ID, LISTS, selectOf } from '../schema/pms-schema.js';
 import {
   columnsOf, fieldsOf, indexById, kindOf, pause, pick, retryAfterMs, spEncode, spError, spLiteral, spParseObject, spTitleIn,
 } from './encoding.js';
+import { classifyRefusal, evidenceLine, ladderVerdict, newSessionState, noteAnswer, recoverSession, refusalEvidence, refusalWords, sessionLost } from './session.js';
 
 // ============================================================================
 // 1. Backend adapter
@@ -26,6 +28,8 @@ let unfinishedScan = null; // a QR scan whose track is written but whose claim i
 let requestTotal = 0;
 let mustConfigure = false; // requireConfiguration() was called and configure() has not been since: nothing may be sent (Phase 10b)
 let onStop = null; // what the page does when the site's lists are not this build's (lib/settings/start.ts: its stop screen); none for Setup or a test
+// The ladder's state (Prompt 19, lib/data/session.js): refusals seen, the recovery under way, the cooldown, lists refused, the page's renewer and listeners.
+let session = newSessionState();
 
 /**
  * Points the service at the API. Only needed when the page isn't served by the
@@ -46,6 +50,7 @@ export function configure({ baseUrl: url, sharePoint: settings, onStop: stop } =
   unfinishedScan = null;
   mustConfigure = false;
   onStop = stop ?? null;
+  session = newSessionState(session);
 }
 
 /**
@@ -78,12 +83,14 @@ function spSite() {
 }
 
 // `idempotent` marks a write that is safe to send twice (it replaces a whole value, or a repeat is
-// caught by the unique AppId), so a 503/504 is retried for it the way it always was for a GET.
-async function spHttp(method, resource, { body, headers = {}, digest = true, idempotent = false } = {}) {
+// caught by the unique AppId), so a 503/504 is retried for it the way it always was for a GET. `ladder: false` is the ladder's own proofs.
+async function spHttp(method, resource, { body, headers = {}, digest = true, idempotent = false, ladder = true } = {}) {
   assertConfigured();
   const root = `${spSite()}/_api`;
   const url = resource.startsWith('https://') ? resource : `${root}${resource}`;
   if (!url.startsWith(`${root}/`)) throw new Error('Unexpected SharePoint pagination URL.');
+  let sentAgain = false; // a refused request is sent once more at most (a stale token, or the ladder): a write is never sent three times
+  let outcome; // this request's recovery, once the ladder has run for it
   for (let attempt = 0; attempt < 4; attempt += 1) {
     const writeHeaders = method === 'GET' || !digest ? {} : { 'X-RequestDigest': await spDigest() };
     requestTotal += 1;
@@ -107,40 +114,67 @@ async function spHttp(method, resource, { body, headers = {}, digest = true, ide
     }
     const text = await response.text();
     let payload;
-    try { payload = text ? JSON.parse(text) : null; } catch {
-      throw spError(response.ok ? 401 : response.status, 'SharePoint returned a sign-in page or non-JSON response. Open the site, sign in, then reload this app.');
-    }
-    if (!response.ok) {
-      const detail = payload?.error?.message;
-      const message = typeof detail === 'string' ? detail : detail?.value;
-      if (response.status === 403 && digest && attempt === 0 && /security validation|request digest/i.test(message ?? '')) {
-        digestPromise = undefined;
-        continue;
-      }
+    let signInPage = false;
+    try { payload = text ? JSON.parse(text) : null; } catch { signInPage = true; }
+    if (signInPage || !response.ok) {
+      const { code, message } = refusalWords(payload);
+      const kind = classifyRefusal({ status: response.status, code, message, sawSignInPage: signInPage });
+      if (kind === 'digest' && digest && attempt === 0) { digestPromise = undefined; sentAgain = true; continue; }
       // A value a unique column holds already (AppId) is 409, "it is there already", to every caller, however SharePoint says it: 400 as it is
       // documented, 500 as the real site did (Phase 10h), by its error code or by its words. Any other refusal keeps its status. `sharePointStatus`
       // is what SharePoint said, for a Details line.
       const duplicate = [400, 409, 500].includes(response.status)
-        && (/SPDuplicateValuesFoundException/.test(payload?.error?.code) || /duplicate|unique value/i.test(message ?? ''));
-      throw Object.assign(spError(duplicate ? 409 : response.status, `SharePoint (${response.status}): ${message ?? response.statusText}`),
-        { sharePointStatus: response.status }, retryAfter === undefined ? {} : { retryAfter });
+        && (/SPDuplicateValuesFoundException/.test(code) || /duplicate|unique value/i.test(message ?? ''));
+      const error = signInPage
+        ? spError(response.ok ? 401 : response.status, 'SharePoint returned a sign-in page or non-JSON response. Open the site, sign in, then reload this app.')
+        : Object.assign(spError(duplicate ? 409 : response.status, `SharePoint (${response.status}): ${message ?? response.statusText}`),
+          { sharePointStatus: response.status }, retryAfter === undefined ? {} : { retryAfter });
+      if (kind !== 'session' || !ladder) throw error;
+      outcome = await spRefused(error, { method, resource, response, code, message, outcome, sentAgain, safe: method === 'GET' || resource === '/contextinfo' });
+      sentAgain = true;
+      continue;
     }
+    noteAnswer(session);
     return { data: payload?.d ?? payload, etag: response.headers.get('ETag') };
   }
 }
+
+/**
+ * The ladder, for a refusal of the `session` kind (lib/data/session.js has its rules): into the evidence; one recovery for every request refused
+ * meanwhile; then sent once more (resolves), or thrown: a permission (a list refused once is not recovered for again), the typed `session-lost`,
+ * or as it was. `safe`: a read, which may be sent again after Step A; a write only after Step B renewed the sign-in (refused whole, it did not run).
+ */
+async function spRefused(error, { method, resource, response, code, message, outcome, sentAgain, safe }) {
+  const list = Object.keys(LISTS).find((key) => resource.includes(spListPath(key))) ?? null;
+  const evidence = refusalEvidence(session, { method, list, status: response.status, code, headers: response.headers });
+  if (!session.renewer) throw error; // a page that cannot renew (a test, no document) sends what it always did: the ladder is for pages that can
+  const denied = list && response.status === 403 && session.denied.has(`${method} ${list}`);
+  const recovery = denied ? { proven: true } : outcome
+    ?? await recoverSession(session, { fresh: spFreshDigest, prove: () => spHttp('GET', '/web?$select=Id', { ladder: false }), pause });
+  const next = ladderVerdict({ recovery, again: !denied && !outcome && !sentAgain, safe, status: response.status, code, message });
+  if (next === 'again') return recovery;
+  if (next === 'lost') throw sessionLost(session, error, evidence);
+  if (next === 'permission' && list) session.denied.add(`${method} ${list}`);
+  throw next === 'permission' ? Object.assign(error, { kind: 'permission', list, listTitle: list && spTitle(list), method, evidence, details: evidenceLine(evidence) }) : error;
+}
+
+/** The write token, asked for (lib/data/session.js's Step A asks with `ladder: false`, past any cached one). */
+function askDigest(options) {
+  digestPromise = spHttp('POST', '/contextinfo', { digest: false, ...options }).then(({ data }) => {
+    const info = data.GetContextWebInformation ?? data;
+    if (!info.FormDigestValue) throw new Error('SharePoint did not return a write-validation token.');
+    return { value: info.FormDigestValue, expires: Date.now() + Math.max(1, Number(info.FormDigestTimeoutSeconds) - 30) * 1000 };
+  });
+  return digestPromise;
+}
+const spFreshDigest = () => askDigest({ ladder: false }).catch((error) => { digestPromise = undefined; throw error; });
 
 async function spDigest() {
   if (digestPromise) {
     const cached = await digestPromise;
     if (cached.expires > Date.now()) return cached.value;
   }
-  digestPromise = (async () => {
-    const { data } = await spHttp('POST', '/contextinfo', { digest: false });
-    const info = data.GetContextWebInformation ?? data;
-    if (!info.FormDigestValue) throw new Error('SharePoint did not return a write-validation token.');
-    return { value: info.FormDigestValue, expires: Date.now() + Math.max(1, Number(info.FormDigestTimeoutSeconds) - 30) * 1000 };
-  })();
-  try { return (await digestPromise).value; } catch (error) {
+  try { return (await askDigest()).value; } catch (error) {
     digestPromise = undefined;
     throw error;
   }
@@ -464,19 +498,25 @@ async function spBatch(resources) {
     ]),
     `--${boundary}--`, '',
   ].join('\r\n');
-  const digest = await spDigest();
-  requestTotal += 1;
-  const response = await fetch(`${root}/$batch`, {
-    method: 'POST', credentials: 'same-origin', cache: 'no-store',
-    headers: { Accept: 'application/json;odata=verbose', 'Content-Type': `multipart/mixed; boundary=${boundary}`, 'X-RequestDigest': digest },
-    body, signal: AbortSignal.timeout(20_000),
-  });
-  const mark = /boundary="?([^";]+)"?/i.exec(response.headers.get('Content-Type') ?? '')?.[1];
-  const text = await response.text();
-  if (!response.ok) {
+  let outcome, response, text; // (`outcome`: the ladder's recovery once it has run: a batch of reads refused whole is sent once more at most)
+  for (;;) {
+    const digest = await spDigest();
+    requestTotal += 1;
+    response = await fetch(`${root}/$batch`, {
+      method: 'POST', credentials: 'same-origin', cache: 'no-store',
+      headers: { Accept: 'application/json;odata=verbose', 'Content-Type': `multipart/mixed; boundary=${boundary}`, 'X-RequestDigest': digest },
+      body, signal: AbortSignal.timeout(20_000),
+    });
+    text = await response.text();
+    if (response.ok) break;
     const retryAfter = retryAfterMs(response);
-    throw Object.assign(spError(response.status, `SharePoint refused the batch request (${response.status}).`), Number.isFinite(retryAfter) ? { retryAfter } : {});
+    const refused = Object.assign(spError(response.status, `SharePoint refused the batch request (${response.status}).`), Number.isFinite(retryAfter) ? { retryAfter } : {});
+    const { code, message } = refusalWords(text);
+    if (classifyRefusal({ status: response.status, code, message }) !== 'session') throw refused;
+    outcome = await spRefused(refused, { method: 'POST', resource: '/$batch', response, code, message, outcome, sentAgain: Boolean(outcome), safe: true });
   }
+  noteAnswer(session);
+  const mark = /boundary="?([^";]+)"?/i.exec(response.headers.get('Content-Type') ?? '')?.[1];
   const parts = mark ? text.split(`--${mark}`).slice(1, -1) : [];
   if (parts.length !== resources.length) {
     throw Object.assign(spError(502, `SharePoint answered ${parts.length} of ${resources.length} batched reads.`), { code: 'batch-unusable' });
@@ -506,8 +546,9 @@ async function spReadTogether(resources) {
   try {
     return await spBatch(resources);
   } catch (error) {
+    if (error.code === 'session-lost') throw error; // the ladder could not renew the sign-in: plain reads would be refused too
     if ([429, 503, 504].includes(error.status)) await pause(Math.min(error.retryAfter ?? 300, 30_000)); // busy, not unsupported: wait before the plain reads
-    else if (error.status === 403) digestPromise = undefined; // most likely a stale write token; the plain reads need none
+    else if (error.status === 403) digestPromise = undefined; // a stale write token (a refused sign-in went through the ladder); the plain reads need none
     else if (error.code === 'batch-unusable' || (error.status >= 400 && error.status < 500)) batchOff = true;
     return [];
   }
@@ -525,8 +566,8 @@ async function spReadOrBatch(asked) {
     try {
       parts = await spBatch(Object.values(asked));
     } catch (error) {
-      if ([429, 503, 504].includes(error.status)) throw error; // busy: the caller backs off, nothing is read twice now
-      if (error.status === 403) digestPromise = undefined; // most likely a stale write token; the plain reads need none, and the next check asks again
+      if ([429, 503, 504].includes(error.status) || error.code === 'session-lost') throw error; // busy, or a sign-in not renewed: the caller backs off
+      if (error.status === 403) digestPromise = undefined; // a stale write token (a refused sign-in went through the ladder); the next check asks again
       else if (error.code === 'batch-unusable' || (error.status >= 400 && error.status < 500)) batchOff = true; // this site cannot batch: read one by one from now on
       else throw error; // no connection, a timeout, a 5xx: that is not a reason to read three things one by one, it is a reason to wait
       parts = [];
@@ -550,7 +591,7 @@ const holdScan = (scan) => { unfinishedScan = scan; };
 // Shared with the other parts of lib/data (dataService.js does not pass these on).
 export {
   baseUrl, createItem, deleteItem, fits, getItem, getItemWithVersion, getItems, holdScan, itemPath, listColumns, listItems, listMetadata, listTypes,
-  logoFolders, onStop, queryItems, readLanUrls, request, requestTotal, send, sharePoint, spBatch, spByAppId, spCreate, spDecode, spDigest,
+  logoFolders, onStop, queryItems, readLanUrls, request, requestTotal, send, session, sharePoint, spBatch, spByAppId, spCreate, spDecode, spDigest,
   spEntityType, spEntityTypeAhead, spFind, spHttp, spItems, spListPath, spMade, spMerge, spMetadata, spPages, spReadOrBatch, spReadTogether, spRefs,
   spSite, spTitle, unfinishedScan, updateItem, updateItemIfUnchanged,
 };
