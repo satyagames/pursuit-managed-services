@@ -1377,6 +1377,36 @@ The report is [RELEASE-18.md](history/RELEASE-18.md); the design and its sources
   `--adm-sticky-room` (the scroll padding) are worked out from them. With the top tabs it takes at most a fifth of the window at 1366 by 768
   and 1180 by 820 (`content-brand.spec.ts`).
 
+## Rules from Prompt 19 (SharePoint session resilience; keep them holding)
+
+The report is [RELEASE-19.md](history/RELEASE-19.md); why and what it cannot do, [SHAREPOINT.md](SHAREPOINT.md#sessions-tokens-and-the-403); the
+sequence, [DATA-FLOW.md](DATA-FLOW.md#a-refused-sign-in-the-ladder). **None of it has met SharePoint Online**: QA-TESTING.md items 205 to 210.
+
+- **Every refusal is classified by one rule book**, `REFUSALS` in `lib/data/session.js` (frozen; a comment beside each row says where it was
+  seen; `scripts/test-session.js` holds each row to its own case, and holds that nothing a stale write token or a busy site covers is ever taken
+  for a sign-in). A new kind of refusal is a row there, never an `if` somewhere else. Where a SharePoint behaviour is assumed, the comment and
+  the documents say ASSUMED.
+- **One place recovers**: `spRefused` in `lib/data/core.js`, for `spHttp` and `spBatch` (the only two calls of `fetch` against `/_api`). It
+  records the evidence first, then one recovery for every request refused meanwhile (`recoverSession`, single flight) and none within the
+  cooldown after one failed. The stale write token keeps its own handling, as before; so do 429, 503 and 504.
+- **A write is sent at most twice**: again only after Step B renewed the sign-in, because SharePoint refused the request whole (it did not run);
+  never after a part of a `$batch` was refused, a timeout or a 5xx, and never if it was already sent again for a stale token.
+- **Nothing changes while the sign-in is good**: the request baselines and the admin request pins are as they were (never `--amend`), and so is
+  every mocked suite, because a page with no renewer (every node suite) sends exactly what it always did. On the local server none of it runs.
+- **The diagnostic record is never stored and never sent**: it lives in memory (the last 20 refusals) and holds the list's key, never an item id,
+  a name or an answer. It is shown in the banner's Details and in Setup's self-test output, and nowhere else.
+- **The words**: a lost sign-in is the banner's (`admin/SessionBanner.svelte`, the words in `lib/admin/session-notice.js`), and a screen that
+  prints its own error line prints its own plain fallback for it through `errorText()` (Today's `failureText()` is the same function); a
+  permission names the list by its title on this site and says whom to ask. Those are the only places SharePoint's "permission" or "access
+  denied" may reach a person; "FedAuth", "digest" and "token" appear only in Details. The participant page keeps its own "Your sign-in has
+  expired" screen (`isSignedOut()` is true for `session-lost`) and its answers not yet saved.
+- **The banner never reloads by itself**, does not take focus, says when a screen holds unsaved work (`hasUnsaved()` in `lib/admin/unsaved.ts`:
+  a guard may say whether its screen is dirty) and offers to stay.
+- **Step B's frame** (`lib/common/session-renewer.ts`) is sandboxed without top navigation or downloads, is always removed, and never throws;
+  `lib/settings/start.ts` installs it on SharePoint only.
+- **The keep-alive** (`lib/common/session-keepalive.ts`) runs on `page-watch.ts`'s one timer: no timer while hidden, nothing while requests are
+  answered, one light read after `SESSION_LIMITS.idleMs`. It decides idle inside its check, not through `enabled` (see RELEASE-19.md).
+
 ## Before finishing a change
 
 - Always: `npm run check:svelte` and `npm test` (the documents, the module map and the project map among it). If you added, moved or renamed a

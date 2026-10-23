@@ -286,6 +286,8 @@ Proposals, not features: nothing below exists yet. Size: S (days), M (a week or 
 | `PMS-LST-011` / `012` | The lists are older / newer than the pages. | Run Setup / upload the newer pages. |
 | The admin page says the account may not open it | The account cannot read PMSAdminUsers. | Use a facilitator account. |
 | "Your sign-in has expired" | The SharePoint session ended. | Reload and sign in; unsaved answers are kept. |
+| Admin or Setup: "Your SharePoint sign-in needs refreshing. Reload this page to carry on." | SharePoint stopped accepting the tab's sign-in (often after the tab sat idle, the laptop slept or the network changed) and the page could not renew it. | Press **Reload** (save unsaved work first if the banner warns). If it comes back after the same time every day, a tenant policy ends sessions: [docs/SHAREPOINT.md](docs/SHAREPOINT.md#sessions-tokens-and-the-403). Send **Details** (its SPRequestGuid) to IT. |
+| "Your account cannot read PMSClients. Ask the site owner for Contribute access to the PMS lists." (or "change", or another list) | The account is signed in, and that list refuses it. | A site owner gives the account Contribute on the PMS lists; nothing is wrong with the page. |
 | Participants still see the old client | Their page looks every 20 s (60 s on a question). | Wait, or reload. After a Brand Studio save, reload open pages. |
 | Two iPads overwrite each other | They share one sign-in in staff mode. | Use guests with personal QR codes. |
 | "Answers could not be read" on Results | One answer item was edited by hand and is not valid JSON. | Fix or delete that item in PMSParticipantAnswers. |

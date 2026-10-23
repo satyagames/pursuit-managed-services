@@ -13,7 +13,9 @@
    recycle bin, a deleted session's guest code, a question edited in place, then production). Below item 187.
 5. Items **195 to 197** (Phase 17: the restructured data layer and the removed CSS on a test folder, one full pass, the first QR scan's requests,
    then production). Below item 194.
-6. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
+6. Items **205 to 210** (Prompt 19: the "403 Access denied" capture before the new package, an idle or sleeping laptop, unsaved Brand changes and
+   the banner, the tenant's session policies from IT, then production). Below item 204. Item 205 is first: it needs the old package.
+7. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
    160, 161, 164, 165, 166, 167, 168, 169, 170.
 
 **Decided, no change:** 162 (names stay "Last, First") and 163 (the wall page keeps the admin header), VJR, 16 Oct 2026.
@@ -1404,6 +1406,34 @@ what Brand Studio does and saves is as it was. Use a test folder first.
     Brand's preview.
 204. **Then production, and the push.** *(Still to see.)* If 198 to 203 pass, replace the three pages in `Shared Documents/PMS` and push the branch
     `pms-18`. Nothing in the lists changes (version 3).
+
+### Prompt 19 (SharePoint session resilience): not verified on SharePoint Online
+
+The admin page sometimes showed SharePoint's raw "SharePoint (403): Access denied..." under a screen's heading after it had been open a while, and a
+reload cured it (RELEASE-19.md). The page now classifies every refusal, tries to renew the sign-in by itself (Step A a fresh write token, Step B a
+hidden frame that navigates to `pms-config.txt`), and otherwise shows one banner. **Step B was proven on the mocked SharePoint and in the browser
+tests, not on SharePoint Online:** whether a navigation in a hidden frame renews a real sign-in is what these items show. Use a test folder first.
+
+205. **Capture the evidence, before this package is installed.** *(Still to see.)* The next time the red message appears, **do not reload**: press
+    F12, open **Network**, tick **Preserve log**, repeat what you did (open the tab again), and click the red row. Note the request's URL (which
+    list), its method and **Status**; in **Response**, `error.code` and `message`; in **Response Headers**, `SPRequestGuid`. **Expect**
+    `-2147024891` (System.UnauthorizedAccessException) on a GET: SharePoint did not accept the sign-in at that moment. `-2130575252` or
+    "security validation" would be a stale write token instead. Keep the guid: IT can find it in SharePoint's logs. *(Record the code here: it
+    replaces the ASSUMED code in `lib/data/session.js`.)*
+206. **An idle or sleeping laptop.** *(Still to see.)* With this package in a test folder: sign in to Admin, then put the laptop to sleep (or
+    leave the tab for the tenant's session time, or switch the VPN on and off) and come back. **Expect** either the screen working with no
+    message (it renewed itself), or the banner "Your SharePoint sign-in needs refreshing. Reload this page to carry on." with **Reload** and
+    **Details**; never SharePoint's raw "403" words. **Reload** brings the page back. If the banner showed: open **Details** and send its line.
+207. **Unsaved Brand changes and the banner.** *(Still to see.)* Open Admin → **Content** → **Brand**, change a colour, do not save, and bring the
+    banner up (sleep, or an expired session: a Wi-Fi drop does not count, it is a lost connection). **Expect** the banner to add "Your unsaved
+    changes here will be lost if you reload." with **Stay on this page**, and nothing to reload by itself; the colour still changed.
+208. **The tenant's session policies.** *(Still to see.)* Ask IT whether **Idle session sign-out** (SharePoint admin centre → Policies → Access
+    control) or a Conditional Access **sign-in frequency**, **persistent browser session** or **continuous access evaluation** policy applies to
+    the PCOE site, and with what times. *(Record the answer here.)* If one does, the banner is expected after that time, and Reload is the answer.
+209. **Setup's self-test and the evidence.** *(Still to see.)* After 206, if the banner showed, open Setup in the same tab's folder and run the
+    self-test: **expect** it to pass 11 of 11; a refusal seen by that page is listed under it with its SPRequestGuid.
+210. **Then production, and the push.** *(Still to see.)* If 206 to 209 pass, copy the three pages to `Shared Documents/PMS` and push the branch
+    `pms-19`. Nothing in the lists changes (version 3), and no setting is new.
 
 ### Phase 8 (browsers, devices, accessibility, performance, the unsupported-browser page): not verified on a real device, a real screen reader, or the real SharePoint site
 

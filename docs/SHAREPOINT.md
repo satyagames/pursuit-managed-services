@@ -152,8 +152,57 @@ PCOE stand-in ([LOCAL-SITE.md](LOCAL-SITE.md)), so a test fails if the handling 
 | **Throttling**: 429 (and 503) with `Retry-After`. | SharePoint's limits | Waited out up to three times when the wait is 30 seconds or less; timers obey `Retry-After` for 15 minutes at most and back off to 5 minutes. |
 | **PMSAdminUsers** is readable by owners and facilitators only (403 for others, in a `$batch` part too). | PCOE, by its owner's choice | The admin page says the account may not open it. |
 | A query string over **2,048 characters** is refused. | ASSUMED (ASP.NET's default; not measured on PCOE) | Reads group ids 20 to a request (15 for session ids), which keeps them under 1,700 characters; the longest, Results' read of names for 20 sessions, is about 1,872 on the PCOE address (known, left open). |
-| A sign-in page comes back where JSON was expected (an expired sign-in). | Any site | Said in words: "Your sign-in has expired. Reload this page to sign in again."; answers not yet saved are kept in the tab. |
+| A sign-in page comes back where JSON was expected (an expired sign-in). | Any site | The ladder below first; if the sign-in cannot be renewed, the participant page says "Your sign-in has expired. Reload this page to sign in again." (answers not yet saved are kept in the tab) and the admin page and Setup show the sign-in banner. |
+| A plain read, which carries no write token, is refused with **403 "Access denied. You do not have permission..."** after the admin page has been open a while; a reload cures it. | PCOE, Oct 2026 (Clients, right after opening the tab) | Taken for a sign-in SharePoint no longer accepts, not for a permission: the ladder below. ASSUMED until QA-TESTING.md item 205 captures its error code and SPRequestGuid. |
 | A column deleted by hand after the site was marked ready. | Mock only | The page stops with SharePoint's words naming the column; Check Lists names it. |
+
+## Sessions, tokens and the 403
+
+Prompt 19. Two different things let a page talk to SharePoint, and either can be refused:
+
+- **The write token** (the request digest) comes from `/contextinfo` and goes with every write. It runs out (about 30 minutes). SharePoint refuses a
+  write with an old one with 403 and "The security validation for this page is invalid". The data layer asks for a new token and sends the write once
+  more, as it always has.
+- **The sign-in** is the browser's cookies for the site (FedAuth and rtFA on SharePoint Online), which every request carries, reads too. The admin page is a
+  static file in a document library: once it is open it only calls `/_api` with `fetch`. ASSUMED: SharePoint renews its sign-in cookies when a person
+  **navigates** to a page of the site, not reliably on a background `fetch`, so a tab left open, a laptop that slept or a change of network (VPN, proxy)
+  ends with a sign-in SharePoint no longer accepts, and a `fetch` cannot follow the interactive sign-in. SharePoint then answers a plain read with 403
+  "Access denied" (or a sign-in page). **A reload is a navigation**, which is why it cures it.
+
+**What the page does** ([DATA-FLOW.md](DATA-FLOW.md#a-refused-sign-in-the-ladder)). Every refused request is classified by one rule book,
+`REFUSALS` in `migration/src/lib/data/session.js`: a stale write token (`digest`), a busy site (`busy`: 429, 503, 504), a refused sign-in
+(`session`: 401, a sign-in page, error code `-2147024891` or the words "Access denied" / "You do not have permission"), anything else (`other`). A
+`session` refusal goes up the ladder in `lib/data/core.js`, once for every request refused meanwhile:
+
+1. **Evidence first.** The refusal is noted in memory (the last 20): when, since the last answer, whether the tab was shown, the method, the list's
+   key, the status, SharePoint's error code, and the `SPRequestGuid` and `X-SharePointHealthScore` it sent. Never stored, never sent; shown in the
+   banner's Details and in Setup's self-test output, so a site owner can give IT or Microsoft the guid.
+2. **Step A.** A short jittered pause, a fresh write token (which proves the sign-in works), and a read is sent once more.
+3. **Step B.** A hidden, sandboxed frame navigates to the page's own `pms-config.txt` (`lib/common/session-renewer.ts`), is removed when it loads
+   or after 10 seconds, then one light read (`GET /_api/web?$select=Id`) proves the sign-in, and the request is sent once more. It never navigates the
+   page itself and never throws; if the frame is blocked, the light read fails and the ladder moves on. A write is sent again only here, and only
+   because SharePoint refused it whole (it did not run): never a third time, never after a timeout or a 5xx.
+4. **Step C.** A typed error (`code: 'session-lost'`, status 401): the admin page and Setup show one banner, "Your SharePoint sign-in needs
+   refreshing. Reload this page to carry on.", with **Reload** and **Details**; with unsaved work on the screen it says so and offers to stay; nothing
+   reloads by itself, and a later answer takes it away ("Reconnected."). The participant page shows its own "Your sign-in has expired" and keeps the
+   answers not yet saved.
+
+A 403 that still happens once the sign-in is proven to work is a **permission**: "Your account cannot read PMSClients. Ask the site owner for Contribute
+access to the PMS lists." (the list by its title on this site), and that list is not tried again for the rest of the visit. After a recovery that
+failed, refusals are not recovered for 5 seconds (the cooldown). A page with no renewer (a test, a page with no document) sends what it always did.
+
+**The keep-alive** (`lib/common/session-keepalive.ts`, the admin page only): when no request has been answered for 10 minutes, one light read,
+at once when the tab is shown again after that long, and never while it is hidden. A busy screen (Today, Results, the Live display) adds nothing,
+because every answer resets the 10 minutes.
+
+**What it cannot do.** It can renew what SharePoint will renew. It cannot outlast a tenant policy that ends sessions on purpose; then the banner is
+expected after that time, and Reload is the answer. For a site owner or IT, the settings that decide it:
+
+- SharePoint admin centre → **Policies** → **Access control** → **Idle session sign-out**: when it is on, an idle tab is signed out by design.
+- Microsoft Entra **Conditional Access**: **sign-in frequency**, **persistent browser session**, and **continuous access evaluation**, any of which can
+  end a sign-in while a tab is open.
+- **One Microsoft account per Chrome profile**: two accounts in one profile can give a request the other account's sign-in.
+- **One admin tab**: several PMS tabs on the same site renew and replace each other's cookies.
 
 ## Deploying a package
 

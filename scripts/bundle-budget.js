@@ -349,6 +349,6 @@ export const PHASE_18 = Object.freeze({
  */
 export const PHASE_19 = Object.freeze({
   participantBefore: PHASE_18.participantAfter, adminBefore: PHASE_18.adminAfter, participantAllowance: 2_500, adminAllowance: 3_500,
-  participantAfter: 160_375, adminAfter: 585_262,
+  participantAfter: 160_367, adminAfter: 585_277,
   participantUtilities: PHASE_11A.participantUtilities,
 });
