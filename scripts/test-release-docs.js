@@ -194,6 +194,8 @@ describe('RUNBOOK.md', () => {
     // (Prompt 19) the sign-in that runs out: its own step, and the note says what changed and that no data, list, column or setting did.
     assert.match(said[15], /^The sign-in that runs out \(Prompt 19, QA-TESTING\.md items 205 to 210\)[^\n]*F12[^\n]*SPRequestGuid[^\n]*sleep[^\n]*Your SharePoint sign-in needs refreshing[^\n]*\*\*Reload\*\*[^\n]*unsaved[^\n]*Idle session sign-out[^\n]*\*Send back:\*/);
     assert.match(note, /\*\*This package \(Prompt 19\) renews a SharePoint sign-in that stops being accepted, or says so plainly\*\*[^\n]*no data, list, column or setting changed/);
+    // (Prompt 20) the confidence check: the note says the lists move to version 4 and what Setup does.
+    assert.match(note, /\*\*This package \(Prompt 20\) adds the confidence check, Before and After\*\*[^\n]*\*\*The lists move to version 4\*\*[^\n]*step 2/);
     assert.match(book, /\| Note 15 \| 205, 206, 207, 208, 209, 210 \|/, 'the steps of Prompt 19');
     assert.match(book, /\| Note 14 \| 198, 199, 200, 201, 202, 203, 204 \|/, 'the steps of Phase 18');
     assert.match(said[13], /^One full pass of the package \(Phase 17, QA-TESTING\.md items 195 to 197\)[^\n]*11 of 11[^\n]*by QR code and by manual select[^\n]*every kind of question[^\n]*\*\*Delete session\*\*[^\n]*8 requests[^\n]*\*Send back:\*/);
@@ -202,7 +204,8 @@ describe('RUNBOOK.md', () => {
     assert.match(said[1], /^Replace `index\.html`, `admin\.html` and `setup\.html`[^\n]*Keep `pms-config\.txt` as it is[^\n]*Change nothing else\./);
     assert.ok(said[1].includes(SETTINGS_TEXT), 'the content that stays, exactly');
     assert.match(said[1], /Delete `pms-config\.json` if it is still there[^\n]*does not serve `\.json` files/);
-    assert.match(said[2], /setup\.html: "1\. This copy of the app" shows the build `pms-abc1234`, and the line under "2\. Lists" says "The lists are the version this app needs\." Press nothing else in Setup: nothing there changed\./);
+    // (Prompt 20: the lists move to version 4, so on PCOE Setup now has something to do: two columns, then the version raised.)
+    assert.match(said[2], /setup\.html: "1\. This copy of the app" shows the build `pms-abc1234`, and the line under "2\. Lists" says the lists are version 3 and this version of the app needs version 4 \(PMS-LST-011\)\. Press \*\*Show the plan\*\*: it names exactly two columns, `PMSClientSessions\.ConfidenceCheck` and `PMSActivities\.Kind`\. Press \*\*Create\*\*, then \*\*Mark the site as ready\*\* if Create did not already: expect "Raised the lists from version 3 to version 4\." Nothing else in Setup\./);
     assert.match(said[2], /If it says the lists are version 2, PMS-LST-011[^\n]*\*\*Show the plan\*\*, \*\*Create\*\* and \*\*Mark the site as ready\*\*/, 'and what to do if the upgrade was not done');
     assert.match(said[3], /^On an iPad, \*\*scan a named guest's QR code\*\*[^\n]*\*\*Guests scan a personal QR\*\*[^\n]*\*\*Add 1 guest\*\*, then \*\*Generate all codes \(1\)\*\*/);
     assert.match(said[4], /\*\*Live display\*\*[^\n]*press the bar of an answer the guest picked: `Who picked: <answer> \(N people\)`[^\n]*\*\*View as table\*\*/);
