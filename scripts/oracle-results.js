@@ -13,6 +13,8 @@
 // and the app disagree, one of them is wrong, and the run prints which figure, for which seed. Known, deliberate differences are
 // in KNOWN below, each with its reason; nothing else is let through.
 //
+// Since Phase 20 each seed has a confidence check of its own too (generateCheck), recounted by checkOracle().
+//
 // scripts/test-oracle.js runs a small seeded version of this in `npm test`.
 
 import { cp, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
@@ -658,13 +660,84 @@ export async function compare(fixture, truth, app, { zone = 'UTC', pdf = false, 
   return { diffs, report };
 }
 
+// ---- The confidence check (Phase 20) --------------------------------------------------------------------------------------------------
+//
+// A session's check from a seed of its own (so the sessions above are the ones they always were): a scale of 3 to 6 points, up to 40 guests,
+// each with a Before, an After, both or neither, and records that are not scores (an answer that is no option, another question's, one with
+// no visit). checkOracle() works the numbers out again with rules of its own, in whole numbers where it can: the paired guests, the shift as
+// a share of the top of the scale, "not confident" as 5 x score <= 2 x top and "confident" as 5 x score >= 4 x top.
+
+export function generateCheck(seed) {
+  const rand = random(seed * 7919 + 20);
+  const top = rand.int(3, 6);
+  const options = Array.from({ length: top }, (_, at) => ({ id: `chk-o${at + 1}`, questionId: 'chk-q', label: `Step ${at + 1}`, value: rand.chance(0.2) ? String(at + 1) : at + 1, correct: false, imageUrl: null }));
+  const tracks = Array.from({ length: rand.int(0, 40) }, (_, at) => ({ id: `chk-t${at}`, sessionId: 'chk-s', clientId: 'c-chk' }));
+  const answers = [];
+  const pickScore = () => (rand.chance(0.05) ? 'not-an-option' : `chk-o${rand.int(1, top)}`);
+  for (const track of tracks) {
+    if (rand.chance(0.8)) answers.push({ questionId: 'chk-q@before', clientTrackId: track.id, answer: pickScore() });
+    if (rand.chance(0.7)) answers.push({ questionId: 'chk-q@after', clientTrackId: track.id, answer: pickScore() });
+    if (rand.chance(0.1)) answers.push({ questionId: 'other-q@before', clientTrackId: track.id, answer: 'chk-o1' });
+  }
+  if (rand.chance(0.3)) answers.push({ questionId: 'chk-q@after', clientTrackId: null, answer: 'chk-o1' });
+  return {
+    seed, top, tracks, options, answers: rand.shuffle(answers), on: rand.chance(0.9),
+    section: { id: 'chk-sec', title: 'Confidence check', kind: 'confidence-check', enabled: true, order: 0, questionIds: ['chk-q'], clientId: 'c-chk' },
+    question: { id: 'chk-q', sectionId: 'chk-sec', type: 'confidence-continuum', prompt: 'How confident?', optionIds: options.map((option) => option.id), order: 1 },
+  };
+}
+
+export function checkOracle(fixture) {
+  const score = new Map(fixture.options.map((option) => [option.id, Number(option.value)]));
+  const guests = new Map();
+  for (const answer of fixture.answers) {
+    const phase = answer.questionId === 'chk-q@before' ? 'before' : answer.questionId === 'chk-q@after' ? 'after' : null;
+    if (!phase || !answer.clientTrackId || !score.has(answer.answer)) continue;
+    guests.set(answer.clientTrackId, { ...guests.get(answer.clientTrackId), [phase]: score.get(answer.answer) });
+  }
+  const all = [...guests.values()];
+  const pairs = all.filter((guest) => guest.before !== undefined && guest.after !== undefined);
+  const sum = (values) => values.reduce((total, value) => total + value, 0);
+  const started = pairs.filter((guest) => 5 * guest.before <= 2 * fixture.top);
+  const moved = started.filter((guest) => 5 * guest.after >= 4 * fixture.top).length;
+  return {
+    guests: fixture.tracks.length,
+    answeredBefore: all.filter((guest) => guest.before !== undefined).length,
+    answeredAfter: all.filter((guest) => guest.after !== undefined).length,
+    answeredBoth: pairs.length,
+    shift: fixture.on && pairs.length ? (sum(pairs.map((guest) => guest.after - guest.before)) / pairs.length / fixture.top) * 100 : null,
+    started: fixture.on ? started.length : 0,
+    moved: fixture.on && started.length ? (moved / started.length) * 100 : null,
+    distribution: Array.from({ length: fixture.top }, (_, at) => [all.filter((guest) => guest.before === at + 1).length, all.filter((guest) => guest.after === at + 1).length]),
+  };
+}
+
+/** The check's numbers as the app gives them (buildResults, and the leader report's model), against checkOracle(). */
+export function compareCheck(fixture, truth, app) {
+  const session = { id: 'chk-s', clientId: 'c-chk', date: '2026-10-27', sectionIds: ['chk-sec'], status: 'completed', confidenceCheck: fixture.on };
+  const records = { session, tracks: fixture.tracks, sections: [fixture.section], questions: [fixture.question], options: fixture.options, answers: fixture.answers };
+  const diffs = [];
+  const seen = (what, mine, theirs) => { if (!close(mine, theirs)) diffs.push(`seed ${fixture.seed} (check): ${what} is ${theirs}, the oracle says ${mine}`); };
+  const check = app.buildResults(records).confidenceCheck;
+  for (const key of ['guests', 'answeredBefore', 'answeredAfter', 'answeredBoth']) seen(key, truth[key], check[key]);
+  seen('the shift', truth.shift, check.shift?.percent ?? null);
+  seen('those who started not confident', truth.started, check.moved.started);
+  seen('moved to confident', truth.moved, check.moved.percent);
+  truth.distribution.forEach(([before, after], at) => { seen(`Before on step ${at + 1}`, before, check.distribution[at]?.before ?? null); seen(`After on step ${at + 1}`, after, check.distribution[at]?.after ?? null); });
+  const reported = app.buildLeaderReport({ ...records, client: { id: 'c-chk', name: 'Check' } }).summary.confidence;
+  seen('the leader report\'s shift', truth.shift, reported?.shift?.percent ?? null);
+  seen('the leader report\'s moved to confident', truth.moved, reported?.moved?.percent ?? null);
+  return diffs;
+}
+
 /** The app modules the comparison drives. Loaded here, away from the oracle, so that the oracle above cannot reach them. */
 export async function loadApp() {
-  const [ds, report, data, names, live, fake, node, inspect, results] = await Promise.all([
+  const [ds, report, data, names, live, fake, node, inspect, results, tally] = await Promise.all([
     import('../migration/src/lib/data/dataService.js'), import('../migration/src/lib/exports/leader-report.js'), import('../migration/src/lib/exports/leader-report-data.js'),
     import('../migration/src/lib/admin/admin-results.js'), import('../migration/src/lib/admin/live-session.js'), import('./sharepoint-fake.js'), import('./leader-report-node.js'), import('./pdf-inspect.js'), import('../migration/src/lib/results/session-results.js'),
+    import('../migration/src/lib/results/results-tally.js'),
   ]);
-  return { ds, buildLeaderReport: report.buildLeaderReport, participantAnswersCsv: report.participantAnswersCsv, readLeaderReportRecords: data.readLeaderReportRecords,
+  return { ds, buildResults: tally.buildResults, buildLeaderReport: report.buildLeaderReport, participantAnswersCsv: report.participantAnswersCsv, readLeaderReportRecords: data.readLeaderReportRecords,
     readNameSources: names.readNameSources, resultRows: names.resultRows, loadLiveStructure: live.loadLiveStructure, readLive: live.readLive, readSessionResults: results.readSessionResults,
     createSharePointFake: fake.createSharePointFake, makeReport: node.makeReport, inspectPdf: inspect.inspectPdf, squash: inspect.squash };
 }
@@ -706,6 +779,7 @@ export async function run({ from = 1, seeds = 50, pdfEvery = 10, localEvery = 10
   const diffs = [];
   const local = [];
   let people = 0;
+  let checks = 0;
   try {
     for (let seed = from; seed < from + seeds; seed += 1) {
       const fixture = generate(seed);
@@ -717,6 +791,10 @@ export async function run({ from = 1, seeds = 50, pdfEvery = 10, localEvery = 10
       people += truth.people.length;
       if (localEvery > 0 && seed % localEvery === 0) local.push({ fixture, truth, zone, report: found.report });
       if (verbose) console.log(`seed ${seed}: ${truth.people.length} people, ${truth.summary.questionCount} questions, ${zone}${fixture.edits.length ? `; ${fixture.edits.join(', ')}` : ''}: ${found.diffs.length ? `${found.diffs.length} DIFFERENCE(S)` : 'agrees'}`);
+      // (Phase 20) the seed's confidence check, apart from its session.
+      const check = generateCheck(seed);
+      diffs.push(...compareCheck(check, checkOracle(check), app));
+      checks += check.tracks.length;
     }
     if (local.length) {
       // The same sessions on the real local server: the oracle's figures again, and the SharePoint adapter's report, word for word.
@@ -738,7 +816,7 @@ export async function run({ from = 1, seeds = 50, pdfEvery = 10, localEvery = 10
     globalThis.fetch = realFetch;
     app.ds.configure({ baseUrl: '/api' });
   }
-  return { diffs, checked: seeds, people, local: local.length, zones };
+  return { diffs, checked: seeds, people, checks, local: local.length, zones };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
@@ -748,6 +826,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const outcome = await run(options);
   for (const line of outcome.diffs.slice(0, 60)) console.log(line);
   if (outcome.diffs.length > 60) console.log(`... and ${outcome.diffs.length - 60} more`);
-  console.log(`\n${outcome.checked} sessions (seeds ${options.from} to ${options.from + options.seeds - 1}), ${outcome.people} participants, ${outcome.local} also on the local server, zones ${outcome.zones.join(', ')}: ${outcome.diffs.length} difference(s) in ${((Date.now() - started) / 1000).toFixed(1)} s`);
+  console.log(`\n${outcome.checked} sessions (seeds ${options.from} to ${options.from + options.seeds - 1}), ${outcome.people} participants (and ${outcome.checks} guests of a confidence check), ${outcome.local} also on the local server, zones ${outcome.zones.join(', ')}: ${outcome.diffs.length} difference(s) in ${((Date.now() - started) / 1000).toFixed(1)} s`);
   process.exit(outcome.diffs.length ? 1 : 0);
 }

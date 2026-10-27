@@ -492,3 +492,30 @@ describe('Part 1: Setup brings a site of version 3 to version 4 without losing a
     }
   });
 });
+
+describe('Part 2: the oracle recounts the check, and its comparison can fail', async () => {
+  const { checkOracle, compareCheck, generateCheck, loadApp } = await import('./oracle-results.js');
+  const app = await loadApp();
+
+  it('60 seeded checks agree with the app', () => {
+    for (let seed = 1; seed <= 60; seed += 1) {
+      const fixture = generateCheck(seed);
+      assert.deepEqual(compareCheck(fixture, checkOracle(fixture), app), [], `seed ${seed}`);
+    }
+  });
+
+  it('an app that divided by the largest move (scaleMax - 1), or counted a Before-only guest as paired, is caught', () => {
+    const wrongDivisor = { ...app, buildResults: (records) => { const tree = app.buildResults(records); const check = tree.confidenceCheck; return { ...tree, confidenceCheck: { ...check, shift: check.shift && { ...check.shift, percent: (check.shift.points * 100) / (check.scaleMax - 1) } } }; } };
+    const wrongPairs = { ...app, buildResults: (records) => { const tree = app.buildResults(records); return { ...tree, confidenceCheck: { ...tree.confidenceCheck, answeredBoth: tree.confidenceCheck.answeredBefore } }; } };
+    let caughtDivisor = 0;
+    let caughtPairs = 0;
+    for (let seed = 1; seed <= 60; seed += 1) {
+      const fixture = generateCheck(seed);
+      const truth = checkOracle(fixture);
+      if (compareCheck(fixture, truth, wrongDivisor).some((line) => line.includes('the shift is'))) caughtDivisor += 1;
+      if (compareCheck(fixture, truth, wrongPairs).some((line) => line.includes('answeredBoth'))) caughtPairs += 1;
+    }
+    assert.ok(caughtDivisor > 30, `the divisor: ${caughtDivisor} of 60`);
+    assert.ok(caughtPairs > 30, `the pairs: ${caughtPairs} of 60`);
+  });
+});
