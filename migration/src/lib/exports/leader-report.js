@@ -24,6 +24,8 @@ import { summarizeActivity } from '../results/export-summary.js';
 import { chartOf } from '../results/results-chart-model.js';
 import { SAMPLE_REPORT_LINE, needsConfirmation } from '../admin/sample-notice.js';
 import { unreadableNotice } from '../results/unreadable.js';
+import { isCheckActivity, isCheckRecord } from '../participant/confidence-check.js';
+import { checkScoresByGuest, confidenceCheckResults, confidenceLine } from '../results/confidence-shift.js';
 import { compositeOver, contrastRatio, MIN_GRAPHIC_CONTRAST, MIN_TEXT_CONTRAST } from '../brand/theme.js';
 
 /** @typedef {{ id: string, [key: string]: any }} Row */
@@ -296,7 +298,11 @@ export function buildLeaderReport(records, { generatedAt = new Date(), timeZone,
   /** @type {Map<string, Map<string, { counted: unknown, first: unknown, final: unknown, attempts: number | null, stored: boolean | null, at: string | null }>>} */
   const held = new Map(people.map((person) => [person.key, new Map()]));
   let unattributed = 0;
+  // The confidence check's Before and After (Phase 20) are not answers to a question of the session: they are counted by
+  // lib/results/confidence-shift.js alone, and never listed as answers to a question no longer in an activity.
+  const checkAnswers = answers.filter(isCheckRecord);
   for (const answer of answers) {
+    if (isCheckRecord(answer)) continue;
     const owner = ownerOf(answer);
     if (owner === null) { unattributed += 1; continue; }
     held.get(owner)?.set(String(answer.questionId), {
@@ -317,9 +323,11 @@ export function buildLeaderReport(records, { generatedAt = new Date(), timeZone,
   };
   let number = 0;
   const activities = [];
+  let checkSection = null;
   for (const id of list(session.sectionIds)) {
     const section = sectionIndex.get(String(id));
     if (!section) continue;
+    if (isCheckActivity(section)) { checkSection ??= section; continue; }
     const own = list(section.questionIds).map((questionId) => questionIndex.get(String(questionId))).filter(Boolean);
     const on = section.enabled === true;
     if (!on && !own.some((question) => answeredIds.has(String(question.id)))) continue;
@@ -412,6 +420,13 @@ export function buildLeaderReport(records, { generatedAt = new Date(), timeZone,
     }
   }
 
+  // The confidence check (Phase 20), when the session lists the client's: its numbers and its one line, from confidence-shift.js.
+  const checkQuestion = checkSection ? questionIndex.get(String(list(checkSection.questionIds)[0])) ?? null : null;
+  const checkOptions = checkQuestion ? list(checkQuestion.optionIds).map((optionId) => optionIndex.get(String(optionId))).filter(Boolean) : [];
+  const check = checkSection ? confidenceCheckResults({ session, section: checkSection, question: checkQuestion, options: checkOptions, tracks: records.tracks ?? people, answers: checkAnswers }) : null;
+  const checkScores = check ? checkScoresByGuest({ question: checkQuestion, options: checkOptions, answers: checkAnswers }) : new Map();
+  for (const person of participants) person.confidence = check ? checkScores.get(person.key) ?? { before: null, after: null } : null;
+
   // The summary.
   // (Only activities that are switched on are compared: one stray answer to a switched-off question is not "the hardest".)
   const graded = results.filter((activity) => !activity.off).flatMap((activity) => activity.questions.map((question) => ({ ...question, activity: activity.title })))
@@ -453,6 +468,7 @@ export function buildLeaderReport(records, { generatedAt = new Date(), timeZone,
       activities: results.map((activity) => ({ title: activity.title, off: activity.off, questions: activity.questions.length, finished: activity.finished, started: activity.started, notStarted: participants.length - activity.finished - activity.started })),
       hardest: flat ? null : highlight(ranked(1)), easiest: flat ? null : highlight(ranked(-1)),
       flat: flat ? { percent: graded[0].firstTry.percent, questions: graded.length } : null,
+      confidence: check ? { ...check, line: confidenceLine(check) } : null,
     },
     activities: results, comments, participants, strays: [...strays.values()],
     // (No `reason`: SharePoint can tell invalid JSON from "not a list" and the local server cannot, and a report must read the same from both.)
@@ -477,6 +493,10 @@ export const answeredLine = (person) => `${person.answered} of ${person.question
 const BOM = String.fromCharCode(0xFEFF);
 
 export const CSV_COLUMNS = Object.freeze(['Client', 'Date', 'Participant', 'Activity', 'Question', 'First answer', 'Final answer', 'Correct', 'Correct on first try', 'Attempts', 'Answered at']);
+/** The two columns a session with the confidence check adds (Phase 20): each guest's Before and After score, on every row of theirs. */
+export const CHECK_CSV_COLUMNS = Object.freeze(['Confidence before', 'Confidence after']);
+/** The CSV's header: CSV_COLUMNS, and CHECK_CSV_COLUMNS when the session lists the client's check. @param {{ summary: { confidence?: unknown } }} report */
+export const csvColumns = (report) => (report.summary.confidence ? [...CSV_COLUMNS, ...CHECK_CSV_COLUMNS] : [...CSV_COLUMNS]);
 
 // White space a spreadsheet ignores in front of a formula's sign: what \s matches, and the zero-width space (written as a number:
 // the character itself does not show in an editor).
@@ -507,21 +527,23 @@ export function participantAnswersRows(report) {
   const yes = (value) => (value === null ? '' : value ? 'Yes' : 'No');
   const head = [report.meta.clientName, report.meta.date];
   const rows = [];
+  const checked = Boolean(report.summary.confidence);
   for (const person of report.participants) {
+    const scores = checked ? [person.confidence?.before ?? '', person.confidence?.after ?? ''] : [];
     for (const activity of person.activities) {
       for (const row of activity.rows) {
-        rows.push([...head, person.name, activity.title, row.prompt, row.first, row.final, row.answered ? yes(row.finalRight) : '', row.answered ? yes(row.firstRight) : '', row.attempts ?? '', report.at.sortable(row.at)]);
+        rows.push([...head, person.name, activity.title, row.prompt, row.first, row.final, row.answered ? yes(row.finalRight) : '', row.answered ? yes(row.firstRight) : '', row.attempts ?? '', report.at.sortable(row.at), ...scores]);
       }
     }
   }
   for (const stray of report.strays) {
-    for (const entry of stray.entries) rows.push([...head, entry.name, `(${STRAY_TITLE})`, stray.title, entry.text, entry.text, '', '', '', '']);
+    for (const entry of stray.entries) rows.push([...head, entry.name, `(${STRAY_TITLE})`, stray.title, entry.text, entry.text, '', '', '', '', ...(checked ? ['', ''] : [])]);
   }
   return rows;
 }
 
 /** The file's text: a byte-order mark (so a spreadsheet reads accented names as UTF-8), a header row, CRLF line ends. @param {LeaderReport} report */
-export const participantAnswersCsv = (report) => `${BOM}${[CSV_COLUMNS, ...participantAnswersRows(report)].map((row) => row.map(csvCell).join(',')).join('\r\n')}\r\n`;
+export const participantAnswersCsv = (report) => `${BOM}${[csvColumns(report), ...participantAnswersRows(report)].map((row) => row.map(csvCell).join(',')).join('\r\n')}\r\n`;
 
 /** "leader-report-kroger-2026-10-11-2026-10-12.pdf": like exportFileName() in resultsExport.js, safe on every OS. */
 export function reportFileName(prefix, sessionId, extension, now = new Date()) {

@@ -293,6 +293,8 @@ function compose(report, measure, logo, noteMissing, palette) {
   });
 
   const highlights = [heading('Hardest and easiest question')];
+  // (Phase 20: a session with the confidence check says how far confidence moved, in confidence-shift.js's one line.)
+  if (summary.confidence) highlights.push(...paragraph(summary.confidence.line, { size: 8.8 }), gap(1.6));
   highlights.push(...paragraph(summary.averageScore === null ? 'No graded question was answered, so there is no first-try score.' : `Average first-try score: ${wholePercent(summary.averageScore)}, over ${plural(summary.scored, 'participant')}.`, { size: 8.8, color: MUTED }), gap(1.6));
   if (summary.hardest && summary.easiest) {
     const boxWidth = (WIDTH - 6) / 2;
