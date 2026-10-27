@@ -3,8 +3,9 @@
 # Do not regenerate this file to make a comparison pass: a difference is a finding. See scripts/request-baseline.js.
 # One entry for each distinct request and how many times it was sent ("~": the count depends on timing). <uuid> and <time> are placeholders.
 # Amended in Phase 10h, part A: every item read names its columns, so each entry that read items without naming them has `&$select=` and its list's columns at the end of its query (and a mock's `__next` link of such a read carries them before its `$fakeskip`), by scripts/schema-baseline/select-baselines.js, after a fresh recording equalled the translation exactly; the number and the order of the requests are as they were. Nothing else was changed.
+# Amended in Phase 20: schema version 4 adds PMSActivities.Kind and PMSClientSessions.ConfidenceCheck, so each read of those lists names one column more at the end of its `$select` (encoded too, in a mock's `__next` link), and Setup, where it makes columns, makes and reads back these two as well; by scripts/schema-baseline/columns-baselines.js, after the suites were run on the last commit's tree and on today's, request by request (in the two Setup suites, whose lanes interleave, as many of each request, not in order), and a fresh recording equalled the translation exactly. Nothing else was changed.
 26 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/fields
-45 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/fields/getbyid('<uuid>')
+51 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/fields/getbyid('<uuid>')
 26 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/fields
 46 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/fields/getbyid('<uuid>')
 25 x GET /sites/cec/_api/web/lists/getbytitle('PMSAdminUsers')/fields
@@ -14,7 +15,7 @@
 26 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/fields
 35 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/fields/getbyid('<uuid>')
 27 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/fields
-54 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/fields/getbyid('<uuid>')
+60 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/fields/getbyid('<uuid>')
 27 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/fields
 62 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/fields/getbyid('<uuid>')
 26 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/fields
@@ -65,12 +66,12 @@
 7 x MERGE /sites/cec/_api/web/lists/getbytitle('PMSVisitLog')/fields/getbyinternalnameortitle('SessionId')
 15 x POST /sites/cec/_api/contextinfo
 88 x POST /sites/cec/_api/web/lists
-45 x POST /sites/cec/_api/web/lists/getbytitle('PMSActivities')/fields/createfieldasxml
+51 x POST /sites/cec/_api/web/lists/getbytitle('PMSActivities')/fields/createfieldasxml
 47 x POST /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/fields/createfieldasxml
 20 x POST /sites/cec/_api/web/lists/getbytitle('PMSAdminUsers')/fields/createfieldasxml
 36 x POST /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/fields/createfieldasxml
 35 x POST /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/fields/createfieldasxml
-54 x POST /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/fields/createfieldasxml
+60 x POST /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/fields/createfieldasxml
 62 x POST /sites/cec/_api/web/lists/getbytitle('PMSClients')/fields/createfieldasxml
 28 x POST /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/fields/createfieldasxml
 54 x POST /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/fields/createfieldasxml

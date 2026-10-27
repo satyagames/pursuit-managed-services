@@ -2,6 +2,7 @@
 # Recorded at Phase 16 part 2 (Delete session on Results), when the suite was first recorded.
 # Do not regenerate this file to make a comparison pass: a difference is a finding. See scripts/request-baseline.js.
 # One entry for each distinct request and how many times it was sent ("~": the count depends on timing). <uuid> and <time> are placeholders.
+# Amended in Phase 20: schema version 4 adds PMSActivities.Kind and PMSClientSessions.ConfidenceCheck, so each read of those lists names one column more at the end of its `$select` (encoded too, in a mock's `__next` link), and Setup, where it makes columns, makes and reads back these two as well; by scripts/schema-baseline/columns-baselines.js, after the suites were run on the last commit's tree and on today's, request by request (in the two Setup suites, whose lanes interleave, as many of each request, not in order), and a fresh recording equalled the translation exactly. Nothing else was changed.
 5 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items(1)
 11 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items(77)
 3 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/items(10)
@@ -1016,10 +1017,10 @@
 1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSVisitLog')/items(994)
 1 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSVisitLog')/items(999)
 12 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField
-12 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$filter=AppId eq 'sec-trivia'&$top=2&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
-12 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$filter=(ClientId eq 'c-dominos')&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
-13 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$filter=(ClientId eq 'c-kroger')&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
-14 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description
+12 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$filter=AppId eq 'sec-trivia'&$top=2&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description,Kind
+12 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$filter=(ClientId eq 'c-dominos')&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description,Kind
+13 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$filter=(ClientId eq 'c-kroger')&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description,Kind
+14 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description,Kind
 12 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')?$select=ListItemEntityTypeFullName
 12 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField
 14 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$top=200&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
@@ -1033,11 +1034,11 @@
 2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$top=200&$select=Id,AppId,ActiveSessionId,ActiveClientId,ActivatedAt,SchemaVersion
 12 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')?$select=ListItemEntityTypeFullName
 12 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField
-24 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$filter=AppId eq 'dominos-2026-10-15'&$top=2&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow
-99 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$filter=AppId eq 'kroger-2026-10-15'&$top=2&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow
-5 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$top=200&$filter=(AppId eq 'big-2026-10-15')&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow
-5 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$top=200&$filter=(AppId eq 'dominos-2026-10-15')&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow
-42 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$top=200&$filter=(AppId eq 'kroger-2026-10-15')&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow
+24 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$filter=AppId eq 'dominos-2026-10-15'&$top=2&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow,ConfidenceCheck
+99 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$filter=AppId eq 'kroger-2026-10-15'&$top=2&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow,ConfidenceCheck
+5 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$top=200&$filter=(AppId eq 'big-2026-10-15')&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow,ConfidenceCheck
+5 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$top=200&$filter=(AppId eq 'dominos-2026-10-15')&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow,ConfidenceCheck
+42 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$top=200&$filter=(AppId eq 'kroger-2026-10-15')&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow,ConfidenceCheck
 12 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')?$select=ListItemEntityTypeFullName
 12 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField
 12 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$filter=AppId eq 'c-dominos'&$top=2&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
