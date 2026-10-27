@@ -399,3 +399,96 @@ describe('Part 3: the flow table (board 14) against nextStep', () => {
     assert.equal(isCheckActivity(sections[0]), false);
   });
 });
+
+// ---- Part 1: the schema ----------------------------------------------------------------------------------------------------------
+
+describe('Part 1: two columns and schema version 4', async () => {
+  const { LISTS, VERSION, selectOf } = await import('../migration/src/lib/schema/pms-schema.js');
+  const { META, columnNamesAt, columnsOf } = await import('../migration/src/lib/schema/pms-schema-meta.js');
+
+  it('PMSActivities.Kind (text) and PMSClientSessions.ConfidenceCheck (Yes/No) are read with every item, and the lists are version 4', () => {
+    assert.equal(VERSION, 4);
+    assert.deepEqual(LISTS.sections.fields.kind, { column: 'Kind', kind: 'text' });
+    assert.deepEqual(LISTS.sessions.fields.confidenceCheck, { column: 'ConfidenceCheck', kind: 'yesno' });
+    assert.match(selectOf('sections'), /,Kind$/);
+    assert.match(selectOf('sessions'), /,ConfidenceCheck$/);
+  });
+
+  it('their meta: words, defaults, who reads and writes them, and since which version', () => {
+    const kind = columnsOf('sections').find((column) => column.name === 'Kind');
+    assert.deepEqual([kind.type, kind.values, kind.since, kind.indexed], ['Text', ['activity', 'confidence-check'], 4, false]);
+    assert.match(kind.default, /empty reads as activity/);
+    const check = columnsOf('sessions').find((column) => column.name === 'ConfidenceCheck');
+    assert.deepEqual([check.type, check.since, check.default], ['Boolean', 4, 'No']);
+    assert.deepEqual(check.writes, ['admin']);
+    assert.ok(META.sections.columns.Kind.purpose.includes('confidence check'));
+  });
+
+  it('a site of version 3 has neither column; one of version 4 has both', () => {
+    assert.equal(columnNamesAt('sections', 3).includes('Kind'), false);
+    assert.equal(columnNamesAt('sessions', 3).includes('ConfidenceCheck'), false);
+    assert.equal(columnNamesAt('sections', 4).includes('Kind'), true);
+    assert.equal(columnNamesAt('sessions').includes('ConfidenceCheck'), true);
+    assert.equal(columnNamesAt('sections', 3).length, columnsOf('sections').length, 'aligned with columnsOf: a column a site lacks is null');
+  });
+});
+
+describe('Part 1: Setup brings a site of version 3 to version 4 without losing anything', async () => {
+  const { PHASE_20_COLUMNS } = await import('./sharepoint-fake.js');
+  const { create, markReady, planLines, showPlan, siteApi } = await import('../migration/src/lib/setup/provision.js');
+  const { schemaSpecs } = await import('../migration/src/lib/setup/setup-checks.js');
+  let pages = 0;
+  const pageOn = async (fake) => {
+    const page = await import(`../migration/src/lib/data/dataService.js?confidence-upgrade=${pages += 1}`);
+    const stops = [];
+    page.configure({ sharePoint: fake.settings, onStop: (code) => stops.push(code) });
+    return { page, stops };
+  };
+  /** A site of version 3 with Kroger live and a visit that answered: its records written first, then the two columns taken off. */
+  async function versionThree() {
+    const fake = createSharePointFake({ listsVersion: 3, keepColumns: PHASE_20_COLUMNS });
+    const restore = fake.install();
+    const { page } = await pageOn(fake);
+    fake.item('appsettings', 'default').SchemaVersion = 4;
+    await seedPack(page, samplePack());
+    const { session } = await page.activateClient('c-kroger', DAY);
+    const track = await page.beginVisit(crypto.randomUUID(), session.id, 'c-kroger');
+    await page.saveParticipantResponses({ trackId: track.id, sessionId: session.id, clientId: 'c-kroger', responses: [record('q-trivia-1', 'q-trivia-1-a', { correct: true })] });
+    fake.dropColumns(PHASE_20_COLUMNS);
+    fake.item('appsettings', 'default').SchemaVersion = 3;
+    fake.reset();
+    return { fake, restore, session, track };
+  }
+
+  it('the pages stop with PMS-LST-011; Show the plan names the two columns and nothing else; Create adds them; Mark ready raises 3 to 4', async () => {
+    const { fake, restore, session, track } = await versionThree();
+    try {
+      const participant = await pageOn(fake);
+      await assert.rejects(participant.page.readParticipantWatch({ sessionId: session.id, trackId: track.id }), (error) => error.code === 'PMS-LST-011');
+      assert.deepEqual(participant.stops, ['PMS-LST-011']);
+      const { page } = await pageOn(fake);
+      const api = siteApi(page);
+      const titles = page.sharePointListTitles();
+      const { plan } = await showPlan(api, titles);
+      assert.deepEqual(plan.columns.map((item) => `${item.list}.${item.name}`), [`${titles.sessions}.ConfidenceCheck`, `${titles.sections}.Kind`]);
+      assert.equal(plan.summary, '0 lists, 2 columns, 0 settings to create');
+      assert.deepEqual(planLines(plan), [`${titles.sessions} (exists)`, '  Create 1 column: ConfidenceCheck.', `${titles.sections} (exists)`, '  Create 1 column: Kind.', '0 lists, 2 columns, 0 settings to create']);
+      fake.reset();
+      assert.equal((await create(api, plan, { gapMs: 0 })).ok, true);
+      assert.deepEqual(fake.writes().map((entry) => `${entry.method} ${entry.list} ${entry.field ?? ''}`), ['POST sessions ConfidenceCheck', 'POST sections Kind']);
+      const ready = await markReady(api, titles, { check: () => page.checkSharePointSchema({ specs: schemaSpecs }) });
+      assert.deepEqual([ready.ready, ready.wrote, ready.words], [true, 'raised', 'Raised the lists from version 3 to version 4.']);
+      assert.equal(fake.item('appsettings', 'default').SchemaVersion, 4);
+      // Nothing was lost, and the session made before reads as one without the check.
+      const after = await pageOn(fake);
+      const read = await after.page.getSession(session.id);
+      assert.deepEqual([read.id, read.sectionIds, read.confidenceCheck ?? false], [session.id, session.sectionIds, false]);
+      assert.equal((await after.page.getParticipantResponses(track.id)).responses[0].questionId, 'q-trivia-1');
+      const sections = await after.page.listClientSections('c-kroger');
+      assert.ok(sections.length > 0 && sections.every((section) => !isCheckActivity(section)), 'every activity made before reads as an activity');
+      assert.deepEqual(after.stops, []);
+    } finally {
+      restore();
+    }
+  });
+});

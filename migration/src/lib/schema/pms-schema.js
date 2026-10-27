@@ -12,6 +12,10 @@
 // called DisplayName by name), so the guest's name is GuestName and a staff sign-in's name is SignedInName; the record field is displayName as
 // it was. A site of version 2 keeps its old DisplayName columns, which nothing reads (pms-schema-meta.js RETIRED); Setup adds the new ones.
 //
+// Schema version 4 (Phase 20): the confidence check. PMSActivities.Kind says whether an activity is one of the client's activities or its
+// confidence check (empty reads as an activity), and PMSClientSessions.ConfidenceCheck whether a session asks it. A site of version 3 lacks
+// both, and every read of those two lists names them, so a page of this build stops there (PMS-LST-011) until Setup has added them.
+//
 // A list is its title before any prefix (the settings may put one in front, or name the list outright) and its fields: the
 // property of a record, then the internal name of the column that holds it, then its kind when it is not text: `number`,
 // `yesno`, `date`, `array` (a JSON list kept as plain text) or `object` (a JSON object kept as plain text); then `indexed` for a
@@ -22,11 +26,11 @@
 /** The column every list is keyed by: the app's own id of a record, never SharePoint's numeric ID. Indexed and unique. */
 export const ID = 'AppId';
 /**
- * The version of the lists this build is made for (Phase 10c-2b: schema v2; Phase 10i: 3). The site says its own in PMSAppSettings.SchemaVersion,
+ * The version of the lists this build is made for (Phase 10c-2b: schema v2; Phase 10i: 3; Phase 20: 4). The site says its own in PMSAppSettings.SchemaVersion,
  * which Setup writes when it makes the lists, and raises once it has added what a newer version needs; a page on lists of another version stops
  * (dataService, PMS-LST-010 to 012).
  */
-export const VERSION = 3;
+export const VERSION = 4;
 /** The picture library's title before any prefix. */
 export const LIBRARY = 'PMSClientImages';
 
@@ -49,11 +53,11 @@ export const LISTS = {
   }),
   sessions: list('PMSClientSessions', {
     id: ID, clientId: 'ClientId indexed', date: 'SessionDate date', sectionIds: 'SectionIds array', activeSectionId: 'ActiveSectionId', status: 'Status',
-    endedAt: 'EndedAt date', participationMode: 'ParticipationMode', activityFlow: 'ActivityFlow',
+    endedAt: 'EndedAt date', participationMode: 'ParticipationMode', activityFlow: 'ActivityFlow', confidenceCheck: 'ConfidenceCheck yesno',
   }),
   sections: list('PMSActivities', {
     id: ID, title: 'Title', order: 'SortOrder number', enabled: 'Enabled yesno', industryTags: 'IndustryTags array', questionIds: 'QuestionIds array',
-    clientId: 'ClientId indexed', description: 'Description long',
+    clientId: 'ClientId indexed', description: 'Description long', kind: 'Kind',
   }),
   questions: list('PMSActivityQuestions', {
     id: ID, sectionId: 'SectionId', type: 'QuestionType', prompt: 'Prompt long', optionIds: 'OptionIds array', order: 'SortOrder number', layout: 'Layout',

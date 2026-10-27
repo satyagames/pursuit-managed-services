@@ -48,6 +48,15 @@ const notMade = (error) => { throw sharePoint && error.status === 404 && error.c
 
 export const getAppSettings = async () => versioned(await getItem('appsettings', 'default').catch(notMade));
 
+/**
+ * Phase 20: a read that names a column the site lacks is refused (400). On lists of an older version that is the version's stop, not the read's:
+ * the settings item says which (PMS-LST-011), as it did when the same read met no new column. Anything else is as it was.
+ */
+const versionFirst = async (error) => {
+  if (sharePoint && error?.status === 400) versioned(await getItem('appsettings', 'default').catch(notMade));
+  throw error;
+};
+
 export async function updateAppSettings(changes) {
   if (await getAppSettings()) return updateItem('appsettings', 'default', changes);
   try {
@@ -332,4 +341,4 @@ export const addAdminUser = (fields) => createItem('adminusers', fields);
 export const responseOwner = (response) => response.clientTrackId ?? response.clientId ?? null;
 
 // Shared with the other parts of lib/data (dataService.js does not pass these on).
-export { failure, notMade, unscanned, versioned };
+export { failure, notMade, unscanned, versionFirst, versioned };

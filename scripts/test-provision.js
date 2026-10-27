@@ -57,7 +57,7 @@ describe('Show the plan: a site with nothing on it', () => {
       assert.deepEqual(made.columns.filter((item) => item.key === key).map((item) => item.name), columnsOf(key).map((column) => column.name).filter((name) => name !== 'Title'),
         `${key}: every column of META, in its order, but SharePoint's own Title (the activities' title is that column, and every list is made with it)`);
     }
-    assert.equal(made.columns.length, 89);
+    assert.equal(made.columns.length, 91); // (89 until Phase 20 added PMSActivities.Kind and PMSClientSessions.ConfidenceCheck)
     const settings = (kind) => made.settings.filter((item) => item.kind === kind).map((item) => `${item.key}.${item.column ?? ''}`);
     assert.deepEqual(settings('index'), KEYS.flatMap((key) => columnsOf(key).filter((column) => column.indexed).map((column) => `${key}.${column.name}`)));
     assert.equal(settings('index').length, 23, 'AppId on twelve lists and the eleven columns the app filters on');
@@ -65,7 +65,7 @@ describe('Show the plan: a site with nothing on it', () => {
     assert.deepEqual(settings('list'), KEYS.map((key) => `${key}.`));
     assert.ok(made.settings.filter((item) => item.kind === 'list').every((item) => JSON.stringify(item.changes) === '{"EnableAttachments":false,"EnableModeration":false}'), 'attachments off and content approval off; version history left as it is');
     assert.deepEqual(made.untouched, []);
-    assert.equal(made.summary, '13 lists, 89 columns, 47 settings to create');
+    assert.equal(made.summary, '13 lists, 91 columns, 47 settings to create');
   });
 
   it('each column is defined as META says: its internal name three times, its type, required for AppId alone, plain text, Date & Time, a Yes/No that starts as No', () => {
@@ -78,7 +78,7 @@ describe('Show the plan: a site with nothing on it', () => {
     assert.equal(lines.filter((line) => line.includes('Required="TRUE"')).length, 12, 'AppId of each list, and nothing else');
     assert.ok(lines.every((line) => !/Indexed|EnforceUniqueValues/.test(line)), 'no index and no uniqueness in a definition: they are later steps');
     assert.equal(lines.filter((line) => line.includes('Format="DateTime"')).length, 11);
-    assert.equal(lines.filter((line) => line.includes('<Default>0</Default>')).length, 4);
+    assert.equal(lines.filter((line) => line.includes('<Default>0</Default>')).length, 5); // (ConfidenceCheck: Phase 20)
     assert.equal(lines.filter((line) => line.includes('RichText="FALSE" AppendOnly="FALSE"')).length, 8);
   });
 
@@ -266,10 +266,10 @@ describe('Create: a site with nothing on it', () => {
     const { made, result, progress } = await createNow(site, { gapMs: null });
     assert.equal(result.ok, true, result.failure?.words);
     console.log(`  a whole site on the mocked SharePoint, at the real pace (3 lists at a time, 120 ms between one lane's writes): ${result.writes} writes and ${site.fake.count()} requests in ${(result.ms / 1000).toFixed(1)} s`);
-    assert.deepEqual([result.done.lists.length, result.done.columns.length, result.done.settings.length], [13, 89, 47]);
-    assert.equal(result.writes, 149, '13 lists, 89 columns, 47 settings: one write each');
+    assert.deepEqual([result.done.lists.length, result.done.columns.length, result.done.settings.length], [13, 91, 47]);
+    assert.equal(result.writes, 151, '13 lists, 91 columns, 47 settings: one write each');
     const log = writes(site.fake);
-    assert.equal(log.length, 149);
+    assert.equal(log.length, 151); // (149 until Phase 20)
     const last = (prefix) => log.findLastIndex((line) => line.startsWith(prefix));
     const first = (prefix) => log.findIndex((line) => line.startsWith(prefix));
     assert.ok(last('create list') < first('create column'), 'the lists first');
@@ -279,11 +279,11 @@ describe('Create: a site with nothing on it', () => {
       const appId = log.filter((line) => line === `change column ${key}.${ID}`);
       assert.equal(appId.length, 2, `${key}.AppId: its index, then its uniqueness, in two steps`);
     }
-    assert.equal(site.fake.count((entry) => entry.method === 'GET' && /\/fields\/getbyid\(/.test(entry.path)), 89, 'each column read back once');
+    assert.equal(site.fake.count((entry) => entry.method === 'GET' && /\/fields\/getbyid\(/.test(entry.path)), 91, 'each column read back once');
     assert.ok(site.fake.requests.every((entry) => ['GET', 'POST', 'MERGE'].includes(entry.method)), 'no DELETE, ever');
-    assert.ok(progress.includes(`Creating ${site.titles.sections}: 4 of 7 columns...`), progress.join('\n'));
+    assert.ok(progress.includes(`Creating ${site.titles.sections}: 4 of 8 columns...`), progress.join('\n')); // (of 7 until Phase 20 added Kind)
     assert.equal(progress.at(-1), result.summary);
-    assert.match(result.summary, /^Created 13 lists, 89 columns and 47 settings in [\d.]+ s \(149 writes\)\.$/);
+    assert.match(result.summary, /^Created 13 lists, 91 columns and 47 settings in [\d.]+ s \(151 writes\)\.$/);
     assert.deepEqual(made.untouched, []);
     for (const key of KEYS) assert.deepEqual(site.fake.listSettings(key), { EnableAttachments: false, EnableModeration: false, EnableVersioning: true, Description: `${META[key].purpose} ${MADE_BY}` });
     assert.equal(site.fake.libraryPresent, true);

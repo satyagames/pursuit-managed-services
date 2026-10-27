@@ -104,6 +104,13 @@ export const CHANGES = [
     }
     return shape;
   }],
+  // (Phase 20, schema version 4: the confidence check.)
+  ['(Phase 20, v4) the confidence check: PMSClientSessions.ConfidenceCheck (Yes/No) and PMSActivities.Kind (activity or confidence-check)', (shape) => {
+    const plain = { indexed: false, unique: false, mustExist: true, required: false, format: null };
+    shape.lists.sessions.columns.push({ column: 'ConfidenceCheck', field: 'confidenceCheck', kind: 'yesno', type: 'Boolean', ...plain, values: null });
+    shape.lists.sections.columns.push({ column: 'Kind', field: 'kind', kind: 'plain', type: 'Text', ...plain, values: ['activity', 'confidence-check'] });
+    return shape;
+  }],
 ];
 
 describe('the snapshot of the old schema, with this phase\'s changes, is the schema file', () => {
@@ -131,7 +138,7 @@ describe('the snapshot of the old schema, with this phase\'s changes, is the sch
 
   it('a Yes/No column defaults to No, and a single line of text holds 255 characters at most (VJR\'s checklist)', () => {
     const yesNo = Object.keys(LISTS).flatMap((key) => columnsOf(key).filter((column) => column.type === 'Boolean').map((column) => [`${key}.${column.name}`, column.default]));
-    assert.deepEqual(yesNo, [['sections.Enabled', 'No'], ['options.Correct', 'No'], ['qrtokens.Used', 'No'], ['visitorroster.Enabled', 'No']]);
+    assert.deepEqual(yesNo, [['sessions.ConfidenceCheck', 'No'], ['sections.Enabled', 'No'], ['options.Correct', 'No'], ['qrtokens.Used', 'No'], ['visitorroster.Enabled', 'No']]);
     for (const key of Object.keys(LISTS)) for (const column of columnsOf(key).filter((each) => each.type === 'Text')) assert.ok(column.max > 0 && column.max <= 255, `${key}.${column.name}: at most 255`);
   });
 
@@ -146,7 +153,7 @@ describe('the snapshot of the old schema, with this phase\'s changes, is the sch
     }
     const worded = Object.keys(LISTS).flatMap((key) => columnsOf(key).filter((column) => column.values).map((column) => `${LISTS[key].title}.${column.name}`));
     assert.deepEqual(worded, ['PMSClients.Status', 'PMSClientSessions.Status', 'PMSClientSessions.ParticipationMode', 'PMSClientSessions.ActivityFlow',
-      'PMSActivityQuestions.QuestionType', 'PMSActivityQuestions.Layout', 'PMSParticipants.JoinedVia', 'PMSVisitLog.EntryMode']);
+      'PMSActivities.Kind', 'PMSActivityQuestions.QuestionType', 'PMSActivityQuestions.Layout', 'PMSParticipants.JoinedVia', 'PMSVisitLog.EntryMode']);
   });
 });
 

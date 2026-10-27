@@ -159,7 +159,7 @@
     }
   ],
   "sharePoint": {
-    "schemaVersion": 3,
+    "schemaVersion": 4,
     "lists": [
       {
         "key": "clients",

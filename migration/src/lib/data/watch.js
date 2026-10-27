@@ -5,7 +5,7 @@
 import { READ_CHUNK, RESPONSE, chunked, indexById, pick, spLiteral } from './encoding.js';
 import { getItem, getItems, queryItems, sharePoint, spByAppId, spDecode, spListPath, spReadOrBatch } from './core.js';
 import { spAllRows, spItemsAddress, spOne } from './common.js';
-import { getAppSettings, notMade, versioned } from './records.js';
+import { getAppSettings, notMade, versionFirst, versioned } from './records.js';
 import { inOrder } from './today.js';
 import { PARTICIPANT_SELECT, combineAnswers, decodeResponsesRow, readAnswers, spParticipants } from './responses.js';
 
@@ -48,7 +48,7 @@ export async function readParticipantWatch({ sessionId = null, trackId = null, c
     ...(sessionId ? { session: spByAppId('sessions', sessionId) } : {}),
     ...(trackId ? { track: spByAppId('tracks', trackId) } : {}),
     ...(clientId ? { owned: spItemsAddress('sections', { clientId }) } : {}),
-  }).catch(notMade);
+  }).catch(notMade).catch(versionFirst);
   const session = sessionId ? spOne('sessions', sessionId, data.session)?.item ?? null : null;
   const owned = clientId ? (await spAllRows(data.owned)).map((row) => spDecode('sections', row).item) : null;
   return {

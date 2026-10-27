@@ -9,7 +9,7 @@
 // Number, DateTime, Boolean (Yes/No). A column of chosen words is Text, and `values` are the words the app writes (schema v2: a
 // Choice column would turn every new word into a change to the list). Every column must exist on the list; none but AppId is
 // required to hold a value (`required`, SharePoint's "Require that this column contains information"). `reads` and `writes` name the
-// pages: participant, admin, setup. A Yes/No column defaults to No, and every date column shows Date & Time (`format`). Text of one
+// pages: participant, admin, setup. `since` is the version of the lists that added a column (none: it was there by version 3). A Yes/No column defaults to No, and every date column shows Date & Time (`format`). Text of one
 // line holds 255 characters at most (`max`: the app's own limit where it is lower). Growth figures are ARCHITECTURE-10.md 4.1's (in git history at 7347c72): an ASSUMPTION of 100 events a year with 60 people
 // each, to be replaced with real figures.
 import { ID, LIBRARY, LISTS, VERSION } from './pms-schema.js';
@@ -61,6 +61,7 @@ export const META = {
       EndedAt: when('When the facilitator ended the session; empty while it is open.'),
       ParticipationMode: words('How people are identified: by their own sign-in (staff), or by a personal QR code each (client-visit).', ['staff', 'client-visit'], { default: 'staff' }),
       ActivityFlow: words('Whether each activity waits for the one before it (sequential) or all are open.', ['sequential', 'open'], { default: 'sequential' }),
+      ConfidenceCheck: column('Boolean', 'Whether the session asks the client\'s confidence check before the first activity and after the last (Phase 20). A new session says Yes when its client has a check with a question; one made before version 4 says No.', { default: 'No', writes: [ADMIN], since: 4 }),
     },
   },
   sections: {
@@ -76,6 +77,7 @@ export const META = {
       QuestionIds: json('The activity\'s questions as a JSON list of Questions.AppId, in order.'),
       ClientId: text('The client the activity belongs to (a Clients.AppId). An activity with none is shown to nobody.'),
       Description: note('The one-line subtitle under the activity\'s title.'),
+      Kind: words('What the activity is: one of the client\'s activities, or its confidence check (Phase 20), the one question asked before the first activity and after the last, which is never in the guest\'s list of activities. A client has one check at most.', ['activity', 'confidence-check'], { default: 'empty reads as activity', since: 4 }),
     },
   },
   questions: {
@@ -224,11 +226,14 @@ export const retiredColumn = (key, name) => (RETIRED[key] ?? []).find((column) =
 
 /**
  * The names of the columns of the list `key` as Setup made them for `version` (this build's when left out): the columns of version 2 had
- * DisplayName where version 3 has GuestName and SignedInName. What the mock builds an older site from.
+ * DisplayName where version 3 has GuestName and SignedInName, and a column a later version added (`since`, Phase 20) is null there, so the
+ * names stay aligned with columnsOf(). What the mock builds an older site from.
  * @param {string} key @param {number} [version]
+ * @returns {(string | null)[]}
  */
-export const columnNamesAt = (key, version = VERSION) => Object.keys(META[key].columns)
-  .map((name) => (RETIRED[key] ?? []).find((column) => column.now === name && version <= column.lastIn)?.name ?? name);
+export const columnNamesAt = (key, version = VERSION) => Object.entries(META[key].columns)
+  .map(([name, spec]) => ((spec.since ?? 0) > version ? null
+    : (RETIRED[key] ?? []).find((column) => column.now === name && version <= column.lastIn)?.name ?? name));
 
 /** The picture library: its title before any prefix, and what it holds. */
 export const LIBRARY_META = {

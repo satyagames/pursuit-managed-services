@@ -241,7 +241,7 @@ describe('every item read the data layer and Setup can send names its columns', 
   });
 
   it('selectOf names SharePoint\'s Id, AppId and every column of the list, once, and nothing else', () => {
-    assert.equal(selectOf('sections'), '$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description');
+    assert.equal(selectOf('sections'), '$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description,Kind'); // (Kind: Phase 20)
     assert.equal(selectOf('responses'), '$select=Id,AppId,SessionId,ResponsesJson,TrackId,ClientId');
     for (const key of Object.keys(LISTS)) {
       const named = selectOf(key).slice('$select='.length).split(',');

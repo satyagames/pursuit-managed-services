@@ -23,6 +23,7 @@ flowchart LR
   brand --> participant
   common --> data
   common --> settings
+  data --> participant
   data --> schema
   effects --> motion
   exports --> admin
@@ -63,8 +64,8 @@ flowchart LR
 | `migration/src/lib/effects/` | Sounds and confetti, behind one door (`effects.ts`): which moment makes which effect, the cues as data, Web Audio, canvas-confetti. | 6 |
 | `migration/src/lib/exports/` | The files a leader gets: the leader report (data, counting, layout, PDF writer, fonts) and the Live display's summary pack (PDF, PowerPoint) and summary CSV. | 7 |
 | `migration/src/lib/motion/` | The participant screens' motion, behind one door (`motion.ts`): the plan by kind of question and part of a screen, the tokens and shapes (CSS), the level and the governor. | 2 |
-| `migration/src/lib/participant/` | The participant page: the boot sequence, the visit, the activities held for the page's life, the pager's rules, saving answers, screen moves. | 13 |
-| `migration/src/lib/results/` | Results counted and shown: the tally, the chart model (every number a chart shows), the palette, the figure on paper, names, the takeaways, where a tooltip goes. | 11 |
+| `migration/src/lib/participant/` | The participant page: the boot sequence, the visit, the activities held for the page's life, the pager's rules, saving answers, screen moves. | 14 |
+| `migration/src/lib/results/` | Results counted and shown: the tally, the chart model (every number a chart shows), the palette, the figure on paper, names, the takeaways, where a tooltip goes. | 12 |
 | `migration/src/lib/schema/` | The lists and columns: `pms-schema.js`, the names every page carries, and `pms-schema-meta.js`, everything else about them (Setup, the tests and the generators only). | 2 |
 | `migration/src/lib/settings/` | How a page starts: the browser check, where its settings come from (`pms-config.txt`, the build, its address), which site and lists are its own, and the stop screen. | 8 |
 | `migration/src/lib/setup/` | The Setup page's own modules: the plan and Create, Mark the site as ready, the admins, the seed-file import, the sample clients and their pictures, the self-test's probes. | 10 |
@@ -72,7 +73,7 @@ flowchart LR
 | `migration/src/routes/` | The participant page's screens: Welcome, the Activities hub, the quiz route, the finale, "not live", the preview, and the old addresses that redirect. | 9 |
 | `migration/src/setup/` | Setup's pieces (Svelte): the copy panel, where the lists are, the plan view, and the sample pictures as data. | 4 |
 | `migration/src/unsupported/` | The "needs a recent browser" notice: a page and an ES5 check, put into each HTML shell at build time. | 1 |
-| `scripts/` | Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager. | 132 |
+| `scripts/` | Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager. | 133 |
 | `scripts/local-site/` | The local PCOE stand-in (`npm run local:site`), its scenarios and VJR's dummy dataset, the screenshot harness and the measurements. | 11 |
 | `scripts/migration-tests/` | The Playwright specs of `npm run test:migration`, and their harnesses (`admin-local.ts`, `polling-support.ts`, `fixtures.ts`). | 73 |
 | `scripts/rehearsal-tests/` | The rehearsal of RUNBOOK.md on the mock with a package's own pages (`npm run test:rehearsal`). | 1 |
@@ -163,9 +164,9 @@ Shared by the pages: the product name, the heading focus rule, kiosk lock-down, 
 
 The data layer: dataService.js, the door every page imports, over its parts (core.js holds the state and alone talks to SharePoint REST or, on the local server, its JSON API), and grouping of long id lists into short reads. Every page carries it.
 
-- **Imports from:** `lib/schema`
+- **Imports from:** `lib/participant`, `lib/schema`
 - **Imported by:** `lib/admin`, `lib/brand`, `lib/common`, `lib/exports`, `lib/participant`, `lib/results`, `lib/settings`, `lib/setup`, `src`, `src/admin`, `src/pager`, `src/routes`
-- **Node suites that import it:** `test-admin-content.js`, `test-admin-today.js`, `test-brand-storage.js`, `test-column-names.js`, `test-data-surface.js`, `test-deploy-settings.js`, `test-duplicates.js`, `test-leader-report-pdf.js`, `test-live-display.js`, `test-local-site.js`, `test-motion-switch.js`, `test-named-reads.js`, `test-participant-names.js`, `test-participant-storage.js`, `test-participant-waits.js`, `test-review-9a.js`, `test-schema-upgrade.js`, `test-seeds.js`, `test-session-delete.js`, `test-session.js`, `test-sessions.js`, `test-setup-admins.js`, `test-sharepoint.js`
+- **Node suites that import it:** `test-admin-content.js`, `test-admin-today.js`, `test-brand-storage.js`, `test-column-names.js`, `test-confidence-check.js`, `test-data-surface.js`, `test-deploy-settings.js`, `test-duplicates.js`, `test-leader-report-pdf.js`, `test-live-display.js`, `test-local-site.js`, `test-motion-switch.js`, `test-named-reads.js`, `test-participant-names.js`, `test-participant-storage.js`, `test-participant-waits.js`, `test-review-9a.js`, `test-schema-upgrade.js`, `test-seeds.js`, `test-session-delete.js`, `test-session.js`, `test-sessions.js`, `test-setup-admins.js`, `test-sharepoint.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
@@ -179,7 +180,7 @@ The data layer: dataService.js, the door every page imports, over its parts (cor
 | `pictures.js` | Pictures for a client's look (dataService.js section 7; Phase 17 cut it out unchanged): storing a picture under its own name, in the picture library's folder on SharePoint or the local server's uploads folder, and removing one by name. | `uploadClientAsset`, `removeClientAsset` |
 | `qr-scan.js` | A first QR scan in few requests, and a visit begun from Welcome (dataService.js section 4; Phase 17 cut it out unchanged but for its five writes of the held scan, which go through core.js's holdScan(), where that state lives). | `openQrScan`, `beginVisit`, `prepareWrites` |
 | `read-groups.js` | Reads in groups of 20 ids to an address (Phase 9b), so that no request address grows with what a session holds. | `READ_CHUNK`, `groupsOf`, `sectionQueries` |
-| `records.js` | The records (dataService.js section 2; Phase 17 cut it out unchanged): clients, sessions, activities, questions, options, visits, QR codes, the roster and admin users, as plain objects with a string id, and the lists' version check that every page's first read makes (PMS-LST-010 to 012). | 56 exports |
+| `records.js` | The records (dataService.js section 2; Phase 17 cut it out unchanged): clients, sessions, activities, questions, options, visits, QR codes, the roster and admin users, as plain objects with a string id, and the lists' version check that every page's first read makes (PMS-LST-010 to 012). | 57 exports |
 | `removal.js` | Removing a visit that has no answers, and deleting by key (dataService.js section 9; Phase 17 cut it out unchanged): removeEmptyVisit for Results, and the two generic calls of Delete session (listItemKeys, deleteByKey), whose rules are lib/admin/session-delete.js's. | `removeEmptyVisit`, `listItemKeys`, `deleteByKey` |
 | `responses.js` | Answers, kept one item per participant (dataService.js section 3; Phase 17 cut it out unchanged): the item's shape and limits, the blind save, the read of a session's answers (and of a damaged item, named instead of stopping), a restart, and the list of a session's visits. | 20 exports |
 | `schema-check.js` | The check of a site's lists and columns (dataService.js section 1's end; Phase 17 cut it out unchanged): checkSharePointLists() for Setup's list of lists, checkSharePointSchema() for the admin's Today screen and Setup. | `checkSharePointLists`, `checkSharePointSchema` |
@@ -243,14 +244,15 @@ The participant screens' motion, behind one door (`motion.ts`): the plan by kind
 The participant page: the boot sequence, the visit, the activities held for the page's life, the pager's rules, saving answers, screen moves.
 
 - **Imports from:** `lib/brand`, `lib/common`, `lib/data`, `lib/motion`
-- **Imported by:** `lib/admin`, `lib/brand`, `lib/exports`, `lib/results`, `src`, `src/admin`, `src/pager`, `src/routes`
-- **Node suites that import it:** `test-duplicates.js`, `test-list-namespace.js`, `test-local-site.js`, `test-pager.js`, `test-participant-storage.js`, `test-participant-waits.js`, `test-review-9a.js`, `test-review-9b.js`, `test-session.js`
+- **Imported by:** `lib/admin`, `lib/brand`, `lib/data`, `lib/exports`, `lib/results`, `src`, `src/admin`, `src/pager`, `src/routes`
+- **Node suites that import it:** `test-confidence-check.js`, `test-duplicates.js`, `test-list-namespace.js`, `test-local-site.js`, `test-pager.js`, `test-participant-storage.js`, `test-participant-waits.js`, `test-review-9a.js`, `test-review-9b.js`, `test-session.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
 | `activity-content.js` | The questions and options of today's activities, held for as long as the participant page is open (Phase 10j). | `LOADING_DELAY_MS`, `createActivityContent` |
 | `answer-store.js` | One participant's answers on this device, and the saving of them. | `STORAGE_PREFIX`, `SAVE_ATTEMPTS`, `BACKOFF_MS`, `COOL_DOWN_MS`, `MAX_RETRY_AFTER_MS`, `SaveFailedError`, `createAnswerStore` |
 | `boot.js` | What the participant page reads before its first screen, and in what order. | `bootParticipant`, `writesAhead` |
+| `confidence-check.js` | The confidence check, Before and After (Phase 20): where a guest's visit goes next, and how its two answers are named. | `CHECK_KIND`, `ACTIVITY_KIND`, `beforeId`, `afterId`, `parseCheckId`, `isCheckRecord`, `kindOf`, `isCheckActivity`, `checkOf`, `FLOW_RULES`, `STEP_PATHS`, `nextStep`, `stepPath`, `restartedIds` |
 | `experience.svelte.ts` | Today's experience as the participant screens need it: is anything live, whose it is, how it looks, what it says, and which activities it has. | `experience`, `activityContent`, `showTheme`, `adoptExperience`, `isStale`, `currentActivities`, `adoptWatch`, `knownActivity`, `knownActivities`, `refreshActivities`, `holdsActivities`, `holdActivityContent`, `loadActivity` |
 | `keep-in-view.ts` | A phone or an iPad turned over in the middle of a question. | `keepInView` |
 | `navigation.ts` | The participant page's moves between screens (Welcome, the hub, an activity, the finale), through svelte-spa-router's hash routes. | `navigateTo`, `consumeNavigationData` |
@@ -268,10 +270,11 @@ Results counted and shown: the tally, the chart model (every number a chart show
 
 - **Imports from:** `lib/data`, `lib/participant`, `lib/schema`
 - **Imported by:** `lib/admin`, `lib/exports`, `src/admin`, `src/admin/charts`
-- **Node suites that import it:** `test-column-names.js`, `test-export-summary.js`, `test-leader-report-charts.js`, `test-live-display.js`, `test-live-view.js`, `test-named-reads.js`, `test-participant-names.js`, `test-participant-storage.js`, `test-polling.js`, `test-present-fit.js`, `test-results-chart-fit.js`, `test-results-chart-model.js`, `test-results-csv.js`, `test-results-export.js`, `test-results-pack.js`, `test-review-9b.js`, `test-schema-upgrade.js`, `test-sessions.js`, `test-ux-12.js`
+- **Node suites that import it:** `test-column-names.js`, `test-confidence-check.js`, `test-export-summary.js`, `test-leader-report-charts.js`, `test-live-display.js`, `test-live-view.js`, `test-named-reads.js`, `test-participant-names.js`, `test-participant-storage.js`, `test-polling.js`, `test-present-fit.js`, `test-results-chart-fit.js`, `test-results-chart-model.js`, `test-results-csv.js`, `test-results-export.js`, `test-results-pack.js`, `test-review-9b.js`, `test-schema-upgrade.js`, `test-sessions.js`, `test-ux-12.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
+| `confidence-shift.js` | The confidence check's arithmetic (Phase 20): the one place its numbers are worked out. | 16 exports |
 | `export-summary.js` | What every Results export opens with (Phase 13): for each activity one sentence, its takeaway, and the numbers behind it; for a session the answers and questions in all. | `scoreboardOf`, `summarizeActivity`, `summarizeSession` |
 | `participant-names.js` | The one rule that names a participant. | `ownerOf`, `nameParticipants` |
 | `present-fit.js` | The full screen's type, a step at a time (Phase 11a-3; until then these lines were inside LiveDisplay.svelte). | `SMALLEST`, `scaleOf`, `nextFit` |
@@ -290,7 +293,7 @@ The lists and columns: `pms-schema.js`, the names every page carries, and `pms-s
 
 - **Imports from:** nothing of the app
 - **Imported by:** `lib/data`, `lib/results`, `lib/setup`, `server`
-- **Node suites that import it:** `test-bundle-budget.js`, `test-column-names.js`, `test-fake-site.js`, `test-lists-reference.js`, `test-motion-plan.js`, `test-named-reads.js`, `test-provision-prefix.js`, `test-provision.js`, `test-release-docs.js`, `test-request-baseline.js`, `test-schema-upgrade.js`, `test-schema-version.js`, `test-schema.js`, `test-session-delete.js`, `test-setup-admins.js`, `test-sharepoint.js`, `test-shown-names.js`, `test-site-ready.js`, `test-text-limits.js`
+- **Node suites that import it:** `test-bundle-budget.js`, `test-column-names.js`, `test-confidence-check.js`, `test-fake-site.js`, `test-lists-reference.js`, `test-motion-plan.js`, `test-named-reads.js`, `test-provision-prefix.js`, `test-provision.js`, `test-release-docs.js`, `test-request-baseline.js`, `test-schema-upgrade.js`, `test-schema-version.js`, `test-schema.js`, `test-session-delete.js`, `test-setup-admins.js`, `test-sharepoint.js`, `test-shown-names.js`, `test-site-ready.js`, `test-text-limits.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
@@ -322,7 +325,7 @@ The Setup page's own modules: the plan and Create, Mark the site as ready, the a
 
 - **Imports from:** `lib/admin`, `lib/brand`, `lib/data`, `lib/schema`, `lib/settings`, `src/setup`
 - **Imported by:** `src`, `src/dev`
-- **Node suites that import it:** `test-admin-content.js`, `test-admin-today.js`, `test-brand-storage.js`, `test-brand.js`, `test-bundle-budget.js`, `test-column-names.js`, `test-duplicates.js`, `test-list-namespace.js`, `test-live-display.js`, `test-named-reads.js`, `test-participant-storage.js`, `test-participant-waits.js`, `test-provision-prefix.js`, `test-provision.js`, `test-review-9b.js`, `test-sample-pictures.js`, `test-schema-upgrade.js`, `test-schema.js`, `test-seeds.js`, `test-session-delete.js`, `test-setup-admins.js`, `test-setup-deployment.js`, `test-sharepoint.js`, `test-site-ready.js`, `test-text-limits.js`
+- **Node suites that import it:** `test-admin-content.js`, `test-admin-today.js`, `test-brand-storage.js`, `test-brand.js`, `test-bundle-budget.js`, `test-column-names.js`, `test-confidence-check.js`, `test-duplicates.js`, `test-list-namespace.js`, `test-live-display.js`, `test-named-reads.js`, `test-participant-storage.js`, `test-participant-waits.js`, `test-provision-prefix.js`, `test-provision.js`, `test-review-9b.js`, `test-sample-pictures.js`, `test-schema-upgrade.js`, `test-schema.js`, `test-seeds.js`, `test-session-delete.js`, `test-setup-admins.js`, `test-setup-deployment.js`, `test-sharepoint.js`, `test-site-ready.js`, `test-text-limits.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
