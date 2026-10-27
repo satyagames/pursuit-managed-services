@@ -5,6 +5,13 @@
 // that one damaged answer item does not stop them, and a ranked question is scored among the options it has now.
 //
 // Plain JS with JSDoc and no DOM.
+//
+// Phase 20: a session whose activities include the client's confidence check (PMSActivities.Kind `confidence-check`, which Go live adds to
+// the session's activities like any other) does not count it as an activity: its numbers are `confidenceCheck`, worked out by
+// lib/results/confidence-shift.js alone. A session without one gets the tree it always got, with no `confidenceCheck` at all.
+
+import { isCheckActivity } from '../participant/confidence-check.js';
+import { confidenceCheckResults } from './confidence-shift.js';
 
 /**
  * @typedef {{ id: string, [key: string]: any }} Row
@@ -24,16 +31,20 @@ const rankScore = (answers, optionId, optionIds) => answers.reduce((total, { ans
 
 /**
  * A session's results tree: { session, tracks, sections: [{ ...section, questions: [{ ...question, responses, respondents,
- * options: [{ ...option, count, percent, score? }] }] }] }. The sections are in the order of `session.sectionIds`.
+ * options: [{ ...option, count, percent, score? }] }] }], confidenceCheck? }. The sections are in the order of `session.sectionIds`, without
+ * the client's confidence check, which is `confidenceCheck` when the session lists one (lib/results/confidence-shift.js).
  * @param {{ session: Row, tracks: Row[], sections: Row[], questions: Row[], options: Row[], answers: Answer[] }} records
  */
 export function buildResults({ session, tracks, sections, questions, options, answers }) {
   const questionIndex = byId(questions);
   const optionIndex = byId(options);
+  const listed = pick(byId(sections), session.sectionIds);
+  const check = listed.find(isCheckActivity);
   return {
     session,
     tracks,
-    sections: pick(byId(sections), session.sectionIds).map((section) => ({
+    ...(check && { confidenceCheck: checkResults(check, { session, tracks, questionIndex, optionIndex, answers }) }),
+    sections: listed.filter((section) => !isCheckActivity(section)).map((section) => ({
       ...section,
       questions: pick(questionIndex, section.questionIds).map((question) => {
         const given = answers.filter((response) => response.questionId === question.id);
@@ -56,6 +67,12 @@ export function buildResults({ session, tracks, sections, questions, options, an
       }),
     })),
   };
+}
+
+/** The check's numbers, from its first question and that question's options as they are now. */
+function checkResults(section, { session, tracks, questionIndex, optionIndex, answers }) {
+  const [question = null] = pick(questionIndex, section.questionIds);
+  return confidenceCheckResults({ session, section, question, options: question ? pick(optionIndex, question.optionIds) : [], tracks, answers });
 }
 
 /** The activities, questions and options a session's display is made from: what changes rarely, so it is read once and again only when it must be. */
