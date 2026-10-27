@@ -18,7 +18,7 @@
   import TodayStatus from './TodayStatus.svelte';
 
   type Client = { id: string; name: string; status?: string; logoUrl?: string | null; theme?: { assets?: { logo?: string | null; hero?: string | null } } | null };
-  type Session = { id: string; clientId: string; date?: string; status?: string; participationMode?: string; activityFlow?: string };
+  type Session = { id: string; clientId: string; date?: string; status?: string; participationMode?: string; activityFlow?: string; confidenceCheck?: boolean | null };
   type Section = { id: string; title: string; enabled?: boolean; clientId?: string | null; questionIds?: string[] };
   type Settings = { id?: string; activeSessionId?: string | null; activeClientId?: string | null; activatedAt?: string | null };
   type Status = ReturnType<typeof liveStatus>;
@@ -322,6 +322,24 @@
     }
   }
 
+  /** Phase 20: the live session's confidence check, on or off. */
+  async function setCheck(on: boolean) {
+    if (!controlSession || controlsBusy || (controlSession.confidenceCheck === true) === on) return;
+    controlsBusy = true;
+    epoch += 1;
+    problem = '';
+    try {
+      const updated = await dataService.updateSession(controlSession.id, { confidenceCheck: on }) as Session;
+      sessions = upsert(sessions, { ...controlSession, ...updated, confidenceCheck: on });
+      onToast(`The confidence check is ${on ? 'on' : 'off'}`, 'success');
+    } catch (cause) {
+      problem = failed(cause, 'Could not change the confidence check.');
+    } finally {
+      epoch += 1;
+      controlsBusy = false;
+    }
+  }
+
   async function endIt(session: Session) {
     if (controlsBusy) return;
     const owner = nameOf(session.clientId);
@@ -422,7 +440,7 @@
           <h3 id="controls-heading">Controls</h3>
           <TodayControls
             {controlSession} {controlClient} owner={controlSession ? nameOf(controlSession.clientId) : ''} live={status.live} {controlsBusy}
-            onSetMode={(mode) => void setMode(mode)} onSetFlow={(flow) => void setFlow(flow)} onEnd={(session) => void endIt(session)} onReopen={(session) => void reopenIt(session)}
+            onSetMode={(mode) => void setMode(mode)} onSetFlow={(flow) => void setFlow(flow)} onSetCheck={(on) => void setCheck(on)} onEnd={(session) => void endIt(session)} onReopen={(session) => void reopenIt(session)}
             onMotionSaved={(written) => { clients = clients.map((entry) => (entry.id === written.id ? { ...entry, theme: written.theme as Client['theme'] } : entry)); }} {onToast}
           />
         </section>

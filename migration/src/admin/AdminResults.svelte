@@ -14,6 +14,7 @@
   import { focusHeading } from '../lib/common/focus.js';
   import ConfirmDialog from './ConfirmDialog.svelte';
   import ReportExports from './ReportExports.svelte';
+  import ConfidenceShift from './ConfidenceShift.svelte';
   import ResultCard from './charts/ResultCard.svelte';
 
   type Session = { id: string; clientId: string; date?: string; sectionIds?: string[]; status?: string };
@@ -349,6 +350,7 @@
         </header>
         <ReportExports sessionId={session.id} clientName={card.clientName} {onToast} />
         {#if card.unreadable}<p class="notice card__unreadable" role="status" data-testid="unreadable-notice"><strong>{card.unreadable}</strong></p>{/if}
+        {#if card.results.confidenceCheck}<ConfidenceShift check={card.results.confidenceCheck} />{/if}
         <!-- (Phase 12, F-08: the charts first; with sixty people the list ran 5,000 px above them.) -->
         <details class="tally" open={openResults.includes(session.id)} ontoggle={(event) => { const isOpen = (event.currentTarget as HTMLDetailsElement).open; openResults = isOpen ? [...new Set([...openResults, session.id])] : openResults.filter((id) => id !== session.id); }}>
           <summary>Live results · {answersFrom(answerCounts(card.results.sections.flatMap((section) => section.questions)))}</summary>

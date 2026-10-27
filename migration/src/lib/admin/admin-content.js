@@ -5,6 +5,7 @@
 // render what this says; the data work (copying, bulk guests, codes) is migration/src/lib/data/dataService.js,
 // section 6.
 
+import { isCheckActivity } from '../participant/confidence-check.js';
 import { isRecordSettled } from '../participant/pager-logic.js';
 
 /** The longest guest name kept. A name is printed large on a card, so a long one would not fit it. */
@@ -68,7 +69,21 @@ const byOrder = (a, b) => (Number(a.order) || 0) - (Number(b.order) || 0) || Str
  * @param {S[]} sections @param {string} clientId
  * @returns {S[]}
  */
-export const activitiesOfClient = (sections, clientId) => sections.filter((section) => section.clientId === clientId).sort(byOrder);
+export const activitiesOfClient = (sections, clientId) => sections.filter((section) => section.clientId === clientId && !isCheckActivity(section)).sort(byOrder);
+
+/**
+ * The client's confidence check (Phase 20): its activity of Kind confidence-check, or null. It is not one of the client's activities
+ * (activitiesOfClient leaves it out): Content shows it as a row of its own above them, it is never reordered among them, and it is not copied.
+ * @param {{ id: string, clientId?: string | null, kind?: unknown, order?: number }[]} sections @param {string} clientId
+ */
+export const checkOfClient = (sections, clientId) => sections.filter((section) => section.clientId === clientId && isCheckActivity(section)).sort(byOrder)[0] ?? null;
+
+/**
+ * Why the client's check may not be deleted now, or '' when it may: a session of the client that is open (not ended) and asks it.
+ * @param {{ status?: string, confidenceCheck?: boolean | null } | null} openSession findOpenSession()'s answer
+ */
+export const checkDeleteRefusal = (openSession) => (openSession && openSession.status !== 'completed' && openSession.confidenceCheck === true
+  ? 'The confidence check is asked in an open session. End that session, or switch its confidence check off on Today, before deleting it.' : '');
 
 /**
  * What is wrong with an activity's title, or ''. A client's activities must read differently from one

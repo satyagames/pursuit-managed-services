@@ -639,3 +639,87 @@ describe('Part 4: the golden-ratio tokens of the check screens hold their ratios
     assert.ok(token('check-card-stacked-min') >= 89 && token('check-card-row-min') >= 55, 'and well above the 44 px target');
   });
 });
+
+// ---- Parts 5 and 6: Content, the producer's card, Results, the exports --------------------------------------------------------------
+
+describe('Parts 5 and 6: the check in Content, on the Live display, on Results and in every export', async () => {
+  const { activitiesOfClient, checkDeleteRefusal, checkOfClient } = await import('../migration/src/lib/admin/admin-content.js');
+  const { checkProgress } = await import('../migration/src/lib/admin/live-view.js');
+  const { checkSummary } = await import('../migration/src/lib/results/confidence-shift.js');
+  const { CHECK_CSV_COLUMNS, CSV_COLUMNS, buildLeaderReport, participantAnswersCsv } = await import('../migration/src/lib/exports/leader-report.js');
+  const { buildReport } = await import('../migration/src/lib/exports/resultsExport.js');
+  const BOM = String.fromCharCode(0xFEFF);
+
+  const sections = [
+    { id: 's2', title: 'Two', order: 2, clientId: 'c', questionIds: ['q2'] }, { id: 's1', title: 'One', order: 1, clientId: 'c', questionIds: ['q1'] },
+    { id: 'chk', title: 'Confidence check', order: 0, clientId: 'c', kind: CHECK_KIND, questionIds: ['q'] }, { id: 'x', title: 'Other', order: 1, clientId: 'd' },
+  ];
+
+  it('Content: the check is not one of the client\'s activities, is found on its own, and is not deleted while an open session asks it', () => {
+    assert.deepEqual(activitiesOfClient(sections, 'c').map((section) => section.id), ['s1', 's2']);
+    assert.equal(checkOfClient(sections, 'c')?.id, 'chk');
+    assert.equal(checkOfClient(sections, 'd'), null);
+    assert.match(checkDeleteRefusal({ status: 'in-progress', confidenceCheck: true }), /asked in an open session/);
+    assert.equal(checkDeleteRefusal({ status: 'in-progress', confidenceCheck: false }), '');
+    assert.equal(checkDeleteRefusal({ status: 'completed', confidenceCheck: true }), '');
+    assert.equal(checkDeleteRefusal(null), '');
+  });
+
+  it('the producer\'s card: Before 28 of 34, After 0 of 34, counts only; nothing when the check is off', () => {
+    assert.deepEqual(checkProgress({ measured: true, guests: 34, answeredBefore: 28, answeredAfter: 0 }), { guests: 34, before: { count: 28, percent: (28 / 34) * 100 }, after: { count: 0, percent: 0 } });
+    assert.equal(checkProgress({ measured: false, guests: 34, answeredBefore: 28, answeredAfter: 0 }), null);
+    assert.equal(checkProgress(null), null);
+    assert.deepEqual(Object.keys(checkProgress({ measured: true, guests: 0, answeredBefore: 0, answeredAfter: 0 })).sort(), ['after', 'before', 'guests'], 'no name and no score');
+  });
+
+  it('Results: the shift signed, the means, N of M answered both, moved to confident, a low sample; "not measured" when off', () => {
+    const check = { measured: true, guests: 4, answeredBoth: 3, lowSample: true, shift: { n: 3, beforeMean: 2, afterMean: 3.6, points: 1.6, percent: 32 }, moved: { started: 2, moved: 1, percent: 50 } };
+    assert.deepEqual(checkSummary(check), { measured: true, shift: '+32%', from: '2.0 to 3.6', answered: '3 of 4 guests answered both', moved: '50% (1 of 2 who started not confident)', lowSample: true });
+    assert.equal(checkSummary({ ...check, shift: { ...check.shift, percent: -8 } }).shift, '-8%');
+    assert.equal(checkSummary({ ...check, shift: { ...check.shift, percent: -0.4 } }).shift, '0%');
+    assert.equal(checkSummary({ measured: false }).shift, 'Not measured');
+  });
+
+  /** A session of client c: one activity of one question and the check, three guests. */
+  const records = (confidenceCheck) => ({
+    session: { id: 'c-2026-10-27', clientId: 'c', date: '2026-10-27', status: 'completed', sectionIds: ['chk', 's1'], confidenceCheck },
+    client: { id: 'c', name: 'Client' },
+    tracks: [{ id: 't1', createdAt: '2026-10-27T09:00:00.000Z' }, { id: 't2', createdAt: '2026-10-27T09:01:00.000Z' }, { id: 't3', createdAt: '2026-10-27T09:02:00.000Z' }],
+    sections: [{ id: 's1', title: 'One', enabled: true, order: 1, clientId: 'c', questionIds: ['q1'] }, sections[2]],
+    questions: [{ id: 'q1', sectionId: 's1', type: 'single-select', prompt: 'One?', optionIds: ['a', 'b'] }, { id: 'q', sectionId: 'chk', type: 'confidence-continuum', prompt: 'How confident?', optionIds: scale(5).map((option) => option.id) }],
+    options: [{ id: 'a', questionId: 'q1', label: 'A', value: 'a', correct: null }, { id: 'b', questionId: 'q1', label: 'B', value: 'b', correct: null }, ...scale(5)],
+    answers: [{ questionId: 'q1', clientTrackId: 't1', answer: 'a', timestamp: '2026-10-27T09:05:00.000Z' }, ...answersOf([['t1', 2, 4], ['t2', 1, 5], ['t3', 3, null]])],
+  });
+
+  it('the leader report: the check is not an activity, its records are not strays, its one line is on the summary, and the CSV adds two columns', () => {
+    const report = buildLeaderReport(records(true), { generatedAt: '2026-10-27T12:00:00.000Z', timeZone: 'UTC' });
+    assert.deepEqual(report.activities.map((activity) => activity.id), ['s1']);
+    assert.deepEqual(report.strays, []);
+    assert.equal(report.summary.answers, 1, 'the check\'s answers are not answers to a question');
+    assert.equal(report.summary.confidence.line, 'Confidence moved 60% of the scale (1.5 to 4.5); 100% of guests who started not confident ended confident (n = 2 of 3 guests)');
+    const csv = participantAnswersCsv(report).replace(BOM, '').split('\r\n');
+    assert.equal(csv[0], [...CSV_COLUMNS, ...CHECK_CSV_COLUMNS].join(','));
+    assert.deepEqual(CHECK_CSV_COLUMNS, ['Confidence before', 'Confidence after']);
+    const rowOf = (index) => csv[index].split(',');
+    assert.deepEqual(rowOf(1).slice(-2), ['2', '4']);
+    assert.deepEqual(rowOf(3).slice(-2), ['3', ''], 'a guest with only a Before has it, and nothing after');
+  });
+
+  it('a session without the check: the report and its CSV are as they were (no line, the eleven columns)', () => {
+    const plain = records(false);
+    plain.session.sectionIds = ['s1'];
+    plain.sections = [plain.sections[0]];
+    plain.answers = plain.answers.filter((answer) => !isCheckRecord(answer));
+    const report = buildLeaderReport(plain, { generatedAt: '2026-10-27T12:00:00.000Z', timeZone: 'UTC' });
+    assert.equal(report.summary.confidence, null);
+    assert.equal(participantAnswersCsv(report).replace(BOM, '').split('\r\n')[0], CSV_COLUMNS.join(','));
+  });
+
+  it('the Live display\'s one-page PDF and PowerPoint carry the same line, and nothing for a session without the check', () => {
+    const tree = buildResults(records(true));
+    assert.equal(buildReport(tree, { name: 'Client' }).confidence, 'Confidence moved 60% of the scale (1.5 to 4.5); 100% of guests who started not confident ended confident (n = 2 of 3 guests)');
+    const plain = records(false);
+    plain.session.sectionIds = ['s1'];
+    assert.equal(buildReport(buildResults(plain), { name: 'Client' }).confidence, '');
+  });
+});

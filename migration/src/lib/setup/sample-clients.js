@@ -26,6 +26,7 @@
 
 import { buildClientTheme } from '../brand/client-theme.js';
 import { SAMPLE_SOURCE } from '../admin/sample-notice.js';
+import { CHECK_DESCRIPTION, CHECK_KIND, CHECK_LABELS, CHECK_PROMPT, CHECK_TITLE } from '../participant/confidence-check.js';
 
 /** An option's value: its label in lower case with dashes, as the earlier starter content has it ("Kroger's" is 'kroger-s'). */
 const slug = (text) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
@@ -181,10 +182,7 @@ const dominosContent = build(dominos.id, [
 // carries them. Setup's "Seed sample clients", server/data and the tests build on the pack without them, so a site seeded before is as it was
 // and an existing client gains a check only when somebody adds one in Content.
 
-/** The check's five steps, lowest first (OptionValue 1 to 5). */
-export const CHECK_LABELS = Object.freeze(['Not confident at all', 'Slightly confident', 'Moderately confident', 'Confident', 'Very confident']);
-/** The check's question, as the wireframe asks it. */
-export const CHECK_PROMPT = 'How confident are you that Deloitte has the capabilities to deliver this solution?';
+export { CHECK_LABELS, CHECK_PROMPT };
 
 /** A client's check: one activity of Kind confidence-check, its one question and five options. @param {string} clientId @param {string} slug */
 export function checkContent(clientId, slug) {
@@ -192,7 +190,7 @@ export function checkContent(clientId, slug) {
   const questionId = `q-${slug}-check`;
   const optionIds = CHECK_LABELS.map((_, at) => `o-${slug}-check-${at + 1}`);
   return {
-    sections: [{ id: sectionId, title: 'Confidence check', order: 0, enabled: true, industryTags: [], questionIds: [questionId], clientId, description: 'Asked at the start and the end.', kind: 'confidence-check' }],
+    sections: [{ id: sectionId, title: CHECK_TITLE, order: 0, enabled: true, industryTags: [], questionIds: [questionId], clientId, description: CHECK_DESCRIPTION, kind: CHECK_KIND }],
     questions: [{ id: questionId, sectionId, type: 'confidence-continuum', prompt: CHECK_PROMPT, optionIds, order: 1, layout: 'text-list' }],
     options: CHECK_LABELS.map((label, at) => ({ id: optionIds[at], questionId, label, value: at + 1, correct: false, imageUrl: null })),
   };

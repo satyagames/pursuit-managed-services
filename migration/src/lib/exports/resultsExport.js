@@ -17,6 +17,7 @@
 
 import { embeddedAssetUrl } from '../brand/assets.js';
 import { MULTI_CAPTION, RANKING_CAPTION, answerCounts, answersFrom, chartOf, fewAnswersLine } from '../results/results-chart-model.js';
+import { confidenceLine } from '../results/confidence-shift.js';
 import { chartFigure } from '../results/results-chart-figure.js';
 import { summarizeSession } from '../results/export-summary.js';
 import { binaryString, createMeasure, loadReportFonts } from './report-fonts.js';
@@ -157,6 +158,8 @@ export function buildReport(results, brand = {}) {
     activities,
     questions,
     summary: summarizeSession(activities),
+    // (Phase 20) a session that lists the client's confidence check: its one line, from confidence-shift.js; '' otherwise, and nothing is drawn.
+    confidence: results.confidenceCheck ? confidenceLine(results.confidenceCheck) : '',
   };
 }
 
@@ -361,6 +364,14 @@ export function layoutReport(report, logo = null, palette = null, measure = null
     title.forEach((line, at) => page.items.push(label(M + 4, page.top + at * lineHeight(SIZE.takeaway), titleWidth - 4, lineHeight(SIZE.takeaway), line, SIZE.takeaway, ink, { bold: true, role: 'activity-title' })));
     said.forEach((line, at) => page.items.push(label(M + titleWidth + 4, page.top + at * lineHeight(SIZE.takeaway), W - M * 2 - titleWidth - 4, lineHeight(SIZE.takeaway), line, SIZE.takeaway, ink, { role: 'takeaway' })));
     notes.push(`${activity.title}: ${activity.takeaway}`);
+    page.top += h;
+  }
+  if (report.confidence) {
+    const said = text.wrap(report.confidence, W - M * 2, SIZE.takeaway);
+    const h = said.length * lineHeight(SIZE.takeaway) + 4;
+    if (page.top + h > bottom) { page.notes = notes.join(' '); notes.length = 0; page = summaryPage(false); }
+    said.forEach((line, at) => page.items.push(label(M, page.top + at * lineHeight(SIZE.takeaway), W - M * 2, lineHeight(SIZE.takeaway), line, SIZE.takeaway, ink, { role: 'confidence' })));
+    notes.push(report.confidence);
     page.top += h;
   }
   page.notes = notes.join(' ');

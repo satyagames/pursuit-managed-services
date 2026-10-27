@@ -2,7 +2,8 @@
   import { onMount, tick, untrack } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
   import { answersToQuestions, confirmSampleClient, orphanNote } from '../lib/admin/adminData.js';
-  import { activitiesOfClient, nextOrder, reorderActivities } from '../lib/admin/admin-content.js';
+  import { activitiesOfClient, checkDeleteRefusal, checkOfClient, nextOrder, reorderActivities } from '../lib/admin/admin-content.js';
+  import { CHECK_DESCRIPTION, CHECK_KIND, CHECK_LABELS, CHECK_PROMPT, CHECK_TITLE } from '../lib/participant/confidence-check.js';
   import { viewById } from '../lib/admin/admin-content-views.js';
   import ActivityFormDialog from './ActivityFormDialog.svelte';
   import ActivityPreview from './ActivityPreview.svelte';
@@ -12,7 +13,7 @@
   import CopyActivitiesDialog from './CopyActivitiesDialog.svelte';
 
   type Client = { id: string; name: string; status?: string; theme?: unknown; themeVersion?: number | null; logoUrl?: string | null };
-  type Section = { id: string; title: string; enabled: boolean; order?: number; questionIds?: string[]; clientId?: string | null; description?: string | null };
+  type Section = { id: string; title: string; enabled: boolean; order?: number; questionIds?: string[]; clientId?: string | null; description?: string | null; kind?: string | null };
 
   // Content's Activities view (Phase 18: moved out of AdminContent.svelte, which keeps the client header and the strip). One client's activities
   // are on the left, with their live switch and the rest; the selected activity's questions are on the right. Every activity belongs to a
@@ -45,7 +46,9 @@
 
   /** The client's activities, in order: what the view shows. */
   const owned = $derived(activitiesOfClient(sections, clientId));
-  const selected = $derived(owned.find((section) => section.id === selectedId) ?? null);
+  /** The client's confidence check (Phase 20): a row of its own above the activities, its question edited like any other. */
+  const check = $derived(checkOfClient(sections, clientId) as Section | null);
+  const selected = $derived(owned.find((section) => section.id === selectedId) ?? (check && check.id === selectedId ? check : null));
   const archived = $derived(client.status === 'archived');
 
   const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
@@ -145,6 +148,64 @@
     } catch (cause) {
       onToast(cause instanceof Error ? cause.message : 'Could not save this activity.', 'error');
     } finally {
+      busy = false;
+    }
+  }
+
+  // ---- The confidence check (Phase 20) ----------------------------------------------------------------
+
+  /** Makes the client's check: its activity (Kind confidence-check), one question and five steps, 1 to 5, in the wireframe's words. */
+  async function addCheck() {
+    if (busy || check) return;
+    busy = true;
+    working = 'Adding the confidence check...';
+    const made: { kind: 'section' | 'question' | 'option'; id: string }[] = [];
+    try {
+      const section = await dataService.createSection({
+        title: CHECK_TITLE, order: 0, enabled: true, industryTags: [], questionIds: [], clientId, description: CHECK_DESCRIPTION, kind: CHECK_KIND,
+      }) as Section;
+      made.push({ kind: 'section', id: section.id });
+      const question = await dataService.createQuestion({ sectionId: section.id, type: 'confidence-continuum', prompt: CHECK_PROMPT, optionIds: [], order: 1, layout: 'text-list' }) as { id: string };
+      made.push({ kind: 'question', id: question.id });
+      const optionIds: string[] = [];
+      for (const [at, label] of CHECK_LABELS.entries()) {
+        const option = await dataService.createOption({ questionId: question.id, label, value: at + 1, correct: false }) as { id: string };
+        made.push({ kind: 'option', id: option.id });
+        optionIds.push(option.id);
+      }
+      await dataService.updateQuestion(question.id, { optionIds });
+      const saved = await dataService.updateSection(section.id, { questionIds: [question.id] }) as Section;
+      sections = [...sections, { ...section, ...saved, questionIds: [question.id] }];
+      selectedId = section.id;
+      // Go live lists every activity of the client in its session; a session already made learns of the check now, as of a new activity.
+      await dataService.addSectionsToLiveSession(clientId, [section.id]).catch(() => {});
+      onToast('Added the confidence check. New sessions ask it; switch it on for today on Today.', 'success');
+    } catch (cause) {
+      for (const item of made.reverse()) {
+        await (item.kind === 'option' ? dataService.deleteOption(item.id) : item.kind === 'question' ? dataService.deleteQuestion(item.id) : dataService.deleteActivity(item.id)).catch(() => {});
+      }
+      onToast(cause instanceof Error ? cause.message : 'Could not add the confidence check.', 'error');
+    } finally {
+      working = '';
+      busy = false;
+    }
+  }
+
+  /** Deletes the client's check, unless an open session asks it. */
+  async function removeCheck(section: Section) {
+    if (busy) return;
+    busy = true;
+    working = 'Checking the confidence check...';
+    try {
+      const refusal = checkDeleteRefusal(await dataService.findOpenSession(clientId) as never);
+      if (refusal) { onToast(refusal, 'error'); return; }
+      busy = false;
+      working = '';
+      await remove(section);
+    } catch (cause) {
+      onToast(cause instanceof Error ? cause.message : 'Could not delete the confidence check.', 'error');
+    } finally {
+      working = '';
       busy = false;
     }
   }
@@ -264,6 +325,25 @@
 
 <div class="content-layout">
   <section class="content-activities" aria-labelledby="activities-heading">
+    <div class="content-check" data-testid="content-check">
+      {#if check}
+        <ul class="rows" aria-label="Confidence check">
+          <li class="row activity" class:activity--selected={check.id === selectedId} data-activity={check.id}>
+            <button class="activity__select" type="button" aria-current={check.id === selectedId ? 'true' : undefined} onclick={() => { selectedId = check!.id; }}>
+              <span class="row__title">{CHECK_TITLE}</span>
+              <span class="muted small">{CHECK_DESCRIPTION} {plural(questionCount(check), 'question', 'questions')}</span>
+            </button>
+            <div class="row__actions activity__actions">
+              <button class="btn" type="button" aria-label="Preview the confidence check" onclick={() => { preview = { section: check!, client: clients.find((entry) => entry.id === clientId) ?? null }; }}>Preview</button>
+              <button class="btn btn--danger" type="button" aria-label="Delete the confidence check" onclick={() => void removeCheck(check!)} disabled={busy}>Delete</button>
+            </div>
+          </li>
+        </ul>
+      {:else}
+        <p class="muted small">No confidence check. One question asked before the first activity and after the last shows how far confidence moved.</p>
+        <button class="btn" type="button" onclick={() => void addCheck()} disabled={archived || busy}>Add a confidence check</button>
+      {/if}
+    </div>
     <h3 id="activities-heading">{client.name} activities</h3>
     {#if owned.length === 0}
       <p class="muted">{client.name} has no activities yet. Add one, or copy some from another client.</p>

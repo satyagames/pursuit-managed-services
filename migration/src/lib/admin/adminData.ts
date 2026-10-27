@@ -30,6 +30,8 @@ export type SessionResults = {
   sections: SessionSection[];
   /** What could not be read (empty when everything could). The rest of the session is counted as usual. */
   unreadable?: Unreadable[];
+  /** The client's confidence check, when the session lists it (Phase 20): its numbers, from lib/results/confidence-shift.js. */
+  confidenceCheck?: import('../results/confidence-shift.js').ConfidenceCheck;
 };
 
 // The admin screens read answers through ONE reader of answers, the items kept one per participant

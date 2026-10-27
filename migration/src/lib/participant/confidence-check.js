@@ -14,6 +14,14 @@ export const CHECK_KIND = 'confidence-check';
 /** PMSActivities.Kind of every other activity, and what an empty Kind reads as. */
 export const ACTIVITY_KIND = 'activity';
 
+/** A new check's five steps, lowest first (OptionValue 1 to 5): the approved wireframe's words (board 13), the content owner's to reword. */
+export const CHECK_LABELS = Object.freeze(['Not confident at all', 'Slightly confident', 'Moderately confident', 'Confident', 'Very confident']);
+/** A new check's question, as the wireframe asks it. */
+export const CHECK_PROMPT = 'How confident are you that Deloitte has the capabilities to deliver this solution?';
+/** A check activity's title and the line under it in Content. */
+export const CHECK_TITLE = 'Confidence check';
+export const CHECK_DESCRIPTION = 'Asked at the start and the end.';
+
 const SUFFIX = /^(.+)@(before|after)$/;
 
 /** The id of a guest's first answer to the check question. @param {string} questionId */

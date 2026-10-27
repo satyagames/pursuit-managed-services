@@ -20,6 +20,7 @@
   import LiveHead from './LiveHead.svelte';
   import LiveNotReady from './LiveNotReady.svelte';
   import LiveNotices from './LiveNotices.svelte';
+  import LiveCheckCard from './LiveCheckCard.svelte';
   import LiveSections from './LiveSections.svelte';
   import LiveStage from './LiveStage.svelte';
 
@@ -483,6 +484,7 @@
 
   {#if phase === 'display'}
     <LiveNotices {message} {unreadableText} {wall} {exportMessage} {presenting} {namesShown} onToggleNames={() => { namesShown = !namesShown; }} />
+    {#if !wall && results?.confidenceCheck}<LiveCheckCard check={results.confidenceCheck} />{/if}
     {#if presenting}
       <LiveStage
         bind:stage bind:footHeight {current} {currentChart} {currentTitle} {at} {count} {revealed} {selected} {scale} {spill} {atEnd} {autoAdvance}

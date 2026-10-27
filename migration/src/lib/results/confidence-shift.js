@@ -230,3 +230,22 @@ export function confidenceLine(check) {
     : `${whole(check.moved.percent)}% of guests who started not confident ended confident`;
   return `Confidence moved ${whole(check.shift.percent)}% of the scale (${check.shift.beforeMean.toFixed(1)} to ${check.shift.afterMean.toFixed(1)}); ${moved} ${n}`;
 }
+
+/**
+ * What the Results screen prints of a session's check, in words, from the numbers above (nothing is counted here): the shift as a signed whole
+ * percent of the scale, the means it moved between, "N of M guests answered both", moved to confident, and whether the sample is low.
+ * @param {Partial<ConfidenceCheck> | null | undefined} check
+ */
+export function checkSummary(check) {
+  if (!check?.measured) return { measured: false, shift: 'Not measured', from: '', answered: '', moved: '', lowSample: false };
+  const answered = answeredBothLine(/** @type {{ answeredBoth: number, guests: number }} */ (check));
+  if (!check.shift) return { measured: true, shift: 'No guest answered both', from: '', answered, moved: '', lowSample: true };
+  const percent = Math.round(check.shift.percent) || 0;
+  const moved = check.moved?.percent === null || check.moved?.percent === undefined
+    ? 'No guest started not confident'
+    : `${whole(check.moved.percent)}% (${check.moved.moved} of ${check.moved.started} who started not confident)`;
+  return {
+    measured: true, shift: `${percent > 0 ? '+' : ''}${percent}%`, from: `${check.shift.beforeMean.toFixed(1)} to ${check.shift.afterMean.toFixed(1)}`,
+    answered, moved, lowSample: Boolean(check.lowSample),
+  };
+}
