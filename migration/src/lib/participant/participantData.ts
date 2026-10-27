@@ -22,7 +22,8 @@
  */
 import * as dataService from '../data/dataService.js';
 import { SaveFailedError, createAnswerStore } from './answer-store.js';
-import { currentActivities, knownActivities, type Activity } from './experience.svelte.js';
+import { currentActivities, experience, knownActivities, sessionCheck, type Activity } from './experience.svelte.js';
+import { afterId, beforeId, isCheckActivity, nextStep, restartedIds, STEP_PATHS } from './confidence-check.js';
 import { isRecordSettled } from './pager-logic.js';
 import { participant } from './session.svelte.js';
 import { loadFailureText } from './sign-in.js';
@@ -193,8 +194,9 @@ export async function getKnownProgress(sessionId: string, clientTrackId: string,
 
 function progressOf(sections: Activity[], answeredQuestionIds: string[]) {
   const answered = new Set(answeredQuestionIds);
+  // (The client's confidence check is never one of the guest's activities: Phase 20.)
   const enabled = sections
-    .filter((section) => section.enabled === true)
+    .filter((section) => section.enabled === true && !isCheckActivity(section))
     .sort((left, right) => (left.order ?? 0) - (right.order ?? 0))
     .map((section) => {
       const questionIds = section.questionIds ?? [];
@@ -223,6 +225,71 @@ export async function firstTrySummary(questionIds: string[]): Promise<{ right: n
   const graded = (await store.saved(visit) as AnswerRecord[]).filter((record) => wanted.has(record.questionId) && record.correct !== null && isRecordSettled(record));
   return { right: graded.filter((record) => record.correct === true).length, total: graded.length };
 }
+
+// ---- The confidence check, Before and After (Phase 20) ----------------------------------------
+
+export type CheckPhase = 'before' | 'after';
+type Step = ReturnType<typeof nextStep>;
+
+/** The id a phase's answer is kept under: the check question's id with @before or @after. */
+const checkIdOf = (phase: CheckPhase, questionId: string) => (phase === 'before' ? beforeId(questionId) : afterId(questionId));
+
+/** Which of the check's two answers this device holds for the visit (saved or still waiting). */
+function checkAnswerIds(): string[] {
+  const check = sessionCheck();
+  if (!check) return [];
+  return [beforeId(check.questionId), afterId(check.questionId)].filter((id) => answerRecord(id) !== null);
+}
+
+/**
+ * Where the visit goes next (lib/participant/confidence-check.js nextStep): from what the page holds, no request. `allDone` is what the
+ * caller knows of the activities; `finishing` says the guest asked to finish. With the check off it is the hub, or Thank you, as before.
+ */
+export function visitStep({ allDone = false, finishing = false }: { allDone?: boolean; finishing?: boolean } = {}): Step {
+  return nextStep({ check: sessionCheck(), answers: checkAnswerIds(), allDone, flow: experience.activityFlow, sessionEnded: experience.ended, finishing });
+}
+
+/** visitStep()'s screen. */
+export const visitStepPath = (input: { allDone?: boolean; finishing?: boolean } = {}): string => STEP_PATHS[visitStep(input)];
+
+/** The guest's answer to one phase of the check on this device: the option they chose, or null. */
+export function checkAnswer(phase: CheckPhase): string | null {
+  const check = sessionCheck();
+  const held = check ? answerRecord(checkIdOf(phase, check.questionId)) : null;
+  return held && typeof held.answer === 'string' ? held.answer : null;
+}
+
+const draftKey = (phase: CheckPhase) => `cec-check-pick:${participant.clientTrackId ?? 'none'}:${phase}`;
+
+/** The card picked on a check screen and not yet confirmed, kept in this tab so a reload shows it picked; null if none. */
+export function checkPick(phase: CheckPhase): string | null {
+  try { return sessionStore()?.getItem(draftKey(phase)) ?? null; } catch { return null; }
+}
+
+/** Keeps (or, with null, forgets) the card picked on a check screen. Not an answer: nothing is saved until the guest confirms. */
+export function setCheckPick(phase: CheckPhase, optionId: string | null): void {
+  try {
+    if (optionId) sessionStore()?.setItem(draftKey(phase), optionId);
+    else sessionStore()?.removeItem(draftKey(phase));
+  } catch { /* blocked storage: the pick lives on the screen alone */ }
+}
+
+/**
+ * Keeps the guest's answer to the check and starts saving it, as any answer is kept (recordAnswer): it never waits for the network, so
+ * Continue is instant, and a save that fails is kept on this iPad and retried. Does nothing without a visit or a check (the preview).
+ */
+export function recordCheckAnswer(phase: CheckPhase, optionId: string): void {
+  const check = sessionCheck();
+  if (!check) return;
+  recordAnswer(check.section.id, { questionId: checkIdOf(phase, check.questionId), answer: optionId, firstAnswer: optionId, attempts: 1, correct: null });
+  setCheckPick(phase, null);
+}
+
+/**
+ * The ids a restart at an activity drops here: that activity's questions, and the check's After (asked again once the activity is done
+ * again); Before stays.
+ */
+export const restartedQuestionIds = (questionIds: string[]): string[] => restartedIds(questionIds, sessionCheck());
 
 // ---- Restart ---------------------------------------------------------------------------------
 

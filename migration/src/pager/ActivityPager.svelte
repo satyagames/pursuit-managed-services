@@ -15,7 +15,7 @@
     retryGraded, startGraded, toggleChoice, toggleRank, ungradedRecord,
     type Answer, type GradedState, type Question,
   } from '../lib/participant/pager-logic.js';
-  import { answerRecord, flushActivity, getSavedAnswers, knownProgress, loadFailure, pendingAnswers, recordAnswer } from '../lib/participant/participantData.js';
+  import { answerRecord, flushActivity, getSavedAnswers, knownProgress, loadFailure, pendingAnswers, recordAnswer, visitStepPath } from '../lib/participant/participantData.js';
   import { participant } from '../lib/participant/session.svelte.js';
   import { isSignedOut } from '../lib/participant/sign-in.js';
   import { APP_NAME } from '../lib/common/app-name.js';
@@ -342,7 +342,8 @@
   }
 
   const backToActivities = () => { if (!demo) void navigateTo('/agenda', false, handoff()); };
-  const finishAll = () => { if (!demo) void navigateTo('/thank-you', false, handoff()); };
+  // (Thank you, or (Phase 20) the confidence check's After first.)
+  const finishAll = () => { if (!demo) void navigateTo(visitStepPath({ allDone, finishing: true }), false, handoff()); };
   const goHome = () => { if (!demo) void navigateTo('/welcome'); };
 
   const primaryLabel = $derived(saving ? 'Saving...' : saveFailed ? "Couldn't save, Retry" : isLast ? 'Submit' : 'Next');

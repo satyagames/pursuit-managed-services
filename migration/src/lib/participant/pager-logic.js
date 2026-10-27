@@ -4,7 +4,7 @@
 // Plain JS with JSDoc on purpose, like theme.js: node runs it directly and TypeScript still
 // reads the types from the comments.
 
-/** @typedef {{ id: string, label: string, correct?: boolean | null, imageUrl?: string | null }} Option */
+/** @typedef {{ id: string, label: string, value?: unknown, correct?: boolean | null, imageUrl?: string | null }} Option */
 /** @typedef {{ id: string, prompt: string, type: string, order?: number, layout?: string | null, options: Option[] }} Question */
 /** @typedef {string | string[]} Answer */
 /** @typedef {'choosing' | 'wrong' | 'correct' | 'revealed'} GradedPhase */

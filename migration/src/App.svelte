@@ -11,7 +11,7 @@
   import { greetingName, hiLine } from './lib/participant/pager-logic.js';
   import { createPageWatcher, type PageWatcher } from './lib/common/page-watch.js';
   import { modeOf, sessionHasEnded, showsEndedNotice } from './lib/common/poll-schedule.js';
-  import { applyRestart, restoreAnswers, resumePendingSaves } from './lib/participant/participantData.js';
+  import { applyRestart, restartedQuestionIds, restoreAnswers, resumePendingSaves } from './lib/participant/participantData.js';
   import { visitGoneNotice } from './lib/participant/visit-notice.js';
   import { clearTrack, offerEarlierVisit, participant, setTrack, type ParticipantTrack } from './lib/participant/session.svelte.js';
   import { isSignedOut } from './lib/participant/sign-in.js';
@@ -20,6 +20,7 @@
   import Quiz from './routes/Quiz.svelte';
   import Feedback from './routes/Feedback.svelte';
   import ThankYou from './routes/ThankYou.svelte';
+  import ConfidenceCheck from './routes/ConfidenceCheck.svelte';
   import ResultsMoved from './routes/ResultsMoved.svelte';
   import Welcome from './routes/Welcome.svelte';
   import NotLive from './routes/NotLive.svelte';
@@ -36,6 +37,9 @@
     '/quiz/:sectionId': Quiz,
     '/feedback/:sectionId': Feedback,
     '/thank-you': ThankYou,
+    // The confidence check, Before and After (Phase 20): one screen for both.
+    '/check-in': wrap({ component: ConfidenceCheck, props: { phase: 'before' } }),
+    '/check-out': wrap({ component: ConfidenceCheck, props: { phase: 'after' } }),
     // The facilitator's results display moved to the admin page (Phase 7): these addresses only say so.
     '/master-results': ResultsMoved,
     '/master-results/:sessionId': ResultsMoved,
@@ -334,7 +338,8 @@
         let restarted: string[] | null = null;
         if (track.restartedAt && track.restartSectionId) {
           const section = await dataService.getSection(track.restartSectionId) as { id: string; enabled?: boolean; questionIds?: string[] } | null;
-          restarted = section?.questionIds ?? [];
+          // (At an activity the confidence check's After goes too, and is asked again once the activity is done again: Phase 20.)
+          restarted = restartedQuestionIds(section?.questionIds ?? []);
           if (section?.enabled === true) destination = `/quiz/${section.id}`;
         }
         // The answers go from this device first; only then do the screens learn of the restart.

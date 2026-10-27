@@ -1,0 +1,50 @@
+/* The confidence check's screens, Before and After (Phase 20): the golden-ratio grid of the approved wireframe (boards 13 and 14), drawn for
+ * a 768 x 1024 iPad held upright. Every number of those screens is one of these properties, set on the screen itself (.pms-check), so
+ * nothing else on the page sees them; scripts/test-confidence-check.js reads this file and holds the ratios to within 1%.
+ *
+ * Where these and the page's own rules differ, the page's win (styles/tokens.css): the side margin is the stage's gutter, so the content is
+ * as wide as every other screen's (622 px at 768, not 658), the button is the page's primary button at the page's button height, and body
+ * text never goes under 16 px. The cards and the button take their widths from the content's, so their proportions hold at any width.
+ */
+
+.pms-check {
+  /* phi, and its two sections of a length: 61.8% and 38.2% */
+  --check-phi: 1.618;
+  --check-major: 61.8%;
+  --check-minor: 38.2%;
+
+  /* Fibonacci spacing steps */
+  --check-space-1: 8px;
+  --check-space-2: 13px;
+  --check-space-3: 21px;
+  --check-space-4: 34px;
+  --check-space-5: 55px;
+  --check-space-6: 89px;
+
+  /* Type: each about phi times the last */
+  --check-type-1: 16px;
+  --check-type-2: 26px;
+  --check-type-3: 42px;
+
+  /* The wireframe's frame, at 768 x 1024 */
+  --check-frame-width: 768px;
+  --check-frame-height: 1024px;
+  --check-header: 55px;
+  --check-margin: 55px;
+  /* The answer panel starts at 61.8% of the height (633 at 1024); the question block is centred on 38.2% (391). */
+  --check-answers-top: 633px;
+  --check-question-centre: 391px;
+
+  /* A card is a golden rectangle, five in a row */
+  --check-card-width: 121px;
+  --check-card-height: 196px;
+  --check-card-gap: 13px;
+  --check-card-ratio: calc(121 / 196);
+  /* A card stacked in landscape is at least this high; a row on a phone at least this */
+  --check-card-stacked-min: 89px;
+  --check-card-row-min: 55px;
+
+  /* Continue / Finish: the content's width over phi (407 of 658), 55 high */
+  --check-button-width: 407px;
+  --check-button-height: 55px;
+}

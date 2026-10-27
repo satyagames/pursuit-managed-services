@@ -5,7 +5,8 @@
   import { focusHeading } from '../lib/common/focus.js';
   import { consumeNavigationData, navigateTo } from '../lib/participant/navigation.js';
   import { greetingName } from '../lib/participant/pager-logic.js';
-  import { discardPendingAnswers, firstTrySummary, getProgress } from '../lib/participant/participantData.js';
+  import { checkAnswer, discardPendingAnswers, firstTrySummary, getProgress, visitStep } from '../lib/participant/participantData.js';
+  import { loadActivity, sessionCheck } from '../lib/participant/experience.svelte.js';
   import { clearTrack, participant } from '../lib/participant/session.svelte.js';
   import { APP_NAME } from '../lib/common/app-name.js';
   import { motion } from '../lib/motion/motion.js';
@@ -23,6 +24,8 @@
   let error = $state('');
   let fetchedActivities = $state(0);
   let fetchedScore = $state<{ right: number; total: number } | null>(null);
+  /** The confidence check's two answers (Phase 20), shown only once both exist: how it moved, Before and After. */
+  let moved = $state<{ direction: string; before: string; after: string } | null>(null);
   let heading = $state<HTMLElement>();
   let active = false;
   const loading = $derived(fetching && !preview);
@@ -58,6 +61,26 @@
     }
   }
 
+  /** "Your confidence moved up", Before and After, each as its number and words. Never blocks the finale. */
+  async function describeCheck() {
+    try {
+      const check = sessionCheck();
+      const [before, after] = [checkAnswer('before'), checkAnswer('after')];
+      if (!check || !before || !after) return;
+      const question = (await loadActivity(check.section.id))?.questions.find((each) => each.id === check.questionId);
+      const option = (id: string) => question?.options.find((each) => each.id === id);
+      const [from, to] = [option(before), option(after)];
+      if (!from || !to || !active) return;
+      const [low, high] = [Number(from.value), Number(to.value)];
+      moved = {
+        direction: high > low ? 'moved up' : high < low ? 'moved down' : 'stayed the same',
+        before: `${from.value} ${from.label}`, after: `${to.value} ${to.label}`,
+      };
+    } catch (cause) {
+      console.warn('The finale could not show the confidence check', cause);
+    }
+  }
+
   async function verifyCompletion() {
     fetching = true;
     fetchedAllowed = false;
@@ -72,11 +95,15 @@
       const progress = await getProgress(sessionId, trackId, ownHandoff?.answeredQuestionIds ?? null);
       if (!active || participant.sessionId !== sessionId || participant.clientTrackId !== trackId) return;
       const needed = progress.sections.filter((section) => (section.questionIds ?? []).length > 0);
-      if (!needed.length || !needed.every((section) => section.complete)) {
-        await navigateTo('/agenda', true);
+      const allDone = needed.length > 0 && needed.every((section) => section.complete);
+      // Thank you once every activity is done; with the confidence check (Phase 20), once After is given (or the session has ended).
+      const step = visitStep({ allDone, finishing: true });
+      if (step !== 'thank-you') {
+        await navigateTo(step === 'check-out' ? '/check-out' : '/agenda', true);
         return;
       }
-      fetchedActivities = needed.length;
+      fetchedActivities = needed.filter((section) => section.complete).length;
+      await describeCheck();
       await summarise(needed.flatMap((section) => section.questionIds ?? []));
       if (!active) return;
       fetchedAllowed = true;
@@ -132,6 +159,13 @@
       <li>{activities === 1 ? '1 activity completed' : `${activities} activities completed`}</li>
       {#if score}<li>{score.right} of {score.total} right on the first try</li>{/if}
     </ul>
+    {#if moved}
+      <div class="pms-moved">
+        <p class="pms-moved-head">Your confidence {moved.direction}</p>
+        <p>Before: {moved.before}</p>
+        <p>After: {moved.after}</p>
+      </div>
+    {/if}
     <div class="pms-actions">
       {#if debug && !preview}<PillButton variant="secondary" size="md" onclick={startOver}>Start over</PillButton>{/if}
       <HomeButton onclick={() => go('/welcome')} />
@@ -169,6 +203,24 @@
     padding: 0;
     font: var(--fw-semibold) var(--fs-body) / 1.35 var(--font-sans);
     list-style: none;
+  }
+
+  .pms-moved {
+    display: grid;
+    gap: 0.25rem;
+    padding: 0.9rem 1.25rem;
+    font: var(--fw-regular) var(--fs-body) / 1.4 var(--font-sans);
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--pill-radius);
+  }
+
+  .pms-moved p {
+    margin: 0;
+  }
+
+  .pms-moved-head {
+    font-weight: var(--fw-bold);
   }
 
   .pms-actions {

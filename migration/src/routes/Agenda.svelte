@@ -7,7 +7,7 @@
   import { focusHeading } from '../lib/common/focus.js';
   import { consumeNavigationData, navigateTo } from '../lib/participant/navigation.js';
   import { activityStates } from '../lib/participant/pager-logic.js';
-  import { getKnownProgress, loadFailure } from '../lib/participant/participantData.js';
+  import { getKnownProgress, loadFailure, visitStep, visitStepPath } from '../lib/participant/participantData.js';
   import { participant } from '../lib/participant/session.svelte.js';
   import { APP_NAME } from '../lib/common/app-name.js';
   import { motion } from '../lib/motion/motion.js';
@@ -20,6 +20,8 @@
   let heading = $state<HTMLElement>();
   let fetched = $state<Pill[]>([]);
   let fetchedAllDone = $state(false);
+  /** An any-order session with the confidence check (Phase 20): Finish asks After whenever the guest is ready, not only once all is done. */
+  let finishEarly = $state(false);
   let fetching = $state(true);
   /** The loading line waits LOADING_DELAY_MS (Phase 10j): a quick read does not flash one. */
   let slow = $state(false);
@@ -47,6 +49,7 @@
     // An activity with no questions can never be finished, so it must not keep the finale away.
     const needed = progress.sections.filter((section) => (section.questionIds ?? []).length > 0);
     fetchedAllDone = needed.length > 0 && needed.every((section) => section.complete);
+    finishEarly = experience.activityFlow === 'open' && visitStep({ allDone: fetchedAllDone, finishing: true }) === 'check-out';
     fetching = false;
   }
 
@@ -101,6 +104,11 @@
       void navigateTo('/welcome', true);
       return () => { window.clearTimeout(timer); };
     }
+    // (Phase 20: the confidence check's Before comes first, and cannot be skipped by opening the hub.)
+    if (visitStep() === 'check-in') {
+      void navigateTo('/check-in', true);
+      return () => { window.clearTimeout(timer); };
+    }
 
     // (Drawing what is held reads nothing, unless this visit's answers were never read on this page: if that read fails, the read behind it
     // still runs, and says why with Try again when there is nothing to show.)
@@ -137,7 +145,7 @@
   {/if}
 
   <ActionBar sticky={false}>
-    {#if allDone}<PillButton onclick={() => go('/thank-you')}>Finish</PillButton>{/if}
+    {#if allDone || finishEarly}<PillButton onclick={() => go(preview ? '/thank-you' : visitStepPath({ allDone, finishing: true }))}>Finish</PillButton>{/if}
     <HomeButton onclick={() => go('/welcome')} />
   </ActionBar>
 </section>

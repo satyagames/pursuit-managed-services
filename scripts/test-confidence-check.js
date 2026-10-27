@@ -556,3 +556,38 @@ describe('Part 1: the sample check, and a new session\'s switch', () => {
     }
   });
 });
+
+describe('Part 3: a returning guest resumes on the right step (lib/participant/boot.js)', async () => {
+  const { bootParticipant } = await import('../migration/src/lib/participant/boot.js');
+
+  /** Kroger live with (or without) its check, a visit, and these answers saved. */
+  async function resumed({ withCheck = true, switchedOn = true, answers = [] } = {}) {
+    const fake = createSharePointFake();
+    const restore = fake.install();
+    ds.configure({ sharePoint: fake.settings });
+    await seedPack(ds, samplePack({ confidenceCheck: withCheck }));
+    const { session } = await ds.activateClient('c-kroger', DAY);
+    if (!switchedOn) await ds.updateSession(session.id, { confidenceCheck: false });
+    const track = await ds.beginVisit(crypto.randomUUID(), session.id, 'c-kroger');
+    if (answers.length) await ds.saveParticipantResponses({ trackId: track.id, sessionId: session.id, clientId: 'c-kroger', responses: answers });
+    try {
+      return await bootParticipant(ds, { trackId: track.id, path: '/' });
+    } finally {
+      restore();
+    }
+  }
+
+  it('no Before yet: Before first', async () => {
+    assert.equal((await resumed()).destination, '/check-in');
+  });
+
+  it('Before given: the hub; After given too: Thank you', async () => {
+    assert.equal((await resumed({ answers: [record(beforeId('q-kroger-check'), 'o-kroger-check-2')] })).destination, '/agenda');
+    assert.equal((await resumed({ answers: [record(beforeId('q-kroger-check'), 'o-kroger-check-2'), record(afterId('q-kroger-check'), 'o-kroger-check-4')] })).destination, '/thank-you');
+  });
+
+  it('a client without a check, or a session with it switched off: the hub, as always', async () => {
+    assert.equal((await resumed({ withCheck: false })).destination, '/agenda');
+    assert.equal((await resumed({ switchedOn: false })).destination, '/agenda');
+  });
+});

@@ -7,7 +7,7 @@
   import { focusHeading } from '../lib/common/focus.js';
   import { navigateTo } from '../lib/participant/navigation.js';
   import { greetingName, hiLine } from '../lib/participant/pager-logic.js';
-  import { hasAnyAnswer, restoreAnswers } from '../lib/participant/participantData.js';
+  import { hasAnyAnswer, restoreAnswers, visitStepPath } from '../lib/participant/participantData.js';
   import { participant, setTrack, takeEarlierVisit, type ParticipantTrack } from '../lib/participant/session.svelte.js';
   import { visitBegun, visitIdFor } from '../lib/participant/visit-id.js';
   import { APP_NAME } from '../lib/common/app-name.js';
@@ -76,7 +76,7 @@
       // going back to its activities needs nothing from the server.
       if (trackId && trackId === participant.clientTrackId) {
         participant.notice = '';
-        await navigateTo('/agenda');
+        await navigateTo(visitStepPath()); // the hub, or (Phase 20) the confidence check's Before first
         return;
       }
       // A new visit is begun with an id the page chose (lib/participant/visit-id.js): a press whose reply was lost, pressed again, finds the
@@ -92,7 +92,7 @@
       setTrack(track);
       if (!trackId) await restoreAnswers(null); // a visit that began this moment has saved nothing: no need to ask
       participant.notice = '';
-      await navigateTo('/agenda');
+      await navigateTo(visitStepPath());
     } catch (cause) {
       error = cause instanceof Error ? cause.message : 'Could not continue this visit.';
     } finally {
