@@ -176,6 +176,28 @@ const dominosContent = build(dominos.id, [
   },
 ]);
 
+// The confidence check (Phase 20): one for each client, asked at the start and the end of a session, on five steps whose values are 1 to 5.
+// The words are the approved wireframe's (board 13); the content owner may reword them in Content. Only samplePack({ confidenceCheck: true })
+// carries them. Setup's "Seed sample clients", server/data and the tests build on the pack without them, so a site seeded before is as it was
+// and an existing client gains a check only when somebody adds one in Content.
+
+/** The check's five steps, lowest first (OptionValue 1 to 5). */
+export const CHECK_LABELS = Object.freeze(['Not confident at all', 'Slightly confident', 'Moderately confident', 'Confident', 'Very confident']);
+/** The check's question, as the wireframe asks it. */
+export const CHECK_PROMPT = 'How confident are you that Deloitte has the capabilities to deliver this solution?';
+
+/** A client's check: one activity of Kind confidence-check, its one question and five options. @param {string} clientId @param {string} slug */
+export function checkContent(clientId, slug) {
+  const sectionId = `sec-${slug}-check`;
+  const questionId = `q-${slug}-check`;
+  const optionIds = CHECK_LABELS.map((_, at) => `o-${slug}-check-${at + 1}`);
+  return {
+    sections: [{ id: sectionId, title: 'Confidence check', order: 0, enabled: true, industryTags: [], questionIds: [questionId], clientId, description: 'Asked at the start and the end.', kind: 'confidence-check' }],
+    questions: [{ id: questionId, sectionId, type: 'confidence-continuum', prompt: CHECK_PROMPT, optionIds, order: 1, layout: 'text-list' }],
+    options: CHECK_LABELS.map((label, at) => ({ id: optionIds[at], questionId, label, value: at + 1, correct: false, imageUrl: null })),
+  };
+}
+
 /**
  * A sample client's record: its theme built from its look, with its pictures when they are given (the three addresses in the theme,
  * the logo's in LogoUrl too, and the focal point beside the background), else none.
@@ -193,15 +215,17 @@ function clientRecord(client, pictures) {
 
 /**
  * The sample pack: { clients, sections, questions, options }, a fresh copy on every call. With `pictures` (by client id: the addresses
- * of its hero, logo and background, and the background's focal point) each client named there has them in its theme and LogoUrl.
- * @param {{ pictures?: Record<string, { hero: string, logo: string, background: string, backgroundFocus?: { x: number, y: number } }> }} [options]
+ * of its hero, logo and background, and the background's focal point) each client named there has them in its theme and LogoUrl. With
+ * `confidenceCheck` (Phase 20) each client has its confidence check too (checkContent), after its activities.
+ * @param {{ pictures?: Record<string, { hero: string, logo: string, background: string, backgroundFocus?: { x: number, y: number } }>, confidenceCheck?: boolean }} [options]
  * @returns {{ clients: any[], sections: any[], questions: any[], options: any[] }}
  */
-export function samplePack({ pictures = {} } = {}) {
+export function samplePack({ pictures = {}, confidenceCheck = false } = {}) {
+  const checks = confidenceCheck ? [checkContent(kroger.id, kroger.slug), checkContent(dominos.id, dominos.slug)] : [];
   return structuredClone({
     clients: [kroger, dominos].map((client) => clientRecord(client, pictures[client.id])),
-    sections: [...krogerContent.sections, ...dominosContent.sections],
-    questions: [...krogerContent.questions, ...dominosContent.questions],
-    options: [...krogerContent.options, ...dominosContent.options],
+    sections: [...krogerContent.sections, ...dominosContent.sections, ...checks.flatMap((check) => check.sections)],
+    questions: [...krogerContent.questions, ...dominosContent.questions, ...checks.flatMap((check) => check.questions)],
+    options: [...krogerContent.options, ...dominosContent.options, ...checks.flatMap((check) => check.options)],
   });
 }

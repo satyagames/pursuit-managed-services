@@ -519,3 +519,40 @@ describe('Part 2: the oracle recounts the check, and its comparison can fail', a
     assert.ok(caughtPairs > 30, `the pairs: ${caughtPairs} of 60`);
   });
 });
+
+describe('Part 1: the sample check, and a new session\'s switch', () => {
+  it('samplePack({ confidenceCheck: true }) gives each client one check of five steps, 1 to 5; samplePack() is as it was', async () => {
+    const { CHECK_LABELS, CHECK_PROMPT } = await import('../migration/src/lib/setup/sample-clients.js');
+    const plain = samplePack();
+    const pack = samplePack({ confidenceCheck: true });
+    assert.equal(plain.sections.some(isCheckActivity), false);
+    const checks = pack.sections.filter(isCheckActivity);
+    assert.deepEqual(checks.map((section) => section.clientId), ['c-kroger', 'c-dominos']);
+    for (const section of checks) {
+      const [question] = pack.questions.filter((each) => each.sectionId === section.id);
+      assert.equal(question.prompt, CHECK_PROMPT);
+      assert.equal(question.type, 'confidence-continuum');
+      const options = question.optionIds.map((id) => pack.options.find((option) => option.id === id));
+      assert.deepEqual(options.map((option) => [option.label, option.value]), CHECK_LABELS.map((label, at) => [label, at + 1]));
+    }
+    assert.deepEqual(CHECK_LABELS, ['Not confident at all', 'Slightly confident', 'Moderately confident', 'Confident', 'Very confident']);
+    assert.deepEqual(pack.sections.filter((section) => !isCheckActivity(section)), plain.sections);
+  });
+
+  it('Go live makes a session that asks the check when its client has one with a question, and one that does not otherwise', async () => {
+    for (const [withCheck, expected] of [[true, true], [false, false]]) {
+      const fake = createSharePointFake();
+      const restore = fake.install();
+      try {
+        ds.configure({ sharePoint: fake.settings });
+        await seedPack(ds, samplePack({ confidenceCheck: withCheck }));
+        const { session } = await ds.activateClient('c-kroger', DAY);
+        assert.equal(session.confidenceCheck, expected);
+        assert.equal((await ds.getSession(session.id)).confidenceCheck, expected, 'and it is stored');
+        assert.equal(session.sectionIds.includes('sec-kroger-check'), withCheck, 'the check is one of the session\'s activities, as every activity of the client is');
+      } finally {
+        restore();
+      }
+    }
+  });
+});
