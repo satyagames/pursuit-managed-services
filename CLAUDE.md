@@ -60,7 +60,7 @@ On the Windows checkout the system Node is 20: run Node 22 from `.local/node22/n
 4. **Behaviour the tests pin stays pinned.** Write the failing test first and show it failing; never loosen or delete a test that guards live
    behaviour; never re-record a request baseline to make it pass (`--amend` only, see [docs/TESTING.md](docs/TESTING.md)).
 5. **SharePoint:** every item read names its columns (`selectOf`); a duplicate is 409 for 400, 409 or 500; no column named like a list-item property
-   (`DisplayName`); a list title only through `spTitle()` / `sharePointListTitles()`; schema version 3; the settings file is `pms-config.txt`.
+   (`DisplayName`); a list title only through `spTitle()` / `sharePointListTitles()`; schema version 4; the settings file is `pms-config.txt`.
 6. **Only the data layer fetches** (`lib/data/core.js`; everything else imports `lib/data/dataService.js`), and `lib/settings/settings-file.js`, the settings file. Sounds and confetti only through
    `lib/effects/effects.ts`. Saving answers only through `lib/participant/participantData.ts`. Motion only through `lib/motion/motion.ts`, its durations
    and curves only in `lib/motion/motion-tokens.css`.

@@ -117,6 +117,14 @@ seven sizes.
   (recorded from Phase 17's file; `PMS_RECORD_MARKUP=1` records it again, for a deliberate change only), and embedded with its level 3 heading and no
   Back button. The browser side is `content-brand.spec.ts` (the strip, the address, Clients' Brand, a switch that keeps both views, the guards from a
   view out of sight, the bridge, the keyboard, requests, timers and memory, the sticky budget at 1366 by 768 and 1180 by 820, axe and reflow).
+- `node --test scripts/test-confidence-check.js` (also part of `npm test`, Prompt 20): Part 0's proof that `@before`/`@after` records survive the save,
+  the merge, the store and both restarts, and leave every tally as it was; the arithmetic of `lib/results/confidence-shift.js` worked by hand
+  (3, 4 and 5 points, ties on the thresholds, an empty session), its properties over 300 seeds, and the oracle's check block caught when wrong;
+  every row of board 14 against `nextStep()`; the schema (version 4, a site of version 3 brought up with nothing lost); the boot's resume step; the
+  golden-ratio tokens to 1%; Content's rules, the producer's counts, Results' words, the leader report, its CSV and the pack. The request
+  baselines followed the two columns by [scripts/schema-baseline/columns-baselines.js](../scripts/schema-baseline/columns-baselines.js)
+  (`--order`, `--check`, `--write`): the suites run on the last commit's tree and on today's, request by request, and a fresh recording equal to the
+  translation. The browser side is `confidence-check.spec.ts` (Chromium and WebKit; pictures in `test-results/confidence-check/`).
 - `node --test scripts/test-session.js` (also part of `npm test`, Prompt 19): the rule book of refusals (`REFUSALS` in
   `migration/src/lib/data/session.js`, each row against its own case, and nothing of a stale write token or a busy site taken for a sign-in), and the
   ladder on the mocked SharePoint with a renewer the test supplies: a stale token as before, a sign-in mended at Step A, one that needs Step B, one

@@ -76,6 +76,17 @@ sequenceDiagram
   client, activities and the guest; the new visit beside the activities' content; then the claim, ONE write with `If-Match` on the code's version,
   so only one device can win. The loser removes the visit it wrote.
 
+### The confidence check, Before and After
+
+Prompt 20. When the live session's `ConfidenceCheck` is Yes and the client has a check (an activity of `Kind` `confidence-check` with a question),
+`nextStep()` in `lib/participant/confidence-check.js` decides each move: the boot (a resumed visit), Welcome, the hub, the pager's last activity and
+Thank you all ask it. Before (`#/check-in`) comes first; the hub sends a visit without it back there. After (`#/check-out`) comes when the last
+activity is finished, or when Finish is pressed on the hub of an any-order session; an ended session asks none. Each answer is one more record in
+the visit's own item (`<questionId>@before`, `<questionId>@after`), saved by the same store as every answer; the check's question and options are
+the client's activities' content, read with them, so no request is added. Thank you shows "Your confidence moved up / stayed the same / moved
+down" once both exist. A restart at an activity drops that activity's answers and After (on the device and in the list); from the very beginning,
+everything. On the facilitator's side the session's results carry `confidenceCheck` (`buildResults`), from the answers and activities already read.
+
 ## The facilitator
 
 ```mermaid

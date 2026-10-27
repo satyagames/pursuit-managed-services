@@ -19,7 +19,8 @@ One line each: the decision, why, and what enforces it (a test fails if it is br
 | Decision | Why | Enforced by |
 |---|---|---|
 | One schema file names every list and column (`lib/schema/pms-schema.js`, `pms-schema-meta.js`); `SHAREPOINT-LISTS.md` is generated from it. | Six hand-kept tables used to disagree. | `scripts/test-schema.js`, `scripts/test-lists-reference.js` |
-| Schema version 3; a page stops on another version; Setup raises an older one and never lowers. | A build must never write lists shaped for another build. | `scripts/test-schema-version.js`, `scripts/test-schema-upgrade.js` |
+| Schema version 4 (3 until Prompt 20); a page stops on another version; Setup raises an older one and never lowers. | A build must never write lists shaped for another build. | `scripts/test-schema-version.js`, `scripts/test-schema-upgrade.js` |
+| The confidence check's two answers are records `<questionId>@before` and `<questionId>@after` in the visit's existing `ResponsesJson`: no answers column, no list. A client's check is an activity of `Kind` `confidence-check`; a session asks it when `ConfidenceCheck` is Yes (schema version 4). | Every layer keys answers by `questionId`, so saving, retries, resume and restart needed no change, and no tally meets an id no question has (Prompt 20, proved in Part 0). | `scripts/test-confidence-check.js` |
 | No column named like a SharePoint list-item property (`DisplayName`...). | PCOE refused to return `DisplayName` by name (15 Oct 2026). | `scripts/test-schema.js` |
 | Every item read names its columns (`$select`). | PCOE left `ClientId` out of a read that named none (14 Oct 2026). | `scripts/test-named-reads.js`, the strict mock |
 | A duplicate is 409 whether SharePoint says 400, 409 or 500. | PCOE says 500. | `scripts/test-duplicates.js` |

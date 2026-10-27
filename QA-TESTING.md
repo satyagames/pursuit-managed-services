@@ -1435,6 +1435,30 @@ tests, not on SharePoint Online:** whether a navigation in a hidden frame renews
 210. **Then production, and the push.** *(Still to see.)* If 206 to 209 pass, copy the three pages to `Shared Documents/PMS` and push the branch
     `pms-19`. Nothing in the lists changes (version 3), and no setting is new.
 
+### Prompt 20 (the confidence check, Before and After): not verified on SharePoint Online or an iPad
+
+Every guest answers one confidence question before the first activity and after the last; Results show how far confidence moved. Proven on the
+mocked SharePoint, the local server and the built page in Chromium and WebKit (RELEASE-20.md), not on the real site or a real iPad. **The lists
+move to version 4**: two columns, which Setup adds. Use a test copy of the site first.
+
+211. **Upgrade a test copy of the site.** *(Still to see.)* Open Setup on a copy of the site with this package: **expect** "The lists on this site
+    are version 3; this version of the app needs version 4", and Show the plan naming exactly `PMSClientSessions.ConfidenceCheck` and
+    `PMSActivities.Kind`. Press Create, then Mark the site as ready: **expect** "Raised the lists from version 3 to version 4." and the
+    self-test passing. Every session, activity and answer of before is where it was.
+212. **A session with three iPads.** *(Still to see.)* In Content add the client's confidence check, Go live (or switch Confidence check on, on
+    Today's Controls), and on three iPads answer Before, the activities and After. **Expect** the Live display's card to read "Before 3 of 3" and
+    "After 3 of 3", with no names, and Results to show a Confidence shift with "3 of 3 guests answered both" (and "Low sample": under 10).
+213. **Reloads, restarts and an early end.** *(Still to see.)* Reload an iPad on the After screen with a card picked: **expect** the same screen and
+    the card still picked. Restart one visit from Results at an activity: **expect** that iPad back in the activity, Before kept and After asked
+    again at the end; restart another from the very beginning: **expect** Before again. End the session while one guest has not given After:
+    **expect** that guest counted in Before and not in the shift.
+214. **The screen on an iPad.** *(Still to see.)* Upright and sideways: **expect** the five cards and the button without scrolling, the button under
+    the thumb, the text readable at arm's length, the picked card dark with a tick, and a keyboard (if one is attached) moving between cards with
+    the arrows.
+215. **Words and thresholds.** *(Still to see.)* Ask the content owner to confirm the five labels and the 2 / 4 thresholds, and the manager whether
+    the shift divides by the full scale (5) or by the largest possible move (4): `shiftDivisor` in `lib/results/confidence-shift.js`. *(Record the
+    answers here.)* Then push the branch `pms-20`.
+
 ### Phase 8 (browsers, devices, accessibility, performance, the unsupported-browser page): not verified on a real device, a real screen reader, or the real SharePoint site
 
 A printable sheet for the real devices, one page each for iPad Safari, iPhone Safari, Safari on a Mac, Chrome, Edge and Firefox, built from these items and from

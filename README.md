@@ -94,7 +94,7 @@ Each folder, file and dependency: [docs/MODULES.md](docs/MODULES.md) (generated 
 
 ## SharePoint at a glance
 
-Twelve lists and one picture library, schema version 3. Every column is described in [SHAREPOINT-LISTS.md](SHAREPOINT-LISTS.md); setting up, the
+Twelve lists and one picture library, schema version 4. Every column is described in [SHAREPOINT-LISTS.md](SHAREPOINT-LISTS.md); setting up, the
 settings file and what SharePoint does are in [docs/SHAREPOINT.md](docs/SHAREPOINT.md).
 
 | List | Holds |
@@ -233,7 +233,7 @@ Proposals, not features: nothing below exists yet. Size: S (days), M (a week or 
 - Import activities from a spreadsheet (CSV or Excel), with a preview before anything is saved. M
 - Session templates: a set of activities to start a client from. M
 - Follow-up questions and an activity's purpose in the content (the dataset has purposes the app has no place for). M ◆
-- A "reveal" line after "Guess the brand" (needs a column: schema version 4). M ◆
+- A "reveal" line after "Guess the brand" (needs a column: schema version 5). M ◆
 - A ranking version of "Straight talk". S ◆
 - Whether Setup's "Seed sample clients" uses VJR's dataset instead of the older pack. S ◆
 
@@ -243,7 +243,7 @@ Proposals, not features: nothing below exists yet. Size: S (days), M (a week or 
 - Retry and Home nearer the answers on an iPad in portrait. S
 - A client's logo on Welcome when it also has a hero. S ◆
 - A lighter scrim for clients with a light background. S ◆
-- A motion profile per activity, chosen in Content (needs a column: schema version 4). M ◆
+- A motion profile per activity, chosen in Content (needs a column: schema version 5). M ◆
 - A motion "personality" per client (calmer, livelier) beside the Animations switch. S ◆
 
 **Facilitation and live**

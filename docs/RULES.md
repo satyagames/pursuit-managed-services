@@ -1407,6 +1407,38 @@ sequence, [DATA-FLOW.md](DATA-FLOW.md#a-refused-sign-in-the-ladder). **None of i
 - **The keep-alive** (`lib/common/session-keepalive.ts`) runs on `page-watch.ts`'s one timer: no timer while hidden, nothing while requests are
   answered, one light read after `SESSION_LIMITS.idleMs`. It decides idle inside its check, not through `enabled` (see RELEASE-19.md).
 
+## Rules from Prompt 20 (the confidence check, Before and After; keep them holding)
+
+The report is [RELEASE-20.md](history/RELEASE-20.md); the steps, [DATA-FLOW.md](DATA-FLOW.md#the-confidence-check-before-and-after). **None of it has met
+SharePoint Online or an iPad**: QA-TESTING.md items 211 to 215.
+
+- **The flow is one list of rules**, `FLOW_RULES` in `lib/participant/confidence-check.js`, and `nextStep()` is the only thing that decides where a
+  visit goes when the session asks the check: Before (`#/check-in`) first, for a late joiner too, never skipped; the activities; After (`#/check-out`)
+  when the last activity is finished (in order) or Finish is pressed on the hub (any order); Thank you. An ended session asks no After. A visit
+  restarted from the very beginning loses both answers; one restarted at an activity keeps Before and loses After. Every row of board 14 is a
+  case in `scripts/test-confidence-check.js`.
+- **A session with the check off, and every client without one, behaves exactly as before**: the same screens, results and exports. The answers
+  CSV gains its two columns only for a session that lists the client's check.
+- **Storage**: the two answers are records `<questionId>@before` and `<questionId>@after` in the visit's `ResponsesJson`, saved, retried, merged,
+  restored and restarted like any answer, through `participantData.ts` (`recordCheckAnswer`); Continue never waits for the network. A card
+  picked and not confirmed is kept in this tab only (`cec-check-pick:`). The Before answer is never shown on the After screen.
+- **The formulas live in `lib/results/confidence-shift.js` and nowhere else**; Results, the Live display, the leader report, the pack and the oracle
+  read them:
+  - Confidence shift (percent) = (mean After − mean Before) / `shiftDivisor(scaleMax)` × 100 over the guests who gave both; `shiftDivisor` is
+    `scaleMax` (ASSUMED until the manager decides; `scaleMax − 1` is the alternative, a one-line change).
+  - Moved to confident = of the paired guests whose Before ≤ `notConfidentMax` (`floor(0.4 × scaleMax)`: 2 of 5, 1 of 3), the share whose After ≥
+    `confidentMin` (`ceil(0.8 × scaleMax)`: 4 of 5, 3 of 3).
+  - `scaleMax` is the check question's highest OptionValue; a Before-only guest counts in the Before totals, never in a shift.
+  - Confidence index = mean After of a group / mean After of the baseline × 100 (a function, for the multi-session dashboard).
+  - `MIN_SAMPLE` is 10 (ASSUMED: no setting may be added). A session's Results show the shift whatever its size, with "N of M guests answered
+    both" and "Low sample" under 10.
+- **The check is not an activity**: not in the guest's list, not in Results by activity, not in "N answers from M iPads" (Before and After are not
+  counted as answers), not a stray answer in the leader report. `buildResults` lifts it into `confidenceCheck`.
+- **The producer's card** on the Live display counts Before and After over the iPads that joined: no name, no score, never on the wall, and no
+  request of its own.
+- **The screens** are built from the tokens of `styles/check-tokens.css` (a ratio test holds them to 1%); where they differ from the page's own
+  rules, the page's win (the stage's gutter, the page's button, body text 16 px or more).
+
 ## Before finishing a change
 
 - Always: `npm run check:svelte` and `npm test` (the documents, the module map and the project map among it). If you added, moved or renamed a
