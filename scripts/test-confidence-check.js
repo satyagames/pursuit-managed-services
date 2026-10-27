@@ -466,6 +466,9 @@ describe('Part 1: Setup brings a site of version 3 to version 4 without losing a
       const participant = await pageOn(fake);
       await assert.rejects(participant.page.readParticipantWatch({ sessionId: session.id, trackId: track.id }), (error) => error.code === 'PMS-LST-011');
       assert.deepEqual(participant.stops, ['PMS-LST-011']);
+      // The admin page's first read (a $batch of the settings item, the sessions and more) says the same, not the sessions' 400.
+      const adminPage = await pageOn(fake);
+      await assert.rejects(adminPage.page.readLists([{ list: 'appsettings' }, { list: 'clients' }, { list: 'sessions' }, { list: 'sections' }]), (error) => error.code === 'PMS-LST-011');
       const { page } = await pageOn(fake);
       const api = siteApi(page);
       const titles = page.sharePointListTitles();
@@ -721,5 +724,19 @@ describe('Parts 5 and 6: the check in Content, on the Live display, on Results a
     const plain = records(false);
     plain.session.sectionIds = ['s1'];
     assert.equal(buildReport(buildResults(plain), { name: 'Client' }).confidence, '');
+  });
+});
+
+describe('Part 5: Today\'s readiness does not count the check as an activity', async () => {
+  const { evaluateReadiness } = await import('../migration/src/lib/admin/admin-today.js');
+  it('a client whose only live item is its check has no live activities; one activity beside it is one', () => {
+    const client = { id: 'c-a', name: 'A', slug: 'a', status: 'active' };
+    const check = { id: 'chk', title: 'Confidence check', enabled: true, order: 0, clientId: 'c-a', kind: CHECK_KIND, questionIds: ['q'] };
+    const activity = { id: 's1', title: 'Trivia', enabled: true, order: 1, clientId: 'c-a', questionIds: ['q1'] };
+    const base = { client, date: DAY, today: DAY, questions: [], options: [], sessions: [], clients: [client], target: null, roster: null, schema: null };
+    const alone = evaluateReadiness({ ...base, sections: [check] }).find((row) => row.id === 'activities');
+    assert.equal(alone.level, 'blocker');
+    const both = evaluateReadiness({ ...base, sections: [check, activity] }).find((row) => row.id === 'activities');
+    assert.equal(both.detail, '1 activity is live: Trivia.');
   });
 });

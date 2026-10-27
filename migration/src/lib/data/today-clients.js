@@ -5,7 +5,7 @@
 import { LISTS } from '../schema/pms-schema.js';
 import { getItem, queryItems, request, sharePoint, spDecode, spPages, spReadTogether, updateItem } from './core.js';
 import { localFilter, spItemsAddress } from './common.js';
-import { failure, getAppSettings, notMade, unscanned, updateAppSettings, versioned } from './records.js';
+import { failure, getAppSettings, notMade, unscanned, updateAppSettings, versionFirst, versioned } from './records.js';
 
 // ============================================================================
 // 5. The admin's Today and Clients screens
@@ -48,7 +48,8 @@ export async function readLists(queries) {
         rows = await spPages(addresses[position]).catch(list === 'appsettings' ? notMade : (error) => { throw error; });
       }
       return rows.map((row) => spDecode(list, row).item);
-    }));
+    })).catch(sent.some(({ list }) => list === 'appsettings') ? versionFirst : (error) => { throw error; });
+    // (Phase 20: a read refused for a column an older site lacks says the version's stop first, as before the column existed.)
     // The lists' version comes with the AppSettings item: a read of it checks it (above).
     sent.forEach(({ list }, at) => { if (list === 'appsettings') versioned(answers[at].find((row) => row.id === 'default') ?? null); });
   }

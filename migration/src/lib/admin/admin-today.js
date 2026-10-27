@@ -18,6 +18,7 @@
 //
 // Where the site cannot batch, the same reads go one by one: more requests, never a failed screen.
 
+import { isCheckActivity } from '../participant/confidence-check.js';
 import { withoutRetiredLogo } from '../brand/retired-logos.js';
 
 /** How often the status panel asks. Visibility-aware: AdminToday.svelte pauses while the tab is hidden. */
@@ -320,7 +321,8 @@ export function evaluateReadiness({ client, date, today, sections, questions, op
   }
 
   // -- the activities --------------------------------------------------------------------------
-  const owned = sections.filter((section) => section.clientId === client.id);
+  // (The client's confidence check is not one of its activities: Phase 20.)
+  const owned = sections.filter((section) => section.clientId === client.id && !isCheckActivity(section));
   const live = owned.filter((section) => section.enabled === true);
   if (live.length === 0) {
     add({ id: 'activities', level: 'blocker', title: 'Live activities',
