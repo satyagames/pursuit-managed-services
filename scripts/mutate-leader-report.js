@@ -108,8 +108,9 @@ const MUTATIONS = [
     'export const participantAnswersCsv = (report) => `${BOM}${',
     'export const participantAnswersCsv = (report) => `${'],
   ['The CSV leaves out the people who answered nothing',
-    'for (const person of report.participants) {\n    for (const activity of person.activities) {',
-    'for (const person of report.participants.filter((each) => each.answered > 0)) {\n    for (const activity of person.activities) {'],
+    // (Phase 20: the loop sets each guest's confidence scores before its rows.)
+    'for (const person of report.participants) {\n    const scores',
+    'for (const person of report.participants.filter((each) => each.answered > 0)) {\n    const scores'],
   ['The CSV’s "Correct" and "Correct on first try" are swapped',
     'row.answered ? yes(row.finalRight) : \'\', row.answered ? yes(row.firstRight) : \'\'',
     'row.answered ? yes(row.firstRight) : \'\', row.answered ? yes(row.finalRight) : \'\''],

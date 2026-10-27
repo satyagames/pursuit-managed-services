@@ -5,7 +5,7 @@ import { newFake, pageUrl, serveSharePoint } from './sharepoint.js';
 
 // Phase 10c-2b, part E, in the BUILT pages, against the mocked SharePoint REST: the version of the lists (SchemaVersion on the AppSettings item
 // every page reads first). The participant and admin pages stop on lists of another version with 10b's coded stop screen; Setup opens and says
-// which case it is. On version 3 (2 until Phase 10i) every page works (every other spec runs on such a site). Nothing here has met the real tenant: a page opened
+// which case it is. On version 4 (3 until Phase 20, 2 until Phase 10i) every page works (every other spec runs on such a site). Nothing here has met the real tenant: a page opened
 // there before Setup has run is QA-TESTING.md's to see.
 
 const PIN = '2468';
@@ -16,7 +16,7 @@ const site = (version: number | null) => {
   return fake;
 };
 
-for (const [version, code] of [[null, 'PMS-LST-010'], [2, 'PMS-LST-011'], [4, 'PMS-LST-012']] as const) {
+for (const [version, code] of [[null, 'PMS-LST-010'], [2, 'PMS-LST-011'], [3, 'PMS-LST-011'], [5, 'PMS-LST-012']] as const) {
   test(`the participant page on lists ${version === null ? 'that were never set up' : `of version ${version}`} stops with ${code}, at its first read`, async ({ page }) => {
     const fake = site(version);
     await serveSharePoint(page, fake);
@@ -59,9 +59,9 @@ test('the admin page on a site with no lists at all stops with PMS-LST-010 at th
 
 for (const [version, words] of [
   [null, "This site's lists have not been set up for this app yet. "],
-  [2, "This site's lists need an update before this version of the app can use them. The lists on this site are version 2; this version of the app needs version 3. Open Setup (setup.html, in the same folder as this page), press Show the plan, then Create, then Mark the site as ready: a clean Create does the last step by itself."],
-  [4, 'This site has been updated for a newer version of the app. The lists on this site are version 4; these files are for version 3. Upload the newer files.'],
-  [3, 'The lists are the version this app needs.'],
+  [2, "This site's lists need an update before this version of the app can use them. The lists on this site are version 2; this version of the app needs version 4. Open Setup (setup.html, in the same folder as this page), press Show the plan, then Create, then Mark the site as ready: a clean Create does the last step by itself."],
+  [5, 'This site has been updated for a newer version of the app. The lists on this site are version 5; these files are for version 4. Upload the newer files.'],
+  [4, 'The lists are the version this app needs.'],
 ] as const) {
   test(`Setup opens on lists ${version === null ? 'that were never set up' : `of version ${version}`}, and says so`, async ({ page }) => {
     const fake = site(version);

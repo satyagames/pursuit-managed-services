@@ -580,8 +580,9 @@ test('keyboard: the controls come in reading order and show the green ring, dial
   expect(rings, 'every stop draws the 3px green ring with its halo').toEqual([]);
   expect(order).toEqual([
     // (Phase 9b, SAM-2: Domino's is a sample client, so "Mark as confirmed" is the next stop after the two buttons, before the activities.)
-    'content-client', expect.stringContaining('Activities'), 'Open Brand', 'Add activity', 'Copy from another client...', 'Mark as confirmed', expect.stringContaining("Domino's History"), "Set Domino's History live", "Preview Domino's History",
-    "Rename or describe Domino's History", "Duplicate Domino's History", "Move Domino's History down", "Delete Domino's History", expect.stringContaining('Guess the Innovation'), 'Set Guess the Innovation live',
+    // (Prompt 20: a client without a confidence check offers to add one, above its activities: one stop more, so the list ends a stop earlier.)
+    'content-client', expect.stringContaining('Activities'), 'Open Brand', 'Add activity', 'Copy from another client...', 'Mark as confirmed', 'Add a confidence check', expect.stringContaining("Domino's History"), "Set Domino's History live", "Preview Domino's History",
+    "Rename or describe Domino's History", "Duplicate Domino's History", "Move Domino's History down", "Delete Domino's History", expect.stringContaining('Guess the Innovation'),
   ]);
 
   // Dialogs: focus goes in, Escape comes out, and the button that opened it has the focus again.

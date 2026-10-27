@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { sha256Hex } from '../../migration/src/lib/admin/sha256.js';
 import { newFake, onSite, pageUrl, seedAndGoLive, serveSharePoint, type Fake } from './sharepoint.js';
+import { PHASE_20_COLUMNS } from '../sharepoint-fake.js';
 
 // Phase 10i, part C, in the BUILT pages, against the mocked SharePoint REST in the real site's modes (`strict: false`: ClientId and DisplayName left out of a
 // read that names no columns; DisplayName refused by name when there is an item; a duplicate refused with 500). The site is the PCOE site as it was on
@@ -8,21 +9,25 @@ import { newFake, onSite, pageUrl, seedAndGoLive, serveSharePoint, type Fake } f
 // logged under DisplayName. The participant and admin pages stop with PMS-LST-011; Setup says version 2 and what to press; Show the plan names the two new
 // columns, and the two old ones as harmless; Create adds them and, being clean, marks the site as ready, which raises it: "Raised the lists from version 2
 // to version 3." Then the participant page greets a member of staff and Results names them, and a named guest checks in by QR. Not the real site.
+// (Since Phase 20 the site is brought to this build's version, 4: the plan names the two columns of version 4 as well.)
 
 const PIN = '2468';
 const DAY = '2026-10-15';
 
-/** The PCOE site of 15 Oct 2026 (see the top). The records are what the pages of version 2 wrote: the item says 3 while this test writes them. */
+/** The PCOE site of 15 Oct 2026 (see the top). The records are what the pages of version 2 wrote: the item says this build's version (4) while this test writes them. */
 async function pcoe() {
-  const fake = newFake({ listsVersion: 2, strict: false });
+  // (Phase 20: this build's data layer names PMSActivities.Kind and PMSClientSessions.ConfidenceCheck, so the site has them while the records are
+  // written and loses them before anything is looked at.)
+  const fake = newFake({ listsVersion: 2, strict: false, keepColumns: [...PHASE_20_COLUMNS] });
   fake.add('adminusers', { AppId: 'admin', Title: 'Facilitator', Name: 'Facilitator', PinHash: sha256Hex(PIN) });
-  fake.item('appsettings', 'default')!.SchemaVersion = 3;
+  fake.item('appsettings', 'default')!.SchemaVersion = 4;
   const session = await seedAndGoLive(fake, 'c-dominos', DAY);
   const before = await onSite(fake, (ds) => ds.beginVisit(crypto.randomUUID(), session.id, 'c-dominos', { sharePointUserId: '17' }));
   fake.add('uservisitlogs', {
     AppId: 'visit-before', Title: 'visit-before', SessionId: session.id, ClientId: 'c-dominos', Page: 'participant', EntryMode: 'staff', SharePointUserId: '17',
     DisplayName: 'Priya Shah', TrackId: (before as { id: string }).id, VisitedAt: `${DAY}T09:00:00.000Z`,
   });
+  fake.dropColumns([...PHASE_20_COLUMNS]);
   // (Go live rewrote the item: it is read again.)
   fake.item('appsettings', 'default')!.SchemaVersion = 2;
   fake.reset();
@@ -48,16 +53,18 @@ test('on the PCOE site of version 2 the participant and admin pages stop with PM
   expect(served.unexpected).toEqual([]);
 });
 
-test('Setup brings the PCOE site from version 2 to version 3: the plan, Create, "Raised the lists from version 2 to version 3.", and then the pages work', async ({ page, browser }) => {
+test('Setup brings the PCOE site from version 2 to version 4: the plan, Create, "Raised the lists from version 2 to version 4.", and then the pages work', async ({ page, browser }) => {
   const { fake, session } = await pcoe();
   const served = await serveSharePoint(page, fake);
   await page.goto(pageUrl('setup.html'));
-  await expect(page.getByTestId('lists-version')).toHaveText("This site's lists need an update before this version of the app can use them. The lists on this site are version 2; this version of the app needs version 3. "
-    + 'Open Setup (setup.html, in the same folder as this page), press Show the plan, then Create, then Mark the site as ready: a clean Create does the last step by itself. (PMS-LST-011, SchemaVersion 2, this build needs 3)');
+  await expect(page.getByTestId('lists-version')).toHaveText("This site's lists need an update before this version of the app can use them. The lists on this site are version 2; this version of the app needs version 4. "
+    + 'Open Setup (setup.html, in the same folder as this page), press Show the plan, then Create, then Mark the site as ready: a clean Create does the last step by itself. (PMS-LST-011, SchemaVersion 2, this build needs 4)');
 
-  // Show the plan: the two new columns and nothing else; the old DisplayName columns are named as harmless.
+  // Show the plan: the two new columns of version 3 and the two of version 4, and nothing else; the old DisplayName columns are named as harmless.
   await lists(page).getByRole('button', { name: 'Show the plan' }).click();
-  await expect(page.getByTestId('plan-summary')).toHaveText('0 lists, 2 columns, 0 settings to create.');
+  await expect(page.getByTestId('plan-summary')).toHaveText('0 lists, 4 columns, 0 settings to create.');
+  await expect(page.locator('[data-testid="plan"] [data-list="sessions"]')).toContainText('Create 1 column: ConfidenceCheck.');
+  await expect(page.locator('[data-testid="plan"] [data-list="sections"]')).toContainText('Create 1 column: Kind.');
   const guests = page.locator('[data-testid="plan"] [data-list="visitorroster"]');
   const visits = page.locator('[data-testid="plan"] [data-list="uservisitlogs"]');
   await expect(guests).toContainText('Create 1 column: GuestName.');
@@ -66,19 +73,19 @@ test('Setup brings the PCOE site from version 2 to version 3: the plan, Create, 
   await expect(visits.locator('[data-harmless="true"]')).toContainText('Harmless: nothing reads or writes it. Leave it as it is, or a site owner may delete it by hand.');
   expect(fake.writes(), 'the plan writes nothing').toEqual([]);
 
-  // Create adds the two columns, and a clean Create marks the site as ready by itself: that raises the version.
+  // Create adds the four columns, and a clean Create marks the site as ready by itself: that raises the version.
   page.once('dialog', (dialog) => { expect(dialog.message()).toContain('It only adds'); void dialog.accept(); });
   await lists(page).getByRole('button', { name: 'Create', exact: true }).click();
-  await expect(page.getByTestId('create-progress')).toHaveText(/^Created 0 lists, 2 columns and 0 settings in [\d.]+ s \(2 writes\)\.$/, { timeout: 30_000 });
-  await expect(page.getByTestId('ready-status')).toHaveText('Raised the lists from version 2 to version 3.');
+  await expect(page.getByTestId('create-progress')).toHaveText(/^Created 0 lists, 4 columns and 0 settings in [\d.]+ s \(4 writes\)\.$/, { timeout: 30_000 });
+  await expect(page.getByTestId('ready-status')).toHaveText('Raised the lists from version 2 to version 4.');
   await expect(page.getByTestId('lists-version')).toHaveText('The lists are the version this app needs.');
   await expect(page.getByTestId('lists-status')).toHaveText('All list schemas ready. Write permissions have not been tested.');
-  expect(fake.item('appsettings', 'default')!.SchemaVersion).toBe(3);
+  expect(fake.item('appsettings', 'default')!.SchemaVersion).toBe(4);
   expect(fake.field('visitorroster', 'DisplayName') && fake.field('uservisitlogs', 'DisplayName'), 'the old columns are where they were').toBeTruthy();
   expect(fake.requests.some((entry) => entry.method === 'DELETE')).toBe(false);
   // Pressed again, it writes nothing.
   await lists(page).getByRole('button', { name: 'Mark the site as ready' }).click();
-  await expect(page.getByTestId('ready-status')).toHaveText('The site was already marked ready (version 3). Nothing was written.');
+  await expect(page.getByTestId('ready-status')).toHaveText('The site was already marked ready (version 4). Nothing was written.');
 
   // A member of staff opens the participant page and begins: Welcome greets them, and their visit is logged under SignedInName.
   const staff = await browser.newPage();
@@ -109,13 +116,13 @@ test('Setup brings the PCOE site from version 2 to version 3: the plan, Create, 
   expect(served.unexpected).toEqual([]);
 });
 
-test('on a site whose lists say version 4, Setup says they are newer, and Mark the site as ready never lowers them', async ({ page }) => {
-  const fake: Fake = newFake({ schemaVersion: 4 });
+test('on a site whose lists say version 5, Setup says they are newer, and Mark the site as ready never lowers them', async ({ page }) => {
+  const fake: Fake = newFake({ schemaVersion: 5 });
   await serveSharePoint(page, fake);
   await page.goto(pageUrl('setup.html'));
-  await expect(page.getByTestId('lists-version')).toContainText('The lists on this site are version 4; these files are for version 3. Upload the newer files.');
+  await expect(page.getByTestId('lists-version')).toContainText('The lists on this site are version 5; these files are for version 4. Upload the newer files.');
   await lists(page).getByRole('button', { name: 'Mark the site as ready' }).click();
-  await expect(page.getByTestId('ready-status')).toHaveText('Not marked ready: the settings item says version 4; this version of the app is for version 3. Setup never lowers the version of the lists: upload the newer files.');
-  expect(fake.item('appsettings', 'default')!.SchemaVersion).toBe(4);
+  await expect(page.getByTestId('ready-status')).toHaveText('Not marked ready: the settings item says version 5; this version of the app is for version 4. Setup never lowers the version of the lists: upload the newer files.');
+  expect(fake.item('appsettings', 'default')!.SchemaVersion).toBe(5);
   expect(fake.writes()).toEqual([]);
 });

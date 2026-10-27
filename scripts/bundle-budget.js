@@ -352,3 +352,16 @@ export const PHASE_19 = Object.freeze({
   participantAfter: 160_367, adminAfter: 585_277,
   participantUtilities: PHASE_11A.participantUtilities,
 });
+
+/**
+ * Prompt 20 (the confidence check, Before and After) grows the participant page by its two screens (routes/ConfidenceCheck.svelte and the
+ * golden-ratio tokens of styles/check-tokens.css), the flow's rules (lib/participant/confidence-check.js) and their use in the boot, Welcome,
+ * the hub, the pager's finish and Thank you (its card). The admin page carries the same rules, the arithmetic (lib/results/confidence-shift.js),
+ * Content's check row, the session's switch, the producer's card and the Results panel. Its Tailwind rules are the ones it had, and the ceiling
+ * is not raised. Measured when the phase ended: participantAfter and adminAfter, where the next phase starts.
+ */
+export const PHASE_20 = Object.freeze({
+  participantBefore: PHASE_19.participantAfter, adminBefore: PHASE_19.adminAfter, participantAllowance: 4_500, adminAllowance: 7_500,
+  participantAfter: 164_582, adminAfter: 592_267,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
