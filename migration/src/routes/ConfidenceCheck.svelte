@@ -127,7 +127,7 @@
             onfocus={() => { if (arrowed) { arrowed = false; pick(card.id); } }}
             use:motion={{ role: 'options', type: 'confidence-continuum', index: at, count: cards.length }}
           >
-            <span class="pms-check-value" aria-hidden="true">{card.value}</span>
+            <span class="pms-check-value">{card.value}</span>
             <span class="pms-check-label">{card.label}</span>
             <span class="pms-check-tick" aria-hidden="true">{picked === card.id ? '✓' : ''}</span>
           </button>
@@ -141,14 +141,13 @@
 </section>
 
 <style>
-  /* The screen fills the stage below the header. Portrait: the question in the upper 61.8%, centred near the 38.2% line (its spacers are
-     1.618 to 1, so a short question sits on the line and a long one a little lower), and the answer panel in the lower 38.2%. */
+  /* The screen fills the stage below the header. Portrait: the answer panel is the lower 38.2% of the screen, to its foot (the stage's own
+     bottom padding is inside it), so it starts on the 61.8% line; the question takes the rest, centred near the 38.2% line (its spacers are
+     1.618 to 1, so a short question sits on the line and a long one a little lower). */
   .pms-check {
     display: grid;
-    grid-template-rows: minmax(0, var(--check-major)) minmax(min-content, var(--check-minor));
+    grid-template-rows: minmax(0, 1fr) auto;
     flex: 1;
-    min-height: min(calc(100dvh - 9rem), calc(var(--check-frame-height) - var(--check-header)));
-    gap: 0;
   }
 
   .pms-check-ask {
@@ -187,8 +186,10 @@
     display: flex;
     flex-direction: column;
     gap: var(--check-space-3);
-    margin-inline: calc(-1 * var(--gutter));
-    padding: var(--check-space-4) var(--gutter) var(--check-space-3);
+    box-sizing: border-box;
+    min-height: var(--check-panel-height);
+    margin: 0 calc(-1 * var(--gutter)) var(--check-stage-foot);
+    padding: var(--check-space-3) var(--gutter) calc(var(--check-space-3) - var(--check-stage-foot));
     background: var(--surface);
     border-top: 2px solid var(--surface-border);
   }
@@ -253,10 +254,9 @@
     display: flex;
     justify-content: center;
     margin-top: auto;
-    padding-top: var(--check-space-2);
   }
 
-  .pms-check-action :global(.pill-button) {
+  .pms-check-action :global(.pill-button[data-size]) {
     width: calc(100% / var(--check-phi));
     min-height: max(var(--check-button-height), var(--target-min));
   }
@@ -284,9 +284,11 @@
       padding-bottom: 0;
     }
 
+    /* (The panel runs from the header to the foot: the stage's own top and bottom padding are inside it.) */
     .pms-check-panel {
-      margin: 0 calc(-1 * var(--gutter)) 0 0;
-      padding: var(--check-space-3) var(--gutter) var(--check-space-3) var(--check-space-4);
+      min-height: 0;
+      margin: calc(var(--check-stage-head) / 2) calc(-1 * var(--gutter)) var(--check-stage-foot) 0;
+      padding: var(--check-space-3) var(--gutter) calc(var(--check-space-3) - var(--check-stage-foot)) var(--check-space-4);
       border-top: 0;
       border-left: 2px solid var(--surface-border);
     }
@@ -313,7 +315,7 @@
       margin: 0 0 0 auto;
     }
 
-    .pms-check-action :global(.pill-button) {
+    .pms-check-action :global(.pill-button[data-size]) {
       width: 100%;
     }
   }
@@ -322,6 +324,10 @@
   @media (max-width: 599.98px) {
     .pms-check {
       grid-template-rows: auto auto;
+    }
+
+    .pms-check-panel {
+      min-height: 0;
     }
 
     .pms-check-ask {
@@ -352,7 +358,7 @@
       margin: 0 0 0 auto;
     }
 
-    .pms-check-action :global(.pill-button) {
+    .pms-check-action :global(.pill-button[data-size]) {
       width: 100%;
     }
   }

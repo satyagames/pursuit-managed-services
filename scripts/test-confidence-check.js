@@ -591,3 +591,51 @@ describe('Part 3: a returning guest resumes on the right step (lib/participant/b
     assert.equal((await resumed({ switchedOn: false })).destination, '/agenda');
   });
 });
+
+describe('Part 4: the golden-ratio tokens of the check screens hold their ratios (styles/check-tokens.css)', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const css = await readFile(new URL('../migration/src/styles/check-tokens.css', import.meta.url), 'utf8');
+  const token = (name) => {
+    const found = new RegExp(`--${name}:\\s*([\\d.]+)(px|%|dvh)?;`).exec(css);
+    assert.ok(found, `--${name} is in the file`);
+    return Number(found[1]);
+  };
+  const near = (actual, expected, what) => assert.ok(Math.abs(actual - expected) / expected <= 0.01, `${what}: ${actual} is not within 1% of ${expected}`);
+  const PHI = (1 + Math.sqrt(5)) / 2;
+
+  it('phi, and the two sections of a length', () => {
+    near(token('check-phi'), PHI, 'phi');
+    near(token('check-major') / 100, 1 / PHI, '61.8%');
+    near(token('check-minor') / 100, 1 - 1 / PHI, '38.2%');
+    near(token('check-panel-height') / 100, 1 - 1 / PHI, 'the panel is the lower 38.2% of the screen');
+  });
+
+  it('the spacing steps are Fibonacci, and each type size about phi times the last', () => {
+    const steps = [1, 2, 3, 4, 5, 6].map((step) => token(`check-space-${step}`));
+    assert.deepEqual(steps, [8, 13, 21, 34, 55, 89]);
+    for (let at = 2; at < steps.length; at += 1) assert.equal(steps[at], steps[at - 1] + steps[at - 2]);
+    const type = [1, 2, 3].map((step) => token(`check-type-${step}`));
+    assert.deepEqual(type, [16, 26, 42]);
+    near(type[1] / type[0], PHI, '26 / 16');
+    near(type[2] / type[1], PHI, '42 / 26');
+    assert.ok(type[0] >= 16, 'body text at least 16 px');
+  });
+
+  it('on the 768 x 1024 frame: the answer panel at 61.8% of the height, the question centred on 38.2%, the content width over phi is the button', () => {
+    const [width, height] = [token('check-frame-width'), token('check-frame-height')];
+    near(token('check-answers-top') / height, 1 / PHI, 'the answer panel top (633)');
+    near(token('check-question-centre') / height, 1 - 1 / PHI, 'the question centre (391)');
+    const content = width - 2 * token('check-margin');
+    assert.equal(content, 658);
+    near(content / token('check-button-width'), PHI, 'content / button (658 / 407)');
+    assert.equal(token('check-button-height'), 55);
+    assert.equal(token('check-header'), 55);
+  });
+
+  it('a card is a golden rectangle, and five with their gaps fill the content width', () => {
+    const [cardWidth, cardHeight, gap] = [token('check-card-width'), token('check-card-height'), token('check-card-gap')];
+    near(cardHeight / cardWidth, PHI, 'card 121 x 196');
+    assert.ok(Math.abs(5 * cardWidth + 4 * gap - (token('check-frame-width') - 2 * token('check-margin'))) <= 1, 'five cards and four gaps are 658');
+    assert.ok(token('check-card-stacked-min') >= 89 && token('check-card-row-min') >= 55, 'and well above the 44 px target');
+  });
+});
