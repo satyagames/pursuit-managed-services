@@ -66,11 +66,11 @@ standing instruction (develop now, the heavy gates at the final build), only wha
 
 | Gate | Before | After |
 |---|---|---|
-| `npm run check:svelte` | 0 errors, 0 warnings (427 files) | 0 errors, 0 warnings (see "After", below) |
-| `npm test` | 1,651 of 1,653 (the two `scripts/test-store.js` timing tests, EPERM from Windows under the full run) | see "After" |
+| `npm run check:svelte` | 0 errors, 0 warnings (427 files) | 0 errors, 0 warnings (436 files) |
+| `npm test` | 1,651 of 1,653 (the two `scripts/test-store.js` timing tests, EPERM from Windows under the full run) | 1,684 of 1,684 (the two store timing tests passed this time) |
 | `npm run test:bundle` | 46 of 46 | 47 of 47 |
 | `scripts/migration-tests/users.spec.ts` (Chromium) | does not exist | 5 of 5 |
-| `npm run test:report`, `test:report:mutations`, `test:charts`, `test:local-site`, `oracle -- --seeds 500` | 150; 64 of 64; 57; 26; 0 differences | see "After" |
+| `npm run test:report`, `test:report:mutations`, `test:charts`, `test:local-site`, `oracle -- --seeds 500` | 150; 64 of 64; 57; 26; 0 differences | 150; 64 of 64; 57; 26; 0 differences (5,620 participants, 9,865 guests) |
 | `npm run test:migration`, `test:a11y` (all browsers) | Phase 20's record | not run: the final round (below) |
 
 ## Page sizes (gzip -9)
