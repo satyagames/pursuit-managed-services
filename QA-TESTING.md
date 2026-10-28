@@ -15,7 +15,11 @@
    then production). Below item 194.
 6. Items **205 to 210** (Prompt 19: the "403 Access denied" capture before the new package, an idle or sleeping laptop, unsaved Brand changes and
    the banner, the tenant's session policies from IT, then production). Below item 204. Item 205 is first: it needs the old package.
-7. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
+7. Items **211 to 215** (Prompt 20: the confidence check on a test copy, three iPads, reloads and restarts, the screen on an iPad, the words).
+   Below item 210.
+8. Items **216 to 221** (Prompt 21, Phase 1: who may do what, the upgrade to version 5, an existing admin unchanged, the site owner, the copy of
+   the PIN admins, No access, what "site owner" means on PCOE). Below item 215. Item 217 first after the upgrade: nothing may change for an admin.
+9. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
    160, 161, 164, 165, 166, 167, 168, 169, 170.
 
 **Decided, no change:** 162 (names stay "Last, First") and 163 (the wall page keeps the admin header), VJR, 16 Oct 2026.
@@ -1434,6 +1438,35 @@ tests, not on SharePoint Online:** whether a navigation in a hidden frame renews
     self-test: **expect** it to pass 11 of 11; a refusal seen by that page is listed under it with its SPRequestGuid.
 210. **Then production, and the push.** *(Still to see.)* If 206 to 209 pass, copy the three pages to `Shared Documents/PMS` and push the branch
     `pms-19`. Nothing in the lists changes (version 3), and no setting is new.
+
+### Prompt 21, Phase 1 (roles and access: the engine): not verified on SharePoint Online
+
+People sign in to the admin page with their own account and their roles are rows of three new lists; until Setup copies an old admin into them,
+that admin unlocks with their PIN exactly as before. Proven on the mocked SharePoint and in node tests (RELEASE-21A.md), not on the real site.
+**The lists move to version 5**: three lists and two settings, which Setup adds (with Prompt 20's two columns, on a site of version 3). Use a
+test copy of the site first.
+
+216. **Upgrade a test copy of the site.** *(Still to see.)* Open Setup with this package: **expect** "this version of the app needs version 5"
+    (PMS-LST-011) and the participant and admin pages stopping with PMS-LST-011 until it is done. Show the plan: **expect** `PMSUsers`,
+    `PMSRoleAssignments`, `PMSAuditLog` to create, `PMSAppSettings.FiscalYearStartMonth` and `MinSample` (and, on a site of version 3,
+    Prompt 20's two columns), nothing else. Create, then Mark the site as ready: **expect** "Raised the lists from version 3 to version 5." (or
+    "4 to 5") and the self-test passing.
+217. **An existing admin sees no change.** *(Still to see.)* As an admin who is not a site owner and has no row yet, open admin.html: **expect** the
+    PIN screen, after "Checking your access..." for a moment, and with the PIN every tab as before, Delete session included. F12, Network:
+    **expect** one `$batch` asking who you are and one carrying the two reads of `PMSUsers` and `PMSRoleAssignments`, then the old requests.
+218. **The site owner.** *(Still to see.)* As a site owner, open admin.html: **expect** no PIN, every tab, and the banner "You can see everything
+    because you own this site. Add yourself as a Super admin in Setup." On Setup, under 3. Admins, People and access: **expect** "Signed in as
+    ..., an owner of this site" and **Make me a Super admin**; press it, reload admin.html: **expect** the banner gone.
+219. **Copy the PIN admins.** *(Still to see.)* On Setup, People and access: type each PIN admin's email (leave one empty) and press **Copy into
+    the new lists**: **expect** the counts, and the one left empty named as still on the PIN. That admin reloads admin.html: **expect** no PIN,
+    no Lock, every tab, and Delete session refused in words ("Your access does not allow this (delete a session's data)..."). Press Copy again:
+    **expect** everything "there already". `PMSAuditLog` has a line for each person and role, and no PIN hash anywhere.
+220. **No access.** *(Still to see.)* In `PMSUsers`, set a copied admin's Status to `Disabled` by hand; they reload admin.html: **expect** "Your access
+    to PMS is turned off", their email, and **Copy my details**. Set it back to `Active`.
+221. **What "site owner" means here.** *(Still to see.)* The app treats a site collection administrator, or a member of the site's owners group
+    (`/_api/web/AssociatedOwnerGroup`), as the site owner (ASSUMED). Confirm with the site's owners that this is the right set of people, and
+    ask the manager about the open items of RELEASE-21A.md (the roles a copied admin gets, the indexes left for later phases). *(Record the
+    answers here.)* Then push the branch `pms-21-1`.
 
 ### Prompt 20 (the confidence check, Before and After): not verified on SharePoint Online or an iPad
 

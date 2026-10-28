@@ -125,6 +125,17 @@ seven sizes.
   baselines followed the two columns by [scripts/schema-baseline/columns-baselines.js](../scripts/schema-baseline/columns-baselines.js)
   (`--order`, `--check`, `--write`): the suites run on the last commit's tree and on today's, request by request, and a fresh recording equal to the
   translation. The browser side is `confidence-check.spec.ts` (Chromium and WebKit; pictures in `test-results/confidence-check/`).
+- `node --test scripts/test-access.js` (also part of `npm test`, Prompt 21, Phase 1): schema version 5 (the three access lists, the two settings, a
+  site of version 4 without them); the role matrix printed and held to board 10, and every write of the app named in `LIST_WRITES`; `can()`
+  for each role, scope, extra, `ValidUntil`, a disabled person, the site owner and the legacy admin; `AccessDenied` and the write guard on
+  SharePoint's and the local server's requests, and in the data layer (nothing refused is sent; `configure()` takes the guard away);
+  `resolveAccess()` in two round trips however many people the site has, kept and read again on demand, and without `$batch`; the sign-in
+  step; grants, the last Super admin, your own roles, a duplicate grant, the audit list; Setup's copy of `PMSAdminUsers` (idempotent, counts) and
+  "Make me a Super admin"; the words. `node --test scripts/test-schema-version.js` holds a site of version 4 stopping with `PMS-LST-011`. The
+  request baselines followed version 5 by [scripts/schema-baseline/access-baselines.js](../scripts/schema-baseline/access-baselines.js)
+  (`--order`, `--check`, `--write`): every recorded suite run on `21cef34`'s tree (where the branch began) and on today's, request by
+  request, the settings' `$select` and the every-list column check translated, only requests of version 5 added, and a fresh recording equal to
+  the translation.
 - `node --test scripts/test-session.js` (also part of `npm test`, Prompt 19): the rule book of refusals (`REFUSALS` in
   `migration/src/lib/data/session.js`, each row against its own case, and nothing of a stale write token or a busy site taken for a sign-in), and the
   ladder on the mocked SharePoint with a renewer the test supplies: a stale token as before, a sign-in mended at Step A, one that needs Step B, one

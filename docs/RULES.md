@@ -1439,6 +1439,37 @@ SharePoint Online or an iPad**: QA-TESTING.md items 211 to 215.
 - **The screens** are built from the tokens of `styles/check-tokens.css` (a ratio test holds them to 1%); where they differ from the page's own
   rules, the page's win (the stage's gutter, the page's button, body text 16 px or more).
 
+## Rules from Prompt 21, Phase 1 (roles and access: the engine; keep them holding)
+
+The report is [RELEASE-21A.md](history/RELEASE-21A.md); the steps, [DATA-FLOW.md](DATA-FLOW.md#signing-in-to-the-admin-page-prompt-21). **None of it has met
+SharePoint Online**: QA-TESTING.md items 216 to 221.
+
+- **Schema version 5**: `PMSUsers` (a person, AppId their email in lower case, `Status` Active or Disabled), `PMSRoleAssignments` (one row for each
+  person, role and place, AppId `user|role|scope|place`), `PMSAuditLog` (only grows) and `PMSAppSettings.FiscalYearStartMonth` and `MinSample`
+  (empty reads as 6 and 10, ASSUMED). Indexed: exactly what Phase 1 filters on, AppId and `PMSRoleAssignments.UserKey`; the brief's other indexes
+  come with the phase that first filters on them. A page on lists of version 4 or older stops with `PMS-LST-011`: its full read of the settings item
+  is refused (400), so it reads the item's version alone (`versionSelect()`), one request more on such a site only.
+- **The role matrix is reviewed data**: `lib/access/access-matrix.js` holds board 10 of the approved wireframes cell by cell (`MATRIX`), the places
+  each role may have (`ROLE_SCOPES`), the extras (`content.edit` for a Designer, `users.manage` for an Admin) and `LIST_WRITES`, the actions that
+  allow each write to each list. `scripts/test-access.js` prints it and fails on any change. Rules only allow, and add up.
+- **One check**: `can(access, action, target)` in `lib/access/can.js`, with `ValidUntil` honoured at the call (its whole last day), a disabled
+  person allowed nothing, the site owner always a Super admin. An empty target asks "anywhere"; a client's role covers its client, a session's its
+  session, a period's every session dated inside it.
+- **The data layer asks before every write**: `core.js` holds the page's write guard (`setAccessGuard`) and calls it in `spHttp` and the local
+  `send()`; `lib/access/guard.js` reads the change from the request (list, create, update or delete), and throws `AccessDenied` (code
+  `access-denied`, no `status`, plain words) when no action of its `LIST_WRITES` row is allowed, before anything is sent. Only the admin page
+  installs one; the participant page and Setup install none. ASSUMED until Phase 4: a write whose item names no client is allowed when the role has
+  the action anywhere.
+- **Sign-in on the admin page**: who is signed in (one request), then their row and assignments (two indexed reads, one `$batch`), kept for the page.
+  The site owner (a site collection administrator or a member of the owners group, ASSUMED) enters as a Super admin, with a banner until they have a
+  row of their own; a listed, active person with a current role enters with no PIN and no Lock; a disabled person, or one with no current role,
+  sees No access; anyone not listed gets the PIN screen exactly as before, and a PIN gives the legacy admin, everything the Phase 20 admin page did.
+- **The switch-over** is Setup's copy of `PMSAdminUsers` (People and access, under 3. Admins): each admin given an email becomes Admin, Producer and
+  Designer on all clients (ASSUMED, for the manager), idempotent, with counts; `PMSAdminUsers` is left as it was. Setup lists the Super admins now.
+- **Grants**: `grantRole()` writes the row and one audit line, and a duplicate is "already granted"; only a Super admin gives Super admin, Admin or
+  Leadership for a period; nobody changes their own roles (the site owner's own Super admin row aside); `revokeProblem()` keeps one Super admin.
+- **The audit list only grows** (the guard refuses a change to a line), and a line never holds an answer (`writeAudit` refuses one).
+
 ## Before finishing a change
 
 - Always: `npm run check:svelte` and `npm test` (the documents, the module map and the project map among it). If you added, moved or renamed a

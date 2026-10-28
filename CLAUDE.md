@@ -3,7 +3,7 @@
 Pursuit Managed Services (PMS): an interactive session app for Deloitte client visits. Participants answer short activities on iPads; a facilitator
 runs the day from an admin page and shows live results on a projector; leaders get a PDF report, a summary pack and CSVs. It is three single-file
 HTML pages (participant `index.html`, admin `admin.html`, `setup.html`), built with Svelte 5 from `migration/`, that run from one SharePoint document
-folder and keep everything in twelve SharePoint lists, through the browser's own sign-in. No server, no CDN. A local Express + JSON server
+folder and keep everything in fifteen SharePoint lists, through the browser's own sign-in. No server, no CDN. A local Express + JSON server
 (`server/`) stands in for SharePoint in development and in the tests.
 
 `AGENTS.md` points here. The detail: [docs/RULES.md](docs/RULES.md) (the rule book, by part and phase), [docs/DECISIONS.md](docs/DECISIONS.md) (what
@@ -36,7 +36,7 @@ On the Windows checkout the system Node is 20: run Node 22 from `.local/node22/n
 | Path | What |
 |---|---|
 | `migration/src/main.ts`, `admin-main.ts`, `setup-main.ts` | The three entries; `App.svelte`, `AdminApp.svelte`, `SetupApp.svelte` the apps. |
-| `migration/src/lib/<folder>/` | The modules, by folder: `data`, `schema`, `settings`, `participant`, `common`, `admin`, `results`, `exports`, `brand`, `effects`, `motion`, `setup`. Every file starts with a header saying what it owns. |
+| `migration/src/lib/<folder>/` | The modules, by folder: `data`, `schema`, `settings`, `participant`, `common`, `admin`, `results`, `exports`, `brand`, `effects`, `motion`, `setup`, `access`. Every file starts with a header saying what it owns. |
 | `migration/src/lib/data/dataService.js` | The data layer's door, which every importer uses: it passes on the calls of the parts of `lib/data/` (Phase 17). `core.js` holds all its state and sends every request to SharePoint (or the local server); `records.js`, `today.js`, `responses.js`, `qr-scan.js`, `watch.js` and the rest are one job each (the list is at the top of `dataService.js`). Every page carries all of it. |
 | `migration/src/lib/schema/pms-schema.js` | The one place a list or column is named. `pms-schema-meta.js` says everything else about them. |
 | `migration/src/admin/`, `admin/charts/` | The admin page's screens and the hand-drawn Results charts. Content is one client's workspace whose views (Activities, Brand Studio) are listed in `lib/admin/admin-content-views.js`. |
@@ -60,7 +60,9 @@ On the Windows checkout the system Node is 20: run Node 22 from `.local/node22/n
 4. **Behaviour the tests pin stays pinned.** Write the failing test first and show it failing; never loosen or delete a test that guards live
    behaviour; never re-record a request baseline to make it pass (`--amend` only, see [docs/TESTING.md](docs/TESTING.md)).
 5. **SharePoint:** every item read names its columns (`selectOf`); a duplicate is 409 for 400, 409 or 500; no column named like a list-item property
-   (`DisplayName`); a list title only through `spTitle()` / `sharePointListTitles()`; schema version 4; the settings file is `pms-config.txt`.
+   (`DisplayName`); a list title only through `spTitle()` / `sharePointListTitles()`; schema version 5; the settings file is `pms-config.txt`.
+   **Access** (Prompt 21): one check, `can()` in `lib/access/can.js`, over the reviewed role matrix (`lib/access/access-matrix.js`); the data layer
+   asks the page's write guard before every write and throws `AccessDenied`; screens never decide access alone.
 6. **Only the data layer fetches** (`lib/data/core.js`; everything else imports `lib/data/dataService.js`), and `lib/settings/settings-file.js`, the settings file. Sounds and confetti only through
    `lib/effects/effects.ts`. Saving answers only through `lib/participant/participantData.ts`. Motion only through `lib/motion/motion.ts`, its durations
    and curves only in `lib/motion/motion-tokens.css`.

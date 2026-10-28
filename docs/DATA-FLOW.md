@@ -135,6 +135,25 @@ The lists and their order are `SESSION_OWNED`; nothing else is read for writing,
 written. A participant page open on that session is at Welcome already (a session that can be deleted is not the live one); a printed guest code of it
 is no longer recognised; the Live display open on it says "That session no longer exists."
 
+## Signing in to the admin page (Prompt 21)
+
+The admin page, on SharePoint, once its lists are this build's version (Phase 1 of Prompt 21; [RULES.md](RULES.md) has the rules):
+
+1. **Who is this?** `resolveAccess()` (`lib/access/resolve.js`) asks the data layer (`readSignedInPerson`, `lib/data/access-reads.js`) for the
+   signed-in account (`/web/currentuser`: its name, email, login name, whether it is a site collection administrator, its groups) and the site's
+   owners group, in one `$batch`. The person's key is their email in lower case.
+2. **Their row and roles**: `readAccessRows(key)` reads the `PMSUsers` item whose AppId is the key and the `PMSRoleAssignments` items whose
+   `UserKey` is the key, two indexed reads in one `$batch` (one by one where the site will not batch). The answer is kept for the page.
+3. **Which screen**: `signInStep()`. The site owner enters as a Super admin (a banner until a Super admin row of their own exists); a listed,
+   active person with a current role enters, with no PIN; a disabled person, or one with no current role, sees No access
+   (`admin/NoAccess.svelte`); anyone not listed gets the PIN screen as before, and a PIN unlocks the Phase 20 admin page (the legacy admin). If
+   the reads fail, the PIN screen too. On the local server nobody is signed in: the PIN.
+4. **Every write after that** is asked of the page's write guard (`lib/access/guard.js`, installed with `dataService.setAccessGuard`) inside the
+   data layer before it is sent. A refusal is `AccessDenied`, in words, and nothing is sent. Lock (PIN only) takes the guard away.
+
+Setup's People and access reads `PMSUsers` and `PMSRoleAssignments` whole (`listAccessRecords`) to list the Super admins, and writes through
+`lib/access` (`makeMeSuperAdmin`, `migrateAdmins`): a person's row, their roles, and a line in `PMSAuditLog` for each.
+
 ## How often each open page looks
 
 | Page | Every | Notes |
