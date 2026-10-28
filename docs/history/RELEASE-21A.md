@@ -78,18 +78,23 @@ instruction (develop now, the heavy gates at the final build), the browser runs 
 
 | Gate | Before | After |
 |---|---|---|
-| `npm run check:svelte` | 0 errors, 0 warnings (415 files) | AFTER_CHECK |
-| `npm test` | 1,610 of 1,610 | AFTER_TEST |
+| `npm run check:svelte` | 0 errors, 0 warnings (415 files) | 0 errors, 0 warnings (427 files) |
+| `npm test` | 1,610 of 1,610 | 1,651 of 1,653: the two that failed are `scripts/test-store.js`'s timing tests (fifty writes, and a read meeting a write), with EPERM from Windows on a rename, in both full runs; alone they pass 3 of 3, twice (below) |
 | `npm run test:baseline` (in `npm test`) | 38 of 38 | translated and proved (above); in `npm test` |
 | `npm run test:bundle` | 45 of 45 (Phase 20's record) | 46 of 46 |
-| `npm run test:report` | 150 of 150 (Phase 20's record) | AFTER_REPORT |
-| `npm run test:report:mutations` | 64 of 64 caught (Phase 20's record) | AFTER_MUTATIONS |
-| `npm run test:charts` | 57 of 57 (Phase 20's record) | AFTER_CHARTS |
-| `npm run test:local-site` | 26 of 26 (Phase 20's record) | AFTER_LOCAL |
-| `npm run oracle -- --seeds 500` | 0 differences (Phase 20's record) | AFTER_ORACLE |
+| `npm run test:report` | 150 of 150 (Phase 20's record) | 150 of 150 |
+| `npm run test:report:mutations` | 64 of 64 caught (Phase 20's record) | 64 of 64 caught |
+| `npm run test:charts` | 57 of 57 (Phase 20's record) | 57 of 57 |
+| `npm run test:local-site` | 26 of 26 (Phase 20's record) | 26 of 26 |
+| `npm run oracle -- --seeds 500` | 0 differences (Phase 20's record) | 0 differences (the same 5,620 participants and 9,865 guests of a check) |
 | `test:migration`, `test:a11y` (browsers) | Phase 20's record | not run: the final round (below) |
 
 The "before" of the slower gates is Phase 20's record at `21cef34` (RELEASE-20.md), the same tree; `check:svelte` and `npm test` were run again here.
+
+**The two store tests.** `scripts/test-store.js` writes a temporary `tracks.json` in a folder of its own and touches nothing of this phase. In both full
+runs here four of its fifty writes met EPERM (Windows refusing a rename over a file something holds) after the store's retries; run alone, the suite
+passed 3 of 3 twice. Writes to the repository's own files met the same refusal now and then during this phase (a file a test had just read), which
+points at something on this machine holding files for a moment (a scanner, ASSUMED), not at the store. The final round should run it again.
 
 ## Page sizes (gzip -9)
 
@@ -122,4 +127,5 @@ added; `request-baseline.spec.ts` against the translated browser baselines; `foc
 
 ## The package
 
-PACKAGE_LINE
+Made by `npm run package:release` from this branch's last commit, in a fresh checkout of it; its name is `pms-` and that commit, and its
+checksums were verified against `SHA256SUMS.txt` (the session's report names it).
