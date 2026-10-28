@@ -2,11 +2,11 @@
 // codes, the roster and admin users, as plain objects with a string id, and the lists' version check that every page's first read
 // makes (PMS-LST-010 to 012). Built only on the generic item calls of core.js; reads and writes those lists, and keeps nothing.
 
-import { VERSION } from '../schema/pms-schema.js';
-import { indexById, pick } from './encoding.js';
+import { ID, LISTS, VERSION } from '../schema/pms-schema.js';
+import { indexById, pick, spLiteral } from './encoding.js';
 import {
   baseUrl, createItem, deleteItem, fits, getItem, getItemWithVersion, getItems, listItems, onStop, queryItems, readLanUrls, sharePoint, spCreate,
-  spFind, spHttp, spMerge, updateItem, updateItemIfUnchanged,
+  spFind, spHttp, spListPath, spMerge, updateItem, updateItemIfUnchanged,
 } from './core.js';
 
 // ============================================================================
@@ -46,14 +46,30 @@ function versioned(settings) {
 /** A read that found no list at all (404) means the lists have not been made: PMS-LST-010. Anything else is as it was. */
 const notMade = (error) => { throw sharePoint && error.status === 404 && error.code !== 'item-missing' ? listsStop('PMS-LST-010') : error; };
 
-export const getAppSettings = async () => versioned(await getItem('appsettings', 'default').catch(notMade));
+/**
+ * Prompt 21: a read of the item names every column of this build, and a site of an older version lacks some (version 4 has neither setting of
+ * version 5), so SharePoint refuses it (400). Then the item's version alone is read, naming only what every version has: an older version is the
+ * version's stop (PMS-LST-011), as it was when the read met no new column; anything else is the refusal as it was. One request more, on such a
+ * site only.
+ */
+async function olderItem(error) {
+  if (sharePoint && error?.status === 400) {
+    const column = LISTS.appsettings.fields.schemaVersion.column;
+    const alone = await spHttp('GET', `${spListPath('appsettings')}/items?$filter=${ID} eq ${spLiteral('default')}&$top=1&$select=Id,${ID},${column}`).catch(() => null);
+    const row = alone?.data?.results?.[0];
+    if (row && Number.isInteger(row[column]) && row[column] < VERSION) versioned({ schemaVersion: row[column] });
+  }
+  throw error;
+}
+
+export const getAppSettings = async () => versioned(await getItem('appsettings', 'default').catch(notMade).catch(olderItem));
 
 /**
  * Phase 20: a read that names a column the site lacks is refused (400). On lists of an older version that is the version's stop, not the read's:
  * the settings item says which (PMS-LST-011), as it did when the same read met no new column. Anything else is as it was.
  */
 const versionFirst = async (error) => {
-  if (sharePoint && error?.status === 400) versioned(await getItem('appsettings', 'default').catch(notMade));
+  if (sharePoint && error?.status === 400) await getAppSettings();
   throw error;
 };
 
