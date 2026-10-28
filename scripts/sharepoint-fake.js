@@ -251,9 +251,11 @@ const fieldAsRead = (select) => (field) => {
  *   `duplicateStatus` and `duplicateCode` (Phase 10h) are how a duplicate is refused: see the top of the file. `refusesByName` (Phase 10i)
  *   is the columns an item read may not name when it would return a row: see the top of the file; `[]` answers every one.
  *   `ownerGroupId` (Prompt 21) is the id of the site's owners group, `/web/AssociatedOwnerGroup`: an account whose `Groups` holds it is a site owner.
+ *   `directory` (Prompt 21, Phase 2) is the firm's people the people picker (`/SP.UI.ApplicationPages.ClientPeoplePickerWebServiceInterface.clientPeoplePickerSearchUser`)
+ *   finds, as { name, email, jobTitle }; `pickerStatus` makes the picker answer with that status instead (a site that refuses the call).
  *   `keepColumns` may also name a whole list (by key) that a later version added, for a site of an earlier version that has it all the same.
  */
-export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Casey Example' }, ownerGroupId = 3, siteUrl = SITE_URL, prefix = SUITE_PREFIX, lists: named = {}, logoLibrary, addresses = {}, listsVersion = VERSION, schemaVersion = listsVersion, keepColumns = [], traps = {}, strict = true, leavesOut = TENANT_LEAVES_OUT, refusesByName = TENANT_REFUSES_BY_NAME, duplicateStatus = 500, duplicateCode = false, realShape = null } = {}) {
+export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Casey Example' }, ownerGroupId = 3, siteUrl = SITE_URL, prefix = SUITE_PREFIX, lists: named = {}, logoLibrary, addresses = {}, listsVersion = VERSION, schemaVersion = listsVersion, keepColumns = [], traps = {}, strict = true, leavesOut = TENANT_LEAVES_OUT, refusesByName = TENANT_REFUSES_BY_NAME, duplicateStatus = 500, duplicateCode = false, realShape = null, directory = [], pickerStatus = null } = {}) {
   const fields = new Map();
   const lists = new Map();
   /** The other set's rows, by the title a request names: empty unless something went to the wrong lists. */
@@ -487,6 +489,16 @@ export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Ca
     // (`user` may be a function, asked on every request: the local site's personas, Phase 12.)
     if (path.endsWith('/web/currentuser')) return ok(typeof user === 'function' ? user() : user);
     // The site's owners group (Prompt 21: a member of it is a site owner, and so a Super admin): its id, which a signed-in account's groups are compared with.
+    // The people picker (Prompt 21, Phase 2): what the firm's directory holds that matches the typed text, at most the suggestions asked for, in SharePoint's shape.
+    if (/clientPeoplePickerSearchUser$/.test(path) && method === 'POST') {
+      if (pickerStatus) return error(pickerStatus, 'The people picker is not allowed here.');
+      const query = JSON.parse(request.body ?? '{}').queryParams ?? {};
+      const text = String(query.QueryString ?? '').toLowerCase();
+      const found = directory.filter((person) => `${person.name} ${person.email}`.toLowerCase().includes(text)).slice(0, Number(query.MaximumEntitySuggestions) || 30);
+      return ok({ ClientPeoplePickerSearchUser: JSON.stringify(found.map((person) => ({
+        Key: `i:0#.f|membership|${person.email}`, DisplayText: person.name, IsResolved: true, EntityType: 'User',
+        EntityData: { Email: person.email, Title: person.jobTitle ?? '', Department: '' } }))) });
+    }
     if (path.endsWith('/web/AssociatedOwnerGroup') && method === 'GET') return ok({ Id: ownerGroupId });
     // The site itself: the light read that proves a sign-in works (Prompt 19).
     if (/\/_api\/web$/.test(path) && method === 'GET') return ok({ Id: idOf(siteUrl) });

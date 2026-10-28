@@ -437,6 +437,11 @@
     "arity": 1
   },
   {
+    "name": "removeAccessRecord",
+    "kind": "async function",
+    "arity": 2
+  },
+  {
     "name": "removeClientAsset",
     "kind": "async function",
     "arity": 1
@@ -487,6 +492,11 @@
     "arity": 1
   },
   {
+    "name": "searchDirectory",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
     "name": "sendToSharePoint",
     "kind": "async function",
     "arity": 4
@@ -530,6 +540,11 @@
     "name": "slugify",
     "kind": "function",
     "arity": 1
+  },
+  {
+    "name": "updateAccessRecord",
+    "kind": "async function",
+    "arity": 3
   },
   {
     "name": "updateAppSettings",

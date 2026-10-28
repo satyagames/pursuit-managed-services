@@ -86,7 +86,7 @@ function spSite() {
 
 // `idempotent` marks a write that is safe to send twice (it replaces a whole value, or a repeat is
 // caught by the unique AppId), so a 503/504 is retried for it the way it always was for a GET. `ladder: false` is the ladder's own proofs.
-async function spHttp(method, resource, { body, headers = {}, digest = true, idempotent = false, ladder = true } = {}) {
+async function spHttp(method, resource, { body, headers = {}, digest = true, idempotent = false, ladder = true, signal = undefined } = {}) {
   assertConfigured();
   const root = `${spSite()}/_api`;
   const url = resource.startsWith('https://') ? resource : `${root}${resource}`;
@@ -102,7 +102,7 @@ async function spHttp(method, resource, { body, headers = {}, digest = true, ide
       headers: { Accept: 'application/json;odata=verbose', ...writeHeaders,
         ...(body === undefined ? {} : { 'Content-Type': body instanceof Blob ? body.type : 'application/json;odata=verbose' }), ...headers },
       body: body === undefined || body instanceof Blob ? body : JSON.stringify(body),
-      signal: AbortSignal.timeout(20_000),
+      signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(20_000)]) : AbortSignal.timeout(20_000), // (a caller's own abort: the people picker's stale search)
     });
     const asked = [429, 503, 504].includes(response.status) ? retryAfterMs(response) : undefined;
     const retryAfter = Number.isFinite(asked) ? asked : undefined; // handed to the caller if every try fails
@@ -406,7 +406,7 @@ export const isUnreachable = (error) =>
   (typeof error?.status === 'number' && (error.status === 429 || error.status >= 500));
 
 export const isSharePointMode = () => { assertConfigured(); return Boolean(sharePoint); };
-export const setAccessGuard = (guard) => { accessGuard = guard ?? null; }; // Prompt 21: installs the page's write guard; null, or configure(), takes it away
+export const setAccessGuard = (guard) => { accessGuard = guard ?? null; }; export const currentAccessGuard = () => accessGuard; // Prompt 21: the page's write guard (null, or configure(), takes it away); the getter is for lib/data/access-people.js
 
 // List operations: the same set a SharePoint list offers. `list` is a logical
 // name (a JSON file here; a SharePoint list after the migration).

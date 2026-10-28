@@ -1,8 +1,8 @@
 // Giving and removing roles (Prompt 21, Phase 1): an assignment's id, who may give or remove which role (a Super admin gives Super admin, Admin and
 // Leadership for all clients in a period; an Admin gives a client's or a session's team roles), the guards (never the last Super admin, never your
 // own roles), and the Super admins now. grantRole() writes the row and its audit line; a grant given twice is "already granted" (the unique AppId:
-// SharePoint answers 500, the data layer says 409). Removing is Phase 2's screen: revokeProblem() is its rule, here so that the data layer and the
-// screen share it. Plain JS with no DOM; the admin page and Setup import it.
+// SharePoint answers 500, the data layer says 409). Removing and turning a person off are Phase 2's screens: revokeProblem() and disableProblem() are
+// their rules, here so that the data layer and the screens share them. Plain JS with no DOM; the admin page and Setup import it.
 import { EXTRAS, ROLES, ROLE_SCOPES } from './access-matrix.js';
 import { AccessDenied } from './access-denied.js';
 import { can, extrasOf, grantsOf } from './can.js';
@@ -12,7 +12,7 @@ const GLOBAL_ROLES = Object.freeze(['Super admin', 'Admin']);
 const dayOf = (value) => String(value ?? '').slice(0, 10);
 
 /** The place of an assignment as its id spells it: empty when global, the client, the session, or the period's first and last day. */
-const placeOf = ({ scopeType, clientId, sessionId, periodFrom, periodTo }) => (
+export const placeOf = ({ scopeType, clientId, sessionId, periodFrom, periodTo }) => (
   scopeType === 'client' ? clientId ?? '' : scopeType === 'session' ? sessionId ?? '' : scopeType === 'period' ? `${dayOf(periodFrom)}..${dayOf(periodTo)}` : '');
 /** An assignment's AppId: user|role|scope|place. The same grant twice is the same id, so SharePoint refuses the second. */
 export const assignmentId = (assignment) => `${assignment.userKey}|${assignment.role}|${assignment.scopeType}|${placeOf(assignment)}`;
@@ -98,4 +98,20 @@ export function revokeProblem(access, assignment, all, { now = new Date() } = {}
 export function superAdmins(users, assignments, { now = new Date() } = {}) {
   return users.filter((user) => (user.status ?? 'Active') !== 'Disabled'
     && grantsOf({ person: { key: user.id }, user, assignments: assignments.filter((row) => row.userKey === user.id) }, { now }).some((grant) => grant.role === 'Super admin'));
+}
+
+/**
+ * What stops `access` turning a person off (Phase 2; decision J: disabled, never deleted), in words, or null: yourself; a person with a current
+ * Super admin or Admin row is a Super admin's to turn off; and at least one active Super admin must remain.
+ * @param {any} access @param {string} userKey @param {any[]} assignments every assignment on the site @param {any[]} users every PMSUsers record
+ * @param {{ now?: Date }} [options]
+ */
+export function disableProblem(access, userKey, assignments, users, { now = new Date() } = {}) {
+  if (userKey === access?.person?.key) return 'You cannot turn off your own access.';
+  const theirs = assignments.filter((row) => row.userKey === userKey);
+  const global = theirs.some((row) => GLOBAL_ROLES.includes(row.role) && grantsOf({ person: { key: userKey }, user: { status: 'Active' }, assignments: [row] }, { now }).length > 0);
+  if (global && !can(access, 'roles.global', {}, { now })) return 'Only a Super admin can turn off a Super admin or an Admin.';
+  const active = superAdmins(users, assignments, { now });
+  if (active.some((user) => user.id === userKey) && !active.some((user) => user.id !== userKey)) return 'At least one Super admin must remain.';
+  return null;
 }
