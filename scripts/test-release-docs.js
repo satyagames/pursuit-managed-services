@@ -87,11 +87,11 @@ describe('the permissions, from pms-schema-meta.js', () => {
     assert.ok(WRITE.startsWith('Contribute'));
   });
 
-  it('the participant accounts: write the five lists of a visit, only read the content, the settings, the guest list and the pictures, and never read the admins', () => {
+  it('the participant accounts: write the five lists of a visit, only read the content, the settings, the guest list and the pictures, and never read the admins or who may do what', () => {
     assert.deepEqual(participantGroups(), {
       write: ['PMSClientSessions', 'PMSParticipants', 'PMSGuestQRCodes', 'PMSVisitLog', 'PMSParticipantAnswers'],
       read: ['PMSClients', 'PMSActivities', 'PMSActivityQuestions', 'PMSAnswerOptions', 'PMSAppSettings', 'PMSGuestList', 'PMSClientImages'],
-      none: ['PMSAdminUsers'],
+      none: ['PMSAdminUsers', 'PMSUsers', 'PMSRoleAssignments', 'PMSAuditLog'], // (Prompt 21: the three access lists are no guest's business)
     });
   });
 
@@ -185,17 +185,19 @@ describe('RUNBOOK.md', () => {
     assert.match(note, /With pms-283ad18, \*\*a chart's tooltip could lie over the question, the "got it right first time" line and the Show answer \/ View as table buttons above its mark, and a locked activity's title was too faint to read\*\* \(photographed by Satyadev, 16 Oct 2026\)/);
     assert.match(note, /The participant page changed for the first time since pms-0a1c701: a locked activity's title, and when it looks again after the network comes back\./);
     const items = [...note.matchAll(/^(\d+)\. (.+)$/gm)].map((match) => [Number(match[1]), match[2]]);
-    assert.deepEqual(items.map(([number]) => number), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], 'fifteen steps since Prompt 19 (SharePoint session resilience)');
+    assert.deepEqual(items.map(([number]) => number), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], 'sixteen steps since Prompt 21, Phase 1 (fifteen since Prompt 19)');
     const said = Object.fromEntries(items);
     // (Phase 18) Brand Studio in Content: its own step, and the note says what moved and that no data, list or setting changed.
     assert.match(said[14], /^Brand Studio in the Content tab \(Phase 18, QA-TESTING\.md items 198 to 204\)[^\n]*\*\*Content\*\*[^\n]*Activities \| Brand[^\n]*\*\*Brand\*\* on a client's row[^\n]*#content\/brand[^\n]*Unsaved changes[^\n]*Preview an activity in this look\.\.\.[^\n]*\*Send back:\*/);
     assert.match(note, /\*\*This package \(Phase 18\) moves Brand Studio into the Content tab\*\*[^\n]*no data, list, column or setting changed/);
-    assert.match(note, /step 13 is Phase 17's; step 14 is Phase 18's; step 15 is this package's\./);
+    assert.match(note, /step 13 is Phase 17's; step 14 is Phase 18's; step 15 is Prompt 19's; step 16 is this package's\./);
     // (Prompt 19) the sign-in that runs out: its own step, and the note says what changed and that no data, list, column or setting did.
     assert.match(said[15], /^The sign-in that runs out \(Prompt 19, QA-TESTING\.md items 205 to 210\)[^\n]*F12[^\n]*SPRequestGuid[^\n]*sleep[^\n]*Your SharePoint sign-in needs refreshing[^\n]*\*\*Reload\*\*[^\n]*unsaved[^\n]*Idle session sign-out[^\n]*\*Send back:\*/);
     assert.match(note, /\*\*This package \(Prompt 19\) renews a SharePoint sign-in that stops being accepted, or says so plainly\*\*[^\n]*no data, list, column or setting changed/);
-    // (Prompt 20) the confidence check: the note says the lists move to version 4 and what Setup does.
-    assert.match(note, /\*\*This package \(Prompt 20\) adds the confidence check, Before and After\*\*[^\n]*\*\*The lists move to version 4\*\*[^\n]*step 2/);
+    // (Prompt 20) the confidence check, and (Prompt 21, Phase 1) who may do what: the note says the lists move to version 5 and what Setup does.
+    assert.match(note, /\*\*This package adds the confidence check, Before and After \(Prompt 20\), and who may do what \(Prompt 21, Phase 1\)\*\*[^\n]*unlocks with their PIN as before[^\n]*\*\*The lists move to version 5\*\*[^\n]*step 2/);
+    assert.match(said[16], /^Who may do what \(Prompt 21, Phase 1, QA-TESTING\.md items 216 to 221\)[^\n]*the PIN screen as before[^\n]*Add yourself as a Super admin in Setup[^\n]*\*\*People and access\*\*[^\n]*\*\*Make me a Super admin\*\*[^\n]*\*\*Copy into the new lists\*\*[^\n]*\*Send back:\*/);
+    assert.match(book, /\| Note 16 \| 216, 217, 218, 219, 220, 221 \|/, 'the steps of Prompt 21, Phase 1');
     assert.match(book, /\| Note 15 \| 205, 206, 207, 208, 209, 210 \|/, 'the steps of Prompt 19');
     assert.match(book, /\| Note 14 \| 198, 199, 200, 201, 202, 203, 204 \|/, 'the steps of Phase 18');
     assert.match(said[13], /^One full pass of the package \(Phase 17, QA-TESTING\.md items 195 to 197\)[^\n]*11 of 11[^\n]*by QR code and by manual select[^\n]*every kind of question[^\n]*\*\*Delete session\*\*[^\n]*8 requests[^\n]*\*Send back:\*/);
@@ -204,8 +206,9 @@ describe('RUNBOOK.md', () => {
     assert.match(said[1], /^Replace `index\.html`, `admin\.html` and `setup\.html`[^\n]*Keep `pms-config\.txt` as it is[^\n]*Change nothing else\./);
     assert.ok(said[1].includes(SETTINGS_TEXT), 'the content that stays, exactly');
     assert.match(said[1], /Delete `pms-config\.json` if it is still there[^\n]*does not serve `\.json` files/);
-    // (Prompt 20: the lists move to version 4, so on PCOE Setup now has something to do: two columns, then the version raised.)
-    assert.match(said[2], /setup\.html: "1\. This copy of the app" shows the build `pms-abc1234`, and the line under "2\. Lists" says the lists are version 3 and this version of the app needs version 4 \(PMS-LST-011\)\. Press \*\*Show the plan\*\*: it names exactly two columns, `PMSClientSessions\.ConfidenceCheck` and `PMSActivities\.Kind`\. Press \*\*Create\*\*, then \*\*Mark the site as ready\*\* if Create did not already: expect "Raised the lists from version 3 to version 4\." Nothing else in Setup\./);
+    // (Prompt 20: the lists move to version 4, so on PCOE Setup now has something to do: two columns, then the version raised. Prompt 21: version 5,
+    // three lists and two settings more.)
+    assert.match(said[2], /setup\.html: "1\. This copy of the app" shows the build `pms-abc1234`, and the line under "2\. Lists" says the lists are version 3 and this version of the app needs version 5 \(PMS-LST-011\)\. Press \*\*Show the plan\*\*: it names Prompt 20's two columns, `PMSClientSessions\.ConfidenceCheck` and `PMSActivities\.Kind`, version 5's two settings, `PMSAppSettings\.FiscalYearStartMonth` and `PMSAppSettings\.MinSample`, and version 5's three lists, `PMSUsers`, `PMSRoleAssignments` and `PMSAuditLog`\. Press \*\*Create\*\*, then \*\*Mark the site as ready\*\* if Create did not already: expect "Raised the lists from version 3 to version 5\." Nothing else in Setup yet \(step 16 is the rest\)\./);
     assert.match(said[2], /If it says the lists are version 2, PMS-LST-011[^\n]*\*\*Show the plan\*\*, \*\*Create\*\* and \*\*Mark the site as ready\*\*/, 'and what to do if the upgrade was not done');
     assert.match(said[3], /^On an iPad, \*\*scan a named guest's QR code\*\*[^\n]*\*\*Guests scan a personal QR\*\*[^\n]*\*\*Add 1 guest\*\*, then \*\*Generate all codes \(1\)\*\*/);
     assert.match(said[4], /\*\*Live display\*\*[^\n]*press the bar of an answer the guest picked: `Who picked: <answer> \(N people\)`[^\n]*\*\*View as table\*\*/);
