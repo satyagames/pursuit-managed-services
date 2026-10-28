@@ -31,6 +31,9 @@ Show the plan, Create and Mark the site as ready, which adds the two columns and
 | `uservisitlogs` | PMSVisitLog | The visit log: one row for each browser tab that opened the participant page. Results read it for names, and Delete session removes a session's rows. | admin | participant, admin |
 | `adminusers` | PMSAdminUsers | The facilitators who may unlock the admin page: a name and a hash of a PIN each. | admin | setup |
 | `responses` | PMSParticipantAnswers | The answers: one item for each visit, holding all of that person's answers. | participant, admin | participant, admin, setup |
+| `users` | PMSUsers | One item for each person who may use the admin page (Prompt 21): who they are and whether they are active. Adding a person gives them no access; their assignments do. | admin, setup | admin, setup |
+| `roleassignments` | PMSRoleAssignments | One item for each person, role and place (Prompt 21, decision H): roles only allow, and they add up. A duplicate grant is refused by its unique AppId. | admin, setup | admin, setup |
+| `auditlog` | PMSAuditLog | One line for each grant, removal, added person and disable (Prompt 21, decision J). Lines are only ever added; none holds an answer. | admin, setup | admin, setup |
 | (library) | PMSClientImages | The clients' pictures (hero badge, logo, background, answer tiles), each stored once under a name made from its content. | participant, admin, setup | admin, setup |
 <!-- lists:end -->
 
