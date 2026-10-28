@@ -20,6 +20,11 @@
   import PrintSheet from './admin/PrintSheet.svelte';
   import SessionBanner from './admin/SessionBanner.svelte';
   import { createKeepAlive } from './lib/common/session-keepalive.js';
+  import NoAccess from './admin/NoAccess.svelte';
+  import { resolveAccess, signInStep } from './lib/access/resolve.js';
+  import { legacyAccess } from './lib/access/can.js';
+  import { writeGuard } from './lib/access/guard.js';
+  import { OWNER_BANNER } from './lib/access/access-words.js';
 
   type Admin = { id: string; name?: string };
   type Tab = 'today' | 'clients' | 'content' | 'guests' | 'results';
@@ -60,6 +65,53 @@
   /** The Live display as the wall (Phase 11a: `#live-display/<id>/wall`, what "Open in a new tab" opens): the charts with no names in the page. */
   let wallPage = $state(false);
 
+  // Sign-in (Prompt 21, lib/access): on SharePoint the page first asks who is signed in and reads their row and roles. A listed, active person with a
+  // current role, and the site owner (a Super admin, with a banner until they have a row of their own), enter without a PIN; a disabled person, or
+  // one with no current role, sees No access; anyone not listed gets the PIN screen exactly as before, and a PIN gives the Phase 20 admin page (the
+  // legacy admin). The data layer then checks every write against that access (lib/access/guard.js). On the local server nobody is signed in: the PIN.
+  const onSharePoint = (() => { try { return dataService.isSharePointMode(); } catch { return false; } })();
+  let signIn = $state<'checking' | 'pin' | 'no-access'>(onSharePoint ? 'checking' : 'pin');
+  let access = $state<any>(null);
+  let noAccessReason = $state<string | null>(null);
+  let ownerBanner = $state(false);
+  /** Whether the admin came in with a PIN: only then is there a Lock, back to the PIN. */
+  let viaPin = $state(true);
+  const supportWords = (() => {
+    const support = deployment()?.settings?.support as { name?: string; contact?: string } | undefined;
+    return support?.name ? `${support.name}${support.contact ? ` (${support.contact})` : ''}` : '';
+  })();
+
+  /** Installs the data layer's write guard for an access (or takes it away). */
+  function guardWith(next: any) {
+    access = next;
+    dataService.setAccessGuard(next ? writeGuard(next, onSharePoint ? dataService.sharePointListTitles() : {}) : null);
+  }
+
+  async function checkAccess() {
+    try {
+      const found = await resolveAccess(dataService);
+      const step = signInStep(found);
+      access = found;
+      if (step.step === 'enter') {
+        guardWith(found);
+        ownerBanner = step.banner === 'owner';
+        viaPin = false;
+        admin = { id: found.person?.key ?? 'admin', name: found.person?.name ?? '' };
+        openShell();
+        return;
+      }
+      if (step.step === 'no-access') {
+        noAccessReason = step.reason;
+        signIn = 'no-access';
+        return;
+      }
+    } catch {
+      // (The access lists could not be read: the PIN, as before. A site whose lists are not this build's has stopped the page already.)
+    }
+    signIn = 'pin';
+  }
+  if (onSharePoint) void checkAccess();
+
   // The sign-in keep-alive (Prompt 19, lib/common/session-keepalive.ts), on SharePoint and while the admin is in: one light read after a long idle.
   $effect(() => {
     if (!admin || !dataService.isSharePointMode()) return;
@@ -93,15 +145,11 @@
         pin = '';
         return;
       }
+      guardWith(legacyAccess(access?.person ?? null));
+      viaPin = true;
       admin = result as Admin;
-      printing = window.location.hash === PRINT_HASH;
-      const view = liveOfHash(window.location.hash);
-      liveDisplay = view?.sessionId ?? null;
-      wallPage = view?.wall ?? false;
-      activeTab = printing ? 'guests' : liveDisplay !== null ? 'results' : tabFromHash() ?? 'today';
-      if (activeTab === 'content') setContentView(viewOfHash(window.location.hash) ?? DEFAULT_VIEW);
       pin = '';
-      void newScreen();
+      openShell();
     } catch (cause) {
       const support = deployment()?.settings?.support as { name?: string; contact?: string } | undefined;
       error = unlockFailureText(cause, { isUnreachable: dataService.isUnreachable, adminsList: dataService.sharePointListTitles().adminusers, support });
@@ -110,6 +158,17 @@
       // The field was disabled while the PIN was checked, and a disabled field drops focus: after a wrong PIN, put the person back in it.
       if (!admin) void tick().then(() => pinField?.focus());
     }
+  }
+
+  /** The shell opens where the address says (a tab, the Live display, the QR sheet), and says where the person is. */
+  function openShell() {
+    printing = window.location.hash === PRINT_HASH;
+    const view = liveOfHash(window.location.hash);
+    liveDisplay = view?.sessionId ?? null;
+    wallPage = view?.wall ?? false;
+    activeTab = printing ? 'guests' : liveDisplay !== null ? 'results' : tabFromHash() ?? 'today';
+    if (activeTab === 'content') setContentView(viewOfHash(window.location.hash) ?? DEFAULT_VIEW);
+    void newScreen();
   }
 
   /**
@@ -135,6 +194,7 @@
   async function lock() {
     // A screen with unsaved changes (Brand Studio) asks first.
     if (!(await mayLeave())) return;
+    guardWith(null);
     admin = null;
     printing = false;
     liveDisplay = null;
@@ -239,7 +299,17 @@
 
 <svelte:window onhashchange={onHashChange} />
 
-{#if !admin}
+{#if !admin && signIn === 'no-access'}
+  <NoAccess person={access?.person ?? null} reason={noAccessReason} support={supportWords} />
+{:else if !admin && signIn === 'checking'}
+  <main class="login">
+    <div class="login__brand"><div class="login__wordmark"><DeloitteWordmark /></div></div>
+    <div class="login__card">
+      <h1>Admin</h1>
+      <p class="muted" role="status">Checking your access...</p>
+    </div>
+  </main>
+{:else if !admin}
   <main class="login">
     <div class="login__brand"><div class="login__wordmark"><DeloitteWordmark /></div></div>
     <form class="login__card" autocomplete="off" onsubmit={unlock}>
@@ -262,7 +332,7 @@
         {#if label}<span class="shell__label" data-testid="copy-label">{label}</span>{/if}
       </div>
       <span class="shell__user">{admin.name ?? ''}</span>
-      <button class="btn btn--bar" type="button" onclick={() => void lock()}>Lock</button>
+      {#if viaPin}<button class="btn btn--bar" type="button" onclick={() => void lock()}>Lock</button>{/if}
     </header>
     <nav class="shell__nav" aria-label="Admin sections">
       <div class="tabs" role="tablist">
@@ -272,6 +342,7 @@
       </div>
     </nav>
     <SessionBanner onBack={() => showToast('Reconnected.', 'success')} />
+    {#if ownerBanner}<p class="notice owner-banner" role="status" data-testid="owner-banner">{OWNER_BANNER}</p>{/if}
 
     <div id="admin-panel" class="shell__body" role="tabpanel" aria-labelledby={`admin-tab-${activeTab}`} tabindex="0">
       {#if activeTab === 'today'}
