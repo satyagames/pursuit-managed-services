@@ -16,6 +16,11 @@
 // confidence check (empty reads as an activity), and PMSClientSessions.ConfidenceCheck whether a session asks it. A site of version 3 lacks
 // both, and every read of those two lists names them, so a page of this build stops there (PMS-LST-011) until Setup has added them.
 //
+// Schema version 5 (Prompt 21, Phase 1): roles and access. Three lists, PMSUsers (a person, keyed by their email in lower case),
+// PMSRoleAssignments (one row for each person, role and place) and PMSAuditLog (a line for each grant, removal and disable: it only grows), and two
+// settings on PMSAppSettings, FiscalYearStartMonth and MinSample. A site of version 4 lacks them, and the settings item's read names the two
+// settings, so a page of this build stops there (PMS-LST-011) until Setup has made them.
+//
 // A list is its title before any prefix (the settings may put one in front, or name the list outright) and its fields: the
 // property of a record, then the internal name of the column that holds it, then its kind when it is not text: `number`,
 // `yesno`, `date`, `array` (a JSON list kept as plain text) or `object` (a JSON object kept as plain text); then `indexed` for a
@@ -26,11 +31,11 @@
 /** The column every list is keyed by: the app's own id of a record, never SharePoint's numeric ID. Indexed and unique. */
 export const ID = 'AppId';
 /**
- * The version of the lists this build is made for (Phase 10c-2b: schema v2; Phase 10i: 3; Phase 20: 4). The site says its own in PMSAppSettings.SchemaVersion,
+ * The version of the lists this build is made for (Phase 10c-2b: schema v2; Phase 10i: 3; Phase 20: 4; Prompt 21: 5). The site says its own in PMSAppSettings.SchemaVersion,
  * which Setup writes when it makes the lists, and raises once it has added what a newer version needs; a page on lists of another version stops
  * (dataService, PMS-LST-010 to 012).
  */
-export const VERSION = 4;
+export const VERSION = 5;
 /** The picture library's title before any prefix. */
 export const LIBRARY = 'PMSClientImages';
 
@@ -72,7 +77,9 @@ export const LISTS = {
     id: ID, clientId: 'ClientId', sessionId: 'SessionId indexed', visitorId: 'VisitorId indexed', used: 'Used yesno', createdAt: 'CreatedAt date', usedAt: 'UsedAt date',
     expiredAt: 'ExpiredAt date', clientTrackId: 'ClientTrackId',
   }),
-  appsettings: list('PMSAppSettings', { id: ID, activeSessionId: 'ActiveSessionId', activeClientId: 'ActiveClientId', activatedAt: 'ActivatedAt date', schemaVersion: 'SchemaVersion number' }),
+  appsettings: list('PMSAppSettings', { id: ID, activeSessionId: 'ActiveSessionId', activeClientId: 'ActiveClientId', activatedAt: 'ActivatedAt date', schemaVersion: 'SchemaVersion number',
+    fiscalYearStartMonth: 'FiscalYearStartMonth number', minSample: 'MinSample number',
+  }),
   visitorroster: list('PMSGuestList', { id: ID, sessionId: 'SessionId indexed', displayName: 'GuestName', enabled: 'Enabled yesno' }),
   uservisitlogs: list('PMSVisitLog', {
     id: ID, sessionId: 'SessionId indexed', clientId: 'ClientId', page: 'Page', entryMode: 'EntryMode', sharePointUserId: 'SharePointUserId', displayName: 'SignedInName',
@@ -81,6 +88,18 @@ export const LISTS = {
   adminusers: list('PMSAdminUsers', { id: ID, pin: 'PinHash', name: 'Name' }),
   // (A participant's item is keyed by their visit's id, which the data layer writes into AppId itself: a record of it has no `id`.)
   responses: list('PMSParticipantAnswers', { sessionId: 'SessionId indexed', responses: 'ResponsesJson array', trackId: 'TrackId indexed', clientId: 'ClientId' }),
+  // Prompt 21: who may do what. A person's AppId is their email in lower case; an assignment's is user|role|scope|place (lib/access/grants.js).
+  users: list('PMSUsers', {
+    id: ID, fullName: 'FullName', email: 'Email indexed', loginName: 'LoginName', jobTitle: 'JobTitle', status: 'Status', source: 'Source', addedBy: 'AddedBy',
+  }),
+  roleassignments: list('PMSRoleAssignments', {
+    id: ID, userKey: 'UserKey indexed', role: 'Role', scopeType: 'ScopeType', clientId: 'ClientId indexed', sessionId: 'SessionId indexed',
+    periodFrom: 'PeriodFrom date', periodTo: 'PeriodTo date', validUntil: 'ValidUntil date', extras: 'Extras', grantedBy: 'GrantedBy',
+  }),
+  auditlog: list('PMSAuditLog', {
+    id: ID, actor: 'Actor indexed', action: 'Action', targetUser: 'TargetUser indexed', role: 'Role', clientId: 'ClientId indexed', sessionId: 'SessionId',
+    detail: 'Detail', occurredAt: 'OccurredAt date',
+  }),
 };
 
 /**

@@ -76,7 +76,7 @@
 // proof that a sign-in works. Every answer carries an SPRequestGuid header, as SharePoint's do, so a refusal can be traced.
 
 import { LIBRARY, LISTS, VERSION } from '../migration/src/lib/schema/pms-schema.js';
-import { columnNamesAt, columnsOf } from '../migration/src/lib/schema/pms-schema-meta.js';
+import { META, columnNamesAt, columnsOf } from '../migration/src/lib/schema/pms-schema-meta.js';
 
 export const SITE_URL = 'https://tenant.example/sites/cec';
 
@@ -183,6 +183,10 @@ const LIST_SETTINGS = ['EnableAttachments', 'EnableModeration', 'EnableVersionin
 const FIELD_SETTINGS = ['Indexed', 'EnforceUniqueValues', 'Required'];
 const XML_ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
 const unescapeXml = (text) => text.replace(/&(amp|lt|gt|quot|apos);/g, (_, name) => XML_ENTITIES[name]);
+/** The lists schema version 5 added (Prompt 21, Phase 1), by key: a site Setup made for an earlier version has none of them. */
+export const PHASE_21_LISTS = Object.freeze(Object.keys(LISTS).filter((key) => META[key].since === 5));
+/** The columns of an older list schema version 5 added (Prompt 21, Phase 1), as 'key.Column'. */
+export const PHASE_21_COLUMNS = Object.freeze(['appsettings.FiscalYearStartMonth', 'appsettings.MinSample']);
 /** The columns schema version 4 added (Phase 20), as 'key.Column': what a site Setup made for an earlier version lacks. */
 export const PHASE_20_COLUMNS = Object.freeze(['sections.Kind', 'sessions.ConfidenceCheck']);
 
@@ -246,8 +250,10 @@ const fieldAsRead = (select) => (field) => {
  *   `leavesOut` (Phase 10h) are what an item read that names no columns gets: see the top of the file. `{ strict: false }` is the tenant.
  *   `duplicateStatus` and `duplicateCode` (Phase 10h) are how a duplicate is refused: see the top of the file. `refusesByName` (Phase 10i)
  *   is the columns an item read may not name when it would return a row: see the top of the file; `[]` answers every one.
+ *   `ownerGroupId` (Prompt 21) is the id of the site's owners group, `/web/AssociatedOwnerGroup`: an account whose `Groups` holds it is a site owner.
+ *   `keepColumns` may also name a whole list (by key) that a later version added, for a site of an earlier version that has it all the same.
  */
-export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Casey Example' }, siteUrl = SITE_URL, prefix = SUITE_PREFIX, lists: named = {}, logoLibrary, addresses = {}, listsVersion = VERSION, schemaVersion = listsVersion, keepColumns = [], traps = {}, strict = true, leavesOut = TENANT_LEAVES_OUT, refusesByName = TENANT_REFUSES_BY_NAME, duplicateStatus = 500, duplicateCode = false, realShape = null } = {}) {
+export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Casey Example' }, ownerGroupId = 3, siteUrl = SITE_URL, prefix = SUITE_PREFIX, lists: named = {}, logoLibrary, addresses = {}, listsVersion = VERSION, schemaVersion = listsVersion, keepColumns = [], traps = {}, strict = true, leavesOut = TENANT_LEAVES_OUT, refusesByName = TENANT_REFUSES_BY_NAME, duplicateStatus = 500, duplicateCode = false, realShape = null } = {}) {
   const fields = new Map();
   const lists = new Map();
   /** The other set's rows, by the title a request names: empty unless something went to the wrong lists. */
@@ -269,6 +275,8 @@ export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Ca
       otherLists.set(other, []);
     }
     if (without.includes(key)) continue;
+    // (Prompt 21: a list a later version added is not on a site of an earlier one, unless the test keeps it, by key, in `keepColumns`.)
+    if ((META[key].since ?? 0) > listsVersion && !keepColumns.includes(key)) continue;
     fields.set(key, [...fieldsFor(key, listsVersion), ...fieldsFor(key).filter((column) => keepColumns.includes(`${key}.${column.InternalName}`) && !fieldsFor(key, listsVersion).some((held) => held.InternalName === column.InternalName))]
       .filter((column) => !without.includes(`${key}.${column.InternalName}`)));
     lists.set(key, []);
@@ -478,6 +486,8 @@ export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Ca
     if (path.endsWith('/contextinfo')) return ok({ GetContextWebInformation: { FormDigestValue: 'digest-token', FormDigestTimeoutSeconds: 1800 } });
     // (`user` may be a function, asked on every request: the local site's personas, Phase 12.)
     if (path.endsWith('/web/currentuser')) return ok(typeof user === 'function' ? user() : user);
+    // The site's owners group (Prompt 21: a member of it is a site owner, and so a Super admin): its id, which a signed-in account's groups are compared with.
+    if (path.endsWith('/web/AssociatedOwnerGroup') && method === 'GET') return ok({ Id: ownerGroupId });
     // The site itself: the light read that proves a sign-in works (Prompt 19).
     if (/\/_api\/web$/.test(path) && method === 'GET') return ok({ Id: idOf(siteUrl) });
     // The site's lists (Phase 10c-3): what Setup's plan reads, and where Create makes a list or the library.

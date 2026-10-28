@@ -9,7 +9,8 @@
 // Number, DateTime, Boolean (Yes/No). A column of chosen words is Text, and `values` are the words the app writes (schema v2: a
 // Choice column would turn every new word into a change to the list). Every column must exist on the list; none but AppId is
 // required to hold a value (`required`, SharePoint's "Require that this column contains information"). `reads` and `writes` name the
-// pages: participant, admin, setup. `since` is the version of the lists that added a column (none: it was there by version 3). A Yes/No column defaults to No, and every date column shows Date & Time (`format`). Text of one
+// pages: participant, admin, setup. `since` is the version of the lists that added a column (none: it was there by version 3), or, on a list, the version that
+// added the whole list (Prompt 21: version 5). A Yes/No column defaults to No, and every date column shows Date & Time (`format`). Text of one
 // line holds 255 characters at most (`max`: the app's own limit where it is lower). Growth figures are ARCHITECTURE-10.md 4.1's (in git history at 7347c72): an ASSUMPTION of 100 events a year with 60 people
 // each, to be replaced with real figures.
 import { ID, LIBRARY, LISTS, VERSION } from './pms-schema.js';
@@ -153,6 +154,8 @@ export const META = {
       ActiveClientId: text('The live client (a Clients.AppId). With none named, nothing is live.'),
       ActivatedAt: when('When Go live was last pressed: open pages notice a change by it.'),
       SchemaVersion: column('Number', `The version of these lists (${VERSION}). Setup writes it when it makes the lists, and raises an earlier version once the check of this one is clean; every page reads it with the item and stops on another version. Never written by hand.`, { writes: [SETUP] }),
+      FiscalYearStartMonth: column('Number', 'The month the firm\'s fiscal year starts in, 1 to 12 (Prompt 21): quarters and periods are counted from it. ASSUMED June (6) until the manager confirms it; typed on the item by hand until a screen sets it.', { default: 'empty reads as 6 (June, ASSUMED)', reads: [ADMIN], writes: [], since: 5 }),
+      MinSample: column('Number', 'The fewest answers a leader\'s figure is shown for without a "low sample" mark (Prompt 21, used from Phase 5). ASSUMED 10 until the manager confirms it.', { default: 'empty reads as 10', reads: [ADMIN], writes: [], since: 5 }),
     },
   },
   visitorroster: {
@@ -207,6 +210,55 @@ export const META = {
       ClientId: text('The client (a Clients.AppId).'),
     },
   },
+  users: {
+    purpose: 'One item for each person who may use the admin page (Prompt 21): who they are and whether they are active. Adding a person gives them no access; their assignments do.',
+    reads: [ADMIN, SETUP], writes: [ADMIN, SETUP], since: 5,
+    growth: { perEvent: '0', perYear: 'tens of people in total' },
+    columns: {
+      AppId: id('the person\'s email in lower case'),
+      FullName: text('The person\'s name as the directory gives it ("Last, First").', { personal: true }),
+      Email: text('The person\'s email, in lower case: how a signed-in account finds its row.', { personal: true }),
+      LoginName: text('The account\'s SharePoint login name (i:0#.f|membership|<email>), when the directory gave one.', { personal: true }),
+      JobTitle: text('The person\'s job title, when the directory gave one.', { personal: true }),
+      Status: words('Whether the person may sign in: a leaver is disabled, never deleted (decision J), and every role stops at once.', ['Active', 'Disabled'], { default: 'Active' }),
+      Source: words('Where the person came from: the directory search, or an email typed by hand (unverified).', ['Directory', 'Typed']),
+      AddedBy: text('Who added the person (a Users.AppId).', { personal: true }),
+    },
+  },
+  roleassignments: {
+    purpose: 'One item for each person, role and place (Prompt 21, decision H): roles only allow, and they add up. A duplicate grant is refused by its unique AppId.',
+    reads: [ADMIN, SETUP], writes: [ADMIN, SETUP], since: 5,
+    growth: { perEvent: '0 to 5 (a client\'s team)', perYear: 'hundreds at most' },
+    columns: {
+      AppId: id('user|role|scope|place: the person\'s key, the role, the scope and the client, the session or the period (from..to), empty when global'),
+      UserKey: text('The person (a Users.AppId): how a signed-in account finds its roles.', { personal: true }),
+      Role: words('The role.', ['Super admin', 'Admin', 'Producer', 'Designer', 'Leadership']),
+      ScopeType: words('Where the role applies: everywhere, one client, one session, or every client\'s sessions dated inside a period (Leadership only).', ['global', 'client', 'session', 'period']),
+      ClientId: text('The client (a Clients.AppId), when the scope is a client or a session; empty when global.'),
+      SessionId: text('The session (a Sessions.AppId), when the scope is a session.'),
+      PeriodFrom: when('The first day of the period, when the scope is a period.'),
+      PeriodTo: when('The last day of the period, when the scope is a period.'),
+      ValidUntil: when('The last day the role works, if it ends (Prompt 21, decision G); empty: it does not end.'),
+      Extras: words('What an Option cell of the role table is switched on for this assignment, comma-separated: content.edit (a Designer may also edit activities), users.manage (an Admin may also add people).', ['content.edit', 'users.manage'], { default: 'empty' }),
+      GrantedBy: text('Who gave the role (a Users.AppId).', { personal: true }),
+    },
+  },
+  auditlog: {
+    purpose: 'One line for each grant, removal, added person and disable (Prompt 21, decision J). Lines are only ever added; none holds an answer.',
+    reads: [ADMIN, SETUP], writes: [ADMIN, SETUP], since: 5,
+    growth: { perEvent: '0 to 5', perYear: 'hundreds' },
+    columns: {
+      AppId: id('audit-<UUID>'),
+      Actor: text('Who did it (a Users.AppId).', { personal: true }),
+      Action: words('What was done.', ['grant', 'revoke', 'add-user', 'disable', 'enable', 'migrate']),
+      TargetUser: text('To whom (a Users.AppId).', { personal: true }),
+      Role: text('The role, for a grant or a removal.'),
+      ClientId: text('The client, when the role was for one.'),
+      SessionId: text('The session, when the role was for one.'),
+      Detail: text('A few words more, 255 characters at most, never an answer.'),
+      OccurredAt: when('When it was done, by the clock of the device that did it. (SharePoint\'s own Created says the same by the site\'s clock.)'),
+    },
+  },
 };
 
 /**
@@ -232,7 +284,7 @@ export const retiredColumn = (key, name) => (RETIRED[key] ?? []).find((column) =
  * @returns {(string | null)[]}
  */
 export const columnNamesAt = (key, version = VERSION) => Object.entries(META[key].columns)
-  .map(([name, spec]) => ((spec.since ?? 0) > version ? null
+  .map(([name, spec]) => (Math.max(spec.since ?? 0, META[key].since ?? 0) > version ? null
     : (RETIRED[key] ?? []).find((column) => column.now === name && version <= column.lastIn)?.name ?? name));
 
 /** The picture library: its title before any prefix, and what it holds. */
