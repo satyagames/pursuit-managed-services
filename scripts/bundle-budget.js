@@ -378,3 +378,16 @@ export const PHASE_21A = Object.freeze({
   participantAfter: 165_480, adminAfter: 596_907,
   participantUtilities: PHASE_11A.participantUtilities,
 });
+
+/**
+ * Prompt 21, Phase 2 (Manage Users) is the admin page's: the People tab (the list, Add user with the people picker, a person's page, Give access),
+ * lib/access's people rules and the picker's. The participant page carries only what the data layer every page carries gained: section 13 of the
+ * data layer (a directory search, a change to a person's row, a role removed: lib/data/access-people.js) and the abort signal of the one request
+ * function. None of lib/access, none of the People screens. Its Tailwind rules are the ones it had, and the ceiling is not raised. Measured when
+ * the phase ended: participantAfter and adminAfter, where the next phase starts.
+ */
+export const PHASE_21B = Object.freeze({
+  participantBefore: PHASE_21A.participantAfter, adminBefore: PHASE_21A.adminAfter, participantAllowance: 1_000, adminAllowance: 14_000,
+  participantAfter: 166_085, adminAfter: 608_919,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
