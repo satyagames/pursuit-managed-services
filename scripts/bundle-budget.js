@@ -365,3 +365,16 @@ export const PHASE_20 = Object.freeze({
   participantAfter: 164_582, adminAfter: 592_267,
   participantUtilities: PHASE_11A.participantUtilities,
 });
+
+/**
+ * Prompt 21, Phase 1 (the access engine) grows the participant page by what the data layer every page carries gained: the schema's three access
+ * lists and two settings, core.js's write-guard hook (no guard is installed there), lib/data/access-reads.js and records.js's read of an older
+ * site's version. None of lib/access (the role matrix, can(), the guard, the grants) is on it. The admin page carries lib/access, the No access
+ * screen, the owner's banner and the sign-in step. Its Tailwind rules are the ones it had, and the ceiling is not raised. Measured when the phase
+ * ended: participantAfter and adminAfter, where the next phase starts.
+ */
+export const PHASE_21A = Object.freeze({
+  participantBefore: PHASE_20.participantAfter, adminBefore: PHASE_20.adminAfter, participantAllowance: 1_500, adminAllowance: 7_000,
+  participantAfter: 165_480, adminAfter: 596_907,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
