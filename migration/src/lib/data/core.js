@@ -28,6 +28,7 @@ let unfinishedScan = null; // a QR scan whose track is written but whose claim i
 let requestTotal = 0;
 let mustConfigure = false; // requireConfiguration() was called and configure() has not been since: nothing may be sent (Phase 10b)
 let onStop = null; // what the page does when the site's lists are not this build's (lib/settings/start.ts: its stop screen); none for Setup or a test
+let accessGuard = null; // Prompt 21: the page's write guard (lib/access/guard.js), asked before every write; none on the participant page or Setup
 // The ladder's state (Prompt 19, lib/data/session.js): refusals seen, the recovery under way, the cooldown, lists refused, the page's renewer and listeners.
 let session = newSessionState();
 
@@ -50,6 +51,7 @@ export function configure({ baseUrl: url, sharePoint: settings, onStop: stop } =
   unfinishedScan = null;
   mustConfigure = false;
   onStop = stop ?? null;
+  accessGuard = null;
   session = newSessionState(session);
 }
 
@@ -89,6 +91,7 @@ async function spHttp(method, resource, { body, headers = {}, digest = true, ide
   const root = `${spSite()}/_api`;
   const url = resource.startsWith('https://') ? resource : `${root}${resource}`;
   if (!url.startsWith(`${root}/`)) throw new Error('Unexpected SharePoint pagination URL.');
+  if (accessGuard && method !== 'GET') accessGuard(method, resource, headers, body); // (throws AccessDenied: nothing is sent)
   let sentAgain = false; // a refused request is sent once more at most (a stale token, or the ladder): a write is never sent three times
   let outcome; // this request's recovery, once the ladder has run for it
   for (let attempt = 0; attempt < 4; attempt += 1) {
@@ -371,6 +374,7 @@ async function spSend(method, path, { body, headers = {} }) {
 async function send(method, path, { body, headers } = {}) {
   assertConfigured();
   if (sharePoint) return spSend(method, path, { body, headers });
+  if (accessGuard && method !== 'GET') accessGuard(method, path, headers, body);
   const upload = body instanceof Blob;
   requestTotal += 1;
   const response = await fetch(baseUrl + path, {
@@ -393,18 +397,16 @@ async function send(method, path, { body, headers } = {}) {
 
 const request = async (method, path, body) => (await send(method, path, { body })).data;
 
-/**
- * True when `error` means the backend couldn't be reached or failed on its side (offline,
- * timed out, 5xx), as opposed to it answering "no" (404, 409 and the like). Screens use it
- * to offer a retry instead of a dead end. Part of the adapter: the SharePoint version
- * decides what a connection failure looks like there.
- */
+/** True when `error` means the backend couldn't be reached or failed on its side (offline, timed out, 5xx), as opposed to it answering "no" (404,
+ * 409 and the like). Screens use it to offer a retry instead of a dead end. Part of the adapter: the SharePoint version decides what a connection
+ * failure looks like there. */
 export const isUnreachable = (error) =>
   error instanceof TypeError || // fetch() rejects with this when there is no connection
   ['TimeoutError', 'AbortError'].includes(error?.name) ||
   (typeof error?.status === 'number' && (error.status === 429 || error.status >= 500));
 
 export const isSharePointMode = () => { assertConfigured(); return Boolean(sharePoint); };
+export const setAccessGuard = (guard) => { accessGuard = guard ?? null; }; // Prompt 21: installs the page's write guard; null, or configure(), takes it away
 
 // List operations: the same set a SharePoint list offers. `list` is a logical
 // name (a JSON file here; a SharePoint list after the migration).

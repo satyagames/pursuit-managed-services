@@ -18,11 +18,13 @@ import { can, canView, grantsOf, legacyAccess, userKeyOf } from '../migration/sr
 import { writeGuard } from '../migration/src/lib/access/guard.js';
 import { forgetAccess, resolveAccess, signInStep } from '../migration/src/lib/access/resolve.js';
 import { assignmentId, grantProblem, grantRole, revokeProblem, superAdmins } from '../migration/src/lib/access/grants.js';
-import { AUDIT_DETAIL_MAX, writeAudit } from '../migration/src/lib/access/audit.js';
+import { AUDIT_ACTIONS, AUDIT_DETAIL_MAX, writeAudit } from '../migration/src/lib/access/audit.js';
 import { migrateAdmins } from '../migration/src/lib/access/migrate-admins.js';
 import { createSharePointFake } from './sharepoint-fake.js';
 
 let pages = 0;
+/** The round trips of a test, but the write token a $batch needs (the page asks for it once, and every write after reuses it). */
+const trips = (fake) => fake.requests.filter((entry) => !entry.path.endsWith('/contextinfo')).length;
 /** A fresh data service on a fake site, with fetch routed to it. */
 async function siteWith(options = {}) {
   const fake = createSharePointFake(options);
@@ -303,7 +305,7 @@ describe('resolveAccess(): who is signed in, in few requests', () => {
     assert.equal(access.person.key, 'pulmathur@deloitte.com');
     assert.equal(access.user.status, 'Active');
     assert.deepEqual(access.assignments.map((each) => each.role).sort(), ['Admin', 'Producer']);
-    assert.equal(fake.requests.length, 2, 'two round trips: who this is, then the two reads in one $batch');
+    assert.equal(trips(fake), 2, 'two round trips: who this is, then the two reads in one $batch');
     const reads = fake.requests.flatMap((entry) => entry.parts ?? [entry]).filter((entry) => ['users', 'roleassignments'].includes(entry.list));
     assert.equal(reads.length, 2);
     assert.match(reads.find((entry) => entry.list === 'users').query, /\$filter=AppId eq 'pulmathur@deloitte\.com'/);
@@ -314,11 +316,11 @@ describe('resolveAccess(): who is signed in, in few requests', () => {
   it('costs the same however many people are on the site, and is kept for the page until it is asked again', async () => {
     const { fake, ds } = await peopleSite({ extra: 300 });
     await resolveAccess(ds, { now: NOW });
-    assert.equal(fake.requests.length, 2);
+    assert.equal(trips(fake), 2);
     await resolveAccess(ds, { now: NOW });
-    assert.equal(fake.requests.length, 2, 'the second asking is answered from the page');
+    assert.equal(trips(fake), 2, 'the second asking is answered from the page');
     await resolveAccess(ds, { now: NOW, refresh: true });
-    assert.equal(fake.requests.length, 4, 'and read again on demand');
+    assert.equal(trips(fake), 4, 'and read again on demand');
   });
 
   it('reads the same two lists one by one when the site will not batch', async () => {
@@ -326,7 +328,7 @@ describe('resolveAccess(): who is signed in, in few requests', () => {
     fake.failNext({ status: 400, when: (entry) => entry.path.endsWith('/$batch') });
     const access = await resolveAccess(ds, { now: NOW });
     assert.equal(access.assignments.length, 2);
-    assert.ok(fake.requests.length <= 5);
+    assert.equal(trips(fake), 5, 'the refused batch, then four plain reads; the page asks for no second batch');
   });
 
   it('the sign-in step: listed and active with a role enters; disabled or no role is No access; nobody listed tries the PIN', async () => {
@@ -414,6 +416,7 @@ describe('grants, their guards and the audit list', () => {
   });
 
   it('an audit line is short and holds no answers', async () => {
+    assert.deepEqual(AUDIT_ACTIONS, META.auditlog.columns.Action.values, 'the writer and the schema say the same words');
     const { fake, ds } = await siteWith();
     await writeAudit(ds, sa, { action: 'add-user', targetUser: 'raedla@deloitte.com', detail: 'x'.repeat(400) }, { now: NOW });
     const [line] = fake.lists.get('auditlog');

@@ -26,6 +26,8 @@
  *    list-titles.js   section 10, which lists are this copy's
  *    session-calls.js section 11 (Prompt 19), the page's SharePoint sign-in: its renewer, lost and back, the evidence, the keep-alive's read
  *                     (session.js, which core.js imports, holds the rule book of refusals and the ladder's rules; it has no public names)
+ *    access-reads.js  section 12 (Prompt 21), roles and access: who is signed in, their row and their assignments in two indexed reads, the access
+ *                     lists read whole and a row added (the rules are lib/access's; core.js holds the page's write guard, setAccessGuard)
  *
  * Since Phase 10c-1 it belongs to the pages in migration/ alone. Until then the legacy pages were built from this same file, so it
  * was only ever allowed to grow; they left the branch (the tag legacy-final holds them), that rule went with them, and so did the
@@ -46,7 +48,7 @@
  */
 
 export {
-  configure, requireConfiguration, isUnreachable, isSharePointMode,
+  configure, requireConfiguration, isUnreachable, isSharePointMode, setAccessGuard,
 } from './core.js';
 export {
   runPaced,
@@ -100,3 +102,6 @@ export {
 export {
   setSessionRenewer, onSessionChange, sessionEvidence, lastAnswerAt, checkSession,
 } from './session-calls.js';
+export {
+  readSignedInPerson, readAccessRows, listAccessRecords, addAccessRecord,
+} from './access-reads.js';

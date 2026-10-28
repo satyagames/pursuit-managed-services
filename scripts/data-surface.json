@@ -22,6 +22,11 @@
     "arity": 1
   },
   {
+    "name": "addAccessRecord",
+    "kind": "function",
+    "arity": 2
+  },
+  {
     "name": "addAdminUser",
     "kind": "function",
     "arity": 1
@@ -262,6 +267,11 @@
     "arity": 0
   },
   {
+    "name": "listAccessRecords",
+    "kind": "function",
+    "arity": 1
+  },
+  {
     "name": "listAdminUsers",
     "kind": "function",
     "arity": 0
@@ -377,6 +387,11 @@
     "arity": 2
   },
   {
+    "name": "readAccessRows",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
     "name": "readActivityContent",
     "kind": "async function",
     "arity": 1
@@ -405,6 +420,11 @@
     "name": "readSessionResponsesChecked",
     "kind": "async function",
     "arity": 1
+  },
+  {
+    "name": "readSignedInPerson",
+    "kind": "async function",
+    "arity": 0
   },
   {
     "name": "recordParticipantVisit",
@@ -480,6 +500,11 @@
     "name": "sessionIdFor",
     "kind": "function",
     "arity": 2
+  },
+  {
+    "name": "setAccessGuard",
+    "kind": "function",
+    "arity": 1
   },
   {
     "name": "setSessionParticipationMode",
