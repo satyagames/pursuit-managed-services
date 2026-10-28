@@ -411,7 +411,7 @@ describe('on SharePoint (mocked)', () => {
     const idle = await loadToday(page, { date: DAY });
     assert.deepEqual(fake.requests.map(shape), [
       'POST /contextinfo',
-      'POST /$batch [clients, sessions, sections, questions, options, tracks, qrtokens, appsettings, visitorroster, uservisitlogs, adminusers, responses]',
+      'POST /$batch [clients, sessions, sections, questions, options, tracks, qrtokens, appsettings, visitorroster, uservisitlogs, adminusers, responses, users, roleassignments, auditlog]',
       'POST /$batch [appsettings, clients, sessions, sections]',
       'POST /$batch [questions, options]',
     ], 'the lists beside the column check, then the picked client\'s questions and options');
@@ -605,7 +605,7 @@ describe('on SharePoint (mocked)', () => {
     fake.reset();
     const batched = await page.checkSharePointSchema({ batch: true });
     assert.deepEqual(fake.requests.map(shape).filter((entry) => !/contextinfo/.test(entry)), [
-      'POST /$batch [clients, sessions, sections, questions, options, tracks, qrtokens, appsettings, visitorroster, uservisitlogs, adminusers, responses]',
+      'POST /$batch [clients, sessions, sections, questions, options, tracks, qrtokens, appsettings, visitorroster, uservisitlogs, adminusers, responses, users, roleassignments, auditlog]',
       'GET uservisitlogs', // the one list that is missing: its part failed, so it is asked for alone to learn why
     ], 'one request carries every list\'s columns');
     fake.reset();

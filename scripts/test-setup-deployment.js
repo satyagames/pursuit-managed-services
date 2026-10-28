@@ -40,7 +40,7 @@ describe('"This copy of the app": the rows, and where each value came from', () 
     assert.deepEqual(await panel({ file: { configVersion: 1, listPrefix: 'PMS3', support: { name: 'Asha Rao', contact: 'asha.rao@example.com' } }, built: { label: 'Test, folder 3' } }), [
       `Opened from | ${SITE}/Shared Documents/p_cec_03/ | `,
       `Site | ${SITE} | from this page's address`,
-      `Lists | PMS3${TITLE.clients}, PMS3${TITLE.sessions}, ... (12) | prefix "PMS3" from pms-config.txt`,
+      `Lists | PMS3${TITLE.clients}, PMS3${TITLE.sessions}, ... (15) | prefix "PMS3" from pms-config.txt`,
       `Picture library | PMS3${TITLE.logoLibrary} | default for this prefix`,
       'Grouped reads | on | default',
       'Support | Asha Rao, asha.rao@example.com | from pms-config.txt',
@@ -53,7 +53,7 @@ describe('"This copy of the app": the rows, and where each value came from', () 
     assert.deepEqual(await panel({ file: { listPrefix: '' } }), [
       `Opened from | ${SITE}/Shared Documents/p_cec_03/ | `,
       `Site | ${SITE} | from this page's address`,
-      `Lists | ${TITLE.clients}, ${TITLE.sessions}, ... (12) | no prefix from pms-config.txt`,
+      `Lists | ${TITLE.clients}, ${TITLE.sessions}, ... (15) | no prefix from pms-config.txt`,
       `Picture library | ${TITLE.logoLibrary} | default`,
       'Grouped reads | on | default',
       'Support | Not set | ',
@@ -66,7 +66,7 @@ describe('"This copy of the app": the rows, and where each value came from', () 
     }), [
       `Opened from | ${SITE}/Shared Documents/p_cec_03/ | `,
       `Site | ${SITE} | built in`,
-      `Lists | PMS3${TITLE.clients}, PMS3${TITLE.sessions}, ... (12) | prefix "PMS3" built in; 2 named on their own from pms-config.txt: qrtokens is GuestCodes, adminusers is Admin accounts`,
+      `Lists | PMS3${TITLE.clients}, PMS3${TITLE.sessions}, ... (15) | prefix "PMS3" built in; 2 named on their own from pms-config.txt: qrtokens is GuestCodes, adminusers is Admin accounts`,
       'Picture library | Client Pictures | built in',
       'Grouped reads | off | from pms-config.txt',
       'Support | https://example.com/help | built in',
@@ -89,7 +89,7 @@ describe('"This copy of the app": the rows, and where each value came from', () 
     ]);
     // A file that could not be read: what is built in is shown as what is built in, though the page did not use it.
     const unread = await panel({ fileError: { kind: 'status', status: 503 }, built: { listPrefix: 'PMS3' } });
-    assert.equal(unread[2], `Lists | PMS3${TITLE.clients}, PMS3${TITLE.sessions}, ... (12) | prefix "PMS3" built in`);
+    assert.equal(unread[2], `Lists | PMS3${TITLE.clients}, PMS3${TITLE.sessions}, ... (15) | prefix "PMS3" built in`);
   });
 
   it('on the local server there is no site and no settings file: the panel says so and names the build', async () => {
@@ -130,11 +130,11 @@ describe('"Where the lists are": SharePoint\'s own answer for each title, and on
   }
   const restore = () => { globalThis.fetch = realFetch; };
 
-  it('before anything is asked there is a row for each of the twelve lists and one for the picture library, with the title this copy asks by', async () => {
+  it('before anything is asked there is a row for each of the fifteen lists (twelve until Prompt 21) and one for the picture library, with the title this copy asks by', async () => {
     const { page } = await site({ prefix: OTHER_PREFIX, lists: { qrtokens: 'GuestCodes' } });
     try {
       const rows = listRows(page.sharePointListTitles());
-      assert.equal(rows.length, 13);
+      assert.equal(rows.length, 16);
       assert.deepEqual(rows.map((row) => row.title).slice(0, 3), [`${OTHER_PREFIX}${TITLE.clients}`, `${OTHER_PREFIX}${TITLE.sessions}`, `${OTHER_PREFIX}${TITLE.sections}`]);
       assert.equal(rows.find((row) => row.key === 'qrtokens').title, 'GuestCodes');
       assert.deepEqual(rows.at(-1), { key: 'logoLibrary', title: `${OTHER_PREFIX}${TITLE.logoLibrary}`, library: true, asked: false, found: false, address: '', id: '', note: '' });
@@ -148,20 +148,20 @@ describe('"Where the lists are": SharePoint\'s own answer for each title, and on
       try {
         const seen = [];
         const rows = await readListAddresses(read, titles, fake.siteUrl, (row) => seen.push(row.key));
-        assert.equal(rows.length, 13);
+        assert.equal(rows.length, 16);
         assert.deepEqual(seen, rows.map((row) => row.key), 'each row is handed over as its answer arrives');
         assert.ok(rows.every((row) => row.asked && row.found), JSON.stringify(rows.filter((row) => !row.found)));
         assert.equal(rows[0].address, `/sites/cec/Lists/${prefix}${TITLE.clients}`);
         assert.equal(rows.at(-1).address, `/sites/cec/${prefix}${TITLE.logoLibrary}`, 'a library is not under Lists/');
         assert.ok(rows.every((row) => row.note === 'At the address its title suggests.'), rows.map((row) => row.note).join(' | '));
         assert.ok(rows.every((row) => /^[0-9a-f-]{36}$/.test(row.id)));
-        assert.equal(new Set(rows.map((row) => row.id)).size, 13, 'thirteen different lists');
-        assert.equal(fake.requests.length, 13);
+        assert.equal(new Set(rows.map((row) => row.id)).size, 16, 'sixteen different lists (thirteen until Prompt 21)');
+        assert.equal(fake.requests.length, 16);
         assert.ok(fake.requests.every((entry) => entry.method === 'GET'));
 
         const probe = await sameListByAddress(read, rows);
         assert.deepEqual(probe, { asked: true, same: true, words: `Asked for ${prefix}${TITLE.clients} by its title and by its address (/sites/cec/Lists/${prefix}${TITLE.clients}): the same list both ways (id ${rows[0].id}).` });
-        assert.equal(fake.requests.length, 14);
+        assert.equal(fake.requests.length, 17); // (one read per title, sixteen since Prompt 21, and the one by address)
         assert.match(fake.requests.at(-1).path, new RegExp(`/web/GetList\\('/sites/cec/Lists/${prefix}${TITLE.clients}'\\)$`));
         assert.equal(fake.count((entry) => entry.method !== 'GET'), 0, 'it only reads');
         assert.deepEqual(fake.strays, []);

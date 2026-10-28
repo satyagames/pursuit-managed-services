@@ -72,7 +72,7 @@ function checkRef(items, name, field, targetIndex, targetName, { optional = fals
 async function main() {
   // Every list of the schema (migration/src/lib/schema/pms-schema.js) has its file; the answers' file may be missing (the server reads none as empty).
   const required = Object.keys(LISTS).filter((key) => !LOCAL_FILE[key]);
-  const { clients, sessions, sections, questions, options, qrtokens, adminusers, tracks, appsettings, visitorroster, uservisitlogs } =
+  const { clients, sessions, sections, questions, options, qrtokens, adminusers, tracks, appsettings, visitorroster, uservisitlogs, users, roleassignments, auditlog } =
     Object.fromEntries(await Promise.all(required.map(async (key) => [key, await loadJson(key)])));
 
   const participantresponses = await loadOptional(LOCAL_FILE.responses);
@@ -88,6 +88,14 @@ async function main() {
   indexById(appsettings, 'appsettings');
   indexById(adminusers, 'adminusers');
   indexById(uservisitlogs, 'uservisitlogs');
+  // (Prompt 21) who may do what: every assignment is of a person on the list, and of a client there is.
+  const userIndex = indexById(users, 'users');
+  indexById(roleassignments, 'roleassignments');
+  indexById(auditlog, 'auditlog');
+  for (const assignment of roleassignments) {
+    if (!userIndex.has(String(assignment.userKey))) fail(`roleassignments "${assignment.id}": references missing person "${assignment.userKey}"`);
+    if (assignment.clientId && !clientIndex.has(String(assignment.clientId))) fail(`roleassignments "${assignment.id}": references missing client "${assignment.clientId}"`);
+  }
   if (appsettings.length > 1 || appsettings.some((setting) => setting.id !== 'default')) {
     fail('appsettings: expected at most one singleton record with id "default"');
   }
@@ -284,7 +292,7 @@ async function main() {
 
   // Every record against the schema file (Phase 10c-2b): no field the lists do not have, each of the kind the data layer writes, a
   // column of chosen words holding one of its words, and text of one line no longer than its column holds.
-  const files = { clients, sessions, sections, questions, options, qrtokens, adminusers, tracks, appsettings, visitorroster, uservisitlogs, participantresponses };
+  const files = { clients, sessions, sections, questions, options, qrtokens, adminusers, tracks, appsettings, visitorroster, uservisitlogs, participantresponses, users, roleassignments, auditlog };
   for (const key of Object.keys(LISTS)) {
     const name = LOCAL_FILE[key] ?? key;
     const described = new Map(columnsOf(key).filter((column) => column.field).map((column) => [column.field, column]));

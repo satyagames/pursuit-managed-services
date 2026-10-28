@@ -1,0 +1,13 @@
+[
+  {
+    "id": "audit-seed-0001",
+    "actor": "vsatyadev@deloitte.com",
+    "action": "grant",
+    "targetUser": "pulmathur@deloitte.com",
+    "role": "Admin",
+    "clientId": "",
+    "sessionId": "",
+    "detail": "Admin, global (sample data)",
+    "occurredAt": "2026-10-27T09:00:00.000Z"
+  }
+]

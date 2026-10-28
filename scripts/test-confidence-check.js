@@ -407,7 +407,7 @@ describe('Part 1: two columns and schema version 4', async () => {
   const { META, columnNamesAt, columnsOf } = await import('../migration/src/lib/schema/pms-schema-meta.js');
 
   it('PMSActivities.Kind (text) and PMSClientSessions.ConfidenceCheck (Yes/No) are read with every item, and the lists are version 4', () => {
-    assert.equal(VERSION, 4);
+    assert.equal(VERSION, 5); // (Prompt 21 raised it again: scripts/test-access.js)
     assert.deepEqual(LISTS.sections.fields.kind, { column: 'Kind', kind: 'text' });
     assert.deepEqual(LISTS.sessions.fields.confidenceCheck, { column: 'ConfidenceCheck', kind: 'yesno' });
     assert.match(selectOf('sections'), /,Kind$/);
@@ -433,8 +433,8 @@ describe('Part 1: two columns and schema version 4', async () => {
   });
 });
 
-describe('Part 1: Setup brings a site of version 3 to version 4 without losing anything', async () => {
-  const { PHASE_20_COLUMNS } = await import('./sharepoint-fake.js');
+describe('Part 1: Setup brings a site of version 3 to version 4 (5 since Prompt 21) without losing anything', async () => {
+  const { PHASE_20_COLUMNS, PHASE_21_COLUMNS, PHASE_21_LISTS } = await import('./sharepoint-fake.js');
   const { create, markReady, planLines, showPlan, siteApi } = await import('../migration/src/lib/setup/provision.js');
   const { schemaSpecs } = await import('../migration/src/lib/setup/setup-checks.js');
   let pages = 0;
@@ -446,21 +446,22 @@ describe('Part 1: Setup brings a site of version 3 to version 4 without losing a
   };
   /** A site of version 3 with Kroger live and a visit that answered: its records written first, then the two columns taken off. */
   async function versionThree() {
-    const fake = createSharePointFake({ listsVersion: 3, keepColumns: PHASE_20_COLUMNS });
+    // (Prompt 21: this build's settings item names version 5's two settings too, so the site keeps them while the records are written.)
+    const fake = createSharePointFake({ listsVersion: 3, keepColumns: [...PHASE_20_COLUMNS, ...PHASE_21_COLUMNS] });
     const restore = fake.install();
     const { page } = await pageOn(fake);
-    fake.item('appsettings', 'default').SchemaVersion = 4;
+    fake.item('appsettings', 'default').SchemaVersion = 5;
     await seedPack(page, samplePack());
     const { session } = await page.activateClient('c-kroger', DAY);
     const track = await page.beginVisit(crypto.randomUUID(), session.id, 'c-kroger');
     await page.saveParticipantResponses({ trackId: track.id, sessionId: session.id, clientId: 'c-kroger', responses: [record('q-trivia-1', 'q-trivia-1-a', { correct: true })] });
-    fake.dropColumns(PHASE_20_COLUMNS);
+    fake.dropColumns([...PHASE_20_COLUMNS, ...PHASE_21_COLUMNS]);
     fake.item('appsettings', 'default').SchemaVersion = 3;
     fake.reset();
     return { fake, restore, session, track };
   }
 
-  it('the pages stop with PMS-LST-011; Show the plan names the two columns and nothing else; Create adds them; Mark ready raises 3 to 4', async () => {
+  it('the pages stop with PMS-LST-011; Show the plan names the two columns (and version 5\'s three lists and two settings) and nothing else; Create adds them; Mark ready raises 3 to 5', async () => {
     const { fake, restore, session, track } = await versionThree();
     try {
       const participant = await pageOn(fake);
@@ -473,15 +474,21 @@ describe('Part 1: Setup brings a site of version 3 to version 4 without losing a
       const api = siteApi(page);
       const titles = page.sharePointListTitles();
       const { plan } = await showPlan(api, titles);
-      assert.deepEqual(plan.columns.map((item) => `${item.list}.${item.name}`), [`${titles.sessions}.ConfidenceCheck`, `${titles.sections}.Kind`]);
-      assert.equal(plan.summary, '0 lists, 2 columns, 0 settings to create');
-      assert.deepEqual(planLines(plan), [`${titles.sessions} (exists)`, '  Create 1 column: ConfidenceCheck.', `${titles.sections} (exists)`, '  Create 1 column: Kind.', '0 lists, 2 columns, 0 settings to create']);
+      // (Prompt 21: version 5's three lists, with every column of theirs, and the settings item's two columns come with the plan as well.)
+      const newLists = PHASE_21_LISTS.map((key) => titles[key]);
+      assert.deepEqual(plan.columns.filter((item) => !newLists.includes(item.list)).map((item) => `${item.list}.${item.name}`),
+        [`${titles.sessions}.ConfidenceCheck`, `${titles.sections}.Kind`, `${titles.appsettings}.FiscalYearStartMonth`, `${titles.appsettings}.MinSample`]);
+      assert.deepEqual(plan.lists.map((item) => item.list ?? item.title ?? item.key), newLists);
+      assert.equal(plan.summary, '3 lists, 32 columns, 10 settings to create');
+      assert.deepEqual(planLines(plan).filter((line) => !newLists.some((title) => line.startsWith(title)) && !line.startsWith('  ') && !/to create$/.test(line)),
+        [`${titles.sessions} (exists)`, `${titles.sections} (exists)`, `${titles.appsettings} (exists)`]);
       fake.reset();
       assert.equal((await create(api, plan, { gapMs: 0 })).ok, true);
-      assert.deepEqual(fake.writes().map((entry) => `${entry.method} ${entry.list} ${entry.field ?? ''}`), ['POST sessions ConfidenceCheck', 'POST sections Kind']);
+      assert.deepEqual(fake.writes().filter((entry) => !PHASE_21_LISTS.includes(entry.list) && entry.list).map((entry) => `${entry.method} ${entry.list} ${entry.field ?? ''}`),
+        ['POST sessions ConfidenceCheck', 'POST sections Kind', 'POST appsettings FiscalYearStartMonth', 'POST appsettings MinSample']);
       const ready = await markReady(api, titles, { check: () => page.checkSharePointSchema({ specs: schemaSpecs }) });
-      assert.deepEqual([ready.ready, ready.wrote, ready.words], [true, 'raised', 'Raised the lists from version 3 to version 4.']);
-      assert.equal(fake.item('appsettings', 'default').SchemaVersion, 4);
+      assert.deepEqual([ready.ready, ready.wrote, ready.words], [true, 'raised', 'Raised the lists from version 3 to version 5.']);
+      assert.equal(fake.item('appsettings', 'default').SchemaVersion, 5);
       // Nothing was lost, and the session made before reads as one without the check.
       const after = await pageOn(fake);
       const read = await after.page.getSession(session.id);
