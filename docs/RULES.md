@@ -1470,6 +1470,43 @@ SharePoint Online**: QA-TESTING.md items 216 to 221.
   Leadership for a period; nobody changes their own roles (the site owner's own Super admin row aside); `revokeProblem()` keeps one Super admin.
 - **The audit list only grows** (the guard refuses a change to a line), and a line never holds an answer (`writeAudit` refuses one).
 
+## Rules from Prompt 21, Phase 2 (Manage Users: the People tab; keep them holding)
+
+The report is [RELEASE-21B.md](history/RELEASE-21B.md); the steps, [DATA-FLOW.md](DATA-FLOW.md#people-prompt-21-phase-2). **None of it has met SharePoint
+Online**: QA-TESTING.md items 222 to 228. Boards 3 and 4 of the approved wireframes.
+
+- **The People tab** (`admin/AdminPeople.svelte`, `UserDetail.svelte`, `UserAdd.svelte`, `UserPicker.svelte`, `GiveAccess.svelte`) is in the menu only
+  for a person whose access has `users.view` (a Super admin, or an Admin, who may look: `canView`), never for a PIN's legacy admin; `shownTabs` in
+  `AdminApp.svelte` filters the tabs table. Add user shows only with `users.manage` (a Super admin, or an Admin with the extra, decision C). A screen
+  never decides access alone: the data layer asks the same rules again.
+- **The list** (`lib/access/people.js`, no DOM): one row for each person, with the roles and the reach their current assignment rows give (an ended
+  access is not a role; the person's own page shows it as ended); role chips (All, Super admins, Admins, Producers, Designers, Leadership); search
+  by name or email; a Client filter, and a Session filter that lists that client's sessions by date, time and title once a client is picked; Status;
+  pages of 50. The four lists are read once in full pages and filtered in the page (ASSUMED: hundreds of people, below the 5,000-item view limit;
+  Phase 7 revisits it). No index was added: nothing here filters on a column the lists do not already index.
+- **Add user** searches the firm's directory as you type: `lib/access/picker.js` (two characters, a 250 ms pause, at most eight suggestions, one search
+  in flight, a newer search aborts the older and its answer is dropped, Up and Down go round, Enter chooses, Escape closes the list before the
+  dialog), `dataService.searchDirectory` sends `POST /_api/SP.UI.ApplicationPages.ClientPeoplePickerWebServiceInterface.clientPeoplePickerSearchUser`
+  (verbose JSON, `ladder: false`, so that a refusal is not taken for a lost sign-in; the write guard lets it pass: it changes nothing). **ASSUMED** that
+  the real PCOE site allows it (QA item 222); if it is refused, or on the local server, the screen says "unverified" and takes a full email typed by
+  hand (`Source` Typed). Adding a person writes their row and one audit line and gives **no access**; Give access is on the person's own page.
+- **A person's page**: Turn access off or on (`PMSUsers.Status`; never deleted, decision J); Super admin and Admin for all clients, and the Admin's
+  extra "also allowed to add people" (a Super admin's to give); the access to clients and sessions, each with its end date and Remove, whose
+  confirmation says what they lose (`loseWords`); **Give access** (`GiveAccess.svelte`: an existing person gets Producer, Designer or Leadership on one
+  client or one session, with an optional last day, a Designer's "may also edit activities" extra, and, for a Super admin, Leadership for all clients
+  in a period) is not Add user; and a read-only history from the audit list (`historyOf`), read whole and filtered in the page (ASSUMED: the audit
+  list stays far below 5,000 lines; the phase that filters it on the server indexes `TargetUser`).
+- **The guards also live in the data layer**: `lib/data/access-people.js` (`updateAccessRecord`, `removeAccessRecord`) reads both lists and hands the
+  row to the guard's `record()` (`lib/access/guard.js`), which applies `revokeProblem` and `disableProblem` (`lib/access/grants.js`): you cannot change
+  your own roles or turn yourself off, at least one Super admin remains, and an Admin never touches a Super admin or Admin row. A refusal is
+  `AccessDenied` in words and nothing is sent. A role already gone is "already", not an error; a grant given twice is "already has this access".
+- **Every change is one audit line** (`add-user`, `grant` (also an extra switched), `revoke`, `disable`, `enable`), written by `lib/access/people-ops.js`.
+- **`core.js` is at its 600 lines**: the two changes it took (the request function's own abort signal, and `currentAccessGuard`, the guard's getter)
+  are on lines that already existed. New calls go in `access-people.js` or a part of their own.
+- **Tailwind reads every word under `migration/`**: the People files use lists (`ul.rows`), not table markup, and keep class words out of comments;
+  the participant page's rules are unchanged (`npm run test:bundle`). A component's name must not be a retired list's title (`AdminUsers` was one:
+  `scripts/test-shown-names.js`), so the tab's screen is `AdminPeople`.
+
 ## Before finishing a change
 
 - Always: `npm run check:svelte` and `npm test` (the documents, the module map and the project map among it). If you added, moved or renamed a

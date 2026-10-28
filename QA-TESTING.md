@@ -19,7 +19,9 @@
    Below item 210.
 8. Items **216 to 221** (Prompt 21, Phase 1: who may do what, the upgrade to version 5, an existing admin unchanged, the site owner, the copy of
    the PIN admins, No access, what "site owner" means on PCOE). Below item 215. Item 217 first after the upgrade: nothing may change for an admin.
-9. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
+9. Items **222 to 228** (Prompt 21, Phase 2: the people picker on the real site, Add user, Give access, Remove, turning someone off, the guards, an
+   Admin's view, a screen reader). Below item 221. Item 222 first: it decides whether Add user can search the directory.
+10. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
    160, 161, 164, 165, 166, 167, 168, 169, 170.
 
 **Decided, no change:** 162 (names stay "Last, First") and 163 (the wall page keeps the admin header), VJR, 16 Oct 2026.
@@ -1467,6 +1469,37 @@ test copy of the site first.
     (`/_api/web/AssociatedOwnerGroup`), as the site owner (ASSUMED). Confirm with the site's owners that this is the right set of people, and
     ask the manager about the open items of RELEASE-21A.md (the roles a copied admin gets, the indexes left for later phases). *(Record the
     answers here.)* Then push the branch `pms-21-1`.
+
+### Prompt 21, Phase 2 (Manage Users: the People tab): not verified on SharePoint Online or with a screen reader
+
+A Super admin adds people, gives them roles on clients and sessions and turns access off from a new People tab. Proven on the mocked SharePoint, in
+node tests and in Chromium on the built page (RELEASE-21B.md), not on the real site. No list or column changed: no upgrade of the site is needed.
+
+222. **The people picker on PCOE (ASSUMED).** *(Still to see.)* As a Super admin, open People, press **Add user** and type two letters of a
+    colleague's name. **Expect** suggestions within about a second (at most eight, name, email and job title), and the line under the field saying
+    how many were found. F12, Network: **expect** one `clientPeoplePickerSearchUser` request for a pause in typing, an older one cancelled when you
+    type on. If it is refused or finds nobody who should be there, **expect** "unverified" and that a full email typed and Enter is taken: write
+    down the status the site answered (it decides whether the call stays).
+223. **Add user.** *(Still to see.)* Choose a person and press Add user. **Expect** their page, saying they have no access to any client or session,
+    and a history line "Added from the directory by <you>". `PMSUsers` has their row (Source Directory, AddedBy you) and `PMSAuditLog` one line.
+    Add the same person again: **expect** "That person is in the list already" and their page; no second row.
+224. **Give access and Remove.** *(Still to see.)* On that person's page press **Give access**: a Producer on one client with a last day; then a
+    Leadership on one session. **Expect** both rows with their places and "until <day>", a history line each. Press **Remove** on one: **expect** the
+    confirmation to say what they lose, Cancel to leave it, Remove to take it away (a history line). Give the same access twice: **expect** "already
+    has this access". As the person (another browser), **expect** only what the role allows (Phase 4 narrows the screens; this phase gives the rows).
+225. **Turn access off and on.** *(Still to see.)* On a person's page press **Turn access off** and confirm. **Expect** "Turned off" in the list, and
+    that they see "Your access to PMS is turned off" at their next load; **Turn access on** gives it back with their roles as they were.
+226. **The guards on the real site.** *(Still to see.)* As the only Super admin, try to remove your own row, or turn yourself off: **expect** no such
+    button and, if you force it, "You cannot change your own roles". With two Super admins, the second cannot turn off or remove the first when the first
+    is the only one left. As an Admin, try a Super admin's or an Admin's page: **expect** no Remove or Make buttons and "Only a Super admin can give or
+    remove these."
+227. **What an Admin sees.** *(Still to see.)* As an Admin without the extra: People is there, **Add user** is not; Give access works for a Producer,
+    Designer or Leadership on a client or session. A Super admin switches on "Also allowed to add people" for that Admin: **expect** Add user after a
+    reload. A Producer or a Designer has no People tab.
+228. **A screen reader.** *(Still to see.)* With VoiceOver (iPad or Mac) or NVDA, on People and Add user: **expect** the tab and the heading
+    announced, the chips as buttons that are pressed or not, the field as an editable combobox, "3 people found. Use the up and down arrows, then
+    Enter." when suggestions come, each suggestion read with its name and email as the arrows move, and the dialogs announced with their titles.
+    *(Axe finds nothing and the keyboard path works in Chromium; how it is spoken is only for a person to hear.)* Then push the branch `pms-21-2`.
 
 ### Prompt 20 (the confidence check, Before and After): not verified on SharePoint Online or an iPad
 

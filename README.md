@@ -94,7 +94,7 @@ Each folder, file and dependency: [docs/MODULES.md](docs/MODULES.md) (generated 
 
 ## SharePoint at a glance
 
-Fifteen lists and one picture library, schema version 5 (Prompt 21 added who may do what: `PMSUsers`, `PMSRoleAssignments`, `PMSAuditLog`). Every column is described in [SHAREPOINT-LISTS.md](SHAREPOINT-LISTS.md); setting up, the
+Fifteen lists and one picture library, schema version 5 (Prompt 21 added who may do what: `PMSUsers`, `PMSRoleAssignments`, `PMSAuditLog`; the admin page's People tab, for a Super admin, manages them). Every column is described in [SHAREPOINT-LISTS.md](SHAREPOINT-LISTS.md); setting up, the
 settings file and what SharePoint does are in [docs/SHAREPOINT.md](docs/SHAREPOINT.md).
 
 | List | Holds |

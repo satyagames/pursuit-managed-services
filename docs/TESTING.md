@@ -136,6 +136,15 @@ seven sizes.
   (`--order`, `--check`, `--write`): every recorded suite run on `21cef34`'s tree (where the branch began) and on today's, request by
   request, the settings' `$select` and the every-list column check translated, only requests of version 5 added, and a fresh recording equal to
   the translation.
+- `node --test scripts/test-users.js` (also part of `npm test`, Prompt 21, Phase 2): the People rules and calls on the mocked SharePoint: the list
+  (roles and reach from current rows, the chips, search, Client and Session, Status, pages of 50), the people picker's state machine (two
+  characters, the pause, eight suggestions, a stale search aborted and dropped, Up, Down, Enter, Escape, "unverified", the words a screen reader is
+  told), the directory search through the data layer (at most eight, the abort signal reaches the request, a refusal is not a lost sign-in, the
+  local server has none), adding a person (no role, one audit line, "already there"), turning access off and on, removing a role (its words, "already
+  gone"), the extras, the history, and the guards in the data layer (nothing refused is sent). `scripts/migration-tests/users.spec.ts` runs the BUILT
+  admin page signed in as a Super admin, an Admin and a Producer: the list and its filters, Add user by keyboard alone, Give access, Remove with its
+  confirmation, a refused picker, who sees the tab, heading focus, and axe on each screen (Chromium: 5 of 5 on 29 Oct 2026; not yet run in WebKit).
+  `scripts/sharepoint-fake.js` takes `directory` and `pickerStatus` for the people picker.
 - `node --test scripts/test-session.js` (also part of `npm test`, Prompt 19): the rule book of refusals (`REFUSALS` in
   `migration/src/lib/data/session.js`, each row against its own case, and nothing of a stale write token or a busy site taken for a sign-in), and the
   ladder on the mocked SharePoint with a renewer the test supplies: a stale token as before, a sign-in mended at Step A, one that needs Step B, one

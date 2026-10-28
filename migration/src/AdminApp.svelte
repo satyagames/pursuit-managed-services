@@ -16,7 +16,7 @@
   import AdminGuests from './admin/AdminGuests.svelte';
   import AdminResults from './admin/AdminResults.svelte';
   import AdminToday from './admin/AdminToday.svelte';
-  import AdminUsers from './admin/AdminUsers.svelte';
+  import AdminPeople from './admin/AdminPeople.svelte';
   import LiveDisplay from './admin/LiveDisplay.svelte';
   import PrintSheet from './admin/PrintSheet.svelte';
   import SessionBanner from './admin/SessionBanner.svelte';
@@ -359,7 +359,7 @@
       {:else if activeTab === 'guests'}
         <AdminGuests onToast={showToast} onNavigate={(tab) => void open(tab)} onPrint={openPrintSheet} />
       {:else if activeTab === 'users'}
-        <AdminUsers {access} onToast={showToast} />
+        <AdminPeople {access} onToast={showToast} />
       {:else if activeTab === 'results'}
         {#if liveDisplay !== null}
           {#key `${liveDisplay}|${wallPage}`}

@@ -52,6 +52,7 @@ test.describe('the People screens', () => {
     await expect(page.getByRole('tab', { name: 'People' })).toBeVisible();
     await page.getByRole('tab', { name: 'People' }).click();
     await expect(page.getByRole('heading', { name: 'People' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'People' })).toBeFocused(); // (a new screen: its heading takes focus, through focusHeading)
     await expect(page.getByTestId('user-row')).toHaveCount(6);
     await axe(page, 'People, the list');
     await page.getByRole('button', { name: 'Producers' }).click();
@@ -116,6 +117,7 @@ test.describe('the People screens', () => {
     await open(page, fake);
     await page.getByRole('tab', { name: 'People' }).click();
     await page.getByRole('button', { name: 'Open Aedla, Rajeshwar' }).click();
+    await expect(page.getByRole('heading', { name: 'Aedla, Rajeshwar' })).toBeFocused();
     await page.getByRole('button', { name: /^Remove Producer/ }).click();
     const dialog = page.getByRole('dialog');
     await expect(dialog).toContainText('will no longer be a Producer for Kroger');

@@ -154,6 +154,19 @@ The admin page, on SharePoint, once its lists are this build's version (Phase 1 
 Setup's People and access reads `PMSUsers` and `PMSRoleAssignments` whole (`listAccessRecords`) to list the Super admins, and writes through
 `lib/access` (`makeMeSuperAdmin`, `migrateAdmins`): a person's row, their roles, and a line in `PMSAuditLog` for each.
 
+## People (Prompt 21, Phase 2)
+
+The admin page's People tab, for a person whose access allows it ([RULES.md](RULES.md) has the rules):
+
+1. **Open**: `listAccessRecords` reads `PMSUsers` and `PMSRoleAssignments` whole (pages of the lists' own size), and `listClients` and `listSessions`
+   read the clients and sessions: four reads, once. The list, its filters and its pages are worked out in the page (`lib/access/people.js`).
+2. **Add user**: each pause in typing sends one `clientPeoplePickerSearchUser` (an earlier one still in flight is aborted); a choice, or a typed
+   email, becomes `addPerson()`: one `PMSUsers` item (a duplicate is 409, "in the list already") and one `PMSAuditLog` line. No role is written.
+3. **A person's page** reads `PMSAuditLog` whole once, for the history. **Give access** is `grantRole()` (one `PMSRoleAssignments` item, one audit
+   line); **Remove** is `removeRole()`; **Turn access off** and an extra are `updateAccessRecord()`. Each of these first reads both access lists
+   (`lib/data/access-people.js`) and asks the guard's `record()` check, which refuses your own roles, the last Super admin and an Admin touching a
+   Super admin or Admin row, before anything is sent; then it writes, then writes its audit line, and the list is read again.
+
 ## How often each open page looks
 
 | Page | Every | Notes |

@@ -65,6 +65,11 @@ The table, list by list, is in [SHAREPOINT-LISTS.md](../SHAREPOINT-LISTS.md#perm
   PMSGuestQRCodes, PMSVisitLog and PMSParticipantAnswers, Read on the rest and on PMSClientImages, and **no access at all to PMSAdminUsers**.
 - **Facilitators** (the admin page) need Contribute on the content lists and the library, and on PMSVisitLog (Phase 16: Delete session removes a
   session's visit log), and Read on PMSAdminUsers.
+- **The people picker** (Prompt 21, Phase 2): the admin page's Add user sends
+  `POST /_api/SP.UI.ApplicationPages.ClientPeoplePickerWebServiceInterface.clientPeoplePickerSearchUser` (the site's own people search: principal
+  source 15, users only, at most eight suggestions, verbose JSON; the answer is a string of JSON under `ClientPeoplePickerSearchUser`). **ASSUMED**
+  that the PCOE site allows a signed-in Super admin to call it, and that it finds people of the firm's directory (QA item 222). If it answers 401, 403,
+  404 or anything else, or finds no one, Add user says "unverified" and takes a full email typed by hand; nothing else depends on it. It writes nothing.
 - **Delete session** (Results, Phase 16) deletes items in six lists, which needs Contribute (it includes deleting) on each: PMSParticipantAnswers,
   PMSVisitLog, PMSParticipants, PMSGuestList, PMSGuestQRCodes and PMSClientSessions. An account refused in one (403) is told which list, in words; what
   came before it in that order is gone, the rest and the session item stay, and the session stays on Results to be deleted again once the right is
