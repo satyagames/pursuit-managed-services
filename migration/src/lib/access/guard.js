@@ -1,9 +1,9 @@
 // The data layer's write guard (Prompt 21, Phase 1): what lib/data/core.js asks before every write it sends, once a page has installed one
 // (dataService.setAccessGuard). It reads the change from the request itself (SharePoint's REST address and X-HTTP-Method, or the local server's
-// method and path), finds the list's row of LIST_WRITES in the role table, and throws AccessDenied unless can() allows one of its actions for the
+// method and path), finds the list's row of LIST_WRITES in the role matrix, and throws AccessDenied unless can() allows one of its actions for the
 // client or session the written item names. Nothing refused is sent. A change it cannot name is refused too (a guardrail allows only what it
 // knows). Plain JS with no DOM; the admin page installs it after sign-in. The participant page and Setup install none.
-import { LIST_WRITES } from './access-table.js';
+import { LIST_WRITES } from './access-matrix.js';
 import { AccessDenied } from './access-denied.js';
 import { can } from './can.js';
 
@@ -59,7 +59,7 @@ function targetOf({ key, id }, body) {
  */
 export function writeGuard(access, titles, { now = () => new Date() } = {}) {
   const keyOfTitle = new Map(Object.entries(titles).map(([key, title]) => [title, key === 'logoLibrary' ? 'library' : key]));
-  for (const key of Object.keys(titles)) if (key !== 'logoLibrary') keyOfTitle.set(key, key);
+  for (const key of Object.keys(LIST_WRITES)) if (key !== 'library') keyOfTitle.set(key, key); // (the local server's paths name the key)
   return (method, resource, headers = {}, body = undefined) => {
     const change = changeOf(method, resource, headers, keyOfTitle);
     if (change === 'none') return;

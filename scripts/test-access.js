@@ -1,7 +1,7 @@
 // Prompt 21, Phase 1: the access engine. Run: node --test scripts/test-access.js (part of `npm test`).
 //
 // Schema version 5 adds three lists (PMSUsers, PMSRoleAssignments, PMSAuditLog) and two settings (PMSAppSettings.FiscalYearStartMonth, MinSample).
-// lib/access holds the reviewed role table (board 10 of the wireframes approved on 27 Oct 2026), the one check `can()`, the typed error
+// lib/access holds the reviewed role matrix (board 10 of the wireframes approved on 27 Oct 2026), the one check `can()`, the typed error
 // AccessDenied, the write guard the data layer calls before every write, resolveAccess() (who is signed in, then two indexed reads, sent together),
 // grants with their guards, the audit writer and the copy of PMSAdminUsers into the new lists. On the mocked SharePoint REST: what the real site
 // answers (directory, owner group, list permissions) is QA-TESTING.md's.
@@ -12,14 +12,17 @@ import { LISTS, VERSION, selectOf } from '../migration/src/lib/schema/pms-schema
 import { META, columnsOf } from '../migration/src/lib/schema/pms-schema-meta.js';
 import {
   ACTIONS, EXTRAS, LEGACY_ACTIONS, LEGACY_ADMIN, LIST_WRITES, MATRIX, ROLES, ROLE_SCOPES, matrixRows,
-} from '../migration/src/lib/access/access-table.js';
+} from '../migration/src/lib/access/access-matrix.js';
 import { AccessDenied, isAccessDenied } from '../migration/src/lib/access/access-denied.js';
 import { can, canView, grantsOf, legacyAccess, userKeyOf } from '../migration/src/lib/access/can.js';
 import { writeGuard } from '../migration/src/lib/access/guard.js';
 import { forgetAccess, resolveAccess, signInStep } from '../migration/src/lib/access/resolve.js';
 import { assignmentId, grantProblem, grantRole, revokeProblem, superAdmins } from '../migration/src/lib/access/grants.js';
 import { AUDIT_ACTIONS, AUDIT_DETAIL_MAX, writeAudit } from '../migration/src/lib/access/audit.js';
-import { migrateAdmins } from '../migration/src/lib/access/migrate-admins.js';
+import { makeMeSuperAdmin, migrateAdmins } from '../migration/src/lib/access/migrate-admins.js';
+import { OWNER_BANNER, myDetails, noAccessWords } from '../migration/src/lib/access/access-words.js';
+/** The product's name as the pages pass it (lib/common/app-name.ts is TypeScript: the words take the name, so any name will do here). */
+const APP_NAME = 'PMS';
 import { createSharePointFake } from './sharepoint-fake.js';
 
 let pages = 0;
@@ -59,10 +62,12 @@ describe('schema version 5: three lists and two settings', () => {
   });
 
   it('indexes exactly the columns the app filters on, names none DisplayName, and types every date as a date', () => {
+    // (The brief's table also marks Email, ClientId, SessionId, Actor and TargetUser: the repo's rule is exactly the columns a request filters on
+    // (scripts/test-schema.js, against the recorded requests), and Phase 1 filters on UserKey alone. The phase that first filters on one indexes it.)
     const indexed = (key) => columnsOf(key).filter((column) => column.indexed).map((column) => column.name);
-    assert.deepEqual(indexed('users'), ['AppId', 'Email']);
-    assert.deepEqual(indexed('roleassignments'), ['AppId', 'UserKey', 'ClientId', 'SessionId']);
-    assert.deepEqual(indexed('auditlog'), ['AppId', 'Actor', 'TargetUser', 'ClientId']);
+    assert.deepEqual(indexed('users'), ['AppId']);
+    assert.deepEqual(indexed('roleassignments'), ['AppId', 'UserKey']);
+    assert.deepEqual(indexed('auditlog'), ['AppId']);
     for (const key of ['users', 'roleassignments', 'auditlog']) {
       assert.ok(!columnsOf(key).some((column) => column.name === 'DisplayName'));
       assert.equal(META[key].since, 5, `${key} came with version 5`);
@@ -85,7 +90,7 @@ describe('schema version 5: three lists and two settings', () => {
   });
 });
 
-describe('the role table (board 10): reviewed data', () => {
+describe('the role matrix (board 10): reviewed data', () => {
   it('prints exactly the matrix the manager approved', () => {
     const printed = matrixRows().map((line) => line.join(' | '));
     assert.deepEqual(printed, [
@@ -464,6 +469,30 @@ describe('Setup copies PMSAdminUsers into the new lists (the switch-over)', () =
     assert.equal(signInStep(access, { now: NOW }).step, 'enter');
     for (const action of LEGACY_ACTIONS.filter((each) => each !== 'results.delete')) assert.equal(can(access, action, { clientId: 'c-kroger' }, { now: NOW }), true, action);
     assert.equal(can(access, 'results.delete', {}, { now: NOW }), false);
+  });
+});
+
+describe('Setup: the site owner makes themself a Super admin (decision I: ends the banner)', () => {
+  it('writes their row and a Super admin row, with audit lines; again is "already"; anyone else is refused', async () => {
+    const { fake, ds } = await siteWith();
+    const owner = { person: person('vsatyadev@deloitte.com', { name: 'Satyadev, Vedala Venkata' }), owner: true, legacy: false, user: null, assignments: [] };
+    assert.deepEqual(await makeMeSuperAdmin(ds, owner, { now: NOW }), { granted: true, already: false, id: 'vsatyadev@deloitte.com|Super admin|global|' });
+    assert.equal(fake.item('users', 'vsatyadev@deloitte.com').FullName, 'Satyadev, Vedala Venkata');
+    assert.deepEqual(fake.lists.get('auditlog').map((line) => line.Action).sort(), ['add-user', 'grant']);
+    assert.equal((await makeMeSuperAdmin(ds, owner, { now: NOW })).already, true);
+    await assert.rejects(makeMeSuperAdmin(ds, { ...owner, owner: false }, { now: NOW }), AccessDenied);
+  });
+});
+
+describe('the words (board 2 and board 10\'s edge states)', () => {
+  it('No access says who to ask, a disabled person is told so, the owner\'s banner says why, and none names a SharePoint word', () => {
+    assert.deepEqual(noAccessWords(APP_NAME, 'no-roles'), { title: `You do not have access to ${APP_NAME} yet`, line: `Ask a Super admin of ${APP_NAME} to give you access.` });
+    assert.deepEqual(noAccessWords(APP_NAME, 'disabled'), { title: `Your access to ${APP_NAME} is turned off`, line: `Ask a Super admin of ${APP_NAME} if you need it again.` });
+    assert.equal(OWNER_BANNER, 'You can see everything because you own this site. Add yourself as a Super admin in Setup.');
+    assert.equal(myDetails({ name: 'Mathur, Pulkit', email: 'pulmathur@deloitte.com' }), 'Mathur, Pulkit, pulmathur@deloitte.com');
+    for (const words of [OWNER_BANNER, ...Object.values(noAccessWords(APP_NAME, 'disabled')), ...Object.values(noAccessWords(APP_NAME, null))]) {
+      assert.doesNotMatch(words, /FedAuth|digest|token|SharePoint/i);
+    }
   });
 });
 

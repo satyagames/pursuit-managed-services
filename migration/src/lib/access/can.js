@@ -1,4 +1,4 @@
-// The one check of access (Prompt 21, Phase 1): can(access, action, target) reads the role table (access-table.js) and the person's assignment rows,
+// The one check of access (Prompt 21, Phase 1): can(access, action, target) reads the role matrix (access-matrix.js) and the person's assignment rows,
 // with ValidUntil honoured at the moment of the call. Pure: the access it is given is what resolve.js read (or legacyAccess for a PIN), and nothing
 // here reads or writes. Plain JS with no DOM; the admin page and Setup import it. A client-side check is a guardrail, not a security boundary
 // (decision K): Phase 7 hardens the lists themselves.
@@ -6,7 +6,7 @@
 // An access is { person, owner, legacy, user, assignments }: `person` the signed-in account ({ key, email, name, loginName }, null on the local
 // server), `owner` whether they own the site (decision I: always a Super admin), `legacy` whether they unlocked with a PIN, `user` their PMSUsers row
 // or null, `assignments` their PMSRoleAssignments rows as records.
-import { LEGACY_ACTIONS, LEGACY_ADMIN, MATRIX, ROLES, ROLE_SCOPES } from './access-table.js';
+import { LEGACY_ACTIONS, LEGACY_ADMIN, MATRIX, ROLES, ROLE_SCOPES } from './access-matrix.js';
 
 const DAY_MS = 86_400_000;
 /** The day of a date or ISO time as YYYY-MM-DD, or '' when there is none. */
@@ -83,7 +83,7 @@ function allowsIn(grant, action, cells) {
 
 /**
  * The one check: may this access do `action` to `target` now?
- * @param {any} access @param {string} action an action of the role table @param {{ clientId?: string, sessionId?: string, date?: string }} [target]
+ * @param {any} access @param {string} action an action of the role matrix @param {{ clientId?: string, sessionId?: string, date?: string }} [target]
  * @param {{ now?: Date }} [options]
  */
 export const can = (access, action, target = {}, options = {}) => grantsOf(access, options).some((grant) => allowsIn(grant, action, ['yes']) && covers(grant, target));

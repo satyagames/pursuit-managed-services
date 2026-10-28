@@ -242,7 +242,7 @@ Key `users` (on the local server, `server/data/users.json`). One item for each p
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | `AppId` | Single line of text | yes | yes | yes | yes |  | 255 |  | no | The record's own id: the person's email in lower case. | admin, setup | admin, setup |
 | `FullName` | Single line of text | yes | no | no | no |  | 255 |  | **yes** | The person's name as the directory gives it ("Last, First"). | admin, setup | admin, setup |
-| `Email` | Single line of text | yes | yes | no | no |  | 255 |  | **yes** | The person's email, in lower case: how a signed-in account finds its row. | admin, setup | admin, setup |
+| `Email` | Single line of text | yes | no | no | no |  | 255 |  | **yes** | The person's email, in lower case: how a signed-in account finds its row. | admin, setup | admin, setup |
 | `LoginName` | Single line of text | yes | no | no | no |  | 255 |  | **yes** | The account's SharePoint login name (i:0#.f\|membership\|&lt;email>), when the directory gave one. | admin, setup | admin, setup |
 | `JobTitle` | Single line of text | yes | no | no | no |  | 255 |  | **yes** | The person's job title, when the directory gave one. | admin, setup | admin, setup |
 | `Status` | Single line of text | yes | no | no | no | `Active`, `Disabled` | 255 | Active | no | Whether the person may sign in: a leaver is disabled, never deleted (decision J), and every role stops at once. | admin, setup | admin, setup |
@@ -257,14 +257,14 @@ Key `roleassignments` (on the local server, `server/data/roleassignments.json`).
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | `AppId` | Single line of text | yes | yes | yes | yes |  | 255 |  | no | The record's own id: user\|role\|scope\|place: the person's key, the role, the scope and the client, the session or the period (from..to), empty when global. | admin, setup | admin, setup |
 | `UserKey` | Single line of text | yes | yes | no | no |  | 255 |  | **yes** | The person (a Users.AppId): how a signed-in account finds its roles. | admin, setup | admin, setup |
-| `Role` | Single line of text | yes | no | no | no | `Super admin`, `Admin`, `Producer`, `Designer`, `Leadership` | 255 |  | no | The role. | admin, setup | admin, setup |
+| `Role` | Single line of text | yes | no | no | no | `Super admin`, `Admin`, `Producer`, `Designer`, `Leadership` | 255 |  | no | The role given, one of the five of the role matrix (lib/access/access-matrix.js). | admin, setup | admin, setup |
 | `ScopeType` | Single line of text | yes | no | no | no | `global`, `client`, `session`, `period` | 255 |  | no | Where the role applies: everywhere, one client, one session, or every client's sessions dated inside a period (Leadership only). | admin, setup | admin, setup |
-| `ClientId` | Single line of text | yes | yes | no | no |  | 255 |  | no | The client (a Clients.AppId), when the scope is a client or a session; empty when global. | admin, setup | admin, setup |
-| `SessionId` | Single line of text | yes | yes | no | no |  | 255 |  | no | The session (a Sessions.AppId), when the scope is a session. | admin, setup | admin, setup |
+| `ClientId` | Single line of text | yes | no | no | no |  | 255 |  | no | The client (a Clients.AppId), when the scope is a client or a session; empty when global. | admin, setup | admin, setup |
+| `SessionId` | Single line of text | yes | no | no | no |  | 255 |  | no | The session (a Sessions.AppId), when the scope is a session. | admin, setup | admin, setup |
 | `PeriodFrom` | Date and Time, shown as Date & Time | yes | no | no | no |  |  |  | no | The first day of the period, when the scope is a period. | admin, setup | admin, setup |
 | `PeriodTo` | Date and Time, shown as Date & Time | yes | no | no | no |  |  |  | no | The last day of the period, when the scope is a period. | admin, setup | admin, setup |
 | `ValidUntil` | Date and Time, shown as Date & Time | yes | no | no | no |  |  |  | no | The last day the role works, if it ends (Prompt 21, decision G); empty: it does not end. | admin, setup | admin, setup |
-| `Extras` | Single line of text | yes | no | no | no | `content.edit`, `users.manage` | 255 | empty | no | What an Option cell of the role table is switched on for this assignment, comma-separated: content.edit (a Designer may also edit activities), users.manage (an Admin may also add people). | admin, setup | admin, setup |
+| `Extras` | Single line of text | yes | no | no | no |  | 255 | empty: no extra | no | What an Option cell of the role matrix is switched on for this assignment, comma-separated: content.edit (a Designer may also edit activities), users.manage (an Admin may also add people). | admin, setup | admin, setup |
 | `GrantedBy` | Single line of text | yes | no | no | no |  | 255 |  | **yes** | Who gave the role (a Users.AppId). | admin, setup | admin, setup |
 
 ## PMSAuditLog
@@ -274,14 +274,14 @@ Key `auditlog` (on the local server, `server/data/auditlog.json`). One line for 
 | Column | Type | Must exist | Indexed | Unique | Required | Allowed values | Longest | Default | Personal data | What it holds | Read by | Written by |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | `AppId` | Single line of text | yes | yes | yes | yes |  | 255 |  | no | The record's own id: audit-&lt;UUID>. | admin, setup | admin, setup |
-| `Actor` | Single line of text | yes | yes | no | no |  | 255 |  | **yes** | Who did it (a Users.AppId). | admin, setup | admin, setup |
+| `Actor` | Single line of text | yes | no | no | no |  | 255 |  | **yes** | Who did it (a Users.AppId). | admin, setup | admin, setup |
 | `Action` | Single line of text | yes | no | no | no | `grant`, `revoke`, `add-user`, `disable`, `enable`, `migrate` | 255 |  | no | What was done. | admin, setup | admin, setup |
-| `TargetUser` | Single line of text | yes | yes | no | no |  | 255 |  | **yes** | To whom (a Users.AppId). | admin, setup | admin, setup |
+| `TargetUser` | Single line of text | yes | no | no | no |  | 255 |  | **yes** | To whom (a Users.AppId). | admin, setup | admin, setup |
 | `Role` | Single line of text | yes | no | no | no |  | 255 |  | no | The role, for a grant or a removal. | admin, setup | admin, setup |
-| `ClientId` | Single line of text | yes | yes | no | no |  | 255 |  | no | The client, when the role was for one. | admin, setup | admin, setup |
+| `ClientId` | Single line of text | yes | no | no | no |  | 255 |  | no | The client, when the role was for one. | admin, setup | admin, setup |
 | `SessionId` | Single line of text | yes | no | no | no |  | 255 |  | no | The session, when the role was for one. | admin, setup | admin, setup |
 | `Detail` | Single line of text | yes | no | no | no |  | 255 |  | no | A few words more, 255 characters at most, never an answer. | admin, setup | admin, setup |
-| `OccurredAt` | Date and Time, shown as Date & Time | yes | no | no | no |  |  |  | no | When it was done, by the clock of the device that did it. (SharePoint's own Created says the same by the site's clock.) | admin, setup | admin, setup |
+| `OccurredAt` | Date and Time, shown as Date & Time | yes | no | no | no |  |  |  | no | When it was done, by the clock of the device that did it; SharePoint's own Created says the same by the site's clock. | admin, setup | admin, setup |
 
 ## Columns no longer used
 

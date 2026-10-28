@@ -2,7 +2,7 @@
 // codes, the roster and admin users, as plain objects with a string id, and the lists' version check that every page's first read
 // makes (PMS-LST-010 to 012). Built only on the generic item calls of core.js; reads and writes those lists, and keeps nothing.
 
-import { ID, LISTS, VERSION } from '../schema/pms-schema.js';
+import { ID, LISTS, VERSION, versionSelect } from '../schema/pms-schema.js';
 import { indexById, pick, spLiteral } from './encoding.js';
 import {
   baseUrl, createItem, deleteItem, fits, getItem, getItemWithVersion, getItems, listItems, onStop, queryItems, readLanUrls, sharePoint, spCreate,
@@ -55,7 +55,7 @@ const notMade = (error) => { throw sharePoint && error.status === 404 && error.c
 async function olderItem(error) {
   if (sharePoint && error?.status === 400) {
     const column = LISTS.appsettings.fields.schemaVersion.column;
-    const alone = await spHttp('GET', `${spListPath('appsettings')}/items?$filter=${ID} eq ${spLiteral('default')}&$top=1&$select=Id,${ID},${column}`).catch(() => null);
+    const alone = await spHttp('GET', `${spListPath('appsettings')}/items?$filter=${ID} eq ${spLiteral('default')}&$top=1&${versionSelect()}`).catch(() => null);
     const row = alone?.data?.results?.[0];
     if (row && Number.isInteger(row[column]) && row[column] < VERSION) versioned({ schemaVersion: row[column] });
   }

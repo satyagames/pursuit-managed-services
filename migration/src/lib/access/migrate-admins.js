@@ -6,7 +6,7 @@
 // was, read only for one release. Never reads, writes or shows a PIN hash. Plain JS with no DOM; only Setup imports it.
 import { AccessDenied } from './access-denied.js';
 import { can } from './can.js';
-import { assignmentId } from './grants.js';
+import { assignmentId, grantRole } from './grants.js';
 import { writeAudit } from './audit.js';
 
 /** The roles an old admin is given. */
@@ -22,6 +22,20 @@ async function added(dataService, key, fields) {
     if (/** @type {{ status?: number }} */ (error)?.status === 409) return false;
     throw error;
   }
+}
+
+/**
+ * Setup's "Make me a Super admin": the site owner (decision I: a Super admin already, with a banner) gives themself a row and a Super admin row of
+ * their own, which ends the banner. Their row first (409: there already), then the grant through grantRole (its audit line). Anyone else is refused.
+ * Resolves to grantRole's { granted, already, id }.
+ * @param {{ addAccessRecord: (key: string, fields: object) => Promise<unknown> }} dataService @param {any} access @param {{ now?: Date }} [options]
+ */
+export async function makeMeSuperAdmin(dataService, access, { now = new Date() } = {}) {
+  const key = access?.person?.key;
+  if (!access?.owner || !key) throw new AccessDenied('roles.global', 'Only an owner of this site can make themself a Super admin here.');
+  const person = { id: key, fullName: access.person.name ?? '', email: key, loginName: access.person.loginName ?? '', status: 'Active', source: 'Directory', addedBy: key };
+  if (await added(dataService, 'users', person)) await writeAudit(dataService, access, { action: 'add-user', targetUser: key, detail: 'The site owner added themself.' }, { now });
+  return grantRole(dataService, access, { userKey: key, role: 'Super admin', scopeType: 'global' }, { now });
 }
 
 /**

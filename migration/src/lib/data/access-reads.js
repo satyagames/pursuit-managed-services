@@ -1,6 +1,6 @@
 // Section 12 (Prompt 21, Phase 1): roles and access, as the data layer reads and writes them. Who is signed in (and whether they own the site), their
 // PMSUsers row and their PMSRoleAssignments rows in two indexed reads sent together, however many people the site has; the three access lists
-// read whole (Setup's list of Super admins, and its copy of the old admins list), and a new row added to one of them. The rules (the role table,
+// read whole (Setup's list of Super admins, and its copy of the old admins list), and a new row added to one of them. The rules (the role matrix,
 // can(), the write guard, the grants and the audit) are lib/access's, which only the admin page and Setup import: every page carries this part, so
 // it holds the requests and nothing else. Built on the generic calls of core.js; keeps nothing.
 

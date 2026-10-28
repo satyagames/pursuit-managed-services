@@ -1,5 +1,5 @@
 // Who is signed in, and what that lets them do (Prompt 21, Phase 1). resolveAccess() asks the data layer who the account is and whether it owns the
-// site (one request), then reads their PMSUsers row and PMSRoleAssignments rows (two indexed reads, sent together): the cost does not grow with the
+// site (one request), then reads their PMSUsers row and PMSRoleAssignments rows (two indexed reads, sent together): the cost stays the same whatever the
 // number of people. The answer is kept for the page until it is asked again with `refresh`. signInStep() is the admin page's decision, in the
 // order of board 2: the site owner enters as a Super admin (decision I; a banner until they have a Super admin row of their own); a listed,
 // active person with a current role enters; a listed person who is disabled, or has no current role, sees No access; anyone not listed tries a

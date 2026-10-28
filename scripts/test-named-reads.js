@@ -202,6 +202,9 @@ describe('every item read the data layer and Setup can send names its columns', 
     // Setup: the version, the admins, the check, Mark ready (already ready: it reads the settings item and writes nothing).
     await ds.getAppSettings();
     await ds.listAdminUsers();
+    // (Prompt 21) the admin page's sign-in: the person's row and assignments; Setup's list of Super admins and its copy of the old admins.
+    await ds.readAccessRows('pulmathur@deloitte.com');
+    for (const key of ['users', 'roleassignments', 'auditlog']) await ds.listAccessRecords(key);
     const ready = await markReady(siteApi(ds), ds.sharePointListTitles(), { check: () => ds.checkSharePointSchema({ specs: schemaSpecs }) });
     assert.equal(ready.ready, true, ready.words);
 
@@ -230,8 +233,9 @@ describe('every item read the data layer and Setup can send names its columns', 
         found.push({ where: `${path.relative(ROOT, file).split(path.sep).join('/')}:${at + 1}`, line: line.trim() });
       });
     }
-    // (A probe's query that names its own columns is sent as it is; one that names none is given the list's: probeSharePointRead.)
-    const named = (line) => /selectOf\(|PARTICIPANT_SELECT|\/\\\$select=\/\.test\(query\) \? .*: spItems\(list, query\)/.test(line);
+    // (A probe's query that names its own columns is sent as it is; one that names none is given the list's: probeSharePointRead. Prompt 21: the
+    // settings item's version alone, read on a site of an older version that refuses the full read, names its three columns through versionSelect.)
+    const named = (line) => /selectOf\(|versionSelect\(|PARTICIPANT_SELECT|\/\\\$select=\/\.test\(query\) \? .*: spItems\(list, query\)/.test(line);
     assert.deepEqual(found.filter((entry) => !named(entry.line)).map((entry) => `${entry.where}: ${entry.line}`), []);
     assert.ok(found.some((entry) => entry.where.startsWith('migration/src/lib/data/') && /selectOf\(/.test(entry.line)), 'the data layer builds its item reads with selectOf');
     assert.equal(found.filter((entry) => entry.where.startsWith('migration/src/lib/setup/provision.js')).length, 2, 'Setup\'s two reads of the settings item');
@@ -330,9 +334,9 @@ describe('Setup\'s self-test asks what this site leaves out of a read that names
     await ds.beginVisit(crypto.randomUUID(), `kroger-${DAY}`, 'c-kroger');
     const { detail, requests } = await run(fake);
     assert.equal(detail, `Left out of a read that names no columns: ${TITLE.sessions}: ClientId; ${TITLE.sections}: ClientId; ${TITLE.tracks}: ClientId. `
-      + `Read one item of 7 lists; empty, so not read again: ${TITLE.qrtokens}, ${TITLE.visitorroster}, ${TITLE.uservisitlogs}, ${TITLE.adminusers}, ${TITLE.responses}. `
+      + `Read one item of 7 lists; empty, so not read again: ${TITLE.qrtokens}, ${TITLE.visitorroster}, ${TITLE.uservisitlogs}, ${TITLE.adminusers}, ${TITLE.responses}, ${TITLE.users}, ${TITLE.roleassignments}, ${TITLE.auditlog}. `
       + 'The app names its columns in every read (Phase 10h), so nothing depends on this answer.');
-    assert.equal(requests.length, 12 + 7, 'one read of each list, and a second of each that has an item');
+    assert.equal(requests.length, 15 + 7, 'one read of each list (fifteen since Prompt 21), and a second of each that has an item');
     assert.ok(requests.every((entry) => entry.method === 'GET'), 'it only reads');
   });
 

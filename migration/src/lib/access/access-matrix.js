@@ -1,4 +1,4 @@
-// The role table (Prompt 21, Phase 1): which role may do what, and how a role's place applies. THE one place access is written down: can() reads it,
+// The role matrix (Prompt 21, Phase 1): which role may do what, and how a role's place applies. THE one place access is written down: can() reads it,
 // the write guard reads it, and the menus will be built from it (Phase 4). It is reviewed data, the capability matrix of board 10 of the wireframes
 // the manager approved on 27 Oct 2026; scripts/test-access.js prints it and fails on any cell that changed, so a change here is a decision, made with
 // its test, not a refactor. Plain JS with no DOM; the admin page and Setup import it, the participant page never does (`npm run test:bundle`).
@@ -108,5 +108,5 @@ export const LIST_WRITES = Object.freeze({
 });
 
 const CELL = Object.freeze({ yes: 'Yes', view: 'View', option: 'Option', no: '-' });
-/** The table as board 10 prints it: one line per action, its code, then a cell per role. */
+/** The matrix as board 10 prints it: one line per action, its code, then a cell per role. */
 export const matrixRows = () => Object.entries(MATRIX).map(([action, cells]) => [action, ...ROLES.map((role) => CELL[cells[role]])]);

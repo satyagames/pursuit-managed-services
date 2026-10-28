@@ -73,11 +73,15 @@ export const PMS_TITLES = Object.freeze({
   clients: 'PMSClients', sessions: 'PMSClientSessions', sections: 'PMSActivities', questions: 'PMSActivityQuestions', options: 'PMSAnswerOptions',
   tracks: 'PMSParticipants', responses: 'PMSParticipantAnswers', qrtokens: 'PMSGuestQRCodes', visitorroster: 'PMSGuestList', uservisitlogs: 'PMSVisitLog',
   adminusers: 'PMSAdminUsers', appsettings: 'PMSAppSettings',
+  // (Prompt 21: the brief's titles, approved with the wireframes on 27 Oct 2026.)
+  users: 'PMSUsers', roleassignments: 'PMSRoleAssignments', auditlog: 'PMSAuditLog',
 });
 export const PMS_LIBRARY = 'PMSClientImages';
 /** Exactly the columns a request filters on, besides AppId (what the recorded requests say: see the last test of this file). */
 const FILTERED = ['sessions.ClientId', 'sections.ClientId', 'options.QuestionId', 'tracks.SessionId', 'tracks.QrTokenId', 'qrtokens.SessionId',
-  'qrtokens.VisitorId', 'visitorroster.SessionId', 'uservisitlogs.SessionId', 'responses.SessionId', 'responses.TrackId'];
+  'qrtokens.VisitorId', 'visitorroster.SessionId', 'uservisitlogs.SessionId', 'responses.SessionId', 'responses.TrackId',
+  // (Prompt 21: a signed-in person's roles, by their key.)
+  'roleassignments.UserKey'];
 
 export const CHANGES = [
   ['the lists are named PMS and a meaningful name, and the picture library PMSClientImages', (shape) => {
@@ -111,6 +115,28 @@ export const CHANGES = [
     shape.lists.sections.columns.push({ column: 'Kind', field: 'kind', kind: 'plain', type: 'Text', ...plain, values: ['activity', 'confidence-check'] });
     return shape;
   }],
+  // (Prompt 21, schema version 5: roles and access.)
+  ['(Prompt 21, v5) roles and access: PMSUsers, PMSRoleAssignments and PMSAuditLog; PMSAppSettings.FiscalYearStartMonth and MinSample (numbers)', (shape) => {
+    const plain = { indexed: false, unique: false, mustExist: true, required: false, format: null, values: null };
+    const appId = { column: ID, field: 'id', kind: 'plain', type: 'Text', ...plain, indexed: true, unique: true, required: true };
+    const text = (column, field, more = {}) => ({ column, field, kind: 'plain', type: 'Text', ...plain, ...more });
+    const date = (column, field) => ({ column, field, kind: 'date', type: 'DateTime', ...plain, format: 'Date & Time' });
+    shape.lists.appsettings.columns.push(
+      { column: 'FiscalYearStartMonth', field: 'fiscalYearStartMonth', kind: 'plain', type: 'Number', ...plain },
+      { column: 'MinSample', field: 'minSample', kind: 'plain', type: 'Number', ...plain },
+    );
+    shape.lists.users = { title: 'PMSUsers', local: 'users', columns: [appId, text('FullName', 'fullName'), text('Email', 'email'), text('LoginName', 'loginName'),
+      text('JobTitle', 'jobTitle'), text('Status', 'status', { values: ['Active', 'Disabled'] }), text('Source', 'source', { values: ['Directory', 'Typed'] }),
+      text('AddedBy', 'addedBy')] };
+    shape.lists.roleassignments = { title: 'PMSRoleAssignments', local: 'roleassignments', columns: [appId, text('UserKey', 'userKey', { indexed: true }),
+      text('Role', 'role', { values: ['Super admin', 'Admin', 'Producer', 'Designer', 'Leadership'] }),
+      text('ScopeType', 'scopeType', { values: ['global', 'client', 'session', 'period'] }), text('ClientId', 'clientId'), text('SessionId', 'sessionId'),
+      date('PeriodFrom', 'periodFrom'), date('PeriodTo', 'periodTo'), date('ValidUntil', 'validUntil'), text('Extras', 'extras'), text('GrantedBy', 'grantedBy')] };
+    shape.lists.auditlog = { title: 'PMSAuditLog', local: 'auditlog', columns: [appId, text('Actor', 'actor'),
+      text('Action', 'action', { values: ['grant', 'revoke', 'add-user', 'disable', 'enable', 'migrate'] }), text('TargetUser', 'targetUser'), text('Role', 'role'),
+      text('ClientId', 'clientId'), text('SessionId', 'sessionId'), text('Detail', 'detail'), date('OccurredAt', 'occurredAt')] };
+    return shape;
+  }],
 ];
 
 describe('the snapshot of the old schema, with this phase\'s changes, is the schema file', () => {
@@ -131,7 +157,7 @@ describe('the snapshot of the old schema, with this phase\'s changes, is the sch
   it('the titles are the ones VJR chose, the library is PMSClientImages, and the logical keys are what they were', () => {
     assert.deepEqual(Object.fromEntries(Object.entries(LISTS).map(([key, list]) => [key, list.title])), { ...PMS_TITLES, ...Object.fromEntries(Object.keys(LISTS).map((key) => [key, PMS_TITLES[key]])) });
     assert.deepEqual(Object.keys(LISTS).sort(), Object.keys(PMS_TITLES).sort());
-    assert.deepEqual(Object.keys(LISTS), Object.keys(snapshot.schema.lists), 'the keys, in the order they always had');
+    assert.deepEqual(Object.keys(LISTS), [...Object.keys(snapshot.schema.lists), 'users', 'roleassignments', 'auditlog'], 'the keys, in the order they always had, then Prompt 21\'s three');
     assert.equal(LIBRARY, PMS_LIBRARY);
     assert.equal(LIBRARY_META.title, LIBRARY);
   });
@@ -153,7 +179,9 @@ describe('the snapshot of the old schema, with this phase\'s changes, is the sch
     }
     const worded = Object.keys(LISTS).flatMap((key) => columnsOf(key).filter((column) => column.values).map((column) => `${LISTS[key].title}.${column.name}`));
     assert.deepEqual(worded, ['PMSClients.Status', 'PMSClientSessions.Status', 'PMSClientSessions.ParticipationMode', 'PMSClientSessions.ActivityFlow',
-      'PMSActivities.Kind', 'PMSActivityQuestions.QuestionType', 'PMSActivityQuestions.Layout', 'PMSParticipants.JoinedVia', 'PMSVisitLog.EntryMode']);
+      'PMSActivities.Kind', 'PMSActivityQuestions.QuestionType', 'PMSActivityQuestions.Layout', 'PMSParticipants.JoinedVia', 'PMSVisitLog.EntryMode',
+      // (Prompt 21.)
+      'PMSUsers.Status', 'PMSUsers.Source', 'PMSRoleAssignments.Role', 'PMSRoleAssignments.ScopeType', 'PMSAuditLog.Action']);
   });
 });
 

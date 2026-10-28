@@ -89,15 +89,17 @@ export const LISTS = {
   // (A participant's item is keyed by their visit's id, which the data layer writes into AppId itself: a record of it has no `id`.)
   responses: list('PMSParticipantAnswers', { sessionId: 'SessionId indexed', responses: 'ResponsesJson array', trackId: 'TrackId indexed', clientId: 'ClientId' }),
   // Prompt 21: who may do what. A person's AppId is their email in lower case; an assignment's is user|role|scope|place (lib/access/grants.js).
+  // Indexed: exactly what Phase 1 filters on (AppId, and UserKey to find a person's roles). The brief also marks Email, the access lists'
+  // ClientId and SessionId, Actor and TargetUser: each is indexed by the phase that first filters on it (scripts/test-schema.js holds the rule).
   users: list('PMSUsers', {
-    id: ID, fullName: 'FullName', email: 'Email indexed', loginName: 'LoginName', jobTitle: 'JobTitle', status: 'Status', source: 'Source', addedBy: 'AddedBy',
+    id: ID, fullName: 'FullName', email: 'Email', loginName: 'LoginName', jobTitle: 'JobTitle', status: 'Status', source: 'Source', addedBy: 'AddedBy',
   }),
   roleassignments: list('PMSRoleAssignments', {
-    id: ID, userKey: 'UserKey indexed', role: 'Role', scopeType: 'ScopeType', clientId: 'ClientId indexed', sessionId: 'SessionId indexed',
+    id: ID, userKey: 'UserKey indexed', role: 'Role', scopeType: 'ScopeType', clientId: 'ClientId', sessionId: 'SessionId',
     periodFrom: 'PeriodFrom date', periodTo: 'PeriodTo date', validUntil: 'ValidUntil date', extras: 'Extras', grantedBy: 'GrantedBy',
   }),
   auditlog: list('PMSAuditLog', {
-    id: ID, actor: 'Actor indexed', action: 'Action', targetUser: 'TargetUser indexed', role: 'Role', clientId: 'ClientId indexed', sessionId: 'SessionId',
+    id: ID, actor: 'Actor', action: 'Action', targetUser: 'TargetUser', role: 'Role', clientId: 'ClientId', sessionId: 'SessionId',
     detail: 'Detail', occurredAt: 'OccurredAt date',
   }),
 };
@@ -107,3 +109,9 @@ export const LISTS = {
  * columns: the real site left ClientId out of a read that did not (PCOE, 14 Oct 2026), and returned it to one that did.
  */
 export const selectOf = (key) => `$select=${[...new Set(['Id', ID, ...Object.values(LISTS[key].fields).map((field) => field.column)])]}`;
+/**
+ * The `$select` of the settings item's version alone (Prompt 21): the one read that names fewer than its list's columns, on purpose. A site of an
+ * older version refuses a read of the item that names a column it lacks (400), and every version has these three, so this read tells the page
+ * which version it is on (lib/data/records.js).
+ */
+export const versionSelect = () => `$select=Id,${ID},${LISTS.appsettings.fields.schemaVersion.column}`;

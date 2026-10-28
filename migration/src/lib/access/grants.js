@@ -3,7 +3,7 @@
 // own roles), and the Super admins now. grantRole() writes the row and its audit line; a grant given twice is "already granted" (the unique AppId:
 // SharePoint answers 500, the data layer says 409). Removing is Phase 2's screen: revokeProblem() is its rule, here so that the data layer and the
 // screen share it. Plain JS with no DOM; the admin page and Setup import it.
-import { EXTRAS, ROLES, ROLE_SCOPES } from './access-table.js';
+import { EXTRAS, ROLES, ROLE_SCOPES } from './access-matrix.js';
 import { AccessDenied } from './access-denied.js';
 import { can, extrasOf, grantsOf } from './can.js';
 import { writeAudit } from './audit.js';
