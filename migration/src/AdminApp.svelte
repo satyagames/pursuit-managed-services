@@ -16,18 +16,19 @@
   import AdminGuests from './admin/AdminGuests.svelte';
   import AdminResults from './admin/AdminResults.svelte';
   import AdminToday from './admin/AdminToday.svelte';
+  import AdminUsers from './admin/AdminUsers.svelte';
   import LiveDisplay from './admin/LiveDisplay.svelte';
   import PrintSheet from './admin/PrintSheet.svelte';
   import SessionBanner from './admin/SessionBanner.svelte';
   import { createKeepAlive } from './lib/common/session-keepalive.js';
   import NoAccess from './admin/NoAccess.svelte';
   import { resolveAccess, signInStep } from './lib/access/resolve.js';
-  import { legacyAccess } from './lib/access/can.js';
+  import { canView, legacyAccess } from './lib/access/can.js';
   import { writeGuard } from './lib/access/guard.js';
   import { OWNER_BANNER } from './lib/access/access-words.js';
 
   type Admin = { id: string; name?: string };
-  type Tab = 'today' | 'clients' | 'content' | 'guests' | 'results';
+  type Tab = 'today' | 'clients' | 'content' | 'guests' | 'results' | 'users';
   type ContentRows = { settings: unknown[]; clients: unknown[]; sections: unknown[] };
 
   // The day's work first. Content is the old Activities and Content tabs in one, scoped by client (Phase 5b).
@@ -37,12 +38,16 @@
     { id: 'content', title: 'Content' },
     { id: 'guests', title: 'Guests and QR' },
     { id: 'results', title: 'Results' },
+    { id: 'users', title: 'People' },
   ];
   /** The address of the guest QR sheet. It is a view of this page, not a tab: Back returns to Guests and QR. */
   const PRINT_HASH = '#print-guests';
 
   /** This copy's label, from its settings ("Test, folder 3"): shown in the bar, so that two folders on one site can be told apart. */
   const label = typeof deployment()?.settings?.label === 'string' ? String(deployment()?.settings?.label) : '';
+
+  /** The tabs this person's role may open (the menu is the role matrix's: People is for those who may look at the people list, never for a PIN's legacy admin). */
+  const shownTabs = $derived(tabs.filter((tab) => tab.id !== 'users' || Boolean(access && !access.legacy && canView(access, 'users.view'))));
 
   let loginHeading = $state<HTMLElement>();
   let pinField = $state<HTMLInputElement>();
@@ -129,7 +134,7 @@
   }
 
   // Content's addresses (#content, #content/brand, the old #sections of the Activities tab) are its views' (lib/admin/admin-content-views.js).
-  const tabFromHash = (): Tab | null => (viewOfHash(window.location.hash) !== null ? 'content' : tabs.find((tab) => `#${tab.id}` === window.location.hash)?.id ?? null);
+  const tabFromHash = (): Tab | null => (viewOfHash(window.location.hash) !== null ? 'content' : shownTabs.find((tab) => `#${tab.id}` === window.location.hash)?.id ?? null);
   /** The address of a tab: Content's carries its view. */
   const hashOf = (tab: Tab) => (tab === 'content' ? hashOfView(contentView) : `#${tab}`);
 
@@ -248,7 +253,7 @@
    * the rows Clients has just read (`to.rows`), so that it reads nothing more.
    */
   async function open(tab: string, to: { view?: string; clientId?: string; rows?: ContentRows } = {}): Promise<boolean> {
-    const next = tabs.find((entry) => entry.id === tab)?.id;
+    const next = shownTabs.find((entry) => entry.id === tab)?.id;
     if (!next) return false;
     if (next !== activeTab && !(await mayLeave())) return false;
     const entering = next !== activeTab || liveDisplay !== null;
@@ -283,13 +288,13 @@
 
   function onTabKeydown(event: KeyboardEvent, index: number) {
     let next = index;
-    if (event.key === 'ArrowRight') next = (index + 1) % tabs.length;
-    else if (event.key === 'ArrowLeft') next = (index - 1 + tabs.length) % tabs.length;
+    if (event.key === 'ArrowRight') next = (index + 1) % shownTabs.length;
+    else if (event.key === 'ArrowLeft') next = (index - 1 + shownTabs.length) % shownTabs.length;
     else if (event.key === 'Home') next = 0;
-    else if (event.key === 'End') next = tabs.length - 1;
+    else if (event.key === 'End') next = shownTabs.length - 1;
     else return;
     event.preventDefault();
-    void open(tabs[next].id).then((opened) => document.getElementById(`admin-tab-${opened ? tabs[next].id : activeTab}`)?.focus());
+    void open(shownTabs[next].id).then((opened) => document.getElementById(`admin-tab-${opened ? shownTabs[next].id : activeTab}`)?.focus());
   }
 </script>
 
@@ -336,7 +341,7 @@
     </header>
     <nav class="shell__nav" aria-label="Admin sections">
       <div class="tabs" role="tablist">
-        {#each tabs as tab, index (tab.id)}
+        {#each shownTabs as tab, index (tab.id)}
           <button id={`admin-tab-${tab.id}`} class="tab" type="button" role="tab" aria-controls="admin-panel" aria-selected={activeTab === tab.id} tabindex={activeTab === tab.id ? 0 : -1} onkeydown={(event) => onTabKeydown(event, index)} onclick={() => void open(tab.id)}>{tab.title}</button>
         {/each}
       </div>
@@ -353,6 +358,8 @@
         <AdminContent onToast={showToast} adminName={admin.name ?? ''} view={contentView} clientRequest={contentClient} rows={contentRows} onView={setContentView} />
       {:else if activeTab === 'guests'}
         <AdminGuests onToast={showToast} onNavigate={(tab) => void open(tab)} onPrint={openPrintSheet} />
+      {:else if activeTab === 'users'}
+        <AdminUsers {access} onToast={showToast} />
       {:else if activeTab === 'results'}
         {#if liveDisplay !== null}
           {#key `${liveDisplay}|${wallPage}`}

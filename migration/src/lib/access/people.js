@@ -29,7 +29,10 @@ export const sessionsOfClient = (sessions, clientId) => (clientId ? sessions.fil
   .sort((a, b) => String(a.date ?? '').localeCompare(String(b.date ?? '')) || String(a.startTime ?? '').localeCompare(String(b.startTime ?? '')))
   .map((session) => ({ id: session.id, label: sessionLabel(session) }));
 
-/** Where an assignment reaches, in words: "All clients", "Kroger", "Kroger, 4 Nov 2026", "All clients, 1 Dec 2026 to 28 Feb 2027", then ", until <day>". */
+/**
+ * Where an assignment reaches, in words: "All clients", "Kroger", "Kroger, 4 Nov 2026", "All clients, 1 Dec 2026 to 28 Feb 2027", then ", until <day>".
+ * @param {any} assignment @param {{ clients?: any[], sessions?: any[] }} [at]
+ */
 export function reachWords(assignment, { clients = [], sessions = [] } = {}) {
   const clientName = (id) => clients.find((client) => client.id === id)?.name ?? id ?? '';
   let words;

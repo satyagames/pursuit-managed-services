@@ -58,7 +58,7 @@ export function createPicker({ search, delay = SEARCH_DELAY_MS, minChars = MIN_C
       if (name === 'Enter') {
         if (state.open && state.active >= 0) return this.choose(state.active);
         const typed = state.text.trim();
-        if (state.status === 'unavailable' && EMAIL.test(typed)) return { typed };
+        if ((state.status === 'unavailable' || state.status === 'none') && EMAIL.test(typed)) return { typed };
       }
       return {};
     },
