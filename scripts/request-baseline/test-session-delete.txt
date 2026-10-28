@@ -3,6 +3,7 @@
 # Do not regenerate this file to make a comparison pass: a difference is a finding. See scripts/request-baseline.js.
 # One entry for each distinct request and how many times it was sent ("~": the count depends on timing). <uuid> and <time> are placeholders.
 # Amended in Phase 20: schema version 4 adds PMSActivities.Kind and PMSClientSessions.ConfidenceCheck, so each read of those lists names one column more at the end of its `$select` (encoded too, in a mock's `__next` link), and Setup, where it makes columns, makes and reads back these two as well; by scripts/schema-baseline/columns-baselines.js, after the suites were run on the last commit's tree and on today's, request by request (in the two Setup suites, whose lanes interleave, as many of each request, not in order), and a fresh recording equalled the translation exactly. Nothing else was changed.
+# Amended in Prompt 21, Phase 1: schema version 5 adds PMSAppSettings.FiscalYearStartMonth and MinSample, so each read of the settings item names two columns more at the end of its `$select` (encoded too, in a mock's `__next` link); a read of every list's columns carries the three new lists (PMSUsers, PMSRoleAssignments, PMSAuditLog) after the twelve; and requests that name the three lists, make or read back the two settings, or read the settings item's version alone on an older site, are new; by scripts/schema-baseline/access-baselines.js, after the suites were run on 21cef34's tree and on today's, request by request (in the two Setup suites, whose lanes interleave, as many of each request, not in order), and a fresh recording equalled the translation exactly. Nothing else was changed.
 5 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items(1)
 11 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items(77)
 3 x DELETE /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/items(10)
@@ -1030,8 +1031,8 @@
 14 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$top=200&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
 12 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')?$select=ListItemEntityTypeFullName
 12 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField
-165 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$filter=AppId eq 'default'&$top=2&$select=Id,AppId,ActiveSessionId,ActiveClientId,ActivatedAt,SchemaVersion
-2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$top=200&$select=Id,AppId,ActiveSessionId,ActiveClientId,ActivatedAt,SchemaVersion
+165 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$filter=AppId eq 'default'&$top=2&$select=Id,AppId,ActiveSessionId,ActiveClientId,ActivatedAt,SchemaVersion,FiscalYearStartMonth,MinSample
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$top=200&$select=Id,AppId,ActiveSessionId,ActiveClientId,ActivatedAt,SchemaVersion,FiscalYearStartMonth,MinSample
 12 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')?$select=ListItemEntityTypeFullName
 12 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField
 24 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$filter=AppId eq 'dominos-2026-10-15'&$top=2&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow,ConfidenceCheck

@@ -6,6 +6,7 @@
 # Amended in Phase 10j, part B: the column check before a list's first write (dataService.js spMetadata) names the eight properties it checks, so each of its reads of a list's columns ends `/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField` where it ended `/fields`; which of a list's `/fields` reads were the check's was found by running the suite on the last commit's tree and on today's, request by request (scripts/schema-baseline/fields-baselines.js), and a fresh recording equalled the translation exactly; the number and the order of the requests are as they were, and the schema checks' own reads of a list's columns are unchanged. Nothing else was changed.
 # Amended in Phase 10j, part C: beginning a visit (dataService.js beginVisit) moves the session on with the version its check read, so the second read of the session by its AppId, which the general update made before that write, is gone, and the session is read side by side with AppSettings, so a press that AppSettings refuses reads it too (and its error is still AppSettings's): each entry of such a read is lower by the visits begun on a session that had not started, and higher by the presses refused, found by running the suite on the last commit's tree and on today's, test by test (scripts/schema-baseline/begin-baselines.js), and a fresh recording equalled the translation exactly; every test sends every other request as it did. Nothing else was changed.
 # Amended in Phase 20: schema version 4 adds PMSActivities.Kind and PMSClientSessions.ConfidenceCheck, so each read of those lists names one column more at the end of its `$select` (encoded too, in a mock's `__next` link), and Setup, where it makes columns, makes and reads back these two as well; by scripts/schema-baseline/columns-baselines.js, after the suites were run on the last commit's tree and on today's, request by request (in the two Setup suites, whose lanes interleave, as many of each request, not in order), and a fresh recording equalled the translation exactly. Nothing else was changed.
+# Amended in Prompt 21, Phase 1: schema version 5 adds PMSAppSettings.FiscalYearStartMonth and MinSample, so each read of the settings item names two columns more at the end of its `$select` (encoded too, in a mock's `__next` link); a read of every list's columns carries the three new lists (PMSUsers, PMSRoleAssignments, PMSAuditLog) after the twelve; and requests that name the three lists, make or read back the two settings, or read the settings item's version alone on an older site, are new; by scripts/schema-baseline/access-baselines.js, after the suites were run on 21cef34's tree and on today's, request by request (in the two Setup suites, whose lanes interleave, as many of each request, not in order), and a fresh recording equalled the translation exactly. Nothing else was changed.
 1 x GET /sites/PCOE/_api/web/lists/getbytitle('PMSActivities')/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField
 1 x GET /sites/PCOE/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description,Kind
 1 x GET /sites/PCOE/_api/web/lists/getbytitle('PMSActivities')?$select=ListItemEntityTypeFullName
@@ -46,10 +47,10 @@
 14 x GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')?$select=ListItemEntityTypeFullName
 1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/fields
 4 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField
-27 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$filter=AppId eq 'default'&$top=2&$select=Id,AppId,ActiveSessionId,ActiveClientId,ActivatedAt,SchemaVersion
+27 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$filter=AppId eq 'default'&$top=2&$select=Id,AppId,ActiveSessionId,ActiveClientId,ActivatedAt,SchemaVersion,FiscalYearStartMonth,MinSample
 2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$top=1
-2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$top=1&$select=Id,AppId,ActiveSessionId,ActiveClientId,ActivatedAt,SchemaVersion
-2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$top=200&$select=Id,AppId,ActiveSessionId,ActiveClientId,ActivatedAt,SchemaVersion
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$top=1&$select=Id,AppId,ActiveSessionId,ActiveClientId,ActivatedAt,SchemaVersion,FiscalYearStartMonth,MinSample
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$top=200&$select=Id,AppId,ActiveSessionId,ActiveClientId,ActivatedAt,SchemaVersion,FiscalYearStartMonth,MinSample
 4 x GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')?$select=ListItemEntityTypeFullName
 1 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientImages')?$select=Id,BaseTemplate
 1 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/fields
@@ -111,15 +112,15 @@
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$top=200&$filter=(AppId%20eq%20%27q-trivia-1%27%20or%20AppId%20eq%20%27q-trivia-2%27%20or%20AppId%20eq%20%27q-trivia-3%27%20or%20AppId%20eq%20%27q-trivia-4%27%20or%20AppId%20eq%20%27q-trivia-5%27%20or%20AppId%20eq%20%27q-brand-1%27)&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$top=200&$filter=(QuestionId%20eq%20%27q-trivia-1%27%20or%20QuestionId%20eq%20%27q-trivia-2%27%20or%20QuestionId%20eq%20%27q-trivia-3%27%20or%20QuestionId%20eq%20%27q-trivia-4%27%20or%20QuestionId%20eq%20%27q-trivia-5%27%20or%20QuestionId%20eq%20%27q-brand-1%27)&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
 1 x POST /sites/cec/_api/$batch
-    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$filter=AppId%20eq%20%27default%27&$top=2&$select=Id,AppId,ActiveSessionId,ActiveClientId,ActivatedAt,SchemaVersion
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$filter=AppId%20eq%20%27default%27&$top=2&$select=Id,AppId,ActiveSessionId,ActiveClientId,ActivatedAt,SchemaVersion,FiscalYearStartMonth,MinSample
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$filter=AppId%20eq%20%27kroger-2026-10-15%27&$top=2&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow,ConfidenceCheck
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items?$filter=AppId%20eq%20%27<uuid>%27&$top=2&$select=Id,AppId,SessionId,ClientId,JoinedVia,QrTokenId,VisitorId,ParticipantName,SharePointUserId,CreatedAt,ResumeCount,LastResumedAt,RestartedAt,RestartSectionId
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$filter=(ClientId%20eq%20%27c-kroger%27)&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description,Kind
 1 x POST /sites/cec/_api/$batch
-    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$top=200&$select=Id,AppId,ActiveSessionId,ActiveClientId,ActivatedAt,SchemaVersion
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$top=200&$select=Id,AppId,ActiveSessionId,ActiveClientId,ActivatedAt,SchemaVersion,FiscalYearStartMonth,MinSample
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$top=200&$filter=(ClientId%20eq%20%27c-kroger%27)&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow,ConfidenceCheck
 2 x POST /sites/cec/_api/$batch
-    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$top=200&$select=Id,AppId,ActiveSessionId,ActiveClientId,ActivatedAt,SchemaVersion
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$top=200&$select=Id,AppId,ActiveSessionId,ActiveClientId,ActivatedAt,SchemaVersion,FiscalYearStartMonth,MinSample
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$top=200&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$top=200&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow,ConfidenceCheck
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description,Kind
@@ -152,6 +153,9 @@
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSVisitLog')/fields
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSAdminUsers')/fields
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSParticipantAnswers')/fields
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSUsers')/fields
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSRoleAssignments')/fields
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSAuditLog')/fields
 1 x POST /sites/cec/_api/$batch
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items?$top=200&$filter=(SessionId%20eq%20%27kroger-2026-10-15%27)&$select=Id,AppId,SessionId,ClientId,JoinedVia,QrTokenId,VisitorId,ParticipantName,SharePointUserId,CreatedAt,ResumeCount,LastResumedAt,RestartedAt,RestartSectionId
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items?$top=200&$filter=(SessionId%20eq%20%27kroger-2026-10-15%27)&$select=Id,AppId,ClientId,SessionId,VisitorId,Used,CreatedAt,UsedAt,ExpiredAt,ClientTrackId
@@ -168,3 +172,16 @@
 1 x POST /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items
 1 x POST /sites/cec/_api/web/lists/getbytitle('PMSParticipantAnswers')/items
 3 x POST /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items
+
+1 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSUsers')/items?$filter=AppId%20eq%20%27pulmathur%40deloitte.com%27&$top=2&$select=Id,AppId,FullName,Email,LoginName,JobTitle,Status,Source,AddedBy
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSRoleAssignments')/items?$filter=UserKey%20eq%20%27pulmathur%40deloitte.com%27&$top=500&$select=Id,AppId,UserKey,Role,ScopeType,ClientId,SessionId,PeriodFrom,PeriodTo,ValidUntil,Extras,GrantedBy
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSUsers')/items?$top=200&$select=Id,AppId,FullName,Email,LoginName,JobTitle,Status,Source,AddedBy
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSRoleAssignments')/items?$top=200&$select=Id,AppId,UserKey,Role,ScopeType,ClientId,SessionId,PeriodFrom,PeriodTo,ValidUntil,Extras,GrantedBy
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAuditLog')/items?$top=200&$select=Id,AppId,Actor,Action,TargetUser,Role,ClientId,SessionId,Detail,OccurredAt
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSUsers')/fields
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSRoleAssignments')/fields
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAuditLog')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSUsers')/items?$top=1
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSRoleAssignments')/items?$top=1
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSAuditLog')/items?$top=1
