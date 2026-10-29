@@ -220,3 +220,37 @@ describe('Part 3: the dashboard\'s figures, worked out by hand', async () => {
 });
 
 export { rebuildSummaries, writeSummary };
+
+describe('Part 4: the empty states (Prompt 21, Phase 6)', async () => {
+  const { dashboardOf, defaultFilters, emptyStateOf, reportCsv } = await import('../migration/src/lib/results/dashboard-model.js');
+  const none = { all: false, clientIds: new Set(), sessionIds: new Set(), sessionClients: new Set(), periods: [] };
+  // A session that ended with nobody answering: its summary has no guest, no After and no mean.
+  const silent = { id: 's0', clientId: 'kroger', period: 'FY27-Q2', sessionDate: '2026-10-01', guests: 0, answers: 0, completed: 0, beforeCount: 0, afterCount: 0, pairedCount: 0,
+    meanBefore: null, meanAfter: null, summary: { v: 1, title: '', startTime: '09:00', facilitator: '', scaleMax: null, pairedBefore: null, pairedAfter: null, moved: { started: 0, moved: 0 },
+      distribution: null, firstChoices: [], kinds: {}, groups: {}, feedback: { count: 0, themes: [], quotes: [] } } };
+
+  it('a person with no client, session or period is told so, and nothing is read for them', () => {
+    assert.deepEqual(emptyStateOf({ reach: none, summaries: [] }), {
+      kind: 'no-scope', title: 'No clients to show yet',
+      line: 'You have not been given a client or a period yet. Ask a Super admin or an Admin to give you access; your figures appear here when they do.',
+    });
+    assert.equal(emptyStateOf({ reach: reachOf(ANNABELL, { now: NOW }), summaries: [] }).kind, 'no-summaries');
+    const blank = accessOf(grant('Leadership', 'client', { clientId: '' }));
+    assert.equal(emptyStateOf({ reach: reachOf(blank, { now: NOW }), summaries: [] })?.kind, 'no-scope', 'a role row that names no client is no place');
+  });
+
+  it('no summary at all: no session has ended yet; with summaries, no empty state (the headline speaks for an empty period)', () => {
+    assert.deepEqual(emptyStateOf({ reach: null, summaries: [] }), {
+      kind: 'no-summaries', title: 'No session has ended yet', line: 'A session\'s figures appear here once it has ended.',
+    });
+    assert.equal(emptyStateOf({ reach: null, summaries: [silent] }), null);
+  });
+
+  it('a session with no answers counts as a session with nobody in it: no figure reads NaN', () => {
+    const board = dashboardOf({ summaries: [silent], clients: [{ id: 'kroger', name: 'Kroger' }], filters: defaultFilters({ period: 'FY27-Q2' }), startMonth: 6, minSample: 10 });
+    assert.deepEqual(board.tiles.map((tile) => tile.text), ['1', '0', 'None yet', 'Not measured', 'Not measured', 'Not measured']);
+    assert.equal(board.headline, '1 session with 0 guests at 1 client in FY27 Q2. Confidence was not measured in these sessions.');
+    assert.doesNotMatch(JSON.stringify(board), /NaN|Infinity/);
+    assert.doesNotMatch(reportCsv(board), /NaN|Infinity/);
+  });
+});

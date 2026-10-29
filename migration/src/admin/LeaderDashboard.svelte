@@ -11,7 +11,7 @@
   import { can, canView } from '../lib/access/can.js';
   import { readDashboard, rebuildSummaries } from '../lib/admin/session-summaries.js';
   import { BASELINES } from '../lib/results/index-math.js';
-  import { SPANS, dashboardOf, defaultFilters, filterOptions, reportCsv } from '../lib/results/dashboard-model.js';
+  import { SPANS, dashboardOf, defaultFilters, emptyStateOf, filterOptions, reportCsv } from '../lib/results/dashboard-model.js';
   import { METRICS } from '../lib/results/metric-words.js';
   import { readQueries, reachOf, sessionsFor } from '../lib/access/scope.js';
   import MetricInfo from './MetricInfo.svelte';
@@ -49,6 +49,9 @@
   const mayRebuild = $derived(!access || canView(access, 'events.run', {}));
   const board = $derived(dashboardOf({ summaries, clients, filters: { ...filters, hideNames }, startMonth, minSample, mayName }));
   const options = $derived(filterOptions(summaries, clients));
+  /** No client, session or period given (nothing is read), or no summary yet: said instead of the filters and figures (Prompt 21, Phase 6). */
+  const reach = $derived(access ? reachOf(access) : null);
+  const empty = $derived(emptyStateOf({ reach, summaries }));
   const shownClients = $derived([...clients].filter((client) => summaries.some((each) => each.clientId === client.id)).sort((a, b) => String(a.name).localeCompare(String(b.name))));
   const years = $derived([...new Set([...options.years, filters.year])].sort());
   const scaleTop = $derived(Math.max(150, ...board.byClient.map((row) => Math.ceil((row.index ?? 0) / 10) * 10)));
@@ -63,6 +66,7 @@
   async function load() {
     loading = true;
     error = '';
+    if (emptyStateOf({ reach, summaries: [] })?.kind === 'no-scope') { loading = false; return; }
     try {
       const settings = await dataService.getAppSettings().catch(() => null) as { fiscalYearStartMonth?: number | null; minSample?: number | null } | null;
       const month = Number(settings?.fiscalYearStartMonth);
@@ -165,6 +169,9 @@
         <button class="btn btn--small" type="button" onclick={() => void rebuild()} disabled={Boolean(rebuilding)}>{rebuilding || 'Rebuild summaries'}</button>
       </p>
     {/if}
+    {#if empty}
+      <div class="dash__empty" role="status"><h3>{empty.title}</h3><p>{empty.line}</p></div>
+    {:else}
 
     <form class="dash__filters" aria-label="Filters" onsubmit={(event) => event.preventDefault()}>
       <fieldset class="dash__group">
@@ -367,6 +374,7 @@
         {/if}
       </section>
     {/if}
+    {/if}
   {/if}
 </section>
 
@@ -434,6 +442,16 @@
     align-items: center;
     cursor: pointer;
     font-weight: 600;
+  }
+
+  .dash__empty {
+    padding: 1.5rem;
+    border: 1px dashed var(--line);
+    border-radius: 12px;
+  }
+
+  .dash__empty h3 {
+    margin: 0 0 0.5rem;
   }
 
   .dash__headline {

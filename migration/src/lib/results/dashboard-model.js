@@ -226,3 +226,17 @@ export function reportCsv(board) {
   }
   return `${rows.map((row) => row.map(csvCell).join(',')).join('\r\n')}\r\n`;
 }
+
+/**
+ * What the dashboard says instead of its figures (Prompt 21, Phase 6): 'no-scope' for a person given no client, session or period (nothing is read for
+ * them), 'no-summaries' when no session they may see has a summary, else null (a filter that leaves nothing is said by the headline). `reach` is
+ * lib/access/scope.js reachOf's, or null before there were roles.
+ * @param {{ reach: any, summaries: any[] }} input
+ */
+export function emptyStateOf({ reach, summaries }) {
+  if (reach && !reach.all && !reach.clientIds.size && !reach.sessionIds.size && !reach.periods.length) {
+    return { kind: 'no-scope', title: 'No clients to show yet', line: 'You have not been given a client or a period yet. Ask a Super admin or an Admin to give you access; your figures appear here when they do.' };
+  }
+  if (!summaries.length) return { kind: 'no-summaries', title: 'No session has ended yet', line: 'A session\'s figures appear here once it has ended.' };
+  return null;
+}

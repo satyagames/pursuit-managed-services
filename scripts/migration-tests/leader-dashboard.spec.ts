@@ -119,3 +119,14 @@ test('a Producer opens Results on Sessions, as before, and the dashboard shows t
   await expect(page.locator('.dash__client')).toHaveCount(1);
   await expect(page.locator('.dash__client')).toContainText('Kroger');
 });
+
+test('no summary yet (Prompt 21, Phase 6): the dashboard says no session has ended yet, instead of empty figures', async ({ page }) => {
+  const fake = await site(me('ablepe', 'Lepe, Annabell'), 'Leadership', 'client', { ClientId: 'c-kroger' });
+  (fake as unknown as { lists: Map<string, unknown[]> }).lists.get('sessionsummary')!.length = 0;
+  await open(page, fake);
+  await expect(page.getByRole('heading', { name: 'No session has ended yet', level: 3 })).toBeVisible();
+  await expect(page.getByText('A session\'s figures appear here once it has ended.')).toBeVisible();
+  await expect(page.getByRole('list', { name: 'Key figures' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Export report' })).toBeDisabled();
+  await axe(page, 'no summary yet');
+});
