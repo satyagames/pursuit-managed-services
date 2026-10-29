@@ -455,3 +455,15 @@ export const PHASE_21G = Object.freeze({
   participantAfter: 167_109, adminAfter: 640_183,
   participantUtilities: PHASE_11A.participantUtilities,
 });
+
+/**
+ * Prompt 22 (closing the audit of Prompts 20 and 21) is the admin page's: the shift and moved to confident by client and by session on the dashboard,
+ * the Region filter, Reporting settings (a Super admin's) and a client's Industry and Region. The participant page does not change, to the byte: the
+ * value checks and the column rules live in lib/access (the write guard, which only the admin page installs), not in the data layer every page carries,
+ * and no new word adds a Tailwind rule. The ceiling is not raised. Measured when the prompt ended: adminAfter, where the next one starts.
+ */
+export const PHASE_22 = Object.freeze({
+  participantBefore: PHASE_21G.participantAfter, adminBefore: PHASE_21G.adminAfter, participantAllowance: 0, adminAllowance: 10_000,
+  participantAfter: 167_109, adminAfter: 646_925,
+  participantUtilities: PHASE_11A.participantUtilities,
+});

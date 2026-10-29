@@ -234,7 +234,7 @@
       {
         "key": "auditlog",
         "title": "PMSAuditLog",
-        "purpose": "One line for each grant, removal, added person and disable (Prompt 21, decision J). Lines are only ever added; none holds an answer."
+        "purpose": "One line for each grant, removal, added person and disable (Prompt 21, decision J), and for each change of a reporting setting or of a client's Industry or Region (Prompt 22). Lines are only ever added; none holds an answer."
       },
       {
         "key": "sessionsummary",

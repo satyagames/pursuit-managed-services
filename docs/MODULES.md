@@ -13,6 +13,7 @@ holds what the participant page must not carry (the libraries of the admin page,
 
 ```mermaid
 flowchart LR
+  access --> schema
   admin --> access
   admin --> brand
   admin --> common
@@ -91,17 +92,17 @@ flowchart LR
 
 Roles and access (Prompt 21): the role matrix (board 10), the one check can(), AccessDenied, the data layer's write guard, who is signed in, grants and their guards, the audit writer, the copy of the old admins list.
 
-- **Imports from:** nothing of the app
+- **Imports from:** `lib/schema`
 - **Imported by:** `lib/admin`, `src`, `src/admin`, `src/setup`
 - **Node suites that import it:** `test-access-recheck.js`, `test-access.js`, `test-hardening.js`, `test-leader-dashboard.js`, `test-scope.js`, `test-sessions-plan.js`, `test-users.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
 | `access-denied.js` | The one typed error of access (Prompt 21, Phase 1): what the data layer's write guard and the grant rules throw when the role matrix does not allow what was asked. | `AccessDenied`, `isAccessDenied` |
-| `access-matrix.js` | The role matrix (Prompt 21, Phase 1): which role may do what, and how a role's place applies. | `ROLES`, `ROLE_SCOPES`, `ACTIONS`, `MATRIX`, `EXTRAS`, `LEGACY_ADMIN`, `LEGACY_ACTIONS`, `LIST_WRITES`, `matrixRows` |
+| `access-matrix.js` | The role matrix (Prompt 21, Phase 1): which role may do what, and how a role's place applies. | `ROLES`, `ROLE_SCOPES`, `ACTIONS`, `MATRIX`, `EXTRAS`, `LEGACY_ADMIN`, `LEGACY_ACTIONS`, `LIST_WRITES`, `FIELD_WRITES`, `matrixRows` |
 | `access-words.js` | What the admin page says about access (Prompt 21, Phase 1): the No access screen (board 2) and the site owner's banner (board 10's edge states). | `OWNER_BANNER`, `noAccessWords`, `myDetails` |
 | `audit-review.js` | The audit review (Prompt 21, Phase 7): a Super admin's read-only look at every line of PMSAuditLog (decision J), newest first, in words, filtered by what was done, by a person (who did it or to whom) and by days, 50 lines to a page. | `AUDIT_PAGE`, `AUDIT_FILTERS`, `auditView` |
-| `audit.js` | The audit writer (Prompt 21, Phase 1, decision J): one line in PMSAuditLog for every grant, removal, added person, disable and copy of the old admins list. | `AUDIT_DETAIL_MAX`, `AUDIT_ACTIONS`, `writeAudit` |
+| `audit.js` | The audit writer (Prompt 21, Phase 1, decision J): one line in PMSAuditLog for every grant, removal, added person, disable and copy of the old admins list, and (Prompt 22) every change of the reporting settings and of a client's Industry or Region. | `AUDIT_DETAIL_MAX`, `AUDIT_ACTIONS`, `writeAudit` |
 | `can.js` | The one check of access (Prompt 21, Phase 1): can(access, action, target) reads the role matrix (access-matrix.js) and the person's assignment rows, with ValidUntil honoured at the moment of the call. | `extrasOf`, `userKeyOf`, `legacyAccess`, `grantsOf`, `allowsIn`, `can`, `canView` |
 | `grants.js` | Giving and removing roles (Prompt 21, Phase 1): an assignment's id, who may give or remove which role (a Super admin gives Super admin, Admin and Leadership for all clients in a period; an Admin gives a client's or a session's team roles), the guards (never the last Super admin, never your own roles), and the Super admins now. grantRole() writes the row and its audit line; a grant given twice is "already granted" (the unique AppId: | `placeOf`, `assignmentId`, `grantProblem`, `grantRole`, `revokeProblem`, `superAdmins`, `disableProblem` |
 | `guard.js` | The data layer's write guard (Prompt 21, Phase 1): what lib/data/core.js asks before every write it sends, once a page has installed one (dataService.setAccessGuard). | `changeOf`, `writeGuard` |
@@ -315,9 +316,9 @@ Results counted and shown: the tally, the chart model (every number a chart show
 | Module | What it is (its header) | Exports |
 |---|---|---|
 | `confidence-shift.js` | The confidence check's arithmetic (Phase 20): the one place its numbers are worked out. | 17 exports |
-| `dashboard-model.js` | The Leadership dashboard's figures (Prompt 21, Phase 5; wireframe board 9): from the summaries a person may read and the clients, under the filters, the headline sentence, the six tiles, the index by client against 100 with each client's sessions, the trend by quarter, the priority index, the confidence steps Before and After, the Survey feedback themes and comments, and the report's CSV. | `SPANS`, `KIND_WORDS`, `defaultFilters`, `windowOf`, `dashboardOf`, `filterOptions`, `reportCsv`, `emptyStateOf`, `rebuildQuestion`, `dashboardFileName` |
+| `dashboard-model.js` | The Leadership dashboard's figures (Prompt 21, Phase 5; wireframe board 9): from the summaries a person may read and the clients, under the filters, the headline sentence, the six tiles, the index by client against 100 with each client's sessions, the trend by quarter, the priority index, the confidence steps Before and After, the Survey feedback themes and comments, and the report's CSV. | `SPANS`, `KIND_WORDS`, `defaultFilters`, `windowOf`, `shiftWords`, `dashboardOf`, `filterOptions`, `reportCsv`, `emptyStateOf`, `rebuildQuestion`, `dashboardFileName` |
 | `export-summary.js` | What every Results export opens with (Phase 13): for each activity one sentence, its takeaway, and the numbers behind it; for a session the answers and questions in all. | `scoreboardOf`, `summarizeActivity`, `summarizeSession` |
-| `index-math.js` | The Leadership dashboard's arithmetic (Prompt 21, Phase 5; wireframe boards 9 and 12): the one place an index, a baseline, a change or a pooled shift is worked out. | 17 exports |
+| `index-math.js` | The Leadership dashboard's arithmetic (Prompt 21, Phase 5; wireframe boards 9 and 12): the one place an index, a baseline, a change or a pooled shift is worked out. | 18 exports |
 | `metric-words.js` | The words of every figure on the Leadership dashboard (Prompt 21, Phase 5; wireframe boards 9 and 12): its name, the formula, what it means and an example, written once here and shown by the dashboard's i button on each figure (hover or focus) and by board 12's glossary. | `HIDE_NAMES_BY_DEFAULT`, `METRICS`, `metricWords` |
 | `participant-names.js` | The one rule that names a participant. | `ownerOf`, `nameParticipants`, `withNamesHidden` |
 | `present-fit.js` | The full screen's type, a step at a time (Phase 11a-3; until then these lines were inside LiveDisplay.svelte). | `SMALLEST`, `scaleOf`, `nextFit` |
@@ -336,7 +337,7 @@ Results counted and shown: the tally, the chart model (every number a chart show
 The lists and columns: `pms-schema.js`, the names every page carries, and `pms-schema-meta.js`, everything else about them (Setup, the tests and the generators only).
 
 - **Imports from:** nothing of the app
-- **Imported by:** `lib/data`, `lib/results`, `lib/setup`, `server`
+- **Imported by:** `lib/access`, `lib/data`, `lib/results`, `lib/setup`, `server`
 - **Node suites that import it:** `test-access.js`, `test-bundle-budget.js`, `test-column-names.js`, `test-confidence-check.js`, `test-fake-site.js`, `test-guest-group.js`, `test-lists-reference.js`, `test-motion-plan.js`, `test-named-reads.js`, `test-provision-prefix.js`, `test-provision.js`, `test-release-docs.js`, `test-request-baseline.js`, `test-schema-upgrade.js`, `test-schema-version.js`, `test-schema.js`, `test-session-delete.js`, `test-sessions-plan.js`, `test-setup-admins.js`, `test-sharepoint.js`, `test-shown-names.js`, `test-site-ready.js`, `test-text-limits.js`
 
 | Module | What it is (its header) | Exports |
