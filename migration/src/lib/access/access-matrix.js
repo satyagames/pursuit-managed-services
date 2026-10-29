@@ -26,6 +26,7 @@ export const ACTIONS = Object.freeze({
   'users.manage': Object.freeze({ what: 'add or disable people', module: 'users' }),
   'users.view': Object.freeze({ what: 'see the list of people', module: 'users' }),
   'roles.global': Object.freeze({ what: 'give Super admin or Admin', module: 'users' }),
+  'audit.view': Object.freeze({ what: 'review the history of access changes', module: 'users' }),
   'clients.manage': Object.freeze({ what: 'create or edit clients and sessions', module: 'clients' }),
   'team.assign': Object.freeze({ what: 'pick the team of a client or session', module: 'clients' }),
   'events.run': Object.freeze({ what: 'start or end a session', module: 'events' }),
@@ -48,6 +49,8 @@ export const MATRIX = Object.freeze({
   'users.manage': row('yes', 'option', 'no', 'no', 'no'),
   'users.view': row('yes', 'view', 'no', 'no', 'no'),
   'roles.global': row('yes', 'no', 'no', 'no', 'no'),
+  // (Prompt 21, Phase 7: the audit review, read only, is a Super admin's alone; an Admin sees a person's own history in their detail.)
+  'audit.view': row('yes', 'no', 'no', 'no', 'no'),
   'clients.manage': row('yes', 'yes', 'no', 'no', 'no'),
   'team.assign': row('yes', 'yes', 'no', 'no', 'no'),
   'events.run': row('yes', 'no', 'yes', 'no', 'no'),

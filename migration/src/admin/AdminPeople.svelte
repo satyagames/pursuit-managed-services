@@ -2,7 +2,8 @@
   // Users (Prompt 21, Phase 2; boards 3 and 4): the people who may use the admin page, and what each may do. Shown to a Super admin, to an Admin
   // (who may look, and give team roles) and to nobody else (the menu comes from the role matrix: AdminApp.svelte). It reads the four lists once (people, their
   // assignments, clients, sessions), filters them here (lib/access/people.js: role chips, search, Client and Session, Status, pages of 50) and
-  // opens one person (UserDetail.svelte) or Add user (UserAdd.svelte). A change reads the lists again.
+  // opens one person (UserDetail.svelte) or Add user (UserAdd.svelte). A change reads the lists again. A Super admin also opens History of changes
+  // (AuditReview.svelte, Prompt 21, Phase 7: the audit list, read only).
   import { onMount } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
   import { focusHeading } from '../lib/common/focus.js';
@@ -11,6 +12,7 @@
   import { errorText } from '../lib/admin/session-notice.js';
   import UserAdd from './UserAdd.svelte';
   import UserDetail from './UserDetail.svelte';
+  import AuditReview from './AuditReview.svelte';
 
   let { access, onToast }: {
     access: any;
@@ -32,8 +34,10 @@
   let page = $state(1);
   let openKey = $state<string | null>(null);
   let adding = $state(false);
+  let reviewing = $state(false);
 
   const mayAdd = $derived(can(access, 'users.manage', {}));
+  const mayReview = $derived(can(access, 'audit.view', {}));
   const everyone = $derived(peopleRows(users, assignments, { clients, sessions }));
   const shown = $derived(filterPeople(everyone, { chip, search, status, clientId, sessionId, sessions }));
   const paged = $derived(pageOf(shown, page));
@@ -63,7 +67,9 @@
   const clear = () => { chip = 'all'; search = ''; clientId = ''; sessionId = ''; status = 'all'; page = 1; };
 </script>
 
-{#if open}
+{#if reviewing}
+  <AuditReview {users} onBack={() => { reviewing = false; }} />
+{:else if open}
   <UserDetail {access} person={open} {users} {assignments} {clients} {sessions} onBack={() => { openKey = null; }} onChanged={changed} />
 {:else}
   <section class="panel" aria-labelledby="users-heading" aria-busy={loading}>
@@ -72,7 +78,10 @@
         <h2 id="users-heading" bind:this={heading} tabindex="-1">People</h2>
         <p class="muted">Who can use the admin page, and what each person may do. Roles are given to a person for all clients, one client or one session.</p>
       </div>
-      {#if mayAdd}<button class="btn btn--primary" type="button" onclick={() => { adding = true; }}>Add user</button>{/if}
+      <div class="panel__actions">
+        {#if mayReview}<button class="btn" type="button" onclick={() => { reviewing = true; }}>History of changes</button>{/if}
+        {#if mayAdd}<button class="btn btn--primary" type="button" onclick={() => { adding = true; }}>Add user</button>{/if}
+      </div>
     </header>
 
     {#if loading}<p class="muted" role="status">Loading people...</p>

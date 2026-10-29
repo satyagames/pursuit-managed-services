@@ -107,6 +107,9 @@ export function loseWords(assignment, name, at = {}) {
   return `${name} will no longer be ${ARTICLE[assignment.role] ?? ''}${assignment.role} for ${place}: they will not be able to ${ABILITY(its)[assignment.role] ?? 'use what it allowed'}.`;
 }
 
+/** What an audit line says was done, in words (a person's history and the audit review: lib/access/audit-review.js). @param {any} line */
+export const auditWords = (line) => (DID[line.action] ?? (() => line.action))(line);
+
 const DID = {
   'add-user': (line) => line.detail || 'Added',
   grant: (line) => `Given ${line.detail || line.role}`,
@@ -126,6 +129,6 @@ export function historyOf(lines, userKey, { names = {} } = {}) {
     .sort((a, b) => String(b.occurredAt ?? '').localeCompare(String(a.occurredAt ?? '')))
     .map((line) => ({
       id: line.id, when: line.occurredAt, day: dayWords(line.occurredAt),
-      words: `${(DID[line.action] ?? (() => line.action))(line)} by ${names[line.actor] ?? line.actor}`,
+      words: `${auditWords(line)} by ${names[line.actor] ?? line.actor}`,
     }));
 }
