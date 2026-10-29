@@ -60,3 +60,10 @@ export function nameParticipants({ tracks = [], visits = [], roster = [], answer
   });
 }
 
+/**
+ * The same people with their names hidden (Prompt 21, decision B's Hide names): "Guest 1", "Guest 2" ..., numbered in the order above, so every
+ * Results surface and export that hides names numbers the same person the same way. Named or not, everyone is numbered: a hidden list does not say who
+ * had no name. The list given is not changed. @template {{ name: string, unnamed: boolean }} T @param {T[]} people @returns {T[]}
+ */
+export const withNamesHidden = (people) => people.map((person, at) => ({ ...person, name: `Guest ${at + 1}`, unnamed: false }));
+

@@ -19,7 +19,7 @@
 import { resolveClientTheme } from '../brand/client-theme.js';
 import { masterColours } from '../brand/legacy-colours.js';
 import { isGraded, isRecordSettled, MAX_WRONG_TRIES } from '../participant/pager-logic.js';
-import { nameParticipants, ownerOf } from '../results/participant-names.js';
+import { nameParticipants, ownerOf, withNamesHidden } from '../results/participant-names.js';
 import { summarizeActivity } from '../results/export-summary.js';
 import { chartOf } from '../results/results-chart-model.js';
 import { SAMPLE_REPORT_LINE, needsConfirmation } from '../admin/sample-notice.js';
@@ -282,17 +282,21 @@ function answerRow(question, kind, record) {
 // question was a choice. Anything else that was typed is a written answer and is shown as it is.
 const LOOKS_LIKE_ID = /^[A-Za-z0-9]+(?:[-_~.:][A-Za-z0-9]+)+$/;
 
+/** The note a report with names hidden carries (Prompt 21, decision B). */
+export const NAMES_HIDDEN_NOTE = 'Names are hidden: each person is shown as Guest 1, Guest 2 … in the order they joined.';
+
 // ---- The report -----------------------------------------------------------------------------------------------------------------------
 
 /**
  * The whole report as data.
  * @param {ReportRecords} records
- * @param {{ generatedAt?: Date | string | number, timeZone?: string, locale?: string }} [options]
+ * @param {{ generatedAt?: Date | string | number, timeZone?: string, locale?: string, hideNames?: boolean }} [options] `hideNames`: the Hide names switch
+ *   (Prompt 21, decision B): everyone is "Guest N", in the order they joined, on every page, in the comments and in the CSV, and a note says so.
  */
-export function buildLeaderReport(records, { generatedAt = new Date(), timeZone, locale = 'en-US' } = {}) {
+export function buildLeaderReport(records, { generatedAt = new Date(), timeZone, locale = 'en-US', hideNames = false } = {}) {
   const { session, client = null, sections = [], questions = [], options = [], answers = [], strayQuestions = [], strayOptions = [], unreadable = [] } = records;
   const at = clock(timeZone, locale);
-  const people = nameParticipants(records);
+  const people = hideNames ? withNamesHidden(nameParticipants(records)) : nameParticipants(records);
 
   // One record per person and question. `counted` is the answer the tallies have always used (the first try of a graded question).
   /** @type {Map<string, Map<string, { counted: unknown, first: unknown, final: unknown, attempts: number | null, stored: boolean | null, at: string | null }>>} */
@@ -444,12 +448,13 @@ export function buildLeaderReport(records, { generatedAt = new Date(), timeZone,
   if (restarted > 0) notes.push(`${plural(restarted, 'participant was', 'participants were')} restarted by the facilitator during the session.`);
   if (results.some((activity) => activity.off)) notes.push('An activity that is switched off now but holds answers is included, marked “switched off”. It is not needed to count as finished.');
   if (unreadableText) notes.push(unreadableText);
+  if (hideNames) notes.push(NAMES_HIDDEN_NOTE);
   if (unattributed > 0) notes.push(`${plural(unattributed, 'answer')} recorded without a participant, by an older version of the app, ${unattributed === 1 ? 'is' : 'are'} not in this report.`);
 
   return {
     meta: {
       clientName, eventTitle: theme.copy.eventTitle, sessionId: String(session.id), date: words(session.date), dateText: at.day(session.date),
-      ended: session.status === 'completed',
+      ended: session.status === 'completed', namesHidden: hideNames,
       unreadableNotice: unreadableText,
       // A sample client's cover says so until somebody confirms the content with the client team (Phase 9b, SAM-2).
       sampleNotice: needsConfirmation(client) ? SAMPLE_REPORT_LINE : '',

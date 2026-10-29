@@ -1,6 +1,6 @@
 import * as dataService from '../data/dataService.js';
 import { MAX_WRONG_TRIES, isRecordSettled } from '../participant/pager-logic.js';
-import { nameParticipants } from '../results/participant-names.js';
+import { nameParticipants, withNamesHidden } from '../results/participant-names.js';
 
 // What Admin → Results works out for each iPad of a session: the name it shows, and where it has got to. Plain JS with JSDoc and no
 // DOM, so scripts/test-participant-names.js can hold the screen's names equal to the leader report's, on both adapters.
@@ -84,12 +84,15 @@ export const heldNameSources = (sessionId) => heldSources.get(String(sessionId))
 
 /**
  * One row for each iPad of a session, in the order they joined: the track, the name the report would print, whether that name is
- * the "Unnamed participant N" it falls back on, and how many of the live questions it has answered.
+ * the "Unnamed participant N" it falls back on, and how many of the live questions it has answered. With `hide` (the Hide names switch, Prompt 21
+ * decision B) every row is "Guest N" in the same order, and none reads as unnamed.
  * @param {SessionResults} result
  * @param {NameSources} [sources]
+ * @param {{ hide?: boolean }} [shown]
  */
-export function resultRows(result, sources = EMPTY) {
-  const people = nameParticipants({ tracks: result.tracks, visits: sources.visits, roster: sources.roster });
+export function resultRows(result, sources = EMPTY, { hide = false } = {}) {
+  const named = nameParticipants({ tracks: result.tracks, visits: sources.visits, roster: sources.roster });
+  const people = hide ? withNamesHidden(named) : named;
   // A visit whose saved answers could not be read (Phase 9b, DI-6) is "unreadable", not "not started": nobody knows what it holds.
   const damaged = new Set((result.unreadable ?? []).map((entry) => String(entry.id)));
   const responses = result.sections.flatMap((section) => section.questions.flatMap((question) => question.responses));

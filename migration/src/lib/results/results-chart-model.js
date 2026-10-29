@@ -18,7 +18,7 @@
 //   - for written answers, the words that came up most: repeated words, counted by comment, never a summary or a theme.
 
 import { isGraded } from '../participant/pager-logic.js';
-import { nameParticipants, ownerOf } from './participant-names.js';
+import { nameParticipants, ownerOf, withNamesHidden } from './participant-names.js';
 
 /** @typedef {{ id: string, label?: string, value?: unknown, correct?: boolean | null, count?: number, score?: number, [key: string]: any }} TallyOption */
 /** @typedef {{ questionId?: string, clientTrackId?: string | null, clientId?: string | null, answer: unknown, timestamp?: string | null, [key: string]: any }} TallyAnswer */
@@ -65,12 +65,15 @@ export const STOP_WORDS = Object.freeze(new Set([
 /**
  * Who is who, by the key an answer carries (its visit, see ownerOf): the names lib/results/participant-names.js gives, so the chart's names are the
  * Results rows' and the leader report's. `visits` and `roster` are what Admin → Results reads besides the tracks (lib/admin/admin-results.js
- * readNameSources); without them a staff sign-in is "Unnamed participant N" (a guest's QR name is on the track itself).
+ * readNameSources); without them a staff sign-in is "Unnamed participant N" (a guest's QR name is on the track itself). With `hide` (the Hide names
+ * switch, Prompt 21 decision B) everyone is "Guest N" in the same order.
  * @param {{ tracks?: any[], answers?: TallyAnswer[], visits?: any[], roster?: any[] }} records
+ * @param {{ hide?: boolean }} [shown]
  * @returns {Map<string, string>}
  */
-export function namesFor({ tracks = [], answers = [], visits = [], roster = [] }) {
-  const people = nameParticipants({ tracks, visits, roster, answers: answers.map((answer) => ({ clientTrackId: answer.clientTrackId ?? null, clientId: answer.clientId ?? null })) });
+export function namesFor({ tracks = [], answers = [], visits = [], roster = [] }, { hide = false } = {}) {
+  const named = nameParticipants({ tracks, visits, roster, answers: answers.map((answer) => ({ clientTrackId: answer.clientTrackId ?? null, clientId: answer.clientId ?? null })) });
+  const people = hide ? withNamesHidden(named) : named;
   return new Map(people.map((person) => [person.key, person.name]));
 }
 
