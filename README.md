@@ -94,7 +94,7 @@ Each folder, file and dependency: [docs/MODULES.md](docs/MODULES.md) (generated 
 
 ## SharePoint at a glance
 
-Fifteen lists and one picture library, schema version 7 (Prompt 21 added who may do what: `PMSUsers`, `PMSRoleAssignments`, `PMSAuditLog`; the admin page's People tab, for a Super admin, manages them; its Phase 3 gave a session a start time, a title, its order in the day, a period and when it was planned, so that a client may have several sessions a day, planned on the client's page and started by a Producer on Today). Every column is described in [SHAREPOINT-LISTS.md](SHAREPOINT-LISTS.md); setting up, the
+Sixteen lists and one picture library, schema version 8 (Prompt 21 added who may do what: `PMSUsers`, `PMSRoleAssignments`, `PMSAuditLog`; the admin page's People tab, for a Super admin, manages them; its Phase 3 gave a session a start time, a title, its order in the day, a period and when it was planned, so that a client may have several sessions a day, planned on the client's page and started by a Producer on Today). Every column is described in [SHAREPOINT-LISTS.md](SHAREPOINT-LISTS.md); setting up, the
 settings file and what SharePoint does are in [docs/SHAREPOINT.md](docs/SHAREPOINT.md).
 
 | List | Holds |
@@ -107,6 +107,7 @@ settings file and what SharePoint does are in [docs/SHAREPOINT.md](docs/SHAREPOI
 | PMSGuestList, PMSGuestQRCodes | named guests and their single-use codes |
 | PMSVisitLog | one row per browser tab: how staff are named in Results |
 | PMSAppSettings | which session and client are live; the lists' version |
+| PMSSessionSummary | each ended session's totals, which the Leadership dashboard in Results reads instead of every answer (Prompt 21, Phase 5) |
 | PMSAdminUsers | facilitators' names and PIN hashes |
 | PMSClientImages (library) | the clients' pictures |
 

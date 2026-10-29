@@ -3,7 +3,7 @@
 Pursuit Managed Services (PMS): an interactive session app for Deloitte client visits. Participants answer short activities on iPads; a facilitator
 runs the day from an admin page and shows live results on a projector; leaders get a PDF report, a summary pack and CSVs. It is three single-file
 HTML pages (participant `index.html`, admin `admin.html`, `setup.html`), built with Svelte 5 from `migration/`, that run from one SharePoint document
-folder and keep everything in fifteen SharePoint lists, through the browser's own sign-in. No server, no CDN. A local Express + JSON server
+folder and keep everything in sixteen SharePoint lists, through the browser's own sign-in. No server, no CDN. A local Express + JSON server
 (`server/`) stands in for SharePoint in development and in the tests.
 
 `AGENTS.md` points here. The detail: [docs/RULES.md](docs/RULES.md) (the rule book, by part and phase), [docs/DECISIONS.md](docs/DECISIONS.md) (what
@@ -60,7 +60,7 @@ On the Windows checkout the system Node is 20: run Node 22 from `.local/node22/n
 4. **Behaviour the tests pin stays pinned.** Write the failing test first and show it failing; never loosen or delete a test that guards live
    behaviour; never re-record a request baseline to make it pass (`--amend` only, see [docs/TESTING.md](docs/TESTING.md)).
 5. **SharePoint:** every item read names its columns (`selectOf`); a duplicate is 409 for 400, 409 or 500; no column named like a list-item property
-   (`DisplayName`); a list title only through `spTitle()` / `sharePointListTitles()`; schema version 7; the settings file is `pms-config.txt`.
+   (`DisplayName`); a list title only through `spTitle()` / `sharePointListTitles()`; schema version 8; the settings file is `pms-config.txt`.
    **Access** (Prompt 21): one check, `can()` in `lib/access/can.js`, over the reviewed role matrix (`lib/access/access-matrix.js`); the data layer
    asks the page's write guard before every write and throws `AccessDenied`; screens never decide access alone.
 6. **Only the data layer fetches** (`lib/data/core.js`; everything else imports `lib/data/dataService.js`), and `lib/settings/settings-file.js`, the settings file. Sounds and confetti only through

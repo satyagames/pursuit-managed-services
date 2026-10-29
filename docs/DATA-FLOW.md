@@ -202,6 +202,24 @@ The admin page installs the write guard after sign-in (`lib/access/guard.js`); s
 6. **The guard.** Every `readLists`, `listItems` and `queryItems` asks `guard.read(list, where)` first (nothing is sent when it throws) and tells
    `guard.learn(list, rows)` what came back. A global role is asked nothing.
 
+## The Leadership dashboard (Prompt 21, Phase 5)
+
+The dashboard reads totals, never answers ([RULES.md](RULES.md) has the rules):
+
+1. **When a session ends.** Today's End session ends it (`endSession`), then `writeSummary` (`lib/admin/session-summaries.js`) reads the leader report's
+   records of that session (`readLeaderReportRecords`: the session, its activities, tracks, visits, roster, questions, options and answers), builds the
+   report (`buildLeaderReport`), takes the summary from it (`summaryOf`) and writes one item of `PMSSessionSummary` under the session's id
+   (`saveSessionSummary`: made, or written over when SharePoint answers 409). A failure ends nothing.
+2. **Rebuild.** For a person who may run sessions, the dashboard lists the ended sessions they may run (`readQueries` of the sessions) without a summary, and
+   writes theirs one after another (`rebuildSummaries`), the same way.
+3. **Opening the dashboard.** `getAppSettings` (the fiscal start month and the minimum sample), then `readDashboard`: the summaries (`readSessionSummaries`:
+   whole for a global role; by `ClientId`, AppId or `Period`, fifteen to an address, for a scoped one) beside the clients (`readQueries` of the clients), two
+   requests. The read check holds a scoped role to its places before anything is sent. Every figure is then worked out in the page
+   (`dashboardOf`), filters included: a filter sends nothing.
+4. **Export.** Export report is a CSV made in the page from the figures; each session's Export (in a client's row) is that session's leader report, read
+   as Results always read it.
+5. **Delete session** removes the session's summary with its other data, before the session item.
+
 ## How often each open page looks
 
 | Page | Every | Notes |

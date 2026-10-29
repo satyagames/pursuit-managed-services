@@ -1600,6 +1600,51 @@ one owner registry, `lib/access/owners.js`, both reading the role matrix; the da
 12. **Request baselines** were translated for version 7's one column by `scripts/schema-baseline/guestgroup-baselines.js` (every recorded suite on
     `dda6eb2`'s tree and on today's, request by request; a fresh recording equal to the translation in all 13), never recorded again.
 
+## Rules from Prompt 21, Phase 5 (the Leadership dashboard and its index arithmetic; keep them holding)
+
+Results is a leader's view as well (boards 9 and 12): `admin/LeaderDashboard.svelte`, from the sessions' summaries, never every answer. The arithmetic is
+`lib/results/index-math.js`, the figures `lib/results/dashboard-model.js`, their words `lib/results/metric-words.js`, the summary `lib/results/session-summary.js`.
+
+1. **An index is a ratio.** `indexOf(segment, baseline)` = segment / baseline x 100, null (never Infinity) when the baseline is zero, missing or not a number
+   (ASSUMED, open item 3: a ratio, not a difference). The **confidence index** is a group's mean After (every After score, each session weighed by its
+   Afters) over the baseline's; the **session index** is a session's mean After over its client's mean in view; the **priority index** is an option's share
+   of first choices (polls with no correct answer, and the option a ranking puts first; options grouped by label, case and spaces aside) over its share in
+   the baseline; **change** is now minus the quarter before, in points; the **pooled shift** is every paired guest's (After - Before) as a share of their
+   session's scale (`confidence-shift.js`'s divisor); **moved to confident** adds the sessions' counts. **Low sample** is under `PMSAppSettings.MinSample`
+   (10 when empty, ASSUMED); a low figure is shown and marked, never hidden.
+2. **The baselines.** All-client average (the default: every summary the person may read, in the same days), the quarter before, the same quarter last
+   year (each quarter in view moved back), one chosen client. Quarters come from `FiscalYearStartMonth` (June when empty, ASSUMED) through `periodOf`,
+   `periodRange` and `periodsBetween`. A person who holds one client sees its index against itself, 100 (ASSUMED: the baseline is what they may read).
+3. **The dashboard reads summaries.** `PMSSessionSummary` (schema version 8) holds one item for each session, keyed by the session's id: its totals, the
+   check's counts and means, and SummaryJson (title, time, writer, the paired means and scale, moved, the Before and After steps, first choices, kinds of
+   question, guest groups, feedback themes and up to five comments with their author). Its numbers are the leader report's (`buildLeaderReport`, first
+   answers only): nothing is counted twice. `readDashboard` sends two requests, the summaries and the clients, whatever the answers
+   (`scripts/test-leader-dashboard.js`: 10,000 answers cost what none do).
+4. **A summary is written when a session ends** (Today's End session, after the session is ended: one read of the leader report's records and one write,
+   made or written over; a failure ends nothing and says to Rebuild) **and by Rebuild** (the dashboard, for ended sessions without one, for a person who may
+   run sessions: each costs the leader report's reads of that session and a write; it says so before it starts). Delete session removes the summary too.
+5. **Each person reads their scope.** By `ClientId` for the clients held whole, by AppId for the sessions held one by one, by `Period` for a Leadership
+   period (the quarters it touches, the days outside it dropped in the page); a global role reads the list whole. The read check (`owners.js`) refuses
+   anything else before a request is sent. A Producer sees the same dashboard, limited to their clients.
+6. **Results has two views.** `admin/ResultsTab.svelte`: Dashboard and Sessions; a role that runs no session (Leadership) opens on the dashboard, every
+   other on Sessions as before (this changed Phase 4's `role-scoping.spec.ts` test of Leadership's cards, which now opens Sessions first). Only the view
+   shown is mounted.
+7. **The board.** Filters (period chips FY, Q1 to Q4, Month, Custom; Compare with; Clients; Industry; More filters: Facilitator, the summary's writer,
+   ASSUMED; Activity type; Guest group; Minimum sample; Hide names), Save this view (kept while the page is open: nothing is kept in the browser between
+   loads, ASSUMED), Reset, Export report (one CSV row a session, through `csvCell`); the headline sentence built from the numbers; six tiles; the index by
+   client against a line at 100; the trend of the four quarters up to the one in view, each against their mean (ASSUMED); By client with an arrow that opens
+   the client's sessions in place, each with its own Export; the priority index; the steps Before and After (the most common scale); Survey feedback themes
+   and comments. **Every figure has an i button** (`admin/MetricInfo.svelte`: hover, focus or a press shows the formula, meaning and example; Escape hides
+   it), worded once in `metric-words.js`.
+8. **Names follow decision B.** Comments show names, with **Hide names** giving Guest 1, Guest 2; `HIDE_NAMES_BY_DEFAULT` (one setting) turns the default
+   round; a role without `results.names` never sees a name.
+9. **Industry and Region** (`PMSClients`, version 8) are optional text the dashboard filters by in the page: not indexed (the index rule: exactly what a
+   recorded request filters on; the summaries' `ClientId` and `Period` are). `PMSClientSessions.Period` stays unindexed: the dashboard filters the
+   summaries, not the sessions.
+10. **Request baselines** were translated for version 8 by `scripts/schema-baseline/summary-baselines.js` (every recorded suite on `ca3a16b`'s tree and on
+    today's, request by request; a fresh recording equal to the translation in all 17); Delete session's removal of the summary amended
+    `test-session-delete`'s with `--amend --code`.
+
 ## Before finishing a change
 
 - Always: `npm run check:svelte` and `npm test` (the documents, the module map and the project map among it). If you added, moved or renamed a

@@ -25,7 +25,9 @@
    the Producer starts, an Admin cannot, the Client team, Safari's date field, a screen reader). Below item 228. Item 229 first: the upgrade.
 11. Items **237 to 245** (Prompt 21, Phase 4: the upgrade to version 7, each role's menu, a Producer's requests, View only, a live session that is not theirs,
    a guest's group, the new words, a delete that names no client, a screen reader). Below item 236. Item 237 first: the upgrade.
-12. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
+12. Items **246 to 254** (Prompt 21, Phase 5: the upgrade to version 8, a summary when a session ends, Rebuild, Leadership for a period and on one client,
+   the figures by hand, the i buttons, names, a screen reader). Below item 245. Item 246 first: the upgrade.
+13. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
    160, 161, 164, 165, 166, 167, 168, 169, 170.
 
 **Decided, no change:** 162 (names stay "Last, First") and 163 (the wall page keeps the admin header), VJR, 16 Oct 2026.
@@ -1572,6 +1574,37 @@ adds. Use a test copy of the site first, after items 216 to 228.
 245. **A screen reader.** *(Still to see.)* With VoiceOver or NVDA on a view-only screen: **expect** "View only. Your role can look at ..." read as a status when
     the view opens and the controls announced as unavailable. *(Axe finds nothing in Chromium; how it is spoken is only for a person to hear.)*
     Then push the branch `pms-21-4`.
+246. **The upgrade to version 8.** *(Still to see.)* On a test copy at version 7: **Show the plan** names one new list, `PMSSessionSummary` (13 columns, AppId
+    unique, ClientId and Period indexed), and two new columns, `PMSClients.Industry` and `Region`, and nothing else; **Create** makes them; **Mark the site as
+    ready** says "Raised the lists from version 7 to version 8." **Expect** the new pages to open, an old build (version 7) to stop with `PMS-LST-012`, and
+    the clients' two columns to be plain text, not indexed.
+247. **A summary when a session ends.** *(Still to see.)* As the Producer, run a session with three iPads (the confidence check on, a poll, a ranking, a Survey
+    feedback question), then **End session** on Today. **Expect** one item in `PMSSessionSummary` whose AppId is the session's id, with Guests 3, the Before,
+    After and paired counts and means, and SummaryJson holding the title, time, first choices, themes and up to five comments; ending again (Reopen, End)
+    writes the same item over, not a second one. Then turn the list's permission off for a moment and End another session: **expect** "The session ended,
+    but its summary for the dashboard could not be written. Rebuild it from Results." and the session ended all the same.
+248. **Rebuild, and what it costs.** *(Still to see.)* On a site with sessions ended before this build, open Results, **Dashboard**: **expect** "N ended sessions
+    have no summary yet" and **Rebuild summaries**; press it and confirm. **Expect** a count as it goes, about five reads and one write for each session
+    (the network tab), and the figures to include them afterwards. A Leadership account sees no Rebuild.
+249. **Leadership for a period.** *(Still to see.)* As Brian Milder (Leadership, FY27 Q2, all clients): **expect** Results to open on **Leadership dashboard**,
+    every client with a session in the quarter, the headline sentence, six tiles, the index by client with its line at 100, and no request to
+    `PMSParticipantAnswers` in the network tab (the summaries are read by `Period eq 'FY27-Q2'`). A session dated outside his period is in no figure.
+250. **Leadership on one client.** *(Still to see.)* As Annabell Lepe (Leadership on Kroger): **expect** Kroger alone, its index against itself (100, the
+    all-client average being only what she may read: ASSUMED), no request naming another client, and the arrow beside Kroger opening its sessions in place,
+    "24 Oct 09:30 Morning workshop", each with its Export buttons; the leader report downloads for one of them.
+251. **The figures by hand.** *(Still to see.)* For one quarter with two clients, work out on paper each client's mean confidence after (every After score),
+    the all-client mean, and their ratio x 100; compare with the dashboard's index by client, the headline and the CSV of **Export report**. Change the
+    period chips, **Compare with** (the quarter before, the same quarter last year, one client) and the filters (Industry, Facilitator, Activity type, Guest
+    group): **expect** the figures to follow, and a figure under the minimum sample to say "Low sample".
+252. **The i buttons.** *(Still to see.)* With a mouse, hover each i; with the keyboard, Tab to it: **expect** the formula, the meaning and an example, Escape to
+    hide them, and on an iPad a tap to keep them open. The words are those of `lib/results/metric-words.js`.
+253. **Names (decision B).** *(Still to see, and for the manager.)* As Leadership: **expect** the comments to show names, and **Hide names** (More filters) to
+    show Guest 1, Guest 2. Decide which is the default (`HIDE_NAMES_BY_DEFAULT`, one setting). **Save this view** keeps the filters while the page is open
+    only (nothing is kept between page loads: ASSUMED until a place for saved views is decided).
+254. **A screen reader.** *(Still to see.)* With VoiceOver or NVDA on the dashboard: **expect** the heading announced when it opens, the headline read when a
+    filter changes, each tile with its name, the i button as "About Confidence index" with its formula as its description, and the arrow of a client as
+    "Show the sessions of Kroger", expanded or collapsed. *(Axe finds nothing in Chromium and WebKit; how it is spoken is only for a person to hear.)*
+    Then push the branch `pms-21-5`.
 
 ### Prompt 20 (the confidence check, Before and After): not verified on SharePoint Online or an iPad
 
