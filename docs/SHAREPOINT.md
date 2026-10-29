@@ -12,7 +12,8 @@ registration, no certificate, no Graph, nothing from a CDN.
 
 ## The lists at a glance
 
-**Schema version 5** (Prompt 21, Phase 1 added `PMSUsers`, `PMSRoleAssignments` and `PMSAuditLog`, and `PMSAppSettings.FiscalYearStartMonth` and
+**Schema version 6** (Prompt 21, Phase 3 added `PMSClientSessions.StartTime`, `Sequence`, `Period` and `PlannedDate`, a session's title being the built-in
+`Title`; Phase 1, version 5, added `PMSUsers`, `PMSRoleAssignments` and `PMSAuditLog`, and `PMSAppSettings.FiscalYearStartMonth` and
 `MinSample`; Prompt 20, version 4, added `PMSActivities.Kind` and `PMSClientSessions.ConfidenceCheck`; a site of version 3 or 4 is brought up by
 Setup's Show the plan, Create and Mark the site as ready, which adds what is missing and changes nothing else. A page on such a site stops with
 PMS-LST-011: its read of the settings item names the two settings the site lacks, so it reads the item's version alone). Fifteen lists and one
@@ -65,6 +66,9 @@ The table, list by list, is in [SHAREPOINT-LISTS.md](../SHAREPOINT-LISTS.md#perm
   PMSGuestQRCodes, PMSVisitLog and PMSParticipantAnswers, Read on the rest and on PMSClientImages, and **no access at all to PMSAdminUsers**.
 - **Facilitators** (the admin page) need Contribute on the content lists and the library, and on PMSVisitLog (Phase 16: Delete session removes a
   session's visit log), and Read on PMSAdminUsers.
+- **A planned session's id** (Prompt 21, Phase 3): `PMSClientSessions.AppId` is unique, so a second session of the same client at the same time of
+  the same day is refused; SharePoint answers 500 (the data layer reads it as 409, as for any duplicate) and the next try is `-2`. **ASSUMED** that the
+  real site answers a duplicate on this list as it does on the others (QA item 231).
 - **The people picker** (Prompt 21, Phase 2): the admin page's Add user sends
   `POST /_api/SP.UI.ApplicationPages.ClientPeoplePickerWebServiceInterface.clientPeoplePickerSearchUser` (the site's own people search: principal
   source 15, users only, at most eight suggestions, verbose JSON; the answer is a string of JSON under `ClientPeoplePickerSearchUser`). **ASSUMED**
@@ -229,12 +233,12 @@ expected after that time, and Reload is the answer. For a site owner or IT, the 
 4. **Upload** `index.html`, `admin.html`, `setup.html` and `pms-config.txt` to the folder, with those names, no sub-folder. Uploading over the old files
    replaces them; reload open tabs (Ctrl+F5).
 5. **Follow RUNBOOK.md**: on a new site every step; on PCOE (lists of version 3), its note, then Setup's Show the plan, Create and Mark the site as
-   ready for version 5 (Prompt 20's two columns, Prompt 21's three lists and two settings), check the build name on Setup, and then its step 16
-   (People and access: Make me a Super admin, and the copy of the PIN admins).
+   ready for version 6 (Prompt 20's two columns, Prompt 21's three lists and two settings, its Phase 3's four session columns), check the build name
+   on Setup, and then its step 16 (People and access: Make me a Super admin, and the copy of the PIN admins) and step 17 (sessions planned ahead).
 6. **Printed QR codes** carry the folder's address: moving the files means printing every code again.
 
-**Rolling back.** Keep the previous package. A package of schema version 4 stops with `PMS-LST-012` on lists Setup has raised to version 5
-(Prompt 21), and one of version 3 on lists of version 4 or 5 (Prompt 20); before that, every package of schema version 3 (since `pms-da9fc8d`) worked with the same lists, so going back was
+**Rolling back.** Keep the previous package. A package of schema version 5 stops with `PMS-LST-012` on lists Setup has raised to version 6
+(Prompt 21, Phase 3; the four session columns stay, unread), one of version 4 on lists of version 5 (Prompt 21), and one of version 3 on lists of version 4 or 5 (Prompt 20); before that, every package of schema version 3 (since `pms-da9fc8d`) worked with the same lists, so going back was
 uploading the previous package's three pages over the new ones; nothing in the lists changes. A package of an older version would stop with
 `PMS-LST-012` on lists of version 3: do not go back past a version change. Answers saved meanwhile stay in the lists either way.
 

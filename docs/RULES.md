@@ -1507,6 +1507,55 @@ Online**: QA-TESTING.md items 222 to 228. Boards 3 and 4 of the approved wirefra
   the participant page's rules are unchanged (`npm run test:bundle`). A component's name must not be a retired list's title (`AdminUsers` was one:
   `scripts/test-shown-names.js`), so the tab's screen is `AdminPeople`.
 
+## Rules from Prompt 21, Phase 3 (clients, sessions several a day, the team; keep them holding)
+
+The report is [RELEASE-21C.md](history/RELEASE-21C.md); the steps, [DATA-FLOW.md](DATA-FLOW.md#a-clients-sessions-and-team-prompt-21-phase-3). **None of it
+has met SharePoint Online**: QA-TESTING.md items 229 to 236. Boards 5 and 6 of the approved wireframes.
+
+- **Schema version 6**: `PMSClientSessions` gains `StartTime` (text `HH:mm`), `Sequence` (a number: its place among its client's sessions that day, in
+  the order they were planned), `Period` (text, like `FY27-Q2`) and `PlannedDate` (when an Admin planned it, ASSUMED: the brief names the column, not
+  what it holds). A session's title is SharePoint's own `Title`, where the data layer has always written a session's id: a title equal to the id
+  reads as none (`sessionTitle`, `lib/access/people.js`). Every read of the sessions names the four, so a site of version 5 stops with PMS-LST-011
+  until Setup has added them. **Nothing new is indexed**: the brief marks `Period` as indexed, and the rule is exactly what a recorded request
+  filters on (`scripts/test-schema.js`); the Leadership dashboard (Phase 5) indexes it when it filters on it. `PMSClients.Industry` and `Region` and
+  `PMSGuestList.GuestGroup` are left to Phases 4 and 5: no screen of this phase uses them.
+- **A session's id is opaque.** A planned one is `<slug>-<yyyy-mm-dd>-<hhmm>` (`plannedSessionId`, `lib/admin/session-plan.js`), built once; when
+  SharePoint refuses it as a duplicate the data layer tries `-2`, then `-3`, up to `-9` (`planSession`, `lib/data/planning.js`). An existing id,
+  `<slug>-<yyyy-mm-dd>` or older, keeps working everywhere. Nothing reads a date or a time out of an id: QR codes carry a code's own id, results and
+  exports group by the session's id and only make a file name safe with it. An id is up to 58 characters now (51 before), so a read by many session
+  ids takes 15 to an address (`NAME_SOURCE_SESSIONS` in `lib/admin/admin-results.js`, `SESSIONS_TO_A_READ` in `admin-clients.js`; 20 of the longer
+  ids made 2,013 characters on the real site's address).
+- **The period** of a session is worked out from its date and `PMSAppSettings.FiscalYearStartMonth` (empty reads as June, ASSUMED) when it is
+  planned (`periodOf`): the fiscal year is named by the year it ends in (ASSUMED), a quarter is three months from the start month. A session made
+  before version 6 shows its date's period.
+- **A client's page** (`admin/ClientWorkspace.svelte`, opened by **Sessions and team** on Clients) has the client's **Sessions**
+  (`ClientSessions.svelte`: date and time, title, period, label, team; the latest day first, a day by start time, "1 of 2 today"), **New session** (a
+  date and a start time; a title when the client has another session that day; "Use the client team": on, the client's team covers it; off, the
+  team form opens on the new session) for a person who may create clients and sessions (`clients.manage`), and the **Client team**
+  (`ClientTeam.svelte`, `lib/access/team.js`): Producer, Designer or Leadership, among the people registered (and active) under People only, for the
+  whole client (one row) or for selected sessions (one row each, with the client named on it), a Designer's "may also edit activities"
+  (`content.edit`), and Remove with `loseWords`; each change one audit line (`grantRole`, `removeRole`); Add and Remove for `team.assign` only (an
+  Admin, a Super admin; not the PIN's legacy admin, which has nothing about people).
+- **Planned, Live and Ended** are labels of the existing Status values (`stageOf`): Ended when `completed`; Live while it is the session
+  `PMSAppSettings` names; Planned otherwise, a session that was visited and is no longer the live one included (ASSUMED).
+- **The Admin plans, the Producer starts.** Making a session is `clients.manage`'s alone (`LIST_WRITES.sessions.create`, no longer `events.run`).
+  Today offers the client's sessions of the day when one was planned (`daySessionsOf`, `sessionChoiceWords`) and its Go live is the data layer's
+  `startSession` (`startPlannedSession`): the activities added since planning join it, the codes nobody scanned for the session it replaces stop
+  working, and the settings item names it. It is the only thing that makes a planned session live, and only a person with `events.run` may press it
+  (a Producer, a Super admin, the PIN's legacy admin): an Admin is told who may. With nothing planned for the client that day, a person who may plan
+  as well as run goes live as before (`activateClient`, the day's session `<slug>-<date>`), so that an existing admin's day does not change until
+  the switch-over; anyone else meets the blocker "No session is planned for <client> on <date>." (`evaluateReadiness`, `mayPlan`).
+- **One session is live at a time** (`PMSAppSettings.ActiveSessionId`): a known limit of this release, not solved. The client's page says it, and
+  Today says what going live with another session does (`oneLiveWords`); starting one ends nothing.
+- **A client's several open sessions**: the confidence check may not be deleted while any open session of the client asks it (`checkDeleteRefusal`
+  takes them all; Content reads the client's sessions by `ClientId`).
+- **Safari sends a date field's change again when it loses the focus**: Today ignores a date pick that did not change the date, so that pressing Go
+  live does not re-check readiness under the press.
+- **Day one**: existing clients and sessions keep their ids; until a client has a team, only Super admins and Admins see it on the screens Phase 4
+  scopes (this phase gives the rows; Phase 4 builds the menus and screens from them).
+- **`core.js` is still at its 600 lines**: the two calls are a part of their own, `lib/data/planning.js` (section 14). The Sessions list is a
+  `<table>` with a caption and column headers: the word was already under `migration/`, and the participant page's Tailwind rules are unchanged.
+
 ## Before finishing a change
 
 - Always: `npm run check:svelte` and `npm test` (the documents, the module map and the project map among it). If you added, moved or renamed a

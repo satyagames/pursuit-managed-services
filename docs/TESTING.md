@@ -136,6 +136,18 @@ seven sizes.
   (`--order`, `--check`, `--write`): every recorded suite run on `21cef34`'s tree (where the branch began) and on today's, request by
   request, the settings' `$select` and the every-list column check translated, only requests of version 5 added, and a fresh recording equal to
   the translation.
+- `node --test scripts/test-sessions-plan.js` (also part of `npm test`, Prompt 21, Phase 3): schema version 6's session columns (and a site of version 5
+  stopping with PMS-LST-011), the period from the fiscal start month, a planned session's id and its -2 and -3 on a duplicate, an old id still found,
+  two sessions on one day for one client and for two (their QR codes and visits with their own session), starting a planned session (the activities
+  added since), the New session form, Planned, Live and Ended, the one-live limit in words, the Client team (registered people only, whole client or
+  selected sessions, the Designer's extra, a Producer refused), the Admin plans and the Producer starts (each refused the other's write, nothing
+  sent), Today's readiness with nothing planned, the day's session picked, and a client's several open sessions. `scripts/migration-tests/client-sessions.spec.ts`
+  runs the BUILT admin page signed in as an Admin and a Producer: planning two sessions on one day, the team (selected sessions, Remove), heading
+  focus, an Admin's Go live off, a Producer picking and starting one of the day's two sessions, the one-live words, and axe on each screen (Chromium
+  and WebKit, 29 Oct 2026); it is in `npm run test:a11y`. The request baselines followed version 6 by
+  [scripts/schema-baseline/sessions-baselines.js](../scripts/schema-baseline/sessions-baselines.js) (every recorded suite on `43a98d4`'s tree and
+  on today's, request by request; only Setup's four new columns added; a fresh recording equal to the translation in all 17), and two (test-named-reads,
+  test-participant-names) were amended with `--amend --code` for Results' 15 sessions to a read.
 - `node --test scripts/test-users.js` (also part of `npm test`, Prompt 21, Phase 2): the People rules and calls on the mocked SharePoint: the list
   (roles and reach from current rows, the chips, search, Client and Session, Status, pages of 50), the people picker's state machine (two
   characters, the pause, eight suggestions, a stale search aborted and dropped, Up, Down, Enter, Escape, "unverified", the words a screen reader is

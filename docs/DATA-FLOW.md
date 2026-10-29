@@ -167,6 +167,22 @@ The admin page's People tab, for a person whose access allows it ([RULES.md](RUL
    (`lib/data/access-people.js`) and asks the guard's `record()` check, which refuses your own roles, the last Super admin and an Admin touching a
    Super admin or Admin row, before anything is sent; then it writes, then writes its audit line, and the list is read again.
 
+## A client's sessions and team (Prompt 21, Phase 3)
+
+A client's page (Clients, **Sessions and team**) and Today's start ([RULES.md](RULES.md) has the rules):
+
+1. **Open**: one `readLists` of the settings item and the client's sessions (by the indexed `ClientId`; one `$batch` on SharePoint), beside
+   `listAccessRecords` of `PMSUsers` and `PMSRoleAssignments` read whole: three reads, once, and again after each change.
+2. **New session**: `planSession()` reads the client's activities (by `ClientId`) and writes one `PMSClientSessions` item under the id the page gave it
+   (`<slug>-<yyyy-mm-dd>-<hhmm>`, with the period and the order in the day worked out in the page); a 409 (a duplicate) is tried again as `-2`, `-3`.
+   It needs `clients.manage`: the write guard refuses anyone else before anything is sent.
+3. **Client team**: Add is `grantRole()` for each place (one `PMSRoleAssignments` item and one audit line each); Remove is `removeRole()`, which reads
+   both access lists for the guard's `record()` check first, as on People.
+4. **Today, a planned session**: Go live is `startSession()`: the settings item, the session, its client and its activities, a `MERGE` of the session's
+   activities when some were added since it was planned, the codes nobody scanned for the session it replaces marked used, the settings item written
+   (`events.run`), then one read of the settings item to prove it. With nothing planned for the client that day, Go live is `activateClient()` as before.
+   One session is live at a time: the settings item names one.
+
 ## How often each open page looks
 
 | Page | Every | Notes |

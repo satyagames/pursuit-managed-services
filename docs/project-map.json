@@ -159,7 +159,7 @@
     }
   ],
   "sharePoint": {
-    "schemaVersion": 5,
+    "schemaVersion": 6,
     "lists": [
       {
         "key": "clients",
@@ -169,7 +169,7 @@
       {
         "key": "sessions",
         "title": "PMSClientSessions",
-        "purpose": "One item for each client and day: the session participants join when it is live."
+        "purpose": "One item for each session: what participants join when it is live. A client may have several in one day (Prompt 21, Phase 3)."
       },
       {
         "key": "sections",
