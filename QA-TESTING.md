@@ -21,7 +21,9 @@
    the PIN admins, No access, what "site owner" means on PCOE). Below item 215. Item 217 first after the upgrade: nothing may change for an admin.
 9. Items **222 to 228** (Prompt 21, Phase 2: the people picker on the real site, Add user, Give access, Remove, turning someone off, the guards, an
    Admin's view, a screen reader). Below item 221. Item 222 first: it decides whether Add user can search the directory.
-10. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
+10. Items **229 to 236** (Prompt 21, Phase 3: the upgrade to version 6, a session's title on the real site, two sessions on one day and an id taken,
+   the Producer starts, an Admin cannot, the Client team, Safari's date field, a screen reader). Below item 228. Item 229 first: the upgrade.
+11. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
    160, 161, 164, 165, 166, 167, 168, 169, 170.
 
 **Decided, no change:** 162 (names stay "Last, First") and 163 (the wall page keeps the admin header), VJR, 16 Oct 2026.
@@ -1500,6 +1502,44 @@ node tests and in Chromium on the built page (RELEASE-21B.md), not on the real s
     announced, the chips as buttons that are pressed or not, the field as an editable combobox, "3 people found. Use the up and down arrows, then
     Enter." when suggestions come, each suggestion read with its name and email as the arrows move, and the dialogs announced with their titles.
     *(Axe finds nothing and the keyboard path works in Chromium; how it is spoken is only for a person to hear.)* Then push the branch `pms-21-2`.
+
+### Prompt 21, Phase 3 (clients, sessions several a day, the team): not verified on SharePoint Online, an iPad or with a screen reader
+
+An Admin plans a client's sessions ahead, several in one day if needed, and picks its team on the client's page (Clients, **Sessions and team**); a
+Producer starts a planned session on Today, the only thing that makes it live. Proven on the mocked SharePoint, in node tests and in Chromium and
+WebKit on the built page (RELEASE-21C.md), not on the real site. **The lists move to version 6**: four columns of `PMSClientSessions`, which Setup
+adds. Use a test copy of the site first, after items 216 to 228.
+
+229. **Upgrade to version 6.** *(Still to see.)* Open Setup with this package on a site of version 5. **Expect** PMS-LST-011 on the participant and
+    admin pages until then, and **Show the plan** to name exactly `PMSClientSessions.StartTime`, `Sequence`, `Period` and `PlannedDate` (not `Title`:
+    every list has it). **Create**, then **Mark the site as ready**: "Raised the lists from version 5 to version 6." The pages then open as before.
+230. **A session's title on the real site.** *(Still to see.)* Plan a session with a title, then open an older session (one Go live made before this
+    package). **Expect** the new session's title on its row and on Today's session picker, and no title on the older one (SharePoint's `Title` of an
+    older session holds its id, which the screens read as no title). F12, Network: a read of `PMSClientSessions` names `Title` and the four columns.
+231. **Two sessions on one day, and the id taken.** *(Still to see.)* As an Admin, on Kroger's page, plan 09:00 "Morning" and 14:00 (the form asks
+    for a title: give "Afternoon"). **Expect** two rows, "1 of 2 today" and "2 of 2 today", the period (FY27-Q2 for a date in October 2026 with June
+    as the fiscal start, ASSUMED), Planned, and in `PMSClientSessions` the ids `kroger-<date>-0900` and `kroger-<date>-1400`. Plan a second 09:00 on
+    the same day: **expect** the id `kroger-<date>-0900-2` (SharePoint refused the first id as a duplicate; write down the status it answered).
+232. **The Producer starts; QR codes and answers stay with their session.** *(Still to see.)* As a Producer on Kroger's team, on Today pick Kroger,
+    that date and the 09:00 session, press **Go live**: Verified. Check in one iPad by a QR code (Clients, **Generate QR**) and answer one activity.
+    Then pick the 14:00 session: **expect** "One session can be live at a time. Going live with this one takes the place of Kroger, ..." under the
+    button; press **Go live**, check in a second iPad and answer. **Expect** on Results two sessions, each with its own iPad and answers, and the first
+    iPad's unscanned codes no longer working. The known limit: only one session is live at a time.
+233. **An Admin cannot start, a Producer cannot plan.** *(Still to see.)* As an Admin on Today: **expect** Go live off and "Only a Producer or a Super
+    admin starts a session. You can plan sessions on the client's page under Clients." As a Producer, on a date with nothing planned for the client:
+    **expect** the blocker "No session is planned for <client> on <date>." and Go live off. The PIN's legacy admin still goes live as before.
+234. **The Client team.** *(Still to see.)* As an Admin on a client's page, **Add to team**: a Designer, searched by part of the name (only people
+    under People are offered), for **Selected sessions** (one), with **May also edit activities**. **Expect** the row with the session and "may also edit
+    activities" and a line in `PMSAuditLog`. (What a Designer of one session may then change is Phase 4's: an activity belongs to its client, and the
+    write guard does not yet let a session's role edit it.)
+    Press **Remove**: **expect** the confirmation to say what they lose, then the row gone and an audit line. Plan a session with **Use the client
+    team** off: **expect** the team form to open on it.
+235. **Safari: the date, then Go live.** *(Still to see.)* On a Mac or an iPad in Safari, on Today type or pick a date, then press **Go live** at once.
+    **Expect** it to go live on the first press (Safari sends the field's change again when it loses the focus; the page now ignores the same date).
+236. **A screen reader.** *(Still to see.)* With VoiceOver or NVDA, on a client's page: **expect** the heading announced when it opens, the Sessions
+    list read as a table with its column headers, the New session fields with their labels and problems, the team form's Where as a group of two
+    choices, and the Remove confirmation announced with its title. *(Axe finds nothing in Chromium; how it is spoken is only for a person to hear.)*
+    Then push the branch `pms-21-3`.
 
 ### Prompt 20 (the confidence check, Before and After): not verified on SharePoint Online or an iPad
 
