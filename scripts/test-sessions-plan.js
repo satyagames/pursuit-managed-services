@@ -342,3 +342,37 @@ describe('a client\'s open sessions, now that it can have several', () => {
     assert.equal(checkDeleteRefusal(null), '');
   });
 });
+
+describe('the words the screens draw', () => {
+  it('Today\'s session picker: the start time, the title, its place in the day and its label', async () => {
+    const { sessionChoiceWords } = await import('../migration/src/lib/admin/session-plan.js');
+    const sessions = [
+      { id: 'kroger-2026-10-29-0900', clientId: 'c-kroger', date: DAY, startTime: '09:00', title: 'Morning', status: 'not-started' },
+      { id: 'kroger-2026-10-29-1400', clientId: 'c-kroger', date: DAY, startTime: '14:00', title: '', status: 'completed' },
+      { id: `kroger-${DAY}`, clientId: 'c-kroger', date: DAY, title: `kroger-${DAY}` },
+    ];
+    const settings = { activeSessionId: 'kroger-2026-10-29-0900' };
+    assert.equal(sessionChoiceWords(sessions[0], sessions, settings), '09:00, Morning, 2 of 3 today, Live');
+    assert.equal(sessionChoiceWords(sessions[1], sessions, settings), '14:00, 3 of 3 today, Ended');
+    assert.equal(sessionChoiceWords(sessions[2], sessions, settings), 'No start time, 1 of 3 today, Planned');
+  });
+
+  it('a session\'s team in the Sessions list: the client\'s team, and who is on that session alone', async () => {
+    const { sessionTeamWords } = await import('../migration/src/lib/access/team.js');
+    const users = [ACTIVE('raedla@deloitte.com', 'Aedla, Rajeshwar'), ACTIVE('mohammadahussain@deloitte.com', 'Hussain, Mohammad Afrid')];
+    const rows = [
+      rowOf('raedla@deloitte.com', 'Producer', 'client', { clientId: 'c-kroger' }),
+      rowOf('mohammadahussain@deloitte.com', 'Designer', 'session', { sessionId: 'kroger-2026-10-29-1400' }),
+    ];
+    assert.equal(sessionTeamWords(rows, users, { id: 'kroger-2026-10-29-1400', clientId: 'c-kroger' }), 'Client team (1), and Hussain, Mohammad Afrid (Designer)');
+    assert.equal(sessionTeamWords(rows, users, { id: 'kroger-2026-10-29-0900', clientId: 'c-kroger' }), 'Client team (1)');
+    assert.equal(sessionTeamWords([], users, { id: 'x', clientId: 'c-kroger' }), 'No team yet');
+  });
+
+  it('Go live says why it is off for someone who may not start a session (an Admin)', async () => {
+    const { goLiveWhy } = await import('../migration/src/lib/admin/today-view.js');
+    const state = { loaded: true, client: { name: 'Kroger' }, dateValid: true, inputsBusy: false, blockers: 0, reason: null, alreadyLive: false, date: DAY };
+    assert.equal(goLiveWhy({ ...state, mayRun: false }), 'Only a Producer or a Super admin starts a session. You can plan sessions on the client\'s page under Clients.');
+    assert.equal(goLiveWhy(state), '', 'and nothing to say for one who may');
+  });
+});

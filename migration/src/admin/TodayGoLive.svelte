@@ -1,10 +1,11 @@
 <script lang="ts">
   // The body of Today's Go live card, inside AdminToday.svelte's section and under its heading: the client and the date, the button, and what it
   // says about them (Phase 17: moved out of AdminToday.svelte unchanged, its markup and its styles). The picking and the going live are
-  // AdminToday's; this draws them and hands each press back.
+  // AdminToday's; this draws them and hands each press back. Prompt 21, Phase 3: the session, when the client has sessions planned that day (several
+  // may be), and the known limit in words when going live would take the place of another live session.
   type Pickable = { id: string; name: string; status?: string };
 
-  let { pickable, clientId, date = $bindable(), busy, canGo, label, why, verified, problem, onPickClient, onPickDate, onGo, onNavigate }: {
+  let { pickable, clientId, date = $bindable(), busy, canGo, label, why, verified, problem, onPickClient, onPickDate, onGo, onNavigate, sessionChoices = [], sessionId = '', onPickSession = () => {}, oneLive = '' }: {
     pickable: Pickable[];
     clientId: string;
     date: string;
@@ -19,13 +20,19 @@
     onPickDate: () => void;
     onGo: () => void;
     onNavigate: (tab: string) => void;
+    /** The client's sessions that day, as the picker says them (lib/admin/session-plan.js sessionChoiceWords); none when nothing is planned. */
+    sessionChoices?: { id: string; label: string }[];
+    sessionId?: string;
+    onPickSession?: (event: Event) => void;
+    /** The one-live-session limit in words (oneLiveWords), or ''. */
+    oneLive?: string;
   } = $props();
 </script>
 
 {#if pickable.length === 0}
   <p class="muted">There are no active clients yet. <button class="link" type="button" onclick={() => onNavigate('clients')}>Add one on Clients</button>.</p>
 {:else}
-  <div class="picker">
+  <div class="picker" class:picker--sessions={sessionChoices.length > 0}>
     <div class="field"><label class="field__label" for="today-client">Client</label>
       <select id="today-client" class="select" value={clientId} onchange={onPickClient} disabled={busy}>
         {#each pickable as entry (entry.id)}<option value={entry.id}>{entry.name}{entry.status === 'archived' ? ' (archived)' : ''}</option>{/each}
@@ -34,11 +41,19 @@
     <div class="field"><label class="field__label" for="today-date">Date</label>
       <input id="today-date" class="input" type="date" bind:value={date} onchange={onPickDate} disabled={busy} />
     </div>
+    {#if sessionChoices.length > 0}
+      <div class="field"><label class="field__label" for="today-session">Session</label>
+        <select id="today-session" class="select" value={sessionId} onchange={onPickSession} disabled={busy}>
+          {#each sessionChoices as entry (entry.id)}<option value={entry.id}>{entry.label}</option>{/each}
+        </select>
+      </div>
+    {/if}
     <button class="btn btn--primary btn--go" type="button" onclick={onGo} disabled={!canGo}>
       {label}
     </button>
   </div>
   {#if why}<p class="why" role="status" data-testid="go-live-why">{why}</p>{/if}
+  {#if oneLive}<p class="why" data-testid="one-live">{oneLive}</p>{/if}
   {#if verified}<p class="verified" role="status">{verified}</p>{/if}
   {#if problem}<p class="error" role="alert">{problem}</p>{/if}
 {/if}
@@ -49,6 +64,10 @@
     grid-template-columns: minmax(0, 2fr) minmax(10.5rem, 1fr) auto;
     gap: 0.9rem;
     align-items: end;
+  }
+
+  .picker--sessions {
+    grid-template-columns: minmax(0, 2fr) minmax(10.5rem, 1fr) minmax(0, 2fr) auto;
   }
 
   .picker .select,

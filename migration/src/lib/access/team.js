@@ -86,3 +86,16 @@ export async function addToTeam(dataService, access, form, { now = new Date() } 
   }
   return { added, already };
 }
+
+/**
+ * A session's team as the Sessions list says it: how many are on the whole client's team, and who is on this session alone ("Client team (2), and
+ * Hussain, Mohammad Afrid (Designer)"); "No team yet" when there is nobody.
+ * @param {any[]} assignments @param {any[]} users @param {{ id: string, clientId: string }} session
+ */
+export function sessionTeamWords(assignments, users, session) {
+  const team = assignments.filter((row) => TEAM_ROLES.includes(row.role));
+  const whole = team.filter((row) => row.scopeType === 'client' && row.clientId === session.clientId).length;
+  const own = team.filter((row) => row.scopeType === 'session' && row.sessionId === session.id).map((row) => `${nameOf(users, row.userKey)} (${row.role})`);
+  if (!whole && !own.length) return 'No team yet';
+  return [whole ? `Client team (${whole})` : '', own.join('; ')].filter(Boolean).join(', and ');
+}

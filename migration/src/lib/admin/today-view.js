@@ -34,11 +34,13 @@ export function readinessSummary({ inputsBusy, blockers, warnings }) {
 }
 
 /**
- * Why Go live cannot be pressed, in words ('' when it can, or before the screen has loaded). `reason` is blockedReason() of the rows.
- * @param {{ loaded: boolean, client: { name: string } | null, dateValid: boolean, inputsBusy: boolean, blockers: number, reason: string | null, alreadyLive: boolean, date: string }} state
+ * Why Go live cannot be pressed, in words ('' when it can, or before the screen has loaded). `reason` is blockedReason() of the rows. `mayRun`
+ * (Prompt 21, Phase 3): whether this person may start a session (events.run, the role matrix's): an Admin plans, a Producer starts.
+ * @param {{ loaded: boolean, client: { name: string } | null, dateValid: boolean, inputsBusy: boolean, blockers: number, reason: string | null, alreadyLive: boolean, date: string, mayRun?: boolean }} state
  */
-export const goLiveWhy = ({ loaded, client, dateValid, inputsBusy, blockers, reason, alreadyLive, date }) => (
-  !loaded ? '' : !client ? 'Add a client first.' : !dateValid ? 'Choose a date.' : inputsBusy ? 'Checking that everything is ready...'
+export const goLiveWhy = ({ loaded, client, dateValid, inputsBusy, blockers, reason, alreadyLive, date, mayRun = true }) => (
+  !loaded ? '' : !client ? 'Add a client first.' : !mayRun ? 'Only a Producer or a Super admin starts a session. You can plan sessions on the client\'s page under Clients.'
+    : !dateValid ? 'Choose a date.' : inputsBusy ? 'Checking that everything is ready...'
     : blockers > 0 ? (reason ?? '') : alreadyLive ? `${client.name} is already live for ${date}.` : ''
 );
 

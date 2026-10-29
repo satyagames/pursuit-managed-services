@@ -127,3 +127,11 @@ export function sessionRows(sessions, { clientId, settings, fiscalStartMonth = D
       title: sessionTitle(session), period: periodLabel(session, fiscalStartMonth), stage: stageOf(session, settings),
     }));
 }
+
+/**
+ * A session as Today's session picker says it: its start time, its title, its place in the client's day and its label ("09:00, Morning, 2 of 3
+ * today, Live"). A session made by Go live has no start time.
+ * @param {any} session @param {any[]} sessions @param {{ activeSessionId?: string | null } | null} settings
+ */
+export const sessionChoiceWords = (session, sessions, settings) => [text(session.startTime) || 'No start time', sessionTitle(session), sequenceWords(session, sessions),
+  stageOf(session, settings)].filter(Boolean).join(', ');

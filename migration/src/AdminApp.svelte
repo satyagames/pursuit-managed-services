@@ -351,9 +351,9 @@
 
     <div id="admin-panel" class="shell__body" role="tabpanel" aria-labelledby={`admin-tab-${activeTab}`} tabindex="0">
       {#if activeTab === 'today'}
-        <AdminToday onToast={showToast} onNavigate={(tab) => void open(tab)} onLiveDisplay={(sessionId) => void openLiveDisplay(sessionId)} />
+        <AdminToday {access} onToast={showToast} onNavigate={(tab) => void open(tab)} onLiveDisplay={(sessionId) => void openLiveDisplay(sessionId)} />
       {:else if activeTab === 'clients'}
-        <AdminClients onToast={showToast} adminName={admin.name ?? ''} onNavigate={(tab, to) => void open(tab, to)} />
+        <AdminClients {access} onToast={showToast} adminName={admin.name ?? ''} onNavigate={(tab, to) => void open(tab, to)} />
       {:else if activeTab === 'content'}
         <AdminContent onToast={showToast} adminName={admin.name ?? ''} view={contentView} clientRequest={contentClient} rows={contentRows} onView={setContentView} />
       {:else if activeTab === 'guests'}

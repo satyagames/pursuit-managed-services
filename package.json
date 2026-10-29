@@ -48,7 +48,7 @@
     "test:live": "node --test scripts/test-live-display.js",
     "test:charts": "node --test scripts/test-results-chart-model.js scripts/test-results-palette.js scripts/test-results-wall.js scripts/test-results-chart-fit.js scripts/test-present-fit.js",
     "test:unsupported": "node --test scripts/test-unsupported.js",
-    "test:a11y": "npm run build:svelte:release && playwright test --config migration/playwright.config.ts a11y keyboard aria reflow contrast motion unsupported",
+    "test:a11y": "npm run build:svelte:release && playwright test --config migration/playwright.config.ts a11y keyboard aria reflow contrast motion unsupported client-sessions",
     "test:devices": "npm run build:svelte:release && playwright test --config migration/playwright.config.ts devices",
     "test:perf": "npm run build:svelte:release && playwright test --config migration/playwright.config.ts --project=chromium performance latency",
     "test:report": "node --test scripts/test-leader-report.js scripts/test-leader-report-pdf.js scripts/test-participant-names.js scripts/test-leader-report-charts.js scripts/test-results-export.js scripts/test-export-summary.js scripts/test-leader-report-glance.js scripts/test-results-pack.js scripts/test-results-csv.js",
