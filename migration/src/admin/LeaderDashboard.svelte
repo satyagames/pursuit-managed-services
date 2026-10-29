@@ -343,9 +343,11 @@
                 <span>{row.sessions.length} {row.sessions.length === 1 ? 'session' : 'sessions'}, {row.guests} guests</span>
                 <span>Index {row.index === null ? 'not measured' : whole(row.index)}{row.low ? ' (low sample)' : ''}</span>
                 <span>Change {row.change === null ? 'none to compare' : `${row.change > 0 ? '+' : ''}${whole(row.change)}`}<MetricInfo id="change" /></span>
-                <span>{said.shift}{#if row.shiftLow} <span class="tag">Low sample (n = {row.shift.n})</span>{/if}</span>
-                {#if said.moved}<span>{said.moved}{#if row.movedLow} <span class="tag">Low sample (n = {row.moved.started})</span>{/if}</span>{/if}
-                <span>{said.answered}</span>
+                <span class="dash__shift dash__shift--row">
+                  <span>{said.shift}{#if row.shiftLow} <span class="tag">Low sample (n = {row.shift.n})</span>{/if}</span>
+                  {#if said.moved}<span>{said.moved}{#if row.movedLow} <span class="tag">Low sample (n = {row.moved.started})</span>{/if}</span>{/if}
+                  <span>{said.answered}</span>
+                </span>
               </div>
               {#if expanded}
                 <ul class="dash__sessions" id="dash-sessions-{row.clientId}" aria-label="Sessions of {row.name}">
@@ -600,10 +602,12 @@
   }
 
   .dash__shift-head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
     margin: 0 0 0.5rem;
+  }
+
+  .dash__shift--row {
+    flex-basis: 100%;
+    margin: 0 0 0 0.25rem;
   }
 
   .dash__shift {
