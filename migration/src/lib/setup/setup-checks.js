@@ -10,6 +10,7 @@
 // order is `SortOrder`, and the lists are made by Setup, not by hand: there is nothing left to check by eye.)
 import { ID, LISTS, selectOf } from '../schema/pms-schema.js';
 import { columnsOf, retiredColumn } from '../schema/pms-schema-meta.js';
+import { PROBE_PERMISSIONS, permissionProbe } from './list-permissions.js';
 
 // ---- What the check expects of each column ---------------------------------------------------------------------------------------------
 
@@ -168,12 +169,13 @@ async function columnsRefused(probe, titles) {
 
 /**
  * The probes as self-test steps ({ name, run }), for dataService.runParticipantSelfTest(onStep, extraSteps): the two of Phase 9b and, given the lists'
- * titles (`titles`), the one of Phase 10h and the one of Phase 10i. SharePoint only: the local server has none of these questions, so the page passes none there.
+ * titles (`titles`), who may change the access lists (Prompt 21, Phase 7: lib/setup/list-permissions.js), the one of Phase 10h and the one of Phase 10i. SharePoint only: the local server has none of these questions, so the page passes none there.
  * @param {Probe} probe
  * @param {Record<string, string> | null} [titles]
  */
 export const selfTestProbes = (probe, titles = null) => [
   { name: PROBE_YESNO, run: () => yesNoFilter(probe) },
   { name: PROBE_LENGTH, run: () => filterLength(probe) },
+  ...(titles ? [{ name: PROBE_PERMISSIONS, run: () => permissionProbe(probe, titles) }] : []),
   ...(titles ? [{ name: PROBE_LEFT_OUT, run: () => columnsLeftOut(probe, titles) }, { name: PROBE_REFUSED, run: () => columnsRefused(probe, titles) }] : []),
 ];
