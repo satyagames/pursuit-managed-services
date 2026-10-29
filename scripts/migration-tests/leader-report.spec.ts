@@ -307,16 +307,12 @@ test('Hide names (Prompt 21, Phase 6): the rows, the leader report and the parti
 
   const pdf = await download(page, session.id, 'Leader report (PDF)');
   const text = squash((await inspectPdf(pdf.bytes)).pages.map((sheet) => sheet.text).join(' '));
-  for (const name of ['José Álvarez', 'Zoë Brontë', 'Søren Kjær', 'Łukasz Żółć', 'Unnamed participant']) expect(text, name).not.toContain(squash(name));
+  // (The counting rules, a fixed page, still explain "Unnamed participant 1, 2 ...": that names nobody.)
+  for (const name of ['José Álvarez', 'Zoë Brontë', 'Søren Kjær', 'Łukasz Żółć']) expect(text, name).not.toContain(squash(name));
   expect(text).toContain(squash('Guest 7'));
   expect(text).toContain(squash('Names are hidden: each person is shown as Guest 1, Guest 2 … in the order they joined.'));
 
   const csv = (await download(page, session.id, 'All answers (CSV)')).bytes.toString('utf8');
   for (const name of ['José Álvarez', 'Zoë Brontë', 'Søren Kjær', 'Łukasz Żółć']) expect(csv, name).not.toContain(name);
   expect(csv).toContain('Guest 1,Harbour History');
-
-  // The switch is Results' one switch: the dashboard shows it on.
-  await page.getByRole('button', { name: 'Dashboard', exact: true }).click();
-  await page.getByText('More filters').click();
-  await expect(page.getByLabel('Hide names')).toBeChecked();
 });

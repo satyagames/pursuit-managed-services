@@ -51,7 +51,7 @@
   const options = $derived(filterOptions(summaries, clients));
   /** No client, session or period given (nothing is read), or no summary yet: said instead of the filters and figures (Prompt 21, Phase 6). */
   const reach = $derived(access ? reachOf(access) : null);
-  const empty = $derived(emptyStateOf({ reach, summaries }));
+  const empty = $derived(emptyStateOf({ reach, summaries, waiting: mayRebuild ? missing.length : 0 }));
   const shownClients = $derived([...clients].filter((client) => summaries.some((each) => each.clientId === client.id)).sort((a, b) => String(a.name).localeCompare(String(b.name))));
   const years = $derived([...new Set([...options.years, filters.year])].sort());
   const scaleTop = $derived(Math.max(150, ...board.byClient.map((row) => Math.ceil((row.index ?? 0) / 10) * 10)));

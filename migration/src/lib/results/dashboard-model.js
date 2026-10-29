@@ -230,13 +230,14 @@ export function reportCsv(board) {
 /**
  * What the dashboard says instead of its figures (Prompt 21, Phase 6): 'no-scope' for a person given no client, session or period (nothing is read for
  * them), 'no-summaries' when no session they may see has a summary, else null (a filter that leaves nothing is said by the headline). `reach` is
- * lib/access/scope.js reachOf's, or null before there were roles.
- * @param {{ reach: any, summaries: any[] }} input
+ * lib/access/scope.js reachOf's, or null before there were roles; `waiting` the ended sessions with no summary yet that Rebuild would write.
+ * @param {{ reach: any, summaries: any[], waiting?: number }} input
  */
-export function emptyStateOf({ reach, summaries }) {
+export function emptyStateOf({ reach, summaries, waiting = 0 }) {
   if (reach && !reach.all && !reach.clientIds.size && !reach.sessionIds.size && !reach.periods.length) {
     return { kind: 'no-scope', title: 'No clients to show yet', line: 'You have not been given a client or a period yet. Ask a Super admin or an Admin to give you access; your figures appear here when they do.' };
   }
+  if (!summaries.length && waiting > 0) return { kind: 'no-summaries', title: 'No summaries yet', line: 'Sessions have ended, but none has a summary yet. Rebuild summaries adds them.' };
   if (!summaries.length) return { kind: 'no-summaries', title: 'No session has ended yet', line: 'A session\'s figures appear here once it has ended.' };
   return null;
 }

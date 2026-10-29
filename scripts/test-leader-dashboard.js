@@ -244,6 +244,9 @@ describe('Part 4: the empty states (Prompt 21, Phase 6)', async () => {
       kind: 'no-summaries', title: 'No session has ended yet', line: 'A session\'s figures appear here once it has ended.',
     });
     assert.equal(emptyStateOf({ reach: null, summaries: [silent] }), null);
+    assert.deepEqual(emptyStateOf({ reach: null, summaries: [], waiting: 2 }), {
+      kind: 'no-summaries', title: 'No summaries yet', line: 'Sessions have ended, but none has a summary yet. Rebuild summaries adds them.',
+    }, 'ended sessions waiting for Rebuild are not "no session has ended"');
   });
 
   it('a session with no answers counts as a session with nobody in it: no figure reads NaN', () => {

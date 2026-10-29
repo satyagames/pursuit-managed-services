@@ -105,6 +105,9 @@ test('the keyboard: the period chips, Compare with and Hide names, and the headl
   await page.getByLabel('Hide names').check();
   await expect(page.locator('.dash__quotes')).not.toContainText('Asha Rao');
   await expect(page.locator('.dash__quotes')).toContainText('Guest 1');
+  // (Phase 6: Hide names is Results' one switch: the Sessions view shows it on.)
+  await page.getByRole('button', { name: 'Sessions', exact: true }).click();
+  await expect(page.getByLabel('Hide names')).toBeChecked();
 });
 
 test('a Producer opens Results on Sessions, as before, and the dashboard shows their client only', async ({ page }) => {
