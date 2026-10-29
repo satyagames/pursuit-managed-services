@@ -254,3 +254,18 @@ describe('Part 4: the empty states (Prompt 21, Phase 6)', async () => {
     assert.doesNotMatch(reportCsv(board), /NaN|Infinity/);
   });
 });
+
+describe('Part 5: the words (Prompt 21, Phase 6 wording review)', async () => {
+  const { dashboardFileName, rebuildQuestion } = await import('../migration/src/lib/results/dashboard-model.js');
+
+  it('Rebuild asks in plain words, with no word of the plumbing', () => {
+    assert.equal(rebuildQuestion(1), 'Rebuild the summary of 1 ended session? It reads that session\'s answers once and writes one summary, which can take a few seconds. Nothing else changes.');
+    assert.equal(rebuildQuestion(3), 'Rebuild the summaries of 3 ended sessions? Each one reads that session\'s answers once and writes one summary, which can take a few seconds a session. Nothing else changes.');
+    assert.doesNotMatch(rebuildQuestion(3), /request|token|digest/i);
+  });
+
+  it('Export report is named like the other exports: lower case, hyphens, the day it was made', () => {
+    assert.equal(dashboardFileName('FY27 Q2', new Date('2026-10-29T12:00:00Z')), 'dashboard-fy27-q2-2026-10-29.csv');
+    assert.equal(dashboardFileName('1 Oct 2026 to 31 Oct 2026', new Date('2026-10-29T12:00:00Z')), 'dashboard-1-oct-2026-to-31-oct-2026-2026-10-29.csv');
+  });
+});

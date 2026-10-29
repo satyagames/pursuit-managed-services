@@ -240,3 +240,16 @@ export function emptyStateOf({ reach, summaries }) {
   if (!summaries.length) return { kind: 'no-summaries', title: 'No session has ended yet', line: 'A session\'s figures appear here once it has ended.' };
   return null;
 }
+
+/** Rebuild's question (Prompt 21, Phase 6 wording review: plain words, nothing of the plumbing; the cost is docs/history/RELEASE-21E.md's). @param {number} count */
+export function rebuildQuestion(count) {
+  return count === 1
+    ? 'Rebuild the summary of 1 ended session? It reads that session\'s answers once and writes one summary, which can take a few seconds. Nothing else changes.'
+    : `Rebuild the summaries of ${count} ended sessions? Each one reads that session's answers once and writes one summary, which can take a few seconds a session. Nothing else changes.`;
+}
+
+/** Export report's file: "dashboard-fy27-q2-2026-10-29.csv", named like the other exports (lib/exports/leader-report.js reportFileName). @param {string} windowWords @param {Date} [now] */
+export function dashboardFileName(windowWords, now = new Date()) {
+  const slug = String(windowWords).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return `dashboard-${slug}-${new Date(now).toISOString().slice(0, 10)}.csv`;
+}

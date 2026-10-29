@@ -11,7 +11,7 @@
   import { can, canView } from '../lib/access/can.js';
   import { readDashboard, rebuildSummaries } from '../lib/admin/session-summaries.js';
   import { BASELINES } from '../lib/results/index-math.js';
-  import { SPANS, dashboardOf, defaultFilters, emptyStateOf, filterOptions, reportCsv } from '../lib/results/dashboard-model.js';
+  import { SPANS, dashboardFileName, dashboardOf, defaultFilters, emptyStateOf, filterOptions, rebuildQuestion, reportCsv } from '../lib/results/dashboard-model.js';
   import { METRICS } from '../lib/results/metric-words.js';
   import { readQueries, reachOf, sessionsFor } from '../lib/access/scope.js';
   import MetricInfo from './MetricInfo.svelte';
@@ -95,7 +95,7 @@
 
   async function rebuild() {
     if (rebuilding || !missing.length) return;
-    if (!window.confirm(`Rebuild the summaries of ${missing.length} ended ${missing.length === 1 ? 'session' : 'sessions'}? Each one reads all of that session's answers once (about five requests) and writes one summary. Nothing else changes.`)) return;
+    if (!window.confirm(rebuildQuestion(missing.length))) return;
     rebuilding = 'Starting...';
     try {
       const result = await rebuildSummaries(missing, { writtenBy: access?.person?.name ?? '', startMonth, onProgress: (done, of) => { rebuilding = `Rebuilt ${done} of ${of}...`; } });
@@ -124,7 +124,7 @@
     const blob = new Blob([`﻿${reportCsv(board)}`], { type: 'text/csv;charset=utf-8' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `PMS dashboard ${board.window.words}.csv`;
+    link.download = dashboardFileName(board.window.words);
     link.click();
     setTimeout(() => URL.revokeObjectURL(link.href), 1000);
   }
