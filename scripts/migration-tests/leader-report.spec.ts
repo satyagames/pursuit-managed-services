@@ -294,3 +294,29 @@ for (const { name, end, cover, last } of [
     expect(picture.png.length, `${name} cover is a real picture`).toBeGreaterThan(15_000);
   });
 }
+
+test('Hide names (Prompt 21, Phase 6): the rows, the leader report and the participant CSV name everyone Guest 1, Guest 2 ...', async ({ page }) => {
+  test.setTimeout(90_000);
+  const { session } = await seedSession(ds, harbour());
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await openAdmin(page, local, 'Results');
+  await expect(card(page, session.id)).toContainText('José Álvarez');
+  await page.getByLabel('Hide names').check();
+  await expect(card(page, session.id)).not.toContainText('José Álvarez');
+  await expect(card(page, session.id)).toContainText('Guest 1');
+
+  const pdf = await download(page, session.id, 'Leader report (PDF)');
+  const text = squash((await inspectPdf(pdf.bytes)).pages.map((sheet) => sheet.text).join(' '));
+  for (const name of ['José Álvarez', 'Zoë Brontë', 'Søren Kjær', 'Łukasz Żółć', 'Unnamed participant']) expect(text, name).not.toContain(squash(name));
+  expect(text).toContain(squash('Guest 7'));
+  expect(text).toContain(squash('Names are hidden: each person is shown as Guest 1, Guest 2 … in the order they joined.'));
+
+  const csv = (await download(page, session.id, 'All answers (CSV)')).bytes.toString('utf8');
+  for (const name of ['José Álvarez', 'Zoë Brontë', 'Søren Kjær', 'Łukasz Żółć']) expect(csv, name).not.toContain(name);
+  expect(csv).toContain('Guest 1,Harbour History');
+
+  // The switch is Results' one switch: the dashboard shows it on.
+  await page.getByRole('button', { name: 'Dashboard', exact: true }).click();
+  await page.getByText('More filters').click();
+  await expect(page.getByLabel('Hide names')).toBeChecked();
+});

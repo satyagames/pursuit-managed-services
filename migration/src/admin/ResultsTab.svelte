@@ -1,3 +1,9 @@
+<script lang="ts" module>
+  import { HIDE_NAMES_BY_DEFAULT } from '../lib/results/metric-words.js';
+  /** The Hide names switch (Prompt 21, Phase 6; decision B): one for every view of Results and their exports, kept while this page is open. */
+  let keptHidden = HIDE_NAMES_BY_DEFAULT;
+</script>
+
 <script lang="ts">
   import { canView } from '../lib/access/can.js';
   import AdminResults from './AdminResults.svelte';
@@ -15,6 +21,14 @@
   const runsSessions = $derived(!access || canView(access, 'events.run', {}) || canView(access, 'results.live', {}));
   let chosen = $state<'dashboard' | 'sessions' | null>(null);
   const view = $derived(chosen ?? (runsSessions ? 'sessions' : 'dashboard'));
+  /** A role without results.names never sees a guest's name (decision B), whatever the switch says; before there were roles, the PIN's admin does. */
+  const mayName = $derived(!access || canView(access, 'results.names', {}));
+  let switchedHidden = $state(keptHidden);
+  const hideNames = $derived(switchedHidden || !mayName);
+  function setHideNames(on: boolean) {
+    switchedHidden = on;
+    keptHidden = on;
+  }
 </script>
 
 <div class="results-views" role="group" aria-label="Results view">
@@ -22,9 +36,9 @@
   <button class="btn btn--small results-views__choice" type="button" aria-pressed={view === 'sessions'} onclick={() => { chosen = 'sessions'; }}>Sessions</button>
 </div>
 {#if view === 'dashboard'}
-  <LeaderDashboard {access} {onToast} />
+  <LeaderDashboard {access} {onToast} {hideNames} onHideNames={setHideNames} />
 {:else}
-  <AdminResults {access} {onToast} {onLiveDisplay} />
+  <AdminResults {access} {onToast} {onLiveDisplay} {hideNames} {mayName} onHideNames={setHideNames} />
 {/if}
 
 <style>

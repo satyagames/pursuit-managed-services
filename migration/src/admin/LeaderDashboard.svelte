@@ -22,7 +22,13 @@
   // the same, limited to their clients. Every figure is lib/results/dashboard-model.js's, its words lib/results/metric-words.js's. "Save this view" keeps the
   // filters while the page is open, across its tabs (ASSUMED: nothing is kept between page loads, scripts/test-participant-storage.js; a view kept across
   // visits needs a place of its own, docs/history/RELEASE-21E.md).
-  let { access = null, onToast }: { access?: any; onToast: (message: string, kind?: 'info' | 'success' | 'error') => void } = $props();
+  // Hide names is Results' one switch (ResultsTab), shared with Sessions and every export; it rides in the saved view.
+  let { access = null, onToast, hideNames = false, onHideNames = () => {} }: {
+    access?: any;
+    onToast: (message: string, kind?: 'info' | 'success' | 'error') => void;
+    hideNames?: boolean;
+    onHideNames?: (on: boolean) => void;
+  } = $props();
 
   type Filters = ReturnType<typeof defaultFilters>;
   let summaries = $state<any[]>([]);
@@ -41,7 +47,7 @@
   const mayName = $derived(!access || canView(access, 'results.names', {}));
   /** Rebuild writes summaries: a person who may run sessions (a Producer, a Super admin, the PIN's admin). */
   const mayRebuild = $derived(!access || canView(access, 'events.run', {}));
-  const board = $derived(dashboardOf({ summaries, clients, filters, startMonth, minSample, mayName }));
+  const board = $derived(dashboardOf({ summaries, clients, filters: { ...filters, hideNames }, startMonth, minSample, mayName }));
   const options = $derived(filterOptions(summaries, clients));
   const shownClients = $derived([...clients].filter((client) => summaries.some((each) => each.clientId === client.id)).sort((a, b) => String(a.name).localeCompare(String(b.name))));
   const years = $derived([...new Set([...options.years, filters.year])].sort());
@@ -99,12 +105,13 @@
   }
 
   function saveView() {
-    savedView = JSON.parse(JSON.stringify(filters));
+    savedView = JSON.parse(JSON.stringify({ ...filters, hideNames }));
     onToast('This view is kept while this page is open', 'success');
   }
 
   function reset() {
     filters = defaultFilters({ startMonth });
+    onHideNames(filters.hideNames);
     savedView = null;
     void tick().then(() => focusHeading(heading));
   }
@@ -131,7 +138,7 @@
   }
 
   onMount(() => {
-    void load().then(() => { const saved = restore(); filters = saved ?? defaultFilters({ startMonth }); });
+    void load().then(() => { const saved = restore(); filters = saved ?? defaultFilters({ startMonth }); if (saved) onHideNames(Boolean(saved.hideNames)); });
     void tick().then(() => focusHeading(heading));
   });
 </script>
@@ -231,7 +238,7 @@
             <input type="number" min="1" max="1000" inputmode="numeric" value={filters.minSample ?? board.minSample} onchange={(event) => { const value = Number((event.currentTarget as HTMLInputElement).value); filters = { ...filters, minSample: value > 0 ? value : null }; }} />
           </label>
           {#if mayName}
-            <label class="choice"><input type="checkbox" checked={filters.hideNames} onchange={(event) => { filters = { ...filters, hideNames: (event.currentTarget as HTMLInputElement).checked }; }} /><span>Hide names</span></label>
+            <label class="choice"><input type="checkbox" checked={hideNames} disabled={!mayName} onchange={(event) => onHideNames((event.currentTarget as HTMLInputElement).checked)} /><span>Hide names</span></label>
           {/if}
         </div>
       </details>
@@ -306,7 +313,7 @@
                       <span class="dash__session-name">{each.label}</span>
                       <span>{each.guests} guests, {each.completed} finished</span>
                       <span>Session index {each.index === null ? 'not measured' : whole(each.index)}{each.low ? ' (low sample)' : ''}<MetricInfo id="session-index" /></span>
-                      {#if !access || can(access, 'results.export', { clientId: row.clientId, sessionId: each.id, date: each.date })}<ReportExports sessionId={each.id} clientName={row.name} {onToast} />{/if}
+                      {#if !access || can(access, 'results.export', { clientId: row.clientId, sessionId: each.id, date: each.date })}<ReportExports sessionId={each.id} clientName={row.name} {hideNames} {onToast} />{/if}
                     </li>
                   {/each}
                 </ul>

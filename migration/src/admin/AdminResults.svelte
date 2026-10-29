@@ -1,6 +1,6 @@
 <script lang="ts">
   import { errorText } from '../lib/admin/session-notice.js';
-  import { onMount, tick } from 'svelte';
+  import { onMount, tick, untrack } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
   import { restartClientTrack, getSessionResults, removeEmptyVisit } from '../lib/admin/adminData.js';
   import type { SessionResults, SessionTrack, SessionSection } from '../lib/admin/adminData.js';
@@ -25,12 +25,17 @@
   type TrackRow = { track: SessionTrack; name: string; unnamed: boolean; status: string; answered: number; total: number };
   type SessionCard = { results: SessionResults; owner: string; clientName: string; codes: string[]; tracks: TrackRow[]; unreadable: string; charts: ReturnType<typeof chartsOf> };
 
-  let { access = null, onToast, onLiveDisplay }: {
+  let { access = null, onToast, onLiveDisplay, hideNames = false, mayName = true, onHideNames = () => {} }: {
     /** The signed-in person's access (Phase 4): the sessions listed are those they hold, and a button shows only for an action their role has on that session. */
     access?: any;
     onToast: (message: string, kind?: 'info' | 'success' | 'error') => void;
     /** Opens the Live display (and the exports) for a session. */
     onLiveDisplay: (sessionId: string) => void;
+    /** Results' one Hide names switch (Prompt 21, Phase 6; decision B, ResultsTab): every row, chart and export names Guest 1, Guest 2 ... */
+    hideNames?: boolean;
+    /** Whether the role may see names at all (results.names): without it the switch is not offered and names stay hidden. */
+    mayName?: boolean;
+    onHideNames?: (on: boolean) => void;
   } = $props();
   let cards = $state<SessionCard[]>([]);
   let loading = $state(true);
@@ -263,13 +268,23 @@
     }
   }
 
+  // The Hide names switch turned: every card is named again from what it already holds (no request).
+  let namedHidden: boolean | null = null;
+  $effect(() => {
+    const hide = hideNames;
+    untrack(() => {
+      if (namedHidden !== null && namedHidden !== hide) cards = cards.map((card) => cardOf(card.results));
+      namedHidden = hide;
+    });
+  });
+
   /** One session's card, from its results: each iPad's row, its status, and the codes. */
   function cardOf(result: SessionResults): SessionCard {
     const sources = sourcesHeld.get(result.session.id);
     // (Phase 16: the newest joiner first, lib/admin/admin-results.js ROW_ORDER; the names are the report's, worked out in the order they joined.)
-    const tracks = rowsInOrder(resultRows(result, sources));
+    const tracks = rowsInOrder(resultRows(result, sources, { hide: hideNames }));
     // The charts of the session's live activities (Phase 11a), with each answer's names: the same rule as the rows, over what was read for them.
-    const charts = chartsOf({ sections: result.sections.filter((section) => section.enabled) }, { names: namesFor({ tracks: result.tracks, answers: answersOf(result), ...(sources ?? {}) }) });
+    const charts = chartsOf({ sections: result.sections.filter((section) => section.enabled) }, { names: namesFor({ tracks: result.tracks, answers: answersOf(result), ...(sources ?? {}) }, { hide: hideNames }) });
     // What could not be read (Phase 9b, DI-6), said beside the export buttons, with each person's name the way their row has it.
     return { results: result, owner: namesHeld.get(result.session.clientId) ?? result.session.clientId, clientName: namesHeld.get(result.session.clientId) ?? '', codes: tokensHeld.filter((token) => token.sessionId === result.session.id).map((token) => token.expiredAt ? 'expired' : token.used ? 'used' : 'unused'), tracks, unreadable: unreadableNotice(result.unreadable, namesByVisit(tracks)), charts };
   }
@@ -354,7 +369,7 @@
 </script>
 
 <section class="panel sessions-panel" aria-busy={loading || busy}>
-  <header class="panel__head"><div><h2 bind:this={pageHeading} tabindex="-1">Results</h2><p class="muted">Each iPad is its own client track. Answers merge into live results as submitted. The live session refreshes by itself every {local ? 'few seconds' : '15 seconds'}; Refresh reads every session again. To end or reopen a session, use Today.</p></div><span class="muted small">{updated}</span><button class="btn btn--small" type="button" onclick={() => refreshAll()} disabled={busy}>Refresh</button></header>
+  <header class="panel__head"><div><h2 bind:this={pageHeading} tabindex="-1">Results</h2><p class="muted">Each iPad is its own client track. Answers merge into live results as submitted. The live session refreshes by itself every {local ? 'few seconds' : '15 seconds'}; Refresh reads every session again. To end or reopen a session, use Today.</p></div><span class="muted small">{updated}</span>{#if mayName}<label class="choice"><input type="checkbox" checked={hideNames} onchange={(event) => onHideNames((event.currentTarget as HTMLInputElement).checked)} /><span>Hide names</span></label>{/if}<button class="btn btn--small" type="button" onclick={() => refreshAll()} disabled={busy}>Refresh</button></header>
   {#if loading}<p role="status">Loading results...</p>
   {:else if error}<p class="error" role="alert">{error}</p>
   {:else if cards.length === 0}<p class="muted">No sessions yet.</p>
@@ -368,7 +383,7 @@
           <!-- (Phase 16: after Live display, never beside the export buttons. It opens a warning; only its "Delete permanently" deletes.) -->
           {#if may('results.delete', session)}<button class="btn btn--small btn--danger" type="button" data-delete-session onclick={() => openDelete(card)} disabled={busy}>{DELETE_SESSION.button}</button>{/if}
         </header>
-        {#if may('results.export', session)}<ReportExports sessionId={session.id} clientName={card.clientName} {onToast} />{/if}
+        {#if may('results.export', session)}<ReportExports sessionId={session.id} clientName={card.clientName} {hideNames} {onToast} />{/if}
         {#if card.unreadable}<p class="notice card__unreadable" role="status" data-testid="unreadable-notice"><strong>{card.unreadable}</strong></p>{/if}
         {#if card.results.confidenceCheck}<ConfidenceShift check={card.results.confidenceCheck} />{/if}
         <!-- (Phase 12, F-08: the charts first; with sixty people the list ran 5,000 px above them.) -->
@@ -414,7 +429,7 @@
       tone="danger" busy={deleting.working} status={deleting.status} error={deleting.error} onConfirm={() => void confirmDelete()} onCancel={closeDelete}>
       <div class="delete-keep">
         <p class="muted">{DELETE_SESSION.keepFirst}</p>
-        <ReportExports sessionId={deleting.card.results.session.id} clientName={deleting.card.clientName} {onToast} />
+        <ReportExports sessionId={deleting.card.results.session.id} clientName={deleting.card.clientName} {hideNames} {onToast} />
       </div>
     </ConfirmDialog>
   {/if}
