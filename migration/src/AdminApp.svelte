@@ -22,7 +22,7 @@
   import SessionBanner from './admin/SessionBanner.svelte';
   import { createKeepAlive } from './lib/common/session-keepalive.js';
   import NoAccess from './admin/NoAccess.svelte';
-  import { resolveAccess, signInStep } from './lib/access/resolve.js';
+  import { lostAccess, recheckDue, resolveAccess, signInStep, withoutGrants } from './lib/access/resolve.js';
   import { legacyAccess } from './lib/access/can.js';
   import { tabAllowed, tabsFor } from './lib/access/scope.js';
   import { writeGuard } from './lib/access/guard.js';
@@ -96,6 +96,7 @@
   async function checkAccess() {
     try {
       const found = await resolveAccess(dataService);
+      accessReadAt = Date.now();
       const step = signInStep(found);
       access = found;
       if (step.step === 'enter') {
@@ -117,6 +118,29 @@
     signIn = 'pin';
   }
   if (onSharePoint) void checkAccess();
+
+  // Turned off while the page is open (Prompt 21, Phase 6; lib/access/resolve.js): the access is read again when a tab is opened or the page is shown
+  // again, at most once every RECHECK_AFTER_MS, so a normal visit asks nothing more. A person who may no longer enter is stopped: every write is
+  // refused and No access says what happened. A changed role changes the menu. A read that fails leaves the page as it was (the next tab tries again).
+  let accessReadAt = Date.now();
+  async function recheckAccess() {
+    if (!admin || viaPin || !access?.person || !recheckDue(accessReadAt, Date.now())) return;
+    accessReadAt = Date.now();
+    try {
+      const next = await resolveAccess(dataService, { refresh: true });
+      const lost = lostAccess(next);
+      if (!lost) { guardWith(next); return; }
+      guardWith(withoutGrants(next));
+      admin = null;
+      printing = false;
+      liveDisplay = null;
+      wallPage = false;
+      noAccessReason = lost;
+      signIn = 'no-access';
+    } catch {
+      // (Not read: the page carries on with the access it had.)
+    }
+  }
 
   // The sign-in keep-alive (Prompt 19, lib/common/session-keepalive.ts), on SharePoint and while the admin is in: one light read after a long idle.
   $effect(() => {
@@ -257,6 +281,7 @@
    * the rows Clients has just read (`to.rows`), so that it reads nothing more.
    */
   async function open(tab: string, to: { view?: string; clientId?: string; rows?: ContentRows } = {}): Promise<boolean> {
+    void recheckAccess();
     const next = shownTabs.find((entry) => entry.id === tab)?.id;
     if (!next) return false;
     if (next !== activeTab && !(await mayLeave())) return false;
@@ -307,6 +332,7 @@
 </svelte:head>
 
 <svelte:window onhashchange={onHashChange} />
+<svelte:document onvisibilitychange={() => { if (document.visibilityState === 'visible') void recheckAccess(); }} />
 
 {#if !admin && signIn === 'no-access'}
   <NoAccess person={access?.person ?? null} reason={noAccessReason} support={supportWords} />

@@ -121,3 +121,19 @@ test.describe('the reads hold the places given', () => {
     expect(asked(fake, 'c-dominos') || asked(fake, 'dominos-2026'), 'no request named the other client or its session').toBe(false);
   });
 });
+
+test('a person turned off while the page is open (Prompt 21, Phase 6) is stopped at the next tab after five minutes, and told so', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-10-29T12:00:00Z') });
+  const fake = await site(me('raedla', 'Aedla, Rajeshwar'), 'Producer', 'client', { ClientId: 'c-kroger' });
+  await open(page, fake);
+  await expect(page.getByRole('heading', { name: 'Today', level: 2 })).toBeVisible();
+  (fake as unknown as { lists: Map<string, Record<string, unknown>[]> }).lists.get('users')![0].Status = 'Disabled';
+  await page.getByRole('tab', { name: 'Results' }).click();
+  await expect(page.getByRole('heading', { name: 'Results', level: 2 }), 'within five minutes the access is not read again').toBeVisible();
+  await page.clock.fastForward('05:01');
+  await page.getByRole('tab', { name: 'Today' }).click();
+  await expect(page.getByRole('heading', { name: 'Your access to Pursuit Managed Services was turned off' })).toBeVisible();
+  await expect(page.getByText('This happened while the page was open, so nothing more can be changed here.')).toBeVisible();
+  await expect(page.getByRole('tablist')).toHaveCount(0);
+  await axe(page, 'turned off while open');
+});
