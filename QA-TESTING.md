@@ -23,7 +23,9 @@
    Admin's view, a screen reader). Below item 221. Item 222 first: it decides whether Add user can search the directory.
 10. Items **229 to 236** (Prompt 21, Phase 3: the upgrade to version 6, a session's title on the real site, two sessions on one day and an id taken,
    the Producer starts, an Admin cannot, the Client team, Safari's date field, a screen reader). Below item 228. Item 229 first: the upgrade.
-11. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
+11. Items **237 to 245** (Prompt 21, Phase 4: the upgrade to version 7, each role's menu, a Producer's requests, View only, a live session that is not theirs,
+   a guest's group, the new words, a delete that names no client, a screen reader). Below item 236. Item 237 first: the upgrade.
+12. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
    160, 161, 164, 165, 166, 167, 168, 169, 170.
 
 **Decided, no change:** 162 (names stay "Last, First") and 163 (the wall page keeps the admin header), VJR, 16 Oct 2026.
@@ -1525,13 +1527,14 @@ adds. Use a test copy of the site first, after items 216 to 228.
     Then pick the 14:00 session: **expect** "One session can be live at a time. Going live with this one takes the place of Kroger, ..." under the
     button; press **Go live**, check in a second iPad and answer. **Expect** on Results two sessions, each with its own iPad and answers, and the first
     iPad's unscanned codes no longer working. The known limit: only one session is live at a time.
-233. **An Admin cannot start, a Producer cannot plan.** *(Still to see.)* As an Admin on Today: **expect** Go live off and "Only a Producer or a Super
-    admin starts a session. You can plan sessions on the client's page under Clients." As a Producer, on a date with nothing planned for the client:
+233. **An Admin cannot start, a Producer cannot plan.** *(Still to see.)* As an Admin: **expect** no Today in the menu (Phase 4: an Admin has no
+    Events module) and no Go live on the client's page; Today's words "Only a Producer or a Super admin starts a session. You can plan sessions on the
+    client's page under Clients." remain for a role that reaches Today without the right to start. As a Producer, on a date with nothing planned for the client:
     **expect** the blocker "No session is planned for <client> on <date>." and Go live off. The PIN's legacy admin still goes live as before.
 234. **The Client team.** *(Still to see.)* As an Admin on a client's page, **Add to team**: a Designer, searched by part of the name (only people
     under People are offered), for **Selected sessions** (one), with **May also edit activities**. **Expect** the row with the session and "may also edit
-    activities" and a line in `PMSAuditLog`. (What a Designer of one session may then change is Phase 4's: an activity belongs to its client, and the
-    write guard does not yet let a session's role edit it.)
+    activities" and a line in `PMSAuditLog`. (What a Designer of one session may then change is decided in Phase 4: an activity and a brand belong to
+    the client, so a role given one session only looks at them; item 240.)
     Press **Remove**: **expect** the confirmation to say what they lose, then the row gone and an audit line. Plan a session with **Use the client
     team** off: **expect** the team form to open on it.
 235. **Safari: the date, then Go live.** *(Still to see.)* On a Mac or an iPad in Safari, on Today type or pick a date, then press **Go live** at once.
@@ -1540,6 +1543,35 @@ adds. Use a test copy of the site first, after items 216 to 228.
     list read as a table with its column headers, the New session fields with their labels and problems, the team form's Where as a group of two
     choices, and the Remove confirmation announced with its title. *(Axe finds nothing in Chromium; how it is spoken is only for a person to hear.)*
     Then push the branch `pms-21-3`.
+237. **The upgrade to version 7.** *(Still to see.)* On a test copy at version 6: **Show the plan** names one new column, `PMSGuestList.GuestGroup`, and nothing
+    else; **Create** adds it; **Mark the site as ready** says "Raised the lists from version 6 to version 7." **Expect** the admin and participant pages of the
+    new build to open, an old build (version 6) to stop with `PMS-LST-012` until the old pages are replaced, and a guest list read before the upgrade to show
+    no group. The column is plain text, not indexed.
+238. **Each role's menu.** *(Still to see.)* On a site with the sample people (Satyadev Super admin, Mathur Admin, Aedla Producer on Kroger, Hussain Designer on
+    Kroger, Lepe Leadership on Kroger), sign in as each. **Expect** Super admin: Today, Clients, Content, Guests and QR, Results, People. Admin: Clients, People
+    (no Today: an Admin plans on the client's page and cannot start a session). Producer: Today, Content, Guests and QR, Results. Designer: Content. Leadership:
+    Results. The PIN screen's legacy admin: all but People, as before.
+239. **A Producer's requests.** *(Still to see.)* As the Kroger Producer on a site with two clients, with the browser's network tab open through Today,
+    Content, Guests and QR and Results: **expect** no request whose address or `$batch` parts name the other client's id or one of its sessions, and no
+    "AccessDenied" message anywhere. (This is the browser's mock in `role-scoping.spec.ts`; the real site's `$batch` is the thing to see.) Then, as a Producer
+    of one session only: **expect** Content to list the client and show its activities and brand to read, and Today, Guests and Results to name that session alone.
+240. **View only.** *(Still to see.)* As the Designer: Content opens on Activities with "View only", every button and field switched off, and Brand editable;
+    give them **May also edit activities** (Clients, Sessions and team) and reload: **expect** Activities editable. As the Producer, Brand shows "View only".
+    Give the Designer one session only: **expect** both views to read and neither to edit.
+241. **A live session that is not theirs.** *(Still to see.)* Go live with the other client, then, as the Kroger Producer, open Today and Guests and QR:
+    **expect** "A session you have not been given is live. You can see only your own clients and sessions here." on Today, and the same idea on Guests and QR;
+    nothing of the other client on screen, and Results unchanged.
+242. **A guest's group.** *(Still to see.)* On Guests and QR in guest mode: add a visitor with a group; paste three lines, one as `Jordan Lee | Finance` and one
+    copied from two spreadsheet columns (name, tab, group); fill **Group for lines with none** and paste a plain name. **Expect** each guest with their group
+    beside the status, **Show guests in** to narrow the list, and the group in `PMSGuestList.GuestGroup` on the real list. A guest with no group has none.
+243. **The new words.** *(Still to see.)* In the question editor the type is **Survey feedback**; in the CSV, the PDF and the PowerPoint exports the question
+    type column and the report's kind say "Survey feedback"; the stored type in `PMSActivityQuestions.QuestionType` is still `open-text-feedback`.
+244. **A delete names no client.** *(Still to see, and a known limit.)* On SharePoint a delete request carries no body, so the page's guard holds it to the
+    list, not the client (`DECISIONS.md`). As the Kroger Producer nothing on screen offers another client's activity, so there is nothing to press; the lists'
+    own permissions are Phase 7's. **Expect** to confirm only that no screen offers it.
+245. **A screen reader.** *(Still to see.)* With VoiceOver or NVDA on a view-only screen: **expect** "View only. Your role can look at ..." read as a status when
+    the view opens and the controls announced as unavailable. *(Axe finds nothing in Chromium; how it is spoken is only for a person to hear.)*
+    Then push the branch `pms-21-4`.
 
 ### Prompt 20 (the confidence check, Before and After): not verified on SharePoint Online or an iPad
 

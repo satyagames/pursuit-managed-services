@@ -119,16 +119,17 @@ test.describe('a client\'s page: sessions and team', () => {
 });
 
 test.describe('Today: the Admin plans, the Producer starts', () => {
-  test('an Admin cannot start a session: Go live is off, and says who can', async ({ page }) => {
+  // (Prompt 21, Phase 4: the menu is the role matrix's, and an Admin has no Events module, so Today is not theirs: they plan on the client's page.
+  // In Phase 3 this test opened Today as an Admin and found Go live off with the words "Only a Producer or a Super admin starts a session"; those words
+  // stay in Today for any role that reaches it without the right to start.)
+  test('an Admin cannot start a session: Today is not in their menu, and no Go live is on the client\'s page', async ({ page }) => {
     const fake = await site(me('pulmathur', 'Mathur, Pulkit'));
     planned(fake, `kroger-${DAY}-0900`, '09:00', 'Morning', 1);
     await open(page, fake);
-    await page.getByRole('tab', { name: 'Today' }).click();
-    await page.getByLabel('Client').selectOption({ label: 'Kroger' });
-    await page.getByLabel('Date').fill(DAY);
-    await page.getByLabel('Date').dispatchEvent('change');
-    await expect(page.getByRole('button', { name: 'Go live' })).toBeDisabled();
-    await expect(page.getByTestId('go-live-why')).toHaveText('Only a Producer or a Super admin starts a session. You can plan sessions on the client\'s page under Clients.');
+    await expect(page.getByRole('tab', { name: 'Today' })).toHaveCount(0);
+    await openKroger(page);
+    await expect(page.getByTestId('client-sessions')).toContainText('Morning');
+    await expect(page.getByRole('button', { name: 'Go live' })).toHaveCount(0);
   });
 
   test('a Producer picks one of the day\'s two sessions and starts it; the next is told plainly that one session is live at a time; with nothing planned, ask an Admin', async ({ page }) => {

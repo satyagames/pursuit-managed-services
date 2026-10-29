@@ -1556,6 +1556,50 @@ has met SharePoint Online**: QA-TESTING.md items 229 to 236. Boards 5 and 6 of t
 - **`core.js` is still at its 600 lines**: the two calls are a part of their own, `lib/data/planning.js` (section 14). The Sessions list is a
   `<table>` with a caption and column headers: the word was already under `migration/`, and the participant page's Tailwind rules are unchanged.
 
+## Rules from Prompt 21, Phase 4 (scoping Events, Content and Guests by role; keep them holding)
+
+Every module of the admin page shows only what the person's role and its assignments allow (boards 7, 8 and 10). One rule file, `lib/access/scope.js`, and
+one owner registry, `lib/access/owners.js`, both reading the role matrix; the data layer asks the page's guard before it reads.
+
+1. **The menu is the role matrix's.** `TAB_ACTIONS` names the actions that open each tab; a tab shows when the role may at least look at one of them
+   (`tabsFor`, `tabAllowed`). Producer: Today, Content, Guests and QR, Results. Designer: Content. Leadership: Results. Admin: Clients and People. Super
+   admin: all six. The PIN's legacy admin: all but People, as before the switch-over. An address for a tab the role does not open is not followed (the
+   first tab it does open is shown). An Admin has no Today: they plan on the client's page, and Today's words for someone who may not start remain for
+   any role that reaches it (this changed Phase 3's `client-sessions.spec.ts` test of an Admin on Today, whose assertion is now that the tab is absent).
+2. **View only is shown, not left out.** `contentModes(access, clientId)` gives each of Content's views 'edit', 'view' or 'none'. Editing needs the action
+   for the whole client (`can()` with the client); a role that holds a Content action on the client (or one of its sessions) otherwise sees both views to
+   read, wrapped in `admin/ViewOnly.svelte` (a notice and a disabled fieldset). DECIDED: the client owns its activities and its brand, so a Designer or
+   Producer given one session only looks at them; the extra (`content.edit`) lets a client's Designer edit the activities, never a session's.
+3. **A scoped role's requests name only the places it holds.** `reachOf(access)` gives the clients held whole, the sessions held one by one (with their
+   clients, shown to read) and the periods; `readQueries(reach, list)` builds the `readLists` queries (the same plain query for a global role, so the
+   requests it always sent are unchanged; `where` by id or `ClientId`, fifteen to an address, otherwise); `scopedReader(readLists, reach, readable)` does it for a
+   screen that asks for the plain lists (Today) and leaves out a read by id of a session it does not hold. A person with no place reads nothing.
+4. **The guard asks before it reads.** `guard.read(list, where)` throws `AccessDenied` for a scoped role that names no place or another's; `guard.learn`
+   is told every read's rows, so a session's client and date, an activity's client and a question's activity are known (an activity names its questions).
+   `readLists`, `listItems` and `queryItems` ask it first (`lib/data/read-scope.js`, which imports nothing); the participant page and Setup install no
+   guard and are asked nothing. A session read by id before its client is known is refused for a client-scoped role: the screens read the client's
+   sessions first (Guests and QR does so before it reads the live session).
+5. **A write is held to the real client.** `targetOf` takes the client from the body (a section, a session, a code, a guest), or from the owners
+   (a question's activity, an option's question, a session's start). An owner not known is `UNKNOWN_OWNER`, a client no assignment names, so a scoped role is
+   refused and a global role is not. A write with no body (a SharePoint delete) names nothing and is held to the list, as before: Phase 7 hardens the lists.
+   An allowed create tells the owners what it made, so what is made next under it is theirs at once.
+6. **Day one.** A client nobody was given to is covered only by a global role: nothing more is needed for Super admins and Admins to be the only people
+   who see it.
+7. **Buttons show for the actions a role has.** Results offers Live display (`results.live`), Delete session (`results.delete`), the exports
+   (`results.export`) and Remove or Restart a visit (`events.run`) only to those who have them, for that session.
+8. **A live session that is not theirs.** Today says "A session you have not been given is live" (the status 'elsewhere'), and Guests and QR says the same
+   in its own words; nothing of that session is read.
+9. **A guest's group (schema version 7).** `PMSGuestList.GuestGroup` is optional text, not indexed until a screen filters on it (Phase 5). A paste may
+   end a line with a bar or a tab and the group (`parseGuestList`); the form has a group, and `addGuests` takes `{ name, group }` as well as a name; a guest
+   with no group is written exactly as before. Guests and QR narrows its list by group. `PMSClients.Industry` and `Region` are left to Phase 5 (the first
+   screen that filters on them), so that the lists change when a reader needs them.
+10. **Survey feedback.** The question type once shown as "Open text feedback" and, in the exports, "Written answer" is "Survey feedback" on screen and in
+    the CSV, the PDF and the PowerPoint; the stored key `open-text-feedback` is unchanged.
+11. **Words that Tailwind reads.** `lib/access/scope.js` and the schema's descriptions are read for class names like every file under `migration/`: the
+    word "table" in a comment added a rule to the participant page (found by `npm run test:bundle`); say "matrix" or "list" instead.
+12. **Request baselines** were translated for version 7's one column by `scripts/schema-baseline/guestgroup-baselines.js` (every recorded suite on
+    `dda6eb2`'s tree and on today's, request by request; a fresh recording equal to the translation in all 13), never recorded again.
+
 ## Before finishing a change
 
 - Always: `npm run check:svelte` and `npm test` (the documents, the module map and the project map among it). If you added, moved or renamed a
@@ -1588,6 +1632,7 @@ has met SharePoint Online**: QA-TESTING.md items 229 to 236. Boards 5 and 6 of t
 - If you touched Setup's plan, Create, Mark the site as ready, Add an admin, the seed-file import or the fake's site building: run `npm run test:provision`,
   `npm run test:baseline`, `npm run test:namespace` and `npm run test:bundle`, then `setup-provision.spec.ts` and `setup.spec.ts` in all three engines, and see
   "Rules from Phase 10c-3".
+- If you touched who sees or reads what (`lib/access/scope.js`, `owners.js`, `guard.js`, `lib/data/read-scope.js`, a screen's reads or the buttons a role gets): run `node --test scripts/test-scope.js scripts/test-access.js`, `npm run test:baseline` (a global role's requests must not change) and `role-scoping.spec.ts` in Chromium and WebKit; every action must appear in the role matrix and every non-"no" cell must have its test.
 - If you touched a list or a column: change `migration/src/lib/schema/pms-schema.js` and `pms-schema-meta.js` together, run `npm run build:lists-reference`,
   `npm run test:schema`, `npm run test:baseline` and `npm run test:bundle` (the participant page carries `pms-schema.js`), and see "Rules from Phase 10c-2b".
 - If you touched the sample pictures, `lib/setup/sample-seed.js`, `lib/setup/sample-clients.js` or Setup's seed: run `npm run test:sample-pictures`, `npm run test:baseline`,

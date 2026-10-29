@@ -183,6 +183,25 @@ A client's page (Clients, **Sessions and team**) and Today's start ([RULES.md](R
    (`events.run`), then one read of the settings item to prove it. With nothing planned for the client that day, Go live is `activateClient()` as before.
    One session is live at a time: the settings item names one.
 
+## What a scoped role reads (Prompt 21, Phase 4)
+
+The admin page installs the write guard after sign-in (`lib/access/guard.js`); since Phase 4 the guard also checks reads and learns whose things are
+([RULES.md](RULES.md) has the rules):
+
+1. **Menu.** `tabsFor(access, tabs)` (the role matrix's) decides the tabs; the first one the role opens is the page it opens on.
+2. **Today.** `loadToday` and `pollToday` read through `readerOf(api, access)`: for a global role `api.readLists`, as always; for a scoped role
+   `scopedReader`, which turns the plain reads of clients, sessions and activities into `where` reads for the places held and does not send a read by id of
+   a session it has not found to be readable. A live session the person does not hold is status 'elsewhere'.
+3. **Content.** `AdminContent` sends `[appsettings, clients, sections]` for a global role (three plain reads in one `$batch`) and the same lists by `id` and
+   `ClientId` for a scoped one; each view is `edit`, `view` (read only, `ViewOnly`) or `none` for the picked client (`contentModes`).
+4. **Guests and QR.** A scoped role first reads its sessions (`readQueries`), which teaches the guard whose each is; the live session and its roster, codes,
+   visits and answers are then read by session. A live session that is not theirs throws `AccessDenied`, which the screen says in words.
+5. **Results.** `readBasics` lists the sessions and clients for a scoped role by `readQueries`, filters the sessions to the ones the role may see
+   (a period of Leadership by date), and reads the codes of those sessions fifteen to an address; a global role reads `listSessions`, `listClients`
+   and `listQrTokens` as always.
+6. **The guard.** Every `readLists`, `listItems` and `queryItems` asks `guard.read(list, where)` first (nothing is sent when it throws) and tells
+   `guard.learn(list, rows)` what came back. A global role is asked nothing.
+
 ## How often each open page looks
 
 | Page | Every | Notes |

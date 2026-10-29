@@ -12,7 +12,7 @@ registration, no certificate, no Graph, nothing from a CDN.
 
 ## The lists at a glance
 
-**Schema version 6** (Prompt 21, Phase 3 added `PMSClientSessions.StartTime`, `Sequence`, `Period` and `PlannedDate`, a session's title being the built-in
+**Schema version 7** (Prompt 21, Phase 4 added `PMSGuestList.GuestGroup`, an optional tag, not indexed until Phase 5 filters on it; Phase 3 added `PMSClientSessions.StartTime`, `Sequence`, `Period` and `PlannedDate`, a session's title being the built-in
 `Title`; Phase 1, version 5, added `PMSUsers`, `PMSRoleAssignments` and `PMSAuditLog`, and `PMSAppSettings.FiscalYearStartMonth` and
 `MinSample`; Prompt 20, version 4, added `PMSActivities.Kind` and `PMSClientSessions.ConfidenceCheck`; a site of version 3 or 4 is brought up by
 Setup's Show the plan, Create and Mark the site as ready, which adds what is missing and changes nothing else. A page on such a site stops with
@@ -233,12 +233,12 @@ expected after that time, and Reload is the answer. For a site owner or IT, the 
 4. **Upload** `index.html`, `admin.html`, `setup.html` and `pms-config.txt` to the folder, with those names, no sub-folder. Uploading over the old files
    replaces them; reload open tabs (Ctrl+F5).
 5. **Follow RUNBOOK.md**: on a new site every step; on PCOE (lists of version 3), its note, then Setup's Show the plan, Create and Mark the site as
-   ready for version 6 (Prompt 20's two columns, Prompt 21's three lists and two settings, its Phase 3's four session columns), check the build name
+   ready for version 7 (Prompt 20's two columns, Prompt 21's three lists and two settings, its Phase 3's four session columns, its Phase 4's guest group), check the build name
    on Setup, and then its step 16 (People and access: Make me a Super admin, and the copy of the PIN admins) and step 17 (sessions planned ahead).
 6. **Printed QR codes** carry the folder's address: moving the files means printing every code again.
 
-**Rolling back.** Keep the previous package. A package of schema version 5 stops with `PMS-LST-012` on lists Setup has raised to version 6
-(Prompt 21, Phase 3; the four session columns stay, unread), one of version 4 on lists of version 5 (Prompt 21), and one of version 3 on lists of version 4 or 5 (Prompt 20); before that, every package of schema version 3 (since `pms-da9fc8d`) worked with the same lists, so going back was
+**Rolling back.** Keep the previous package. A package of schema version 6 stops with `PMS-LST-012` on lists Setup has raised to version 7
+(Prompt 21, Phase 4; the guest group column stays, unread), one of version 5 on lists of version 6 (Phase 3; the four session columns stay, unread), one of version 4 on lists of version 5 (Prompt 21), and one of version 3 on lists of version 4 or 5 (Prompt 20); before that, every package of schema version 3 (since `pms-da9fc8d`) worked with the same lists, so going back was
 uploading the previous package's three pages over the new ones; nothing in the lists changes. A package of an older version would stop with
 `PMS-LST-012` on lists of version 3: do not go back past a version change. Answers saved meanwhile stay in the lists either way.
 
