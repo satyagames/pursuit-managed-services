@@ -59,7 +59,7 @@ describe('Summary by activity (CSV)', () => {
 
   it('written answers: the words that came up most, then every comment a row of its own in a last block, with nobody\'s name', () => {
     const rows = rowsOf(resultsExport.summaryCsvFile(vineResults(), VINE));
-    const words = rows.filter((row) => row['Question type'] === 'Written answer');
+    const words = rows.filter((row) => row['Question type'] === 'Survey feedback');
     assert.deepEqual(words.map((row) => [row.Option, row.Answers]), [['delivery', '3'], ['price', '3'], ['high', '2']]);
     assert.equal(words[0].Takeaway, '4 comments. The word that came up most is “delivery”, in 3 of them.');
     const comments = rows.filter((row) => row['Question type'] === 'Comment');

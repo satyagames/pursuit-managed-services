@@ -208,7 +208,7 @@ async function participantWalk(deviceKey, { full = true } = {}) {
   await page.waitForURL(/#\/agenda/);
   await page.getByRole('heading', { level: 1 }).waitFor();
   await shot(view, { flow, id: '02-hub', title: 'Activities hub, nothing done' });
-  const titles = ['Straight talk', 'Confidence continuum', 'Open feedback', 'MCQ', 'Guess the brand'];
+  const titles = ['Straight talk', 'Confidence continuum', 'Survey feedback', 'MCQ', 'Guess the brand'];
   for (const [index, title] of titles.entries()) {
     if (!full && index > 1) break;
     await page.getByRole('button', { name: new RegExp(`^${title}`) }).first().click();

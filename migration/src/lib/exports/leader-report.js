@@ -75,7 +75,7 @@ const REMOVED_OPTION = 'an answer option that was later removed';
 const UNREADABLE = 'An answer that can no longer be read (its question was deleted)';
 
 const KIND_LABEL = Object.freeze({
-  graded: 'One correct answer', choice: 'Poll, one answer', multi: 'Poll, any number of answers', scale: 'Confidence scale', ranking: 'Ranking', text: 'Written answer',
+  graded: 'One correct answer', choice: 'Poll, one answer', multi: 'Poll, any number of answers', scale: 'Confidence scale', ranking: 'Ranking', text: 'Survey feedback',
 });
 
 // ---- Small helpers ------------------------------------------------------------------------------------------------------------------

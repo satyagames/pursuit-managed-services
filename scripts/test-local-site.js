@@ -236,7 +236,7 @@ describe('VJR\'s dataset', () => {
     assert.equal(records.sections.length, 15);
     assert.equal(records.questions.length, 28);
     for (const client of records.clients) {
-      assert.deepEqual(records.sections.filter((section) => section.clientId === client.id).map((section) => section.title), ['Straight talk', 'Confidence continuum', 'Open feedback', 'MCQ', 'Guess the brand']);
+      assert.deepEqual(records.sections.filter((section) => section.clientId === client.id).map((section) => section.title), ['Straight talk', 'Confidence continuum', 'Survey feedback', 'MCQ', 'Guess the brand']);
     }
     const label = (id) => records.options.find((option) => option.id === id).label;
     assert.equal(label('o-kroger-mcq-2-c'), `84.51${String.fromCharCode(0xB0)}`);

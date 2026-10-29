@@ -33,7 +33,7 @@ export const liveSections = (results) => results.sections.filter((section) => se
 /** A question's type in words, as a spreadsheet's reader would name it. */
 const TYPE_WORDS = Object.freeze({
   'single-select': 'Single choice', 'multi-select': 'Multiple choice', 'true-false': 'True or false',
-  'confidence-continuum': 'Confidence scale', 'ranked-voting': 'Ranking', 'open-text-feedback': 'Written answer',
+  'confidence-continuum': 'Confidence scale', 'ranked-voting': 'Ranking', 'open-text-feedback': 'Survey feedback',
 });
 
 /**

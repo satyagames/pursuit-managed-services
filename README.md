@@ -38,7 +38,7 @@ folder and keeps everything in SharePoint lists: there is no server, nothing to 
 | True or false (`true-false`) | picks one | graded when one is marked correct | one split bar |
 | Confidence scale (`confidence-continuum`) | picks a place on a scale | the place's value | a column per step, the average as a line, three bands |
 | Ranking (`ranked-voting`) | orders every answer | support score 0 to 100 (100 = everyone ranked it first) | bars of support, with places |
-| Written answer (`open-text-feedback`) | writes up to 1,000 characters | not graded | the words that came up most, and the comments |
+| Survey feedback (`open-text-feedback`) | writes up to 1,000 characters | not graded | the words that came up most, and the comments |
 
 Every number on a chart is worked out in one place, so the screen, the wall, the PDF, the PowerPoint and the CSV agree. Scores use each person's
 **first** answer only.
