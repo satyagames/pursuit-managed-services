@@ -793,6 +793,24 @@ export function indexOracle(fixture) {
   // "Not confident" is 5 x score <= 2 x top, "confident" 5 x score >= 4 x top (as checkOracle above).
   const started = pairs.filter((pair) => 5 * pair.before <= 2 * pair.top);
   truth.moved = started.length ? (started.filter((pair) => 5 * pair.after >= 4 * pair.top).length * 100) / started.length : null;
+  // Prompt 22: each client's and each session's shift and moved, guest by guest, in whole numbers: every move counted in sixtieths of a percent point
+  // (60 is a multiple of every scale of 3 to 6), divided once at the end.
+  const pairsOf = (group) => group.flatMap((session) => session.pairs.map(([before, after]) => ({ before, after, top: session.top })));
+  const shiftIn = (group) => {
+    const all = pairsOf(group);
+    return all.length ? sum(all.map((pair) => (pair.after - pair.before) * 100 * (60 / pair.top))) / (60 * all.length) : null;
+  };
+  const movedIn = (group) => {
+    const low = pairsOf(group).filter((pair) => 5 * pair.before <= 2 * pair.top);
+    return low.length ? (low.filter((pair) => 5 * pair.after >= 4 * pair.top).length * 100) / low.length : null;
+  };
+  truth.clientShift = {}; truth.clientMoved = {}; truth.sessionShift = {}; truth.sessionMoved = {};
+  for (const client of fixture.clients) {
+    const mine = now.filter((session) => session.clientId === client);
+    truth.clientShift[client] = shiftIn(mine);
+    truth.clientMoved[client] = movedIn(mine);
+    for (const session of mine) { truth.sessionShift[session.id] = shiftIn([session]); truth.sessionMoved[session.id] = movedIn([session]); }
+  }
   return truth;
 }
 
@@ -826,6 +844,13 @@ export function compareIndexes(fixture, truth, app) {
       seen(`${client}'s priority index of "${label}"`, truth.priority[`${client}/${label}`], math.priorityIndex(label, mine, now));
     }
     for (const kind of ['prior-quarter', 'last-year']) seen(`${client} against ${kind}`, truth.baselines[`${client}/${kind}`], math.clientIndex(mine, math.baselineOf(summaries, { kind, periods: [fixture.period] })));
+    // (Prompt 22: what the dashboard shows beside each client's bar and in each session's row, from the same two calls.)
+    seen(`${client}'s shift`, truth.clientShift[client], math.shiftOf(mine).percent);
+    seen(`${client}'s moved to confident`, truth.clientMoved[client], math.movedOf(mine).percent);
+    for (const each of mine) {
+      seen(`${each.id}'s shift`, truth.sessionShift[each.id], math.shiftOf([each]).percent);
+      seen(`${each.id}'s moved to confident`, truth.sessionMoved[each.id], math.movedOf([each]).percent);
+    }
   }
   seen('the pooled shift', truth.shift, math.shiftOf(now).percent);
   seen('moved to confident', truth.moved, math.movedOf(now).percent);
