@@ -35,8 +35,8 @@ export function defaultFilters({ period, today = new Date().toISOString().slice(
   const quarter = period || periodOf(today, startMonth);
   const [year, q] = quarter.split('-');
   return {
-    period: quarter, year, span: q ? q.toLowerCase() : 'fy', month: today.slice(0, 7), from: '', to: '', compare: 'all', compareClient: '', clientIds: [], industry: '',
-    facilitator: '', kind: '', group: '', minSample: null, hideNames: HIDE_NAMES_BY_DEFAULT,
+    period: quarter, year, span: q ? q.toLowerCase() : 'fy', month: today.slice(0, 7), from: '', to: '', compare: 'all', compareClient: '', clientIds: /** @type {string[]} */ ([]), industry: '',
+    facilitator: '', kind: '', group: '', minSample: /** @type {number | null} */ (null), hideNames: HIDE_NAMES_BY_DEFAULT,
   };
 }
 

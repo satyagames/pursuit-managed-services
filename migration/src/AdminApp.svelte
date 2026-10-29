@@ -14,7 +14,7 @@
   import AdminClients from './admin/AdminClients.svelte';
   import AdminContent from './admin/AdminContent.svelte';
   import AdminGuests from './admin/AdminGuests.svelte';
-  import AdminResults from './admin/AdminResults.svelte';
+  import ResultsTab from './admin/ResultsTab.svelte';
   import AdminToday from './admin/AdminToday.svelte';
   import AdminPeople from './admin/AdminPeople.svelte';
   import LiveDisplay from './admin/LiveDisplay.svelte';
@@ -370,7 +370,7 @@
             <LiveDisplay sessionId={liveDisplay} {wallPage} onToast={showToast} onOpen={(sessionId) => void openLiveDisplay(sessionId)} onBack={closeLiveDisplay} />
           {/key}
         {:else}
-          <AdminResults {access} onToast={showToast} onLiveDisplay={(sessionId) => void openLiveDisplay(sessionId)} />
+          <ResultsTab {access} onToast={showToast} onLiveDisplay={(sessionId) => void openLiveDisplay(sessionId)} />
         {/if}
       {/if}
     </div>

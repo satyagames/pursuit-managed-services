@@ -64,6 +64,9 @@ test.describe('the menu is the role matrix\'s', () => {
   test('Leadership: Results only, with no Live display, no Delete session and no restart of a visit', async ({ page }) => {
     await open(page, await site(me('ablepe', 'Lepe, Annabell'), 'Leadership', 'client', { ClientId: 'c-kroger' }));
     expect(await tabs(page)).toEqual(['Results']);
+    // (Prompt 21, Phase 5: Leadership opens Results on the dashboard; the sessions' cards are its Sessions view.)
+    await expect(page.getByRole('heading', { name: 'Leadership dashboard', level: 2 })).toBeVisible();
+    await page.getByRole('button', { name: 'Sessions', exact: true }).click();
     const cards = page.locator('article[data-session]');
     await expect(cards).toHaveCount(1);
     await expect(cards.first()).toHaveAttribute('data-session', 'kroger-2026-11-04-0900');

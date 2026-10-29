@@ -18,6 +18,7 @@
   import TodaySessions from './TodaySessions.svelte';
   import TodayShare from './TodayShare.svelte';
   import TodayStatus from './TodayStatus.svelte';
+  import { writeSummary } from '../lib/admin/session-summaries.js';
 
   type Client = { id: string; name: string; status?: string; logoUrl?: string | null; theme?: { assets?: { logo?: string | null; hero?: string | null } } | null };
   type Session = { id: string; clientId: string; date?: string; status?: string; participationMode?: string; activityFlow?: string; confidenceCheck?: boolean | null };
@@ -393,6 +394,10 @@
       status = liveStatus({ settings, session: { ...session, ...ended, status: 'completed' }, clients } as never);
       verified = '';
       onToast('Session ended', 'success');
+      // (Prompt 21, Phase 5) its summary for the Leadership dashboard, from its answers as they are now: one more read of the session and one write. A
+      // failure ends nothing: the session has ended, and Rebuild on the dashboard writes the summary later.
+      void writeSummary(session.id, { writtenBy: access?.person?.name ?? '', startMonth: (settings as { fiscalYearStartMonth?: number } | null)?.fiscalYearStartMonth ?? undefined })
+        .catch(() => { if (alive) onToast('The session ended, but its summary for the dashboard could not be written. Rebuild it from Results.', 'error'); });
     } catch (cause) {
       if (alive) { problem = failed(cause, 'Could not end the session.'); onToast(problem, 'error'); }
     } finally {

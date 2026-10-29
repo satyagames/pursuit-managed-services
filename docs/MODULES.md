@@ -17,6 +17,7 @@ flowchart LR
   admin --> brand
   admin --> common
   admin --> data
+  admin --> exports
   admin --> participant
   admin --> results
   brand --> common
@@ -38,6 +39,7 @@ flowchart LR
   participant --> motion
   results --> admin
   results --> data
+  results --> exports
   results --> participant
   results --> schema
   settings --> common
@@ -61,15 +63,15 @@ flowchart LR
 | `migration/src/components/` | The participant page's building blocks (Svelte): the shell, pills, buttons, the hero plate, tiles, the progress bar, the sound switch. | 16 |
 | `migration/src/dev/` | The styleguide, `#/styleguide` on the dev server only (absent from builds). | 1 |
 | `migration/src/lib/access/` | Roles and access (Prompt 21): the role matrix (board 10), the one check can(), AccessDenied, the data layer's write guard, who is signed in, grants and their guards, the audit writer, the copy of the old admins list. | 15 |
-| `migration/src/lib/admin/` | The admin page's rules and data: Today, Clients, Content, Guests and QR, Results, the Live display's session, the PIN check. | 21 |
+| `migration/src/lib/admin/` | The admin page's rules and data: Today, Clients, Content, Guests and QR, Results, the Live display's session, the PIN check. | 22 |
 | `migration/src/lib/brand/` | A client's look: deriving a readable theme from a colour, the stored theme, Brand Studio's rules, picture slots, cropping, compressing and naming. | 18 |
 | `migration/src/lib/common/` | Shared by the pages: the product name, the heading focus rule, kiosk lock-down, the polling schedule and its one timer, the admin page's address. | 8 |
-| `migration/src/lib/data/` | The data layer: dataService.js, the door every page imports, over its parts (core.js holds the state and alone talks to SharePoint REST or, on the local server, its JSON API), and grouping of long id lists into short reads. Every page carries it. | 24 |
+| `migration/src/lib/data/` | The data layer: dataService.js, the door every page imports, over its parts (core.js holds the state and alone talks to SharePoint REST or, on the local server, its JSON API), and grouping of long id lists into short reads. Every page carries it. | 25 |
 | `migration/src/lib/effects/` | Sounds and confetti, behind one door (`effects.ts`): which moment makes which effect, the cues as data, Web Audio, canvas-confetti. | 6 |
 | `migration/src/lib/exports/` | The files a leader gets: the leader report (data, counting, layout, PDF writer, fonts) and the Live display's summary pack (PDF, PowerPoint) and summary CSV. | 7 |
 | `migration/src/lib/motion/` | The participant screens' motion, behind one door (`motion.ts`): the plan by kind of question and part of a screen, the tokens and shapes (CSS), the level and the governor. | 2 |
 | `migration/src/lib/participant/` | The participant page: the boot sequence, the visit, the activities held for the page's life, the pager's rules, saving answers, screen moves. | 14 |
-| `migration/src/lib/results/` | Results counted and shown: the tally, the chart model (every number a chart shows), the palette, the figure on paper, names, the takeaways, where a tooltip goes. | 14 |
+| `migration/src/lib/results/` | Results counted and shown: the tally, the chart model (every number a chart shows), the palette, the figure on paper, names, the takeaways, where a tooltip goes. | 16 |
 | `migration/src/lib/schema/` | The lists and columns: `pms-schema.js`, the names every page carries, and `pms-schema-meta.js`, everything else about them (Setup, the tests and the generators only). | 2 |
 | `migration/src/lib/settings/` | How a page starts: the browser check, where its settings come from (`pms-config.txt`, the build, its address), which site and lists are its own, and the stop screen. | 8 |
 | `migration/src/lib/setup/` | The Setup page's own modules: the plan and Create, Mark the site as ready, the admins, the seed-file import, the sample clients and their pictures, the self-test's probes. | 10 |
@@ -77,11 +79,11 @@ flowchart LR
 | `migration/src/routes/` | The participant page's screens: Welcome, the Activities hub, the quiz route, the finale, "not live", the preview, and the old addresses that redirect. | 10 |
 | `migration/src/setup/` | Setup's pieces (Svelte): the copy panel, where the lists are, the plan view, and the sample pictures as data. | 5 |
 | `migration/src/unsupported/` | The "needs a recent browser" notice: a page and an ES5 check, put into each HTML shell at build time. | 1 |
-| `scripts/` | Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager. | 140 |
+| `scripts/` | Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager. | 141 |
 | `scripts/local-site/` | The local PCOE stand-in (`npm run local:site`), its scenarios and VJR's dummy dataset, the screenshot harness and the measurements. | 11 |
 | `scripts/migration-tests/` | The Playwright specs of `npm run test:migration`, and their harnesses (`admin-local.ts`, `polling-support.ts`, `fixtures.ts`). | 77 |
 | `scripts/rehearsal-tests/` | The rehearsal of RUNBOOK.md on the mock with a package's own pages (`npm run test:rehearsal`). | 1 |
-| `scripts/schema-baseline/` | The schema as it was before Phase 10c-2b, and the scripts that translated the request baselines (each baseline names the one that touched it). | 9 |
+| `scripts/schema-baseline/` | The schema as it was before Phase 10c-2b, and the scripts that translated the request baselines (each baseline names the one that touched it). | 10 |
 | `scripts/styleguide-tests/` | The styleguide's audit (`npm run test:styleguide`). | 1 |
 | `server/` | The local stand-in for SharePoint: an Express API over JSON files (`server/data/`, committed seed data), with ETag concurrency and picture uploads. Development and tests only. | 3 |
 
@@ -91,7 +93,7 @@ Roles and access (Prompt 21): the role matrix (board 10), the one check can(), A
 
 - **Imports from:** nothing of the app
 - **Imported by:** `lib/admin`, `src`, `src/admin`, `src/setup`
-- **Node suites that import it:** `test-access.js`, `test-scope.js`, `test-sessions-plan.js`, `test-users.js`
+- **Node suites that import it:** `test-access.js`, `test-leader-dashboard.js`, `test-scope.js`, `test-sessions-plan.js`, `test-users.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
@@ -115,9 +117,9 @@ Roles and access (Prompt 21): the role matrix (board 10), the one check can(), A
 
 The admin page's rules and data: Today, Clients, Content, Guests and QR, Results, the Live display's session, the PIN check.
 
-- **Imports from:** `lib/access`, `lib/brand`, `lib/common`, `lib/data`, `lib/participant`, `lib/results`
+- **Imports from:** `lib/access`, `lib/brand`, `lib/common`, `lib/data`, `lib/exports`, `lib/participant`, `lib/results`
 - **Imported by:** `lib/exports`, `lib/results`, `lib/setup`, `src`, `src/admin`
-- **Node suites that import it:** `test-admin-content-views.js`, `test-admin-content.js`, `test-admin-results.js`, `test-admin-today.js`, `test-brand-studio-view.js`, `test-column-names.js`, `test-confidence-check.js`, `test-duplicates.js`, `test-guest-group.js`, `test-live-display.js`, `test-live-view.js`, `test-local-site.js`, `test-motion-switch.js`, `test-named-reads.js`, `test-participant-names.js`, `test-results-chart-model.js`, `test-results-wall.js`, `test-review-9a.js`, `test-review-9b.js`, `test-sample-pictures.js`, `test-schema-upgrade.js`, `test-scope.js`, `test-session-delete.js`, `test-session.js`, `test-sessions-plan.js`, `test-setup-admins.js`, `test-sharepoint.js`, `test-text-limits.js`, `test-today-view.js`, `test-ux-12.js`
+- **Node suites that import it:** `test-admin-content-views.js`, `test-admin-content.js`, `test-admin-results.js`, `test-admin-today.js`, `test-brand-studio-view.js`, `test-column-names.js`, `test-confidence-check.js`, `test-duplicates.js`, `test-guest-group.js`, `test-leader-dashboard.js`, `test-live-display.js`, `test-live-view.js`, `test-local-site.js`, `test-motion-switch.js`, `test-named-reads.js`, `test-participant-names.js`, `test-results-chart-model.js`, `test-results-wall.js`, `test-review-9a.js`, `test-review-9b.js`, `test-sample-pictures.js`, `test-schema-upgrade.js`, `test-scope.js`, `test-session-delete.js`, `test-session.js`, `test-sessions-plan.js`, `test-setup-admins.js`, `test-sharepoint.js`, `test-text-limits.js`, `test-today-view.js`, `test-ux-12.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
@@ -139,6 +141,7 @@ The admin page's rules and data: Today, Clients, Content, Guests and QR, Results
 | `session-delete.js` | "Delete session..." on Admin → Results (Phase 16): what deleting a session's data removes, in which order, what it refuses, and the words the screen, the tests and the documents use. | `SESSION_OWNED`, `KEPT`, `DELETE_SESSION`, `countsText`, `deleteSessionWarning`, `changedText`, `progressText`, `stoppedText`, `refusedText`, `deletedText`, `cardCounts`, `planSessionDelete`, `deleteSessionData` |
 | `session-notice.js` | What the admin page and Setup say about a refused SharePoint request (Prompt 19). | `permissionText`, `errorText`, `sessionBanner` |
 | `session-plan.js` | What the client's page decides about its sessions (Prompt 21, Phase 3; wireframe board 5): the period of a date from the fiscal-year start month, a planned session's id, the New session form's rules and what it plans, the day's sessions in order ("1 of 2 today"), the words Planned, Live and Ended for the existing Status values, and the one-live-session limit in plain words. | `DEFAULT_FISCAL_START`, `periodOf`, `periodLabel`, `plannedSessionId`, `daySessionsOf`, `daySessionPick`, `sequenceWords`, `stageOf`, `ONE_LIVE_LIMIT`, `oneLiveWords`, `planProblems`, `planSessionFor`, `sessionRows`, `sessionChoiceWords` |
+| `session-summaries.js` | The sessions' summaries on the admin page (Prompt 21, Phase 5): which a person may read (placesOf: every one for a role on every client, else those of the clients, sessions and fiscal quarters they hold), the Leadership dashboard's read (the summaries and the clients' names and tags, side by side: never an answer), and a summary written (when a session ends, and by the dashboard's Rebuild for older sessions). | `placesOf`, `readSummaries`, `readDashboard`, `writeSummary`, `rebuildSummaries` |
 | `sha256.js` | SHA-256 for the mock PIN check. crypto.subtle only exists in secure contexts (HTTPS or localhost), and the admin iPad reaches this dev server over plain http://<lan-ip>:3000, so a small pure-JS fallback is needed there. | `sha256Hex` |
 | `today-view.js` | What the admin's Today screen works out for itself before it draws: the words of its status ("Live since"), of its Go live button and of the reason it is off, of its readiness line, which clients it offers, the order of the other sessions, and how a changed session joins the list. | `sinceText`, `levelCounts`, `readinessSummary`, `goLiveWhy`, `goLiveLabel`, `pickableClients`, `otherSessionsOf`, `upsertSession`, `failureText` |
 | `unsaved.ts` | "You have unsaved changes": a screen that holds some (Brand Studio, a question being edited) registers a guard here, and the shell asks before it switches tab or locks the page; Content asks before it changes client. | `setLeaveGuard`, `hasUnsaved`, `mayLeave`, `provideReveal`, `revealer` |
@@ -197,7 +200,7 @@ The data layer: dataService.js, the door every page imports, over its parts (cor
 
 - **Imports from:** `lib/participant`, `lib/schema`
 - **Imported by:** `lib/admin`, `lib/brand`, `lib/common`, `lib/exports`, `lib/participant`, `lib/results`, `lib/settings`, `lib/setup`, `src`, `src/admin`, `src/pager`, `src/routes`, `src/setup`
-- **Node suites that import it:** `test-admin-content.js`, `test-admin-today.js`, `test-brand-storage.js`, `test-column-names.js`, `test-confidence-check.js`, `test-data-surface.js`, `test-deploy-settings.js`, `test-duplicates.js`, `test-leader-report-pdf.js`, `test-live-display.js`, `test-local-site.js`, `test-motion-switch.js`, `test-named-reads.js`, `test-participant-names.js`, `test-participant-storage.js`, `test-participant-waits.js`, `test-review-9a.js`, `test-schema-upgrade.js`, `test-seeds.js`, `test-session-delete.js`, `test-session.js`, `test-sessions.js`, `test-setup-admins.js`, `test-sharepoint.js`
+- **Node suites that import it:** `test-admin-content.js`, `test-admin-today.js`, `test-brand-storage.js`, `test-column-names.js`, `test-confidence-check.js`, `test-data-surface.js`, `test-deploy-settings.js`, `test-duplicates.js`, `test-leader-dashboard.js`, `test-leader-report-pdf.js`, `test-live-display.js`, `test-local-site.js`, `test-motion-switch.js`, `test-named-reads.js`, `test-participant-names.js`, `test-participant-storage.js`, `test-participant-waits.js`, `test-review-9a.js`, `test-schema-upgrade.js`, `test-seeds.js`, `test-session-delete.js`, `test-session.js`, `test-sessions.js`, `test-setup-admins.js`, `test-sharepoint.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
@@ -222,6 +225,7 @@ The data layer: dataService.js, the door every page imports, over its parts (cor
 | `self-test.js` | The Setup page's own calls on a real site (dataService.js section 3; Phase 17 cut them out unchanged): a read-only probe, one REST request for lib/setup/provision.js, and the participant self-test, which makes a throwaway answers item, checks the writes and the $batch the participant page relies on, and deletes everything it made. | `probeSharePointRead`, `sendToSharePoint`, `runParticipantSelfTest` |
 | `session-calls.js` | The calls a page makes about its SharePoint sign-in (Prompt 19): it gives the data layer its renewer (Step B of the ladder: the entries hand it lib/common/session-renewer.ts's hidden frame), listens for a sign-in lost and back (the admin's banner), reads the evidence of the last refusals (the banner's Details, Setup's self-test), and makes the keep-alive's one light read. | `setSessionRenewer`, `onSessionChange`, `sessionEvidence`, `lastAnswerAt`, `checkSession` |
 | `session.js` | What a refused SharePoint request means, and the rules of recovering from it (Prompt 19). | `SESSION_LIMITS`, `REFUSALS`, `refusalWords`, `classifyRefusal`, `newSessionState`, `refusalEvidence`, `evidenceLine`, `recoverSession`, `ladderVerdict`, `SESSION_LOST_WORDS`, `sessionLost`, `noteAnswer` |
+| `summaries.js` | Section 15 (Prompt 21, Phase 5): the sessions' summaries, PMSSessionSummary, one item for each session keyed by its id. saveSessionSummary() writes one (when a session ends, and by the dashboard's Rebuild), making it the first time and writing it again after: a summary is the session's totals as they are now, never added up. readSessionSummaries() is the Leadership dashboard's one read: every summary for a role that holds every client, else those of the clients, sessions or fiscal periods it holds, fifteen to an address (the read check of core.js holds a scoped role to them). | `saveSessionSummary`, `readSessionSummaries` |
 | `today-clients.js` | The admin's Today and Clients screens (dataService.js section 5; Phase 17 cut it out unchanged): several list reads in one request (readLists, which the content and guest parts use too) and making a session the live one (activateSession). | `readLists`, `activateSession` |
 | `today.js` | Today's client (dataService.js section 3; Phase 17 cut it out unchanged): making a client today's (activateClient), what the participant page shows for it (getLiveExperience), an activity's questions, and the stamps of a visit (recordParticipantVisit, noteTrackResumed). | `slugify`, `listClientSections`, `sessionIdFor`, `activateClient`, `getLiveExperience`, `getSessionActivities`, `getClientActivities`, `recordParticipantVisit`, `getSectionQuestions`, `noteTrackResumed`, `inOrder`, `liveExperienceOf` |
 | `watch.js` | What a page that stays open reads on a timer (dataService.js section 8; Phase 17 cut it out unchanged): the participant page's one look (readParticipantWatch) and the Live display's feed (readLiveFeed), each one request where the site can batch, saying what it cost. | `readParticipantWatch`, `readLiveFeed` |
@@ -248,7 +252,7 @@ Sounds and confetti, behind one door (`effects.ts`): which moment makes which ef
 The files a leader gets: the leader report (data, counting, layout, PDF writer, fonts) and the Live display's summary pack (PDF, PowerPoint) and summary CSV.
 
 - **Imports from:** `lib/admin`, `lib/brand`, `lib/data`, `lib/participant`, `lib/results`, `src/assets/report-fonts`
-- **Imported by:** `src/admin`
+- **Imported by:** `lib/admin`, `lib/results`, `src/admin`
 - **Node suites that import it:** `test-column-names.js`, `test-confidence-check.js`, `test-export-summary.js`, `test-leader-report-charts.js`, `test-leader-report-glance.js`, `test-leader-report-pdf.js`, `test-live-display.js`, `test-participant-names.js`, `test-results-csv.js`, `test-results-export.js`, `test-results-pack.js`, `test-review-9a.js`, `test-review-9b.js`, `test-session-summary.js`, `test-sessions.js`
 
 | Module | What it is (its header) | Exports |
@@ -303,15 +307,17 @@ The participant page: the boot sequence, the visit, the activities held for the 
 
 Results counted and shown: the tally, the chart model (every number a chart shows), the palette, the figure on paper, names, the takeaways, where a tooltip goes.
 
-- **Imports from:** `lib/admin`, `lib/data`, `lib/participant`, `lib/schema`
+- **Imports from:** `lib/admin`, `lib/data`, `lib/exports`, `lib/participant`, `lib/schema`
 - **Imported by:** `lib/admin`, `lib/exports`, `src/admin`, `src/admin/charts`
-- **Node suites that import it:** `test-column-names.js`, `test-confidence-check.js`, `test-export-summary.js`, `test-index-math.js`, `test-leader-report-charts.js`, `test-live-display.js`, `test-live-view.js`, `test-named-reads.js`, `test-participant-names.js`, `test-participant-storage.js`, `test-polling.js`, `test-present-fit.js`, `test-results-chart-fit.js`, `test-results-chart-model.js`, `test-results-csv.js`, `test-results-export.js`, `test-results-pack.js`, `test-review-9b.js`, `test-schema-upgrade.js`, `test-session-summary.js`, `test-sessions.js`, `test-ux-12.js`
+- **Node suites that import it:** `test-column-names.js`, `test-confidence-check.js`, `test-export-summary.js`, `test-index-math.js`, `test-leader-dashboard.js`, `test-leader-report-charts.js`, `test-live-display.js`, `test-live-view.js`, `test-named-reads.js`, `test-participant-names.js`, `test-participant-storage.js`, `test-polling.js`, `test-present-fit.js`, `test-results-chart-fit.js`, `test-results-chart-model.js`, `test-results-csv.js`, `test-results-export.js`, `test-results-pack.js`, `test-review-9b.js`, `test-schema-upgrade.js`, `test-session-summary.js`, `test-sessions.js`, `test-ux-12.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
 | `confidence-shift.js` | The confidence check's arithmetic (Phase 20): the one place its numbers are worked out. | 17 exports |
+| `dashboard-model.js` | The Leadership dashboard's figures (Prompt 21, Phase 5; wireframe board 9): from the summaries a person may read and the clients, under the filters, the headline sentence, the six tiles, the index by client against 100 with each client's sessions, the trend by quarter, the priority index, the confidence steps Before and After, the Survey feedback themes and comments, and the report's CSV. | `SPANS`, `KIND_WORDS`, `defaultFilters`, `windowOf`, `dashboardOf`, `filterOptions`, `reportCsv` |
 | `export-summary.js` | What every Results export opens with (Phase 13): for each activity one sentence, its takeaway, and the numbers behind it; for a session the answers and questions in all. | `scoreboardOf`, `summarizeActivity`, `summarizeSession` |
 | `index-math.js` | The Leadership dashboard's arithmetic (Prompt 21, Phase 5; wireframe boards 9 and 12): the one place an index, a baseline, a change or a pooled shift is worked out. | 17 exports |
+| `metric-words.js` | The words of every figure on the Leadership dashboard (Prompt 21, Phase 5; wireframe boards 9 and 12): its name, the formula, what it means and an example, written once here and shown by the dashboard's i button on each figure (hover or focus) and by board 12's glossary. | `HIDE_NAMES_BY_DEFAULT`, `METRICS`, `metricWords` |
 | `participant-names.js` | The one rule that names a participant. | `ownerOf`, `nameParticipants` |
 | `present-fit.js` | The full screen's type, a step at a time (Phase 11a-3; until then these lines were inside LiveDisplay.svelte). | `SMALLEST`, `scaleOf`, `nextFit` |
 | `results-chart-figure.js` | A Results chart on paper (Phase 11b): what the screen's charts (admin/charts/) draw, as rectangles, lines, ticks and single lines of text in millimetres, from the chart model (lib/results/results-chart-model.js chartOf) and the palette (lib/results/results-palette.js). | `valueOf`, `barRows`, `chartFigure`, `MULTI_CAPTION` |
