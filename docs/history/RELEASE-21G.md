@@ -60,22 +60,29 @@ the full browser run (`npm run test:migration`) ran as well.
 | Gate | Before (`576e8b6`) | After |
 |---|---|---|
 | `npm run check:svelte` | 0 errors, 0 warnings (455 files) | 0 errors, 0 warnings (458 files) |
-| `npm test` | 1,865 of 1,865 | AFTER_TEST |
+| `npm test` | 1,865 of 1,865 | 1,884 of 1,884 |
 | `npm run test:bundle` (in `npm test`) | 51 of 51 | 52 of 52 |
 | `npm run test:baseline` | 38 of 38 | 38 of 38 (no baseline moved) |
 | `npm run test:report`, `test:report:mutations`, `test:charts`, `test:local-site` | 158; 64 of 64; 57; 26 | 158; 64 of 64; 57; 26 |
 | `npm run oracle -- --seeds 500` | 0 differences | 0 differences (5,620 participants, 9,865 guests, 4,447 session summaries) |
-| `npm run test:migration` (Chromium, WebKit; Firefox does not start here) | Phase 6 ran the specs it touched | AFTER_MIGRATION |
-| `npm run test:a11y` | 145 of 149 (Phase 6) | AFTER_A11Y |
+| `npm run test:migration` (Chromium, WebKit; Firefox does not start here) | Phase 6 ran the specs it touched | 956 passed, 545 failed, 23 skipped, 17 did not run (52.8 min). 484 of the failures are Firefox, which does not start here. Of the 61 in Chromium and WebKit, every one is older than this phase (below); the one that was this phase's to look at, `users.spec.ts`'s "Add user, by keyboard alone" in WebKit, was a race of the test since Phase 2 and is fixed (48 of 48 with four workers) |
+| `npm run test:a11y` | 145 of 149 (Phase 6) | 157 passed, 74 failed (69 Firefox; in Chromium and WebKit the four known faults below and the WebKit race above, since fixed), 3 skipped |
 
-AFTER_FAULTS
+**The Chromium and WebKit failures of the full run, all older than this phase.** These specs were run on `576e8b6`'s tree (a `git archive` sharing
+`node_modules`): `setup.spec.ts` (three tests: Setup sends two or three requests where "nothing" is expected, Chromium and WebKit), `setup-deployment.spec.ts`
+(two), `flow.spec.ts`'s header in WebKit, `brand-studio.spec.ts`'s answer tile in Chromium and `reflow.spec.ts` fail there in the same words. The rest are
+on the known list: `contrast.spec.ts` (the Live display's focus ring, 1.64:1), `reflow.spec.ts` (Content's chip at 200% text), `keyboard.spec.ts` in WebKit
+(Today's "Open participant view"), `devices.spec.ts` (the Content strip on an iPhone in landscape), `schema-upgrade.spec.ts` and `schema-version.spec.ts`
+(versions 2, 4 and 5 hard-coded), `setup-provision.spec.ts` ("91 columns" where the plan now says 100, "version 4"), `admin-content-sharepoint.spec.ts`
+("4 requests", 3 since Phase 1), `admin-today.spec.ts`'s slugs flake, and `effects-audio.spec.ts` in WebKit (the audio of this machine). This phase's
+own line in `setup.spec.ts` (the self-test's fifth probe: 12 of 12 steps, 56 requests) sits after the line that already fails there, so it is not seen run.
 
 ## Page sizes (the budget's gzip)
 
 | Page | Before (`576e8b6`) | After | Change |
 |---|---|---|---|
 | `index.html` (participant) | 167,081 B | 167,109 B | +28 B: `askRead` in the answer readers (allowance 100 B; the same Tailwind rules; ceiling 450,000 B, not raised) |
-| `admin.html` | 638,134 B | AFTER_ADMIN | History of changes, its rules, `audit.view` (allowance 4,000 B; budget 700,000 B) |
+| `admin.html` | 638,134 B | 640,183 B | +2,049 B: History of changes, its rules, `audit.view` (allowance 4,000 B; budget 700,000 B) |
 
 `PHASE_21G` in `scripts/bundle-budget.js` records them.
 
