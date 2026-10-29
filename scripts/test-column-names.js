@@ -102,9 +102,9 @@ describe('the mock answers a column the site will not return by name as the real
     assert.ok(names('uservisitlogs').includes('DisplayName') && !names('uservisitlogs').includes('SignedInName'));
     assert.equal(fake.item('appsettings', 'default').SchemaVersion, 2);
     const today = createSharePointFake();
-    assert.deepEqual(today.fields.get('visitorroster').map((field) => field.InternalName), ['AppId', 'SessionId', 'GuestName', 'Enabled']);
+    assert.deepEqual(today.fields.get('visitorroster').map((field) => field.InternalName), ['AppId', 'SessionId', 'GuestName', 'Enabled', 'GuestGroup']);
     assert.equal(today.fields.get('visitorroster')[2].TypeAsString, fake.fields.get('visitorroster')[2].TypeAsString);
-    assert.equal(today.item('appsettings', 'default').SchemaVersion, 6); // (3 until Phase 20; 4 until Prompt 21; 5 until its Phase 3)
+    assert.equal(today.item('appsettings', 'default').SchemaVersion, 7); // (3 until Phase 20; 4 until Prompt 21; 5 until its Phase 3; 6 until its Phase 4)
   });
 });
 
@@ -152,7 +152,7 @@ describe('on the mock as the site is: a member of staff and a named guest', () =
   });
 
   it('the guest list and the visit log are read naming GuestName and SignedInName, never DisplayName (schema version 3)', () => {
-    assert.equal(selectOf('visitorroster'), '$select=Id,AppId,SessionId,GuestName,Enabled');
+    assert.equal(selectOf('visitorroster'), '$select=Id,AppId,SessionId,GuestName,Enabled,GuestGroup');
     assert.equal(selectOf('uservisitlogs'), '$select=Id,AppId,SessionId,ClientId,Page,EntryMode,SharePointUserId,SignedInName,VisitorId,VisitorName,TrackId,VisitedAt');
   });
 });
@@ -197,7 +197,7 @@ describe('Setup\'s self-test asks which columns this site will not return by nam
       + 'No column of the app is among them (since version 3 no column is named like a property SharePoint gives every list item), so nothing depends on this answer.');
     assert.ok(requests.every((entry) => entry.method === 'GET'), 'it only reads');
     // One look at each list, its fields and one item naming every column for each of the ten with an item, and each column alone on the two that refused.
-    assert.equal(requests.length, 15 + 10 + 10 + 5 + 12); // (Prompt 21: fifteen lists, twelve before)
+    assert.equal(requests.length, 15 + 10 + 10 + 5 + 13); // (Prompt 21: fifteen lists, twelve before; Phase 4: the guest list has one more column to read alone, GuestGroup)
     assert.equal(requests.filter((entry) => /\/items$/.test(entry.path) && !/[?&]\$select=/.test(entry.query)).length, 0, 'every item read names its columns');
   });
 

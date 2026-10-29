@@ -7,7 +7,7 @@
   import { isAccessDenied } from '../lib/access/access-denied.js';
   import { reachOf, readQueries } from '../lib/access/scope.js';
   import {
-    MAX_GUEST_NAME, completedTrackIds, csvFileName, guestKey, guestRows, guestsCsv, parseGuestNames, pasteSummary, printCards, statusCounts,
+    MAX_GUEST_GROUP, MAX_GUEST_NAME, completedTrackIds, csvFileName, guestGroups, guestKey, guestRows, guestsCsv, inGroup, parseGuestList, parseGuestNames, pasteSummary, printCards, statusCounts, tidyGroup,
   } from '../lib/admin/admin-content.js';
 
   type QrDisplay = { visitor: GuestVisitor; url: string; image: string };
@@ -27,6 +27,10 @@
   let guestState = $state<GuestState | null>(null);
   let visitorName = $state('');
   let pasted = $state('');
+  /** A guest's group (Prompt 21, Phase 4): for the one added, and for each pasted line that names none; and the group the list is narrowed to. */
+  let visitorGroup = $state('');
+  let pasteGroup = $state('');
+  let groupFilter = $state('');
   let qrDisplay = $state<QrDisplay | null>(null);
   let loading = $state(true);
   let busy = $state(false);
@@ -44,7 +48,10 @@
   const completed = $derived(guestState ? completedTrackIds({ tracks: guestState.tracks, responses: guestState.responses, sections: guestState.sections }) : new Set<string>());
   const rows = $derived(guestState ? guestRows({ visitors: guestState.visitors, tokens: guestState.tokens, tracks: guestState.tracks, completed }) : []);
   const counts = $derived(statusCounts(rows));
-  const parsed = $derived(parseGuestNames(pasted, { existing: (guestState?.visitors ?? []).map((visitor) => visitor.displayName) }));
+  const parsedList = $derived(parseGuestList(pasted, { existing: (guestState?.visitors ?? []).map((visitor) => visitor.displayName), group: pasteGroup }));
+  const parsed = $derived({ ...parsedList, names: parsedList.guests.map((guest) => guest.name) });
+  const groups = $derived(guestGroups(guestState?.visitors ?? []));
+  const shownRows = $derived(inGroup(rows.map((row) => ({ ...row, guestGroup: row.visitor.guestGroup })), groupFilter));
   const cardCount = $derived(printCards(rows, (id) => id).cards.length);
   const missing = $derived(counts.none);
 
@@ -100,9 +107,11 @@
     try {
       const single = parseGuestNames(visitorName.replace(/[,;]/g, ' '), { existing: (guestState?.visitors ?? []).map((visitor) => visitor.displayName) });
       if (single.names.length === 0) throw new Error(`${single.duplicates[0]?.name ?? visitorName.trim()} is already on the list.`);
-      const visitor = await dataService.createVisitor({ sessionId: session.id, displayName: single.names[0], enabled: true }) as GuestVisitor;
+      const group = tidyGroup(visitorGroup);
+      const visitor = await dataService.createVisitor({ sessionId: session.id, displayName: single.names[0], enabled: true, ...(group ? { guestGroup: group } : {}) }) as GuestVisitor;
       guestState = guestState ? { ...guestState, visitors: [...guestState.visitors, visitor] } : guestState;
       visitorName = '';
+      visitorGroup = '';
       onToast('Visitor added', 'success');
     } catch (cause) {
       error = explain(cause, 'Could not add this visitor.');
@@ -119,7 +128,7 @@
     controller = new AbortController();
     progress = { label: 'Adding guests', done: 0, total: parsed.names.length };
     try {
-      const result = await dataService.addGuests(session.id, parsed.names, { onProgress: (step: { done: number; total: number }) => { progress = { label: 'Adding guests', ...step }; }, signal: controller.signal }) as unknown as {
+      const result = await dataService.addGuests(session.id, parsedList.guests, { onProgress: (step: { done: number; total: number }) => { progress = { label: 'Adding guests', ...step }; }, signal: controller.signal }) as unknown as {
         added: unknown[]; skipped: string[]; failed: { name: string; error: Error }[]; notAttempted: string[]; stopped: string | null;
       };
       const problem = result.failed.length + result.notAttempted.length;
@@ -127,7 +136,7 @@
         ? { level: result.added.length ? 'warning' : 'error', text: `Added ${result.added.length} of ${parsed.names.length}. ${plural(problem, 'name was', 'names were')} not added (${result.failed[0]?.error.message ?? 'stopped'}). Press Add again: names already on the list are skipped.` }
         : { level: 'success', text: `Added ${plural(result.added.length, 'guest', 'guests')}.${result.skipped.length ? ` ${plural(result.skipped.length, 'name was', 'names were')} already on the list.` : ''}` };
       if (!problem) pasted = '';
-      else pasted = [...result.failed.map((entry) => entry.name), ...result.notAttempted].join('\n');
+      else pasted = [...result.failed.map((entry) => entry.name), ...result.notAttempted].map((name) => { const group = parsedList.guests.find((guest) => guest.name === name)?.group; return group ? `${name} | ${group}` : name; }).join('\n');
       await refresh();
     } catch (cause) {
       error = explain(cause, 'Could not add these guests.');
@@ -273,23 +282,34 @@
         <div class="guests-add">
           <div class="field">
             <label class="field__label" for="paste-names">Paste names</label>
-            <textarea id="paste-names" class="input" rows="4" bind:value={pasted} placeholder={'One name per line, or separated by commas:\nJordan Lee\nCasey Park, Morgan Day'} disabled={busy || ended} aria-describedby="paste-summary"></textarea>
+            <textarea id="paste-names" class="input" rows="4" bind:value={pasted} placeholder={'One name per line, or separated by commas. A group may follow a bar:\nJordan Lee | Finance\nCasey Park, Morgan Day'} disabled={busy || ended} aria-describedby="paste-summary"></textarea>
             <span id="paste-summary" class="muted small" data-testid="paste-summary">{pasted.trim() ? `${pasteSummary(parsed)} Commas separate names, so write "Jordan Lee", not "Lee, Jordan". A name is kept to ${MAX_GUEST_NAME} characters.` : `One name per line, or separated by commas. Names already on the list are skipped. A name is kept to ${MAX_GUEST_NAME} characters.`}</span>
           </div>
+          <label class="field"><span class="field__label">Group for lines with none (optional)</span><input class="input" bind:value={pasteGroup} maxlength={MAX_GUEST_GROUP} autocomplete="off" disabled={busy || ended} /></label>
           <button class="btn" type="button" onclick={() => void addPasted()} disabled={busy || ended || parsed.names.length === 0}>{parsed.names.length > 0 ? `Add ${plural(parsed.names.length, 'guest', 'guests')}` : 'Add guests'}</button>
         </div>
         <form class="field-row" onsubmit={addVisitor}>
           <label class="field"><span class="field__label">Visitor name</span><input class="input" bind:value={visitorName} maxlength={MAX_GUEST_NAME} autocomplete="off" disabled={busy || ended} /></label>
+          <label class="field"><span class="field__label">Group (optional)</span><input class="input" bind:value={visitorGroup} maxlength={MAX_GUEST_GROUP} autocomplete="off" disabled={busy || ended} /></label>
           <button class="btn" type="submit" disabled={busy || ended || !visitorName.trim()}>Add visitor</button>
         </form>
 
+        {#if groups.length > 0}
+          <div class="field">
+            <label class="field__label" for="guest-group-filter">Show guests in</label>
+            <select id="guest-group-filter" class="select" bind:value={groupFilter}>
+              <option value="">All groups</option>
+              {#each groups as group (group)}<option value={group}>{group}</option>{/each}
+            </select>
+          </div>
+        {/if}
         {#if rows.length === 0}<p class="muted">No visitors added for this session.</p>
         {:else}
           <ul class="rows rows--flat">
-            {#each rows as row (row.visitor.id)}
+            {#each shownRows as row (row.visitor.id)}
               {@const visitor = row.visitor}
               <li class="row" data-guest={guestKey(visitor.displayName)} data-status={row.key}>
-                <div class="row__main"><span class="row__title">{visitor.displayName}</span><span class="muted"><span class="pill {pillClass[row.key]}">{row.label}</span></span></div>
+                <div class="row__main"><span class="row__title">{visitor.displayName}</span><span class="muted"><span class="pill {pillClass[row.key]}">{row.label}</span>{#if visitor.guestGroup} <span class="tag" data-testid="guest-group">{visitor.guestGroup}</span>{/if}</span></div>
                 <div class="row__actions">
                   <button class="btn btn--small" type="button" onclick={() => void setVisitorEnabled(visitor)} disabled={busy || ended}>{visitor.enabled === false ? 'Enable' : 'Disable'}</button>
                   {#if row.key === 'disabled'}

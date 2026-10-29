@@ -404,3 +404,16 @@ export const PHASE_21C = Object.freeze({
   participantAfter: 166_497, adminAfter: 620_335,
   participantUtilities: PHASE_11A.participantUtilities,
 });
+
+/**
+ * Prompt 21, Phase 4 (scoping Events, Content and Guests by role) is the admin page's: the menu from the role matrix, Content's view-only mode, the
+ * scoped reads of Today, Guests and Results, lib/access/scope.js and owners.js, and a guest's group in Guests. The participant page carries only what
+ * the data layer every page carries gained: the read check (lib/data/read-scope.js, asked of an access guard it never has) and a guest's column of
+ * schema version 7 in every read of the guest list. None of lib/access, none of the screens. Its Tailwind rules are the ones it had, and the ceiling is
+ * not raised. Measured when the phase ended: participantAfter and adminAfter, where the next phase starts.
+ */
+export const PHASE_21D = Object.freeze({
+  participantBefore: PHASE_21C.participantAfter, adminBefore: PHASE_21C.adminAfter, participantAllowance: 400, adminAllowance: 6_000,
+  participantAfter: 166_683, adminAfter: 623_918,
+  participantUtilities: PHASE_11A.participantUtilities,
+});

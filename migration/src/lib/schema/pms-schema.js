@@ -40,7 +40,7 @@ export const ID = 'AppId';
  * which Setup writes when it makes the lists, and raises once it has added what a newer version needs; a page on lists of another version stops
  * (dataService, PMS-LST-010 to 012).
  */
-export const VERSION = 6;
+export const VERSION = 7;
 /** The picture library's title before any prefix. */
 export const LIBRARY = 'PMSClientImages';
 
@@ -86,7 +86,7 @@ export const LISTS = {
   appsettings: list('PMSAppSettings', { id: ID, activeSessionId: 'ActiveSessionId', activeClientId: 'ActiveClientId', activatedAt: 'ActivatedAt date', schemaVersion: 'SchemaVersion number',
     fiscalYearStartMonth: 'FiscalYearStartMonth number', minSample: 'MinSample number',
   }),
-  visitorroster: list('PMSGuestList', { id: ID, sessionId: 'SessionId indexed', displayName: 'GuestName', enabled: 'Enabled yesno' }),
+  visitorroster: list('PMSGuestList', { id: ID, sessionId: 'SessionId indexed', displayName: 'GuestName', enabled: 'Enabled yesno', guestGroup: 'GuestGroup' }),
   uservisitlogs: list('PMSVisitLog', {
     id: ID, sessionId: 'SessionId indexed', clientId: 'ClientId', page: 'Page', entryMode: 'EntryMode', sharePointUserId: 'SharePointUserId', displayName: 'SignedInName',
     visitorId: 'VisitorId', visitorName: 'VisitorName', trackId: 'TrackId', visitedAt: 'VisitedAt date',

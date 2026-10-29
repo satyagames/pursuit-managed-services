@@ -1,5 +1,5 @@
 // Scoping by role (Prompt 21, Phase 4; wireframe boards 7, 8 and 10): what the admin page shows a person, and what it may ask the lists for. The menu is
-// built from the role matrix (the same table can() reads, so a tab is never decided apart from it); Content's two views are edited, shown read only, or
+// built from the role matrix (the same matrix can() reads, so a tab is never decided apart from it); Content's two views are edited, shown read only, or
 // not shown; the pickers list only the clients and sessions a person was given; and a read names only those places (readQueries), which the data layer's
 // read check (owners.js) holds a scoped role to. Plain JS with no DOM; the admin page imports it, the participant page never does (`npm run test:bundle`).
 //
@@ -29,7 +29,7 @@ export const firstTab = (access, tabs, options) => tabsFor(access, tabs, options
 const touchesClient = (grant, clientId) => grant.scopeType === 'global' || ((grant.scopeType === 'client' || grant.scopeType === 'session') && grant.clientId === clientId);
 
 /**
- * How Content shows a client to a person: each of its two views is 'edit', 'view' (read only: shown, not hidden) or 'none'. Editing needs the action
+ * How Content shows a client to a person: each of its two views is 'edit', 'view' (read only: shown, not left out) or 'none'. Editing needs the action
  * for the whole client; any other holder of a Content action on the client sees both views to read.
  * @param {any} access @param {string} clientId @param {{ now?: Date }} [options]
  * @returns {{ activities: 'edit' | 'view' | 'none', brand: 'edit' | 'view' | 'none' }}

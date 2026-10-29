@@ -149,6 +149,11 @@ export const CHANGES = [
     );
     return shape;
   }],
+  // (Prompt 21, Phase 4, schema version 7: a guest's group.)
+  ['(Prompt 21 Phase 4, v7) a guest\'s GuestGroup (optional text): not indexed, nothing filters on it until the Guest filter of Phase 5', (shape) => {
+    shape.lists.visitorroster.columns.push({ column: 'GuestGroup', field: 'guestGroup', kind: 'plain', type: 'Text', indexed: false, unique: false, mustExist: true, required: false, format: null, values: null });
+    return shape;
+  }],
 ];
 
 describe('the snapshot of the old schema, with this phase\'s changes, is the schema file', () => {

@@ -189,6 +189,8 @@ export const PHASE_21_LISTS = Object.freeze(Object.keys(LISTS).filter((key) => M
 export const PHASE_21_COLUMNS = Object.freeze(['appsettings.FiscalYearStartMonth', 'appsettings.MinSample']);
 /** The columns of PMSClientSessions schema version 6 added (Prompt 21, Phase 3), as 'key.Column': a site Setup made for version 5 lacks them. */
 export const PHASE_21C_COLUMNS = Object.freeze(['sessions.StartTime', 'sessions.Sequence', 'sessions.Period', 'sessions.PlannedDate']);
+/** The column of PMSGuestList schema version 7 added (Prompt 21, Phase 4), as 'key.Column': a site Setup made for version 6 lacks it. */
+export const PHASE_21D_COLUMNS = Object.freeze(['visitorroster.GuestGroup']);
 /** The columns schema version 4 added (Phase 20), as 'key.Column': what a site Setup made for an earlier version lacks. */
 export const PHASE_20_COLUMNS = Object.freeze(['sections.Kind', 'sessions.ConfidenceCheck']);
 

@@ -46,8 +46,8 @@ const person = (email, more = {}) => ({ key: email, email, name: email, loginNam
 const accessOf = (grants, more = {}) => ({ person: person('x@deloitte.com'), owner: false, legacy: false, user: row({ id: 'x@deloitte.com' }), assignments: grants, ...more });
 
 describe('schema version 5: three lists and two settings', () => {
-  it('the version is 6 (5 until Prompt 21, Phase 3) and the three lists hold the columns of the brief, the access lists keyed by AppId', () => {
-    assert.equal(VERSION, 6);
+  it('the version is 7 (6 until Prompt 21 Phase 4, 5 until its Phase 3) and the three lists hold the columns of the brief, the access lists keyed by AppId', () => {
+    assert.equal(VERSION, 7);
     const columns = (key) => Object.values(LISTS[key].fields).map((field) => field.column);
     assert.equal(LISTS.users.title, 'PMSUsers');
     assert.deepEqual(columns('users'), ['AppId', 'FullName', 'Email', 'LoginName', 'JobTitle', 'Status', 'Source', 'AddedBy']);

@@ -172,6 +172,7 @@ export const META = {
       SessionId: text('The guest\'s session (a Sessions.AppId).'),
       GuestName: text('The guest\'s name, cut to 60 letters by the screen. Called DisplayName until version 3: SharePoint gives every list item a property of that name, and the real site would not return a column called DisplayName by name (15 Oct 2026).', { max: 60, personal: true }),
       Enabled: column('Boolean', 'Whether the guest\'s code may still be used.', { default: 'No' }),
+      GuestGroup: text('An optional tag for the guest (a team, a company, a delegation), set when the guest is added or imported, cut to 60 letters by the screen. The Guest filter of the leader\'s dashboard reads it. Not indexed until a screen filters on it (Phase 5).', { max: 60, default: 'empty', writes: [ADMIN], since: 7 }),
     },
   },
   uservisitlogs: {

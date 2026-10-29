@@ -53,7 +53,7 @@ const guarded = (ds, access) => ds.setAccessGuard(writeGuard(access, ds.sharePoi
 
 describe('schema version 6: a session\'s time, title, order in its day, period and when it was planned', () => {
   it('this build is for version 6, and PMSClientSessions gains StartTime, Sequence, Period and PlannedDate (since 6), with its title in the built-in Title', () => {
-    assert.equal(VERSION, 6);
+    assert.equal(VERSION, 7); // (6 until Prompt 21, Phase 4, which added the roster's GuestGroup; these five columns are still since 6)
     const fields = LISTS.sessions.fields;
     assert.deepEqual(
       ['title', 'startTime', 'sequence', 'period', 'plannedDate'].map((field) => [field, fields[field]?.column, fields[field]?.kind]),

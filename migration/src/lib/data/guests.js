@@ -30,10 +30,11 @@ async function guestSession(sessionId) {
  * Admin: adds named guests to the live session's roster. `names` are already tidy (the screen's
  * parser trims, collapses and caps them); names already on the roster, or repeated in `names`, are
  * skipped here too, against a roster read just now, so adding the same list twice adds nobody. A
- * run that fails part way keeps the guests it added and can simply be run again. Resolves to
+ * run that fails part way keeps the guests it added and can simply be run again. A guest may come with a group (Prompt 21, Phase 4: `{ name, group }`);
+ * one with none is written exactly as before. Resolves to
  * { added: [visitor], skipped: [name], failed: [{ name, error }], notAttempted: [name], stopped }.
  * @param {string} sessionId
- * @param {string[]} names
+ * @param {(string | { name: string, group?: string })[]} names
  * @param {PaceOptions & { onProgress?: (step: { done: number, total: number }) => void }} [options]
  */
 export async function addGuests(sessionId, names, { concurrency = PACE.concurrency, gapMs = null, onProgress = () => {}, signal = null } = {}) {
@@ -42,15 +43,16 @@ export async function addGuests(sessionId, names, { concurrency = PACE.concurren
   const have = new Set(roster.map((visitor) => guestNameKey(visitor.displayName)));
   const fresh = [];
   const skipped = [];
-  for (const name of names) {
+  for (const guest of names) {
+    const name = typeof guest === 'string' ? guest : guest.name;
     const key = guestNameKey(name);
     if (!key || have.has(key)) { skipped.push(name); continue; }
     have.add(key);
-    fresh.push(name);
+    fresh.push({ name, group: typeof guest === 'string' ? '' : String(guest.group ?? '').trim() });
   }
   let done = 0;
-  const { results, stopped } = await runPaced(fresh, async (name) => {
-    const visitor = await createItem('visitorroster', { sessionId: session.id, displayName: name, enabled: true });
+  const { results, stopped } = await runPaced(fresh, async ({ name, group }) => {
+    const visitor = await createItem('visitorroster', { sessionId: session.id, displayName: name, enabled: true, ...(group ? { guestGroup: group } : {}) });
     done += 1;
     onProgress({ done, total: fresh.length });
     return visitor;
@@ -58,8 +60,8 @@ export async function addGuests(sessionId, names, { concurrency = PACE.concurren
   return {
     added: results.flatMap((result) => (result?.ok ? [result.value] : [])),
     skipped,
-    failed: fresh.flatMap((name, index) => (results[index] && !results[index].ok ? [{ name, error: results[index].error }] : [])),
-    notAttempted: fresh.filter((_, index) => results[index] === undefined),
+    failed: fresh.flatMap(({ name }, index) => (results[index] && !results[index].ok ? [{ name, error: results[index].error }] : [])),
+    notAttempted: fresh.filter((_, index) => results[index] === undefined).map(({ name }) => name),
     stopped,
   };
 }

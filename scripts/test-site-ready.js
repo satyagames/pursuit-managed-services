@@ -103,8 +103,8 @@ describe('Mark the site as ready', () => {
   });
 
   // (Phase 10i: a LOWER version, 1 or 2, is raised once the check is clean; scripts/test-schema-upgrade.js holds that on the PCOE site of version 2.)
-  it('never lowers a higher version (7; 4 until Phase 20, 5 until Prompt 21, 6 until its Phase 3), and leaves a value that is no version of these lists (0) as it is', async () => {
-    for (const [version, words] of [[7, 'Setup never lowers the version of the lists: upload the newer files.'], [0, null]]) {
+  it('never lowers a higher version (8; 4 until Phase 20, 5 until Prompt 21, 6 until its Phase 3, 7 until its Phase 4), and leaves a value that is no version of these lists (0) as it is', async () => {
+    for (const [version, words] of [[8, 'Setup never lowers the version of the lists: upload the newer files.'], [0, null]]) {
       const site = await siteWith({ schemaVersion: version });
       const result = await ready(site);
       assert.deepEqual([result.ready, result.wrote], [false, null]);

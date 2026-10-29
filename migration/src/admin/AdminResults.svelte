@@ -396,7 +396,7 @@
               <li class="row" class:row--open={restarting}>
                 <div class="row__main"><span class="row__title">{row.name}</span><span class="muted">{notes}</span></div>
                 <span class={statusClass(row.status)}>{statusText(row.status)}</span>
-                {#if canRemoveVisit(row, session) && may('events.run', session)}<button class="btn btn--small" type="button" onclick={() => void removeVisit(row)} disabled={busy}>Remove...</button>{/if}
+                {#if canRemoveVisit(row, session)}{#if may('events.run', session)}<button class="btn btn--small" type="button" onclick={() => void removeVisit(row)} disabled={busy}>Remove...</button>{/if}{/if}
                 {#if may('events.run', session)}<button class="btn btn--small" type="button" data-restart={row.track.id} aria-expanded={restarting} aria-controls={restarting ? RESTART_FORM : undefined} onclick={() => openRestart(row, session.id)} disabled={busy || row.status === 'unreadable'} title={row.status === 'unreadable' ? `Its saved answers cannot be read, so they cannot be restarted. Correct or delete the damaged item in the ${dataService.sharePointListTitles().responses} list.` : undefined}>Restart...</button>{/if}
                 {#if restarting && restartTrack}{@render restartForm(restartTrack)}{/if}
               </li>
