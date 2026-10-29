@@ -58,7 +58,7 @@
     <div class="plan-list" data-testid="plan-permissions">
       <h4>Who may change the access lists (by hand)</h4>
       <p class="muted">The admin page checks every change itself; these permissions are what holds when someone writes to the lists another way. Setup does not
-        change permissions: a site owner does this once, and the self-test then reads what is set. Not yet tried on the PCOE site.</p>
+        change permissions: a site owner does this once, and the self-test then reads what is set. Not yet tried on a real site.</p>
       <ol>{#each permissions as step (step)}<li>{step}</li>{/each}</ol>
     </div>
   {/if}
