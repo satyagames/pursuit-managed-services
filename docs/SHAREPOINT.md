@@ -97,6 +97,10 @@ The table, list by list, is in [SHAREPOINT-LISTS.md](../SHAREPOINT-LISTS.md#perm
   answer lists to do their work, and a list's permission is the same for every item in it, so the separation between clients there is the app's alone
   (`can()`, the write guard and the read check). Holding it against someone who goes around the page would need a server component between the page
   and the lists, which this app does not have (no server, by design).
+- **The reporting settings and a client's Industry and Region** (Prompt 22) are written to `PMSAppSettings` and `PMSClients`, which the facilitators
+  already write (the live session, a client's brand), so SharePoint cannot tell these columns apart: a Super admin alone may change the fiscal-year start
+  month and the minimum sample, and whoever has `clients.manage` a client's Industry and Region, **by the page's write guard only** (`FIELD_WRITES`),
+  like the separation between clients above. Each change is a line of `PMSAuditLog` (`settings`, `client`). No list, column or permission changes.
 - **Setup** is run by a site owner (Full Control): it creates lists and columns, writes the version, adds admins and uploads the sample pictures.
 - **PMSAdminUsers holds the facilitators' PIN hashes** (unsalted SHA-256) and the whole list reaches the admin page, so its permission is the real lock:
   break its inheritance and remove every group the participant accounts are in. The PIN gates the admin page's screens; it is not authorization.

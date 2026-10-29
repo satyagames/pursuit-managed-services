@@ -79,6 +79,7 @@ Chosen on the control page; a cookie only the local server reads (the pages neve
 | `pcoe-16oct` | Calibration: what PCOE showed on 16 Oct 2026, to compare with the photographs (UX-REVIEW.md says what could not be rebuilt). |
 | `stress` | 60 clients, one session of 400 visits over 30 questions, one question with eight answers of 90 characters. |
 | `chaos` | `ready`, answering a fault every sixth API request in turn: 429, 503, 500, a dropped connection, an expired write token. |
+| `confidence-check` | Prompt 22: `ready` with the confidence check. Kroger and Domino's ask it; Kroger's session of 14 Oct (20 guests, 4 Before only) and Domino's of 15 Oct (12, 2 Before only) ended with their summaries written by the dashboard's own code; Kroger live today with the check (18 Before, 5 After). Unlock with the local PIN; Results shows the check, the Live display the Producer's card, the dashboard the shift by client. The other scenarios, and Setup's real **Seed sample clients**, gain no check: a site that already has the samples never gets one added behind its owner's back. |
 
 Every scenario is built from a seeded generator with a fixed "now" (16 Oct 2026, 17:00 IST), so it is the same site every time. Every person in it is invented.
 

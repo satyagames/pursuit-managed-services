@@ -32,7 +32,9 @@
 14. Items **262 to 273** (Prompt 21, Phase 7, the real-site pass for all of Prompt 21: the access lists' permissions set by hand and what they
    refuse, the people screens under the lock, directory search, the site owner, the old admins copied, two sessions in a day, Leadership's scope, a person
    turned off, sign-in renewal with the new reads, History of changes). Below item 261. Item 263 first: it decides whether the lock holds on PCOE.
-15. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
+15. Items **274 to 278** (Prompt 22: the shift by client and by session, Industry and Region with the Region filter, the minimum sample and who may
+   set it, the fiscal start month on a test copy, and the manager's questions). Below item 273. No upgrade.
+16. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
    160, 161, 164, 165, 166, 167, 168, 169, 170.
 
 **Decided, no change:** 162 (names stay "Last, First") and 163 (the wall page keeps the admin header), VJR, 16 Oct 2026.
@@ -1677,6 +1679,30 @@ nothing there. Proven on the mocked SharePoint and the built pages (RELEASE-21G.
 273. **History of changes.** *(Still to see.)* As a Super admin, People, **History of changes**: **expect** every line of `PMSAuditLog` newest first, the
     filters by what was done, by person and by days, 50 to a page, no button to change anything, and no answer in any line. As an Admin: **expect** no
     such button (a person's own history is still on their page). Then push the branch `pms-21-7`.
+
+### Prompt 22 (the shift by client, the reporting settings, Industry and Region): not verified on SharePoint Online
+
+No upgrade: the lists stay at version 8 and nothing is added to them. Proven on the mocked SharePoint, in node and in the built pages in Chromium and
+WebKit, and on the local site (docs/history/RELEASE-22.md), not on the real site. Use a test copy for item 277.
+
+274. **The shift by client.** *(Still to see.)* As Leadership, open Results with two clients that have ended sessions with the check: **expect** the
+    card **Confidence index and shift by client**, and beside each client's bar its index, "Shift +N%", "P% moved to confident" and "n of m guests
+    answered both"; the same in each client's row and, with the arrow, in each session. Open one of those sessions on its own (Sessions, or its leader
+    report): **expect** the same shift and moved to confident as its session row. Change **Compare with**: **expect** the index to change and the shift
+    not to.
+275. **Industry and Region.** *(Still to see.)* As an Admin, on two clients' pages (**About this client**) give each an Industry and a Region (the box
+    offers the values already used): **expect** the labels on the client's page and its Clients row, one line each in History of changes. As
+    Leadership, filter the dashboard by an Industry, then by a Region (More filters): **expect** only that client; clear both. As a Designer, Content
+    shows the labels and no way to change them.
+276. **The minimum sample.** *(Still to see.)* As a Super admin, dashboard, **Reporting settings**: try 0 (**expect** "The minimum sample is a whole
+    number, 1 or more." and nothing saved), then 3: **expect** a "Low sample" tag to go from a small client; set it back (empty means 10). As an Admin
+    and as a Producer: **expect** no Reporting settings.
+277. **The fiscal start month, on a test copy.** *(Still to see.)* Change it to July: read the question (what follows at once, and how many sessions
+    and summaries keep June's quarters); after saving, **Move stored quarters** and its second question; **expect** the quarter names on the dashboard,
+    the trend and a client's sessions (Period on its page) to follow July. Set it back to June the same way.
+278. **For the manager.** *(Open.)* Should the shift divide by the full scale (5 points: 1 to 5 is +80%) or by the largest possible move (4: 1 to 5 is
+    +100%)? Should a Low sample shift show its number with the tag (as now) or be hidden? Is the headline's "(X to Y)" wanted when sessions in view use
+    scales of different lengths (it is left out then)?
 
 ### Prompt 20 (the confidence check, Before and After): not verified on SharePoint Online or an iPad
 

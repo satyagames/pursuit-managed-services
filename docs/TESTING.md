@@ -150,6 +150,21 @@ seven sizes.
   GETs and a refused read), the answer readers and the Live feed refusing a session not held before any request (and reading one held, and a global role
   as before), and History of changes (Super admin only; newest first; the filters; pages of 50; no answer shown). In the browser: `users.spec.ts` (History
   of changes: focus, axe, filters, no write; none for an Admin; now in `npm run test:a11y`) and `setup-provision.spec.ts` (the plan's four steps).
+- Prompt 22: `scripts/test-leader-dashboard.js` part 6 (each client's and session's shift and moved to confident, worked by hand: a client of two
+  sessions of different sizes pooled by paired guests, not a plain mean; no paired guest is "Not measured"; Before only adds nothing; low sample at
+  n below the minimum; the words; the headline only when measured; the CSV's six columns) and part 3's Region filter; `scripts/test-index-math.js`
+  (`pairedMeansOf`, and the oracle's recount of every client's and session's shift and moved in whole numbers, with two plain-mean mutants it must
+  catch); `node --test scripts/test-reporting-settings.js` (part of `npm test`: `settings.manage`, the guarded columns on the local server and on
+  SharePoint, the value rules, the saves and their audit lines, a refused role sends nothing, which stored quarters a new start month leaves behind
+  and the words of the confirmation, moving them). In the browser: `leader-dashboard.spec.ts` (the shift beside each bar, in each row and session, the
+  two i buttons by Tab, Enter, Space and Escape, unique ids, no sideways scroll at 1280, 768 and 375, axe) and `reporting-settings.spec.ts` (a Super
+  admin by keyboard, a refused 0, the low sample tag gone at 3, the start month's two questions and the stored quarters moved, the audit lines; a
+  Producer without the button, an Admin without Results; an Admin's Industry and Region with suggestions; a Designer's labels in Content). The local
+  site has a `confidence-check` scenario (`npm run local:site -- --scenario confidence-check`; `scripts/test-local-site.js` checks it in node and on
+  the Live display, Results and the dashboard).
+- The specs that typed numbers read them since Prompt 22: `setup-provision.spec.ts`, `schema-version.spec.ts`, `schema-upgrade.spec.ts` and the runbook
+  rehearsal take the lists and the version from `lib/schema/pms-schema.js` and an empty or older site's plan from Setup's own `makePlan` / `showPlan`
+  (which `scripts/test-provision.js` holds), so the next new column cannot break them.
 - `node --test scripts/test-sessions-plan.js` (also part of `npm test`, Prompt 21, Phase 3): schema version 6's session columns (and a site of version 5
   stopping with PMS-LST-011), the period from the fiscal start month, a planned session's id and its -2 and -3 on a duplicate, an old id still found,
   two sessions on one day for one client and for two (their QR codes and visits with their own session), starting a planned session (the activities

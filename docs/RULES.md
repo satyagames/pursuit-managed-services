@@ -1692,6 +1692,41 @@ Results is a leader's view as well (boards 9 and 12): `admin/LeaderDashboard.sve
 5. **The participant page** grew by the read check alone (`PHASE_21G` in `scripts/bundle-budget.js`: +28 B gzip, allowance 100 B, the same Tailwind
    rules, the 450,000 B ceiling not raised).
 
+## Rules from Prompt 22 (the shift by client, the reporting settings, Industry and Region; keep them holding)
+
+1. **The shift by client and by session is `shiftOf` and `movedOf` of that group.** `lib/results/dashboard-model.js` gives each `byClient` row and each
+   of its sessions `shift` (`shiftOf(mine)`, `shiftOf([each])`), `moved` (`movedOf`) and `shiftLow` / `movedLow` by the tiles' rule (the shift low on its
+   paired guests, moved on those who started not confident; nothing measured is not low). No second formula: a client's shift is weighed by its paired
+   guests, never a plain mean of its sessions' percents (`scripts/test-index-math.js` catches that mutant through the oracle). **The shift is the change
+   on the scale itself: it is not compared with the baseline and ignores "Compare with"** (the i words say so).
+2. **The screen.** The card is **Confidence index and shift by client**: under each bar "Shift +24%", "8% moved to confident" and "16 of 20 guests
+   answered both" (`shiftWords`), with "Low sample (n = x)" beside a low figure, which is shown, never hidden; the same in each client's row and each
+   session's. Two i buttons (Confidence shift, Moved to confident) head the column. Bars are `aria-hidden`; every figure is text. Each i button's words
+   have an id of their own (`MetricInfo`, `$props.id()`).
+3. **The headline** adds "Guests moved N% up (or down) the scale (X to Y), and P% of those who started not confident ended confident." only when the
+   shift is measured; X and Y are the paired guests' means (`pairedMeansOf`), left out when the sessions in view use scales of different lengths
+   (ASSUMED: a mean is one scale's); "low sample" joins them when the shift tile is low. **Export report** adds `Shift %`, `Moved to confident %`,
+   `Guests answered both` for the client and `Session shift %`, `Session moved to confident %`, `Session guests answered both`, whole numbers.
+4. **Region** filters like Industry (`filters.region`, `filterOptions().regions`), under More filters: Period, Compare with, Clients and Industry stay
+   the four in view.
+5. **The reporting settings are a Super admin's alone** (`settings.manage`: Super admin Yes, every other role no). Reporting settings
+   (`admin/ReportingSettings.svelte`, opened from the dashboard) sets `FiscalYearStartMonth` (January to December) and `MinSample` (a whole number, 1 or
+   more; empty means 10) with `updateAppSettings`, and writes one audit line (`settings`: who, the old value and the new).
+6. **A client's Industry and Region** are set on its page (**About this client**, `admin/ClientAbout.svelte`) by whoever has `clients.manage`, with the
+   values other clients use as suggestions; plain text, trimmed, spaces single, at most 60 characters, empty allowed (`lib/admin/client-tags.js`); one
+   audit line (`client`). They show as labels on the client's page, its Clients row, its dashboard row and in Content (to read).
+7. **The guarded columns.** `FIELD_WRITES` in `lib/access/access-matrix.js` names the columns a list's rule does not decide alone: the two settings need
+   `settings.manage` (the settings item takes the live session from a Producer), Industry and Region need `clients.manage` (a client takes its brand from
+   a Designer). The write guard asks it, and `lib/access/field-values.js`'s value rules, before anything is sent: another role is `AccessDenied`, a value
+   out of range is refused in plain words (`invalid-value`). The participant page and Setup install no guard and write none of these columns.
+8. **What a new fiscal start month moves.** At once: the dashboard's year and quarter chips and the days each covers, which sessions are in view (by
+   date), the all-client and one-client baselines, the tiles, the index and shift by client, and the quarter of every session planned after. Kept: the
+   `Period` stored on each session when it was planned and copied into its summary, so the trend by quarter, a client's change since the quarter before,
+   the quarter-before and same-quarter-last-year baselines, the Fiscal year list and a Leadership period's reads keep the old quarters. The confirmation
+   says both; the dashboard's Rebuild cannot move them (it writes only missing summaries and keeps a session's stored Period), so the screen offers
+   **Move stored quarters** (`moveStoredPeriods`: each session's Period, each summary written again whole), only on the person's second yes.
+9. **The participant page does not change**, to the byte (`PHASE_22`: +0 B, the same Tailwind rules); the admin page within its allowance.
+
 ## Before finishing a change
 
 - Always: `npm run check:svelte` and `npm test` (the documents, the module map and the project map among it). If you added, moved or renamed a
