@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
 import { PAGES, ROOT, analyzePage } from './analyze-bundle.js';
-import { BUDGET, FORBIDDEN, PHASE_8, PHASE_9A, PHASE_9B, PHASE_10B, PHASE_10C1, PHASE_10C2A, PHASE_10C2B, PHASE_10C3, PHASE_10F, PHASE_10G, PHASE_10H, PHASE_10I, PHASE_10J, PHASE_11A, PHASE_11A3, PHASE_11B, PHASE_12, PHASE_13, PHASE_14, PHASE_15, PHASE_16, PHASE_17, PHASE_18, PHASE_19, PHASE_20, PHASE_21A, PHASE_21B, PHASE_21C, PHASE_21D, PHASE_21E, checkBudgets, utilityClasses } from './bundle-budget.js';
+import { BUDGET, FORBIDDEN, PHASE_8, PHASE_9A, PHASE_9B, PHASE_10B, PHASE_10C1, PHASE_10C2A, PHASE_10C2B, PHASE_10C3, PHASE_10F, PHASE_10G, PHASE_10H, PHASE_10I, PHASE_10J, PHASE_11A, PHASE_11A3, PHASE_11B, PHASE_12, PHASE_13, PHASE_14, PHASE_15, PHASE_16, PHASE_17, PHASE_18, PHASE_19, PHASE_20, PHASE_21A, PHASE_21B, PHASE_21C, PHASE_21D, PHASE_21E, PHASE_21F, checkBudgets, utilityClasses } from './bundle-budget.js';
 import { SAMPLE_PICTURE_NAMES } from '../migration/src/lib/setup/sample-pictures.js';
 import { pageProblems } from './release-proofs.js';
 
@@ -384,6 +384,23 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
     assert.ok(built.admin.htmlGzip < BUDGET.admin, `the admin page is under its ${bytes(BUDGET.admin)} budget`);
     assert.ok(PHASE_21E.participantAfter - PHASE_21E.participantBefore <= PHASE_21E.participantAllowance, 'the participant page, as measured when Phase 5 ended');
     assert.ok(PHASE_21E.adminAfter - PHASE_21E.adminBefore <= PHASE_21E.adminAllowance, 'the admin page, as measured when Phase 5 ended');
+  });
+
+  it('Prompt 21, Phase 6 (polish) left the participant page as it was, to the byte and the same Tailwind rules, and grew the admin page within its allowance', (t) => {
+    assert.equal(PHASE_21F.participantBefore, PHASE_21E.participantAfter, 'Phase 6 is measured from where Phase 5 ended');
+    assert.equal(PHASE_21F.adminBefore, PHASE_21E.adminAfter);
+    const participant = built.participant.htmlGzip - PHASE_21F.participantBefore;
+    const admin = built.admin.htmlGzip - PHASE_21F.adminBefore;
+    t.diagnostic(`participant ${participant >= 0 ? '+' : ''}${participant} B, admin ${admin >= 0 ? '+' : ''}${admin} B against where Phase 5 ended`);
+    console.log(`  Prompt 21f: the participant page is ${participant >= 0 ? '+' : ''}${participant} B gzip against where Phase 5 ended (allowance ${PHASE_21F.participantAllowance} B), now ${bytes(built.participant.htmlGzip)}; the admin page ${admin >= 0 ? '+' : ''}${admin} B (allowance ${PHASE_21F.adminAllowance} B), now ${bytes(built.admin.htmlGzip)} of its ${bytes(BUDGET.admin)} budget`);
+    assert.equal(PHASE_21F.participantAllowance, 0, 'the participant page does not change in this phase');
+    assert.equal(participant, 0, `the participant page is ${participant} B away from where Phase 5 left it`);
+    assert.equal(BUDGET.participantCeiling, 450_000, 'the ceiling is not raised');
+    assert.deepEqual(utilityClasses(built.participant.html), [...PHASE_21F.participantUtilities], "the participant page's Tailwind rules are the ones it had");
+    assert.ok(!/withNamesHidden|NAMES_HIDDEN_NOTE|lostAccess|RECHECK_AFTER_MS|emptyStateOf|rebuildQuestion|dashboardFileName|Hide names/.test(built.participant.html), 'the participant page carries none of this phase');
+    assert.ok(admin <= PHASE_21F.adminAllowance, `the admin page is ${admin} B larger than where Phase 5 left it`);
+    assert.ok(built.admin.htmlGzip < BUDGET.admin, `the admin page is under its ${bytes(BUDGET.admin)} budget`);
+    assert.ok(PHASE_21F.adminAfter - PHASE_21F.adminBefore <= PHASE_21F.adminAllowance, 'the admin page, as measured when Phase 6 ended');
   });
 
   it('the Tailwind rules check can fail: a rule added to the participant page, or one taken away, is found', () => {

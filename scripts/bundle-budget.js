@@ -431,3 +431,15 @@ export const PHASE_21E = Object.freeze({
   participantAfter: 167_081, adminAfter: 636_734,
   participantUtilities: PHASE_11A.participantUtilities,
 });
+
+/**
+ * Prompt 21, Phase 6 (polish) is the admin page's: Results' one Hide names switch (the Sessions view, the dashboard, the leader report and the participant
+ * CSV), the dashboard's empty states and words, and the admin page reading a person's access again while it is open (lib/access/resolve.js). The
+ * participant page does not change, to the byte: none of it is in the data layer every page carries, and no new word adds a Tailwind rule. The ceiling is
+ * not raised. Measured when the phase ended: adminAfter, where the next phase starts.
+ */
+export const PHASE_21F = Object.freeze({
+  participantBefore: PHASE_21E.participantAfter, adminBefore: PHASE_21E.adminAfter, participantAllowance: 0, adminAllowance: 4_000,
+  participantAfter: 167_081, adminAfter: 637_936,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
