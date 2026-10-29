@@ -370,7 +370,8 @@ describe('nothing of the local site ships', () => {
 });
 
 describe('the acceptance test of the stand-in', () => {
-  test('Setup\'s own self-test passes on the local site: "Passed: 11 of 11 steps", as on PCOE on 16 Oct 2026', async () => {
+  // (Prompt 22: 11 steps until Prompt 21 Phase 7 added the access lists' permission probe, and this test went on expecting 11.)
+  test('Setup\'s own self-test passes on the local site: every step, as "Passed: 11 of 11 steps" did on PCOE on 16 Oct 2026', async () => {
     const { chromium } = await import('@playwright/test');
     const running = await site({ scenario: 'event-day' });
     const browser = await chromium.launch({ args: running.browserArgs });
@@ -383,7 +384,7 @@ describe('the acceptance test of the stand-in', () => {
       page.once('dialog', (dialog) => { void dialog.accept(); });
       await section.getByRole('button', { name: 'Run self-test' }).click();
       await section.getByRole('status').filter({ hasText: /Passed|failed/ }).waitFor({ timeout: 60_000 });
-      assert.match(await section.getByRole('status').textContent(), /Passed: 11 of 11 steps/);
+      assert.match(await section.getByRole('status').textContent(), /Passed: 12 of 12 steps/, 'twelve since Prompt 21 Phase 7 (the permission probe)');
       assert.deepEqual(outside, [], 'no request left the site');
     } finally {
       await browser.close();
@@ -392,3 +393,47 @@ describe('the acceptance test of the stand-in', () => {
   });
 });
 
+
+describe('Prompt 22: the confidence check on the local site', () => {
+  test('the confidence-check scenario: both clients ask it, two ended sessions with summaries (some guests Before only), Kroger live with it; ready gains nothing', async () => {
+    const { state } = await buildScenario('confidence-check', { pictures: new Map() });
+    const checks = state.lists.sections.filter((row) => row.Kind === 'confidence-check');
+    assert.deepEqual(checks.map((row) => row.ClientId).sort(), ['c-dominos', 'c-kroger']);
+    assert.deepEqual(state.lists.sessions.map((row) => [row.AppId, row.Status, row.ConfidenceCheck]),
+      [['kroger-2026-10-14', 'completed', true], ['dominos-2026-10-15', 'completed', true], ['kroger-2026-10-16', 'in-progress', true]]);
+    assert.deepEqual(state.lists.sessionsummary.map((row) => [row.AppId, row.Guests, row.BeforeCount, row.AfterCount, row.PairedCount]),
+      [['kroger-2026-10-14', 20, 20, 16, 16], ['dominos-2026-10-15', 12, 12, 10, 10]], '4 and 2 guests answered Before only');
+    const ready = await buildScenario('ready', { pictures: new Map() });
+    assert.equal(ready.state.lists.sections.filter((row) => row.Kind === 'confidence-check').length, 0, 'ready gains no check');
+    assert.equal(ready.state.lists.sessionsummary.length, 0);
+  });
+
+  test('the Producer\'s card on the Live display, the session\'s Results and the dashboard show the check', async () => {
+    const { chromium } = await import('@playwright/test');
+    const running = await site({ scenario: 'confidence-check' });
+    const browser = await chromium.launch({ args: running.browserArgs });
+    try {
+      const page = await (await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 1280, height: 900 } })).newPage();
+      await page.goto(pageUrl('admin.html'));
+      await page.getByLabel('PIN').fill(ADMIN.pin);
+      await page.getByRole('button', { name: 'Unlock' }).click();
+      await page.getByRole('tab', { name: 'Results' }).click();
+      await page.getByRole('button', { name: 'Sessions', exact: true }).click();
+      await page.getByText('5 of 18 guests answered both').waitFor({ timeout: 30_000 });
+      await page.getByRole('button', { name: 'Dashboard', exact: true }).click();
+      const card = page.getByRole('region', { name: 'Confidence index and shift by client' });
+      await card.getByText('16 of 20 guests answered both').waitFor({ timeout: 30_000 });
+      assert.match(await card.innerText(), /Shift \+24%/, 'Kroger: 16 paired, 1.7 to 2.9 on 5');
+      assert.match(await card.innerText(), /Shift \+14%/, 'Domino\'s: 10 paired, 2.4 to 3.1');
+      assert.match(await page.locator('.dash__headline').innerText(), /Guests moved 20% up the scale \(2\.0 to 3\.0\)/, '(16 x 23.75 + 10 x 14) / 26 = 20');
+      await page.getByRole('button', { name: 'Sessions', exact: true }).click();
+      await page.getByRole('button', { name: 'Live display' }).first().click();
+      const producer = page.getByTestId('live-check-card');
+      await producer.waitFor({ timeout: 30_000 });
+      assert.match(await producer.innerText(), /Before\s+18 of 18[\s\S]*After\s+5 of 18/);
+    } finally {
+      await browser.close();
+      await running.stop();
+    }
+  });
+});
