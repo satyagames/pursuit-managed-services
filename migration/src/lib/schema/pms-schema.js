@@ -21,6 +21,11 @@
 // settings on PMSAppSettings, FiscalYearStartMonth and MinSample. A site of version 4 lacks them, and the settings item's read names the two
 // settings, so a page of this build stops there (PMS-LST-011) until Setup has made them.
 //
+// Schema version 6 (Prompt 21, Phase 3): several sessions a day. PMSClientSessions gains StartTime (HH:mm), Sequence (its order among its client's
+// sessions that day, as planned), Period (FY27-Q2, from the date and FiscalYearStartMonth) and PlannedDate (when an Admin planned it), and its
+// title is the built-in Title (where the data layer has always written a session's id: such a title reads as none). A site of version 5 lacks
+// the four, and every read of the list names them, so a page of this build stops there (PMS-LST-011) until Setup has added them.
+//
 // A list is its title before any prefix (the settings may put one in front, or name the list outright) and its fields: the
 // property of a record, then the internal name of the column that holds it, then its kind when it is not text: `number`,
 // `yesno`, `date`, `array` (a JSON list kept as plain text) or `object` (a JSON object kept as plain text); then `indexed` for a
@@ -31,11 +36,11 @@
 /** The column every list is keyed by: the app's own id of a record, never SharePoint's numeric ID. Indexed and unique. */
 export const ID = 'AppId';
 /**
- * The version of the lists this build is made for (Phase 10c-2b: schema v2; Phase 10i: 3; Phase 20: 4; Prompt 21: 5). The site says its own in PMSAppSettings.SchemaVersion,
+ * The version of the lists this build is made for (Phase 10c-2b: schema v2; Phase 10i: 3; Phase 20: 4; Prompt 21: 5; Prompt 21, Phase 3: 6). The site says its own in PMSAppSettings.SchemaVersion,
  * which Setup writes when it makes the lists, and raises once it has added what a newer version needs; a page on lists of another version stops
  * (dataService, PMS-LST-010 to 012).
  */
-export const VERSION = 5;
+export const VERSION = 6;
 /** The picture library's title before any prefix. */
 export const LIBRARY = 'PMSClientImages';
 
@@ -59,6 +64,7 @@ export const LISTS = {
   sessions: list('PMSClientSessions', {
     id: ID, clientId: 'ClientId indexed', date: 'SessionDate date', sectionIds: 'SectionIds array', activeSectionId: 'ActiveSectionId', status: 'Status',
     endedAt: 'EndedAt date', participationMode: 'ParticipationMode', activityFlow: 'ActivityFlow', confidenceCheck: 'ConfidenceCheck yesno',
+    title: 'Title', startTime: 'StartTime', sequence: 'Sequence number', period: 'Period', plannedDate: 'PlannedDate date',
   }),
   sections: list('PMSActivities', {
     id: ID, title: 'Title', order: 'SortOrder number', enabled: 'Enabled yesno', industryTags: 'IndustryTags array', questionIds: 'QuestionIds array',

@@ -20,7 +20,7 @@ import { samplePack } from '../migration/src/lib/setup/sample-clients.js';
 import { seedPack } from '../migration/src/lib/setup/seed.js';
 import { readSessionResults } from '../migration/src/lib/results/session-results.js';
 import { schemaSpecs } from '../migration/src/lib/setup/setup-checks.js';
-import { PHASE_20_COLUMNS, PHASE_21_COLUMNS, PHASE_21_LISTS, REFUSED_BY_NAME, STRAYS, UNINDEXED, UNNAMED, createSharePointFake } from './sharepoint-fake.js';
+import { PHASE_20_COLUMNS, PHASE_21_COLUMNS, PHASE_21C_COLUMNS, PHASE_21_LISTS, REFUSED_BY_NAME, STRAYS, UNINDEXED, UNNAMED, createSharePointFake } from './sharepoint-fake.js';
 
 const DAY = '2026-10-15';
 const SESSION = `dominos-${DAY}`;
@@ -41,8 +41,9 @@ async function pageOn(fake) {
 async function pcoe() {
   // (Phase 20: the records are written by this build's data layer, which names PMSActivities.Kind and PMSClientSessions.ConfidenceCheck in its
   // reads, so the site has them while they are written and loses them before anything is looked at, as a site of version 2 never had them.
-  // Prompt 21: the same for the settings item's two columns of version 5. The three lists of version 5 are not there at all.)
-  const fake = createSharePointFake({ listsVersion: 2, keepColumns: [...PHASE_20_COLUMNS, ...PHASE_21_COLUMNS] });
+  // Prompt 21: the same for the settings item's two columns of version 5, and its Phase 3 for a session's four of version 6. The three lists of
+  // version 5 are not there at all.)
+  const fake = createSharePointFake({ listsVersion: 2, keepColumns: [...PHASE_20_COLUMNS, ...PHASE_21_COLUMNS, ...PHASE_21C_COLUMNS] });
   fake.install();
   const { ds } = await pageOn(fake);
   fake.item('appsettings', 'default').SchemaVersion = VERSION;
@@ -55,7 +56,7 @@ async function pcoe() {
     DisplayName: 'Casey Example', VisitorId: null, VisitorName: '', TrackId: track.id, VisitedAt: `${DAY}T09:00:00.000Z`,
   });
   fake.add('visitorroster', { AppId: 'guest-before', Title: 'guest-before', SessionId: 'dominos-2026-10-14', DisplayName: 'Avery Stone', Enabled: true });
-  fake.dropColumns([...PHASE_20_COLUMNS, ...PHASE_21_COLUMNS]);
+  fake.dropColumns([...PHASE_20_COLUMNS, ...PHASE_21_COLUMNS, ...PHASE_21C_COLUMNS]);
   // (Go live rewrote the item: it is read again.)
   fake.item('appsettings', 'default').SchemaVersion = 2;
   fake.reset();
@@ -84,48 +85,49 @@ describe('a site of version 2 (the PCOE site), before Setup has run', () => {
     assert.equal(fake.writes().length, 0);
   });
 
-  it('Setup says the case in full: version 2, this build needs 5 (3 until Phase 20, 4 until Prompt 21), and what to press, in order', async () => {
+  it('Setup says the case in full: version 2, this build needs 6 (3 until Phase 20, 4 until Prompt 21, 5 until its Phase 3), and what to press, in order', async () => {
     const { fake } = await pcoe();
     const { ds } = await setup(fake);
     const found = await ds.getAppSettings().then(() => null, (error) => error);
     const said = problem({ id: found.code, version: found.version, wanted: found.wanted, list: ds.sharePointListTitles().appsettings });
     assert.equal(`${said.title}. ${said.what} ${said.next} (${said.technical})`,
-      "This site's lists need an update before this version of the app can use them. The lists on this site are version 2; this version of the app needs version 5. "
+      "This site's lists need an update before this version of the app can use them. The lists on this site are version 2; this version of the app needs version 6. "
       + 'Open Setup (setup.html, in the same folder as this page), press Show the plan, then Create, then Mark the site as ready: a clean Create does the last step by itself. '
-      + '(PMS-LST-011, SchemaVersion 2, this build needs 5)');
+      + '(PMS-LST-011, SchemaVersion 2, this build needs 6)');
   });
 });
 
-describe('Setup brings it to version 5 (3 until Phase 20, 4 until Prompt 21)', () => {
+describe('Setup brings it to version 6 (3 until Phase 20, 4 until Prompt 21, 5 until its Phase 3)', () => {
   // (Prompt 21: version 5's three lists, every column of theirs and their settings come with the plan, and the settings item's two columns.)
   const newLists = (site) => PHASE_21_LISTS.map((key) => site.titles[key]);
   it('Show the plan: the two new columns of version 3, the two of version 4, version 5\'s two settings and three lists, and nothing else; the old DisplayName columns under what it will not touch, as harmless', async () => {
     const { fake } = await pcoe();
     const site = await setup(fake);
     const { plan } = await showPlan(site.api, site.titles);
-    assert.deepEqual(plan.columns.filter((item) => !newLists(site).includes(item.list)).map((item) => `${item.list}.${item.name}`).sort(), [`${site.titles.visitorroster}.GuestName`, `${site.titles.uservisitlogs}.SignedInName`, `${site.titles.sessions}.ConfidenceCheck`, `${site.titles.sections}.Kind`, `${site.titles.appsettings}.FiscalYearStartMonth`, `${site.titles.appsettings}.MinSample`].sort());
+    assert.deepEqual(plan.columns.filter((item) => !newLists(site).includes(item.list)).map((item) => `${item.list}.${item.name}`).sort(), [`${site.titles.visitorroster}.GuestName`, `${site.titles.uservisitlogs}.SignedInName`, `${site.titles.sessions}.ConfidenceCheck`, `${site.titles.sections}.Kind`, `${site.titles.appsettings}.FiscalYearStartMonth`, `${site.titles.appsettings}.MinSample`,
+      ...PHASE_21C_COLUMNS.map((name) => `${site.titles.sessions}.${name.split('.')[1]}`)].sort());
     assert.deepEqual(plan.settings.filter((item) => !PHASE_21_LISTS.includes(item.key)), []);
     assert.equal(plan.lists.length, 3);
-    assert.equal(plan.summary, '3 lists, 34 columns, 10 settings to create');
+    assert.equal(plan.summary, '3 lists, 38 columns, 10 settings to create');
     assert.deepEqual(plan.untouched.map((item) => [item.list, item.column, item.harmless]), [[site.titles.visitorroster, 'DisplayName', true], [site.titles.uservisitlogs, 'DisplayName', true]]);
     assert.equal(plan.toFix, 0, 'nothing to fix by hand');
     // (The two lists that gain a column of version 4 say so in lines of their own: test-confidence-check.js holds them.)
     const own = (line) => newLists(site).some((title) => line.startsWith(title)) || ['  Create 2 columns: FiscalYearStartMonth, MinSample.', `${site.titles.appsettings} (exists)`].includes(line);
     let inNew = false;
     const lines = planLines(plan).filter((line) => { if (!line.startsWith('  ')) inNew = newLists(site).some((title) => line.startsWith(title)); return !inNew && !own(line); });
-    assert.deepEqual(lines.filter((line) => ![`${site.titles.sessions} (exists)`, `${site.titles.sections} (exists)`, '  Create 1 column: ConfidenceCheck.', '  Create 1 column: Kind.'].includes(line)), [
+    assert.deepEqual(lines.filter((line) => ![`${site.titles.sessions} (exists)`, `${site.titles.sections} (exists)`, '  Create 5 columns: ConfidenceCheck, StartTime, Sequence, Period, PlannedDate.', '  Create 1 column: Kind.'].includes(line)), [
       `${site.titles.visitorroster} (exists)`,
       '  Create 1 column: GuestName.',
       `  Will not touch (harmless): ${retired('the guest\'s name', 'GuestName')}`,
       `${site.titles.uservisitlogs} (exists)`,
       '  Create 1 column: SignedInName.',
       `  Will not touch (harmless): ${retired('the signed-in name', 'SignedInName')}`,
-      '3 lists, 34 columns, 10 settings to create',
+      '3 lists, 38 columns, 10 settings to create',
     ]);
     assert.equal(fake.writes().length, 0, 'the plan reads and never writes');
   });
 
-  it('Create adds the four columns (and version 5\'s) and only adds; Mark the site as ready raises the version: "Raised the lists from version 2 to version 5."', async () => {
+  it('Create adds the four columns (and version 5\'s and 6\'s) and only adds; Mark the site as ready raises the version: "Raised the lists from version 2 to version 6."', async () => {
     const { fake } = await pcoe();
     const site = await setup(fake);
     const { plan } = await showPlan(site.api, site.titles);
@@ -133,18 +135,18 @@ describe('Setup brings it to version 5 (3 until Phase 20, 4 until Prompt 21)', (
     const made = await create(site.api, plan, { gapMs: 0 });
     assert.equal(made.ok, true, made.failure?.words);
     assert.deepEqual(fake.writes().filter((entry) => entry.list && !PHASE_21_LISTS.includes(entry.list)).map((entry) => `${entry.method} ${entry.list} ${entry.field ?? ''}`).sort(),
-      ['POST appsettings FiscalYearStartMonth', 'POST appsettings MinSample', 'POST sections Kind', 'POST sessions ConfidenceCheck', 'POST uservisitlogs SignedInName', 'POST visitorroster GuestName']);
+      ['POST appsettings FiscalYearStartMonth', 'POST appsettings MinSample', 'POST sections Kind', 'POST sessions ConfidenceCheck', 'POST sessions Period', 'POST sessions PlannedDate', 'POST sessions Sequence', 'POST sessions StartTime', 'POST uservisitlogs SignedInName', 'POST visitorroster GuestName']);
     assert.ok(fake.field('visitorroster', 'DisplayName') && fake.field('uservisitlogs', 'DisplayName'), 'the old columns are where they were');
     assert.equal(fake.field('uservisitlogs', 'SignedInName').TypeAsString, 'Text');
     fake.reset();
     const ready = await markReady(site.api, site.titles, { check: site.check });
-    assert.deepEqual([ready.ready, ready.wrote, ready.words], [true, 'raised', 'Raised the lists from version 2 to version 5.']);
-    assert.deepEqual(ready.problems, [], 'the check of version 5 found nothing: the old DisplayName columns are not a problem');
+    assert.deepEqual([ready.ready, ready.wrote, ready.words], [true, 'raised', 'Raised the lists from version 2 to version 6.']);
+    assert.deepEqual(ready.problems, [], 'the check of version 6 found nothing: the old DisplayName columns are not a problem');
     assert.deepEqual(fake.writes().map((entry) => `${entry.method} ${entry.list}`), ['MERGE appsettings'], 'one write: the version');
-    assert.equal(fake.item('appsettings', 'default').SchemaVersion, 5);
+    assert.equal(fake.item('appsettings', 'default').SchemaVersion, 6);
     assert.equal(fake.item('appsettings', 'default').ActiveClientId, 'c-dominos', 'and nothing else of the item changed');
     const again = await markReady(site.api, site.titles, { check: site.check });
-    assert.deepEqual([again.wrote, again.words], [null, 'The site was already marked ready (version 5). Nothing was written.']);
+    assert.deepEqual([again.wrote, again.words], [null, 'The site was already marked ready (version 6). Nothing was written.']);
     const plan2 = (await showPlan(site.api, site.titles)).plan;
     assert.equal(plan2.summary, 'Nothing to create', 'and the plan has nothing left to create');
     assert.equal(plan2.untouched.length, 2, 'the old columns are still listed, as harmless');
@@ -159,7 +161,7 @@ describe('Setup brings it to version 5 (3 until Phase 20, 4 until Prompt 21)', (
     const ds = admin;
     const stops = [];
     ds.configure({ sharePoint: fake.settings, onStop: (code) => stops.push(code) });
-    assert.equal((await ds.getAppSettings()).schemaVersion, 5);
+    assert.equal((await ds.getAppSettings()).schemaVersion, 6);
     // A member of staff visits, as the participant page logs it (App.svelte, logEntry).
     const now = await ds.beginVisit(crypto.randomUUID(), SESSION, 'c-dominos', { sharePointUserId: '17' });
     await ds.recordParticipantVisit({
@@ -194,14 +196,14 @@ describe('Setup brings it to version 5 (3 until Phase 20, 4 until Prompt 21)', (
     assert.deepEqual(roster.map((guest) => [guest.id, guest.displayName ?? null]), [['guest-before', null]]);
   });
 
-  it('a site whose lists say version 6 (5 until Prompt 21) is never lowered, and one with a problem left is not raised', async () => {
-    const newer = createSharePointFake({ schemaVersion: 6 });
+  it('a site whose lists say version 7 (a newer one; 6 until Prompt 21, Phase 3) is never lowered, and one with a problem left is not raised', async () => {
+    const newer = createSharePointFake({ schemaVersion: 7 });
     newer.install();
     const site = await setup(newer);
     const result = await markReady(site.api, site.titles, { check: site.check });
     assert.deepEqual([result.ready, result.wrote], [false, null]);
-    assert.equal(result.words, 'Not marked ready: the settings item says version 6; this version of the app is for version 5. Setup never lowers the version of the lists: upload the newer files.');
-    assert.equal(newer.item('appsettings', 'default').SchemaVersion, 6);
+    assert.equal(result.words, 'Not marked ready: the settings item says version 7; this version of the app is for version 6. Setup never lowers the version of the lists: upload the newer files.');
+    assert.equal(newer.item('appsettings', 'default').SchemaVersion, 7);
     assert.equal(newer.writes().length, 0);
 
     const { fake } = await pcoe();
@@ -211,6 +213,8 @@ describe('Setup brings it to version 5 (3 until Phase 20, 4 until Prompt 21)', (
     assert.deepEqual(result2.problems.map((entry) => `${entry.list}.${entry.column}: ${entry.problem}`).sort(), [`${half.titles.visitorroster}.GuestName: Missing.`, `${half.titles.uservisitlogs}.SignedInName: Missing.`, `${half.titles.sessions}.ConfidenceCheck: Missing.`, `${half.titles.sections}.Kind: Missing.`,
       // (Prompt 21: version 5's two settings and three lists.)
       `${half.titles.appsettings}.FiscalYearStartMonth: Missing.`, `${half.titles.appsettings}.MinSample: Missing.`,
+      // (Prompt 21, Phase 3: a session's four columns of version 6.)
+      ...PHASE_21C_COLUMNS.map((name) => `${half.titles.sessions}.${name.split('.')[1]}: Missing.`),
       ...PHASE_21_LISTS.map((key) => `${half.titles[key]}.null: The list "${half.titles[key]}" does not exist.`)].sort());
     assert.equal(fake.item('appsettings', 'default').SchemaVersion, 2);
     assert.equal(fake.writes().length, 0);

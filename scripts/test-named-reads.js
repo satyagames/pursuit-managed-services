@@ -255,7 +255,7 @@ describe('every item read the data layer and Setup can send names its columns', 
     }
   });
 
-  it('the longest addresses, on the real site\'s address: naming the columns adds the same to every read of a list (at most 164 characters); printed', async () => {
+  it('the longest addresses, on the real site\'s address: naming the columns adds the same to every read of a list (at most 171 characters since Prompt 21 Phase 3; 164 before); printed', async () => {
     const fake = await site({ siteUrl: 'https://internal.global.deloitteonline.com/sites/PCOE' });
     // The reads that carry the most ids (lib/data/read-groups.js, admin-clients.js, admin-results.js), each id as long as it can be: a session id is a slug of
     // 40 and a date (51 characters), a question id a UUID (36). As a browser sends them: spaces and quotes encoded.
@@ -275,8 +275,10 @@ describe('every item read the data layer and Setup can send names its columns', 
       assert.equal(sent.length - without.length, selectOf(query.list).length + 1, 'the columns, named once, at the end');
       assert.ok(sent.length <= most, `${what}: ${sent.length} characters`);
     }
-    assert.ok(Object.keys(LISTS).every((key) => selectOf(key).length <= selectOf('tracks').length), 'the participants\' visits name the most columns');
+    // (Prompt 21, Phase 3: a session's five columns of version 6 make PMSClientSessions the list that names the most; until then it was the visits'.)
+    assert.ok(Object.keys(LISTS).every((key) => selectOf(key).length <= selectOf('sessions').length), 'the sessions name the most columns');
     assert.equal(selectOf('tracks').length + 1, 164);
+    assert.equal(selectOf('sessions').length + 1, 171);
   });
 });
 

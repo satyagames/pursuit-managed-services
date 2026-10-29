@@ -187,6 +187,8 @@ const unescapeXml = (text) => text.replace(/&(amp|lt|gt|quot|apos);/g, (_, name)
 export const PHASE_21_LISTS = Object.freeze(Object.keys(LISTS).filter((key) => META[key].since === 5));
 /** The columns of an older list schema version 5 added (Prompt 21, Phase 1), as 'key.Column'. */
 export const PHASE_21_COLUMNS = Object.freeze(['appsettings.FiscalYearStartMonth', 'appsettings.MinSample']);
+/** The columns of PMSClientSessions schema version 6 added (Prompt 21, Phase 3), as 'key.Column': a site Setup made for version 5 lacks them. */
+export const PHASE_21C_COLUMNS = Object.freeze(['sessions.StartTime', 'sessions.Sequence', 'sessions.Period', 'sessions.PlannedDate']);
 /** The columns schema version 4 added (Phase 20), as 'key.Column': what a site Setup made for an earlier version lacks. */
 export const PHASE_20_COLUMNS = Object.freeze(['sections.Kind', 'sessions.ConfidenceCheck']);
 

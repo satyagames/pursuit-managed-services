@@ -137,6 +137,18 @@ export const CHANGES = [
       text('ClientId', 'clientId'), text('SessionId', 'sessionId'), text('Detail', 'detail'), date('OccurredAt', 'occurredAt')] };
     return shape;
   }],
+  // (Prompt 21, Phase 3, schema version 6: several sessions a day.)
+  ['(Prompt 21 Phase 3, v6) a session\'s title (the built-in Title), StartTime, Sequence (a number), Period and PlannedDate (a date): none indexed, nothing filters on them yet', (shape) => {
+    const plain = { indexed: false, unique: false, mustExist: true, required: false, format: null, values: null };
+    shape.lists.sessions.columns.push(
+      { column: 'Title', field: 'title', kind: 'plain', type: 'Text', ...plain },
+      { column: 'StartTime', field: 'startTime', kind: 'plain', type: 'Text', ...plain },
+      { column: 'Sequence', field: 'sequence', kind: 'plain', type: 'Number', ...plain },
+      { column: 'Period', field: 'period', kind: 'plain', type: 'Text', ...plain },
+      { column: 'PlannedDate', field: 'plannedDate', kind: 'date', type: 'DateTime', ...plain, format: 'Date & Time' },
+    );
+    return shape;
+  }],
 ];
 
 describe('the snapshot of the old schema, with this phase\'s changes, is the schema file', () => {

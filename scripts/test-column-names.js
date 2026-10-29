@@ -104,7 +104,7 @@ describe('the mock answers a column the site will not return by name as the real
     const today = createSharePointFake();
     assert.deepEqual(today.fields.get('visitorroster').map((field) => field.InternalName), ['AppId', 'SessionId', 'GuestName', 'Enabled']);
     assert.equal(today.fields.get('visitorroster')[2].TypeAsString, fake.fields.get('visitorroster')[2].TypeAsString);
-    assert.equal(today.item('appsettings', 'default').SchemaVersion, 5); // (3 until Phase 20; 4 until Prompt 21)
+    assert.equal(today.item('appsettings', 'default').SchemaVersion, 6); // (3 until Phase 20; 4 until Prompt 21; 5 until its Phase 3)
   });
 });
 

@@ -23,7 +23,7 @@ picture library. The titles below have no prefix (`"listPrefix": ""`); a copy of
 | Key | Title | What it is for | Read by | Written by |
 |---|---|---|---|---|
 | `clients` | PMSClients | One item for each client: its name, its slug and its look. | participant, admin, setup | admin, setup |
-| `sessions` | PMSClientSessions | One item for each client and day: the session participants join when it is live. | participant, admin | admin, participant |
+| `sessions` | PMSClientSessions | One item for each session: what participants join when it is live. A client may have several in one day (Prompt 21, Phase 3). | participant, admin | admin, participant |
 | `sections` | PMSActivities | The activities: each belongs to one client and holds its questions in order. | participant, admin, setup | admin, setup |
 | `questions` | PMSActivityQuestions | The questions of every activity. | participant, admin | admin, setup |
 | `options` | PMSAnswerOptions | The answers a question offers, including which one is right. | participant, admin | admin, setup |
