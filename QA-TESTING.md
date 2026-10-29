@@ -29,7 +29,10 @@
    the figures by hand, the i buttons, names, a screen reader). Below item 245. Item 246 first: the upgrade.
 13. Items **255 to 261** (Prompt 21, Phase 6: Hide names on Sessions, in the report and the CSV, one switch; a person turned off or left with no role
    while the page is open; the dashboard with no summary; the words). Below item 254. No upgrade: the lists stay at version 8.
-14. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
+14. Items **262 to 273** (Prompt 21, Phase 7, the real-site pass for all of Prompt 21: the access lists' permissions set by hand and what they
+   refuse, the people screens under the lock, directory search, the site owner, the old admins copied, two sessions in a day, Leadership's scope, a person
+   turned off, sign-in renewal with the new reads, History of changes). Below item 261. Item 263 first: it decides whether the lock holds on PCOE.
+15. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
    160, 161, 164, 165, 166, 167, 168, 169, 170.
 
 **Decided, no change:** 162 (names stay "Last, First") and 163 (the wall page keeps the admin header), VJR, 16 Oct 2026.
@@ -1627,6 +1630,53 @@ adds. Use a test copy of the site first, after items 216 to 228.
 261. **The words.** *(Still to see.)* Press **Rebuild summaries**: **expect** the question in plain words, with nothing about requests. Press **Export
     report**: **expect** a file named like "dashboard-fy27-q2-2026-10-29.csv". Read every new screen of Prompt 21 once more for words that are not plain
     or not in sentence case, and send back any found. Then push the branch `pms-21-6`.
+
+### Prompt 21, Phase 7 (hardening and the real-site pass): not verified on SharePoint Online
+
+The last phase of Prompt 21. Setup's plan now ends with **who may change the access lists**, four steps a site owner does by hand (Setup changes no
+permission), and its self-test reads what is set; the data layer's answer readers ask the read check as the plain reads do; and People has **History of
+changes** for a Super admin, read only. No list, column or setting changed (version 8); the participant page differs only by that read check, which asks
+nothing there. Proven on the mocked SharePoint and the built pages (RELEASE-21G.md); everything below is the **real-site pass for the whole of Prompt
+21**, in this order, on a test copy of the site first. Items 216 to 261 still hold; these say what only the real site can show.
+
+262. **The package on a test copy.** *(Still to see.)* Replace the three pages (step 21 of the runbook): **expect** no upgrade (the lists stay at
+    version 8) and Setup's self-test to have one step more, "Probe (read-only): who may change the access lists".
+263. **The access lists' permissions.** *(Still to see; ASSUMED until done.)* As a site owner, do the four steps under **Show the plan**, "Who may change
+    the access lists (by hand)": a group "PMS access managers" with the Super admins and the Admins; `PMSUsers` and `PMSRoleAssignments` with their own
+    permissions (the group Contribute, the members Read); a permission level "PMS add only" (View Items, Add Items, Open; not Edit or Delete Items);
+    `PMSAuditLog` with its own permissions (the members "PMS add only"). Run the self-test: **expect** "as planned." for all three. Say whether PCOE lets
+    a site owner make a permission level (a tenant may forbid it), and whether the owners' group's name ends in "Owners".
+264. **What the lists now refuse.** *(Still to see.)* As a Producer (a member, not in the group), open `PMSUsers` and `PMSRoleAssignments` in SharePoint:
+    **expect** no New and no Edit; open `PMSAuditLog`: **expect** New but no Edit or Delete on a line. Then on the admin page as that Producer, run a
+    session end to end (Go live, a visit, End session, Results): **expect** no write refused (each grant, removal and person added writes an audit line
+    as the person who did it, so every member needs Add on `PMSAuditLog`).
+265. **The people screens still work under the lock.** *(Still to see.)* As an Admin in the group, give a Producer a role on a client, remove it; as an
+    Admin with "may also add people", add a person; as a Super admin, give and take Admin: **expect** each to work and to show in **History of changes**.
+    As an Admin **not** in the group (a mistake to try on purpose): **expect** Give access to say SharePoint refused it, in plain words, and nothing half done.
+266. **Directory search.** *(Still to see; item 222 first.)* On **Add user**, type two letters of a colleague's name: **expect** suggestions from the
+    directory. If PCOE refuses the people picker, **expect** "unverified" and a typed email taken.
+267. **The site owner.** *(Still to see; item 221.)* Sign in as a site owner who has no row: **expect** the Super admin banner. Say which group made it
+    (a site collection administrator, or the site's owners group).
+268. **The old admins copied.** *(Still to see; items 217 to 219.)* With a test copy still holding `PMSAdminUsers` rows: before the copy, an old admin
+    unlocks with the PIN as before; Setup's copy (each with an email) makes them Admin, Producer and Designer on all clients; after it, they sign in with
+    no PIN. **Expect** the counts Setup reports to match the rows.
+269. **Two sessions in a day.** *(Still to see; items 231 to 233.)* On Kroger plan 09:00 and 14:00 on one day, run the first, end it, run the second:
+    **expect** each QR code to open its own session, each session's answers only on its own Results card and in its own summary, and "1 of 2 today",
+    "2 of 2 today". Two live at the same moment is not supported (one live session at a time, open item 5).
+270. **Leadership sees only their scope.** *(Still to see; items 249 and 250.)* As Leadership on Kroger, and as Leadership for FY27 Q2 on all clients,
+    open Results with the browser's network tab: **expect** no request naming another client's session or answers for the one on Kroger, and the period
+    holder to see only sessions inside FY27 Q2.
+271. **A person turned off.** *(Still to see; items 258 and 259.)* Turn a Producer off on People while their page is open: **expect** them stopped at the
+    next tab after five minutes at most, and at once on reload ("Your access to Pursuit Managed Services was turned off"). **Not done by the lists**: turning
+    someone off in the app does not take them out of the site's groups, so a person who must lose all access is also removed from the site (say so to
+    the owner of PCOE). Say whether five minutes is acceptable (open item 19).
+272. **Sign-in renewal with the new reads.** *(Still to see; items 205 to 210.)* Leave the admin page open on People, as a Super admin, until SharePoint
+    stops accepting the sign-in (or sleep the laptop for an hour): press another tab. **Expect** the page to renew the sign-in by itself (the access
+    re-read is a GET of `PMSUsers` and `PMSRoleAssignments` and goes through the same renewal), or the one banner with **Reload** and **Details**,
+    never SharePoint's raw "403". After Reload, the same person, the same roles.
+273. **History of changes.** *(Still to see.)* As a Super admin, People, **History of changes**: **expect** every line of `PMSAuditLog` newest first, the
+    filters by what was done, by person and by days, 50 to a page, no button to change anything, and no answer in any line. As an Admin: **expect** no
+    such button (a person's own history is still on their page). Then push the branch `pms-21-7`.
 
 ### Prompt 20 (the confidence check, Before and After): not verified on SharePoint Online or an iPad
 

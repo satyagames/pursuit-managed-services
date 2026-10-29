@@ -11,7 +11,7 @@
 
 /** The lists and what each needs: 'managers' (only the access group and the owners write), 'add-only' (everyone adds, no one else changes). */
 export const PERMISSION_LISTS = Object.freeze({ users: 'managers', roleassignments: 'managers', auditlog: 'add-only' });
-/** The SharePoint group whose members may write the people lists: the Super admins (ASSUMED name). */
+/** The SharePoint group whose members may write the people lists: the Super admins and the Admins, who give team roles (ASSUMED name). */
 export const ACCESS_GROUP = 'PMS access managers';
 /** The custom permission level the site's members hold on the audit list: View and Add, no Edit, no Delete (ASSUMED name). */
 export const ADD_ONLY_LEVEL = 'PMS add only';
@@ -37,7 +37,7 @@ const joined = (words) => (words.length < 2 ? words.join('') : `${words.slice(0,
  */
 export function permissionSteps(titles) {
   return [
-    `Make a SharePoint group named "${ACCESS_GROUP}" and put the Super admins in it.`,
+    `Make a SharePoint group named "${ACCESS_GROUP}" and put the Super admins and the Admins in it (an Admin gives team roles, and with the extra adds people).`,
     `${titles.users} and ${titles.roleassignments}: stop inheriting permissions; give "${ACCESS_GROUP}" Contribute and the site's members Read.`,
     `Make a permission level named "${ADD_ONLY_LEVEL}": View Items, Add Items and Open, and not Edit Items or Delete Items.`,
     `${titles.auditlog}: stop inheriting permissions; give the site's members "${ADD_ONLY_LEVEL}". Only the owners keep Full Control.`,
