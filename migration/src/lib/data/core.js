@@ -10,6 +10,7 @@ import { ID, LISTS, selectOf } from '../schema/pms-schema.js';
 import {
   columnsOf, fieldsOf, indexById, kindOf, pause, pick, retryAfterMs, spEncode, spError, spLiteral, spParseObject, spTitleIn,
 } from './encoding.js';
+import { observed } from './read-scope.js';
 import { classifyRefusal, evidenceLine, ladderVerdict, newSessionState, noteAnswer, recoverSession, refusalEvidence, refusalWords, sessionLost } from './session.js';
 
 // ============================================================================
@@ -18,14 +19,13 @@ import { classifyRefusal, evidenceLine, ladderVerdict, newSessionState, noteAnsw
 
 let baseUrl = globalThis.CEC_API_BASE || '/api';
 let sharePoint = globalThis.CEC_SHAREPOINT ?? null;
-let digestPromise;
+let digestPromise; let requestTotal = 0;
 const listMetadata = new Map();
 const listTypes = new Map(); // list -> its item entity type, learnt from any item read or asked for once
 const typeReads = new Map(); // list -> the request for its item type that prepareWrites() made, while it is on its way
 const listColumns = new Map(); // list -> the internal column names it has, once its fields were read
 let batchOff = false; // this page load found $batch unusable, so reads that would share a request go one by one
 let unfinishedScan = null; // a QR scan whose track is written but whose claim is not known to have landed (openQrScan); never stored
-let requestTotal = 0;
 let mustConfigure = false; // requireConfiguration() was called and configure() has not been since: nothing may be sent (Phase 10b)
 let onStop = null; // what the page does when the site's lists are not this build's (lib/settings/start.ts: its stop screen); none for Setup or a test
 let accessGuard = null; // Prompt 21: the page's write guard (lib/access/guard.js), asked before every write; none on the participant page or Setup
@@ -445,13 +445,13 @@ function fits(list, record) {
   }
   return record;
 }
-const listItems = (list) => request('GET', `/${list}`);
+const listItems = (list) => observed(accessGuard, list, undefined, () => request('GET', `/${list}`));
 const createItem = async (list, fields) => request('POST', `/${list}`, fits(list, fields));
 const updateItem = async (list, id, changes) => request('PATCH', itemPath(list, id), fits(list, changes));
 const deleteItem = (list, id) => request('DELETE', itemPath(list, id));
 
 /** Items whose fields equal the given values, e.g. queryItems('tracks', { sessionId }). */
-const queryItems = (list, filters) => request('GET', `/${list}?${new URLSearchParams(filters)}`);
+const queryItems = (list, filters) => observed(accessGuard, list, filters, () => request('GET', `/${list}?${new URLSearchParams(filters)}`));
 
 // Optimistic concurrency, for read-check-write sequences that several iPads can
 // race on (claiming a QR token). Read an item with its version, then write only if

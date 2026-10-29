@@ -24,7 +24,10 @@ export function newOwners() {
       for (const row of rows ?? []) {
         if (!row?.id) continue;
         if (list === 'sessions' && row.clientId) sessions.set(row.id, { clientId: row.clientId, date: row.date ?? '' });
-        else if (list === 'sections' && row.clientId) sections.set(row.id, row.clientId);
+        else if (list === 'sections' && row.clientId) {
+          sections.set(row.id, row.clientId);
+          for (const questionId of row.questionIds ?? []) if (!questions.has(questionId)) questions.set(questionId, row.id); // (an activity names its questions)
+        }
         else if (list === 'questions' && row.sectionId) questions.set(row.id, row.sectionId);
       }
     },

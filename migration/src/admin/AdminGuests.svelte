@@ -4,13 +4,17 @@
   import * as dataService from '../lib/data/dataService.js';
   import { loadGuestState, refreshGuestState, type GuestState, type GuestToken, type GuestVisitor } from '../lib/admin/adminData.js';
   import { copyText, participantPageUrl, qrImage } from '../lib/admin/admin-links.js';
+  import { isAccessDenied } from '../lib/access/access-denied.js';
+  import { reachOf, readQueries } from '../lib/access/scope.js';
   import {
     MAX_GUEST_NAME, completedTrackIds, csvFileName, guestKey, guestRows, guestsCsv, parseGuestNames, pasteSummary, printCards, statusCounts,
   } from '../lib/admin/admin-content.js';
 
   type QrDisplay = { visitor: GuestVisitor; url: string; image: string };
   type Progress = { label: string; done: number; total: number };
-  let { onToast, onNavigate, onPrint }: {
+  let { access = null, onToast, onNavigate, onPrint }: {
+    /** The signed-in person's access (Phase 4): the live session is shown only when it is one they hold. */
+    access?: any;
     onToast: (message: string, kind?: 'info' | 'success' | 'error') => void;
     onNavigate: (tab: string) => void;
     /** Opens the print-optimised view of the QR cards. */
@@ -29,6 +33,8 @@
   let progress = $state<Progress | null>(null);
   let report = $state<{ level: 'success' | 'warning' | 'error'; text: string } | null>(null);
   let error = $state('');
+  /** The live session is not one this role holds (Phase 4): nothing of it is read, and the screen says so. */
+  let elsewhere = $state(false);
   let controller: AbortController | null = null;
 
   const session = $derived(guestState?.session ?? null);
@@ -59,7 +65,15 @@
   });
 
   async function load() {
-    guestState = await loadGuestState();
+    // (A role that holds some places first reads their sessions, so that the data layer knows whose each is; the live session is then read only if it is theirs.)
+    const reach = access ? reachOf(access) : null;
+    try {
+      if (reach && !reach.all) await dataService.readLists(readQueries(reach, 'sessions'));
+      guestState = await loadGuestState();
+    } catch (cause) {
+      if (!isAccessDenied(cause)) throw cause;
+      elsewhere = true;
+    }
   }
 
   async function refresh() {
@@ -223,6 +237,7 @@
     <div><h2>Guests and QR</h2><p class="muted">Add the guests for the live session, give each a single-use QR code, and print the codes. Who is identified how is set on Today.</p></div>
   </header>
   {#if loading}<p role="status">Loading Guests and QR...</p>
+  {:else if elsewhere}<p class="notice" role="status" data-testid="guests-elsewhere">A session you have not been given is live. Guests and QR works on the live session of the clients and sessions you hold.</p>
   {:else if error && !session}<p class="error" role="alert">{error}</p>
   {:else if !session}
     <p class="muted">Nothing is live, so there is no session to add guests to. Go live on Today first; codes can only be made for the live session.</p>

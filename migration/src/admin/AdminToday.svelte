@@ -144,7 +144,7 @@
 
   async function reload({ keepPicker = false } = {}) {
     try {
-      const data = await loadToday(dataService, { clientId: keepPicker ? clientId : null, date: dateValid ? date : today, keepClient: keepPicker, sessionId: keepPicker ? pickedSessionId : null });
+      const data = await loadToday(dataService, { clientId: keepPicker ? clientId : null, date: dateValid ? date : today, keepClient: keepPicker, sessionId: keepPicker ? pickedSessionId : null, access });
       if (!alive) return;
       clients = data.clients as Client[];
       sessions = data.sessions as Session[];
@@ -175,7 +175,7 @@
         await reload({ keepPicker: true });
         return;
       }
-      const inputs = await loadReadinessInputs(dataService, { client, date: dateValid ? date : today, sections, sessions, sessionId: target?.id ?? null });
+      const inputs = await loadReadinessInputs(dataService, { client, date: dateValid ? date : today, sections, sessions, sessionId: target?.id ?? null, access });
       if (!alive || version !== inputsVersion) return;
       questions = inputs.questions;
       options = inputs.options;
@@ -222,7 +222,7 @@
     polling = true;
     const began = epoch;
     try {
-      const next = await pollToday(dataService, { settings, clients });
+      const next = await pollToday(dataService, { settings, clients, access });
       if (!alive || began !== epoch) return;
       pollError = '';
       if (next.changed && next.settings?.activeSessionId !== settings?.activeSessionId) {
@@ -281,7 +281,7 @@
   }
 
   async function applyPoll() {
-    const next = await pollToday(dataService, { settings, clients });
+    const next = await pollToday(dataService, { settings, clients, access });
     if (!alive) return;
     settings = next.settings as Settings | null;
     clients = next.clients as Client[];

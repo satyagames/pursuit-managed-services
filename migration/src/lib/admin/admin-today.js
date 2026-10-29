@@ -21,6 +21,17 @@
 import { isCheckActivity } from '../participant/confidence-check.js';
 import { withoutRetiredLogo } from '../brand/retired-logos.js';
 import { daySessionPick } from './session-plan.js';
+import { reachOf, scopedReader } from '../access/scope.js';
+
+/** The sessions each access has been found to be allowed to read, so that a poll reads what the first load found (Phase 4). */
+const readableOf = new WeakMap();
+/** `api.readLists` for an access: as it is for a global role (and for no access), the reads of the places held for a scoped one (lib/access/scope.js scopedReader). */
+function readerOf(api, access) {
+  const reach = access ? reachOf(access) : null;
+  if (!reach || reach.all) return (queries) => api.readLists(queries);
+  if (!readableOf.has(access)) readableOf.set(access, new Set());
+  return scopedReader((queries) => api.readLists(queries), reach, readableOf.get(access));
+}
 
 /** How often the status panel asks. Visibility-aware: AdminToday.svelte pauses while the tab is hidden. */
 export const POLL_MS = 10_000;
@@ -62,11 +73,11 @@ export const isCalendarDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value ?? '')
  * @param {{ settings: any, session: any, clients: any[] }} state
  * @returns {{ live: boolean, reason: string | null, client: any, session: any, since: string | null }}
  */
-export function liveStatus({ settings, session, clients }) {
+export function liveStatus({ settings, session, clients, elsewhere = false }) {
   const since = settings?.activatedAt ?? null;
   const found = (reason, client = null) => ({ live: false, reason, client, session: session ?? null, since });
   if (!settings?.activeSessionId) return found('no-session');
-  if (!session) return found('session-missing');
+  if (!session) return found(elsewhere ? 'elsewhere' : 'session-missing');
   // (The client is the one AppSettings names, which Go live writes beside the session. It is never looked for through the session.)
   const client = clients.find((entry) => entry.id === settings.activeClientId) ?? null;
   if (session.status === 'completed') return found('session-ended', client);
@@ -78,6 +89,7 @@ export function liveStatus({ settings, session, clients }) {
 /** What the status panel says about a client that is not live. */
 export const notLiveText = (status) => ({
   'no-session': 'Nothing is live. A participant who opens the page sees "Today\'s experience isn\'t live yet".',
+  elsewhere: 'A session you have not been given is live. You can see only your own clients and sessions here.',
   'session-missing': 'The live session no longer exists. A participant who opens the page sees "Today\'s experience isn\'t live yet".',
   'session-ended': `The ${status.client?.name ?? 'client'} session has ended. A participant who opens or reloads the page sees "This session has ended."; a page that is already open shows it within about 25 seconds (someone partway through an activity finishes it first). Reopen it, or go live with a client below.`,
   'client-missing': 'The live session\'s client no longer exists. A participant who opens the page sees "Today\'s experience isn\'t live yet".',
@@ -108,10 +120,10 @@ export function startingClientId(clients, wanted, liveId, { keepWanted = false }
  * back as `extraAnswers`. The session is the one picked for the day (`sessionId`, Prompt 21 Phase 3: a client may have several that day), else
  * the day's first that has not ended (daySessionPick); for a client with one session that day, the one Go live made, as before.
  * @param {any} api
- * @param {{ client: any, date: string, sections: any[], sessions: any[], sessionId?: string | null }} input
+ * @param {{ client: any, date: string, sections: any[], sessions: any[], sessionId?: string | null, access?: any }} input
  * @param {{ list: string, where?: Record<string, any> }[]} [extra]
  */
-export async function loadReadinessInputs(api, { client, date, sections, sessions, sessionId = null }, extra = []) {
+export async function loadReadinessInputs(api, { client, date, sections, sessions, sessionId = null, access = null }, extra = []) {
   const live = sections.filter((section) => section.clientId === client.id && section.enabled === true);
   const questionIds = unique(live.flatMap((section) => section.questionIds ?? []));
   const target = daySessionPick(sessions, client.id, date, sessionId);
@@ -123,7 +135,7 @@ export async function loadReadinessInputs(api, { client, date, sections, session
     ...(guests ? [{ list: 'visitorroster', where: { sessionId: target.id } }] : []),
     ...extra,
   ];
-  const answers = asked.length ? await api.readLists(asked) : [];
+  const answers = asked.length ? await readerOf(api, access)(asked) : [];
   return {
     questions: answers.slice(0, pages).flat(),
     options: answers.slice(pages, pages * 2).flat(),
@@ -136,28 +148,30 @@ export async function loadReadinessInputs(api, { client, date, sections, session
 /**
  * Everything Today shows on first paint.
  * @param {any} api
- * @param {{ clientId?: string | null, date?: string, keepClient?: boolean, sessionId?: string | null }} [options]
+ * @param {{ clientId?: string | null, date?: string, keepClient?: boolean, sessionId?: string | null, access?: any }} [options]
  */
-export async function loadToday(api, { clientId = null, date = localDate(), keepClient = false, sessionId = null } = {}) {
+export async function loadToday(api, { clientId = null, date = localDate(), keepClient = false, sessionId = null, access = null } = {}) {
+  const read = readerOf(api, access);
+  const scoped = Boolean(access && !reachOf(access).all);
   // The schema check is only meaningful on SharePoint, and only a read: a failure to run it is
   // reported as a warning, never a reason to hide the screen.
   const schema = api.isSharePointMode()
     ? api.checkSharePointSchema({ batch: true }).then((report) => ({ report }), (error) => ({ error: error instanceof Error ? error.message : String(error) }))
     : Promise.resolve(null);
   const [[settingRows, clients, sessions, sections], schemaResult] = await Promise.all([
-    api.readLists([{ list: 'appsettings' }, { list: 'clients' }, { list: 'sessions' }, { list: 'sections' }]),
+    read([{ list: 'appsettings' }, { list: 'clients' }, { list: 'sessions' }, { list: 'sections' }]),
     schema,
   ]);
   const settings = settingsOf(settingRows);
   const active = settings?.activeSessionId ? sessions.find((session) => session.id === settings.activeSessionId) ?? null : null;
-  const status = liveStatus({ settings, session: active, clients });
+  const status = liveStatus({ settings, session: active, clients, elsewhere: scoped });
   const picked = startingClientId(clients, clientId, status.live ? status.client.id : null, { keepWanted: keepClient });
   const client = clients.find((entry) => entry.id === picked) ?? null;
   const inputs = client
-    ? await loadReadinessInputs(api, { client, date, sections, sessions, sessionId }, active ? [{ list: 'tracks', where: { sessionId: active.id } }] : [])
+    ? await loadReadinessInputs(api, { client, date, sections, sessions, sessionId, access }, active ? [{ list: 'tracks', where: { sessionId: active.id } }] : [])
     : { questions: [], options: [], roster: null, target: null, extraAnswers: [] };
   const { extraAnswers, ...held } = inputs;
-  const tracks = extraAnswers[0] ?? (active && !client ? (await api.readLists([{ list: 'tracks', where: { sessionId: active.id } }]))[0] : []);
+  const tracks = extraAnswers[0] ?? (active && !client ? (await read([{ list: 'tracks', where: { sessionId: active.id } }]))[0] : []);
   return { settings, clients, sessions, sections, schema: schemaResult, status, participants: tracks.length, pickedClientId: picked, ...held };
 }
 
@@ -166,11 +180,13 @@ export async function loadToday(api, { clientId = null, date = localDate(), keep
  * SharePoint). If something else became live meanwhile, one more read gets that session, its tracks
  * and its client. `known` is the last result of loadToday() or pollToday().
  * @param {any} api
- * @param {{ settings: any, clients: any[] }} known
+ * @param {{ settings: any, clients: any[], access?: any }} known
  */
 export async function pollToday(api, known) {
+  const read = readerOf(api, known.access ?? null);
+  const scoped = Boolean(known.access && !reachOf(known.access).all);
   const knownSession = known.settings?.activeSessionId ?? null;
-  const [settingRows, sessionRows, trackRows] = await api.readLists([
+  const [settingRows, sessionRows, trackRows] = await read([
     { list: 'appsettings' },
     { list: 'sessions', where: { id: knownSession ?? [] } },
     { list: 'tracks', where: { sessionId: knownSession ?? [] } },
@@ -182,7 +198,7 @@ export async function pollToday(api, known) {
   const nextSession = settings?.activeSessionId ?? null;
   if (nextSession !== knownSession) {
     const wantedClient = settings?.activeClientId ?? null;
-    const [sessionNow, tracksNow, clientNow] = await api.readLists([
+    const [sessionNow, tracksNow, clientNow] = await read([
       { list: 'sessions', where: { id: nextSession ?? [] } },
       { list: 'tracks', where: { sessionId: nextSession ?? [] } },
       { list: 'clients', where: { id: wantedClient ?? [] } },
@@ -191,10 +207,10 @@ export async function pollToday(api, known) {
     tracks = tracksNow;
     clients = [...known.clients.filter((entry) => !clientNow.some((fresh) => fresh.id === entry.id)), ...clientNow];
   } else if (session && settings?.activeClientId && !clients.some((entry) => entry.id === settings.activeClientId)) {
-    const [clientNow] = await api.readLists([{ list: 'clients', where: { id: settings.activeClientId } }]);
+    const [clientNow] = await read([{ list: 'clients', where: { id: settings.activeClientId } }]);
     clients = [...clients, ...clientNow];
   }
-  const status = liveStatus({ settings, session, clients });
+  const status = liveStatus({ settings, session, clients, elsewhere: scoped });
   return { settings, clients, session, status, participants: tracks.length, changed: nextSession !== knownSession || (known.settings?.activeClientId ?? null) !== (settings?.activeClientId ?? null) };
 }
 

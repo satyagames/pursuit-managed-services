@@ -106,3 +106,39 @@ export function readQueries(reach, list) {
   }
   return groups(owned).map((group) => ({ list, where: { clientId: group } }));
 }
+
+/** Lists whose items belong to a session. */
+const BY_SESSION = new Set(['tracks', 'uservisitlogs', 'qrtokens', 'visitorroster']);
+const idsIn = (query, key) => (query.where?.[key] === undefined ? null : [query.where[key]].flat().map(String));
+
+/**
+ * `readLists` for a scoped role: a plain read of clients, sessions or activities becomes the reads for the places the reach holds (readQueries), and a
+ * read by id of a session, its answers or a client the person does not hold is left out, not sent (it answers nothing). The sessions that come back are
+ * remembered as readable, so the reads that follow for them (tracks, roster) are sent. A global role's reader is `readLists` itself.
+ * @param {(queries: { list: string, where?: any }[]) => Promise<any[][]>} readLists @param {ReturnType<typeof reachOf> | null} reach @param {Set<string>} [readable] the sessions already known to be readable (a page keeps one set, so that a later poll reads what the first load found)
+ */
+export function scopedReader(readLists, reach, readable = new Set()) {
+  if (!reach || reach.all) return readLists;
+  const keep = (ids, test) => ids.filter(test);
+  return async (queries) => {
+    const plan = queries.map((query) => {
+      if (!query.where && ['clients', 'sessions', 'sections'].includes(query.list)) return { query, parts: readQueries(reach, query.list) };
+      let key = null; let test = null;
+      if (query.list === 'sessions' && idsIn(query, 'id')) { key = 'id'; test = (id) => reach.sessionIds.has(id) || readable.has(id); }
+      else if (BY_SESSION.has(query.list) && idsIn(query, 'sessionId')) { key = 'sessionId'; test = (id) => reach.sessionIds.has(id) || readable.has(id); }
+      else if (query.list === 'clients' && idsIn(query, 'id')) { key = 'id'; test = (id) => mayReadClient(reach, id); }
+      if (!key) return { query, parts: [query] };
+      const kept = keep(idsIn(query, key), test);
+      return { query, parts: kept.length ? [{ ...query, where: { ...query.where, [key]: kept } }] : [] };
+    });
+    const sent = plan.flatMap((entry) => entry.parts);
+    const answers = sent.length ? await readLists(sent) : [];
+    let at = 0;
+    return plan.map((entry) => {
+      const rows = answers.slice(at, at + entry.parts.length).flat();
+      at += entry.parts.length;
+      if (entry.query.list === 'sessions') for (const row of rows) readable.add(row.id);
+      return rows;
+    });
+  };
+}

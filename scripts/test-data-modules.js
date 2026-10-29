@@ -143,9 +143,10 @@ describe('the data layer is a facade over parts, with its state in core.js (Phas
     assert.ok(graph.size > 140, `${graph.size} files read`);
     assert.deepEqual(cyclesOf(graph), []);
     const coreImports = Object.keys(partImportsOf(await text(path.join(DATA, 'core.js'))));
-    // (Prompt 19 added session.js, the table of refusals and the ladder's rules: no state of its own, and it imports no part at all.)
-    assert.deepEqual(coreImports, ['encoding.js', 'session.js'], 'core.js imports only the parts with no state');
+    // (Prompt 19 added session.js, the table of refusals and the ladder's rules: no state of its own, and it imports no part at all. Prompt 21, Phase 4 added read-scope.js, the read check that asks the page's access guard: the same.)
+    assert.deepEqual(coreImports, ['encoding.js', 'read-scope.js', 'session.js'], 'core.js imports only the parts with no state');
     assert.deepEqual(Object.keys(partImportsOf(await text(path.join(DATA, 'session.js')))), [], 'session.js imports no part of lib/data');
+    assert.deepEqual(Object.keys(partImportsOf(await text(path.join(DATA, 'read-scope.js')))), [], 'read-scope.js imports no part of lib/data');
     // The cycle check can fail.
     assert.equal(cyclesOf(new Map([['a', ['b']], ['b', ['c']], ['c', ['a']]])).length, 1);
     assert.deepEqual(cyclesOf(new Map([['a', ['b']], ['b', []]])), []);

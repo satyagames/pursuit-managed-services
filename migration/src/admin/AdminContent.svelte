@@ -12,12 +12,14 @@
   import BrandStudio from './BrandStudio.svelte';
   import ContentActivities from './ContentActivities.svelte';
   import ContentView from './ContentView.svelte';
+  import ViewOnly from './ViewOnly.svelte';
+  import { contentModes, readQueries, reachOf } from '../lib/access/scope.js';
 
   type Client = { id: string; name: string; status?: string; theme?: unknown; themeVersion?: number | null; logoUrl?: string | null };
   type Section = { id: string; title: string; enabled: boolean; order?: number; questionIds?: string[]; clientId?: string | null; description?: string | null };
   type Settings = { id: string; activeSessionId?: string | null; activeClientId?: string | null };
 
-  let { onToast, adminName = '', view = DEFAULT_VIEW, clientRequest = null, rows = null, onView = () => {} }: {
+  let { access = null, onToast, adminName = '', view = DEFAULT_VIEW, clientRequest = null, rows = null, onView = () => {} }: {
     onToast: (message: string, kind?: 'info' | 'success' | 'error') => void;
     adminName?: string;
     /** The view showing (CONTENT_VIEWS); the shell keeps it in the address. */
@@ -31,6 +33,8 @@
     rows?: { settings: unknown[]; clients: unknown[]; sections: unknown[] } | null;
     /** The person chose another view on the strip. */
     onView?: (view: string) => void;
+    /** The signed-in person's access (Phase 4): which clients Content lists, and which of its two views they may change (lib/access/scope.js). */
+    access?: any;
   } = $props();
 
   // Its styles (below, with no comments: a comment in a component's styles is carried into the page): on a window wide and tall enough
@@ -66,6 +70,8 @@
   let bridgePreview = $state<Section | null>(null);
 
   const client = $derived(clients.find((entry) => entry.id === clientId) ?? null);
+  /** Which views of this client the person may change; the rest are shown to read (a role with no access sees every client's content as 'edit': the page had no roles). */
+  const modes = $derived(access && clientId ? contentModes(access, clientId) : { activities: 'edit', brand: 'edit' });
   const owned = $derived(activitiesOfClient(sections, clientId));
   const isLive = $derived(client !== null && client.id === liveClientId);
   const archived = $derived(client?.status === 'archived');
@@ -93,8 +99,17 @@
   /** One batch on SharePoint: who is live, the clients, and every activity (or the same three as Clients has just read them). */
   async function load() {
     const given = untrack(() => rows);
-    const [settingRows, clientRows, sectionRows] = (given ? [given.settings, given.clients, given.sections]
-      : await dataService.readLists([{ list: 'appsettings' }, { list: 'clients' }, { list: 'sections' }])) as unknown as [Settings[], Client[], Section[]];
+    // (Phase 4: a role that holds some clients reads those clients and their activities; a global role sends the three plain reads, as always.)
+    const reach = untrack(() => (access ? reachOf(access) : null));
+    const wanted = reach && !reach.all ? [{ list: 'clients' }, { list: 'sections' }].map(({ list }) => readQueries(reach, list as 'clients' | 'sections')) : null;
+    let settingRows: Settings[]; let clientRows: Client[]; let sectionRows: Section[];
+    if (given) [settingRows, clientRows, sectionRows] = [given.settings, given.clients, given.sections] as unknown as [Settings[], Client[], Section[]];
+    else if (wanted) {
+      const answers = await dataService.readLists([{ list: 'appsettings' }, ...wanted.flat()]) as unknown as unknown[][];
+      settingRows = answers[0] as Settings[];
+      clientRows = answers.slice(1, 1 + wanted[0].length).flat() as Client[];
+      sectionRows = answers.slice(1 + wanted[0].length).flat() as Section[];
+    } else [settingRows, clientRows, sectionRows] = await dataService.readLists([{ list: 'appsettings' }, { list: 'clients' }, { list: 'sections' }]) as unknown as [Settings[], Client[], Section[]];
     const settings = settingRows.find((row) => row.id === 'default');
     // (The live client is the one AppSettings names: Go live writes it beside the session.)
     const live = settings?.activeSessionId ? settings.activeClientId ?? null : null;
@@ -211,11 +226,15 @@
         <ContentView id={panelId(entry.id)} labelledBy={tabId(entry.id)} shown={view === entry.id} onReveal={() => reveal(entry.id)}>
           {#if opened.includes(entry.id) || view === entry.id}
             {#if entry.component === 'activities'}
-              <ContentActivities bind:clients bind:sections bind:busy {client} shown={view === entry.id} {look} {onToast} {adminName}
-                onEditBrand={() => void show('brand')} />
+              <ViewOnly readOnly={modes.activities !== 'edit'} words={`Your role can look at ${client.name}'s activities but not change them. Ask an admin if you need to.`}>
+                <ContentActivities bind:clients bind:sections bind:busy {client} shown={view === entry.id} {look} {onToast} {adminName} {access}
+                  onEditBrand={() => void show('brand')} />
+              </ViewOnly>
             {:else if entry.component === 'brand'}
-              <BrandStudio embedded client={client as never} clients={clients as never} {onToast} onDirty={(dirty) => { brandDirty = dirty; }}
-                onSaved={(record) => { clients = clients.map((item) => (item.id === record.id ? { ...item, ...record } : item)); }} />
+              <ViewOnly readOnly={modes.brand !== 'edit'} words={`Your role can look at ${client.name}'s look but not change it. Ask an admin if you need to.`}>
+                <BrandStudio embedded client={client as never} clients={clients as never} {onToast} onDirty={(dirty) => { brandDirty = dirty; }}
+                  onSaved={(record) => { clients = clients.map((item) => (item.id === record.id ? { ...item, ...record } : item)); }} />
+              </ViewOnly>
               <section class="card content-bridge" aria-labelledby="content-bridge-title">
                 <h3 id="content-bridge-title">Preview an activity in this look...</h3>
                 {#if owned.length === 0}
@@ -240,7 +259,7 @@
 
   {#if bridgePreview && client}
     <ActivityPreview section={bridgePreview} {client} onClose={() => { bridgePreview = null; }} {onToast}
-      onChange={() => { void dataService.readLists([{ list: 'sections' }]).then((result) => { sections = (result as unknown as [Section[]])[0]; }).catch(() => {}); }} />
+      onChange={() => { void dataService.readLists(access ? readQueries(reachOf(access), 'sections') : [{ list: 'sections' }]).then((result) => { sections = (result as unknown as Section[][]).flat(); }).catch(() => {}); }} />
   {/if}
 </section>
 

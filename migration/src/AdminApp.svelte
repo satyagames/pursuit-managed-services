@@ -23,7 +23,8 @@
   import { createKeepAlive } from './lib/common/session-keepalive.js';
   import NoAccess from './admin/NoAccess.svelte';
   import { resolveAccess, signInStep } from './lib/access/resolve.js';
-  import { canView, legacyAccess } from './lib/access/can.js';
+  import { legacyAccess } from './lib/access/can.js';
+  import { tabAllowed, tabsFor } from './lib/access/scope.js';
   import { writeGuard } from './lib/access/guard.js';
   import { OWNER_BANNER } from './lib/access/access-words.js';
 
@@ -46,8 +47,6 @@
   /** This copy's label, from its settings ("Test, folder 3"): shown in the bar, so that two folders on one site can be told apart. */
   const label = typeof deployment()?.settings?.label === 'string' ? String(deployment()?.settings?.label) : '';
 
-  /** The tabs this person's role may open (the menu is the role matrix's: People is for those who may look at the people list, never for a PIN's legacy admin). */
-  const shownTabs = $derived(tabs.filter((tab) => tab.id !== 'users' || Boolean(access && !access.legacy && canView(access, 'users.view'))));
 
   let loginHeading = $state<HTMLElement>();
   let pinField = $state<HTMLInputElement>();
@@ -77,6 +76,8 @@
   const onSharePoint = (() => { try { return dataService.isSharePointMode(); } catch { return false; } })();
   let signIn = $state<'checking' | 'pin' | 'no-access'>(onSharePoint ? 'checking' : 'pin');
   let access = $state<any>(null);
+  /** The tabs this person's role may open: the menu is the role matrix's (lib/access/scope.js, Phase 4), for a Producer, a Designer or Leadership as for a Super admin. Before there is an access, none but People is shown, as before. */
+  const shownTabs = $derived(access ? tabsFor(access, tabs) : tabs.filter((tab) => tab.id !== 'users'));
   let noAccessReason = $state<string | null>(null);
   let ownerBanner = $state(false);
   /** Whether the admin came in with a PIN: only then is there a Lock, back to the PIN. */
@@ -171,7 +172,10 @@
     const view = liveOfHash(window.location.hash);
     liveDisplay = view?.sessionId ?? null;
     wallPage = view?.wall ?? false;
-    activeTab = printing ? 'guests' : liveDisplay !== null ? 'results' : tabFromHash() ?? 'today';
+    // (An address for a screen the role does not open is not followed: the first tab it does open is shown.)
+    if (printing && access && !tabAllowed(access, 'guests')) printing = false;
+    if (liveDisplay !== null && access && !tabAllowed(access, 'results')) { liveDisplay = null; wallPage = false; }
+    activeTab = printing ? 'guests' : liveDisplay !== null ? 'results' : tabFromHash() ?? shownTabs[0]?.id ?? 'today';
     if (activeTab === 'content') setContentView(viewOfHash(window.location.hash) ?? DEFAULT_VIEW);
     void newScreen();
   }
@@ -355,9 +359,9 @@
       {:else if activeTab === 'clients'}
         <AdminClients {access} onToast={showToast} adminName={admin.name ?? ''} onNavigate={(tab, to) => void open(tab, to)} />
       {:else if activeTab === 'content'}
-        <AdminContent onToast={showToast} adminName={admin.name ?? ''} view={contentView} clientRequest={contentClient} rows={contentRows} onView={setContentView} />
+        <AdminContent {access} onToast={showToast} adminName={admin.name ?? ''} view={contentView} clientRequest={contentClient} rows={contentRows} onView={setContentView} />
       {:else if activeTab === 'guests'}
-        <AdminGuests onToast={showToast} onNavigate={(tab) => void open(tab)} onPrint={openPrintSheet} />
+        <AdminGuests {access} onToast={showToast} onNavigate={(tab) => void open(tab)} onPrint={openPrintSheet} />
       {:else if activeTab === 'users'}
         <AdminPeople {access} onToast={showToast} />
       {:else if activeTab === 'results'}
@@ -366,7 +370,7 @@
             <LiveDisplay sessionId={liveDisplay} {wallPage} onToast={showToast} onOpen={(sessionId) => void openLiveDisplay(sessionId)} onBack={closeLiveDisplay} />
           {/key}
         {:else}
-          <AdminResults onToast={showToast} onLiveDisplay={(sessionId) => void openLiveDisplay(sessionId)} />
+          <AdminResults {access} onToast={showToast} onLiveDisplay={(sessionId) => void openLiveDisplay(sessionId)} />
         {/if}
       {/if}
     </div>

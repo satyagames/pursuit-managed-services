@@ -254,6 +254,9 @@ describe('AccessDenied and the write guard', () => {
   it('a scoped role is held to the client a written item names', () => {
     const producer = accessOf([grant('Producer', 'client', { clientId: 'c-kroger' })]);
     const guard = writeGuard(producer, titles, { now: () => NOW });
+    // (Phase 4: a write that names only a session is held to that session's client, which the page has read; one it has not read is nobody's.)
+    assert.throws(() => guard('POST', `${at('visitorroster')}/items`, {}, { SessionId: 'kroger-2026-11-02' }), AccessDenied, 'a session not read is not known to be theirs');
+    guard.learn('sessions', [{ id: 'kroger-2026-11-02', clientId: 'c-kroger', date: '2026-11-02' }]);
     assert.doesNotThrow(() => guard('POST', `${at('visitorroster')}/items`, {}, { SessionId: 'kroger-2026-11-02' }));
     assert.doesNotThrow(() => guard('POST', `${at('qrtokens')}/items`, {}, { ClientId: 'c-kroger' }));
     assert.throws(() => guard('POST', `${at('qrtokens')}/items`, {}, { ClientId: 'c-other' }), AccessDenied);

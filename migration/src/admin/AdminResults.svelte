@@ -16,6 +16,8 @@
   import ReportExports from './ReportExports.svelte';
   import ConfidenceShift from './ConfidenceShift.svelte';
   import ResultCard from './charts/ResultCard.svelte';
+  import { can } from '../lib/access/can.js';
+  import { reachOf, readQueries, sessionsFor } from '../lib/access/scope.js';
 
   type Session = { id: string; clientId: string; date?: string; sectionIds?: string[]; status?: string };
   type Client = { id: string; name: string };
@@ -23,7 +25,9 @@
   type TrackRow = { track: SessionTrack; name: string; unnamed: boolean; status: string; answered: number; total: number };
   type SessionCard = { results: SessionResults; owner: string; clientName: string; codes: string[]; tracks: TrackRow[]; unreadable: string; charts: ReturnType<typeof chartsOf> };
 
-  let { onToast, onLiveDisplay }: {
+  let { access = null, onToast, onLiveDisplay }: {
+    /** The signed-in person's access (Phase 4): the sessions listed are those they hold, and a button shows only for an action their role has on that session. */
+    access?: any;
     onToast: (message: string, kind?: 'info' | 'success' | 'error') => void;
     /** Opens the Live display (and the exports) for a session. */
     onLiveDisplay: (sessionId: string) => void;
@@ -270,15 +274,31 @@
     return { results: result, owner: namesHeld.get(result.session.clientId) ?? result.session.clientId, clientName: namesHeld.get(result.session.clientId) ?? '', codes: tokensHeld.filter((token) => token.sessionId === result.session.id).map((token) => token.expiredAt ? 'expired' : token.used ? 'used' : 'unused'), tracks, unreadable: unreadableNotice(result.unreadable, namesByVisit(tracks)), charts };
   }
 
+  /** The sessions, clients and QR codes the person may read, and the settings: the plain lists for a global role, the places held for a scoped one (lib/access/scope.js), and the codes of the sessions listed only. */
+  async function readBasics(): Promise<[Session[], Client[], Token[], { activeSessionId?: string | null } | null]> {
+    const reach = access ? reachOf(access) : null;
+    const settingsRead = local ? Promise.resolve(null) : dataService.getAppSettings() as Promise<{ activeSessionId?: string | null } | null>;
+    if (!reach || reach.all) {
+      return Promise.all([dataService.listSessions() as Promise<Session[]>, dataService.listClients() as Promise<Client[]>, dataService.listQrTokens() as Promise<Token[]>, settingsRead]);
+    }
+    const wantedSessions = readQueries(reach, 'sessions');
+    const wantedClients = readQueries(reach, 'clients');
+    const answers = await dataService.readLists([...wantedSessions, ...wantedClients]) as unknown as unknown[][];
+    const sessions = sessionsFor(access, answers.slice(0, wantedSessions.length).flat() as Session[]);
+    const clients = answers.slice(wantedSessions.length).flat() as Client[];
+    const ids = sessions.map((session) => session.id);
+    const tokens: Token[] = [];
+    for (let at = 0; at < ids.length; at += 15) tokens.push(...((await dataService.readLists([{ list: 'qrtokens', where: { sessionId: ids.slice(at, at + 15) } }]))[0] as unknown as Token[]));
+    return [sessions, clients, tokens, await settingsRead];
+  }
+
+  /** Whether this role may do an action to a session (a role with no access, before there were roles, may do all). */
+  const may = (action: string, session: Session) => !access || can(access, action, { clientId: session.clientId, sessionId: session.id, date: session.date });
+
   /** Everything, from the start: every session in full. The live one is read the lean way, so the timer can carry on from it. */
   async function refreshNow() {
     const version = ++requestVersion;
-    const [sessions, clients, tokens, settings] = await Promise.all([
-      dataService.listSessions() as Promise<Session[]>,
-      dataService.listClients() as Promise<Client[]>,
-      dataService.listQrTokens() as Promise<Token[]>,
-      local ? Promise.resolve(null) : dataService.getAppSettings() as Promise<{ activeSessionId?: string | null } | null>,
-    ]);
+    const [sessions, clients, tokens, settings] = await readBasics();
     if (!active || version !== requestVersion) return;
     namesHeld = new Map(clients.map((client) => [client.id, client.name]));
     tokensHeld = tokens;
@@ -344,11 +364,11 @@
       <article class="card" data-session={session.id} aria-busy={deleting?.working && deleting.card.results.session.id === session.id}>
         <header class="card__head">
           <strong data-card-title tabindex="-1">{card.owner}</strong><span class="muted">{session.date ?? ''}</span><span class="tag">Session: {session.status ?? 'unknown'}</span><span class="card__spacer"></span>
-          <button class="btn btn--small" type="button" onclick={() => onLiveDisplay(session.id)}>Live display</button>
+          {#if may('results.live', session)}<button class="btn btn--small" type="button" onclick={() => onLiveDisplay(session.id)}>Live display</button>{/if}
           <!-- (Phase 16: after Live display, never beside the export buttons. It opens a warning; only its "Delete permanently" deletes.) -->
-          <button class="btn btn--small btn--danger" type="button" data-delete-session onclick={() => openDelete(card)} disabled={busy}>{DELETE_SESSION.button}</button>
+          {#if may('results.delete', session)}<button class="btn btn--small btn--danger" type="button" data-delete-session onclick={() => openDelete(card)} disabled={busy}>{DELETE_SESSION.button}</button>{/if}
         </header>
-        <ReportExports sessionId={session.id} clientName={card.clientName} {onToast} />
+        {#if may('results.export', session)}<ReportExports sessionId={session.id} clientName={card.clientName} {onToast} />{/if}
         {#if card.unreadable}<p class="notice card__unreadable" role="status" data-testid="unreadable-notice"><strong>{card.unreadable}</strong></p>{/if}
         {#if card.results.confidenceCheck}<ConfidenceShift check={card.results.confidenceCheck} />{/if}
         <!-- (Phase 12, F-08: the charts first; with sixty people the list ran 5,000 px above them.) -->
@@ -376,8 +396,8 @@
               <li class="row" class:row--open={restarting}>
                 <div class="row__main"><span class="row__title">{row.name}</span><span class="muted">{notes}</span></div>
                 <span class={statusClass(row.status)}>{statusText(row.status)}</span>
-                {#if canRemoveVisit(row, session)}<button class="btn btn--small" type="button" onclick={() => void removeVisit(row)} disabled={busy}>Remove...</button>{/if}
-                <button class="btn btn--small" type="button" data-restart={row.track.id} aria-expanded={restarting} aria-controls={restarting ? RESTART_FORM : undefined} onclick={() => openRestart(row, session.id)} disabled={busy || row.status === 'unreadable'} title={row.status === 'unreadable' ? `Its saved answers cannot be read, so they cannot be restarted. Correct or delete the damaged item in the ${dataService.sharePointListTitles().responses} list.` : undefined}>Restart...</button>
+                {#if canRemoveVisit(row, session) && may('events.run', session)}<button class="btn btn--small" type="button" onclick={() => void removeVisit(row)} disabled={busy}>Remove...</button>{/if}
+                {#if may('events.run', session)}<button class="btn btn--small" type="button" data-restart={row.track.id} aria-expanded={restarting} aria-controls={restarting ? RESTART_FORM : undefined} onclick={() => openRestart(row, session.id)} disabled={busy || row.status === 'unreadable'} title={row.status === 'unreadable' ? `Its saved answers cannot be read, so they cannot be restarted. Correct or delete the damaged item in the ${dataService.sharePointListTitles().responses} list.` : undefined}>Restart...</button>{/if}
                 {#if restarting && restartTrack}{@render restartForm(restartTrack)}{/if}
               </li>
             {/each}

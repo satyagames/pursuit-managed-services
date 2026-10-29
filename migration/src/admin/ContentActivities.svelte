@@ -5,6 +5,7 @@
   import { activitiesOfClient, checkDeleteRefusal, checkOfClient, nextOrder, reorderActivities } from '../lib/admin/admin-content.js';
   import { CHECK_DESCRIPTION, CHECK_KIND, CHECK_LABELS, CHECK_PROMPT, CHECK_TITLE } from '../lib/participant/confidence-check.js';
   import { viewById } from '../lib/admin/admin-content-views.js';
+  import { readQueries, reachOf } from '../lib/access/scope.js';
   import ActivityFormDialog from './ActivityFormDialog.svelte';
   import ActivityPreview from './ActivityPreview.svelte';
   import { effectiveSlug } from '../lib/admin/admin-clients.js';
@@ -19,7 +20,9 @@
   // are on the left, with their live switch and the rest; the selected activity's questions are on the right. Every activity belongs to a
   // client: one is added here, or copied from another client. Everything on the left is Sections.ClientId and Sections.Order; no column is added.
   // Content makes this view afresh for each client and keeps it while another view shows (`shown` false).
-  let { clients = $bindable(), sections = $bindable(), client, busy = $bindable(false), shown, look, onEditBrand, onToast, adminName = '' }: {
+  let { clients = $bindable(), sections = $bindable(), client, busy = $bindable(false), shown, look, onEditBrand, onToast, adminName = '', access = null }: {
+    /** The signed-in person's access (Phase 4): the activities are read for the places it holds. */
+    access?: any;
     /** Every client, read by Content (the copy dialog lists them; a confirmed sample is written back). */
     clients: Client[];
     /** Every activity, read by Content. */
@@ -67,8 +70,9 @@
   });
 
   async function readSections(): Promise<Section[]> {
-    const [rows] = await dataService.readLists([{ list: 'sections' }]) as unknown as [Section[]];
-    return rows;
+    // (Phase 4: a role that holds some clients reads their activities only; a global role reads the one plain list, as always.)
+    const queries = access ? readQueries(reachOf(access), 'sections') : [{ list: 'sections' }];
+    return (await dataService.readLists(queries) as unknown as Section[][]).flat();
   }
 
   /** Takes a fresh list of activities; the selection stays unless that activity is gone. */

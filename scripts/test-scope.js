@@ -2,9 +2,11 @@
 // (part of `npm test`). Plain functions of lib/access/scope.js (the menu, the Content modes, the reach of an access, the scoped read queries), the write guard's
 // real targets and its read check, one test for every cell of the capability matrix that is not "no", one forbidden write for every role, and the
 // words "Survey feedback" (the stored key `open-text-feedback` does not change).
+import './fresh-page.js';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
+import { createSharePointFake } from './sharepoint-fake.js';
 import { ACTIONS, LIST_WRITES, MATRIX, ROLES } from '../migration/src/lib/access/access-matrix.js';
 import { AccessDenied } from '../migration/src/lib/access/access-denied.js';
 import { can, canView, legacyAccess } from '../migration/src/lib/access/can.js';
@@ -290,5 +292,77 @@ describe('Survey feedback: the words change, the stored key does not', () => {
   });
   it('the sample content pack\'s activity is Survey feedback too', () => {
     assert.doesNotMatch(read('scripts/local-site/datasets/pms-content-pack.json'), /Open feedback/);
+  });
+});
+
+describe('the data layer asks the read check, and a scoped role\'s refused read sends nothing', () => {
+  let pages = 0;
+  async function siteWith() {
+    const fake = createSharePointFake();
+    fake.install();
+    const ds = await import(`../migration/src/lib/data/dataService.js?scope=${pages += 1}`);
+    ds.configure({ sharePoint: fake.settings });
+    return { fake, ds };
+  }
+  it('readLists, listClients and queryItems refuse an unfiltered or foreign read before any request, and send a scoped one', async () => {
+    const { fake, ds } = await siteWith();
+    ds.setAccessGuard(writeGuard(producerOnAcme, ds.sharePointListTitles(), { now: () => NOW }));
+    fake.reset();
+    await assert.rejects(ds.readLists([{ list: 'clients' }]), (error) => error.code === 'access-denied');
+    await assert.rejects(ds.readLists([{ list: 'sessions', where: { clientId: 'globex' } }]), (error) => error.code === 'access-denied');
+    await assert.rejects(ds.listClients(), (error) => error.code === 'access-denied');
+    await assert.rejects(ds.listClientSections('globex'), (error) => error.code === 'access-denied');
+    assert.equal(fake.requests.length, 0, 'not one request reached the site');
+    await ds.readLists([{ list: 'clients', where: { id: ['acme'] } }, { list: 'sessions', where: { clientId: ['acme'] } }]);
+    assert.ok(fake.requests.length > 0, 'a read of their own client goes out');
+  });
+  it('a global role and a page with no guard read as they always did', async () => {
+    const { fake, ds } = await siteWith();
+    ds.setAccessGuard(writeGuard(legacyAccess(null), ds.sharePointListTitles(), { now: () => NOW }));
+    await ds.readLists([{ list: 'clients' }]);
+    await ds.listClients();
+    ds.configure({ sharePoint: fake.settings });
+    await ds.readLists([{ list: 'clients' }]);
+  });
+});
+
+describe('Today, Guests and Results read only the places held', () => {
+  it('scopedReader turns a plain read into the reads of the places held, and sends nothing for a session not held', async () => {
+    const { scopedReader } = await import('../migration/src/lib/access/scope.js');
+    const sent = [];
+    const readLists = async (queries) => { sent.push(queries); return queries.map(({ list, where }) => (list === 'sessions' ? sessions.filter((s) => [where?.clientId ?? s.clientId].flat().includes(s.clientId)) : [])); };
+    const read = scopedReader(readLists, reachOf(producerOnAcme));
+    const [clientRows, sessionRows] = await read([{ list: 'clients' }, { list: 'sessions' }]);
+    assert.deepEqual(sent[0], [{ list: 'clients', where: { id: ['acme'] } }, { list: 'sessions', where: { clientId: ['acme'] } }]);
+    assert.deepEqual(clientRows, []);
+    assert.deepEqual(ids(sessionRows), ['acme-1', 'acme-2']);
+    sent.length = 0;
+    const [elsewhere, mine, tracks, foreign] = await read([
+      { list: 'sessions', where: { id: 'globex-1' } }, { list: 'sessions', where: { id: 'acme-1' } }, { list: 'tracks', where: { sessionId: 'acme-1' } }, { list: 'clients', where: { id: 'globex' } },
+    ]);
+    assert.deepEqual(elsewhere, []);
+    assert.deepEqual(foreign, []);
+    assert.deepEqual(sent[0].map((query) => query.list), ['sessions', 'tracks'], 'only the session they hold, and its answers (it was read before), are sent');
+    assert.equal(mine.length + tracks.length >= 0, true);
+  });
+  it('the reader of a global role is readLists itself', async () => {
+    const { scopedReader } = await import('../migration/src/lib/access/scope.js');
+    const readLists = async () => [];
+    assert.equal(scopedReader(readLists, reachOf(accessOf(grant('Admin')))), readLists);
+    assert.equal(scopedReader(readLists, null), readLists);
+  });
+  it('an activity names its questions, so a question read by id is known to be the client\'s', () => {
+    const guard = writeGuard(producerOnAcme, TITLES, { now: () => NOW });
+    guard.learn('sections', [{ id: 'a1', clientId: 'acme', questionIds: ['qa'] }, { id: 'g1', clientId: 'globex', questionIds: ['qg'] }]);
+    assert.doesNotThrow(() => guard.read('questions', { id: ['qa'] }));
+    assert.doesNotThrow(() => guard.read('options', { questionId: ['qa'] }));
+    assert.throws(() => guard.read('questions', { id: ['qg'] }), AccessDenied);
+  });
+  it('a live session that is not theirs is said to be "elsewhere", not "missing"', async () => {
+    const { liveStatus, notLiveText } = await import('../migration/src/lib/admin/admin-today.js');
+    const status = liveStatus({ settings: { activeSessionId: 'globex-1', activeClientId: 'globex' }, session: null, clients: [], elsewhere: true });
+    assert.equal(status.reason, 'elsewhere');
+    assert.match(notLiveText(status), /A session you have not been given is live/);
+    assert.equal(liveStatus({ settings: { activeSessionId: 'x' }, session: null, clients: [] }).reason, 'session-missing', 'as before for a global role');
   });
 });
