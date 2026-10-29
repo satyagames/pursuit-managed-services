@@ -11,7 +11,7 @@
   import { can, canView } from '../lib/access/can.js';
   import { readDashboard, rebuildSummaries } from '../lib/admin/session-summaries.js';
   import { BASELINES } from '../lib/results/index-math.js';
-  import { SPANS, dashboardFileName, dashboardOf, defaultFilters, emptyStateOf, filterOptions, rebuildQuestion, reportCsv } from '../lib/results/dashboard-model.js';
+  import { SPANS, dashboardFileName, dashboardOf, defaultFilters, emptyStateOf, filterOptions, rebuildQuestion, reportCsv, shiftWords } from '../lib/results/dashboard-model.js';
   import { METRICS } from '../lib/results/metric-words.js';
   import { readQueries, reachOf, sessionsFor } from '../lib/access/scope.js';
   import MetricInfo from './MetricInfo.svelte';
@@ -266,10 +266,12 @@
 
       <div class="dash__grid">
         <section class="card dash__card" aria-labelledby="dash-by-client">
-          <h3 id="dash-by-client">{METRICS['client-index'].label}<MetricInfo id="client-index" /></h3>
+          <h3 id="dash-by-client">Confidence index and shift by client<MetricInfo id="client-index" /></h3>
           <p class="muted">Against {filters.compare === 'all' ? 'the all-client average' : BASELINES.find((each) => each.id === filters.compare)?.label.toLowerCase()}: the line is 100.</p>
+          <p class="dash__shift-head">Under each bar: the shift<MetricInfo id="confidence-shift" /> and moved to confident<MetricInfo id="moved" />, which are not compared with the baseline.</p>
           <ul class="dash__bars">
             {#each board.byClient as row (row.clientId)}
+              {@const said = shiftWords(row, row.guests)}
               <li class="dash__bar-row">
                 <span class="dash__bar-label">{row.name}</span>
                 <span class="dash__bar-track" aria-hidden="true">
@@ -277,6 +279,11 @@
                   <span class="dash__bar-line" style:left="{(100 / scaleTop) * 100}%"></span>
                 </span>
                 <span class="dash__bar-value">{row.index === null ? 'Not measured' : whole(row.index)}{row.low ? ' (low sample)' : ''}</span>
+                <span class="dash__shift" data-testid="client-shift">
+                  <span>{said.shift}{#if row.shiftLow} <span class="tag">Low sample (n = {row.shift.n})</span>{/if}</span>
+                  {#if said.moved}<span>{said.moved}{#if row.movedLow} <span class="tag">Low sample (n = {row.moved.started})</span>{/if}</span>{/if}
+                  <span>{said.answered}</span>
+                </span>
               </li>
             {/each}
           </ul>
@@ -304,6 +311,7 @@
         <div class="dash__rows" role="list">
           {#each board.byClient as row (row.clientId)}
             {@const expanded = open.includes(row.clientId)}
+            {@const said = shiftWords(row, row.guests)}
             <div class="dash__client" role="listitem">
               <div class="dash__client-head">
                 <button class="btn btn--small dash__arrow" type="button" aria-expanded={expanded} aria-controls="dash-sessions-{row.clientId}" onclick={() => toggleRow(row.clientId)}>
@@ -312,14 +320,23 @@
                 <span>{row.sessions.length} {row.sessions.length === 1 ? 'session' : 'sessions'}, {row.guests} guests</span>
                 <span>Index {row.index === null ? 'not measured' : whole(row.index)}{row.low ? ' (low sample)' : ''}</span>
                 <span>Change {row.change === null ? 'none to compare' : `${row.change > 0 ? '+' : ''}${whole(row.change)}`}<MetricInfo id="change" /></span>
+                <span>{said.shift}{#if row.shiftLow} <span class="tag">Low sample (n = {row.shift.n})</span>{/if}</span>
+                {#if said.moved}<span>{said.moved}{#if row.movedLow} <span class="tag">Low sample (n = {row.moved.started})</span>{/if}</span>{/if}
+                <span>{said.answered}</span>
               </div>
               {#if expanded}
                 <ul class="dash__sessions" id="dash-sessions-{row.clientId}" aria-label="Sessions of {row.name}">
                   {#each row.sessions as each (each.id)}
+                    {@const told = shiftWords(each, each.guests)}
                     <li class="dash__session">
                       <span class="dash__session-name">{each.label}</span>
                       <span>{each.guests} guests, {each.completed} finished</span>
                       <span>Session index {each.index === null ? 'not measured' : whole(each.index)}{each.low ? ' (low sample)' : ''}<MetricInfo id="session-index" /></span>
+                      <span class="dash__shift">
+                        <span>{told.shift}{#if each.shiftLow} <span class="tag">Low sample (n = {each.shift.n})</span>{/if}</span>
+                        {#if told.moved}<span>{told.moved}{#if each.movedLow} <span class="tag">Low sample (n = {each.moved.started})</span>{/if}</span>{/if}
+                        <span>{told.answered}</span>
+                      </span>
                       {#if !access || can(access, 'results.export', { clientId: row.clientId, sessionId: each.id, date: each.date })}<ReportExports sessionId={each.id} clientName={row.name} {hideNames} {onToast} />{/if}
                     </li>
                   {/each}
@@ -556,6 +573,22 @@
   .dash__bar-value {
     font-variant-numeric: tabular-nums;
     font-weight: 600;
+  }
+
+  .dash__shift-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    margin: 0 0 0.5rem;
+  }
+
+  .dash__shift {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1.25rem;
+    margin-bottom: 0.5rem;
+    font-variant-numeric: tabular-nums;
   }
 
   .dash__client {

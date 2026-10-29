@@ -52,7 +52,8 @@ const requests = (fake: Fake) => (fake as unknown as { requests: { url?: string;
 test('Leadership for a period: every client of the period against 100, the headline and the six tiles, from summaries alone', async ({ page }) => {
   const fake = await site(me('bmilder', 'Milder, Brian'), 'Leadership', 'period', { PeriodFrom: '2026-09-01T00:00:00Z', PeriodTo: '2026-11-30T00:00:00Z' });
   await open(page, fake);
-  await expect(page.locator('.dash__headline')).toHaveText("2 sessions with 24 guests at 2 clients in FY27 Q2. Confidence matched the all-client average (index 100); Kroger was highest at 110.");
+  await expect(page.locator('.dash__headline')).toHaveText("2 sessions with 24 guests at 2 clients in FY27 Q2. Confidence matched the all-client average (index 100); Kroger was highest at 110."
+    + ' Guests moved 20% up the scale (2.0 to 3.0), and 50% of those who started not confident ended confident.');
   await expect(page.getByRole('heading', { name: 'Leadership dashboard', level: 2 }), 'the dashboard\'s heading has the focus when it opens').toBeFocused();
   await expect(page.getByRole('list', { name: 'Key figures' }).getByRole('listitem')).toHaveCount(6);
   await expect(page.locator('.dash__bar-row', { hasText: 'Kroger' }).first()).toContainText('110');
@@ -132,4 +133,53 @@ test('no summary yet (Prompt 21, Phase 6): the dashboard says no session has end
   await expect(page.getByRole('list', { name: 'Key figures' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Export report' })).toBeDisabled();
   await axe(page, 'no summary yet');
+});
+
+test('Prompt 22: each client shows its shift and moved to confident beside its bar, in its row and in each session; the i buttons by keyboard; no sideways scroll', async ({ page }) => {
+  const fake = await site(me('bmilder', 'Milder, Brian'), 'Leadership', 'period', { PeriodFrom: '2026-09-01T00:00:00Z', PeriodTo: '2026-11-30T00:00:00Z' });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await open(page, fake);
+  const card = page.getByRole('region', { name: 'Confidence index and shift by client' });
+  // Kroger: 12 paired, 2.3 to 3.3 on 5 (+20%); 2 of the 4 who started not confident ended confident (50%, under the minimum of 10: low sample).
+  const kroger = card.locator('.dash__bar-row', { hasText: 'Kroger' });
+  await expect(kroger).toContainText('110');
+  await expect(kroger).toContainText('Shift +20%');
+  await expect(kroger).toContainText('50% moved to confident');
+  await expect(kroger).toContainText('Low sample (n = 4)');
+  await expect(kroger).toContainText('12 of 12 guests answered both');
+  const row = page.locator('.dash__client', { hasText: 'Kroger' });
+  await expect(row.locator('.dash__client-head')).toContainText('Shift +20%');
+  await row.getByRole('button', { name: /sessions of Kroger/ }).press('Enter');
+  const session = page.getByRole('list', { name: 'Sessions of Kroger' }).getByRole('listitem');
+  await expect(session).toContainText('Session index 100');
+  await expect(session).toContainText('Shift +20%');
+  await expect(session).toContainText('12 of 12 guests answered both');
+
+  // The i buttons of the shift column: Tab reaches them from the card's own, Enter or Space keeps the words open, Escape hides them.
+  await card.getByRole('button', { name: 'About Confidence index by client' }).focus();
+  await page.keyboard.press('Tab');
+  const shift = card.getByRole('button', { name: 'About Confidence shift' });
+  await expect(shift).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(shift).toHaveAttribute('aria-expanded', 'true');
+  const shiftTip = card.getByRole('tooltip').filter({ hasText: 'Confidence shift' });
+  await expect(shiftTip).toBeVisible();
+  await expect(shiftTip).toContainText('not compared with the baseline');
+  await page.keyboard.press('Escape');
+  await expect(shiftTip).toBeHidden();
+  await page.keyboard.press('Tab');
+  const moved = card.getByRole('button', { name: 'About Moved to confident' });
+  await expect(moved).toBeFocused();
+  await page.keyboard.press('Space');
+  await expect(card.getByRole('tooltip').filter({ hasText: 'Moved to confident' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  const ids = await page.locator('[id^="metric-tip-"]').evaluateAll((nodes) => nodes.map((node) => node.id));
+  expect(new Set(ids).size, 'no two i buttons share the id of their words').toBe(ids.length);
+  await axe(page, 'the shift by client at 1280');
+  for (const width of [1280, 768, 375]) {
+    await page.setViewportSize({ width, height: 900 });
+    const sideways = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(sideways, `no sideways scroll at ${width}`).toBeLessThanOrEqual(0);
+  }
+  await axe(page, 'the shift by client at 375');
 });

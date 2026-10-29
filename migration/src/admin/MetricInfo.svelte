@@ -6,7 +6,9 @@
   // and the words are its description. Pressing it keeps them open (a touch screen has no hover).
   let { id }: { id: string } = $props();
   const words = $derived(metricWords(id));
-  const tipId = $derived(`metric-tip-${id}`);
+  // (Prompt 22: one figure's i is on a tile and beside every client and session, so each words' id is its own: an id is never on the page twice.)
+  const uid = $props.id();
+  const tipId = $derived(`metric-tip-${id}-${uid}`);
   let shown = $state(false);
   let pinned = $state(false);
 </script>
