@@ -97,6 +97,8 @@ describe('the role matrix (board 10): reviewed data', () => {
       'users.manage | Yes | Option | - | - | -',
       'users.view | Yes | View | - | - | -',
       'roles.global | Yes | - | - | - | -',
+      // (Prompt 21, Phase 7: the audit review, the brief's "Audit review screen for Super admins (read only)".)
+      'audit.view | Yes | - | - | - | -',
       'clients.manage | Yes | Yes | - | - | -',
       'team.assign | Yes | Yes | - | - | -',
       'events.run | Yes | - | Yes | - | -',

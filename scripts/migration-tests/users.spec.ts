@@ -166,4 +166,35 @@ test.describe('the People screens', () => {
     await open(page, producer);
     await expect(page.getByRole('tab', { name: 'People' })).toHaveCount(0);
   });
+
+  test('(Prompt 21, Phase 7) a Super admin reviews the history of changes, read only, filtered; an Admin has no such button', async ({ page }) => {
+    const fake = await site(me('vsatyadev', 'Satyadev, Vedala Venkata'));
+    const line = (n: number, action: string, target: string) => fake.add('auditlog', {
+      Title: `audit-${n}`, AppId: `audit-${n}`, Actor: mail('vsatyadev'), Action: action, TargetUser: mail(target), Role: 'Producer', ClientId: 'c-kroger',
+      SessionId: '', Detail: '', OccurredAt: `2026-10-${String(n).padStart(2, '0')}T09:00:00Z`,
+    });
+    line(1, 'add-user', 'raedla'); line(2, 'grant', 'raedla'); line(3, 'disable', 'gone');
+    const served = await open(page, fake);
+    await page.getByRole('tab', { name: 'People' }).click();
+    const before = fake.requests.length;
+    await page.getByRole('button', { name: 'History of changes' }).click();
+    await expect(page.getByRole('heading', { name: 'History of changes' })).toBeFocused();
+    await expect(page.getByTestId('audit-lines').getByRole('listitem')).toHaveCount(3);
+    await expect(page.getByTestId('audit-lines').getByRole('listitem').first()).toContainText('Turned off: Gone, Leaver');
+    await axe(page, 'History of changes');
+    await page.getByLabel('What was done').selectOption({ label: 'Access given' });
+    await expect(page.getByTestId('audit-lines').getByRole('listitem')).toHaveCount(1);
+    await page.getByRole('button', { name: 'Clear filters' }).click();
+    await page.getByLabel('Person').fill('aedla');
+    await expect(page.getByTestId('audit-lines').getByRole('listitem')).toHaveCount(2);
+    await page.getByRole('button', { name: 'Back to people' }).click();
+    await expect(page.getByRole('heading', { name: 'People' })).toBeVisible();
+    expect(served.unexpected).toEqual([]);
+    expect(fake.requests.slice(before).filter((request: { method: string }) => request.method !== 'GET')).toEqual([]); // (read only)
+    await page.goto('about:blank');
+    await open(page, await site(me('pulmathur', 'Mathur, Pulkit')));
+    await page.getByRole('tab', { name: 'People' }).click();
+    await expect(page.getByRole('heading', { name: 'People' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'History of changes' })).toHaveCount(0);
+  });
 });

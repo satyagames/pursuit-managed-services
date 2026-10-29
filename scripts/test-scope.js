@@ -239,7 +239,7 @@ describe('one test for every cell of the capability matrix that is not "no"', ()
   it('every action of the matrix is somewhere in a menu tab or a write, so the table is complete', () => {
     const inTabs = new Set(Object.values(TAB_ACTIONS).flat());
     const inWrites = new Set(Object.values(LIST_WRITES).flatMap((change) => Object.values(change).flat()));
-    const viaOther = new Set(['results.export', 'results.live', 'results.names', 'results.view', 'users.view']);
+    const viaOther = new Set(['results.export', 'results.live', 'results.names', 'results.view', 'users.view', 'audit.view']); // (audit.view: People's History of changes, scripts/test-hardening.js)
     for (const action of Object.keys(ACTIONS)) assert.ok(inTabs.has(action) || inWrites.has(action) || viaOther.has(action), action);
   });
 });
