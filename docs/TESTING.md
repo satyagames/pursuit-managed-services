@@ -145,6 +145,11 @@ seven sizes.
   parts 4 and 5 hold the dashboard's empty states and its words. In the browser: `leader-report.spec.ts` (Hide names on Sessions, the PDF and the CSV),
   `role-scoping.spec.ts` (turned off while open, with the clock moved on five minutes), `leader-dashboard.spec.ts` (no summary yet; the switch shared with
   Sessions). Three failures of `npm run test:a11y` are older than this phase and fail the same on its starting commit (RELEASE-21F.md).
+- `node --test scripts/test-hardening.js` (part of `npm test`, Prompt 21, Phase 7): the access lists' permissions (the plan's four steps, the findings for
+  a list that still inherits, a member who may change a people list, an audit list a member may edit or no one may add to, the self-test probe's six
+  GETs and a refused read), the answer readers and the Live feed refusing a session not held before any request (and reading one held, and a global role
+  as before), and History of changes (Super admin only; newest first; the filters; pages of 50; no answer shown). In the browser: `users.spec.ts` (History
+  of changes: focus, axe, filters, no write; none for an Admin; now in `npm run test:a11y`) and `setup-provision.spec.ts` (the plan's four steps).
 - `node --test scripts/test-sessions-plan.js` (also part of `npm test`, Prompt 21, Phase 3): schema version 6's session columns (and a site of version 5
   stopping with PMS-LST-011), the period from the fiscal start month, a planned session's id and its -2 and -3 on a duplicate, an old id still found,
   two sessions on one day for one client and for two (their QR codes and visits with their own session), starting a planned session (the activities

@@ -85,7 +85,18 @@ The table, list by list, is in [SHAREPOINT-LISTS.md](../SHAREPOINT-LISTS.md#perm
 - **A person turned off while the admin page is open** (Prompt 21, Phase 6): the page reads their row and roles again when they open a tab or come
   back to it, at most once every five minutes (ASSUMED), the same requests as at sign-in (who is signed in, then the `PMSUsers` row and the
   `PMSRoleAssignments` rows, two indexed reads). Turned off, they are stopped at that moment and the page refuses every write; until then the page
-  carries on with what it read. Lists that refuse a disabled person are Phase 7's (QA item 258).
+  carries on with what it read. Turning someone off in the app does not take them out of the site's groups: a person who must lose all access is also
+  removed from the site by its owner (QA item 271).
+- **The access lists' own permissions** (Prompt 21, Phase 7, `lib/setup/list-permissions.js`; **ASSUMED** until tried on PCOE, QA item 263). The page's
+  check is a guardrail: SharePoint lets anyone who may write a list write any item of it by calling REST by hand. So a site owner, by hand, from the four
+  steps at the end of Setup's plan: makes a group "PMS access managers" (the Super admins and the Admins); gives `PMSUsers` and `PMSRoleAssignments` their
+  own permissions (that group Contribute, the members Read: everyone must read their own row and roles to sign in); makes a permission level "PMS add
+  only" (View Items, Add Items, Open; not Edit or Delete Items); and gives `PMSAuditLog` its own permissions (the members "PMS add only": every grant,
+  removal and person added writes a line as the person who did it). Setup changes no permission; its self-test ("Probe (read-only): who may change the
+  access lists") reads what is set and says what differs. **What stays the app's:** Producers and Designers need to write the content, session, guest and
+  answer lists to do their work, and a list's permission is the same for every item in it, so the separation between clients there is the app's alone
+  (`can()`, the write guard and the read check). Holding it against someone who goes around the page would need a server component between the page
+  and the lists, which this app does not have (no server, by design).
 - **Setup** is run by a site owner (Full Control): it creates lists and columns, writes the version, adds admins and uploads the sample pictures.
 - **PMSAdminUsers holds the facilitators' PIN hashes** (unsalted SHA-256) and the whole list reaches the admin page, so its permission is the real lock:
   break its inheritance and remove every group the participant accounts are in. The PIN gates the admin page's screens; it is not authorization.

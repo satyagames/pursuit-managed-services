@@ -229,6 +229,15 @@ The dashboard reads totals, never answers ([RULES.md](RULES.md) has the rules):
    on SharePoint). A person who may still enter keeps working (a changed role changes the menu); one turned off is stopped, and every write after that
    is refused before it is sent. Nothing is read again on the local server, where nobody is signed in, or after a PIN.
 
+## The access lists' permissions and History of changes (Prompt 21, Phase 7)
+
+1. **Setup's self-test** reads, for each of `PMSUsers`, `PMSRoleAssignments` and `PMSAuditLog`, whether it has its own permissions and who holds which
+   level (`/web/lists/getbytitle(...)?$select=HasUniqueRoleAssignments` and `.../roleassignments?$expand=Member,RoleDefinitionBindings`): six GETs, no
+   item, nothing written. Setup's plan shows the steps; nothing sends them.
+2. **History of changes** reads `PMSAuditLog` whole, once, as a person's history does (ASSUMED far below 5,000 lines), and filters it in the page.
+3. **A session's answers and the Live feed** ask the page's read check before their first request (`askRead`): a scoped role's refused read sends
+   nothing, as the plain reads already did since Phase 4.
+
 ## How often each open page looks
 
 | Page | Every | Notes |

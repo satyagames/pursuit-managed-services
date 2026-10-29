@@ -1668,6 +1668,30 @@ Results is a leader's view as well (boards 9 and 12): `admin/LeaderDashboard.sve
    `open-text-feedback` is unchanged.
 5. **The participant page did not change** (`PHASE_21F` in `scripts/bundle-budget.js`: +0 B and the same Tailwind rules).
 
+## Rules from Prompt 21, Phase 7 (hardening; keep them holding)
+
+1. **The access lists' own permissions are a site owner's, by hand.** `lib/setup/list-permissions.js` names them: `PMSUsers` and `PMSRoleAssignments`
+   written only by the group "PMS access managers" (the Super admins and the Admins, who give team roles) and the site's owners, read by the members;
+   `PMSAuditLog` taking new lines from the members through a permission level "PMS add only" (View, Add, Open; no Edit, no Delete). Setup's plan ends with
+   those four steps (`permissionSteps`, shown by `setup/PlanView.svelte`) and **changes no permission itself**; its self-test reads each list's
+   `HasUniqueRoleAssignments` and role assignments (`permissionProbe`, two GETs a list, no item) and says what differs (`permissionFindings`). The names,
+   and that the owners' group's name ends in "Owners", are **ASSUMED** until tried on PCOE (QA item 263).
+2. **The separation between clients in the content lists is the app's.** Producers and Designers must write the content, session and answer lists to do
+   their work, and SharePoint's permissions are per list, not per client: someone who calls SharePoint's REST address by hand can write another client's
+   items there. The page refuses it (`can()`, the write guard, the read check); only a server component between the page and the lists could hold it
+   against a person who goes around the page. Written down in [SHAREPOINT.md](SHAREPOINT.md#who-may-do-what).
+3. **Every reader of a session's answers asks the read check.** `readAnswers` (so `readSessionResponses`, `readSessionResponsesChecked` and the leader
+   report), `listSessionParticipants` and the Live display's `readLiveFeed` call `askRead` in `lib/data/responses.js` (the guard's `read`, as
+   `read-scope.js` asks it for the plain reads) before any request; a session the person does not hold is `AccessDenied` and nothing is sent. The
+   participant page installs no guard, so nothing is asked there. `getParticipantResponses` (by a visit) and the QR scan's reads are the participant
+   page's and are not checked.
+4. **History of changes** (`admin/AuditReview.svelte`, opened from People) is a Super admin's alone (`audit.view` in the matrix: Super admin Yes, every
+   other role no; an Admin keeps a person's own history on their page). It reads `PMSAuditLog` once and writes nothing; `lib/access/audit-review.js`
+   filters it by what was done, by a person (who did it or to whom, by name or email) and by days, newest first, 50 to a page, and never shows a detail
+   that looks like an answer.
+5. **The participant page** grew by the read check alone (`PHASE_21G` in `scripts/bundle-budget.js`: +28 B gzip, allowance 100 B, the same Tailwind
+   rules, the 450,000 B ceiling not raised).
+
 ## Before finishing a change
 
 - Always: `npm run check:svelte` and `npm test` (the documents, the module map and the project map among it). If you added, moved or renamed a
