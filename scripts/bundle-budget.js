@@ -391,3 +391,16 @@ export const PHASE_21B = Object.freeze({
   participantAfter: 166_085, adminAfter: 608_919,
   participantUtilities: PHASE_11A.participantUtilities,
 });
+
+/**
+ * Prompt 21, Phase 3 (clients, sessions several a day, the team) is the admin page's: a client's page (its sessions, New session, its team) and
+ * Today's session picker and the Producer's Start, with lib/admin/session-plan.js and lib/access/team.js. The participant page carries only what the
+ * data layer every page carries gained: section 14 (planSession, startSession: lib/data/planning.js) and a session's five columns of schema version 6
+ * in every read of the sessions. None of lib/access, none of the client's page. Its Tailwind rules are the ones it had, and the ceiling is not
+ * raised. Measured when the phase ended: participantAfter and adminAfter, where the next phase starts.
+ */
+export const PHASE_21C = Object.freeze({
+  participantBefore: PHASE_21B.participantAfter, adminBefore: PHASE_21B.adminAfter, participantAllowance: 600, adminAllowance: 13_000,
+  participantAfter: 166_497, adminAfter: 620_333,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
