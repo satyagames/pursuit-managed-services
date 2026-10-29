@@ -162,7 +162,7 @@ test('Seed sample clients creates Kroger and Domino\'s once; a second run create
   expect(served.unexpected).toEqual([]);
 });
 
-test('the self-test creates, updates, reads back, is refused a duplicate, lists, batches two reads, asks the site four read-only questions, and deletes what it made', async ({ page }) => {
+test('the self-test creates, updates, reads back, is refused a duplicate, lists, batches two reads, asks the site five read-only questions, and deletes what it made', async ({ page }) => {
   const { fake, served } = await openSetup(page);
   const section = page.getByRole('region', { name: 'SharePoint self-test' });
   await expect(section.getByText('Test site only.')).toBeVisible();
@@ -177,8 +177,8 @@ test('the self-test creates, updates, reads back, is refused a duplicate, lists,
   await section.getByRole('button', { name: 'Run self-test' }).click();
   // (Phase 9b: two read-only probes of the tenant, 3 and 6 requests, joined the seven steps. Phase 10h: a third, one read of each of the twelve lists and a
   // second of each that holds an item: here the AppSettings item and the self-test's own answers. Phase 10i: a fourth, one look at each list, and for each that
-  // holds an item its fields and one item naming every column.)
-  await expect(section.getByRole('status')).toContainText('Passed: 11 of 11 steps, 50 requests.');
+  // holds an item its fields and one item naming every column. Prompt 21, Phase 7: a fifth, who may change the access lists, two reads of each of the three.)
+  await expect(section.getByRole('status')).toContainText('Passed: 12 of 12 steps, 56 requests.');
   const rows = (await section.getByRole('table', { name: 'Self-test steps' }).getByRole('row').allInnerTexts()).slice(1).map((row) => row.split('\t').slice(0, 3).map((cell) => cell.trim()).join(' | '));
   expect(rows).toEqual([
     'Create a participant item | Pass | 3',
@@ -189,6 +189,7 @@ test('the self-test creates, updates, reads back, is refused a duplicate, lists,
     'Two reads in one request ($batch) | Pass | 1',
     'Probe (read-only): a Yes/No filter on the guest QR codes\' Used column, written three ways | Pass | 3',
     'Probe (read-only): how long a $filter this site accepts | Pass | 6',
+    'Probe (read-only): who may change the access lists | Pass | 6',
     'Probe (read-only): columns this site leaves out of a read that names no columns | Pass | 14',
     'Probe (read-only): columns this site will not return by name | Pass | 16',
     'Delete everything it made | Pass | 3',
