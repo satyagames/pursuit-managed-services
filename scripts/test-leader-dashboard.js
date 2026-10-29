@@ -129,4 +129,94 @@ describe('Part 2: the request budget', () => {
   });
 });
 
+describe('Part 3: the dashboard\'s figures, worked out by hand', async () => {
+  const { dashboardOf, defaultFilters, filterOptions, reportCsv } = await import('../migration/src/lib/results/dashboard-model.js');
+  const { METRICS } = await import('../migration/src/lib/results/metric-words.js');
+  const json = (more) => ({ v: 1, title: '', startTime: '', facilitator: 'Rajeshwar Aedla', scaleMax: 5, pairedBefore: 3, pairedAfter: 3, moved: { started: 0, moved: 0 },
+    distribution: null, firstChoices: [], kinds: { choice: 10 }, groups: {}, feedback: { count: 0, themes: [], quotes: [] }, ...more });
+  const firsts = (counts) => [{ questionId: 'q', prompt: 'First?', options: Object.entries(counts).map(([label, count]) => ({ label, count })) }];
+  const row = (id, clientId, period, sessionDate, more, summary) => ({ id, clientId, period, sessionDate, guests: 10, answers: 0, completed: 0, beforeCount: 0, afterCount: 0, pairedCount: 0,
+    meanBefore: null, meanAfter: null, ...more, summary: json(summary) });
+  // FY27-Q2: Kroger 20 Afters with a mean of 3.3 (k1 3.6, k2 3.0), Acme 20 at 2.7: all 3.0, so Kroger 110 and Acme 90. FY27-Q1: both at 3.0 (100).
+  const SUMMARIES = [
+    row('k1', 'kroger', 'FY27-Q2', '2026-10-01', { guests: 10, completed: 8, afterCount: 10, meanAfter: 3.6, pairedCount: 10 }, {
+      pairedBefore: 3, pairedAfter: 4, moved: { started: 4, moved: 2 }, firstChoices: firsts({ Speed: 6, Cost: 4 }), groups: { Executives: 4 },
+      distribution: { before: [0, 2, 4, 4, 0], after: [0, 0, 2, 6, 2] }, feedback: { count: 3, themes: [{ word: 'clarity', count: 3 }], quotes: [{ name: 'Asha', text: 'Clear' }] } }),
+    row('k2', 'kroger', 'FY27-Q2', '2026-11-02', { guests: 10, completed: 6, afterCount: 10, meanAfter: 3.0, pairedCount: 10 }, {
+      title: 'Afternoon', startTime: '14:00', moved: { started: 4, moved: 0 }, firstChoices: firsts({ speed: 2, Cost: 8 }), kinds: { ranking: 10 }, facilitator: 'Brian Milder',
+      distribution: { before: [0, 0, 10, 0, 0], after: [0, 0, 10, 0, 0] }, feedback: { count: 3, themes: [{ word: 'clarity', count: 1 }, { word: 'pace', count: 2 }], quotes: [{ name: 'Ben', text: 'Good pace' }] } }),
+    row('a1', 'acme', 'FY27-Q2', '2026-10-15', { guests: 20, completed: 16, afterCount: 20, meanAfter: 2.7, pairedCount: 20 }, {
+      pairedBefore: 2.5, pairedAfter: 3, moved: { started: 8, moved: 6 }, firstChoices: firsts({ Speed: 2, Trust: 18 }) }),
+    row('k0', 'kroger', 'FY27-Q1', '2026-07-01', { afterCount: 10, meanAfter: 3.0 }),
+    row('a0', 'acme', 'FY27-Q1', '2026-07-02', { afterCount: 10, meanAfter: 3.0 }),
+  ];
+  const CLIENTS = [{ id: 'kroger', name: 'Kroger', industry: 'Retail', region: 'US' }, { id: 'acme', name: 'Acme', industry: 'Energy', region: 'EU' }];
+  const near = (actual, expected, what) => assert.ok(actual !== null && Math.abs(actual - expected) < 1e-9, `${what}: ${actual}, not ${expected}`);
+  const view = (filters = {}, more = {}) => dashboardOf({ summaries: SUMMARIES, clients: CLIENTS, filters: { ...defaultFilters({ period: 'FY27-Q2' }), ...filters }, startMonth: 6, minSample: 10, ...more });
+
+  it('the six tiles of FY27 Q2, all clients: sessions, guests, completion, the index against the all-client average, the shift and moved to confident', () => {
+    const { tiles } = view();
+    assert.deepEqual(tiles.map((tile) => tile.id), ['sessions', 'guests', 'completion', 'confidence-index', 'confidence-shift', 'moved']);
+    assert.deepEqual(tiles.map((tile) => tile.text), ['3', '40', '75%', '100', '+10%', '50%'], '(10 x 20% + 10 x 0% + 20 x 10%) / 40 = 10%; (2 + 0 + 6) of (4 + 4 + 8) = 50%');
+    assert.ok(tiles.every((tile) => METRICS[tile.id]), 'every tile has its words');
+  });
+  it('the headline sentence is built from the numbers', () => {
+    assert.equal(view().headline, '3 sessions with 40 guests at 2 clients in FY27 Q2. Confidence matched the all-client average (index 100); Kroger was highest at 110.');
+    assert.equal(view({ clientIds: ['kroger'] }).headline, '2 sessions with 20 guests at 1 client in FY27 Q2. Confidence ran 10% above the all-client average (index 110).');
+    assert.equal(view({ clientIds: ['acme'], compare: 'prior-quarter' }).headline, '1 session with 20 guests at 1 client in FY27 Q2. Confidence ran 10% below the quarter before (index 90).');
+    assert.equal(view({ period: 'FY25-Q1', year: 'FY25', span: 'q1' }).headline, 'No session in FY25 Q1 has a summary yet.');
+  });
+  it('by client against 100, highest first, with the change since the quarter before, and each client\'s sessions against its own average', () => {
+    const { byClient } = view();
+    assert.deepEqual(byClient.map((each) => [each.clientId, each.name, each.sessions.length, each.guests]), [['kroger', 'Kroger', 2, 20], ['acme', 'Acme', 1, 20]]);
+    near(byClient[0].index, 110, 'Kroger'); near(byClient[1].index, 90, 'Acme');
+    near(byClient[0].change, 10, 'Kroger moved from 100'); near(byClient[1].change, -10, 'Acme moved from 100');
+    assert.deepEqual(byClient[0].sessions.map((each) => [each.id, each.label]), [['k1', '1 Oct'], ['k2', '2 Nov 14:00 Afternoon']]);
+    near(byClient[0].sessions[0].index, (3.6 / 3.3) * 100, 'k1 against Kroger'); near(byClient[0].sessions[1].index, (3.0 / 3.3) * 100, 'k2 against Kroger');
+  });
+  it('the baselines: one chosen client, and low sample below the minimum', () => {
+    near(view({ clientIds: ['kroger'], compare: 'client', compareClient: 'acme' }).tiles[3].value, (3.3 / 2.7) * 100, 'Kroger against Acme');
+    const small = view({}, { minSample: 50 });
+    assert.equal(small.tiles[3].low, true, '40 Afters is under 50');
+    assert.ok(small.headline.includes('(index 100, low sample)'));
+    assert.equal(view().tiles[3].low, false);
+  });
+  it('the trend by quarter: the four quarters up to the one in view, each against the mean over them', () => {
+    const { trend } = view({ clientIds: ['kroger'] });
+    assert.deepEqual(trend.map((each) => each.period), ['FY26-Q3', 'FY26-Q4', 'FY27-Q1', 'FY27-Q2']);
+    assert.deepEqual(trend.slice(0, 2).map((each) => each.index), [null, null]);
+    near(trend[2].index, (3.0 / 3.2) * 100, 'Q1'); near(trend[3].index, (3.3 / 3.2) * 100, 'Q2');
+  });
+  it('the priority index, the confidence steps, the themes and the comments (names hidden when asked)', () => {
+    const kroger = view({ clientIds: ['kroger'] });
+    assert.deepEqual(kroger.priority.map((each) => [each.label, Math.round(each.share), Math.round(each.baseShare), Math.round(each.index)]), [['Cost', 60, 30, 200], ['Speed', 40, 25, 160]]);
+    assert.deepEqual(kroger.distribution, { scaleMax: 5, before: [0, 10, 70, 20, 0], after: [0, 0, 60, 30, 10], beforeCount: 20, afterCount: 20 });
+    assert.deepEqual(kroger.themes, [{ word: 'clarity', count: 4 }, { word: 'pace', count: 2 }]);
+    assert.deepEqual(kroger.quotes.map((each) => [each.name, each.text]), [['Asha', 'Clear'], ['Ben', 'Good pace']]);
+    assert.deepEqual(view({ clientIds: ['kroger'], hideNames: true }).quotes.map((each) => each.name), ['Guest 1', 'Guest 2']);
+    assert.deepEqual(view({ clientIds: ['kroger'] }, { mayName: false }).quotes.map((each) => each.name), ['Guest 1', 'Guest 2'], 'a role without results.names never sees one');
+  });
+  it('the filters: a whole year, a month, a custom range, an industry, a facilitator, an activity type, a guest group', () => {
+    assert.equal(view({ period: 'FY27', span: 'fy' }).tiles[0].text, '5');
+    assert.deepEqual(view({ span: 'month', month: '2026-10' }).byClient.flatMap((each) => each.sessions.map((session) => session.id)).sort(), ['a1', 'k1']);
+    assert.deepEqual(view({ span: 'custom', from: '2026-10-10', to: '2026-11-30' }).byClient.flatMap((each) => each.sessions.map((session) => session.id)).sort(), ['a1', 'k2']);
+    assert.deepEqual(view({ industry: 'Retail' }).byClient.map((each) => each.clientId), ['kroger']);
+    assert.deepEqual(view({ facilitator: 'Brian Milder' }).byClient.flatMap((each) => each.sessions.map((session) => session.id)), ['k2']);
+    assert.deepEqual(view({ kind: 'ranking' }).byClient.flatMap((each) => each.sessions.map((session) => session.id)), ['k2']);
+    assert.deepEqual(view({ group: 'Executives' }).byClient.flatMap((each) => each.sessions.map((session) => session.id)), ['k1']);
+    const options = filterOptions(SUMMARIES, CLIENTS);
+    assert.deepEqual([options.industries, options.facilitators, options.groups, options.kinds.map((kind) => kind.id)], [['Energy', 'Retail'], ['Brian Milder', 'Rajeshwar Aedla'], ['Executives'], ['choice', 'ranking']]);
+    assert.deepEqual(options.years, ['FY27']);
+  });
+  it('Export report: one row a session, by client, with the indexes; no cell starts a formula', () => {
+    const csv = reportCsv(view());
+    const lines = csv.trim().split('\r\n');
+    assert.equal(lines[0], 'Client,Session,Date,Guests,Completed,Confidence index,Session index,Low sample');
+    assert.equal(lines.length, 1 + 3);
+    assert.equal(lines[1], 'Kroger,1 Oct,2026-10-01,10,8,110,109,');
+    const risky = reportCsv(dashboardOf({ summaries: SUMMARIES, clients: [{ id: 'kroger', name: '=HYPERLINK("x")' }, CLIENTS[1]], filters: defaultFilters({ period: 'FY27-Q2' }), startMonth: 6, minSample: 10 }));
+    assert.ok(!risky.split('\r\n').some((line) => /(^|,)=/.test(line)), 'a name that starts a formula is quoted');
+  });
+});
+
 export { rebuildSummaries, writeSummary };
