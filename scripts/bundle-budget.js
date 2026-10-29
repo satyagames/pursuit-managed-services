@@ -443,3 +443,15 @@ export const PHASE_21F = Object.freeze({
   participantAfter: 167_081, adminAfter: 638_134,
   participantUtilities: PHASE_11A.participantUtilities,
 });
+
+/**
+ * Prompt 21, Phase 7 (hardening) is mostly the admin page's and Setup's: People's History of changes (the audit review, read only) and Setup's check of
+ * the access lists' permissions. The participant page grows by the read check the data layer's answer readers now ask (responses.js, watch.js), which
+ * every page carries and which asks nothing there (no guard). The ceiling is not raised. Measured when the phase ended: adminAfter, where the next
+ * phase starts.
+ */
+export const PHASE_21G = Object.freeze({
+  participantBefore: PHASE_21F.participantAfter, adminBefore: PHASE_21F.adminAfter, participantAllowance: 100, adminAllowance: 4_000,
+  participantAfter: 167_081, adminAfter: 638_134,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
