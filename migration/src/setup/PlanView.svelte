@@ -1,12 +1,13 @@
 <script lang="ts">
   // Setup's plan for this copy's lists (Phase 10c-3, lib/setup/provision.js), as a person reads it: one block for each list that has something to
   // create or something wrong, what will be created in plain words, what Setup will not touch and how to fix it, and the internal names and
-  // definitions under "Technical details". It shows a plan; it changes nothing. Only Setup loads this.
+  // definitions under "Technical details". It shows a plan; it changes nothing. Only Setup loads this. Last, the access lists' permissions a site owner
+  // sets by hand (Prompt 21, Phase 7: lib/setup/list-permissions.js; Setup does not change permissions, and its self-test reads what is set).
   type Item = { words: string; name?: string; label?: string; xml?: string; column?: string | null; changes?: Record<string, unknown>; kind?: string };
   type Kept = { column: string | null; found: string; fix: string; harmless: boolean };
   type Group = { key: string; title: string; state: 'new' | 'exists'; purpose: string; lists: Item[]; columns: Item[]; settings: Item[]; untouched: Kept[] };
   type Plan = { summary: string; toFix: number; groups: Group[] };
-  let { plan }: { plan: Plan } = $props();
+  let { plan, permissions = [] }: { plan: Plan; permissions?: string[] } = $props();
 
   const busy = (group: Group) => group.lists.length + group.columns.length + group.settings.length + group.untouched.length > 0;
   const shown = $derived(plan.groups.filter(busy));
@@ -53,6 +54,14 @@
   {#if settled.length}
     <p class="muted" data-testid="plan-settled">Already as the app needs: {settled.map((group) => group.title).join(', ')}.</p>
   {/if}
+  {#if permissions.length}
+    <div class="plan-list" data-testid="plan-permissions">
+      <h4>Who may change the access lists (by hand)</h4>
+      <p class="muted">The admin page checks every change itself; these permissions are what holds when someone writes to the lists another way. Setup does not
+        change permissions: a site owner does this once, and the self-test then reads what is set. Not yet tried on the PCOE site.</p>
+      <ol>{#each permissions as step (step)}<li>{step}</li>{/each}</ol>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -61,7 +70,7 @@
   .plan-list { padding: 8px 0 12px; border-top: 1px solid var(--line, currentColor); }
   h4 { margin: 8px 0 4px; font-size: 1rem; }
   .plan-state { font-weight: 400; }
-  ul { margin: 4px 0; padding-left: 20px; }
+  ul, ol { margin: 4px 0; padding-left: 20px; }
   li { margin: 2px 0; overflow-wrap: anywhere; }
   .plan-kept-heading { margin: 8px 0 0; font-weight: 600; }
   em { font-style: normal; }
