@@ -13,6 +13,8 @@ import { NAMES_HIDDEN_NOTE, buildLeaderReport, participantAnswersCsv } from '../
 import { nameParticipants, withNamesHidden } from '../migration/src/lib/results/participant-names.js';
 import { namesFor } from '../migration/src/lib/results/results-chart-model.js';
 import { resultRows } from '../migration/src/lib/admin/admin-results.js';
+import { makeReport } from './leader-report-node.js';
+import { inspectPdf, squash } from './pdf-inspect.js';
 
 const OPTIONS = { generatedAt: '2026-10-12T09:30:00.000Z', timeZone: 'UTC' };
 const REAL = ['José Álvarez', 'Zoë Brontë', 'Søren Kjær', 'Łukasz Żółć'];
@@ -74,6 +76,15 @@ describe('Hide names: the leader report and its CSV', () => {
       assert.ok(!csv.includes(name), `the CSV holds ${name}`);
     }
     assert.match(csv, /Guest 1/);
+  });
+
+  it('the PDF holds no recorded name, and its written answers say how people are shown', async () => {
+    const { bytes } = await makeReport(harbourRecords(), { hideNames: true });
+    const text = squash((await inspectPdf(bytes)).pages.map((sheet) => sheet.text).join(' '));
+    // (The counting rules, a fixed page, still explain "Unnamed participant 1, 2 ...": that names nobody.)
+    for (const name of REAL) assert.ok(!text.includes(squash(name)), `the PDF holds ${name}`);
+    assert.ok(text.includes(squash('Every written answer, word for word, with the person who wrote it as Guest 1, Guest 2 … (names are hidden).')));
+    assert.ok(text.includes(squash(NAMES_HIDDEN_NOTE)));
   });
 
   it('with the switch off the report is as it was', () => {

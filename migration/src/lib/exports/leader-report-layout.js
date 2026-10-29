@@ -463,7 +463,8 @@ function compose(report, measure, logo, noteMissing, palette) {
 
   // ---- 3. What participants said ----------------------------------------------------------------------------------------------------
 
-  startSection('What participants said', 'Every written answer, word for word, with the name of the person who wrote it.');
+  // (With Hide names, Prompt 21 decision B, nobody's name is printed: the line says how people are shown instead.)
+  startSection('What participants said', report.meta.namesHidden ? 'Every written answer, word for word, with the person who wrote it as Guest 1, Guest 2 … (names are hidden).' : 'Every written answer, word for word, with the name of the person who wrote it.');
   if (report.comments.length === 0) block(paragraph('This session had no question that asked for a written answer.', { color: MUTED }));
   for (const question of report.comments) {
     block([
