@@ -211,6 +211,14 @@ describe('Part 3: the dashboard\'s figures, worked out by hand', async () => {
     assert.deepEqual([options.industries, options.facilitators, options.groups, options.kinds.map((kind) => kind.id)], [['Energy', 'Retail'], ['Brian Milder', 'Rajeshwar Aedla'], ['Executives'], ['choice', 'ranking']]);
     assert.deepEqual(options.years, ['FY27']);
   });
+  it('Prompt 22: the Region filter, beside Industry, filters the same way and offers the regions in use', () => {
+    assert.equal(defaultFilters({ period: 'FY27-Q2' }).region, '');
+    assert.deepEqual(view({ region: 'EU' }).byClient.map((each) => each.clientId), ['acme']);
+    assert.deepEqual(view({ region: 'US' }).byClient.map((each) => each.clientId), ['kroger']);
+    assert.deepEqual(view({ region: 'US', industry: 'Energy' }).byClient, [], 'both at once: Kroger is US but Retail');
+    assert.equal(view({ region: 'EU' }).tiles[1].text, '20', 'the tiles follow it: Acme\'s 20 guests');
+    assert.deepEqual(filterOptions(SUMMARIES, [...CLIENTS, { id: 'globex', name: 'Globex', region: ' EU ' }]).regions, ['EU', 'US']);
+  });
   it('Export report: one row a session, by client, with the indexes; no cell starts a formula', () => {
     const csv = reportCsv(view());
     const lines = csv.trim().split('\r\n');
@@ -292,7 +300,7 @@ describe('Part 6: the confidence shift by client and by session (Prompt 22, the 
   });
   it('the i words of the shift and moved to confident say they are not compared with the baseline', () => {
     for (const id of ['confidence-shift', 'moved']) assert.match(`${METRICS[id].formula} ${METRICS[id].meaning}`, /not compared with the baseline/i, id);
-    assert.match(METRICS['confidence-shift'].meaning, /absolute change on the scale/);
+    assert.match(METRICS['confidence-shift'].meaning, /the change on the scale itself/);
     assert.match(METRICS['confidence-shift'].meaning, /Compare with/);
   });
   it('Export report: Shift %, Moved to confident % and Guests answered both, for the client and for the session', () => {

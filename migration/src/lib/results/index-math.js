@@ -10,7 +10,7 @@
 //   Change           = now - then, in index points
 //   Low sample       = fewer than the minimum (PMSAppSettings.MinSample, else 10)
 //   Pooled shift     = over every paired guest of every session, (After - Before) as a share of that session's scale, x 100: for the whole view, for
-//                      each client and for each session alike (Prompt 22). It is absolute: no baseline is asked, whatever "Compare with" says.
+//                      each client and for each session alike (Prompt 22). It is the change on the scale itself: no baseline is asked, whatever "Compare with" says.
 // Baselines: the average of all clients in reach for the same periods (the default), the quarter before, the same quarter a year before, one chosen client.
 
 import { MIN_SAMPLE as CHECK_MIN_SAMPLE } from './confidence-shift.js';

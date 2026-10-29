@@ -35,7 +35,7 @@ export function defaultFilters({ period, today = new Date().toISOString().slice(
   const quarter = period || periodOf(today, startMonth);
   const [year, q] = quarter.split('-');
   return {
-    period: quarter, year, span: q ? q.toLowerCase() : 'fy', month: today.slice(0, 7), from: '', to: '', compare: 'all', compareClient: '', clientIds: /** @type {string[]} */ ([]), industry: '',
+    period: quarter, year, span: q ? q.toLowerCase() : 'fy', month: today.slice(0, 7), from: '', to: '', compare: 'all', compareClient: '', clientIds: /** @type {string[]} */ ([]), industry: '', region: '',
     facilitator: '', kind: '', group: '', minSample: /** @type {number | null} */ (null), hideNames: HIDE_NAMES_BY_DEFAULT,
   };
 }
@@ -78,6 +78,7 @@ function filtered(list, filters, clientOf) {
   return list.filter((each) => {
     if (filters.clientIds?.length && !filters.clientIds.includes(each.clientId)) return false;
     if (filters.industry && words(clientOf.get(each.clientId)?.industry) !== filters.industry) return false;
+    if (filters.region && words(clientOf.get(each.clientId)?.region) !== filters.region) return false; // (Prompt 22: as Industry)
     if (filters.facilitator && words(each.summary?.facilitator) !== filters.facilitator) return false;
     if (filters.kind && !(Number(each.summary?.kinds?.[filters.kind]) > 0)) return false;
     if (filters.group && !Object.keys(each.summary?.groups ?? {}).some((group) => words(group).toLowerCase() === filters.group.toLowerCase())) return false;
@@ -238,13 +239,14 @@ export function dashboardOf({ summaries, clients, filters, startMonth = 6, minSa
   return { headline, window, tiles, byClient, trend, priority, distribution, themes, quotes, minSample: min, empty: !segment.length, hideNames: hide };
 }
 
-/** What the filters offer: the years with summaries, the clients' industries, the facilitators, the guest groups and the kinds of question asked. */
+/** What the filters offer: the years with summaries, the clients' industries and regions, the facilitators, the guest groups and the kinds of question asked. */
 export function filterOptions(summaries, clients) {
   const sorted = (values) => [...new Set(values.map(words).filter(Boolean))].sort((a, b) => a.localeCompare(b));
   const kinds = sorted(summaries.flatMap((each) => Object.keys(each.summary?.kinds ?? {})));
   return {
     years: sorted(summaries.map((each) => String(each.period ?? '').slice(0, 4))).filter((year) => /^FY\d{2}$/.test(year)),
     industries: sorted(clients.map((client) => client.industry ?? '')),
+    regions: sorted(clients.map((client) => client.region ?? '')),
     facilitators: sorted(summaries.map((each) => each.summary?.facilitator ?? '')),
     groups: sorted(summaries.flatMap((each) => Object.keys(each.summary?.groups ?? {}))),
     kinds: kinds.map((id) => ({ id, label: KIND_WORDS[id] ?? id })),
