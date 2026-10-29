@@ -74,6 +74,8 @@ test.describe('the People screens', () => {
     const fake = await site(me('vsatyadev', 'Satyadev, Vedala Venkata'));
     await open(page, fake);
     await page.getByRole('tab', { name: 'People' }).click();
+    // (The list's heading takes focus once the people are read: pressing Add user before then lost the focus to it under load, in WebKit.)
+    await expect(page.getByRole('heading', { name: 'People' })).toBeFocused();
     await page.getByRole('button', { name: 'Add user' }).focus();
     await page.keyboard.press('Enter');
     const field = page.getByRole('combobox', { name: 'Name or email' });
