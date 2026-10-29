@@ -9,6 +9,13 @@ export const OWNER_BANNER = 'You can see everything because you own this site. A
  * @param {string} appName @param {'disabled' | 'no-roles' | string | null} reason
  */
 export function noAccessWords(appName, reason) {
+  // (Prompt 21, Phase 6: the two ways a page that was open loses its access, lib/access/resolve.js lostAccess.)
+  if (reason === 'turned-off') {
+    return { title: `Your access to ${appName} was turned off`, line: `This happened while the page was open, so nothing more can be changed here. What was saved before is kept. Ask a Super admin of ${appName} if you need it again.` };
+  }
+  if (reason === 'role-removed') {
+    return { title: `Your access to ${appName} has changed`, line: `You no longer have a role that opens this page, so nothing more can be changed here. What was saved before is kept. Ask a Super admin of ${appName} if you need it.` };
+  }
   if (reason === 'disabled') {
     return { title: `Your access to ${appName} is turned off`, line: `Ask a Super admin of ${appName} if you need it again.` };
   }

@@ -50,3 +50,28 @@ export function signInStep(access, { now = new Date() } = {}) {
   if (!own.length) return { step: 'no-access', banner: null, reason: 'no-roles' };
   return { step: 'enter', banner: null, reason: null };
 }
+
+// ---- Turned off while the page is open (Prompt 21, Phase 6) -------------------------------------------------------------------------
+// The access is read once, at sign-in. The admin page reads it again when the person opens a tab or comes back to the page, at most once every
+// RECHECK_AFTER_MS, so a normal visit sends no more requests than before (ASSUMED five minutes: a Super admin's change reaches an open page within that
+// long of its next use; Phase 7's list permissions are the boundary). When the new answer would not let the person in, the page stops.
+
+/** The least time between two reads of the same person's access while the page is open. */
+export const RECHECK_AFTER_MS = 5 * 60_000;
+
+/** Whether the access is due to be read again. @param {number} lastReadAt @param {number} now */
+export const recheckDue = (lastReadAt, now) => now - lastReadAt >= RECHECK_AFTER_MS;
+
+/**
+ * What a person who was in has lost, from their access read again: 'turned-off' (disabled), 'role-removed' (no current role, an end date passed, or
+ * their row has gone), or null while they may still enter. The site owner is always a Super admin (decision I), so never loses it.
+ * @param {any} access @param {{ now?: Date }} [options]
+ */
+export function lostAccess(access, options = {}) {
+  const step = signInStep(access, options);
+  if (step.step === 'enter') return null;
+  return step.reason === 'disabled' ? 'turned-off' : 'role-removed';
+}
+
+/** The access of a page that has stopped: the person, with no role at all, so the write guard refuses every write. @param {any} access */
+export const withoutGrants = (access) => ({ ...access, owner: false, legacy: false, assignments: [] });
