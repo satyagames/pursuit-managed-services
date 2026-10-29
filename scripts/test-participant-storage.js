@@ -1781,6 +1781,8 @@ describe('the boundaries this phase relies on', () => {
     'addAccessRecord', 'listAccessRecords', 'readAccessRows', 'readSignedInPerson', 'setAccessGuard',
     // (Prompt 21, Phase 2: the people screens' three, lib/data/access-people.js.)
     'removeAccessRecord', 'searchDirectory', 'updateAccessRecord',
+    // (Prompt 21, Phase 3: sessions planned ahead, lib/data/planning.js.)
+    'planSession', 'startSession',
   ].sort();
   // The seven that no page called, and which tests of the pages used as set-up or as a reference until those tests were given the calls the
   // pages use (DROPS-10C2A.md, part 3, in git history at 7347c72).
@@ -1803,8 +1805,8 @@ describe('the boundaries this phase relies on', () => {
     // (Phase 10c-3: sendToSharePoint, the Setup page's one way to write to the site itself, for lib/setup/provision.js, and addAdminUser came; the seed-file
     // import, Setup's alone, went to migration/src/lib/setup/setup-import.js. Still 103. Phase 10j: prepareWrites, 104. Phase 15: updateClientWith, 105. Phase 16: listItemKeys and deleteByKey, for
     // lib/admin/session-delete.js, 107. Prompt 19: the page's SharePoint sign-in (lib/data/session-calls.js), setSessionRenewer, onSessionChange,
-    // sessionEvidence, lastAnswerAt and checkSession, 112. Prompt 21: setAccessGuard and lib/data/access-reads.js's four, 117; Phase 2: three of lib/data/access-people.js, 120.)
-    assert.equal(EXPORTS.length, 120);
+    // sessionEvidence, lastAnswerAt and checkSession, 112. Prompt 21: setAccessGuard and lib/data/access-reads.js's four, 117; Phase 2: three of lib/data/access-people.js, 120; Phase 3: planSession and startSession, lib/data/planning.js, 122.)
+    assert.equal(EXPORTS.length, 122);
     assert.equal(GONE.length, 30);
     for (const name of GONE) assert.ok(!(name in ds), `${name} is back`);
   });

@@ -352,6 +352,11 @@
     "arity": 1
   },
   {
+    "name": "planSession",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
     "name": "prepareWrites",
     "kind": "async function",
     "arity": 1
@@ -539,6 +544,11 @@
   {
     "name": "slugify",
     "kind": "function",
+    "arity": 1
+  },
+  {
+    "name": "startSession",
+    "kind": "async function",
     "arity": 1
   },
   {
