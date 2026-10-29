@@ -13,6 +13,7 @@
 // Baselines: the average of all clients in reach for the same periods (the default), the quarter before, the same quarter a year before, one chosen client.
 
 import { MIN_SAMPLE as CHECK_MIN_SAMPLE } from './confidence-shift.js';
+import { periodOf } from '../admin/session-plan.js';
 
 /** The fewest answers a figure is shown for without a "low sample" mark when PMSAppSettings.MinSample is empty (ASSUMED 10, open item 3). */
 export const MIN_SAMPLE = CHECK_MIN_SAMPLE;
@@ -177,6 +178,26 @@ export function periodRange(period, startMonth) {
   const from = day(firstYear, firstMonth);
   const to = new Date(Date.UTC(firstYear, firstMonth + months, 0)).toISOString().slice(0, 10);
   return { from, to };
+}
+
+/**
+ * The fiscal quarters a range of days touches, in order: what a Leadership role "for a period" reads its summaries by (PMSSessionSummary.Period). None for a
+ * range that ends before it starts or a day that is not one.
+ * @param {string} from YYYY-MM-DD @param {string} to YYYY-MM-DD @param {number} startMonth
+ */
+export function periodsBetween(from, to, startMonth) {
+  const [first, last] = [String(from ?? '').slice(0, 10), String(to ?? '').slice(0, 10)];
+  let period = periodOf(first, startMonth);
+  if (!period || !periodOf(last, startMonth) || first > last) return [];
+  const found = [];
+  while (period && found.length < 400) {
+    const range = periodRange(period, startMonth);
+    if (!range || range.from > last) break;
+    found.push(period);
+    const [, year, quarter] = /** @type {RegExpExecArray} */ (PERIOD.exec(period)).map(Number);
+    period = quarter === 4 ? `FY${two(year + 1)}-Q1` : `FY${two(year)}-Q${quarter + 1}`;
+  }
+  return found;
 }
 
 /**

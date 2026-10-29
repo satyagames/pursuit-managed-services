@@ -430,12 +430,12 @@ describe('the four problems, each in six parts', () => {
 });
 
 describe('list titles: the prefix, and a list that is named on its own', () => {
-  it('there is one list of the fifteen lists (twelve until Prompt 21), the data layer\'s: the resolver keeps none of its own and takes exactly its keys', async () => {
-    assert.equal(LIST_KEYS.length, 15);
+  it('there is one list of the sixteen lists (twelve until Prompt 21, fifteen until its Phase 5), the data layer\'s: the resolver keeps none of its own and takes exactly its keys', async () => {
+    assert.equal(LIST_KEYS.length, 16);
     assert.deepEqual(USUAL, {
       clients: TITLE.clients, sessions: TITLE.sessions, sections: TITLE.sections, questions: TITLE.questions, options: TITLE.options, tracks: TITLE.tracks, qrtokens: TITLE.qrtokens,
       appsettings: TITLE.appsettings, visitorroster: TITLE.visitorroster, uservisitlogs: TITLE.uservisitlogs, adminusers: TITLE.adminusers, responses: TITLE.responses,
-      users: TITLE.users, roleassignments: TITLE.roleassignments, auditlog: TITLE.auditlog, logoLibrary: TITLE.logoLibrary,
+      users: TITLE.users, roleassignments: TITLE.roleassignments, auditlog: TITLE.auditlog, sessionsummary: TITLE.sessionsummary, logoLibrary: TITLE.logoLibrary,
     });
     for (const key of LIST_KEYS) {
       assert.equal(wrongSetting({ lists: { [key]: 'Named' } }), '', key);
@@ -444,7 +444,7 @@ describe('list titles: the prefix, and a list that is named on its own', () => {
     // (`theme` was a list until Phase 10c-2a: a settings file that still names it is told so, like any key that is not a list.)
     for (const key of ['logoLibrary', 'QRTokens', 'theme', 'themeconfig', 'toString', 'constructor']) {
       assert.equal(wrongSetting({ lists: { [key]: 'Named' } }), `lists.${key}`, key);
-      assert.match(settingsProblem({ lists: { [key]: 'Named' } }), /is not one of this app's lists \(clients, sessions, sections, questions, options, tracks, qrtokens, appsettings, visitorroster, uservisitlogs, adminusers, responses, users, roleassignments, auditlog\)$/);
+      assert.match(settingsProblem({ lists: { [key]: 'Named' } }), /is not one of this app's lists \(clients, sessions, sections, questions, options, tracks, qrtokens, appsettings, visitorroster, uservisitlogs, adminusers, responses, users, roleassignments, auditlog, sessionsummary\)$/);
     }
     for (const file of ['deploy-settings.js', 'deploy-rules.js', 'deploy-problems.js']) {
       const source = await readFile(path.join(ROOT, 'migration/src/lib/settings', file), 'utf8');

@@ -959,8 +959,8 @@ describe('the column check reads only what it checks (part B)', () => {
       `${TITLE.clients}.AppId must be Single line of text, indexed, with Enforce unique values = Yes.`);
     assert.equal(await said((fake) => { fake.field('clients', 'ThemeJson').RichText = true; }, client),
       `${TITLE.clients}.ThemeJson must be Multiple lines of plain text, with append-only disabled.`);
-    assert.equal(await said((fake) => { fake.fields.get('clients').push({ InternalName: 'Region', TypeAsString: 'Text', Indexed: false, EnforceUniqueValues: false, RichText: false, AppendOnly: false, Required: true, ReadOnlyField: false }); }, client),
-      `${TITLE.clients} has an unsupported required column: Region.`);
+    assert.equal(await said((fake) => { fake.fields.get('clients').push({ InternalName: 'Territory', TypeAsString: 'Text', Indexed: false, EnforceUniqueValues: false, RichText: false, AppendOnly: false, Required: true, ReadOnlyField: false }); }, client),
+      `${TITLE.clients} has an unsupported required column: Territory.`); // (Region until Prompt 21, Phase 5 made it a column of the clients)
   });
 
   it('the mock answers a read of the columns as SharePoint does: the properties named, or every property with its SchemaXml', async () => {

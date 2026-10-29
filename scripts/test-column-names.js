@@ -104,7 +104,7 @@ describe('the mock answers a column the site will not return by name as the real
     const today = createSharePointFake();
     assert.deepEqual(today.fields.get('visitorroster').map((field) => field.InternalName), ['AppId', 'SessionId', 'GuestName', 'Enabled', 'GuestGroup']);
     assert.equal(today.fields.get('visitorroster')[2].TypeAsString, fake.fields.get('visitorroster')[2].TypeAsString);
-    assert.equal(today.item('appsettings', 'default').SchemaVersion, 7); // (3 until Phase 20; 4 until Prompt 21; 5 until its Phase 3; 6 until its Phase 4)
+    assert.equal(today.item('appsettings', 'default').SchemaVersion, 8); // (3 until Phase 20; 4 until Prompt 21; 5 until its Phase 3; 6 until its Phase 4; 7 until its Phase 5)
   });
 });
 
@@ -193,11 +193,11 @@ describe('Setup\'s self-test asks which columns this site will not return by nam
     const { detail, requests } = await probe(fake);
     assert.equal(detail, `Refused when named: ${TITLE.visitorroster}.DisplayName (no longer used since version 3; 400: ${WORDS}); `
       + `${TITLE.uservisitlogs}.DisplayName (no longer used since version 3; 400: ${WORDS}). `
-      + `Read one item of 10 lists, naming every column; empty, so not tested: ${TITLE.adminusers}, ${TITLE.responses}, ${TITLE.users}, ${TITLE.roleassignments}, ${TITLE.auditlog}. `
+      + `Read one item of 10 lists, naming every column; empty, so not tested: ${TITLE.adminusers}, ${TITLE.responses}, ${TITLE.users}, ${TITLE.roleassignments}, ${TITLE.auditlog}, ${TITLE.sessionsummary}. `
       + 'No column of the app is among them (since version 3 no column is named like a property SharePoint gives every list item), so nothing depends on this answer.');
     assert.ok(requests.every((entry) => entry.method === 'GET'), 'it only reads');
     // One look at each list, its fields and one item naming every column for each of the ten with an item, and each column alone on the two that refused.
-    assert.equal(requests.length, 15 + 10 + 10 + 5 + 13); // (Prompt 21: fifteen lists, twelve before; Phase 4: the guest list has one more column to read alone, GuestGroup)
+    assert.equal(requests.length, 16 + 10 + 10 + 5 + 13); // (Prompt 21: fifteen lists, twelve before; Phase 4: the guest list has one more column to read alone, GuestGroup; Phase 5: sixteen lists)
     assert.equal(requests.filter((entry) => /\/items$/.test(entry.path) && !/[?&]\$select=/.test(entry.query)).length, 0, 'every item read names its columns');
   });
 
@@ -205,9 +205,9 @@ describe('Setup\'s self-test asks which columns this site will not return by nam
     const fake = await site();
     const { detail, requests } = await probe(fake);
     assert.equal(detail, 'Every column of the lists it read came back when named. Read one item of 6 lists, naming every column; empty, so not tested: '
-      + `${TITLE.tracks}, ${TITLE.qrtokens}, ${TITLE.visitorroster}, ${TITLE.uservisitlogs}, ${TITLE.adminusers}, ${TITLE.responses}, ${TITLE.users}, ${TITLE.roleassignments}, ${TITLE.auditlog}. `
+      + `${TITLE.tracks}, ${TITLE.qrtokens}, ${TITLE.visitorroster}, ${TITLE.uservisitlogs}, ${TITLE.adminusers}, ${TITLE.responses}, ${TITLE.users}, ${TITLE.roleassignments}, ${TITLE.auditlog}, ${TITLE.sessionsummary}. `
       + 'No column of the app is among them (since version 3 no column is named like a property SharePoint gives every list item), so nothing depends on this answer.');
-    assert.equal(requests.length, 15 + 6 + 6); // (Prompt 21: fifteen lists, twelve before)
+    assert.equal(requests.length, 16 + 6 + 6); // (Prompt 21: fifteen lists, twelve before; Phase 5: sixteen)
   });
 
   it('a column the app reads that the site will not return is named as such; a list it cannot read is named; it never fails', async () => {

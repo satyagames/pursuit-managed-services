@@ -32,6 +32,8 @@
  *                     an assignment removed; both lists go to the guard's record check first, so its rules hold here as well as on the screen
  *    planning.js      section 14 (Prompt 21, Phase 3), sessions planned ahead, several a day: a planned session written under its id (-2, -3
  *                     on a duplicate), and the Producer's Start, the only thing that makes a planned session live
+ *    summaries.js     section 15 (Prompt 21, Phase 5), the sessions' summaries: one written (made, or written over), and the Leadership
+ *                     dashboard's read of those a role holds, by client, session or fiscal period
  *
  * Since Phase 10c-1 it belongs to the pages in migration/ alone. Until then the legacy pages were built from this same file, so it
  * was only ever allowed to grow; they left the branch (the tag legacy-final holds them), that rule went with them, and so did the
@@ -115,3 +117,6 @@ export {
 export {
   planSession, startSession,
 } from './planning.js';
+export {
+  saveSessionSummary, readSessionSummaries,
+} from './summaries.js';

@@ -417,3 +417,17 @@ export const PHASE_21D = Object.freeze({
   participantAfter: 166_683, adminAfter: 623_918,
   participantUtilities: PHASE_11A.participantUtilities,
 });
+
+/**
+ * Prompt 21, Phase 5 (the Leadership dashboard and its index arithmetic) is the admin page's: the dashboard in Results (lib/results/index-math.js,
+ * session-summary.js, dashboard-model.js, metric-words.js, lib/admin/session-summaries.js and its screens), and a session's summary written when it ends.
+ * The participant page carries only what the data layer every page carries gained: section 15 (saveSessionSummary, readSessionSummaries:
+ * lib/data/summaries.js), the clients' two columns of schema version 8 in every read of the clients, and the summaries' list in the schema file. None of
+ * the dashboard. Its Tailwind rules are the ones it had, and the ceiling is not raised. Measured when the phase ended: participantAfter and adminAfter,
+ * where the next phase starts.
+ */
+export const PHASE_21E = Object.freeze({
+  participantBefore: PHASE_21D.participantAfter, adminBefore: PHASE_21D.adminAfter, participantAllowance: 600, adminAllowance: 30_000,
+  participantAfter: 167_081, adminAfter: 624_264,
+  participantUtilities: PHASE_11A.participantUtilities,
+});

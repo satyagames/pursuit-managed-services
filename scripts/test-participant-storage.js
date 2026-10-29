@@ -1468,7 +1468,7 @@ describe('every column must exist', () => {
       `${TITLE.responses}.ClientId | Single line of text | Missing.`,
     ]);
     assert.deepEqual(report.find((list) => list.list === TITLE.visitorroster).problems, [{ column: null, type: null, problem: `The list "${TITLE.visitorroster}" does not exist.` }]);
-    assert.equal(report.filter((list) => list.ready).map((list) => list.list).join(), `${TITLE.qrtokens},${TITLE.uservisitlogs},${TITLE.adminusers},${TITLE.users},${TITLE.roleassignments},${TITLE.auditlog}`);
+    assert.equal(report.filter((list) => list.ready).map((list) => list.list).join(), `${TITLE.qrtokens},${TITLE.uservisitlogs},${TITLE.adminusers},${TITLE.users},${TITLE.roleassignments},${TITLE.auditlog},${TITLE.sessionsummary}`);
     assert.equal(fake.count((entry) => entry.method !== 'GET'), 0, 'the check only reads');
     const today = plainTitles(await ds.checkSharePointSchema()).flatMap((list) => list.problems.map((problem) => `${list.list}.${problem.column} | ${problem.type} | ${problem.problem}`));
     assert.deepEqual(today, flat.map((line) => line.replace(/ \| [^|]+ \| Missing\.$/, ' | null | Missing.')));
@@ -1783,6 +1783,8 @@ describe('the boundaries this phase relies on', () => {
     'removeAccessRecord', 'searchDirectory', 'updateAccessRecord',
     // (Prompt 21, Phase 3: sessions planned ahead, lib/data/planning.js.)
     'planSession', 'startSession',
+    // (Prompt 21, Phase 5: the sessions' summaries, lib/data/summaries.js.)
+    'readSessionSummaries', 'saveSessionSummary',
   ].sort();
   // The seven that no page called, and which tests of the pages used as set-up or as a reference until those tests were given the calls the
   // pages use (DROPS-10C2A.md, part 3, in git history at 7347c72).
@@ -1805,8 +1807,8 @@ describe('the boundaries this phase relies on', () => {
     // (Phase 10c-3: sendToSharePoint, the Setup page's one way to write to the site itself, for lib/setup/provision.js, and addAdminUser came; the seed-file
     // import, Setup's alone, went to migration/src/lib/setup/setup-import.js. Still 103. Phase 10j: prepareWrites, 104. Phase 15: updateClientWith, 105. Phase 16: listItemKeys and deleteByKey, for
     // lib/admin/session-delete.js, 107. Prompt 19: the page's SharePoint sign-in (lib/data/session-calls.js), setSessionRenewer, onSessionChange,
-    // sessionEvidence, lastAnswerAt and checkSession, 112. Prompt 21: setAccessGuard and lib/data/access-reads.js's four, 117; Phase 2: three of lib/data/access-people.js, 120; Phase 3: planSession and startSession, lib/data/planning.js, 122.)
-    assert.equal(EXPORTS.length, 122);
+    // sessionEvidence, lastAnswerAt and checkSession, 112. Prompt 21: setAccessGuard and lib/data/access-reads.js's four, 117; Phase 2: three of lib/data/access-people.js, 120; Phase 3: planSession and startSession, lib/data/planning.js, 122; Phase 5: readSessionSummaries and saveSessionSummary, lib/data/summaries.js, 124.)
+    assert.equal(EXPORTS.length, 124);
     assert.equal(GONE.length, 30);
     for (const name of GONE) assert.ok(!(name in ds), `${name} is back`);
   });

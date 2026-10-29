@@ -38,6 +38,7 @@ picture library. The titles below have no prefix (`"listPrefix": ""`); a copy of
 | `users` | PMSUsers | One item for each person who may use the admin page (Prompt 21): who they are and whether they are active. Adding a person gives them no access; their assignments do. | admin, setup | admin, setup |
 | `roleassignments` | PMSRoleAssignments | One item for each person, role and place (Prompt 21, decision H): roles only allow, and they add up. A duplicate grant is refused by its unique AppId. | admin, setup | admin, setup |
 | `auditlog` | PMSAuditLog | One line for each grant, removal, added person and disable (Prompt 21, decision J). Lines are only ever added; none holds an answer. | admin, setup | admin, setup |
+| `sessionsummary` | PMSSessionSummary | One item for each session that has ended (Prompt 21, Phase 5): its totals, written when it ends and by the dashboard's Rebuild, so that the Leadership dashboard reads one item a session and never every answer. Its numbers are the leader report's (first answers only); it holds no answer but a few Survey feedback comments. | admin | admin |
 | (library) | PMSClientImages | The clients' pictures (hero badge, logo, background, answer tiles), each stored once under a name made from its content. | participant, admin, setup | admin, setup |
 <!-- lists:end -->
 

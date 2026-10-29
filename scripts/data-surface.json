@@ -427,6 +427,11 @@
     "arity": 1
   },
   {
+    "name": "readSessionSummaries",
+    "kind": "async function",
+    "arity": 0
+  },
+  {
     "name": "readSignedInPerson",
     "kind": "async function",
     "arity": 0
@@ -493,6 +498,11 @@
   },
   {
     "name": "saveParticipantResponses",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "saveSessionSummary",
     "kind": "async function",
     "arity": 1
   },

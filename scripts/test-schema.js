@@ -75,13 +75,17 @@ export const PMS_TITLES = Object.freeze({
   adminusers: 'PMSAdminUsers', appsettings: 'PMSAppSettings',
   // (Prompt 21: the brief's titles, approved with the wireframes on 27 Oct 2026.)
   users: 'PMSUsers', roleassignments: 'PMSRoleAssignments', auditlog: 'PMSAuditLog',
+  // (Prompt 21, Phase 5: the brief's title.)
+  sessionsummary: 'PMSSessionSummary',
 });
 export const PMS_LIBRARY = 'PMSClientImages';
 /** Exactly the columns a request filters on, besides AppId (what the recorded requests say: see the last test of this file). */
 const FILTERED = ['sessions.ClientId', 'sections.ClientId', 'options.QuestionId', 'tracks.SessionId', 'tracks.QrTokenId', 'qrtokens.SessionId',
   'qrtokens.VisitorId', 'visitorroster.SessionId', 'uservisitlogs.SessionId', 'responses.SessionId', 'responses.TrackId',
   // (Prompt 21: a signed-in person's roles, by their key.)
-  'roleassignments.UserKey'];
+  'roleassignments.UserKey',
+  // (Prompt 21, Phase 5: the dashboard reads the summaries of the clients a role holds, or of the periods it holds.)
+  'sessionsummary.ClientId', 'sessionsummary.Period'];
 
 export const CHANGES = [
   ['the lists are named PMS and a meaningful name, and the picture library PMSClientImages', (shape) => {
@@ -154,6 +158,21 @@ export const CHANGES = [
     shape.lists.visitorroster.columns.push({ column: 'GuestGroup', field: 'guestGroup', kind: 'plain', type: 'Text', indexed: false, unique: false, mustExist: true, required: false, format: null, values: null });
     return shape;
   }],
+  // (Prompt 21, Phase 5, schema version 8: the Leadership dashboard.)
+  ['(Prompt 21 Phase 5, v8) PMSSessionSummary, a session\'s totals, indexed on ClientId and Period (what the dashboard reads it by); PMSClients.Industry and Region (optional tags, filtered in the page: not indexed)', (shape) => {
+    const plain = { indexed: false, unique: false, mustExist: true, required: false, format: null, values: null };
+    const text = (column, field, more = {}) => ({ column, field, kind: 'plain', type: 'Text', ...plain, ...more });
+    const number = (column, field) => ({ column, field, kind: 'plain', type: 'Number', ...plain });
+    shape.lists.clients.columns.push(text('Industry', 'industry'), text('Region', 'region'));
+    shape.lists.sessionsummary = { title: 'PMSSessionSummary', local: 'sessionsummary', columns: [
+      { ...text(ID, 'id'), indexed: true, unique: true, required: true }, text('ClientId', 'clientId', { indexed: true }), text('Period', 'period', { indexed: true }),
+      { column: 'SessionDate', field: 'sessionDate', kind: 'date', type: 'DateTime', ...plain, format: 'Date & Time' },
+      number('Guests', 'guests'), number('Answers', 'answers'), number('Completed', 'completed'), number('BeforeCount', 'beforeCount'), number('AfterCount', 'afterCount'),
+      number('PairedCount', 'pairedCount'), number('MeanBefore', 'meanBefore'), number('MeanAfter', 'meanAfter'),
+      { column: 'SummaryJson', field: 'summaryJson', kind: 'object', type: 'Note', ...plain },
+    ] };
+    return shape;
+  }],
 ];
 
 describe('the snapshot of the old schema, with this phase\'s changes, is the schema file', () => {
@@ -174,7 +193,7 @@ describe('the snapshot of the old schema, with this phase\'s changes, is the sch
   it('the titles are the ones VJR chose, the library is PMSClientImages, and the logical keys are what they were', () => {
     assert.deepEqual(Object.fromEntries(Object.entries(LISTS).map(([key, list]) => [key, list.title])), { ...PMS_TITLES, ...Object.fromEntries(Object.keys(LISTS).map((key) => [key, PMS_TITLES[key]])) });
     assert.deepEqual(Object.keys(LISTS).sort(), Object.keys(PMS_TITLES).sort());
-    assert.deepEqual(Object.keys(LISTS), [...Object.keys(snapshot.schema.lists), 'users', 'roleassignments', 'auditlog'], 'the keys, in the order they always had, then Prompt 21\'s three');
+    assert.deepEqual(Object.keys(LISTS), [...Object.keys(snapshot.schema.lists), 'users', 'roleassignments', 'auditlog', 'sessionsummary'], 'the keys, in the order they always had, then Prompt 21\'s three and its Phase 5\'s one');
     assert.equal(LIBRARY, PMS_LIBRARY);
     assert.equal(LIBRARY_META.title, LIBRARY);
   });

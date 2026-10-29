@@ -26,6 +26,13 @@
 // title is the built-in Title (where the data layer has always written a session's id: such a title reads as none). A site of version 5 lacks
 // the four, and every read of the list names them, so a page of this build stops there (PMS-LST-011) until Setup has added them.
 //
+// Schema version 7 (Prompt 21, Phase 4): a guest's group. PMSGuestList gains GuestGroup (an optional tag).
+//
+// Schema version 8 (Prompt 21, Phase 5): the Leadership dashboard. PMSSessionSummary (one item for each session, keyed by the session's id: its totals,
+// written when it ends, so that the dashboard reads summaries and never every answer), indexed on ClientId and Period, the two it is read by; and
+// PMSClients gains Industry and Region (optional tags for the dashboard's filters, which filter in the page: not indexed). A site of version 7 lacks
+// them, and every read of the clients names them, so a page of this build stops there (PMS-LST-011) until Setup has added them.
+//
 // A list is its title before any prefix (the settings may put one in front, or name the list outright) and its fields: the
 // property of a record, then the internal name of the column that holds it, then its kind when it is not text: `number`,
 // `yesno`, `date`, `array` (a JSON list kept as plain text) or `object` (a JSON object kept as plain text); then `indexed` for a
@@ -36,11 +43,11 @@
 /** The column every list is keyed by: the app's own id of a record, never SharePoint's numeric ID. Indexed and unique. */
 export const ID = 'AppId';
 /**
- * The version of the lists this build is made for (Phase 10c-2b: schema v2; Phase 10i: 3; Phase 20: 4; Prompt 21: 5; Prompt 21, Phase 3: 6). The site says its own in PMSAppSettings.SchemaVersion,
+ * The version of the lists this build is made for (Phase 10c-2b: schema v2; Phase 10i: 3; Phase 20: 4; Prompt 21: 5; Prompt 21, Phase 3: 6; Phase 4: 7; Phase 5: 8). The site says its own in PMSAppSettings.SchemaVersion,
  * which Setup writes when it makes the lists, and raises once it has added what a newer version needs; a page on lists of another version stops
  * (dataService, PMS-LST-010 to 012).
  */
-export const VERSION = 7;
+export const VERSION = 8;
 /** The picture library's title before any prefix. */
 export const LIBRARY = 'PMSClientImages';
 
@@ -59,7 +66,7 @@ const list = (title, fields) => ({
 export const LISTS = {
   clients: list('PMSClients', {
     id: ID, name: 'Name', logoUrl: 'LogoUrl', primaryColor: 'PrimaryColor', secondaryColor: 'SecondaryColor', createdAt: 'CreatedAt date',
-    slug: 'Slug', theme: 'ThemeJson object', themeVersion: 'ThemeVersion number', status: 'Status',
+    slug: 'Slug', theme: 'ThemeJson object', themeVersion: 'ThemeVersion number', status: 'Status', industry: 'Industry', region: 'Region',
   }),
   sessions: list('PMSClientSessions', {
     id: ID, clientId: 'ClientId indexed', date: 'SessionDate date', sectionIds: 'SectionIds array', activeSectionId: 'ActiveSectionId', status: 'Status',
@@ -107,6 +114,12 @@ export const LISTS = {
   auditlog: list('PMSAuditLog', {
     id: ID, actor: 'Actor', action: 'Action', targetUser: 'TargetUser', role: 'Role', clientId: 'ClientId', sessionId: 'SessionId',
     detail: 'Detail', occurredAt: 'OccurredAt date',
+  }),
+  // Prompt 21, Phase 5: a session's totals for the Leadership dashboard (lib/results/session-summary.js), keyed by the session's id.
+  sessionsummary: list('PMSSessionSummary', {
+    id: ID, clientId: 'ClientId indexed', period: 'Period indexed', sessionDate: 'SessionDate date', guests: 'Guests number', answers: 'Answers number',
+    completed: 'Completed number', beforeCount: 'BeforeCount number', afterCount: 'AfterCount number', pairedCount: 'PairedCount number',
+    meanBefore: 'MeanBefore number', meanAfter: 'MeanAfter number', summaryJson: 'SummaryJson object',
   }),
 };
 

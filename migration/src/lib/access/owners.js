@@ -9,7 +9,7 @@ import { inPeriod, reachOf } from './scope.js';
 export const UNKNOWN_OWNER = '?unknown';
 
 /** Lists whose items belong to places, and so are read only by naming them. The others (app settings, the access lists) are read by everyone. */
-const OWNED = new Set(['clients', 'sessions', 'sections', 'questions', 'options', 'tracks', 'uservisitlogs', 'qrtokens', 'visitorroster', 'responses']);
+const OWNED = new Set(['clients', 'sessions', 'sections', 'questions', 'options', 'tracks', 'uservisitlogs', 'qrtokens', 'visitorroster', 'responses', 'sessionsummary']);
 const BY_SESSION = new Set(['tracks', 'uservisitlogs', 'qrtokens', 'visitorroster', 'responses']);
 
 /** The owners this page knows. */
@@ -72,5 +72,13 @@ export function mayRead(owners, access, list, where, options) {
   }
   if (list === 'options') return every(idsOf(where, 'questionId'), (id) => owners.clientOfQuestion(id) !== undefined && clientOk(owners.clientOfQuestion(id)));
   if (BY_SESSION.has(list)) return every(idsOf(where, 'sessionId'), sessionOk);
+  if (list === 'sessionsummary') {
+    // (Prompt 21, Phase 5: a session's totals. By its client for a role on the whole client, by its id for a role on the session, by its fiscal period for
+    // Leadership of a period, whose page keeps only the days inside the period: ASSUMED, a quarter that runs past the period is read and its other days
+    // dropped in the page, docs/history/RELEASE-21E.md.)
+    if (idsOf(where, 'clientId')) return idsOf(where, 'clientId').every((id) => reach.clientIds.has(id));
+    if (idsOf(where, 'period')) return reach.periods.length > 0;
+    return every(idsOf(where, 'id'), sessionOk);
+  }
   return false;
 }

@@ -57,15 +57,15 @@ describe('Show the plan: a site with nothing on it', () => {
       assert.deepEqual(made.columns.filter((item) => item.key === key).map((item) => item.name), columnsOf(key).map((column) => column.name).filter((name) => name !== 'Title'),
         `${key}: every column of META, in its order, but SharePoint's own Title (the activities' title is that column, and every list is made with it)`);
     }
-    assert.equal(made.columns.length, 126); // (89 until Phase 20 added PMSActivities.Kind and PMSClientSessions.ConfidenceCheck; 91 until Prompt 21 added the three access lists' 28 and the settings' 2; 121 until its Phase 3 added a session's StartTime, Sequence, Period and PlannedDate, its title being the built-in Title)
+    assert.equal(made.columns.length, 141); // (89 until Phase 20 added PMSActivities.Kind and PMSClientSessions.ConfidenceCheck; 91 until Prompt 21 added the three access lists' 28 and the settings' 2; 121 until its Phase 3 added a session's StartTime, Sequence, Period and PlannedDate, its title being the built-in Title; 126 until its Phase 5 added PMSSessionSummary's 13 and the clients' Industry and Region)
     const settings = (kind) => made.settings.filter((item) => item.kind === kind).map((item) => `${item.key}.${item.column ?? ''}`);
     assert.deepEqual(settings('index'), KEYS.flatMap((key) => columnsOf(key).filter((column) => column.indexed).map((column) => `${key}.${column.name}`)));
-    assert.equal(settings('index').length, 27, 'AppId on fifteen lists and the twelve columns the app filters on (23 until Prompt 21: its three lists\' AppId and UserKey)');
+    assert.equal(settings('index').length, 30, 'AppId on sixteen lists and the fourteen columns the app filters on (23 until Prompt 21: its three lists\' AppId and UserKey; 27 until its Phase 5: the summaries\' AppId, ClientId and Period)');
     assert.deepEqual(settings('unique'), KEYS.map((key) => `${key}.${ID}`));
     assert.deepEqual(settings('list'), KEYS.map((key) => `${key}.`));
     assert.ok(made.settings.filter((item) => item.kind === 'list').every((item) => JSON.stringify(item.changes) === '{"EnableAttachments":false,"EnableModeration":false}'), 'attachments off and content approval off; version history left as it is');
     assert.deepEqual(made.untouched, []);
-    assert.equal(made.summary, '16 lists, 126 columns, 57 settings to create'); // (13, 91 and 47 until Prompt 21; 121 columns until its Phase 3)
+    assert.equal(made.summary, '17 lists, 141 columns, 62 settings to create'); // (13, 91 and 47 until Prompt 21; 121 columns until its Phase 3; 16, 126 and 57 until its Phase 5)
   });
 
   it('each column is defined as META says: its internal name three times, its type, required for AppId alone, plain text, Date & Time, a Yes/No that starts as No', () => {
@@ -75,11 +75,11 @@ describe('Show the plan: a site with nothing on it', () => {
     assert.equal(definition(columnsOf('sessions').find((column) => column.name === 'SessionDate')), '<Field Type="DateTime" Name="SessionDate" StaticName="SessionDate" DisplayName="SessionDate" Required="FALSE" Format="DateTime" />');
     assert.equal(definition(columnsOf('sections').find((column) => column.name === 'Enabled')), '<Field Type="Boolean" Name="Enabled" StaticName="Enabled" DisplayName="Enabled" Required="FALSE"><Default>0</Default></Field>');
     assert.equal(definition(columnsOf('sections').find((column) => column.name === 'SortOrder')), '<Field Type="Number" Name="SortOrder" StaticName="SortOrder" DisplayName="SortOrder" Required="FALSE" />');
-    assert.equal(lines.filter((line) => line.includes('Required="TRUE"')).length, 15, 'AppId of each list, and nothing else');
+    assert.equal(lines.filter((line) => line.includes('Required="TRUE"')).length, 16, 'AppId of each list, and nothing else');
     assert.ok(lines.every((line) => !/Indexed|EnforceUniqueValues/.test(line)), 'no index and no uniqueness in a definition: they are later steps');
-    assert.equal(lines.filter((line) => line.includes('Format="DateTime"')).length, 16); // (11 until Prompt 21: PeriodFrom, PeriodTo, ValidUntil, OccurredAt; 15 until its Phase 3: PlannedDate)
+    assert.equal(lines.filter((line) => line.includes('Format="DateTime"')).length, 17); // (11 until Prompt 21: PeriodFrom, PeriodTo, ValidUntil, OccurredAt; 15 until its Phase 3: PlannedDate; 16 until its Phase 5: a summary's SessionDate)
     assert.equal(lines.filter((line) => line.includes('<Default>0</Default>')).length, 5); // (ConfidenceCheck: Phase 20)
-    assert.equal(lines.filter((line) => line.includes('RichText="FALSE" AppendOnly="FALSE"')).length, 8);
+    assert.equal(lines.filter((line) => line.includes('RichText="FALSE" AppendOnly="FALSE"')).length, 9); // (8 until Prompt 21, Phase 5: a summary's SummaryJson)
   });
 
 });
@@ -91,8 +91,8 @@ describe('Show the plan: a complete site, and one with something missing', () =>
     assert.equal(made.summary, 'Nothing to create');
     assert.equal(made.empty, true);
     assert.deepEqual([made.lists, made.columns, made.settings, made.untouched], [[], [], [], []]);
-    assert.equal(read.reads, 16); // (13 until Prompt 21)
-    assert.deepEqual(site.fake.requests.map((entry) => entry.method), Array(16).fill('GET'));
+    assert.equal(read.reads, 17); // (13 until Prompt 21; 16 until its Phase 5)
+    assert.deepEqual(site.fake.requests.map((entry) => entry.method), Array(17).fill('GET'));
     assert.deepEqual(planLines(made), ['Nothing to create']);
   });
 
@@ -266,10 +266,10 @@ describe('Create: a site with nothing on it', () => {
     const { made, result, progress } = await createNow(site, { gapMs: null });
     assert.equal(result.ok, true, result.failure?.words);
     console.log(`  a whole site on the mocked SharePoint, at the real pace (3 lists at a time, 120 ms between one lane's writes): ${result.writes} writes and ${site.fake.count()} requests in ${(result.ms / 1000).toFixed(1)} s`);
-    assert.deepEqual([result.done.lists.length, result.done.columns.length, result.done.settings.length], [16, 126, 57]);
-    assert.equal(result.writes, 199, '16 lists, 126 columns, 57 settings: one write each (151 until Prompt 21; 194 until its Phase 3; 198 until its Phase 4)');
+    assert.deepEqual([result.done.lists.length, result.done.columns.length, result.done.settings.length], [17, 141, 62]);
+    assert.equal(result.writes, 220, '17 lists, 141 columns, 62 settings: one write each (151 until Prompt 21; 194 until its Phase 3; 198 until its Phase 4; 199 until its Phase 5)');
     const log = writes(site.fake);
-    assert.equal(log.length, 199); // (149 until Phase 20; 151 until Prompt 21; 194 until its Phase 3)
+    assert.equal(log.length, 220); // (149 until Phase 20; 151 until Prompt 21; 194 until its Phase 3; 199 until its Phase 5)
     const last = (prefix) => log.findLastIndex((line) => line.startsWith(prefix));
     const first = (prefix) => log.findIndex((line) => line.startsWith(prefix));
     assert.ok(last('create list') < first('create column'), 'the lists first');
@@ -279,11 +279,11 @@ describe('Create: a site with nothing on it', () => {
       const appId = log.filter((line) => line === `change column ${key}.${ID}`);
       assert.equal(appId.length, 2, `${key}.AppId: its index, then its uniqueness, in two steps`);
     }
-    assert.equal(site.fake.count((entry) => entry.method === 'GET' && /\/fields\/getbyid\(/.test(entry.path)), 126, 'each column read back once');
+    assert.equal(site.fake.count((entry) => entry.method === 'GET' && /\/fields\/getbyid\(/.test(entry.path)), 141, 'each column read back once');
     assert.ok(site.fake.requests.every((entry) => ['GET', 'POST', 'MERGE'].includes(entry.method)), 'no DELETE, ever');
     assert.ok(progress.includes(`Creating ${site.titles.sections}: 4 of 8 columns...`), progress.join('\n')); // (of 7 until Phase 20 added Kind)
     assert.equal(progress.at(-1), result.summary);
-    assert.match(result.summary, /^Created 16 lists, 126 columns and 57 settings in [\d.]+ s \(199 writes\)\.$/);
+    assert.match(result.summary, /^Created 17 lists, 141 columns and 62 settings in [\d.]+ s \(220 writes\)\.$/);
     assert.deepEqual(made.untouched, []);
     for (const key of KEYS) assert.deepEqual(site.fake.listSettings(key), { EnableAttachments: false, EnableModeration: false, EnableVersioning: true, Description: `${META[key].purpose} ${MADE_BY}` });
     assert.equal(site.fake.libraryPresent, true);
@@ -409,19 +409,20 @@ describe('Create: when SharePoint makes something else, refuses, or fails part-w
     assert.equal(result.failure.created, `Made before it stopped: the lists ${site.titles.appsettings} and ${site.titles.adminusers}; AppId, ActiveSessionId, ActiveClientId, ActivatedAt, SchemaVersion, FiscalYearStartMonth and MinSample of ${site.titles.appsettings}; AppId of ${site.titles.adminusers}. Press Show the plan, then Create, to carry on from there.`);
   });
 
-  it('a failure part-way (the 43rd write; the 40th until Prompt 21), then a second run: the same site as one clean run', async () => {
+  it('a failure part-way (the 44th write; the 40th until Prompt 21, the 43rd until its Phase 5), then a second run: the same site as one clean run', async () => {
     const clean = await siteWith({ without: EVERYTHING, traps: ALL_TRAPS });
     await createNow(clean);
     const broken = await siteWith({ without: EVERYTHING, traps: ALL_TRAPS });
-    // (The 43rd write: the column the 40th was until Prompt 21 made three lists more first, so the run still stops at the same column.)
-    broken.fake.failWrite({ at: 43 });
+    // (The 44th write: the column the 40th was until Prompt 21 made three lists more first, and the 43rd until its Phase 5 made one list more, so the run still
+    // stops at the same column, AppId of PMSActivityQuestions.)
+    broken.fake.failWrite({ at: 44 });
     const first = await createNow(broken);
     assert.equal(first.result.ok, false);
     assert.match(first.result.failure.words, /^Create stopped at: create the column \w+ of \w+\. SharePoint said: Something went wrong\. \(an injected failure\)$/);
     assert.match(first.result.failure.created, /Press Show the plan, then Create, to carry on from there\.$/);
     const second = await createNow(broken);
     assert.equal(second.result.ok, true, second.result.failure?.words);
-    assert.ok(second.result.writes < 197 && second.result.writes > 140, `it carried on: ${second.result.writes} writes`); // (a full run is 199 since Prompt 21, Phase 4; 198 and 194 and 151 before)
+    assert.ok(second.result.writes < 218 && second.result.writes > 140, `it carried on: ${second.result.writes} writes`); // (a full run is 220 since Prompt 21, Phase 5; 199, 198, 194 and 151 before)
     assert.deepEqual(stateOf(broken.fake), stateOf(clean.fake));
     assert.equal((await plan(broken)).summary, 'Nothing to create');
   });

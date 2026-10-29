@@ -11,7 +11,7 @@ import { createSharePointFake } from './sharepoint-fake.js';
 
 describe('schema version 7: PMSGuestList.GuestGroup', () => {
   it('the version is 7 and the roster\'s last column is the optional GuestGroup, not indexed, since 7', () => {
-    assert.equal(VERSION, 7);
+    assert.equal(VERSION, 8); // (7 until Prompt 21, Phase 5)
     const fields = Object.values(LISTS.visitorroster.fields);
     assert.deepEqual(fields.map((field) => field.column), ['AppId', 'SessionId', 'GuestName', 'Enabled', 'GuestGroup']);
     assert.ok(!fields.at(-1).indexed, 'the app filters on it in Phase 5, which indexes it then');

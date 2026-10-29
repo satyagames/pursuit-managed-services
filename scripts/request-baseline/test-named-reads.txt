@@ -10,6 +10,7 @@
 # Amended in Prompt 21, Phase 3: schema version 6 adds a session's Title (SharePoint's own column), StartTime, Sequence, Period and PlannedDate, so each read of PMSClientSessions names five columns more at the end of its `$select` (encoded too, in a mock's `__next` link), and Setup, where it makes columns, makes and reads back the four that are not SharePoint's own; by scripts/schema-baseline/sessions-baselines.js, after the suites were run on 43a98d4's tree and on today's, request by request (in the two Setup suites, whose lanes interleave, as many of each request, not in order), and a fresh recording equalled the translation exactly. Nothing else was changed.
 # Amended (4 entries) for the tests matching /the longest addresses/, compared with the last commit's whole tree (its code and helpers, not only its suite). Nothing else was changed (scripts/request-baseline.js, amendment()).
 # Amended in Prompt 21, Phase 4: schema version 7 adds a guest's GuestGroup to PMSGuestList, so each read of the guest list names one column more at the end of its `$select` (encoded too, in a mock's `__next` link), and Setup, where it makes columns, makes and reads back that column; by scripts/schema-baseline/guestgroup-baselines.js, after the suites were run on dda6eb2's tree and on today's, request by request (in the two Setup suites, whose lanes interleave, as many of each request, not in order), and a fresh recording equalled the translation exactly. Nothing else was changed.
+# Amended in Prompt 21, Phase 5: schema version 8 adds PMSClients.Industry and Region, so each read of the clients names two columns more at the end of its `$select` (encoded too, in a mock's `__next` link); a read of every list's columns carries the new list (PMSSessionSummary) after the fifteen; and requests that name the new list, or make or read back the clients' two columns, are new; by scripts/schema-baseline/summary-baselines.js, after the suites were run on ca3a16b's tree and on today's, request by request (in the two Setup suites, whose lanes interleave, as many of each request, not in order), and a fresh recording equalled the translation exactly. Nothing else was changed.
 1 x GET /sites/PCOE/_api/web/lists/getbytitle('PMSActivities')/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField
 1 x GET /sites/PCOE/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description,Kind
 1 x GET /sites/PCOE/_api/web/lists/getbytitle('PMSActivities')?$select=ListItemEntityTypeFullName
@@ -21,7 +22,7 @@
 1 x GET /sites/PCOE/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$top=200&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
 1 x GET /sites/PCOE/_api/web/lists/getbytitle('PMSAnswerOptions')?$select=ListItemEntityTypeFullName
 1 x GET /sites/PCOE/_api/web/lists/getbytitle('PMSClients')/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField
-1 x GET /sites/PCOE/_api/web/lists/getbytitle('PMSClients')/items?$top=200&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+1 x GET /sites/PCOE/_api/web/lists/getbytitle('PMSClients')/items?$top=200&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status,Industry,Region
 1 x GET /sites/PCOE/_api/web/lists/getbytitle('PMSClients')?$select=ListItemEntityTypeFullName
 1 x GET /sites/PCOE/_api/web/lists/getbytitle('PMSParticipants')/items?$top=200&$filter=(SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-10-1430-9' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-11-1430-9' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-12-1430-9' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-13-1430-9' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-14-1430-9' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-15-1430-9' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-16-1430-9' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-17-1430-9' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-18-1430-9' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-19-1430-9' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-20-1430-9' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-21-1430-9' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-22-1430-9' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-23-1430-9' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-24-1430-9')&$select=Id,AppId,SessionId,ClientId,JoinedVia,QrTokenId,VisitorId,ParticipantName,SharePointUserId,CreatedAt,ResumeCount,LastResumedAt,RestartedAt,RestartSectionId
 1 x GET /sites/PCOE/_api/web/lists/getbytitle('PMSVisitLog')/items?$top=200&$filter=(SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-10-1430-9' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-11-1430-9' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-12-1430-9' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-13-1430-9' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-14-1430-9' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-15-1430-9' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-16-1430-9' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-17-1430-9' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-18-1430-9' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-19-1430-9' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-20-1430-9' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-21-1430-9' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-22-1430-9' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-23-1430-9' or SessionId eq 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-2026-10-24-1430-9')&$select=Id,AppId,SessionId,ClientId,Page,EntryMode,SharePointUserId,SignedInName,VisitorId,VisitorName,TrackId,VisitedAt
@@ -69,10 +70,10 @@
 5 x GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')?$select=ListItemEntityTypeFullName
 1 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/fields
 14 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField
-6 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$filter=AppId eq 'c-kroger'&$top=2&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+6 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$filter=AppId eq 'c-kroger'&$top=2&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status,Industry,Region
 2 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$top=1
-2 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$top=1&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
-14 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$top=200&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$top=1&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status,Industry,Region
+14 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$top=200&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status,Industry,Region
 14 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')?$select=ListItemEntityTypeFullName
 1 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/fields
 1 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField
@@ -116,7 +117,7 @@
 2 x POST /sites/PCOE/_api/web/lists/getbytitle('PMSClients')/items
 1 x POST /sites/cec/_api/$batch
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description,Kind
-    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$top=200&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$top=200&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status,Industry,Region
 1 x POST /sites/cec/_api/$batch
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/items?$top=200&$filter=(AppId%20eq%20%27q-dominos-history-1%27%20or%20AppId%20eq%20%27q-dominos-history-2%27%20or%20AppId%20eq%20%27q-dominos-history-3%27%20or%20AppId%20eq%20%27q-dominos-history-4%27%20or%20AppId%20eq%20%27q-dominos-history-5%27%20or%20AppId%20eq%20%27q-dominos-innovation-1%27%20or%20AppId%20eq%20%27q-dominos-innovation-2%27%20or%20AppId%20eq%20%27q-dominos-innovation-3%27)&$select=Id,AppId,SectionId,QuestionType,Prompt,OptionIds,SortOrder,Layout
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/items?$top=200&$filter=(QuestionId%20eq%20%27q-dominos-history-1%27%20or%20QuestionId%20eq%20%27q-dominos-history-2%27%20or%20QuestionId%20eq%20%27q-dominos-history-3%27%20or%20QuestionId%20eq%20%27q-dominos-history-4%27%20or%20QuestionId%20eq%20%27q-dominos-history-5%27%20or%20QuestionId%20eq%20%27q-dominos-innovation-1%27%20or%20QuestionId%20eq%20%27q-dominos-innovation-2%27%20or%20QuestionId%20eq%20%27q-dominos-innovation-3%27)&$select=Id,AppId,QuestionId,Label,OptionValue,Correct,ImageUrl
@@ -133,12 +134,12 @@
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$top=200&$filter=(ClientId%20eq%20%27c-kroger%27)&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow,ConfidenceCheck,Title,StartTime,Sequence,Period,PlannedDate
 2 x POST /sites/cec/_api/$batch
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items?$top=200&$select=Id,AppId,ActiveSessionId,ActiveClientId,ActivatedAt,SchemaVersion,FiscalYearStartMonth,MinSample
-    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$top=200&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$top=200&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status,Industry,Region
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$top=200&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow,ConfidenceCheck,Title,StartTime,Sequence,Period,PlannedDate
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description,Kind
 1 x POST /sites/cec/_api/$batch
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$filter=AppId%20eq%20%27kroger-2026-10-15%27&$top=2&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow,ConfidenceCheck,Title,StartTime,Sequence,Period,PlannedDate
-    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$filter=AppId%20eq%20%27c-kroger%27&$top=2&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$filter=AppId%20eq%20%27c-kroger%27&$top=2&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status,Industry,Region
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/items?$top=200&$filter=(ClientId%20eq%20%27c-kroger%27)&$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description,Kind
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items?$top=20&$filter=(SessionId%20eq%20%27kroger-2026-10-15%27)%20and%20(QrTokenId%20eq%20%27<uuid>%27)&$select=Id,AppId,SessionId,ClientId,JoinedVia,QrTokenId,VisitorId,ParticipantName,SharePointUserId,CreatedAt,ResumeCount,LastResumedAt,RestartedAt,RestartSectionId
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/items?$filter=AppId%20eq%20%27<uuid>%27&$top=2&$select=Id,AppId,SessionId,GuestName,Enabled,GuestGroup
@@ -151,7 +152,7 @@
 2 x POST /sites/cec/_api/$batch
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/items?$top=200&$filter=(AppId%20eq%20%27kroger-2026-10-15%27)&$select=Id,AppId,ClientId,SessionDate,SectionIds,ActiveSectionId,Status,EndedAt,ParticipationMode,ActivityFlow,ConfidenceCheck,Title,StartTime,Sequence,Period,PlannedDate
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items?$top=200&$filter=(SessionId%20eq%20%27kroger-2026-10-15%27)&$select=Id,AppId,SessionId,ClientId,JoinedVia,QrTokenId,VisitorId,ParticipantName,SharePointUserId,CreatedAt,ResumeCount,LastResumedAt,RestartedAt,RestartSectionId
-    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$top=200&$filter=(AppId%20eq%20%27c-kroger%27)&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/items?$top=200&$filter=(AppId%20eq%20%27c-kroger%27)&$select=Id,AppId,Name,LogoUrl,PrimaryColor,SecondaryColor,CreatedAt,Slug,ThemeJson,ThemeVersion,Status,Industry,Region
 2 x POST /sites/cec/_api/$batch
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/fields
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/fields
@@ -168,6 +169,7 @@
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSUsers')/fields
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSRoleAssignments')/fields
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSAuditLog')/fields
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSSessionSummary')/fields
 1 x POST /sites/cec/_api/$batch
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items?$top=200&$filter=(SessionId%20eq%20%27kroger-2026-10-15%27)&$select=Id,AppId,SessionId,ClientId,JoinedVia,QrTokenId,VisitorId,ParticipantName,SharePointUserId,CreatedAt,ResumeCount,LastResumedAt,RestartedAt,RestartSectionId
     carries GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items?$top=200&$filter=(SessionId%20eq%20%27kroger-2026-10-15%27)&$select=Id,AppId,ClientId,SessionId,VisitorId,Used,CreatedAt,UsedAt,ExpiredAt,ClientTrackId
@@ -187,3 +189,14 @@
 1 x POST /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/items
 1 x POST /sites/cec/_api/web/lists/getbytitle('PMSParticipantAnswers')/items
 3 x POST /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/items
+
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSSessionSummary')?$select=ListItemEntityTypeFullName
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSSessionSummary')/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField
+1 x POST /sites/cec/_api/web/lists/getbytitle('PMSSessionSummary')/items
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSSessionSummary')/items?$top=200&$select=Id,AppId,ClientId,Period,SessionDate,Guests,Answers,Completed,BeforeCount,AfterCount,PairedCount,MeanBefore,MeanAfter,SummaryJson
+1 x POST /sites/cec/_api/$batch
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSSessionSummary')/items?$top=200&$filter=(ClientId%20eq%20%27c-kroger%27)&$select=Id,AppId,ClientId,Period,SessionDate,Guests,Answers,Completed,BeforeCount,AfterCount,PairedCount,MeanBefore,MeanAfter,SummaryJson
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSSessionSummary')/items?$top=200&$filter=(AppId%20eq%20%27kroger-2026-10-15%27)&$select=Id,AppId,ClientId,Period,SessionDate,Guests,Answers,Completed,BeforeCount,AfterCount,PairedCount,MeanBefore,MeanAfter,SummaryJson
+    carries GET /sites/cec/_api/web/lists/getbytitle('PMSSessionSummary')/items?$top=200&$filter=(Period%20eq%20%27FY27-Q2%27)&$select=Id,AppId,ClientId,Period,SessionDate,Guests,Answers,Completed,BeforeCount,AfterCount,PairedCount,MeanBefore,MeanAfter,SummaryJson
+1 x GET /sites/cec/_api/web/lists/getbytitle('PMSSessionSummary')/fields
+2 x GET /sites/cec/_api/web/lists/getbytitle('PMSSessionSummary')/items?$top=1

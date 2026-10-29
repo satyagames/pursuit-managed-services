@@ -72,7 +72,7 @@ function checkRef(items, name, field, targetIndex, targetName, { optional = fals
 async function main() {
   // Every list of the schema (migration/src/lib/schema/pms-schema.js) has its file; the answers' file may be missing (the server reads none as empty).
   const required = Object.keys(LISTS).filter((key) => !LOCAL_FILE[key]);
-  const { clients, sessions, sections, questions, options, qrtokens, adminusers, tracks, appsettings, visitorroster, uservisitlogs, users, roleassignments, auditlog } =
+  const { clients, sessions, sections, questions, options, qrtokens, adminusers, tracks, appsettings, visitorroster, uservisitlogs, users, roleassignments, auditlog, sessionsummary } =
     Object.fromEntries(await Promise.all(required.map(async (key) => [key, await loadJson(key)])));
 
   const participantresponses = await loadOptional(LOCAL_FILE.responses);
@@ -92,6 +92,12 @@ async function main() {
   const userIndex = indexById(users, 'users');
   indexById(roleassignments, 'roleassignments');
   indexById(auditlog, 'auditlog');
+  // (Prompt 21, Phase 5) a session's summary is of a session there is, and of its client.
+  for (const summary of indexById(sessionsummary, 'sessionsummary').values()) {
+    const session = sessionIndex.get(String(summary.id));
+    if (!session) fail(`sessionsummary "${summary.id}": references missing session "${summary.id}"`);
+    else if (session.clientId !== summary.clientId) fail(`sessionsummary "${summary.id}": its session belongs to client "${session.clientId}"`);
+  }
   for (const assignment of roleassignments) {
     if (!userIndex.has(String(assignment.userKey))) fail(`roleassignments "${assignment.id}": references missing person "${assignment.userKey}"`);
     if (assignment.clientId && !clientIndex.has(String(assignment.clientId))) fail(`roleassignments "${assignment.id}": references missing client "${assignment.clientId}"`);
@@ -292,7 +298,7 @@ async function main() {
 
   // Every record against the schema file (Phase 10c-2b): no field the lists do not have, each of the kind the data layer writes, a
   // column of chosen words holding one of its words, and text of one line no longer than its column holds.
-  const files = { clients, sessions, sections, questions, options, qrtokens, adminusers, tracks, appsettings, visitorroster, uservisitlogs, participantresponses, users, roleassignments, auditlog };
+  const files = { clients, sessions, sections, questions, options, qrtokens, adminusers, tracks, appsettings, visitorroster, uservisitlogs, participantresponses, users, roleassignments, auditlog, sessionsummary };
   for (const key of Object.keys(LISTS)) {
     const name = LOCAL_FILE[key] ?? key;
     const described = new Map(columnsOf(key).filter((column) => column.field).map((column) => [column.field, column]));

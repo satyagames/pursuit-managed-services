@@ -106,6 +106,9 @@ export const LIST_WRITES = Object.freeze({
   roleassignments: ops(['roles.global', 'team.assign']),
   auditlog: Object.freeze({ create: 'anyone', update: Object.freeze([]), delete: Object.freeze([]) }),
   library: ops(['brand.edit', 'content.edit']),
+  // (Prompt 21, Phase 5: a session's summary is written by whoever ends the session or rebuilds it, a Producer's or a Super admin's run of it, and deleted
+  // with the session's data.)
+  sessionsummary: ops(['events.run'], ['events.run'], ['results.delete']),
 });
 
 const CELL = Object.freeze({ yes: 'Yes', view: 'View', option: 'Option', no: '-' });

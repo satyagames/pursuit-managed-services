@@ -199,6 +199,10 @@ describe('every item read the data layer and Setup can send names its columns', 
     await readNameSources([sessionId]);
     await ds.readLiveFeed(sessionId, { sectionIds: KROGER, tolerant: true });
     await ds.endSession(sessionId);
+    // (Prompt 21, Phase 5) the dashboard: the session's summary written when it ends, then the summaries read whole, and by client, session and period.
+    await ds.saveSessionSummary({ id: sessionId, clientId: 'c-kroger', period: 'FY27-Q2', sessionDate: DAY, guests: 1, answers: 1, completed: 0, beforeCount: 0, afterCount: 0, pairedCount: 0, meanBefore: null, meanAfter: null, summaryJson: {} });
+    await ds.readSessionSummaries();
+    await ds.readSessionSummaries({ clientIds: ['c-kroger'], sessionIds: [sessionId], periods: ['FY27-Q2'] });
     // Setup: the version, the admins, the check, Mark ready (already ready: it reads the settings item and writes nothing).
     await ds.getAppSettings();
     await ds.listAdminUsers();
@@ -338,9 +342,9 @@ describe('Setup\'s self-test asks what this site leaves out of a read that names
     await ds.beginVisit(crypto.randomUUID(), `kroger-${DAY}`, 'c-kroger');
     const { detail, requests } = await run(fake);
     assert.equal(detail, `Left out of a read that names no columns: ${TITLE.sessions}: ClientId; ${TITLE.sections}: ClientId; ${TITLE.tracks}: ClientId. `
-      + `Read one item of 7 lists; empty, so not read again: ${TITLE.qrtokens}, ${TITLE.visitorroster}, ${TITLE.uservisitlogs}, ${TITLE.adminusers}, ${TITLE.responses}, ${TITLE.users}, ${TITLE.roleassignments}, ${TITLE.auditlog}. `
+      + `Read one item of 7 lists; empty, so not read again: ${TITLE.qrtokens}, ${TITLE.visitorroster}, ${TITLE.uservisitlogs}, ${TITLE.adminusers}, ${TITLE.responses}, ${TITLE.users}, ${TITLE.roleassignments}, ${TITLE.auditlog}, ${TITLE.sessionsummary}. `
       + 'The app names its columns in every read (Phase 10h), so nothing depends on this answer.');
-    assert.equal(requests.length, 15 + 7, 'one read of each list (fifteen since Prompt 21), and a second of each that has an item');
+    assert.equal(requests.length, 16 + 7, 'one read of each list (fifteen since Prompt 21, sixteen since its Phase 5), and a second of each that has an item');
     assert.ok(requests.every((entry) => entry.method === 'GET'), 'it only reads');
   });
 

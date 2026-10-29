@@ -159,7 +159,7 @@
     }
   ],
   "sharePoint": {
-    "schemaVersion": 7,
+    "schemaVersion": 8,
     "lists": [
       {
         "key": "clients",
@@ -235,6 +235,11 @@
         "key": "auditlog",
         "title": "PMSAuditLog",
         "purpose": "One line for each grant, removal, added person and disable (Prompt 21, decision J). Lines are only ever added; none holds an answer."
+      },
+      {
+        "key": "sessionsummary",
+        "title": "PMSSessionSummary",
+        "purpose": "One item for each session that has ended (Prompt 21, Phase 5): its totals, written when it ends and by the dashboard's Rebuild, so that the Leadership dashboard reads one item a session and never every answer. Its numbers are the leader report's (first answers only); it holds no answer but a few Survey feedback comments."
       }
     ],
     "library": "PMSClientImages",

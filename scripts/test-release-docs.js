@@ -91,7 +91,7 @@ describe('the permissions, from pms-schema-meta.js', () => {
     assert.deepEqual(participantGroups(), {
       write: ['PMSClientSessions', 'PMSParticipants', 'PMSGuestQRCodes', 'PMSVisitLog', 'PMSParticipantAnswers'],
       read: ['PMSClients', 'PMSActivities', 'PMSActivityQuestions', 'PMSAnswerOptions', 'PMSAppSettings', 'PMSGuestList', 'PMSClientImages'],
-      none: ['PMSAdminUsers', 'PMSUsers', 'PMSRoleAssignments', 'PMSAuditLog'], // (Prompt 21: the three access lists are no guest's business)
+      none: ['PMSAdminUsers', 'PMSUsers', 'PMSRoleAssignments', 'PMSAuditLog', 'PMSSessionSummary'], // (Prompt 21: the three access lists are no guest's business; its Phase 5: nor the sessions' totals)
     });
   });
 
