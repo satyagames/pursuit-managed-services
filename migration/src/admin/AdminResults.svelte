@@ -369,7 +369,7 @@
 </script>
 
 <section class="panel sessions-panel" aria-busy={loading || busy}>
-  <header class="panel__head"><div><h2 bind:this={pageHeading} tabindex="-1">Results</h2><p class="muted">Each iPad is its own client track. Answers merge into live results as submitted. The live session refreshes by itself every {local ? 'few seconds' : '15 seconds'}; Refresh reads every session again. To end or reopen a session, use Today.</p></div><span class="muted small">{updated}</span>{#if mayName}<label class="choice"><input type="checkbox" checked={hideNames} onchange={(event) => onHideNames((event.currentTarget as HTMLInputElement).checked)} /><span>Hide names</span></label>{/if}<button class="btn btn--small" type="button" onclick={() => refreshAll()} disabled={busy}>Refresh</button></header>
+  <header class="panel__head"><div><h2 bind:this={pageHeading} tabindex="-1">Results</h2><p class="muted">Each iPad is its own client track. Answers merge into live results as submitted. The live session refreshes by itself every {local ? 'few seconds' : '15 seconds'}; Refresh reads every session again. To end or reopen a session, use Today.</p></div><span class="muted small">{updated}</span><div class="results-actions">{#if mayName}<label class="choice"><input type="checkbox" checked={hideNames} onchange={(event) => onHideNames((event.currentTarget as HTMLInputElement).checked)} /><span>Hide names</span></label>{/if}<button class="btn btn--small" type="button" onclick={() => refreshAll()} disabled={busy}>Refresh</button></div></header>
   {#if loading}<p role="status">Loading results...</p>
   {:else if error}<p class="error" role="alert">{error}</p>
   {:else if cards.length === 0}<p class="muted">No sessions yet.</p>
@@ -454,6 +454,14 @@
 {/snippet}
 
 <style>
+  /* (Phase 6) Hide names and Refresh as one group, so the time beside them, which changes as the live session refreshes, never moves them. */
+  .results-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
   /* Each session card's "Live results" (Phase 11a): the charts of admin/charts/ResultCard.svelte, a grid of cards under each activity. Here and not in
      src/admin.css, which the Setup page loads too. */
   /* (Phase 16) The row of the iPad being restarted holds its form under it: the row wraps, and the form takes the whole width. */
