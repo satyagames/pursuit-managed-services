@@ -39,6 +39,7 @@ export const ACTIONS = Object.freeze({
   'results.live': Object.freeze({ what: 'open the Live display', module: 'results' }),
   'results.names': Object.freeze({ what: 'see guests\' names', module: 'results' }),
   'results.delete': Object.freeze({ what: 'delete a session\'s data', module: 'results' }),
+  'settings.manage': Object.freeze({ what: 'change the reporting settings', module: 'settings' }),
 });
 
 const row = (superAdmin, admin, producer, designer, leadership) => Object.freeze({
@@ -65,6 +66,8 @@ export const MATRIX = Object.freeze({
   'results.names': row('yes', 'no', 'yes', 'no', 'yes'),
   // (Decision E: only a Super admin deletes a session's results.)
   'results.delete': row('yes', 'no', 'no', 'no', 'no'),
+  // (Prompt 22: the reporting settings, the fiscal-year start month and the minimum sample, are a Super admin's alone.)
+  'settings.manage': row('yes', 'no', 'no', 'no', 'no'),
 });
 
 /** The extras an assignment may carry: each switches on the Option cell of the action of the same code. */
@@ -112,6 +115,16 @@ export const LIST_WRITES = Object.freeze({
   // (Prompt 21, Phase 5: a session's summary is written by whoever ends the session or rebuilds it, a Producer's or a Super admin's run of it, and deleted
   // with the session's data.)
   sessionsummary: ops(['events.run'], ['events.run'], ['results.delete']),
+});
+
+/**
+ * Prompt 22: the columns a list's rule above does not decide alone, by list key and field: writing one needs this action as well (for the client or
+ * session the item names). The settings item takes the live session from a Producer (events.run), but its fiscal-year start month and minimum sample
+ * only from settings.manage; a client takes its brand from a Designer (brand.edit), but its Industry and Region only from clients.manage.
+ */
+export const FIELD_WRITES = Object.freeze({
+  appsettings: Object.freeze({ fiscalYearStartMonth: 'settings.manage', minSample: 'settings.manage' }),
+  clients: Object.freeze({ industry: 'clients.manage', region: 'clients.manage' }),
 });
 
 const CELL = Object.freeze({ yes: 'Yes', view: 'View', option: 'Option', no: '-' });

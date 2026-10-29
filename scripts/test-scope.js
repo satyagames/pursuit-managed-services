@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { createSharePointFake } from './sharepoint-fake.js';
-import { ACTIONS, LIST_WRITES, MATRIX, ROLES } from '../migration/src/lib/access/access-matrix.js';
+import { ACTIONS, FIELD_WRITES, LIST_WRITES, MATRIX, ROLES } from '../migration/src/lib/access/access-matrix.js';
 import { AccessDenied } from '../migration/src/lib/access/access-denied.js';
 import { can, canView, legacyAccess } from '../migration/src/lib/access/can.js';
 import { writeGuard } from '../migration/src/lib/access/guard.js';
@@ -238,7 +238,7 @@ describe('one test for every cell of the capability matrix that is not "no"', ()
   }
   it('every action of the matrix is somewhere in a menu tab or a write, so the table is complete', () => {
     const inTabs = new Set(Object.values(TAB_ACTIONS).flat());
-    const inWrites = new Set(Object.values(LIST_WRITES).flatMap((change) => Object.values(change).flat()));
+    const inWrites = new Set([...Object.values(LIST_WRITES).flatMap((change) => Object.values(change).flat()), ...Object.values(FIELD_WRITES).flatMap((fields) => Object.values(fields))]); // (Prompt 22: settings.manage is a column's)
     const viaOther = new Set(['results.export', 'results.live', 'results.names', 'results.view', 'users.view', 'audit.view']); // (audit.view: People's History of changes, scripts/test-hardening.js)
     for (const action of Object.keys(ACTIONS)) assert.ok(inTabs.has(action) || inWrites.has(action) || viaOther.has(action), action);
   });

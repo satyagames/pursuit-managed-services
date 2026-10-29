@@ -111,6 +111,8 @@ describe('the role matrix (board 10): reviewed data', () => {
       'results.live | Yes | - | Yes | - | -',
       'results.names | Yes | - | Yes | - | Yes',
       'results.delete | Yes | - | - | - | -',
+      // (Prompt 22: the reporting settings, Super admin only.)
+      'settings.manage | Yes | - | - | - | -',
     ]);
     assert.deepEqual(Object.keys(ACTIONS), Object.keys(MATRIX));
     assert.deepEqual(Object.keys(EXTRAS), ['content.edit', 'users.manage'], 'an extra is the code of the Option cell it switches on');

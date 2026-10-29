@@ -10,7 +10,8 @@ export const AUDIT_PAGE = 50;
 export const AUDIT_FILTERS = Object.freeze([
   Object.freeze({ id: '', label: 'Everything' }), Object.freeze({ id: 'grant', label: 'Access given' }), Object.freeze({ id: 'revoke', label: 'Access removed' }),
   Object.freeze({ id: 'add-user', label: 'People added' }), Object.freeze({ id: 'disable', label: 'Turned off' }), Object.freeze({ id: 'enable', label: 'Turned on' }),
-  Object.freeze({ id: 'migrate', label: 'Copied from the old admins list' }),
+  Object.freeze({ id: 'migrate', label: 'Copied from the old admins list' }), Object.freeze({ id: 'settings', label: 'Reporting settings changed' }),
+  Object.freeze({ id: 'client', label: 'Client details changed' }),
 ]);
 /** Text that looks like a participant's answers (lib/access/audit.js refuses to write one; a line written another way is still not shown). */
 const ANSWERS = /questionId|"answer"|ResponsesJson|firstAnswer/i;

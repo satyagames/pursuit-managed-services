@@ -3,9 +3,11 @@
 // method and path), finds the list's row of LIST_WRITES in the role matrix, and throws AccessDenied unless can() allows one of its actions for the
 // client or session the written item names. Nothing refused is sent. A change it cannot name is refused too (a guardrail allows only what it
 // knows). Plain JS with no DOM; the admin page installs it after sign-in. The participant page and Setup install none.
-import { LIST_WRITES } from './access-matrix.js';
+import { LISTS } from '../schema/pms-schema.js';
+import { FIELD_WRITES, LIST_WRITES } from './access-matrix.js';
 import { AccessDenied } from './access-denied.js';
 import { can } from './can.js';
+import { fieldProblem, invalidValue } from './field-values.js';
 import { disableProblem, revokeProblem } from './grants.js';
 import { UNKNOWN_OWNER, mayRead, newOwners } from './owners.js';
 
@@ -68,6 +70,23 @@ function targetOf({ key, id }, body, owners) {
 /** Lists whose items belong to a session: a write that names one is held to the session's client. */
 const BY_SESSION_WRITES = new Set(['tracks', 'uservisitlogs', 'qrtokens', 'visitorroster']);
 
+/**
+ * Prompt 22: the guarded columns a write names (access-matrix.js FIELD_WRITES), by field (local) or column (SharePoint): each value must be one its rule
+ * allows (field-values.js), and the person must hold its action for the item's place. Throws before anything is sent.
+ */
+function checkFields(access, { key }, body, target, now) {
+  const guarded = FIELD_WRITES[key];
+  if (!guarded || !body || typeof body !== 'object') return;
+  for (const [field, action] of Object.entries(guarded)) {
+    const column = LISTS[key]?.fields[field]?.column;
+    const named = Object.hasOwn(body, field) ? field : column && Object.hasOwn(body, column) ? column : null;
+    if (named === null) continue;
+    const words = fieldProblem(key, field, body[named]);
+    if (words) throw invalidValue(words);
+    if (!can(access, action, target, { now })) throw new AccessDenied(action);
+  }
+}
+
 /** What an allowed write tells the page about owners: a session's, an activity's and a question's, so that what it makes next is held to them. */
 function noteWrite(owners, { key, op }, body) {
   if (op !== 'create' || !body || typeof body !== 'object') return;
@@ -93,7 +112,9 @@ export function writeGuard(access, titles, { now = () => new Date() } = {}) {
     if (change === 'none') return;
     const allowed = change?.op ? LIST_WRITES[change.key]?.[change.op] : undefined;
     if (allowed === 'anyone' && access) return;
-    if (Array.isArray(allowed) && allowed.some((action) => can(access, action, targetOf(change, body, owners), { now: now() }))) {
+    const target = change ? targetOf(change, body, owners) : {};
+    if (Array.isArray(allowed) && allowed.some((action) => can(access, action, target, { now: now() }))) {
+      checkFields(access, change, body, target, now());
       noteWrite(owners, change, body);
       return;
     }

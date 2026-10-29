@@ -117,6 +117,8 @@ const DID = {
   disable: () => 'Turned off',
   enable: () => 'Turned on',
   migrate: () => 'Copied from the old admins list',
+  settings: (line) => line.detail || 'Reporting settings changed',
+  client: (line) => line.detail || 'Client details changed',
 };
 
 /**

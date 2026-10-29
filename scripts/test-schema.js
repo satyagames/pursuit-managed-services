@@ -173,6 +173,12 @@ export const CHANGES = [
     ] };
     return shape;
   }],
+  // (Prompt 22: no list, column or version; the audit list's Action, a text column, says two things more.)
+  ['(Prompt 22, still v8) PMSAuditLog.Action\'s words gain settings and client (a reporting setting, a client\'s Industry or Region changed): a text column, so no new version', (shape) => {
+    const action = shape.lists.auditlog?.columns.find((column) => column.column === 'Action'); // (absent when the change that makes the list is left out)
+    if (action) action.values = [...action.values, 'settings', 'client'];
+    return shape;
+  }],
 ];
 
 describe('the snapshot of the old schema, with this phase\'s changes, is the schema file', () => {

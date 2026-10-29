@@ -52,7 +52,7 @@ The code, the screens and the lists use different words for some lists.
 | `responses` | PMSParticipantAnswers | The answers: one item for each visit, holding all of that person's answers. | participant, admin | participant, admin, setup | 60 | 6,000 |
 | `users` | PMSUsers | One item for each person who may use the admin page (Prompt 21): who they are and whether they are active. Adding a person gives them no access; their assignments do. | admin, setup | admin, setup | 0 | tens of people in total |
 | `roleassignments` | PMSRoleAssignments | One item for each person, role and place (Prompt 21, decision H): roles only allow, and they add up. A duplicate grant is refused by its unique AppId. | admin, setup | admin, setup | 0 to 5 (a client's team) | hundreds at most |
-| `auditlog` | PMSAuditLog | One line for each grant, removal, added person and disable (Prompt 21, decision J). Lines are only ever added; none holds an answer. | admin, setup | admin, setup | 0 to 5 | hundreds |
+| `auditlog` | PMSAuditLog | One line for each grant, removal, added person and disable (Prompt 21, decision J), and for each change of a reporting setting or of a client's Industry or Region (Prompt 22). Lines are only ever added; none holds an answer. | admin, setup | admin, setup | 0 to 5 | hundreds |
 | `sessionsummary` | PMSSessionSummary | One item for each session that has ended (Prompt 21, Phase 5): its totals, written when it ends and by the dashboard's Rebuild, so that the Leadership dashboard reads one item a session and never every answer. Its numbers are the leader report's (first answers only); it holds no answer but a few Survey feedback comments. | admin | admin | 1 | one for each session (hundreds) |
 
 Growth is an ASSUMPTION from ARCHITECTURE-10.md 4.1, in git history at 7347c72 (100 events a year with 60 people each), to be replaced with real figures. Tracks (participants), answers and the visit log pass 5,000 items in under a year at that volume: that is why the indexes matter.
@@ -73,8 +73,8 @@ Key `clients` (on the local server, `server/data/clients.json`). One item for ea
 | `ThemeJson` | Multiple lines of text, plain text (append-only off) | yes | no | no | no |  | 60,000 |  | no | The client's look and words as JSON: { version, primary, accent, plate?, tokens, assets, copy, sample? }. About 800 characters. | participant, admin, setup | admin, setup |
 | `ThemeVersion` | Number | yes | no | no | no |  |  |  | no | Raised by one on every save of the look; a participant page does not trust tokens stored for another version. | participant, admin, setup | admin, setup |
 | `Status` | Single line of text | yes | no | no | no | `active`, `archived` | 255 | empty reads as active | no | Whether the client can go live: an archived client is shown to nobody. | participant, admin, setup | admin, setup |
-| `Industry` | Single line of text | yes | no | no | no |  | 255 | empty: no industry | no | The client's industry, an optional tag the Leadership dashboard filters by, in the page (Prompt 21, Phase 5). ASSUMED free text, typed on the item until a screen sets it (open item 4). | admin | admin |
-| `Region` | Single line of text | yes | no | no | no |  | 255 | empty: no region | no | The client's region, an optional tag like Industry (Prompt 21, Phase 5). ASSUMED free text (open item 4). | admin | admin |
+| `Industry` | Single line of text | yes | no | no | no |  | 255 | empty: no industry | no | The client's industry, an optional tag the Leadership dashboard filters by, in the page (Prompt 21, Phase 5). ASSUMED free text (open item 4), at most 60 characters, set on the client's page by whoever has clients.manage (Prompt 22). | admin | admin |
+| `Region` | Single line of text | yes | no | no | no |  | 255 | empty: no region | no | The client's region, an optional tag like Industry (Prompt 21, Phase 5). ASSUMED free text (open item 4), set like Industry (Prompt 22). | admin | admin |
 
 ## PMSClientSessions
 
@@ -188,8 +188,8 @@ Key `appsettings` (on the local server, `server/data/appsettings.json`). One ite
 | `ActiveClientId` | Single line of text | yes | no | no | no |  | 255 |  | no | The live client (a Clients.AppId). With none named, nothing is live. | participant, admin, setup | admin, setup |
 | `ActivatedAt` | Date and Time, shown as Date & Time | yes | no | no | no |  |  |  | no | When Go live was last pressed: open pages notice a change by it. | participant, admin, setup | admin, setup |
 | `SchemaVersion` | Number | yes | no | no | no |  |  |  | no | The version of these lists (8). Setup writes it when it makes the lists, and raises an earlier version once the check of this one is clean; every page reads it with the item and stops on another version. Never written by hand. | participant, admin, setup | setup |
-| `FiscalYearStartMonth` | Number | yes | no | no | no |  |  | empty reads as 6 (June, ASSUMED) | no | The month the firm's fiscal year starts in, 1 to 12 (Prompt 21): quarters and periods are counted from it. ASSUMED June (6) until the manager confirms it; typed on the item by hand until a screen sets it. | admin | nobody |
-| `MinSample` | Number | yes | no | no | no |  |  | empty reads as 10 | no | The fewest answers a leader's figure is shown for without a "low sample" mark (Prompt 21, used from Phase 5). ASSUMED 10 until the manager confirms it. | admin | nobody |
+| `FiscalYearStartMonth` | Number | yes | no | no | no |  |  | empty reads as 6 (June, ASSUMED) | no | The month the firm's fiscal year starts in, 1 to 12 (Prompt 21): quarters and periods are counted from it. ASSUMED June (6) until the manager confirms it; a Super admin sets it on Reporting settings (Prompt 22). | admin | admin |
+| `MinSample` | Number | yes | no | no | no |  |  | empty reads as 10 | no | The fewest answers a leader's figure is shown for without a "low sample" mark (Prompt 21, used from Phase 5). ASSUMED 10 until the manager confirms it; a Super admin sets it on Reporting settings, a whole number of 1 or more (Prompt 22). | admin | admin |
 
 ## PMSGuestList
 
@@ -278,13 +278,13 @@ Key `roleassignments` (on the local server, `server/data/roleassignments.json`).
 
 ## PMSAuditLog
 
-Key `auditlog` (on the local server, `server/data/auditlog.json`). One line for each grant, removal, added person and disable (Prompt 21, decision J). Lines are only ever added; none holds an answer. Read by admin, setup; written by admin, setup.
+Key `auditlog` (on the local server, `server/data/auditlog.json`). One line for each grant, removal, added person and disable (Prompt 21, decision J), and for each change of a reporting setting or of a client's Industry or Region (Prompt 22). Lines are only ever added; none holds an answer. Read by admin, setup; written by admin, setup.
 
 | Column | Type | Must exist | Indexed | Unique | Required | Allowed values | Longest | Default | Personal data | What it holds | Read by | Written by |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | `AppId` | Single line of text | yes | yes | yes | yes |  | 255 |  | no | The record's own id: audit-&lt;UUID>. | admin, setup | admin, setup |
 | `Actor` | Single line of text | yes | no | no | no |  | 255 |  | **yes** | Who did it (a Users.AppId). | admin, setup | admin, setup |
-| `Action` | Single line of text | yes | no | no | no | `grant`, `revoke`, `add-user`, `disable`, `enable`, `migrate` | 255 |  | no | What was done. | admin, setup | admin, setup |
+| `Action` | Single line of text | yes | no | no | no | `grant`, `revoke`, `add-user`, `disable`, `enable`, `migrate`, `settings`, `client` | 255 |  | no | What was done; settings (a reporting setting) and client (a client's Industry or Region) since Prompt 22, in this text column, so no new version. | admin, setup | admin, setup |
 | `TargetUser` | Single line of text | yes | no | no | no |  | 255 |  | **yes** | To whom (a Users.AppId). | admin, setup | admin, setup |
 | `Role` | Single line of text | yes | no | no | no |  | 255 |  | no | The role, for a grant or a removal. | admin, setup | admin, setup |
 | `ClientId` | Single line of text | yes | no | no | no |  | 255 |  | no | The client, when the role was for one. | admin, setup | admin, setup |
@@ -349,7 +349,7 @@ Worked out from who reads and writes each list (the `reads` and `writes` of pms-
 | PMSParticipantAnswers | The answers: one item for each visit, holding all of that person's answers. | Contribute (add and edit items) | Contribute (add and edit items) |
 | PMSUsers | One item for each person who may use the admin page (Prompt 21): who they are and whether they are active. Adding a person gives them no access; their assignments do. | **No access** | Contribute (add and edit items) |
 | PMSRoleAssignments | One item for each person, role and place (Prompt 21, decision H): roles only allow, and they add up. A duplicate grant is refused by its unique AppId. | **No access** | Contribute (add and edit items) |
-| PMSAuditLog | One line for each grant, removal, added person and disable (Prompt 21, decision J). Lines are only ever added; none holds an answer. | **No access** | Contribute (add and edit items) |
+| PMSAuditLog | One line for each grant, removal, added person and disable (Prompt 21, decision J), and for each change of a reporting setting or of a client's Industry or Region (Prompt 22). Lines are only ever added; none holds an answer. | **No access** | Contribute (add and edit items) |
 | PMSSessionSummary | One item for each session that has ended (Prompt 21, Phase 5): its totals, written when it ends and by the dashboard's Rebuild, so that the Leadership dashboard reads one item a session and never every answer. Its numbers are the leader report's (first answers only); it holds no answer but a few Survey feedback comments. | **No access** | Contribute (add and edit items) |
 | PMSClientImages | The clients' pictures (hero badge, logo, background, answer tiles), each stored once under a name made from its content. | Read | Contribute (add and recycle files) |
 

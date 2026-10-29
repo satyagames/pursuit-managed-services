@@ -46,8 +46,8 @@ export const META = {
       ThemeJson: note('The client\'s look and words as JSON: { version, primary, accent, plate?, tokens, assets, copy, sample? }. About 800 characters.', { max: 60_000 }),
       ThemeVersion: column('Number', 'Raised by one on every save of the look; a participant page does not trust tokens stored for another version.'),
       Status: words('Whether the client can go live: an archived client is shown to nobody.', ['active', 'archived'], { default: 'empty reads as active' }),
-      Industry: text('The client\'s industry, an optional tag the Leadership dashboard filters by, in the page (Prompt 21, Phase 5). ASSUMED free text, typed on the item until a screen sets it (open item 4).', { default: 'empty: no industry', reads: [ADMIN], writes: [ADMIN], since: 8 }),
-      Region: text('The client\'s region, an optional tag like Industry (Prompt 21, Phase 5). ASSUMED free text (open item 4).', { default: 'empty: no region', reads: [ADMIN], writes: [ADMIN], since: 8 }),
+      Industry: text('The client\'s industry, an optional tag the Leadership dashboard filters by, in the page (Prompt 21, Phase 5). ASSUMED free text (open item 4), at most 60 characters, set on the client\'s page by whoever has clients.manage (Prompt 22).', { default: 'empty: no industry', reads: [ADMIN], writes: [ADMIN], since: 8 }),
+      Region: text('The client\'s region, an optional tag like Industry (Prompt 21, Phase 5). ASSUMED free text (open item 4), set like Industry (Prompt 22).', { default: 'empty: no region', reads: [ADMIN], writes: [ADMIN], since: 8 }),
     },
   },
   sessions: {
@@ -161,8 +161,8 @@ export const META = {
       ActiveClientId: text('The live client (a Clients.AppId). With none named, nothing is live.'),
       ActivatedAt: when('When Go live was last pressed: open pages notice a change by it.'),
       SchemaVersion: column('Number', `The version of these lists (${VERSION}). Setup writes it when it makes the lists, and raises an earlier version once the check of this one is clean; every page reads it with the item and stops on another version. Never written by hand.`, { writes: [SETUP] }),
-      FiscalYearStartMonth: column('Number', 'The month the firm\'s fiscal year starts in, 1 to 12 (Prompt 21): quarters and periods are counted from it. ASSUMED June (6) until the manager confirms it; typed on the item by hand until a screen sets it.', { default: 'empty reads as 6 (June, ASSUMED)', reads: [ADMIN], writes: [], since: 5 }),
-      MinSample: column('Number', 'The fewest answers a leader\'s figure is shown for without a "low sample" mark (Prompt 21, used from Phase 5). ASSUMED 10 until the manager confirms it.', { default: 'empty reads as 10', reads: [ADMIN], writes: [], since: 5 }),
+      FiscalYearStartMonth: column('Number', 'The month the firm\'s fiscal year starts in, 1 to 12 (Prompt 21): quarters and periods are counted from it. ASSUMED June (6) until the manager confirms it; a Super admin sets it on Reporting settings (Prompt 22).', { default: 'empty reads as 6 (June, ASSUMED)', reads: [ADMIN], writes: [ADMIN], since: 5 }),
+      MinSample: column('Number', 'The fewest answers a leader\'s figure is shown for without a "low sample" mark (Prompt 21, used from Phase 5). ASSUMED 10 until the manager confirms it; a Super admin sets it on Reporting settings, a whole number of 1 or more (Prompt 22).', { default: 'empty reads as 10', reads: [ADMIN], writes: [ADMIN], since: 5 }),
     },
   },
   visitorroster: {
@@ -252,13 +252,13 @@ export const META = {
     },
   },
   auditlog: {
-    purpose: 'One line for each grant, removal, added person and disable (Prompt 21, decision J). Lines are only ever added; none holds an answer.',
+    purpose: 'One line for each grant, removal, added person and disable (Prompt 21, decision J), and for each change of a reporting setting or of a client\'s Industry or Region (Prompt 22). Lines are only ever added; none holds an answer.',
     reads: [ADMIN, SETUP], writes: [ADMIN, SETUP], since: 5,
     growth: { perEvent: '0 to 5', perYear: 'hundreds' },
     columns: {
       AppId: id('audit-<UUID>'),
       Actor: text('Who did it (a Users.AppId).', { personal: true }),
-      Action: words('What was done.', ['grant', 'revoke', 'add-user', 'disable', 'enable', 'migrate']),
+      Action: words('What was done; settings (a reporting setting) and client (a client\'s Industry or Region) since Prompt 22, in this text column, so no new version.',['grant', 'revoke', 'add-user', 'disable', 'enable', 'migrate', 'settings', 'client']),
       TargetUser: text('To whom (a Users.AppId).', { personal: true }),
       Role: text('The role, for a grant or a removal.'),
       ClientId: text('The client, when the role was for one.'),
