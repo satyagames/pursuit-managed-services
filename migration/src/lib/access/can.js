@@ -75,7 +75,7 @@ function covers(grant, target) {
 }
 
 /** Whether one grant's role has `action` in a cell among `cells` ('option' only with the extra of the same code). */
-function allowsIn(grant, action, cells) {
+export function allowsIn(grant, action, cells) {
   if (grant.role === LEGACY_ADMIN) return LEGACY_ACTIONS.includes(action);
   const cell = MATRIX[action]?.[grant.role];
   return cells.includes(cell) || (cell === 'option' && grant.extras.includes(action));
