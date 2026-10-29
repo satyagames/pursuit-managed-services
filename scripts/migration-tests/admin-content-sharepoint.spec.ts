@@ -75,16 +75,26 @@ const quiet = (page: Page) => page.waitForTimeout(400);
 const titles = (page: Page) => page.locator('.content-activities > ul .activity__select .row__title');
 const dialogOf = (page: Page) => page.getByRole('dialog');
 
-test('Content loads in 4 requests from the PIN, and an activity or a client picked costs one each, on SharePoint', async ({ page }) => {
+test('Content loads in 3 requests from the PIN, and an activity or a client picked costs one each, on SharePoint', async ({ page }) => {
   const fake = await site('c-kroger');
-  const served = await openOn(page, fake);
+  // (Opened as openOn does, keeping what the page asked before the PIN. Since Prompt 21 the page's sign-in check, a $batch, asks for the write token as
+  // the page opens, so the PIN no longer does: 4 requests from the PIN until then, 3 since. Prompt 22 found this test still expecting 4.)
+  const served = await serveSharePoint(page, fake);
+  fake.reset(); // (the seeding's own requests)
+  await page.goto(`${pageUrl('admin.html')}#content`);
+  await page.getByRole('textbox', { name: 'PIN' }).fill(PIN);
+  const opening = fake.requests.map(shape);
+  expect(opening.filter((entry) => /contextinfo/.test(entry)), `the write token is asked for once, as the page opens: ${opening.join(' | ')}`).toHaveLength(1);
+  fake.reset();
+  await page.getByRole('button', { name: 'Unlock' }).click();
   await expect(titles(page).first()).toBeVisible();
   await expect(page.locator('[data-activity="sec-trivia"]')).toBeVisible();
   await expect(page.locator('.content-detail .row').first()).toBeVisible();
   await quiet(page);
   const load = fake.requests.map(shape);
-  // The PIN check, the write token, one $batch of AppSettings, Clients and Sections, one of the first activity's questions and options.
-  expect(load, `from Unlock to Content: ${load.join(' | ')}`).toHaveLength(4);
+  // The PIN check, one $batch of AppSettings, Clients and Sections, one of the first activity's questions and options (the write token was asked before).
+  expect(load, `from Unlock to Content: ${load.join(' | ')}`).toHaveLength(3);
+  expect(load.some((entry) => /contextinfo/.test(entry)), 'no second write token').toBe(false);
   expect(load.filter((entry) => entry.startsWith('POST /$batch'))).toHaveLength(2);
   expect(fake.requests.find((entry) => entry.parts)!.parts!.map(shape)).toEqual(['GET appsettings', 'GET clients', 'GET sections']);
   expect(fake.requests.filter((entry) => entry.method !== 'GET' && !/contextinfo|\$batch/.test(entry.path)), 'it only reads').toEqual([]);
