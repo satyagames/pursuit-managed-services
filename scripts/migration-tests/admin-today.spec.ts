@@ -441,7 +441,7 @@ test('slugs: made from the name, a to z and hyphens only, unique, and locked onc
     await expect(page.locator('#slug-help')).toContainText(message);
   }
   await slug.fill('something-else');
-  await expect(page.locator('#slug-help')).toContainText('Session ids are the slug and the date');
+  await expect(page.locator('#slug-help')).toContainText('Session ids are the slug, the date and the start time');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.locator('.row').filter({ hasText: 'Something Else' })).toContainText('something-else');
   // Two admins adding the same slug together: the second is refused by the unique id, not by luck.

@@ -20,6 +20,7 @@
 
 import { isCheckActivity } from '../participant/confidence-check.js';
 import { withoutRetiredLogo } from '../brand/retired-logos.js';
+import { daySessionPick } from './session-plan.js';
 
 /** How often the status panel asks. Visibility-aware: AdminToday.svelte pauses while the tab is hidden. */
 export const POLL_MS = 10_000;
@@ -104,15 +105,16 @@ export function startingClientId(clients, wanted, liveId, { keepWanted = false }
  * (live activities only; a switched-off activity is not shown to anyone), and the roster of the
  * session that client would go live with. Read side by side, in one request. `extra` is more list
  * reads to send in the same request (the load adds the live session's tracks); their answers come
- * back as `extraAnswers`.
+ * back as `extraAnswers`. The session is the one picked for the day (`sessionId`, Prompt 21 Phase 3: a client may have several that day), else
+ * the day's first that has not ended (daySessionPick); for a client with one session that day, the one Go live made, as before.
  * @param {any} api
- * @param {{ client: any, date: string, sections: any[], sessions: any[] }} input
+ * @param {{ client: any, date: string, sections: any[], sessions: any[], sessionId?: string | null }} input
  * @param {{ list: string, where?: Record<string, any> }[]} [extra]
  */
-export async function loadReadinessInputs(api, { client, date, sections, sessions }, extra = []) {
+export async function loadReadinessInputs(api, { client, date, sections, sessions, sessionId = null }, extra = []) {
   const live = sections.filter((section) => section.clientId === client.id && section.enabled === true);
   const questionIds = unique(live.flatMap((section) => section.questionIds ?? []));
-  const target = sessions.find((session) => session.id === api.sessionIdFor(client, date)) ?? null;
+  const target = daySessionPick(sessions, client.id, date, sessionId);
   const guests = target?.participationMode === 'client-visit';
   const pages = Math.ceil(questionIds.length / CHUNK);
   const asked = [
@@ -134,9 +136,9 @@ export async function loadReadinessInputs(api, { client, date, sections, session
 /**
  * Everything Today shows on first paint.
  * @param {any} api
- * @param {{ clientId?: string | null, date?: string, keepClient?: boolean }} [options]
+ * @param {{ clientId?: string | null, date?: string, keepClient?: boolean, sessionId?: string | null }} [options]
  */
-export async function loadToday(api, { clientId = null, date = localDate(), keepClient = false } = {}) {
+export async function loadToday(api, { clientId = null, date = localDate(), keepClient = false, sessionId = null } = {}) {
   // The schema check is only meaningful on SharePoint, and only a read: a failure to run it is
   // reported as a warning, never a reason to hide the screen.
   const schema = api.isSharePointMode()
@@ -152,7 +154,7 @@ export async function loadToday(api, { clientId = null, date = localDate(), keep
   const picked = startingClientId(clients, clientId, status.live ? status.client.id : null, { keepWanted: keepClient });
   const client = clients.find((entry) => entry.id === picked) ?? null;
   const inputs = client
-    ? await loadReadinessInputs(api, { client, date, sections, sessions }, active ? [{ list: 'tracks', where: { sessionId: active.id } }] : [])
+    ? await loadReadinessInputs(api, { client, date, sections, sessions, sessionId }, active ? [{ list: 'tracks', where: { sessionId: active.id } }] : [])
     : { questions: [], options: [], roster: null, target: null, extraAnswers: [] };
   const { extraAnswers, ...held } = inputs;
   const tracks = extraAnswers[0] ?? (active && !client ? (await api.readLists([{ list: 'tracks', where: { sessionId: active.id } }]))[0] : []);
@@ -224,6 +226,26 @@ export function goLive(api, { clientId, date }) {
 }
 
 /**
+ * The Producer's Start (Prompt 21, Phase 3): makes a planned session live through the data layer's startSession(), the only thing that makes a planned
+ * session live, then reads AppSettings back, as goLive() does. Pressing it twice on this page gets the first press's answer.
+ * Resolves to { session, client, settings, verified }.
+ * @param {any} api @param {string} sessionId
+ */
+export function startPlannedSession(api, sessionId) {
+  const key = `start|${sessionId}`;
+  const running = going.get(key);
+  if (running) return running;
+  const run = (async () => {
+    const result = await api.startSession(sessionId);
+    const settings = await api.getAppSettings();
+    const verified = settings?.activeSessionId === result.session.id && settings?.activeClientId === result.client.id;
+    return { session: result.session, client: result.client, settings, verified };
+  })().finally(() => { going.delete(key); });
+  going.set(key, run);
+  return run;
+}
+
+/**
  * Makes an EXISTING session live (one whose id is not `<slug>-<date>`), then reads AppSettings back,
  * as goLive() does. Resolves to { session, client, settings, verified }.
  * @param {any} api @param {string} sessionId
@@ -280,9 +302,11 @@ function schemaLine(listName, problem) {
  * @param {any | null} input.target The session this client would go live with on this date, if it exists.
  * @param {any[] | null} input.roster Its guests (null when it is not in guest mode).
  * @param {{ report?: any[], error?: string } | null} input.schema The SharePoint schema check, or null off SharePoint.
+ * @param {boolean} [input.mayPlan] Whether this person may plan sessions as well as run them (Prompt 21, Phase 3): with nothing planned for the
+ *   client that day, Go live makes the day's session for them, as before; anyone else (a Producer) needs a session planned first.
  * @returns {ReadinessRow[]}
  */
-export function evaluateReadiness({ client, date, today, sections, questions, options, sessions, clients = [], target, roster, schema }) {
+export function evaluateReadiness({ client, date, today, sections, questions, options, sessions, clients = [], target, roster, schema, mayPlan = true }) {
   /** @type {ReadinessRow[]} */
   const rows = [];
   const add = (row) => rows.push(row);
@@ -360,6 +384,10 @@ export function evaluateReadiness({ client, date, today, sections, questions, op
   }
 
   // -- the session for this date ----------------------------------------------------------------
+  if (!target && !mayPlan) {
+    add({ id: 'session-none', level: 'blocker', title: 'Session', detail: `No session is planned for ${name} on ${date}.`,
+      fix: 'An Admin plans sessions on the client\'s page under Clients. Ask one to plan this session.', go: { label: 'Open Clients', tab: 'clients' } });
+  }
   if (target?.status === 'completed') {
     add({ id: 'session-ended', level: 'blocker', title: 'Session', detail: `The ${name} session for ${date} has ended.`,
       fix: 'Reopen it to use it again, or choose another date.', go: { label: 'Reopen session', action: 'reopen' } });

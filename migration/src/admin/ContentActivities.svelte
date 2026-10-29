@@ -197,7 +197,9 @@
     busy = true;
     working = 'Checking the confidence check...';
     try {
-      const refusal = checkDeleteRefusal(await dataService.findOpenSession(clientId) as never);
+      // (Every session of the client: since Prompt 21, Phase 3 it may have several open, and any one that asks the check refuses.)
+      const [own] = await dataService.readLists([{ list: 'sessions', where: { clientId } }]);
+      const refusal = checkDeleteRefusal(own as never);
       if (refusal) { onToast(refusal, 'error'); return; }
       busy = false;
       working = '';

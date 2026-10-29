@@ -181,8 +181,9 @@ export async function isClientLive(api, clientId) {
 }
 
 /**
- * Session ids to one read. A session's id is up to 51 characters (a 40-letter slug and a date), longer than the ids READ_CHUNK
- * was sized for: 20 of them made an address of 1,728 characters, 15 make one of about 1,320.
+ * Session ids to one read. A session's id is up to 58 characters since Prompt 21, Phase 3 (a 40-letter slug, the date, the start time and a
+ * duplicate's -9; 51 before), longer than the ids READ_CHUNK was sized for: 15 of them make a read of about 1,615 characters on the real site's
+ * address with its columns named (scripts/test-named-reads.js prints it).
  */
 const SESSIONS_TO_A_READ = 15;
 

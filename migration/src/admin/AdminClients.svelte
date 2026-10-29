@@ -326,7 +326,7 @@
           <span id="slug-help" class="small" class:muted={!slugText || !slug} class:error={Boolean(slug) && Boolean(slugText)}>
             {#if slugLocked}Locked: this client already has sessions, and their ids start with the slug.
             {:else if slug && slugText}{slugText}
-            {:else}Session ids are the slug and the date, like {slug || 'kroger'}-2026-10-11. a to z, 0 to 9 and hyphens.{/if}
+            {:else}Session ids are the slug, the date and the start time, like {slug || 'kroger'}-2026-10-11-0930. a to z, 0 to 9 and hyphens.{/if}
           </span>
         </div>
         <label class="field"><span class="field__label">Event title</span><input class="input" bind:value={eventTitle} oninput={() => { titleTouched = true; }} disabled={busy} placeholder={defaultEventTitle(name) || 'KROGER TRIVIA NIGHT'} /></label>

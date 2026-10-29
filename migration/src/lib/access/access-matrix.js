@@ -88,8 +88,9 @@ export const LEGACY_ACTIONS = Object.freeze(['clients.manage', 'events.run', 'gu
 const ops = (create, update = create, remove = create) => Object.freeze({ create: Object.freeze(create), update: Object.freeze(update), delete: Object.freeze(remove) });
 export const LIST_WRITES = Object.freeze({
   clients: ops(['clients.manage'], ['clients.manage', 'brand.edit'], ['clients.manage']),
-  // (Today makes the day's session at Go live until Phase 3; Content adds activities to the live session; Delete session removes it last.)
-  sessions: ops(['clients.manage', 'events.run'], ['clients.manage', 'events.run', 'content.edit'], ['results.delete']),
+  // (Phase 3: an Admin plans a session, a Producer starts it, so making one is clients.manage's alone: Today's Go live makes the day's session only
+  // for a person who may plan as well as run. Starting tops up its activities, Content adds activities to the live session; Delete session removes it last.)
+  sessions: ops(['clients.manage'], ['clients.manage', 'events.run', 'content.edit'], ['results.delete']),
   sections: ops(['content.edit']),
   questions: ops(['content.edit']),
   options: ops(['content.edit']),

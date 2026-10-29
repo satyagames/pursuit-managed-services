@@ -21,8 +21,17 @@ export function dayWords(value) {
   return match ? `${Number(match[3])} ${MONTHS[Number(match[2]) - 1]} ${match[1]}` : '';
 }
 
+/**
+ * A session's title, or '' (Phase 3: the built-in Title, where the data layer has always written a session's id: a title that is the id is none).
+ * @param {{ id?: string, title?: string } | null | undefined} session
+ */
+export const sessionTitle = (session) => {
+  const title = String(session?.title ?? '').trim();
+  return title && title !== session?.id ? title : '';
+};
+
 /** A session as a list says it: its date, then its time and title when it has them ("4 Nov 2026, 14:30, Round two"). */
-export const sessionLabel = (session) => [dayWords(session?.date), session?.startTime, session?.title].filter(Boolean).join(', ') || String(session?.id ?? '');
+export const sessionLabel = (session) => [dayWords(session?.date), session?.startTime, sessionTitle(session)].filter(Boolean).join(', ') || String(session?.id ?? '');
 
 /** The sessions of a client, earliest first, as { id, label } (none until a client is picked). */
 export const sessionsOfClient = (sessions, clientId) => (clientId ? sessions.filter((session) => session.clientId === clientId) : [])

@@ -79,10 +79,11 @@ export const activitiesOfClient = (sections, clientId) => sections.filter((secti
 export const checkOfClient = (sections, clientId) => sections.filter((section) => section.clientId === clientId && isCheckActivity(section)).sort(byOrder)[0] ?? null;
 
 /**
- * Why the client's check may not be deleted now, or '' when it may: a session of the client that is open (not ended) and asks it.
- * @param {{ status?: string, confidenceCheck?: boolean | null } | null} openSession findOpenSession()'s answer
+ * Why the client's check may not be deleted now, or '' when it may: a session of the client that is open (not ended) and asks it. Since Prompt 21,
+ * Phase 3 a client may have several open sessions (planned ahead, several a day), and any one of them that asks it refuses.
+ * @param {{ status?: string, confidenceCheck?: boolean | null } | { status?: string, confidenceCheck?: boolean | null }[] | null} open the client's sessions (or one)
  */
-export const checkDeleteRefusal = (openSession) => (openSession && openSession.status !== 'completed' && openSession.confidenceCheck === true
+export const checkDeleteRefusal = (open) => ([open ?? []].flat().some((session) => session && session.status !== 'completed' && session.confidenceCheck === true)
   ? 'The confidence check is asked in an open session. End that session, or switch its confidence check off on Today, before deleting it.' : '');
 
 /**
