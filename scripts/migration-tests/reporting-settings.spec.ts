@@ -138,3 +138,13 @@ test('an Admin gives Kroger an Industry and a Region on its page, suggested from
   await page.getByRole('button', { name: 'Back to clients' }).click();
   await expect(page.locator('.client-row', { hasText: 'Kroger' }).getByTestId('client-tag-region')).toHaveText('Region: North America');
 });
+
+test('a Designer sees a client\'s Industry and Region in Content, to read, and has nothing to change them with', async ({ page }) => {
+  const fake = await site(me('mohammadahussain', 'Hussain, Mohammad Afrid'), 'Designer', 'client', { ClientId: 'c-kroger' });
+  Object.assign(fake.lists.get('clients')!.find((item) => item.AppId === 'c-kroger')!, { Industry: 'Retail', Region: 'North America' });
+  await open(page, fake);
+  await expect(page.getByRole('heading', { name: 'Content', level: 2 })).toBeVisible();
+  await expect(page.getByTestId('client-tag-industry')).toHaveText('Industry: Retail');
+  await expect(page.getByTestId('client-tag-region')).toHaveText('Region: North America');
+  await expect(page.getByRole('region', { name: 'About this client' })).toHaveCount(0);
+});

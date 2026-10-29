@@ -10,6 +10,7 @@
   import { withoutRetiredLogo } from '../lib/brand/retired-logos.js';
   import ActivityPreview from './ActivityPreview.svelte';
   import BrandStudio from './BrandStudio.svelte';
+  import ClientTagChips from './ClientTagChips.svelte';
   import ContentActivities from './ContentActivities.svelte';
   import ContentView from './ContentView.svelte';
   import ViewOnly from './ViewOnly.svelte';
@@ -204,6 +205,7 @@
         </select>
         {#if isLive}<span class="pill pill--live">LIVE NOW</span>{/if}
         {#if archived}<span class="pill pill--archived">Archived</span>{/if}
+        <ClientTagChips {client} />
       </div>
       <div class="content-strip">
         <div class="content-strip__track" role="tablist" aria-label={`${client.name}: views`}>
