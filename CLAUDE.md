@@ -66,7 +66,8 @@ On the Windows checkout the system Node is 20: run Node 22 from `.local/node22/n
 6. **Only the data layer fetches** (`lib/data/core.js`; everything else imports `lib/data/dataService.js`), and `lib/settings/settings-file.js`, the settings file. Sounds and confetti only through
    `lib/effects/effects.ts`. Saving answers only through `lib/participant/participantData.ts`. Motion only through `lib/motion/motion.ts`, its durations
    and curves only in `lib/motion/motion-tokens.css`.
-7. **Names are on the facilitator's view only**: never on the wall display, in the Live display's PDF, PowerPoint or summary CSV.
+7. **Names are on the facilitator's view only**: never on the wall display, in the Live display's PDF, PowerPoint or summary CSV. Results' one **Hide names**
+   switch (decision B) numbers everyone "Guest 1", "Guest 2" through `withNamesHidden` (`lib/results/participant-names.js`) on every Results surface and export.
 8. **The counting rules are fixed** (`COUNTING_RULES` in `lib/exports/leader-report.js`, first answers only). Every number a chart shows comes from
    `lib/results/results-chart-model.js`; every chart colour from `migration/src/styles/results-tokens.css`.
 9. **CSV cells never start a formula** (`csvCell`). Right and wrong are a mark and a word, never colour alone. Body text at least 16 px, targets 44 px,

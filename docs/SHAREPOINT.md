@@ -82,6 +82,10 @@ The table, list by list, is in [SHAREPOINT-LISTS.md](../SHAREPOINT-LISTS.md#perm
 - **What a delete leaves on the site: nothing, as seen on PCOE (19 Oct 2026, Satyadev).** The app sends SharePoint's item DELETE
   (`X-HTTP-Method: DELETE`), not the `recycle()` call. After a Delete session on PCOE, neither the site's Recycle bin (Site contents, Recycle bin) nor
   its second-stage recycle bin held any item of the session: the delete is permanent, as the warning says. The app has nothing to restore an item.
+- **A person turned off while the admin page is open** (Prompt 21, Phase 6): the page reads their row and roles again when they open a tab or come
+  back to it, at most once every five minutes (ASSUMED), the same requests as at sign-in (who is signed in, then the `PMSUsers` row and the
+  `PMSRoleAssignments` rows, two indexed reads). Turned off, they are stopped at that moment and the page refuses every write; until then the page
+  carries on with what it read. Lists that refuse a disabled person are Phase 7's (QA item 258).
 - **Setup** is run by a site owner (Full Control): it creates lists and columns, writes the version, adds admins and uploads the sample pictures.
 - **PMSAdminUsers holds the facilitators' PIN hashes** (unsalted SHA-256) and the whole list reaches the admin page, so its permission is the real lock:
   break its inheritance and remove every group the participant accounts are in. The PIN gates the admin page's screens; it is not authorization.

@@ -79,7 +79,7 @@ flowchart LR
 | `migration/src/routes/` | The participant page's screens: Welcome, the Activities hub, the quiz route, the finale, "not live", the preview, and the old addresses that redirect. | 10 |
 | `migration/src/setup/` | Setup's pieces (Svelte): the copy panel, where the lists are, the plan view, and the sample pictures as data. | 5 |
 | `migration/src/unsupported/` | The "needs a recent browser" notice: a page and an ES5 check, put into each HTML shell at build time. | 1 |
-| `scripts/` | Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager. | 141 |
+| `scripts/` | Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager. | 143 |
 | `scripts/local-site/` | The local PCOE stand-in (`npm run local:site`), its scenarios and VJR's dummy dataset, the screenshot harness and the measurements. | 11 |
 | `scripts/migration-tests/` | The Playwright specs of `npm run test:migration`, and their harnesses (`admin-local.ts`, `polling-support.ts`, `fixtures.ts`). | 78 |
 | `scripts/rehearsal-tests/` | The rehearsal of RUNBOOK.md on the mock with a package's own pages (`npm run test:rehearsal`). | 1 |
@@ -93,7 +93,7 @@ Roles and access (Prompt 21): the role matrix (board 10), the one check can(), A
 
 - **Imports from:** nothing of the app
 - **Imported by:** `lib/admin`, `src`, `src/admin`, `src/setup`
-- **Node suites that import it:** `test-access.js`, `test-leader-dashboard.js`, `test-scope.js`, `test-sessions-plan.js`, `test-users.js`
+- **Node suites that import it:** `test-access-recheck.js`, `test-access.js`, `test-leader-dashboard.js`, `test-scope.js`, `test-sessions-plan.js`, `test-users.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
@@ -109,7 +109,7 @@ Roles and access (Prompt 21): the role matrix (board 10), the one check can(), A
 | `people-ops.js` | What the Users screens do to people and their access (Prompt 21, Phase 2; boards 3 and 4): add a person (and give them no access), turn one off or on, remove a role, switch an extra, read a person's history. | `emailProblem`, `addPerson`, `setStatus`, `removeRole`, `setExtras`, `loseWords`, `historyOf` |
 | `people.js` | The Users list's rules (Prompt 21, Phase 2; board 3): each person's roles and reach from their assignment rows, the role chips, the filters (search, client, session, status), the sessions of a client by date, time and title, and the pages of fifty. | `PAGE_SIZE`, `ROLE_CHIPS`, `dayWords`, `sessionTitle`, `sessionLabel`, `sessionsOfClient`, `reachWords`, `peopleRows`, `filterPeople`, `pageOf` |
 | `picker.js` | The people picker's behaviour (Prompt 21, Phase 2; board 4): search as you type for Add user. | `MIN_CHARS`, `MAX_SUGGESTIONS`, `SEARCH_DELAY_MS`, `createPicker`, `pickerWords` |
-| `resolve.js` | Who is signed in, and what that lets them do (Prompt 21, Phase 1). resolveAccess() asks the data layer who the account is and whether it owns the site (one request), then reads their PMSUsers row and PMSRoleAssignments rows (two indexed reads, sent together): the cost stays the same whatever the number of people. | `forgetAccess`, `resolveAccess`, `signInStep` |
+| `resolve.js` | Who is signed in, and what that lets them do (Prompt 21, Phase 1). resolveAccess() asks the data layer who the account is and whether it owns the site (one request), then reads their PMSUsers row and PMSRoleAssignments rows (two indexed reads, sent together): the cost stays the same whatever the number of people. | `forgetAccess`, `resolveAccess`, `signInStep`, `RECHECK_AFTER_MS`, `recheckDue`, `lostAccess`, `withoutGrants` |
 | `scope.js` | Scoping by role (Prompt 21, Phase 4; wireframe boards 7, 8 and 10): what the admin page shows a person, and what it may ask the lists for. | 15 exports |
 | `team.js` | A client's team (Prompt 21, Phase 3; wireframe board 6): who has a Producer's, a Designer's or Leadership's role on the client or on its sessions, the people the panel offers (registered and active in PMSUsers only), the Add form's rules (a person, a role, the whole client or selected sessions, a Designer's "may also edit activities"), and adding (grants.js grantRole: one row for the whole client, or one for each selected session, each with its audit line). | `TEAM_ROLES`, `teamRows`, `teamCandidates`, `teamProblems`, `addToTeam`, `sessionTeamWords` |
 
@@ -119,7 +119,7 @@ The admin page's rules and data: Today, Clients, Content, Guests and QR, Results
 
 - **Imports from:** `lib/access`, `lib/brand`, `lib/common`, `lib/data`, `lib/exports`, `lib/participant`, `lib/results`
 - **Imported by:** `lib/exports`, `lib/results`, `lib/setup`, `src`, `src/admin`
-- **Node suites that import it:** `test-admin-content-views.js`, `test-admin-content.js`, `test-admin-results.js`, `test-admin-today.js`, `test-brand-studio-view.js`, `test-column-names.js`, `test-confidence-check.js`, `test-duplicates.js`, `test-guest-group.js`, `test-leader-dashboard.js`, `test-live-display.js`, `test-live-view.js`, `test-local-site.js`, `test-motion-switch.js`, `test-named-reads.js`, `test-participant-names.js`, `test-results-chart-model.js`, `test-results-wall.js`, `test-review-9a.js`, `test-review-9b.js`, `test-sample-pictures.js`, `test-schema-upgrade.js`, `test-scope.js`, `test-session-delete.js`, `test-session.js`, `test-sessions-plan.js`, `test-setup-admins.js`, `test-sharepoint.js`, `test-text-limits.js`, `test-today-view.js`, `test-ux-12.js`
+- **Node suites that import it:** `test-admin-content-views.js`, `test-admin-content.js`, `test-admin-results.js`, `test-admin-today.js`, `test-brand-studio-view.js`, `test-column-names.js`, `test-confidence-check.js`, `test-duplicates.js`, `test-guest-group.js`, `test-hide-names.js`, `test-leader-dashboard.js`, `test-live-display.js`, `test-live-view.js`, `test-local-site.js`, `test-motion-switch.js`, `test-named-reads.js`, `test-participant-names.js`, `test-results-chart-model.js`, `test-results-wall.js`, `test-review-9a.js`, `test-review-9b.js`, `test-sample-pictures.js`, `test-schema-upgrade.js`, `test-scope.js`, `test-session-delete.js`, `test-session.js`, `test-sessions-plan.js`, `test-setup-admins.js`, `test-sharepoint.js`, `test-text-limits.js`, `test-today-view.js`, `test-ux-12.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
@@ -253,7 +253,7 @@ The files a leader gets: the leader report (data, counting, layout, PDF writer, 
 
 - **Imports from:** `lib/admin`, `lib/brand`, `lib/data`, `lib/participant`, `lib/results`, `src/assets/report-fonts`
 - **Imported by:** `lib/admin`, `lib/results`, `src/admin`
-- **Node suites that import it:** `test-column-names.js`, `test-confidence-check.js`, `test-export-summary.js`, `test-leader-report-charts.js`, `test-leader-report-glance.js`, `test-leader-report-pdf.js`, `test-live-display.js`, `test-participant-names.js`, `test-results-csv.js`, `test-results-export.js`, `test-results-pack.js`, `test-review-9a.js`, `test-review-9b.js`, `test-session-summary.js`, `test-sessions.js`
+- **Node suites that import it:** `test-column-names.js`, `test-confidence-check.js`, `test-export-summary.js`, `test-hide-names.js`, `test-leader-report-charts.js`, `test-leader-report-glance.js`, `test-leader-report-pdf.js`, `test-live-display.js`, `test-participant-names.js`, `test-results-csv.js`, `test-results-export.js`, `test-results-pack.js`, `test-review-9a.js`, `test-review-9b.js`, `test-session-summary.js`, `test-sessions.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
@@ -261,7 +261,7 @@ The files a leader gets: the leader report (data, counting, layout, PDF writer, 
 | `leader-report-data.js` | What the leader report and the participant CSV read for one session, with the calls the admin screens already use (nothing was added to dataService.js): the session; then, side by side in ONE $batch on SharePoint, its activities, its client, its tracks, its visit log (where a staff sign-in name is kept) and its guest roster; then the activities' questions and options (one more batch) beside every answer, through readSessionResponses(), the one reader that sees both ways answers are stored. | `readLeaderReportRecords` |
 | `leader-report-layout.js` | The leader report, placed on A4 pages. | `PAGE`, `CONFIDENTIAL`, `SESSION_ENDED`, `SESSION_NOT_ENDED`, `WORDMARK_RATIO`, `HOW_TO_READ`, `layoutLeaderReport` |
 | `leader-report-pdf.js` | Draws the leader report's pages (lib/exports/leader-report-layout.js) with jsPDF: rectangles, lines, single lines of text in the embedded Open Sans, the client's logo as a picture, and two shapes that are paths (the tick and cross beside an answer, and the Deloitte wordmark). | `svgPath`, `writeLeaderReportPdf` |
-| `leader-report.js` | The leader report and the participant CSV, as numbers and words: who took part, what each person answered first and last, and every count the PDF prints. | 19 exports |
+| `leader-report.js` | The leader report and the participant CSV, as numbers and words: who took part, what each person answered first and last, and every count the PDF prints. | 20 exports |
 | `report-fonts.js` | Open Sans for the leader report's PDF: the two faces made by scripts/build-report-fonts.py, inflated when a report is made, and read just enough (which characters a face has, and how wide each one is) for the layout to measure text itself. | `MISSING`, `readFace`, `loadReportFonts`, `createMeasure`, `binaryString` |
 | `resultsExport.js` | The Live display's files (the summary pack as PDF and PowerPoint, and Summary by activity as CSV). | 15 exports |
 
@@ -309,16 +309,16 @@ Results counted and shown: the tally, the chart model (every number a chart show
 
 - **Imports from:** `lib/admin`, `lib/data`, `lib/exports`, `lib/participant`, `lib/schema`
 - **Imported by:** `lib/admin`, `lib/exports`, `src/admin`, `src/admin/charts`
-- **Node suites that import it:** `test-column-names.js`, `test-confidence-check.js`, `test-export-summary.js`, `test-index-math.js`, `test-leader-dashboard.js`, `test-leader-report-charts.js`, `test-live-display.js`, `test-live-view.js`, `test-named-reads.js`, `test-participant-names.js`, `test-participant-storage.js`, `test-polling.js`, `test-present-fit.js`, `test-results-chart-fit.js`, `test-results-chart-model.js`, `test-results-csv.js`, `test-results-export.js`, `test-results-pack.js`, `test-review-9b.js`, `test-schema-upgrade.js`, `test-session-summary.js`, `test-sessions.js`, `test-ux-12.js`
+- **Node suites that import it:** `test-column-names.js`, `test-confidence-check.js`, `test-export-summary.js`, `test-hide-names.js`, `test-index-math.js`, `test-leader-dashboard.js`, `test-leader-report-charts.js`, `test-live-display.js`, `test-live-view.js`, `test-named-reads.js`, `test-participant-names.js`, `test-participant-storage.js`, `test-polling.js`, `test-present-fit.js`, `test-results-chart-fit.js`, `test-results-chart-model.js`, `test-results-csv.js`, `test-results-export.js`, `test-results-pack.js`, `test-review-9b.js`, `test-schema-upgrade.js`, `test-session-summary.js`, `test-sessions.js`, `test-ux-12.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
 | `confidence-shift.js` | The confidence check's arithmetic (Phase 20): the one place its numbers are worked out. | 17 exports |
-| `dashboard-model.js` | The Leadership dashboard's figures (Prompt 21, Phase 5; wireframe board 9): from the summaries a person may read and the clients, under the filters, the headline sentence, the six tiles, the index by client against 100 with each client's sessions, the trend by quarter, the priority index, the confidence steps Before and After, the Survey feedback themes and comments, and the report's CSV. | `SPANS`, `KIND_WORDS`, `defaultFilters`, `windowOf`, `dashboardOf`, `filterOptions`, `reportCsv` |
+| `dashboard-model.js` | The Leadership dashboard's figures (Prompt 21, Phase 5; wireframe board 9): from the summaries a person may read and the clients, under the filters, the headline sentence, the six tiles, the index by client against 100 with each client's sessions, the trend by quarter, the priority index, the confidence steps Before and After, the Survey feedback themes and comments, and the report's CSV. | `SPANS`, `KIND_WORDS`, `defaultFilters`, `windowOf`, `dashboardOf`, `filterOptions`, `reportCsv`, `emptyStateOf`, `rebuildQuestion`, `dashboardFileName` |
 | `export-summary.js` | What every Results export opens with (Phase 13): for each activity one sentence, its takeaway, and the numbers behind it; for a session the answers and questions in all. | `scoreboardOf`, `summarizeActivity`, `summarizeSession` |
 | `index-math.js` | The Leadership dashboard's arithmetic (Prompt 21, Phase 5; wireframe boards 9 and 12): the one place an index, a baseline, a change or a pooled shift is worked out. | 17 exports |
 | `metric-words.js` | The words of every figure on the Leadership dashboard (Prompt 21, Phase 5; wireframe boards 9 and 12): its name, the formula, what it means and an example, written once here and shown by the dashboard's i button on each figure (hover or focus) and by board 12's glossary. | `HIDE_NAMES_BY_DEFAULT`, `METRICS`, `metricWords` |
-| `participant-names.js` | The one rule that names a participant. | `ownerOf`, `nameParticipants` |
+| `participant-names.js` | The one rule that names a participant. | `ownerOf`, `nameParticipants`, `withNamesHidden` |
 | `present-fit.js` | The full screen's type, a step at a time (Phase 11a-3; until then these lines were inside LiveDisplay.svelte). | `SMALLEST`, `scaleOf`, `nextFit` |
 | `results-chart-figure.js` | A Results chart on paper (Phase 11b): what the screen's charts (admin/charts/) draw, as rectangles, lines, ticks and single lines of text in millimetres, from the chart model (lib/results/results-chart-model.js chartOf) and the palette (lib/results/results-palette.js). | `valueOf`, `barRows`, `chartFigure`, `MULTI_CAPTION` |
 | `results-chart-model.js` | What a Results chart shows, worked out from the tally and the answers, with no drawing in it (Phase 11a). | 28 exports |

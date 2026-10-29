@@ -1645,6 +1645,29 @@ Results is a leader's view as well (boards 9 and 12): `admin/LeaderDashboard.sve
     today's, request by request; a fresh recording equal to the translation in all 17); Delete session's removal of the summary amended
     `test-session-delete`'s with `--amend --code`.
 
+## Rules from Prompt 21, Phase 6 (polish; keep them holding)
+
+1. **Hide names is one switch for every Results surface.** `admin/ResultsTab.svelte` holds it, kept while the page is open and starting from
+   `HIDE_NAMES_BY_DEFAULT` (decision B's one setting), and gives it to the dashboard (More filters) and to Sessions (the head, beside Refresh). With it on,
+   everyone in a session is "Guest 1", "Guest 2" ..., numbered in the order they joined (`withNamesHidden` in `lib/results/participant-names.js`, the one
+   rule that names a participant): the Sessions rows and each chart's names (`resultRows` and `namesFor` with `{ hide }`), and the leader report's pages,
+   comments and answers to removed questions and All answers (CSV) (`buildLeaderReport(records, { hideNames })`, which adds `NAMES_HIDDEN_NOTE` to its notes
+   and says how people are shown above What participants said). A role without `results.names` never sees a name and is not offered the switch. The wall,
+   the Live display's PDF and PowerPoint and the summary CSV have no names at all, so nothing there changes; `COUNTING_RULES` is unchanged.
+2. **A person turned off while the page is open is stopped.** The admin page reads the access again (`resolveAccess(..., { refresh: true })`, the
+   requests of sign-in) when a tab is opened or the page is shown again, at most once every `RECHECK_AFTER_MS` (five minutes, ASSUMED: a normal visit asks
+   nothing more). When `lostAccess` says `turned-off` (disabled) or `role-removed` (no current role, an end date passed, the row gone), the write guard
+   gets `withoutGrants` (every write refused) and No access says what happened (`noAccessWords`). The site owner never loses access (decision I). A changed
+   role changes the menu; a read that fails leaves the page as it was. A guardrail: Phase 7's list permissions are the boundary.
+3. **The dashboard's empty states** (`emptyStateOf` in `lib/results/dashboard-model.js`, shown instead of the filters and figures). A person given no client,
+   session or period: "No clients to show yet", and nothing is read (in practice such a person meets No access at sign-in, since `grantsOf` drops a row
+   that names no place). No summary: "No session has ended yet", or "No summaries yet" when ended sessions wait for Rebuild. A session that ended with
+   nobody answering reads "None yet" and "Not measured", never NaN.
+4. **The words.** Rebuild asks with `rebuildQuestion` (nothing about requests); Export report saves `dashboardFileName`'s
+   "dashboard-fy27-q2-2026-10-29.csv", named like the other exports. "Survey feedback" is the word wherever the type is shown (Phase 4); the stored key
+   `open-text-feedback` is unchanged.
+5. **The participant page did not change** (`PHASE_21F` in `scripts/bundle-budget.js`: +0 B and the same Tailwind rules).
+
 ## Before finishing a change
 
 - Always: `npm run check:svelte` and `npm test` (the documents, the module map and the project map among it). If you added, moved or renamed a

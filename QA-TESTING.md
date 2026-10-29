@@ -27,7 +27,9 @@
    a guest's group, the new words, a delete that names no client, a screen reader). Below item 236. Item 237 first: the upgrade.
 12. Items **246 to 254** (Prompt 21, Phase 5: the upgrade to version 8, a summary when a session ends, Rebuild, Leadership for a period and on one client,
    the figures by hand, the i buttons, names, a screen reader). Below item 245. Item 246 first: the upgrade.
-13. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
+13. Items **255 to 261** (Prompt 21, Phase 6: Hide names on Sessions, in the report and the CSV, one switch; a person turned off or left with no role
+   while the page is open; the dashboard with no summary; the words). Below item 254. No upgrade: the lists stay at version 8.
+14. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
    160, 161, 164, 165, 166, 167, 168, 169, 170.
 
 **Decided, no change:** 162 (names stay "Last, First") and 163 (the wall page keeps the admin header), VJR, 16 Oct 2026.
@@ -1605,6 +1607,26 @@ adds. Use a test copy of the site first, after items 216 to 228.
     filter changes, each tile with its name, the i button as "About Confidence index" with its formula as its description, and the arrow of a client as
     "Show the sessions of Kroger", expanded or collapsed. *(Axe finds nothing in Chromium and WebKit; how it is spoken is only for a person to hear.)*
     Then push the branch `pms-21-5`.
+255. **Hide names on Sessions.** *(Still to see.)* As the Producer, on Results, **Sessions**, a session with named guests: tick **Hide names** (beside
+    Refresh): **expect** every row and every chart's names to read Guest 1, Guest 2 ... in the order they joined, and no name anywhere on the card.
+256. **Hide names in the files.** *(Still to see.)* With the switch on, save **Leader report (PDF)** and **All answers (CSV)**: **expect** Guest 1, Guest 2
+    on every page and row, "Names are hidden: each person is shown as Guest 1, Guest 2 … in the order they joined." among the notes, and no recorded
+    name in either file (the counting rules' fixed words still explain "Unnamed participant"). With it off, the names as before.
+257. **One switch.** *(Still to see.)* Tick Hide names on Sessions, press **Dashboard**, open More filters: **expect** it ticked there too; reload the
+    page: **expect** it back at the default (`HIDE_NAMES_BY_DEFAULT`; nothing is kept between page loads). As a Designer or an Admin (no Results) there is
+    nothing to see; a role without `results.names` is never offered it.
+258. **Turned off while the page is open.** *(Still to see.)* As a Producer, open the admin page and leave it on Today. In another browser, as a Super
+    admin, turn that Producer's access off on People. Wait five minutes, then press another tab as the Producer: **expect** "Your access to Pursuit
+    Managed Services was turned off" and that it happened while the page was open; no tab row; nothing more is saved. Within the five minutes the page
+    carries on (ASSUMED enough until Phase 7 locks the lists): say whether that is acceptable.
+259. **A role removed while the page is open.** *(Still to see.)* As item 258, but remove the Producer's only role instead: **expect** "Your access to
+    Pursuit Managed Services has changed". Give a second role instead of removing one: **expect** the menu to follow at the next tab after five minutes.
+260. **The dashboard with no summary.** *(Still to see.)* On a site where no session has ended: **expect** "No session has ended yet" instead of the
+    figures, Export report off. With ended sessions from before version 8 and none rebuilt, as a Producer: **expect** "No summaries yet" and
+    **Rebuild summaries** above it; after Rebuild, the figures.
+261. **The words.** *(Still to see.)* Press **Rebuild summaries**: **expect** the question in plain words, with nothing about requests. Press **Export
+    report**: **expect** a file named like "dashboard-fy27-q2-2026-10-29.csv". Read every new screen of Prompt 21 once more for words that are not plain
+    or not in sentence case, and send back any found. Then push the branch `pms-21-6`.
 
 ### Prompt 20 (the confidence check, Before and After): not verified on SharePoint Online or an iPad
 

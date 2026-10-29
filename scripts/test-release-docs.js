@@ -185,17 +185,17 @@ describe('RUNBOOK.md', () => {
     assert.match(note, /With pms-283ad18, \*\*a chart's tooltip could lie over the question, the "got it right first time" line and the Show answer \/ View as table buttons above its mark, and a locked activity's title was too faint to read\*\* \(photographed by Satyadev, 16 Oct 2026\)/);
     assert.match(note, /The participant page changed for the first time since pms-0a1c701: a locked activity's title, and when it looks again after the network comes back\./);
     const items = [...note.matchAll(/^(\d+)\. (.+)$/gm)].map((match) => [Number(match[1]), match[2]]);
-    assert.deepEqual(items.map(([number]) => number), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19], 'nineteen steps since Prompt 21, Phase 5 (eighteen since its Phase 4, seventeen since its Phase 3, sixteen since its Phase 1, fifteen since Prompt 19)');
+    assert.deepEqual(items.map(([number]) => number), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20], 'twenty steps since Prompt 21, Phase 6 (nineteen since its Phase 5, eighteen since its Phase 4, seventeen since its Phase 3, sixteen since its Phase 1, fifteen since Prompt 19)');
     const said = Object.fromEntries(items);
     // (Phase 18) Brand Studio in Content: its own step, and the note says what moved and that no data, list or setting changed.
     assert.match(said[14], /^Brand Studio in the Content tab \(Phase 18, QA-TESTING\.md items 198 to 204\)[^\n]*\*\*Content\*\*[^\n]*Activities \| Brand[^\n]*\*\*Brand\*\* on a client's row[^\n]*#content\/brand[^\n]*Unsaved changes[^\n]*Preview an activity in this look\.\.\.[^\n]*\*Send back:\*/);
     assert.match(note, /\*\*This package \(Phase 18\) moves Brand Studio into the Content tab\*\*[^\n]*no data, list, column or setting changed/);
-    assert.match(note, /step 13 is Phase 17's; step 14 is Phase 18's; step 15 is Prompt 19's; steps 16, 17, 18 and 19 are this package's\./);
+    assert.match(note, /step 13 is Phase 17's; step 14 is Phase 18's; step 15 is Prompt 19's; steps 16 to 20 are this package's\./);
     // (Prompt 19) the sign-in that runs out: its own step, and the note says what changed and that no data, list, column or setting did.
     assert.match(said[15], /^The sign-in that runs out \(Prompt 19, QA-TESTING\.md items 205 to 210\)[^\n]*F12[^\n]*SPRequestGuid[^\n]*sleep[^\n]*Your SharePoint sign-in needs refreshing[^\n]*\*\*Reload\*\*[^\n]*unsaved[^\n]*Idle session sign-out[^\n]*\*Send back:\*/);
     assert.match(note, /\*\*This package \(Prompt 19\) renews a SharePoint sign-in that stops being accepted, or says so plainly\*\*[^\n]*no data, list, column or setting changed/);
     // (Prompt 20) the confidence check, and (Prompt 21, Phase 1) who may do what: the note says the lists move to version 5 and what Setup does.
-    assert.match(note, /\*\*This package adds the confidence check, Before and After \(Prompt 20\), who may do what \(Prompt 21, Phase 1\), sessions planned ahead, several a day \(Prompt 21, Phase 3\), what each role is shown \(Prompt 21, Phase 4\), and the Leadership dashboard \(Prompt 21, Phase 5\)\*\*[^\n]*unlocks with their PIN as before[^\n]*a Producer starts one on Today[^\n]*\*\*The lists move to version 8\*\*[^\n]*nine columns, four lists and two settings in step 2/);
+    assert.match(note, /\*\*This package adds the confidence check, Before and After \(Prompt 20\), who may do what \(Prompt 21, Phase 1\), sessions planned ahead, several a day \(Prompt 21, Phase 3\), what each role is shown \(Prompt 21, Phase 4\), the Leadership dashboard \(Prompt 21, Phase 5\), and its polish \(Prompt 21, Phase 6\)\*\*[^\n]*unlocks with their PIN as before[^\n]*a Producer starts one on Today[^\n]*\*\*The lists move to version 8\*\*[^\n]*nine columns, four lists and two settings in step 2/);
     // (Prompt 21, Phase 3) sessions planned ahead: its own step.
     assert.match(said[17], /^Sessions planned ahead and the team \(Prompt 21, Phase 3, QA-TESTING\.md items 229 to 236\)[^\n]*\*\*Sessions and team\*\*[^\n]*\*\*New session\*\*[^\n]*1 of 2 today[^\n]*\*\*Add to team\*\*[^\n]*a Producer[^\n]*\*\*Go live\*\*[^\n]*One session can be live at a time[^\n]*\*Send back:\*/);
     assert.match(book, /\| Note 17 \| 229, 230, 231, 232, 233, 234, 235, 236 \|/, 'the steps of Prompt 21, Phase 3');
@@ -205,6 +205,9 @@ describe('RUNBOOK.md', () => {
     // (Prompt 21, Phase 5) the Leadership dashboard: its own step.
     assert.match(said[19], /^The Leadership dashboard \(Prompt 21, Phase 5, QA-TESTING\.md items 246 to 254\)[^\n]*\*\*End session\*\*[^\n]*PMSSessionSummary[^\n]*\*\*Rebuild summaries\*\*[^\n]*Leadership dashboard[^\n]*PMSParticipantAnswers[^\n]*\*\*Hide names\*\*[^\n]*\*Send back:\*/);
     assert.match(book, /\| Note 19 \| 246, 247, 248, 249, 250, 251, 252, 253, 254 \|/, 'the steps of Prompt 21, Phase 5');
+    // (Prompt 21, Phase 6) Hide names and an access turned off while the page is open: its own step.
+    assert.match(said[20], /^Hide names and an access turned off \(Prompt 21, Phase 6, QA-TESTING\.md items 255 to 261\)[^\n]*\*\*Hide names\*\*[^\n]*Guest 1, Guest 2[^\n]*\*\*All answers \(CSV\)\*\*[^\n]*five minutes later[^\n]*was turned off/);
+    assert.match(book, /\| Note 20 \| 255, 256, 257, 258, 259, 260, 261 \|/, 'the steps of Prompt 21, Phase 6');
     assert.match(said[16], /^Who may do what \(Prompt 21, Phase 1, QA-TESTING\.md items 216 to 221\)[^\n]*the PIN screen as before[^\n]*Add yourself as a Super admin in Setup[^\n]*\*\*People and access\*\*[^\n]*\*\*Make me a Super admin\*\*[^\n]*\*\*Copy into the new lists\*\*[^\n]*\*Send back:\*/);
     assert.match(book, /\| Note 16 \| 216, 217, 218, 219, 220, 221 \|/, 'the steps of Prompt 21, Phase 1');
     assert.match(book, /\| Note 15 \| 205, 206, 207, 208, 209, 210 \|/, 'the steps of Prompt 19');

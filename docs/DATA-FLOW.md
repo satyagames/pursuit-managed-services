@@ -220,6 +220,15 @@ The dashboard reads totals, never answers ([RULES.md](RULES.md) has the rules):
    as Results always read it.
 5. **Delete session** removes the session's summary with its other data, before the session item.
 
+## Hide names and an access that changes while the page is open (Prompt 21, Phase 6)
+
+1. **Hide names** sends nothing: the names a screen or a file prints are worked out in the page from what was already read (`withNamesHidden` over
+   `nameParticipants`), so turning it on or off renames the Sessions cards from what they hold, and the next export is made with it.
+2. **The access read again.** On opening a tab or coming back to the page, at most once every five minutes (`RECHECK_AFTER_MS`, ASSUMED), the admin page
+   asks again who is signed in and reads their `PMSUsers` row and `PMSRoleAssignments` rows (`resolveAccess` with `refresh`: the requests of sign-in, three
+   on SharePoint). A person who may still enter keeps working (a changed role changes the menu); one turned off is stopped, and every write after that
+   is refused before it is sent. Nothing is read again on the local server, where nobody is signed in, or after a PIN.
+
 ## How often each open page looks
 
 | Page | Every | Notes |
