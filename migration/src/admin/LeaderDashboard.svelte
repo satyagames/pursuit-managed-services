@@ -14,8 +14,10 @@
   import { SPANS, dashboardFileName, dashboardOf, defaultFilters, emptyStateOf, filterOptions, rebuildQuestion, reportCsv, shiftWords } from '../lib/results/dashboard-model.js';
   import { METRICS } from '../lib/results/metric-words.js';
   import { readQueries, reachOf, sessionsFor } from '../lib/access/scope.js';
+  import ClientTagChips from './ClientTagChips.svelte';
   import MetricInfo from './MetricInfo.svelte';
   import ReportExports from './ReportExports.svelte';
+  import ReportingSettings from './ReportingSettings.svelte';
 
   // The Leadership dashboard (Prompt 21, Phase 5; wireframe board 9): Results as a leader's view, from the sessions' summaries (PMSSessionSummary), never
   // every answer. The person sees only their scope: the clients they hold, or every client for their period (lib/admin/session-summaries.js); a Producer sees
@@ -23,6 +25,7 @@
   // filters while the page is open, across its tabs (ASSUMED: nothing is kept between page loads, scripts/test-participant-storage.js; a view kept across
   // visits needs a place of its own, docs/history/RELEASE-21E.md).
   // Hide names is Results' one switch (ResultsTab), shared with Sessions and every export; it rides in the saved view.
+  // Prompt 22: a Super admin opens Reporting settings from here (the fiscal-year start month and the minimum sample); the figures are read again after.
   let { access = null, onToast, hideNames = false, onHideNames = () => {} }: {
     access?: any;
     onToast: (message: string, kind?: 'info' | 'success' | 'error') => void;
@@ -42,11 +45,15 @@
   let rebuilding = $state('');
   let missing = $state<string[]>([]);
   let heading = $state<HTMLElement>();
+  let settingsOpen = $state(false);
 
   /** A role without results.names never sees a guest's name (decision B); before there were roles, the PIN's admin does. */
   const mayName = $derived(!access || canView(access, 'results.names', {}));
   /** Rebuild writes summaries: a person who may run sessions (a Producer, a Super admin, the PIN's admin). */
   const mayRebuild = $derived(!access || canView(access, 'events.run', {}));
+  /** Reporting settings: a Super admin's alone (settings.manage). */
+  const maySettings = $derived(Boolean(access) && can(access, 'settings.manage', {}));
+  const clientById = $derived(new Map(clients.map((client) => [client.id, client])));
   const board = $derived(dashboardOf({ summaries, clients, filters: { ...filters, hideNames }, startMonth, minSample, mayName }));
   const options = $derived(filterOptions(summaries, clients));
   /** No client, session or period given (nothing is read), or no summary yet: said instead of the filters and figures (Prompt 21, Phase 6). */
@@ -141,12 +148,20 @@
     open = open.includes(id) ? open.filter((each) => each !== id) : [...open, id];
   }
 
+  function closeSettings() {
+    settingsOpen = false;
+    void tick().then(() => document.getElementById('dash-settings')?.focus());
+  }
+
   onMount(() => {
     void load().then(() => { const saved = restore(); filters = saved ?? defaultFilters({ startMonth }); if (saved) onHideNames(Boolean(saved.hideNames)); });
     void tick().then(() => focusHeading(heading));
   });
 </script>
 
+{#if settingsOpen}
+  <ReportingSettings {access} onBack={closeSettings} onSaved={() => void load()} {onToast} />
+{:else}
 <section class="panel dash" aria-busy={loading || Boolean(rebuilding)} aria-labelledby="dash-title">
   <header class="panel__head">
     <div>
@@ -157,6 +172,7 @@
       <button class="btn btn--small" type="button" onclick={saveView}>Save this view</button>
       <button class="btn btn--small" type="button" onclick={reset}>Reset</button>
       <button class="btn btn--small btn--primary" type="button" onclick={exportReport} disabled={board.empty}>Export report</button>
+      {#if maySettings}<button class="btn btn--small" id="dash-settings" type="button" onclick={() => { settingsOpen = true; }}>Reporting settings</button>{/if}
     </div>
   </header>
 
@@ -223,6 +239,12 @@
       <details class="dash__more">
         <summary>More filters</summary>
         <div class="dash__group">
+          <label class="dash__field"><span>Region</span>
+            <select value={filters.region} onchange={(event) => { filters = { ...filters, region: (event.currentTarget as HTMLSelectElement).value }; }}>
+              <option value="">All regions</option>
+              {#each options.regions as region (region)}<option value={region}>{region}</option>{/each}
+            </select>
+          </label>
           <label class="dash__field"><span>Facilitator</span>
             <select value={filters.facilitator} onchange={(event) => { filters = { ...filters, facilitator: (event.currentTarget as HTMLSelectElement).value }; }}>
               <option value="">Anyone</option>
@@ -317,6 +339,7 @@
                 <button class="btn btn--small dash__arrow" type="button" aria-expanded={expanded} aria-controls="dash-sessions-{row.clientId}" onclick={() => toggleRow(row.clientId)}>
                   <span aria-hidden="true">{expanded ? '▾' : '▸'}</span><span class="dash__sr">{expanded ? 'Hide' : 'Show'} the sessions of</span> {row.name}
                 </button>
+                {#if clientById.get(row.clientId)}<ClientTagChips client={clientById.get(row.clientId)} />{/if}
                 <span>{row.sessions.length} {row.sessions.length === 1 ? 'session' : 'sessions'}, {row.guests} guests</span>
                 <span>Index {row.index === null ? 'not measured' : whole(row.index)}{row.low ? ' (low sample)' : ''}</span>
                 <span>Change {row.change === null ? 'none to compare' : `${row.change > 0 ? '+' : ''}${whole(row.change)}`}<MetricInfo id="change" /></span>
@@ -394,6 +417,7 @@
     {/if}
   {/if}
 </section>
+{/if}
 
 <style>
   .dash__actions {

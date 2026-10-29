@@ -5,6 +5,7 @@
   import { embeddedAssetUrl } from '../lib/brand/assets.js';
   import { viewById } from '../lib/admin/admin-content-views.js';
   import SampleNotice from './SampleNotice.svelte';
+  import ClientTagChips from './ClientTagChips.svelte';
   import ClientWorkspace from './ClientWorkspace.svelte';
   import { confirmSampleClient, readSessionResponses } from '../lib/admin/adminData.js';
   import { withoutRetiredLogo } from '../lib/brand/retired-logos.js';
@@ -17,7 +18,7 @@
 
   type Client = {
     id: string; name: string; slug?: string; status?: string; logoUrl?: string | null; primaryColor?: string; secondaryColor?: string; createdAt?: string;
-    theme?: unknown; themeVersion?: number;
+    theme?: unknown; themeVersion?: number; industry?: string | null; region?: string | null;
   };
   type Session = { id: string; clientId: string; date?: string; status?: string };
   type Section = { id: string; clientId?: string | null; enabled?: boolean };
@@ -277,7 +278,7 @@
 </script>
 
 {#if workspace}
-  <ClientWorkspace client={workspace} {access} {onToast} onBack={() => { const back = workspace?.id; workspace = null; void refresh().catch(() => {}); void tick().then(() => document.getElementById(`sessions-${back}`)?.focus()); }} />
+  <ClientWorkspace client={workspace} {clients} {access} {onToast} onBack={() => { const back = workspace?.id; workspace = null; void refresh().catch(() => {}); void tick().then(() => document.getElementById(`sessions-${back}`)?.focus()); }} />
 {:else}
 <section class="panel clients-panel" aria-busy={loading || busy}>
   <header class="panel__head">
@@ -301,6 +302,7 @@
               {#if row.liveNow}<span class="pill pill--live">LIVE NOW</span>{/if}
               <span class="pill" class:pill--archived={row.archived}>{row.archived ? 'Archived' : 'Active'}</span>
             </span>
+            <ClientTagChips {client} />
             <span class="muted small">{row.activities} activit{row.activities === 1 ? 'y' : 'ies'} ({row.liveActivities} live) · Last live {row.lastLive ?? 'never'}{client.slug ? ` · ${client.slug}` : ''}</span>
             <SampleNotice {client} {busy} onConfirm={() => void confirmSample(client)} />
           </div>

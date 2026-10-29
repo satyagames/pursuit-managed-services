@@ -3,19 +3,24 @@
   // (ClientSessions.svelte: the list and New session), and its team (ClientTeam.svelte: who may run, design or look at its sessions). It reads, once
   // and again after each change, the settings item and the client's sessions (one request on SharePoint), and the people and their roles (read
   // whole, as People does). What may be done here is the role matrix's (can(), lib/access): an Admin plans and picks the team, a Producer starts a
-  // session on Today. The data layer asks the same before every write.
+  // session on Today. The data layer asks the same before every write. Prompt 22: About this client (ClientAbout.svelte), its Industry and Region,
+  // shown as labels under its name.
   import { onMount } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
   import { focusHeading } from '../lib/common/focus.js';
   import { errorText } from '../lib/admin/session-notice.js';
   import { DEFAULT_FISCAL_START, ONE_LIVE_LIMIT } from '../lib/admin/session-plan.js';
+  import ClientAbout from './ClientAbout.svelte';
   import ClientSessions from './ClientSessions.svelte';
+  import ClientTagChips from './ClientTagChips.svelte';
   import ClientTeam from './ClientTeam.svelte';
 
-  type Client = { id: string; name: string; slug?: string; status?: string };
+  type Client = { id: string; name: string; slug?: string; status?: string; industry?: string | null; region?: string | null };
 
-  let { client, access = null, onBack, onToast }: {
+  let { client, clients = [], access = null, onBack, onToast }: {
     client: Client;
+    /** Every client Clients read: the suggestions for Industry and Region. */
+    clients?: Client[];
     /** The signed-in person's access (lib/access); null where nobody is signed in (the local server's PIN gives a legacy admin's). */
     access?: any;
     onBack: () => void;
@@ -31,6 +36,9 @@
   let heading = $state<HTMLElement>();
   /** A session just planned with its own team: the team panel opens on it. */
   let teamFor = $state<string | null>(null);
+  /** Its Industry and Region as saved here (Clients reads them again on the way back). */
+  let tags = $state<{ industry: string; region: string } | null>(null);
+  const shown = $derived({ ...client, ...(tags ?? {}) });
 
   const fiscalStartMonth = $derived(settings?.fiscalYearStartMonth ?? DEFAULT_FISCAL_START);
 
@@ -72,6 +80,7 @@
   <header class="panel__head">
     <div>
       <h2 id="workspace-heading" bind:this={heading} tabindex="-1">{client.name}</h2>
+      <ClientTagChips client={shown} />
       <p class="muted">Plan this client's sessions, several in one day if needed, and choose who runs them. A Producer starts a session on Today.</p>
     </div>
     <button class="btn" type="button" onclick={onBack}>Back to clients</button>
@@ -79,6 +88,7 @@
   {#if loading}<p class="muted" role="status">Loading sessions and team...</p>
   {:else if error}<p class="error" role="alert">{error}</p>
   {:else}
+    <ClientAbout client={shown} {clients} {access} onSaved={(saved) => { tags = saved; }} {onToast} />
     <p class="muted small" data-testid="one-live-limit">{ONE_LIVE_LIMIT}</p>
     <ClientSessions {client} {access} {sessions} {settings} {users} {assignments} {fiscalStartMonth} onPlanned={(words, id, ownTeam) => void planned(words, id, ownTeam)} {onToast} />
     <ClientTeam {client} {access} {sessions} {users} {assignments} preset={teamFor} onChanged={(words) => void changed(words)} {onToast} />
