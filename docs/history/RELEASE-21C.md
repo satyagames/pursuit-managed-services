@@ -104,14 +104,23 @@ reads when it opens; planning a session one read and one write; Go live on a pla
 Before: `43a98d4`, in this checkout, before anything changed; after: this branch's last code commit. Windows, Node 22.23.3 (`.local/node22`). By the
 owner's standing instruction (develop now, the heavy gates at the final build), only what the phase touches was run in a browser.
 
-GATES_TABLE
+| Gate | Before (`43a98d4`) | After |
+|---|---|---|
+| `npm run check:svelte` | 0 errors, 0 warnings (436 files) | 0 errors, 0 warnings (442 files) |
+| `npm test` | 1,683 of 1,684: one of `scripts/test-store.js`'s timing tests (a read meeting a write), EPERM from Windows on a rename | 1,715 of 1,715 (the two store timing tests passed this time) |
+| `npm run test:baseline` (in `npm test`) | 38 of 38 | translated and proved (above), two amended; in `npm test` |
+| `npm run test:bundle` (in `npm test`) | 47 of 47 | 48 of 48 |
+| `scripts/migration-tests/client-sessions.spec.ts` | does not exist | Chromium 4 of 4, WebKit 4 of 4 (each twice) |
+| `admin-today`, `clients`, `users`, `admin-sharepoint`, `admin-content`, `confidence-check` specs (Chromium) | Phase 2's record | 58 of 60: the "slugs" flake (passed on a rerun) and "Content loads in 4 requests", which fails on `43a98d4` too (below) |
+| `npm run test:report`, `test:report:mutations`, `test:charts`, `test:local-site`, `oracle -- --seeds 500` | 150; 64 of 64; 57; 26; 0 differences (Phase 2's record, the same tree) | 150; 64 of 64; 57; 26; 0 differences (5,620 participants, 9,865 guests) |
+| `npm run test:migration`, `test:a11y` (all browsers) | Phase 20's record | not run: the final round (below) |
 
 ## Page sizes (gzip -9)
 
 | Page | Before (`43a98d4`) | After | Change |
 |---|---:|---:|---|
 | `index.html` (participant) | 166,085 B | 166,497 B | +412 B: section 14 of the data layer and a session's five columns in every read of the sessions (allowance 600 B; ceiling 450,000 B, not raised; its Tailwind rules unchanged; none of `lib/access` and none of the client's page) |
-| `admin.html` | 608,919 B | 620,333 B | +11,414 B: the client's page, Today's picker, `session-plan.js`, `team.js` (allowance 13,000 B; budget 700,000 B) |
+| `admin.html` | 608,919 B | 620,335 B | +11,416 B: the client's page, Today's picker, `session-plan.js`, `team.js` (allowance 13,000 B; budget 700,000 B) |
 
 `PHASE_21C` in `scripts/bundle-budget.js` records them.
 
