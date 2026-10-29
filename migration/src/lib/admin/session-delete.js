@@ -21,6 +21,8 @@ export const SESSION_OWNED = Object.freeze([
   Object.freeze({ list: 'tracks', key: 'sessionId', what: 'iPads' }),
   Object.freeze({ list: 'visitorroster', key: 'sessionId', what: 'guest list' }),
   Object.freeze({ list: 'qrtokens', key: 'sessionId', what: 'guest codes' }),
+  // (Prompt 21, Phase 5: the session's summary for the dashboard, keyed by the session's id, holds its totals and a few comments with their author.)
+  Object.freeze({ list: 'sessionsummary', key: 'id', what: 'dashboard summary' }),
   Object.freeze({ list: 'sessions', key: 'id', what: 'the session' }),
 ]);
 

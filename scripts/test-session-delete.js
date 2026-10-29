@@ -52,8 +52,9 @@ describe('what a session delete removes, and in which order (Phase 16)', () => {
     assert.deepEqual(named.filter((list) => !known.has(list)), ['newthing']);
   });
 
-  it('children first, the session item last: answers, visit log, iPads, guest list, guest codes, then the session', () => {
-    assert.deepEqual(SESSION_OWNED.map((entry) => entry.list), ['responses', 'uservisitlogs', 'tracks', 'visitorroster', 'qrtokens', 'sessions']);
+  it('children first, the session item last: answers, visit log, iPads, guest list, guest codes, the dashboard summary, then the session', () => {
+    // (Prompt 21, Phase 5: the summary holds a few comments with their author, so it goes with the session's data.)
+    assert.deepEqual(SESSION_OWNED.map((entry) => entry.list), ['responses', 'uservisitlogs', 'tracks', 'visitorroster', 'qrtokens', 'sessionsummary', 'sessions']);
     assert.equal(SESSION_OWNED.at(-1).key, 'id');
   });
 
@@ -112,8 +113,12 @@ async function scene() {
   const guest = await ds.createVisitor({ sessionId: KROGER, displayName: 'Ada Guest', enabled: true });
   await ds.provisionQrToken('c-kroger', KROGER, { visitorId: guest.id });
   for (const track of tracks.slice(0, 2)) await ds.recordUserVisit({ id: `visit-${track.id}`, sessionId: KROGER, clientId: 'c-kroger', page: 'participant', entryMode: 'sign-in', trackId: track.id, visitedAt: `${DAY}T09:00:00.000Z` });
+  // (Prompt 21, Phase 5) each session's summary for the dashboard.
+  const summary = (id, clientId) => ({ id, clientId, period: 'FY27-Q2', sessionDate: DAY, guests: 1, answers: 1, completed: 0, beforeCount: 0, afterCount: 0, pairedCount: 0, meanBefore: null, meanAfter: null, summaryJson: { feedback: { quotes: [{ name: 'Ada Guest', text: 'Good' }] } } });
+  await ds.saveSessionSummary(summary(KROGER, 'c-kroger'));
   await ds.activateClient('c-dominos', DAY);
   const other = await ds.beginVisit(crypto.randomUUID(), DOMINOS, 'c-dominos');
+  await ds.saveSessionSummary(summary(DOMINOS, 'c-dominos'));
   return { tracks, other };
 }
 
@@ -145,7 +150,7 @@ function behaves(name, setUp) {
     it('removes every item keyed by the session in every list it owns, and nothing else', async () => {
       await site.fresh();
       await scene();
-      assert.deepEqual(await holding(KROGER), { responses: 2, uservisitlogs: 2, tracks: 3, visitorroster: 1, qrtokens: 1, sessions: 1 });
+      assert.deepEqual(await holding(KROGER), { responses: 2, uservisitlogs: 2, tracks: 3, visitorroster: 1, qrtokens: 1, sessionsummary: 1, sessions: 1 });
       const before = await content();
       const other = await holding(DOMINOS);
       const plan = await planSessionDelete(KROGER);
@@ -153,12 +158,12 @@ function behaves(name, setUp) {
       assert.equal(plan.live, false);
       const steps = [];
       const result = await deleteSessionData(KROGER, { expected: plan.counts, onProgress: (step) => steps.push(step), ...FAST });
-      assert.deepEqual(result.deleted, { responses: 2, uservisitlogs: 2, tracks: 3, visitorroster: 1, qrtokens: 1, sessions: 1 });
-      assert.equal(result.total, 10);
+      assert.deepEqual(result.deleted, { responses: 2, uservisitlogs: 2, tracks: 3, visitorroster: 1, qrtokens: 1, sessionsummary: 1, sessions: 1 });
+      assert.equal(result.total, 11); // (10 until Prompt 21, Phase 5: the summary)
       assert.equal(result.left, 0);
       assert.deepEqual(result.leftovers, []);
-      assert.deepEqual(steps[0], { done: 0, total: 10 });
-      assert.deepEqual(steps.at(-1), { done: 10, total: 10 });
+      assert.deepEqual(steps[0], { done: 0, total: 11 });
+      assert.deepEqual(steps.at(-1), { done: 11, total: 11 });
       assert.deepEqual(await holding(KROGER), empty);
       assert.equal(await ds.getSession(KROGER), null);
       assert.deepEqual(await content(), before, 'the client, activities, questions, options, admins and settings are untouched');
@@ -282,7 +287,7 @@ describe('the requests of a session delete, on the mocked SharePoint (Phase 16)'
   before(() => {});
   after(() => { globalThis.fetch = realFetch; ds.configure({ baseUrl: '/api' }); });
 
-  /** A session with `count` iPads, each with an answers item, a visit log entry, a guest and a code: 5 items each, and the session. */
+  /** A session with `count` iPads, each with an answers item, a visit log entry, a guest and a code: 5 items each, and the session and its summary. */
   async function sized(count) {
     fake = createSharePointFake();
     fake.install();
@@ -297,6 +302,7 @@ describe('the requests of a session delete, on the mocked SharePoint (Phase 16)'
       fake.add('visitorroster', { AppId: `g-${index}`, Title: `g-${index}`, SessionId: id, GuestName: `Guest ${index}`, Enabled: true });
       fake.add('qrtokens', { AppId: `code-${index}`, Title: `code-${index}`, SessionId: id, ClientId: 'c-big', VisitorId: `g-${index}`, Used: true });
     }
+    fake.add('sessionsummary', { AppId: id, Title: id, ClientId: 'c-big', Period: 'FY27-Q2', Guests: count, SummaryJson: '{}' });
     fake.reset();
     return id;
   }
@@ -307,12 +313,12 @@ describe('the requests of a session delete, on the mocked SharePoint (Phase 16)'
       const id = await sized(count);
       const result = await deleteSessionData(id, FAST);
       assert.equal(result.left, 0);
-      assert.equal(result.total, count * 5 + 1);
+      assert.equal(result.total, count * 5 + 2); // (+ 1 until Prompt 21, Phase 5: the session alone)
       const reads = fake.requests.filter((entry) => entry.method === 'GET');
       const writes = fake.writes();
-      // Five child lists and the session, one read each (another for every 200 items more), the answers once more for the numbers, the settings item.
-      assert.equal(reads.length, 5 * pages(count) + 1 + pages(count) + 1, reads.map((entry) => `${entry.method} ${entry.list}`).join('\n'));
-      assert.equal(writes.length, count * 5 + 1, 'one delete for each item');
+      // Five child lists, the summary and the session, one read each (another for every 200 items more), the answers once more for the numbers, the settings item.
+      assert.equal(reads.length, 5 * pages(count) + 2 + pages(count) + 1, reads.map((entry) => `${entry.method} ${entry.list}`).join('\n'));
+      assert.equal(writes.length, count * 5 + 2, 'one delete for each item');
       assert.ok(writes.every((entry) => SESSION_OWNED.some(({ list }) => list === entry.list)), 'only the lists a session owns are written to');
       assert.equal(fake.count({ method: 'POST', list: null }) - writes.filter((entry) => entry.list === null).length <= 1, true, 'one write token at most');
       assert.ok(fake.requests.every((entry) => !/\$batch/.test(entry.path)), 'no batch: one paced delete for each item');
