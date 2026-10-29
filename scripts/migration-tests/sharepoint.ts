@@ -93,6 +93,14 @@ export async function serveSharePoint(page: Page, fake: Fake, { latencyMs = 0, s
   return served;
 }
 
+/**
+ * Whether a request of the fake's log only reads (Prompt 22): a GET, the write token (`POST /contextinfo`, which changes nothing), or a `$batch` whose
+ * every part is a GET. Since Prompt 21 Setup's People and access reads who is signed in in such a batch as it opens; a spec that counted every POST as a
+ * write took those reads for writes.
+ */
+export const isRead = (entry: { method: string; path: string; parts?: { method: string }[] | null }) => entry.method === 'GET' || /\/contextinfo$/.test(entry.path)
+  || Boolean(entry.parts?.length && entry.parts.every((part) => part.method === 'GET'));
+
 /** `GET clients`, `MERGE responses`, `POST /contextinfo`: one request of the fake's log, in words (a list by its key). */
 export const shape = (entry: { method: string; list: string | null; path: string }) => `${entry.method} ${entry.list ?? entry.path.split('/_api')[1]}`;
 

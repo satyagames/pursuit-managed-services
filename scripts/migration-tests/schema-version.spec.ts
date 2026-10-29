@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { sha256Hex } from '../../migration/src/lib/admin/sha256.js';
 import { TITLE } from '../sharepoint-fake.js';
-import { newFake, pageUrl, serveSharePoint } from './sharepoint.js';
+import { isRead, newFake, pageUrl, serveSharePoint } from './sharepoint.js';
 import { VERSION } from '../../migration/src/lib/schema/pms-schema.js';
 
 // (Prompt 22: this build's version is read from the schema, and a newer one is VERSION + 1. Typed out, they said 4 and 5 until Prompt 21 made 5 to 8
@@ -75,7 +75,6 @@ for (const [version, words] of [
     await expect(page.getByTestId('lists-version')).toContainText(words);
     await expect(page.getByRole('button', { name: 'Check Lists' })).toBeEnabled();
     // (A $batch whose every part is a GET is a read: since Prompt 21 Setup asks who is signed in and the owners group in one.)
-    const reads = (entry: { method: string; path: string; parts?: { method: string }[] }) => entry.method === 'GET' || /contextinfo/.test(entry.path) || Boolean(entry.parts?.length && entry.parts.every((part) => part.method === 'GET'));
-    expect(fake.requests.filter((entry) => !reads(entry)), 'it only reads').toEqual([]);
+    expect(fake.requests.filter((entry) => !isRead(entry)), 'it only reads').toEqual([]);
   });
 }
