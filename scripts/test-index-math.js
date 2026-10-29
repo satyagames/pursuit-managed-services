@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   BASELINES, MIN_SAMPLE, baselineOf, change, clientIndex, firstChoiceShares, indexOf, lowSample, meanAfterOf, movedOf, periodRange, priorQuarter,
-  priorityIndex, sameQuarterLastYear, sessionIndex, shiftOf,
+  pairedMeansOf, priorityIndex, sameQuarterLastYear, sessionIndex, shiftOf,
 } from '../migration/src/lib/results/index-math.js';
 
 /** A session's summary as PMSSessionSummary keeps it (only what the arithmetic reads). */
@@ -94,6 +94,17 @@ describe('change, low sample and the pooled shift', () => {
     assert.deepEqual(shiftOf([]), { percent: null, n: 0 });
     assert.deepEqual(movedOf([summary('3', 'c', 'FY27-Q2', 1, 3)]), { percent: null, started: 0, moved: 0 });
   });
+  it('Prompt 22: the paired means the shift moved between, weighed by paired guests, only over sessions of one scale', () => {
+    // 30 paired at 2.0 to 3.0 and 10 at 3.0 to 3.0, both on 5: Before (60 + 30) / 40 = 2.25, After (90 + 30) / 40 = 3.0; (3.0 - 2.25) / 5 = 15%, as shiftOf says.
+    const one = summary('1', 'c', 'FY27-Q2', 30, 3, { pairedCount: 30, summary: { scaleMax: 5, pairedBefore: 2, pairedAfter: 3 } });
+    const two = summary('2', 'c', 'FY27-Q2', 10, 3, { pairedCount: 10, summary: { scaleMax: 5, pairedBefore: 3, pairedAfter: 3 } });
+    const beforeOnly = summary('3', 'c', 'FY27-Q2', 0, null, { beforeCount: 8, summary: { scaleMax: 5, pairedBefore: null, pairedAfter: null } });
+    assert.deepEqual(pairedMeansOf([one, two, beforeOnly]), { before: 2.25, after: 3, n: 40, scaleMax: 5 });
+    assert.equal(shiftOf([one, two]).percent, ((3 - 2.25) * 100) / 5);
+    const four = summary('4', 'c', 'FY27-Q2', 6, 3, { pairedCount: 6, summary: { scaleMax: 4, pairedBefore: 2, pairedAfter: 3 } });
+    assert.deepEqual(pairedMeansOf([one, four]), { before: null, after: null, n: 36, scaleMax: null }, 'means of two scales are not one mean');
+    assert.deepEqual(pairedMeansOf([beforeOnly]), { before: null, after: null, n: 0, scaleMax: null });
+  });
 });
 
 describe('quarters and baselines, from the fiscal-year start month', () => {
@@ -141,5 +152,31 @@ describe('properties over random summaries', () => {
       assert.ok(one === null ? two === null : Math.abs(one - two) < 1e-9, `seed ${seed}`);
       assert.ok(Math.abs(clientIndex(list, list) - 100) < 1e-9, `seed ${seed}: the whole against itself is 100`);
     }
+  });
+});
+
+describe('Prompt 22: the oracle recounts each client\'s and each session\'s shift, and catches a shift pooled the wrong way', async () => {
+  const math = await import('../migration/src/lib/results/index-math.js');
+  const { compareIndexes, generateIndexes, indexOracle } = await import('./oracle-results.js');
+  const diffsOver = (indexMath, seeds = 60) => Array.from({ length: seeds }, (_, at) => generateIndexes(at + 1))
+    .flatMap((fixture) => compareIndexes(fixture, indexOracle(fixture), { indexMath }));
+  const plain = (each) => (each.length ? each.reduce((total, value) => total + value, 0) / each.length : null);
+
+  it('the app and the oracle agree, client by client and session by session', () => {
+    assert.deepEqual(diffsOver(math), []);
+  });
+  it('a mutant that pools a client\'s shift by a plain mean of its sessions\' percents is caught', () => {
+    const shiftOf = (summaries) => {
+      const percents = summaries.map((each) => math.shiftOf([each])).filter((each) => each.percent !== null);
+      return { percent: plain(percents.map((each) => each.percent)), n: percents.reduce((total, each) => total + each.n, 0) };
+    };
+    assert.ok(diffsOver({ ...math, shiftOf }).some((line) => /'s shift is /.test(line)), 'the plain mean went unseen');
+  });
+  it('a mutant that pools moved to confident by a plain mean of its sessions\' percents is caught', () => {
+    const movedOf = (summaries) => {
+      const each = summaries.map((one) => math.movedOf([one])).filter((one) => one.percent !== null);
+      return { percent: plain(each.map((one) => one.percent)), started: 0, moved: 0 };
+    };
+    assert.ok(diffsOver({ ...math, movedOf }).some((line) => /moved to confident is /.test(line)), 'the plain mean went unseen');
   });
 });

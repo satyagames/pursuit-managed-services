@@ -13,8 +13,8 @@
 import { csvCell } from '../exports/leader-report.js';
 import { periodOf } from '../admin/session-plan.js';
 import {
-  BASELINES, MIN_SAMPLE, baselineOf, change, clientIndex, firstChoiceShares, lowSample, meanAfterOf, movedOf, periodRange, periodsBetween, priorQuarter,
-  priorityIndex, sessionIndex, shiftOf,
+  BASELINES, MIN_SAMPLE, baselineOf, change, clientIndex, firstChoiceShares, lowSample, meanAfterOf, movedOf, pairedMeansOf, periodRange, periodsBetween,
+  priorQuarter, priorityIndex, sessionIndex, shiftOf,
 } from './index-math.js';
 import { HIDE_NAMES_BY_DEFAULT } from './metric-words.js';
 
@@ -99,6 +99,29 @@ function baselineFor(all, window, filters) {
   return kind === 'client' ? days.filter((each) => each.clientId === filters.compareClient) : days;
 }
 
+/**
+ * A group's shift and moved to confident (Prompt 22: a client's sessions, or one session), with low sample by the tiles' rule: the shift on its paired
+ * guests, moved on those who started not confident; nothing measured is not low. @param {any[]} group @param {number} min
+ */
+function shiftFigures(group, min) {
+  const shift = shiftOf(group);
+  const moved = movedOf(group);
+  return { shift, moved, shiftLow: shift.percent !== null && lowSample(shift.n, min), movedLow: moved.percent !== null && lowSample(moved.started, min) };
+}
+
+/**
+ * The words beside a client's bar, its row and a session's row (Prompt 22, board 9): "Shift +25%", "62% moved to confident", "40 of 52 guests answered
+ * both". `guests` is the "of" (the client's or the session's guests).
+ * @param {{ shift: { percent: number | null, n: number }, moved: { percent: number | null } }} figures @param {number} guests
+ */
+export function shiftWords({ shift, moved }, guests) {
+  return {
+    shift: shift.percent === null ? 'Shift not measured' : `Shift ${signed(shift.percent)}`,
+    moved: shift.percent === null ? '' : moved.percent === null ? 'No guest started not confident' : `${whole(moved.percent)}% moved to confident`,
+    answered: `${shift.n} of ${plural(guests, 'guest')} answered both`,
+  };
+}
+
 const baselineWords = (filters, clientOf) => {
   if (filters.compare === 'prior-quarter') return 'the quarter before';
   if (filters.compare === 'last-year') return 'the same quarter last year';
@@ -142,9 +165,10 @@ export function dashboardOf({ summaries, clients, filters, startMonth = 6, minSa
     const before = clientIndex(prior.filter((each) => each.clientId === clientId), prior);
     return {
       clientId, name: nameOf(clientId), index: own, change: change(own, before), guests: sum(mine, 'guests'), low: own !== null && lowSample(meanAfterOf(mine).n, min),
+      ...shiftFigures(mine, min),
       sessions: [...mine].sort((left, right) => dayOf(left).localeCompare(dayOf(right)) || words(left.summary?.startTime).localeCompare(words(right.summary?.startTime))).map((each) => ({
         id: each.id, label: sessionWords(each), date: dayOf(each), guests: Number(each.guests) || 0, completed: Number(each.completed) || 0, index: sessionIndex(each, mine),
-        low: Number(each.afterCount) > 0 && lowSample(Number(each.afterCount), min),
+        low: Number(each.afterCount) > 0 && lowSample(Number(each.afterCount), min), ...shiftFigures([each], min),
       })),
     };
   }).sort((left, right) => (right.index ?? -1) - (left.index ?? -1) || left.name.localeCompare(right.name));
@@ -200,7 +224,16 @@ export function dashboardOf({ summaries, clients, filters, startMonth = 6, minSa
       confidence = away === 0 ? `Confidence matched ${against} (index ${whole(index)}${low})` : `Confidence ran ${Math.abs(away)}% ${away > 0 ? 'above' : 'below'} ${against} (index ${whole(index)}${low})`;
     }
     const top = byClient.length > 1 && byClient[0].index !== null ? `; ${byClient[0].name} was highest at ${whole(byClient[0].index)}` : '';
-    headline = `${opening} ${confidence}${top}.`;
+    // (Prompt 22: the shift, when it is measured, from the tiles' shift and moved, and the paired means it moved between, when they are of one scale.)
+    let moving = '';
+    if (shift.percent !== null) {
+      const means = pairedMeansOf(segment);
+      const way = Math.round(shift.percent) > 0 ? 'up' : Math.round(shift.percent) < 0 ? 'down' : 'on';
+      const inside = [means.before === null || means.after === null ? '' : `${means.before.toFixed(1)} to ${means.after.toFixed(1)}`, tiles[4].low ? 'low sample' : ''].filter(Boolean).join(', ');
+      const ended = moved.percent === null ? '' : `, and ${whole(moved.percent)}% of those who started not confident ended confident`;
+      moving = ` Guests moved ${Math.abs(Math.round(shift.percent))}% ${way} the scale${inside ? ` (${inside})` : ''}${ended}.`;
+    }
+    headline = `${opening} ${confidence}${top}.${moving}`;
   }
   return { headline, window, tiles, byClient, trend, priority, distribution, themes, quotes, minSample: min, empty: !segment.length, hideNames: hide };
 }
@@ -218,11 +251,18 @@ export function filterOptions(summaries, clients) {
   };
 }
 
-/** Export report: one row a session, by client in the dashboard's order, with the client's index and the session's (CSV, no cell a formula). @param {ReturnType<typeof dashboardOf>} board */
+/**
+ * Export report: one row a session, by client in the dashboard's order, with the client's index and the session's, then (Prompt 22) the client's shift,
+ * moved to confident and guests who answered both, and the session's (whole numbers, no % sign; CSV, no cell a formula).
+ * @param {ReturnType<typeof dashboardOf>} board
+ */
 export function reportCsv(board) {
-  const rows = [['Client', 'Session', 'Date', 'Guests', 'Completed', 'Confidence index', 'Session index', 'Low sample']];
+  const rows = [['Client', 'Session', 'Date', 'Guests', 'Completed', 'Confidence index', 'Session index', 'Low sample', 'Shift %', 'Moved to confident %', 'Guests answered both',
+    'Session shift %', 'Session moved to confident %', 'Session guests answered both']];
+  const round = (value) => (value === null ? '' : Math.round(value));
+  const shifts = (each) => [round(each.shift.percent), round(each.moved.percent), each.shift.n];
   for (const client of board.byClient) {
-    for (const each of client.sessions) rows.push([client.name, each.label, each.date, each.guests, each.completed, client.index === null ? '' : Math.round(client.index), each.index === null ? '' : Math.round(each.index), each.low ? 'Low sample' : '']);
+    for (const each of client.sessions) rows.push([client.name, each.label, each.date, each.guests, each.completed, round(client.index), round(each.index), each.low ? 'Low sample' : '', ...shifts(client), ...shifts(each)]);
   }
   return `${rows.map((row) => row.map(csvCell).join(',')).join('\r\n')}\r\n`;
 }

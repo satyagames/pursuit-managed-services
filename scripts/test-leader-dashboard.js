@@ -161,9 +161,12 @@ describe('Part 3: the dashboard\'s figures, worked out by hand', async () => {
     assert.ok(tiles.every((tile) => METRICS[tile.id]), 'every tile has its words');
   });
   it('the headline sentence is built from the numbers', () => {
-    assert.equal(view().headline, '3 sessions with 40 guests at 2 clients in FY27 Q2. Confidence matched the all-client average (index 100); Kroger was highest at 110.');
-    assert.equal(view({ clientIds: ['kroger'] }).headline, '2 sessions with 20 guests at 1 client in FY27 Q2. Confidence ran 10% above the all-client average (index 110).');
-    assert.equal(view({ clientIds: ['acme'], compare: 'prior-quarter' }).headline, '1 session with 20 guests at 1 client in FY27 Q2. Confidence ran 10% below the quarter before (index 90).');
+    assert.equal(view().headline, '3 sessions with 40 guests at 2 clients in FY27 Q2. Confidence matched the all-client average (index 100); Kroger was highest at 110. '
+      + 'Guests moved 10% up the scale (2.8 to 3.3), and 50% of those who started not confident ended confident.', '(Prompt 22: the shift sentence)');
+    assert.equal(view({ clientIds: ['kroger'] }).headline, '2 sessions with 20 guests at 1 client in FY27 Q2. Confidence ran 10% above the all-client average (index 110). '
+      + 'Guests moved 10% up the scale (3.0 to 3.5), and 25% of those who started not confident ended confident.');
+    assert.equal(view({ clientIds: ['acme'], compare: 'prior-quarter' }).headline, '1 session with 20 guests at 1 client in FY27 Q2. Confidence ran 10% below the quarter before (index 90). '
+      + 'Guests moved 10% up the scale (2.5 to 3.0), and 75% of those who started not confident ended confident.');
     assert.equal(view({ period: 'FY25-Q1', year: 'FY25', span: 'q1' }).headline, 'No session in FY25 Q1 has a summary yet.');
   });
   it('by client against 100, highest first, with the change since the quarter before, and each client\'s sessions against its own average', () => {
@@ -211,11 +214,95 @@ describe('Part 3: the dashboard\'s figures, worked out by hand', async () => {
   it('Export report: one row a session, by client, with the indexes; no cell starts a formula', () => {
     const csv = reportCsv(view());
     const lines = csv.trim().split('\r\n');
-    assert.equal(lines[0], 'Client,Session,Date,Guests,Completed,Confidence index,Session index,Low sample');
+    assert.equal(lines[0], 'Client,Session,Date,Guests,Completed,Confidence index,Session index,Low sample,Shift %,Moved to confident %,Guests answered both,Session shift %,Session moved to confident %,Session guests answered both', '(Prompt 22 added the six shift columns at the end)');
     assert.equal(lines.length, 1 + 3);
-    assert.equal(lines[1], 'Kroger,1 Oct,2026-10-01,10,8,110,109,');
+    assert.equal(lines[1], 'Kroger,1 Oct,2026-10-01,10,8,110,109,,10,25,20,20,50,10');
     const risky = reportCsv(dashboardOf({ summaries: SUMMARIES, clients: [{ id: 'kroger', name: '=HYPERLINK("x")' }, CLIENTS[1]], filters: defaultFilters({ period: 'FY27-Q2' }), startMonth: 6, minSample: 10 }));
     assert.ok(!risky.split('\r\n').some((line) => /(^|,)=/.test(line)), 'a name that starts a formula is quoted');
+  });
+});
+
+describe('Part 6: the confidence shift by client and by session (Prompt 22, the manager\'s request)', async () => {
+  const { dashboardOf, defaultFilters, reportCsv, shiftWords } = await import('../migration/src/lib/results/dashboard-model.js');
+  const { METRICS } = await import('../migration/src/lib/results/metric-words.js');
+  const json = (more) => ({ v: 1, title: '', startTime: '', facilitator: '', scaleMax: 5, pairedBefore: null, pairedAfter: null, moved: { started: 0, moved: 0 },
+    distribution: null, firstChoices: [], kinds: {}, groups: {}, feedback: { count: 0, themes: [], quotes: [] }, ...more });
+  const row = (id, clientId, sessionDate, more, summary) => ({ id, clientId, period: 'FY27-Q2', sessionDate, guests: 10, answers: 0, completed: 0, beforeCount: 0, afterCount: 0,
+    pairedCount: 0, meanBefore: null, meanAfter: null, ...more, summary: json(summary) });
+  // Domino's: d1 30 paired, 2.0 to 3.0 on 5 (+20%), 10 of them started not confident and 6 ended confident; d2 10 paired, 3.0 to 3.0 (0%), 2 started
+  // and none moved; d3 asked Before only (8 answers). Pooled by paired guests: (30 x 20 + 10 x 0) / 40 = 15% (a plain mean of 20 and 0 would be 10);
+  // moved (6 + 0) of (10 + 2) = 50% (a plain mean of 60 and 0 would be 30). Acme: Afters, nobody paired: not measured.
+  const D1 = row('d1', 'dominos', '2026-10-01', { guests: 32, afterCount: 30, meanAfter: 3, pairedCount: 30, beforeCount: 30 }, { pairedBefore: 2, pairedAfter: 3, moved: { started: 10, moved: 6 } });
+  const D2 = row('d2', 'dominos', '2026-10-08', { guests: 12, afterCount: 10, meanAfter: 3, pairedCount: 10, beforeCount: 10 }, { pairedBefore: 3, pairedAfter: 3, moved: { started: 2, moved: 0 } });
+  const D3 = row('d3', 'dominos', '2026-10-15', { guests: 8, beforeCount: 8 }, { moved: { started: 0, moved: 0 } });
+  const A1 = row('a1', 'acme', '2026-10-02', { guests: 20, afterCount: 20, meanAfter: 3 }, { moved: null, scaleMax: null });
+  const CLIENTS = [{ id: 'dominos', name: 'Domino\'s' }, { id: 'acme', name: 'Acme' }];
+  const view = (summaries = [D1, D2, D3, A1], filters = {}, minSample = 10) => dashboardOf({ summaries, clients: CLIENTS, filters: { ...defaultFilters({ period: 'FY27-Q2' }), ...filters }, startMonth: 6, minSample });
+  const client = (board, id) => board.byClient.find((each) => each.clientId === id);
+
+  it('each client carries its pooled shift and moved to confident, weighed by paired guests, not a plain mean of its sessions', () => {
+    const dominos = client(view(), 'dominos');
+    assert.deepEqual(dominos.shift, { percent: 15, n: 40 });
+    assert.deepEqual(dominos.moved, { percent: 50, started: 12, moved: 6 });
+    assert.equal(dominos.shiftLow, false);
+    assert.equal(dominos.movedLow, false);
+  });
+  it('each session carries its own shift and moved to confident', () => {
+    const [d1, d2, d3] = client(view(), 'dominos').sessions;
+    assert.deepEqual([d1.id, d1.shift, d1.moved], ['d1', { percent: 20, n: 30 }, { percent: 60, started: 10, moved: 6 }]);
+    assert.deepEqual([d2.id, d2.shift, d2.moved], ['d2', { percent: 0, n: 10 }, { percent: 0, started: 2, moved: 0 }]);
+    assert.deepEqual([d3.id, d3.shift.percent, d3.moved.percent], ['d3', null, null]);
+  });
+  it('a session with Before only contributes nothing to its client\'s shift', () => {
+    assert.deepEqual(client(view([D1, D2, A1]), 'dominos').shift, client(view(), 'dominos').shift);
+    assert.deepEqual(client(view([D1, D2, A1]), 'dominos').moved, client(view(), 'dominos').moved);
+  });
+  it('a client with no paired guest gives percent null and "Not measured"', () => {
+    const acme = client(view(), 'acme');
+    assert.deepEqual(acme.shift, { percent: null, n: 0 });
+    assert.equal(acme.moved.percent, null);
+    assert.equal(acme.shiftLow, false, 'nothing measured is not a low sample');
+    assert.deepEqual(shiftWords(acme, acme.guests), { shift: 'Shift not measured', moved: '', answered: '0 of 20 guests answered both' });
+  });
+  it('low sample at n below the minimum, by the same rule as the tiles (the shift by paired guests, moved by those who started not confident)', () => {
+    const at11 = view(undefined, {}, 11);
+    const [d1, d2] = client(at11, 'dominos').sessions;
+    assert.deepEqual([d1.shiftLow, d2.shiftLow], [false, true], '10 paired is under 11');
+    assert.deepEqual([client(at11, 'dominos').shiftLow, client(at11, 'dominos').movedLow], [false, false]);
+    assert.deepEqual([d1.movedLow, d2.movedLow], [true, true], '10 and 2 who started not confident are under 11');
+    assert.equal(client(view(undefined, {}, 13), 'dominos').movedLow, true, '12 started not confident is under 13');
+    assert.equal(client(view(undefined, {}, 10), 'dominos').sessions[1].shiftLow, false, '10 is not under 10');
+  });
+  it('the words beside each bar: the shift, moved to confident, and how many answered both', () => {
+    const dominos = client(view(), 'dominos');
+    assert.deepEqual(shiftWords(dominos, dominos.guests), { shift: 'Shift +15%', moved: '50% moved to confident', answered: '40 of 52 guests answered both' });
+    const [d1, d2] = dominos.sessions;
+    assert.deepEqual(shiftWords(d1, d1.guests), { shift: 'Shift +20%', moved: '60% moved to confident', answered: '30 of 32 guests answered both' });
+    assert.equal(shiftWords(d2, d2.guests).shift, 'Shift 0%');
+    const none = { shift: { percent: -12.4, n: 1 }, moved: { percent: null, started: 0, moved: 0 } };
+    assert.deepEqual(shiftWords(none, 1), { shift: 'Shift -12%', moved: 'No guest started not confident', answered: '1 of 1 guest answered both' });
+  });
+  it('the headline says the shift only when it is measured, from the numbers the tiles use', () => {
+    assert.equal(view([D1, D2, D3]).headline, '3 sessions with 52 guests at 1 client in FY27 Q2. Confidence matched the all-client average (index 100). '
+      + 'Guests moved 15% up the scale (2.3 to 3.0), and 50% of those who started not confident ended confident.');
+    assert.doesNotMatch(view([A1]).headline, /moved|scale|not measured/i, 'nothing about the shift when nobody answered both');
+    const down = row('x', 'acme', '2026-10-03', { guests: 10, afterCount: 10, meanAfter: 2, pairedCount: 10 }, { pairedBefore: 3, pairedAfter: 2, moved: { started: 0, moved: 0 } });
+    assert.match(view([down]).headline, / Guests moved 20% down the scale \(3\.0 to 2\.0\)\.$/, 'no guest started not confident: the second half is left out');
+    assert.match(view([D1, D2], {}, 50).headline, /up the scale \(2\.3 to 3\.0, low sample\)/);
+  });
+  it('the i words of the shift and moved to confident say they are not compared with the baseline', () => {
+    for (const id of ['confidence-shift', 'moved']) assert.match(`${METRICS[id].formula} ${METRICS[id].meaning}`, /not compared with the baseline/i, id);
+    assert.match(METRICS['confidence-shift'].meaning, /absolute change on the scale/);
+    assert.match(METRICS['confidence-shift'].meaning, /Compare with/);
+  });
+  it('Export report: Shift %, Moved to confident % and Guests answered both, for the client and for the session', () => {
+    const lines = reportCsv(view()).trim().split('\r\n');
+    assert.equal(lines[0], 'Client,Session,Date,Guests,Completed,Confidence index,Session index,Low sample,Shift %,Moved to confident %,Guests answered both,Session shift %,Session moved to confident %,Session guests answered both');
+    // (Both clients are at 100, so Acme comes first by name.)
+    assert.equal(lines[1], 'Acme,2 Oct,2026-10-02,20,0,100,100,,,,0,,,0');
+    assert.equal(lines[2], 'Domino\'s,1 Oct,2026-10-01,32,0,100,100,,15,50,40,20,60,30');
+    assert.equal(lines[3], 'Domino\'s,8 Oct,2026-10-08,12,0,100,100,,15,50,40,0,0,10');
+    assert.equal(lines[4], 'Domino\'s,15 Oct,2026-10-15,8,0,100,,,15,50,40,,,0');
   });
 });
 

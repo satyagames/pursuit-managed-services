@@ -9,7 +9,8 @@
 //   Priority index   = an option's share of the first choices in the group / its share in the baseline, x 100 (options grouped by their label)
 //   Change           = now - then, in index points
 //   Low sample       = fewer than the minimum (PMSAppSettings.MinSample, else 10)
-//   Pooled shift     = over every paired guest of every session, (After - Before) as a share of that session's scale, x 100
+//   Pooled shift     = over every paired guest of every session, (After - Before) as a share of that session's scale, x 100: for the whole view, for
+//                      each client and for each session alike (Prompt 22). It is absolute: no baseline is asked, whatever "Compare with" says.
 // Baselines: the average of all clients in reach for the same periods (the default), the quarter before, the same quarter a year before, one chosen client.
 
 import { MIN_SAMPLE as CHECK_MIN_SAMPLE } from './confidence-shift.js';
@@ -130,6 +131,27 @@ export function shiftOf(summaries) {
     n += paired;
   }
   return { percent: n ? total / n : null, n };
+}
+
+/**
+ * The paired guests' mean Before and mean After over the sessions, each session weighed by its paired guests (Prompt 22: the headline's "2.3 to 3.0").
+ * ASSUMED: a mean is only one mean on one scale, so sessions of two scales give no means (null), while `n` still counts every paired guest.
+ * @param {Summary[]} summaries @returns {{ before: number | null, after: number | null, n: number, scaleMax: number | null }}
+ */
+export function pairedMeansOf(summaries) {
+  let before = 0; let after = 0; let n = 0;
+  const scales = new Set();
+  for (const each of summaries) {
+    const paired = Number(each.pairedCount) || 0;
+    const { scaleMax, pairedBefore, pairedAfter } = each.summary ?? {};
+    if (paired <= 0 || !finite(scaleMax) || scaleMax <= 0 || !finite(pairedBefore) || !finite(pairedAfter)) continue;
+    before += paired * pairedBefore;
+    after += paired * pairedAfter;
+    n += paired;
+    scales.add(scaleMax);
+  }
+  if (!n || scales.size !== 1) return { before: null, after: null, n, scaleMax: null };
+  return { before: before / n, after: after / n, n, scaleMax: [...scales][0] };
 }
 
 /** Moved to confident over the sessions: of every paired guest who started not confident, the share who ended confident. @param {Summary[]} summaries */
