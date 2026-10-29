@@ -20,7 +20,7 @@ import { LISTS, selectOf } from '../migration/src/lib/schema/pms-schema.js';
 import { activitiesOfClient } from '../migration/src/lib/admin/admin-content.js';
 import { clientUsage, recentCodes } from '../migration/src/lib/admin/admin-clients.js';
 import { evaluateReadiness, goLive, loadToday, pollToday } from '../migration/src/lib/admin/admin-today.js';
-import { readNameSources } from '../migration/src/lib/admin/admin-results.js';
+import { NAME_SOURCE_SESSIONS, readNameSources } from '../migration/src/lib/admin/admin-results.js';
 import { markReady, siteApi } from '../migration/src/lib/setup/provision.js';
 import { PROBE_LEFT_OUT, schemaSpecs, selfTestProbes } from '../migration/src/lib/setup/setup-checks.js';
 import { readSessionResults } from '../migration/src/lib/results/session-results.js';
@@ -258,12 +258,14 @@ describe('every item read the data layer and Setup can send names its columns', 
   it('the longest addresses, on the real site\'s address: naming the columns adds the same to every read of a list (at most 171 characters since Prompt 21 Phase 3; 164 before); printed', async () => {
     const fake = await site({ siteUrl: 'https://internal.global.deloitteonline.com/sites/PCOE' });
     // The reads that carry the most ids (lib/data/read-groups.js, admin-clients.js, admin-results.js), each id as long as it can be: a session id is a slug of
-    // 40 and a date (51 characters), a question id a UUID (36). As a browser sends them: spaces and quotes encoded.
-    const session = (index) => `${'a'.repeat(40)}-2026-10-${String(index + 10).padStart(2, '0')}`;
+    // 40, a date, a start time and the last try of a duplicate (Prompt 21, Phase 3: <slug>-<yyyy-mm-dd>-<hhmm>-9, 58 characters; 51 before), a question id a
+    // UUID (36). As a browser sends them: spaces and quotes encoded.
+    const session = (index) => `${'a'.repeat(40)}-2026-10-${String(index + 10).padStart(2, '0')}-1430-9`;
     const cases = [
       ['PMSParticipants by 15 sessions (Clients: what uses a client)', { list: 'tracks', where: { sessionId: Array.from({ length: 15 }, (_, index) => session(index)) } }, 1_700],
       ['PMSAnswerOptions by 20 questions (an activity\'s content)', { list: 'options', where: { questionId: Array.from({ length: 20 }, () => crypto.randomUUID()) } }, 1_700],
-      ['PMSVisitLog by 20 sessions (Results: who is who, readNameSources; over 1,500 since Phase 10c-2a)', { list: 'uservisitlogs', where: { sessionId: Array.from({ length: 20 }, (_, index) => session(index)) } }, 2_000],
+      // (Prompt 21, Phase 3: as many sessions as readNameSources puts in a read; 20 of the longer ids made 2,013 characters.)
+      [`PMSVisitLog by ${NAME_SOURCE_SESSIONS} sessions (Results: who is who, readNameSources; over 1,500 since Phase 10c-2a)`, { list: 'uservisitlogs', where: { sessionId: Array.from({ length: NAME_SOURCE_SESSIONS }, (_, index) => session(index)) } }, 2_000],
     ];
     for (const [what, query, most] of cases) {
       fake.reset();

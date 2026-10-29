@@ -7,7 +7,7 @@ import { nameParticipants } from '../results/participant-names.js';
 //
 // The NAME is lib/results/participant-names.js, the one rule the leader report (the PDF and the CSV) names people by. It needs the session's
 // visit log (where a staff sign-in name is kept) and its guest roster, which a track does not carry, so the screen reads them with
-// readNameSources(): ONE `$batch` on SharePoint for up to 20 sessions, and only for sessions that have a track with no name of its
+// readNameSources(): ONE `$batch` on SharePoint for up to 15 sessions, and only for sessions that have a track with no name of its
 // own (a guest's QR name is on the track, so a guest session needs no read at all).
 
 /** @typedef {{ id: string, [key: string]: any }} Row */
@@ -18,7 +18,13 @@ import { nameParticipants } from '../results/participant-names.js';
 const readLists = /** @type {any} */ (dataService).readLists;
 const responseOwner = /** @type {(response: any) => string | null} */ (/** @type {any} */ (dataService).responseOwner);
 
-const CHUNK = 20; // session ids to a read, as readActivityContent() does for activities
+/**
+ * Session ids to a read: 15 since Prompt 21, Phase 3 (20 before). A planned session's id is up to 58 characters (a 40-letter slug, the date, the
+ * start time and a duplicate's -9), and 20 of them made a read of the visit log of 2,013 characters on the real site's address
+ * (scripts/test-named-reads.js prints it); 15 keep it near 1,600.
+ */
+export const NAME_SOURCE_SESSIONS = 15;
+const CHUNK = NAME_SOURCE_SESSIONS;
 const EMPTY = Object.freeze({ visits: [], roster: [] });
 /** A page records a staff sign-in a moment after it draws its first screen, so someone who joined a moment ago may not be in the visit log yet. */
 const RECENT_MS = 120_000;
@@ -43,7 +49,7 @@ export const hasOwnName = (track) => typeof track.participantName === 'string' &
 export const sessionsNeedingNames = (results) => results.filter((result) => result.tracks.some((track) => !hasOwnName(track))).map((result) => result.session.id);
 
 /**
- * The visit log and the roster of each session, by session id. One request on SharePoint for up to 20 sessions (two lists side by side
+ * The visit log and the roster of each session, by session id. One request on SharePoint for up to 15 sessions (two lists side by side
  * in one `$batch`), none for no sessions.
  * @param {string[]} sessionIds
  * @returns {Promise<Map<string, NameSources>>}
