@@ -4,7 +4,7 @@
 
 import { ID } from '../schema/pms-schema.js';
 import { RESPONSE, pause, spLiteral } from './encoding.js';
-import { getItem, itemPath, listTypes, request, send, sharePoint, spDecode, spEntityType, spHttp, spListPath, spPages, updateItem } from './core.js';
+import { currentAccessGuard, getItem, itemPath, listTypes, request, send, sharePoint, spDecode, spEntityType, spHttp, spListPath, spPages, updateItem } from './core.js';
 import { failure, versioned } from './records.js';
 import { parseCheckId } from '../participant/confidence-check.js';
 
@@ -291,6 +291,7 @@ export async function restartParticipantTrack(clientTrackId, { sectionId = null 
  * 60 participants is one query on the indexed SessionId.
  */
 export async function listSessionParticipants(sessionId, { pageSize = 100, cursor = null } = {}) {
+  askRead(sessionId);
   const { items, next } = await participants().page(sessionId, pageSize, cursor);
   return {
     items: items.map((item) => ({ trackId: item.trackId, sessionId: item.sessionId ?? sessionId, clientId: item.clientId ?? null, responses: answerRecords(item.responses) })),
@@ -317,7 +318,12 @@ export async function readSessionResponsesChecked(sessionId) {
   return { answers: await readAnswers(sessionId, unreadable), unreadable };
 }
 
+// Prompt 21, Phase 7: a session's answers are read only for a session the page's read check allows (lib/access/guard.js `read`, as the plain reads ask it
+// through read-scope.js); it throws AccessDenied and nothing is sent. The participant page and Setup install no guard, so nothing is asked there.
+const askRead = (sessionId) => currentAccessGuard()?.read?.('responses', { sessionId });
+
 async function readAnswers(sessionId, damaged) {
+  askRead(sessionId);
   const store = participants();
   const items = [];
   let cursor = null;
@@ -347,6 +353,6 @@ function combineAnswers(items) {
 
 // Shared with the other parts of lib/data (dataService.js does not pass these on).
 export {
-  PARTICIPANT_SELECT, answerRecord, answerRecords, combineAnswers, decodeResponsesRow, participantFields, participantItem, participants, readAnswers,
+  PARTICIPANT_SELECT, answerRecord, answerRecords, askRead, combineAnswers, decodeResponsesRow, participantFields, participantItem, participants, readAnswers,
   spParticipants,
 };

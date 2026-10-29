@@ -7,7 +7,7 @@ import { getItem, getItems, queryItems, sharePoint, spByAppId, spDecode, spListP
 import { spAllRows, spItemsAddress, spOne } from './common.js';
 import { getAppSettings, notMade, versionFirst, versioned } from './records.js';
 import { inOrder } from './today.js';
-import { PARTICIPANT_SELECT, combineAnswers, decodeResponsesRow, readAnswers, spParticipants } from './responses.js';
+import { PARTICIPANT_SELECT, askRead, combineAnswers, decodeResponsesRow, readAnswers, spParticipants } from './responses.js';
 
 // ============================================================================
 // 8. Pages that stay open: what a timer reads, in one request
@@ -75,6 +75,7 @@ export async function readParticipantWatch({ sessionId = null, trackId = null, c
 export async function readLiveFeed(sessionId, { sectionIds = [], tolerant = false } = {}) {
   // `tolerant` (Phase 9b, DI-6): an answer item that is not a list is left out and named in `unreadable`, where it used to stop the feed.
   const damaged = tolerant ? [] : null;
+  askRead(sessionId); // (Prompt 21, Phase 7: the read check, before the batch)
   if (!sharePoint) {
     const [session, tracks, answers, sections] = await Promise.all([
       getItem('sessions', sessionId), queryItems('tracks', { sessionId }), readAnswers(sessionId, damaged), sectionIds.length ? getItems('sections', sectionIds) : null,
