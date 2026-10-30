@@ -66,7 +66,7 @@ export {
   getCurrentUser, getAppSettings, updateAppSettings, getVisitor, createVisitor, updateVisitor, setVisitorEnabled, recordUserVisit, getClient,
   listClients, createClient, updateClient, updateClientWith, deleteClient, getSession, listSessions, createSession, updateSession,
   setSessionParticipationMode, deleteSession, getSection, getSectionContent, listSections, createSection, updateSection, getQuestion, listQuestions,
-  createQuestion, updateQuestion, deleteQuestion, getOption, listOptions, createOption, updateOption, deleteOption, getClientTrack, listClientTracks,
+  createQuestion, updateQuestion, deleteQuestion, getOption, listOptions, createOption, updateOption, deleteOption, matrixRowFields, getClientTrack, listClientTracks,
   findOpenSession, resumeClientTrack, endSession, reopenSession, getQrToken, listQrTokens, updateQrToken, qrTokenStatus, qrUrl, qrTokenFromSearch,
   getLanUrls, provisionQrToken, listAdminUsers, addAdminUser, responseOwner,
 } from './records.js';
@@ -94,7 +94,7 @@ export {
   guestNameKey, addGuests, provisionGuestCodes,
 } from './guests.js';
 export {
-  uploadClientAsset, removeClientAsset,
+  uploadClientAsset, removeClientAsset, uploadGuestPicture, removeGuestPicture,
 } from './pictures.js';
 export {
   readParticipantWatch, readLiveFeed,

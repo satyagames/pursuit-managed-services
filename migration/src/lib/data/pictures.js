@@ -3,7 +3,9 @@
 // browser has already cropped and re-encoded the picture (lib/brand/).
 
 import { spLibraryIn, spLiteral } from './encoding.js';
-import { logoFolders, request, sharePoint, spDigest, spHttp, spSite } from './core.js';
+import { getItem, logoFolders, request, sharePoint, spDigest, spHttp, spSite } from './core.js';
+import { GUEST_PICTURE_NAME } from '../schema/aop-rules.js';
+import { guestPictureName } from '../brand/asset-names.js';
 
 // ============================================================================
 // 7. Pictures for a client's look
@@ -21,13 +23,16 @@ import { logoFolders, request, sharePoint, spDigest, spHttp, spSite } from './co
 
 /** The only names a picture is stored under. */
 const ASSET_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*-(?:hero|logo|background|tile)-[0-9a-f]{10}\.(png|webp|jpg)$/;
+const isAssetName = (name) => ASSET_NAME.test(name) || GUEST_PICTURE_NAME.test(name);
 const ASSET_TYPES = { 'image/png': 'png', 'image/webp': 'webp', 'image/jpeg': 'jpg' };
 /** Above every slot's cap (the biggest is 350 KB): a picture over this did not come from the cropper. */
 const ASSET_MAX_BYTES = 512 * 1024;
 
+const failure = (code, message) => Object.assign(new Error(message), { code });
+
 /** What is wrong with a picture and its name, in words; '' when it can be stored. */
 function assetProblem(file, name) {
-  if (typeof name !== 'string' || !ASSET_NAME.test(name)) return 'That is not a picture file name this page makes.';
+  if (typeof name !== 'string' || !isAssetName(name)) return 'That is not a picture file name this page makes.';
   const extension = ASSET_TYPES[file?.type];
   if (!extension || !name.endsWith(`.${extension}`)) return 'Choose a PNG, JPEG or WebP picture. SVG upload is disabled on SharePoint.';
   if (!(file.size > 0)) return 'The picture is empty.';
@@ -89,20 +94,55 @@ export async function removeClientAsset(url) {
     if (!url) return false;
     const name = decodeURIComponent(String(url).split(/[?#]/)[0].split('/').pop() ?? '');
     if (!ASSET_NAME.test(name)) return false;
-    if (sharePoint) {
-      const folder = await spLogoFolder();
-      const site = new URL(spSite());
-      const parsed = new URL(url, site);
-      const path = decodeURIComponent(parsed.pathname);
-      if (parsed.origin !== site.origin || path.toLowerCase() !== `${folder}/${name}`.toLowerCase()) return false;
-      await spHttp('POST', `/web/GetFileByServerRelativeUrl(${spLiteral(path)})/recycle()`);
-      return true;
-    }
-    if (!decodeURIComponent(new URL(url, 'http://local.invalid/').pathname).endsWith(`/assets/images/clients/${name}`)) return false;
-    await request('DELETE', `/uploads/logo/${encodeURIComponent(name)}`);
-    return true;
+    return await removeFile(url, name);
   } catch (error) {
     console.warn('dataService: could not remove an old picture', error);
     return false;
+  }
+}
+
+/** The file itself, once it is known to be one of ours: to the recycle bin on SharePoint, gone on the local server. False when the address is not in the pictures folder. */
+async function removeFile(url, name) {
+  if (sharePoint) {
+    const folder = await spLogoFolder();
+    const site = new URL(spSite());
+    const parsed = new URL(url, site);
+    const path = decodeURIComponent(parsed.pathname);
+    if (parsed.origin !== site.origin || path.toLowerCase() !== `${folder}/${name}`.toLowerCase()) return false;
+    await spHttp('POST', `/web/GetFileByServerRelativeUrl(${spLiteral(path)})/recycle()`);
+    return true;
+  }
+  if (!decodeURIComponent(new URL(url, 'http://local.invalid/').pathname).endsWith(`/assets/images/clients/${name}`)) return false;
+  await request('DELETE', `/uploads/logo/${encodeURIComponent(name)}`);
+  return true;
+}
+
+// ---- A guest's picture (Prompt 23) -------------------------------------------------------------------------------------------------------
+// In the same folder, under a name with no name of a person in it (lib/brand/asset-names.js guestPictureName): lib/admin/guest-picture.js says when each is called.
+
+/** Stores a finished picture (image/webp or image/jpeg) as a guest's and resolves to { url, name }. The guest's row is the caller's to write. */
+export async function uploadGuestPicture(sessionId, guestId, blob) {
+  if (blob?.type !== 'image/webp' && blob?.type !== 'image/jpeg') throw failure('invalid-value', 'A guest\'s picture must be a WebP or JPEG this page made.');
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  return uploadClientAsset(blob, guestPictureName(sessionId, guestId, bytes, blob.type));
+}
+
+/**
+ * Removes a guest's picture. Refused unless the name is a guest picture's and the address is the one on that guest's row: `guest` is that row, or its id to read it by. A file
+ * already gone counts as removed. Never throws for the file; resolves to { removed, missing, refused }.
+ * @param {string | null | undefined} url @param {string | { id: string, pictureUrl?: string | null }} guest
+ */
+export async function removeGuestPicture(url, guest) {
+  const none = { removed: false, missing: false, refused: true };
+  const name = url ? decodeURIComponent(String(url).split(/[?#]/)[0].split('/').pop() ?? '') : '';
+  if (!GUEST_PICTURE_NAME.test(name)) return none;
+  const row = typeof guest === 'string' ? await getItem('visitorroster', guest) : guest;
+  if (!row || row.pictureUrl !== url) return none;
+  try {
+    return (await removeFile(url, name)) ? { removed: true, missing: false, refused: false } : none;
+  } catch (error) {
+    if (error.status === 404) return { removed: false, missing: true, refused: false };
+    console.warn('dataService: could not remove a guest\'s picture', error);
+    return { removed: false, missing: false, refused: false };
   }
 }

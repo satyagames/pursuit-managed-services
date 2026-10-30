@@ -117,7 +117,7 @@ export function orphanNote({ answers, unreadable }: { answers: number; unreadabl
 
 type GuestSession = { id: string; clientId: string; date?: string; status: string; participationMode?: string };
 type GuestClient = { id: string; name: string };
-export type GuestVisitor = { id: string; sessionId: string; displayName: string; enabled?: boolean; guestGroup?: string | null };
+export type GuestVisitor = { id: string; sessionId: string; displayName: string; enabled?: boolean; guestGroup?: string | null; pictureUrl?: string | null };
 export type GuestToken = { id: string; sessionId: string; visitorId?: string | null; used?: boolean; expiredAt?: string | null; createdAt?: string };
 type GuestTrack = { id: string; visitorId?: string | null; createdAt?: string };
 type GuestVisit = { id: string; sessionId?: string | null; entryMode?: string; displayName?: string; visitorName?: string; visitedAt?: string };

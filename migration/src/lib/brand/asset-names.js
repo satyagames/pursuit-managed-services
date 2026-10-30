@@ -71,6 +71,13 @@ export function assetFileName(slug, slot, bytes, mime) {
   return `${slug}-${slot}-${sha256Hex(bytes).slice(0, HASH_LENGTH)}.${extensionOf(mime)}`;
 }
 
+/**
+ * The stored name of a guest's picture (Prompt 23): `g-<10 hex of the SHA-256 of the session id + the guest id>-<10 hex of the bytes>.<ext>`. It holds no name of a person: a
+ * file listing of the library says nothing about whose face it is, and a different picture has a different name.
+ * @param {string} sessionId @param {string} guestId @param {Uint8Array} bytes @param {string} mime
+ */
+export const guestPictureName = (sessionId, guestId, bytes, mime) => `g-${sha256Hex(new TextEncoder().encode(`${sessionId}${guestId}`)).slice(0, HASH_LENGTH)}-${sha256Hex(bytes).slice(0, HASH_LENGTH)}.${extensionOf(mime)}`;
+
 /** The last part of an address, without a query or fragment. @param {string} url */
 export const fileNameOf = (url) => decodeURIComponent(String(url).split(/[?#]/)[0].split('/').pop() ?? '');
 

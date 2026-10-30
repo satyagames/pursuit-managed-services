@@ -72,6 +72,9 @@ const LOGO_TYPES = {
 // JPEG or WebP only, whose extension matches what it really is, and a name that is not that shape is
 // refused. Without ?name= the endpoint is exactly what it was: a generated name, any type above.
 export const ASSET_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*-(?:hero|logo|background|tile)-[0-9a-f]{10}\.(png|webp|jpg)$/;
+// (Prompt 23: a guest's picture, under a name with no name of a person in it. lib/schema/aop-rules.js holds the same pattern.)
+export const GUEST_PICTURE_NAME = /^g-[0-9a-f]{10}-[0-9a-f]{10}\.(webp|jpg)$/;
+const isAssetName = (name) => ASSET_NAME.test(name) || GUEST_PICTURE_NAME.test(name);
 
 api.post('/uploads/logo', express.raw({ type: Object.keys(LOGO_TYPES), limit: MAX_LOGO_BYTES }), async (req, res) => {
   const type = req.get('Content-Type')?.split(';')[0].trim().toLowerCase();
@@ -81,7 +84,7 @@ api.post('/uploads/logo', express.raw({ type: Object.keys(LOGO_TYPES), limit: MA
   if (!looksRight(req.body)) throw httpError(400, `That file is not a valid ${extension.toUpperCase()} image`);
   const named = req.query.name;
   if (named !== undefined) {
-    if (typeof named !== 'string' || !ASSET_NAME.test(named)) throw httpError(400, 'That is not a picture file name Brand Studio makes');
+    if (typeof named !== 'string' || !isAssetName(named)) throw httpError(400, 'That is not a picture file name Brand Studio makes');
     if (!['png', 'jpg', 'webp'].includes(extension) || !named.endsWith(`.${extension}`)) throw httpError(415, 'A named picture must be a PNG, JPEG or WebP whose name ends with its type');
   }
   const fileName = named ?? `upload-${Date.now()}-${randomUUID().slice(0, 8)}.${extension}`;
@@ -92,7 +95,7 @@ api.post('/uploads/logo', express.raw({ type: Object.keys(LOGO_TYPES), limit: MA
 
 // Removes a picture Brand Studio uploaded (only a name of that shape: never a seeded logo or an older upload).
 api.delete('/uploads/logo/:name', async (req, res) => {
-  if (!ASSET_NAME.test(req.params.name)) throw httpError(400, 'That is not a picture file name Brand Studio makes');
+  if (!isAssetName(req.params.name)) throw httpError(400, 'That is not a picture file name Brand Studio makes');
   try {
     await unlink(path.join(LOGO_DIR, req.params.name));
   } catch (error) {

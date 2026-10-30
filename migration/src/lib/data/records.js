@@ -3,9 +3,10 @@
 // makes (PMS-LST-010 to 012). Built only on the generic item calls of core.js; reads and writes those lists, and keeps nothing.
 
 import { ID, LISTS, VERSION, versionSelect } from '../schema/pms-schema.js';
+import { AOP_LIMITS, criteriaProblem, fteProblem, guestPictureProblem } from '../schema/aop-rules.js';
 import { indexById, pick, spLiteral } from './encoding.js';
 import {
-  baseUrl, createItem, deleteItem, fits, getItem, getItemWithVersion, getItems, listItems, onStop, queryItems, readLanUrls, sharePoint, spCreate,
+  baseUrl, createItem, deleteItem, fits, getItem, getItemWithVersion, getItems, listItems, onStop, queryItems, readLanUrls, sharePoint, spSite, spCreate,
   spFind, spHttp, spListPath, spMerge, updateItem, updateItemIfUnchanged,
 } from './core.js';
 
@@ -91,8 +92,14 @@ export async function updateAppSettings(changes) {
 const unscanned = (tokens) => tokens.filter((token) => !token.used);
 
 export const getVisitor = (id) => getItem('visitorroster', id);
-export const createVisitor = (fields) => createItem('visitorroster', fields);
-export const updateVisitor = (id, changes) => updateItem('visitorroster', id, changes);
+/** A guest's picture address, asked before it is written (Prompt 23: lib/schema/aop-rules.js). */
+const guestChecked = (fields) => {
+  const problem = guestPictureProblem(fields.pictureUrl, { origin: sharePoint ? new URL(spSite()).origin : null });
+  if (problem) throw failure('invalid-value', problem);
+  return fields;
+};
+export const createVisitor = async (fields) => createItem('visitorroster', guestChecked(fields));
+export const updateVisitor = async (id, changes) => updateItem('visitorroster', id, guestChecked(changes));
 export async function setVisitorEnabled(id, enabled) {
   const visitor = await getVisitor(id);
   if (!visitor) throw failure('visitor-missing', 'That visitor no longer exists.');
@@ -196,8 +203,17 @@ export const getQuestion = (id) => getItem('questions', id);
 /** A section's questions in order; every question if no sectionId is given. */
 export const listQuestions = (sectionId) =>
   sectionId === undefined ? listItems('questions') : listChildren('sections', sectionId, 'questionIds', 'questions');
-export const createQuestion = (fields) => createItem('questions', fields);
-export const updateQuestion = (id, changes) => updateItem('questions', id, changes);
+/** An Art of the Possible question, asked before it is written (Prompt 23): its criteria when the write has them, the number of its rows when it says them. A plain question's write is as it was. */
+function questionChecked(fields) {
+  const problem = fields.criteria !== undefined && fields.criteria !== null ? criteriaProblem(fields.criteria) : '';
+  if (problem) throw failure('invalid-value', problem);
+  const rows = fields.type === 'art-of-the-possible' ? fields.optionIds?.length ?? 0 : 0;
+  if (rows > 0 && rows < AOP_LIMITS.minRows) throw failure('invalid-value', `Add at least ${AOP_LIMITS.minRows} sub-processes.`);
+  if (rows > AOP_LIMITS.maxRows) throw failure('invalid-value', `An activity can have at most ${AOP_LIMITS.maxRows} sub-processes.`);
+  return fields;
+}
+export const createQuestion = async (fields) => createItem('questions', questionChecked(fields));
+export const updateQuestion = async (id, changes) => updateItem('questions', id, questionChecked(changes));
 export const deleteQuestion = (id) => deleteItem('questions', id);
 
 // ---- Options ----------------------------------------------------------------
@@ -207,6 +223,13 @@ export const getOption = (id) => getItem('options', id);
 export const listOptions = (questionId) =>
   questionId === undefined ? listItems('options') : listChildren('questions', questionId, 'optionIds', 'options');
 export const createOption = (fields) => createItem('options', fields);
+/** The fields of an Art of the Possible row (Prompt 23), refused here as on the screen: its name, and its people as a number in `OptionValue` (blank is 0). */
+export function matrixRowFields({ label, people }) {
+  const name = typeof label === 'string' ? label.trim() : '';
+  const problem = !name ? 'A sub-process needs a name.' : name.length > AOP_LIMITS.maxRowName ? `A sub-process's name can be ${AOP_LIMITS.maxRowName} characters at most.` : fteProblem(people);
+  if (problem) throw failure('invalid-value', problem);
+  return { label: name, value: Number(people) || 0, correct: null };
+}
 export const updateOption = (id, changes) => updateItem('options', id, changes);
 export const deleteOption = (id) => deleteItem('options', id);
 

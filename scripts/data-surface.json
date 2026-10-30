@@ -93,7 +93,7 @@
   },
   {
     "name": "createQuestion",
-    "kind": "function",
+    "kind": "async function",
     "arity": 1
   },
   {
@@ -108,7 +108,7 @@
   },
   {
     "name": "createVisitor",
-    "kind": "function",
+    "kind": "async function",
     "arity": 1
   },
   {
@@ -327,6 +327,11 @@
     "arity": 0
   },
   {
+    "name": "matrixRowFields",
+    "kind": "function",
+    "arity": 1
+  },
+  {
     "name": "mergeAnswerRecords",
     "kind": "function",
     "arity": 2
@@ -462,6 +467,11 @@
     "arity": 1
   },
   {
+    "name": "removeGuestPicture",
+    "kind": "async function",
+    "arity": 2
+  },
+  {
     "name": "reopenSession",
     "kind": "async function",
     "arity": 1
@@ -593,7 +603,7 @@
   },
   {
     "name": "updateQuestion",
-    "kind": "function",
+    "kind": "async function",
     "arity": 2
   },
   {
@@ -608,12 +618,17 @@
   },
   {
     "name": "updateVisitor",
-    "kind": "function",
+    "kind": "async function",
     "arity": 2
   },
   {
     "name": "uploadClientAsset",
     "kind": "async function",
     "arity": 2
+  },
+  {
+    "name": "uploadGuestPicture",
+    "kind": "async function",
+    "arity": 3
   }
 ]
