@@ -24,14 +24,15 @@
  *   filter: { type: 'bandpass' | 'lowpass', freq: number, q: number },
  * }} Note
  * @typedef {{ label: string, max: number, gain: number, notes: Note[] }} CueSpec
- * @typedef {'soundOn' | 'pick' | 'correctFirst' | 'correctRetry' | 'incorrect' | 'revealed' | 'activityComplete' | 'finale'} CueName
+ * @typedef {'soundOn' | 'pick' | 'correctFirst' | 'correctRetry' | 'incorrect' | 'revealed' | 'activityComplete' | 'finale' | 'stamp' | 'unlock' | 'locked' | 'allDone'} CueName
  */
 
 // Equal temperament, A4 = 440 Hz.
 const HZ = {
+  F3: 174.61, G3: 196.0,
   C4: 261.63, E4: 329.63, G4: 392.0, A4: 440.0,
   C5: 523.25, D5: 587.33, E5: 659.25, G5: 783.99, B5: 987.77,
-  C6: 1046.5, G6: 1567.98,
+  C6: 1046.5, E6: 1318.51, G6: 1567.98,
 };
 
 /** @param {number} freq @param {number} at @param {number} release @param {Partial<Extract<Note, { kind: 'tone' }>>} [more] @returns {Note} */
@@ -113,6 +114,53 @@ export const CUES = {
       triangle(HZ.E5, 0.432, 1.12, { attack: 0.02, hold: 0.5, lowpass: 4200, level: 0.12 }),
       triangle(HZ.G5, 0.444, 1.12, { attack: 0.02, hold: 0.5, lowpass: 4200, level: 0.12 }),
       sine(HZ.C6, 0.456, 1.12, { attack: 0.02, hold: 0.5, level: 0.1 }),
+    ],
+  },
+
+  // The hub (Prompt 24), all in C major so the phrase joins up: finishing an activity (C, E, G), then stamp, then unlock (G, C), which resolves it.
+  // The noise ticks have the 40 ms release every note has here (an envelope falling 80 dB), so they are heard as the brief's 6 to 8 ms click.
+
+  // An activity is stamped done: a soft low thud (G3) and a tick. (G3 alone cannot reach the others' loudness under the peak limit, since the ear and the
+  // A-weighting barely hear it, so it carries a quiet octave. The same for `locked`.)
+  stamp: {
+    label: 'Activity stamped done', max: 0.25, gain: 1.0,
+    notes: [
+      { kind: 'noise', at: 0, attack: 0.002, hold: 0, release: 0.04, level: 0.2, filter: { type: 'lowpass', freq: 1800, q: 0.707 } },
+      sine(HZ.G3, 0, 0.12, { attack: 0.008, hold: 0.03, lowpass: 900, level: 0.36 }),
+      sine(HZ.G3 * 2, 0, 0.12, { attack: 0.008, hold: 0.03, lowpass: 900, level: 0.2 }),
+    ],
+  },
+
+  // The next activity opens: a key click, a short G5, then C6 with an E6 shimmer at a quarter of its level, ringing.
+  unlock: {
+    label: 'Activity unlocked', max: 0.6, gain: 1.26,
+    notes: [
+      { kind: 'noise', at: 0, attack: 0.002, hold: 0, release: 0.04, level: 0.25, filter: { type: 'bandpass', freq: 3000, q: 1.2 } },
+      triangle(HZ.G5, 0.02, 0.09, { lowpass: 4800, level: 0.28 }),
+      sine(HZ.C6, 0.1, 0.3, { level: 0.28 }),
+      sine(HZ.E6, 0.1, 0.3, { level: 0.07 }),
+    ],
+  },
+
+  // A tap on a locked activity: a dull knock, "not yet". Soft, short, under 700 Hz, never a buzz and never like `incorrect`.
+  locked: {
+    label: 'Activity still locked', max: 0.25, gain: 1.05,
+    notes: [
+      { kind: 'noise', at: 0, attack: 0.002, hold: 0, release: 0.05, level: 0.1, filter: { type: 'lowpass', freq: 700, q: 0.707 } },
+      sine(HZ.G3, 0, 0.06, { attack: 0.006, hold: 0.03, lowpass: 700, level: 0.3 }),
+      sine(HZ.G3 * 2, 0, 0.06, { attack: 0.006, hold: 0.03, lowpass: 700, level: 0.18 }),
+      sine(HZ.F3, 0.07, 0.12, { attack: 0.006, hold: 0.045, lowpass: 700, level: 0.3 }),
+      sine(HZ.F3 * 2, 0.07, 0.12, { attack: 0.006, hold: 0.045, lowpass: 700, level: 0.18 }),
+    ],
+  },
+
+  // Every activity done: a rising shimmer.
+  allDone: {
+    label: 'Every activity done', max: 0.8, gain: 1.07,
+    notes: [
+      sine(HZ.C6, 0, 0.5, { level: 0.2 }),
+      sine(HZ.E6, 0.07, 0.5, { level: 0.2 }),
+      sine(HZ.G6, 0.14, 0.5, { level: 0.2 }),
     ],
   },
 };

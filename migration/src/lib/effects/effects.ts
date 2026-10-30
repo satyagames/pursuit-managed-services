@@ -13,7 +13,7 @@
  * Next, Back, Home and "Click here to begin" make no sound.
  */
 import { CONFETTI_SIZES, type ConfettiSize } from './confetti-plan.js';
-import { celebrate, clearConfetti } from './confetti.js';
+import { celebrate, clearConfetti, sparks } from './confetti.js';
 import { EFFECTS, UNAVAILABLE_TITLE, answerEffect, readChoice, soundIsOn, writeChoice, type Effect } from './effect-plan.js';
 import { CUES, CUE_NAMES, type CueName } from './sound-cues.js';
 import * as engine from './sound-engine.js';
@@ -157,6 +157,35 @@ export function clearEffects(): void {
 /** Every activity is finished. */
 export function finale(): void {
   run(EFFECTS.finale);
+}
+
+// The hub's moment (Prompt 24). Sound behind the switch, sparks behind the motion level: `reduced` motion does not silence a cue, the Sound switch does.
+
+/** An activity is stamped done on the hub; `anchor` is its check badge. */
+export function hubStamp(anchor?: Element | null): void {
+  run(EFFECTS.stamp);
+  void sparks('stamp', anchor, motionLevel());
+}
+
+/** The journey line reaches the next activity: the existing soft tick. */
+export function hubJourney(): void {
+  run(EFFECTS.pick);
+}
+
+/** The next activity opens on the hub; `anchor` is its padlock. */
+export function hubUnlock(anchor?: Element | null): void {
+  run(EFFECTS.unlock);
+  void sparks('unlock', anchor, motionLevel());
+}
+
+/** A locked activity was tapped. */
+export function hubLocked(): void {
+  run(EFFECTS.locked);
+}
+
+/** Every activity is done on the hub; `anchor` is Finish, where the burst comes from. */
+export function hubAllDone(anchor?: Element | null): void {
+  run(EFFECTS.allDone, anchor);
 }
 
 // ---- Setup ------------------------------------------------------------------------------------------
