@@ -1425,7 +1425,7 @@ SharePoint Online or an iPad**: QA-TESTING.md items 211 to 215.
 - **The formulas live in `lib/results/confidence-shift.js` and nowhere else**; Results, the Live display, the leader report, the pack and the oracle
   read them:
   - Confidence shift (percent) = (mean After − mean Before) / `shiftDivisor(scaleMax)` × 100 over the guests who gave both; `shiftDivisor` is
-    `scaleMax` (ASSUMED until the manager decides; `scaleMax − 1` is the alternative, a one-line change).
+    `scaleMax`, the full scale (the manager's choice, 30 Oct 2026, QA item 278; not `scaleMax − 1`, the largest possible move).
   - Moved to confident = of the paired guests whose Before ≤ `notConfidentMax` (`floor(0.4 × scaleMax)`: 2 of 5, 1 of 3), the share whose After ≥
     `confidentMin` (`ceil(0.8 × scaleMax)`: 4 of 5, 3 of 3).
   - `scaleMax` is the check question's highest OptionValue; a Before-only guest counts in the Before totals, never in a shift.
@@ -1611,7 +1611,7 @@ Results is a leader's view as well (boards 9 and 12): `admin/LeaderDashboard.sve
    of first choices (polls with no correct answer, and the option a ranking puts first; options grouped by label, case and spaces aside) over its share in
    the baseline; **change** is now minus the quarter before, in points; the **pooled shift** is every paired guest's (After - Before) as a share of their
    session's scale (`confidence-shift.js`'s divisor); **moved to confident** adds the sessions' counts. **Low sample** is under `PMSAppSettings.MinSample`
-   (10 when empty, ASSUMED); a low figure is shown and marked, never hidden.
+   (10 when empty, ASSUMED); a low figure is shown and marked, never hidden (the manager's choice, QA item 278).
 2. **The baselines.** All-client average (the default: every summary the person may read, in the same days), the quarter before, the same quarter last
    year (each quarter in view moved back), one chosen client. Quarters come from `FiscalYearStartMonth` (June when empty, ASSUMED) through `periodOf`,
    `periodRange` and `periodsBetween`. A person who holds one client sees its index against itself, 100 (ASSUMED: the baseline is what they may read).
@@ -1704,8 +1704,8 @@ Results is a leader's view as well (boards 9 and 12): `admin/LeaderDashboard.sve
    session's. Two i buttons (Confidence shift, Moved to confident) head the column. Bars are `aria-hidden`; every figure is text. Each i button's words
    have an id of their own (`MetricInfo`, `$props.id()`).
 3. **The headline** adds "Guests moved N% up (or down) the scale (X to Y), and P% of those who started not confident ended confident." only when the
-   shift is measured; X and Y are the paired guests' means (`pairedMeansOf`), left out when the sessions in view use scales of different lengths
-   (ASSUMED: a mean is one scale's); "low sample" joins them when the shift tile is low. **Export report** adds `Shift %`, `Moved to confident %`,
+   shift is measured; X and Y are the paired guests' means (`pairedMeansByScale`); when the sessions in view use scales of different lengths, each
+   scale gives its own, "2.0 to 3.0 on the 5-point scale and 4.0 to 5.0 on the 7-point scale" (the manager's choice, QA item 278); "low sample" joins them when the shift tile is low. **Export report** adds `Shift %`, `Moved to confident %`,
    `Guests answered both` for the client and `Session shift %`, `Session moved to confident %`, `Session guests answered both`, whole numbers.
 4. **Region** filters like Industry (`filters.region`, `filterOptions().regions`), under More filters: Period, Compare with, Clients and Industry stay
    the four in view.

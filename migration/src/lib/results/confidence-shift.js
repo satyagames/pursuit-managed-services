@@ -18,8 +18,8 @@
 export const MIN_SAMPLE = 10;
 
 /**
- * What the shift is divided by: the top of the scale (decision 2), so 1 point on 5 is 20%. ASSUMED until the manager decides: dividing by
- * `scaleMax - 1`, the largest possible move, would let a full 1-to-5 move read 100%. Changing that is this one line.
+ * What the shift is divided by: the top of the scale (decision 2), so 1 point on 5 is 20% and a full 1-to-5 move reads 80%. The manager chose the
+ * full scale over `scaleMax - 1`, the largest possible move (30 Oct 2026, QA-TESTING.md item 278).
  * @param {number} scaleMax
  */
 export const shiftDivisor = (scaleMax) => scaleMax;

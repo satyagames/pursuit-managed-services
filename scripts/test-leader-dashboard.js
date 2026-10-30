@@ -298,6 +298,13 @@ describe('Part 6: the confidence shift by client and by session (Prompt 22, the 
     assert.match(view([down]).headline, / Guests moved 20% down the scale \(3\.0 to 2\.0\)\.$/, 'no guest started not confident: the second half is left out');
     assert.match(view([D1, D2], {}, 50).headline, /up the scale \(2\.3 to 3\.0, low sample\)/);
   });
+  it('the headline gives each scale its own "X to Y" when the sessions in view use scales of different lengths (the manager, item 278)', () => {
+    // d1 30 paired 2.0 to 3.0 on 5 (+20%); s7 10 paired 4.0 to 5.0 on 7 (+14.29%): (30 x 20 + 10 x 100 / 7) / 40 = 18.57, so 19%; moved 6 of 10.
+    const S7 = row('s7', 'dominos', '2026-10-09', { guests: 10, afterCount: 10, meanAfter: 5, pairedCount: 10, beforeCount: 10 }, { scaleMax: 7, pairedBefore: 4, pairedAfter: 5, moved: { started: 0, moved: 0 } });
+    assert.match(view([D1, S7]).headline, / Guests moved 19% up the scale \(2\.0 to 3\.0 on the 5-point scale and 4\.0 to 5\.0 on the 7-point scale\), and 60% of those who started not confident ended confident\.$/);
+    assert.match(view([D1, S7], {}, 50).headline, /\(2\.0 to 3\.0 on the 5-point scale and 4\.0 to 5\.0 on the 7-point scale, low sample\)/);
+    assert.match(view([D1, D2]).headline, /up the scale \(2\.3 to 3\.0\)/, 'one scale: no scale is named');
+  });
   it('the i words of the shift and moved to confident say they are not compared with the baseline', () => {
     for (const id of ['confidence-shift', 'moved']) assert.match(`${METRICS[id].formula} ${METRICS[id].meaning}`, /not compared with the baseline/i, id);
     assert.match(METRICS['confidence-shift'].meaning, /the change on the scale itself/);

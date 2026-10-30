@@ -219,7 +219,7 @@ The dashboard reads totals, never answers ([RULES.md](RULES.md) has the rules):
 4. **Export.** Export report is a CSV made in the page from the figures; each session's Export (in a client's row) is that session's leader report, read
    as Results always read it.
 5. **Delete session** removes the session's summary with its other data, before the session item.
-6. **The shift by client and by session** (Prompt 22) is worked out in the page from the same summaries (`shiftOf`, `movedOf`, `pairedMeansOf`): no
+6. **The shift by client and by session** (Prompt 22) is worked out in the page from the same summaries (`shiftOf`, `movedOf`, `pairedMeansByScale`): no
    request of its own.
 7. **Reporting settings** (Prompt 22, a Super admin's): opening it reads the settings item (`getAppSettings`); Save sends what changed with
    `updateAppSettings` (the item, then its merge) and one audit line (`addAccessRecord`). A new start month first reads the sessions and the summaries

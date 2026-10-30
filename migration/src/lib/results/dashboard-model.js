@@ -13,7 +13,7 @@
 import { csvCell } from '../exports/leader-report.js';
 import { periodOf } from '../admin/session-plan.js';
 import {
-  BASELINES, MIN_SAMPLE, baselineOf, change, clientIndex, firstChoiceShares, lowSample, meanAfterOf, movedOf, pairedMeansOf, periodRange, periodsBetween,
+  BASELINES, MIN_SAMPLE, baselineOf, change, clientIndex, firstChoiceShares, lowSample, meanAfterOf, movedOf, pairedMeansByScale, periodRange, periodsBetween,
   priorQuarter, priorityIndex, sessionIndex, shiftOf,
 } from './index-math.js';
 import { HIDE_NAMES_BY_DEFAULT } from './metric-words.js';
@@ -225,12 +225,15 @@ export function dashboardOf({ summaries, clients, filters, startMonth = 6, minSa
       confidence = away === 0 ? `Confidence matched ${against} (index ${whole(index)}${low})` : `Confidence ran ${Math.abs(away)}% ${away > 0 ? 'above' : 'below'} ${against} (index ${whole(index)}${low})`;
     }
     const top = byClient.length > 1 && byClient[0].index !== null ? `; ${byClient[0].name} was highest at ${whole(byClient[0].index)}` : '';
-    // (Prompt 22: the shift, when it is measured, from the tiles' shift and moved, and the paired means it moved between, when they are of one scale.)
+    // (Prompt 22: the shift, when it is measured, from the tiles' shift and moved, and the paired means it moved between; with scales of different
+    // lengths in view, each scale's own means, named by its length: the manager's answer to QA item 278.)
     let moving = '';
     if (shift.percent !== null) {
-      const means = pairedMeansOf(segment);
+      const scales = pairedMeansByScale(segment);
       const way = Math.round(shift.percent) > 0 ? 'up' : Math.round(shift.percent) < 0 ? 'down' : 'on';
-      const inside = [means.before === null || means.after === null ? '' : `${means.before.toFixed(1)} to ${means.after.toFixed(1)}`, tiles[4].low ? 'low sample' : ''].filter(Boolean).join(', ');
+      const fromTo = (each) => `${each.before.toFixed(1)} to ${each.after.toFixed(1)}${scales.length > 1 ? ` on the ${each.scaleMax}-point scale` : ''}`;
+      const means = scales.length > 1 ? `${scales.slice(0, -1).map(fromTo).join(', ')} and ${fromTo(scales[scales.length - 1])}` : scales.map(fromTo).join('');
+      const inside = [means, tiles[4].low ? 'low sample' : ''].filter(Boolean).join(', ');
       const ended = moved.percent === null ? '' : `, and ${whole(moved.percent)}% of those who started not confident ended confident`;
       moving = ` Guests moved ${Math.abs(Math.round(shift.percent))}% ${way} the scale${inside ? ` (${inside})` : ''}${ended}.`;
     }

@@ -1700,9 +1700,9 @@ WebKit, and on the local site (docs/history/RELEASE-22.md), not on the real site
 277. **The fiscal start month, on a test copy.** *(Still to see.)* Change it to July: read the question (what follows at once, and how many sessions
     and summaries keep June's quarters); after saving, **Move stored quarters** and its second question; **expect** the quarter names on the dashboard,
     the trend and a client's sessions (Period on its page) to follow July. Set it back to June the same way.
-278. **For the manager.** *(Open.)* Should the shift divide by the full scale (5 points: 1 to 5 is +80%) or by the largest possible move (4: 1 to 5 is
-    +100%)? Should a Low sample shift show its number with the tag (as now) or be hidden? Is the headline's "(X to Y)" wanted when sessions in view use
-    scales of different lengths (it is left out then)?
+278. **For the manager.** *(Answered 30 Oct 2026.)* The shift divides by the full scale (5 points: 1 to 5 is +80%), not the largest possible move;
+    a Low sample shift shows its number with the tag; the headline's "(X to Y)" is shown when sessions in view use scales of different lengths, one
+    for each scale. **Expect**, with a 5-point and a 7-point check in view, "(2.0 to 3.0 on the 5-point scale and 4.0 to 5.0 on the 7-point scale)".
 
 ### Prompt 20 (the confidence check, Before and After): not verified on SharePoint Online or an iPad
 
@@ -1725,8 +1725,8 @@ move to version 4**: two columns, which Setup adds. Use a test copy of the site 
     the thumb, the text readable at arm's length, the picked card dark with a tick, and a keyboard (if one is attached) moving between cards with
     the arrows.
 215. **Words and thresholds.** *(Still to see.)* Ask the content owner to confirm the five labels and the 2 / 4 thresholds, and the manager whether
-    the shift divides by the full scale (5) or by the largest possible move (4): `shiftDivisor` in `lib/results/confidence-shift.js`. *(Record the
-    answers here.)* Then push the branch `pms-20`.
+    the shift divides by the full scale (5) or by the largest possible move (4): `shiftDivisor` in `lib/results/confidence-shift.js`. *(The
+    manager: the full scale, 30 Oct 2026, item 278. The labels and thresholds are still to confirm.)* Then push the branch `pms-20`.
 
 ### Phase 8 (browsers, devices, accessibility, performance, the unsupported-browser page): not verified on a real device, a real screen reader, or the real SharePoint site
 

@@ -153,7 +153,7 @@ seven sizes.
 - Prompt 22: `scripts/test-leader-dashboard.js` part 6 (each client's and session's shift and moved to confident, worked by hand: a client of two
   sessions of different sizes pooled by paired guests, not a plain mean; no paired guest is "Not measured"; Before only adds nothing; low sample at
   n below the minimum; the words; the headline only when measured; the CSV's six columns) and part 3's Region filter; `scripts/test-index-math.js`
-  (`pairedMeansOf`, and the oracle's recount of every client's and session's shift and moved in whole numbers, with two plain-mean mutants it must
+  (`pairedMeansByScale` and `pairedMeansOf`, and the oracle's recount of every client's and session's shift and moved in whole numbers, with two plain-mean mutants it must
   catch); `node --test scripts/test-reporting-settings.js` (part of `npm test`: `settings.manage`, the guarded columns on the local server and on
   SharePoint, the value rules, the saves and their audit lines, a refused role sends nothing, which stored quarters a new start month leaves behind
   and the words of the confirmation, moving them). In the browser: `leader-dashboard.spec.ts` (the shift beside each bar, in each row and session, the

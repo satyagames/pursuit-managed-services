@@ -124,8 +124,9 @@ moment; a "Template" sample client; a button in Setup that sets the access lists
 ## Everything still open for the real site
 
 1. QA-TESTING.md items 274 to 278 (no upgrade), after 216 to 273.
-2. For the manager (item 278): the shift's divisor (the full scale, 5, or the largest move, 4); whether a Low sample shift shows its number or is
-   hidden; the headline's "(X to Y)" when sessions in view use scales of different lengths (left out now).
+2. The manager answered item 278 (30 Oct 2026): the shift divides by the full scale (5), as built; a Low sample shift shows its number, as built;
+   the headline's "(X to Y)" is shown with scales of different lengths, one for each scale (`pairedMeansByScale`; built after this note's gates,
+   with its tests first: `test-index-math` and `test-leader-dashboard`).
 3. Then push `pms-21-1` to `pms-21-7` and `pms-22` in order.
 
 ## Lessons

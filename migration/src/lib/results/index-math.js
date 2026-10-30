@@ -134,24 +134,34 @@ export function shiftOf(summaries) {
 }
 
 /**
- * The paired guests' mean Before and mean After over the sessions, each session weighed by its paired guests (Prompt 22: the headline's "2.3 to 3.0").
- * ASSUMED: a mean is only one mean on one scale, so sessions of two scales give no means (null), while `n` still counts every paired guest.
- * @param {Summary[]} summaries @returns {{ before: number | null, after: number | null, n: number, scaleMax: number | null }}
+ * The paired guests' mean Before and mean After over the sessions, one pair of means for each length of scale, shortest first, each session weighed by
+ * its paired guests (Prompt 22: the headline's "2.3 to 3.0"; the manager, QA item 278: sessions of two scales give each scale its own).
+ * @param {Summary[]} summaries @returns {{ scaleMax: number, before: number, after: number, n: number }[]}
  */
-export function pairedMeansOf(summaries) {
-  let before = 0; let after = 0; let n = 0;
-  const scales = new Set();
+export function pairedMeansByScale(summaries) {
+  const byScale = new Map();
   for (const each of summaries) {
     const paired = Number(each.pairedCount) || 0;
     const { scaleMax, pairedBefore, pairedAfter } = each.summary ?? {};
     if (paired <= 0 || !finite(scaleMax) || scaleMax <= 0 || !finite(pairedBefore) || !finite(pairedAfter)) continue;
-    before += paired * pairedBefore;
-    after += paired * pairedAfter;
-    n += paired;
-    scales.add(scaleMax);
+    const sums = byScale.get(scaleMax) ?? { before: 0, after: 0, n: 0 };
+    sums.before += paired * pairedBefore;
+    sums.after += paired * pairedAfter;
+    sums.n += paired;
+    byScale.set(scaleMax, sums);
   }
-  if (!n || scales.size !== 1) return { before: null, after: null, n, scaleMax: null };
-  return { before: before / n, after: after / n, n, scaleMax: [...scales][0] };
+  return [...byScale].sort((left, right) => left[0] - right[0]).map(([scaleMax, sums]) => ({ scaleMax, before: sums.before / sums.n, after: sums.after / sums.n, n: sums.n }));
+}
+
+/**
+ * The paired means over sessions of one scale (pairedMeansByScale); sessions of two scales give no single mean (null), while `n` still counts every
+ * paired guest. @param {Summary[]} summaries @returns {{ before: number | null, after: number | null, n: number, scaleMax: number | null }}
+ */
+export function pairedMeansOf(summaries) {
+  const scales = pairedMeansByScale(summaries);
+  const n = scales.reduce((total, each) => total + each.n, 0);
+  if (scales.length !== 1) return { before: null, after: null, n, scaleMax: null };
+  return scales[0];
 }
 
 /** Moved to confident over the sessions: of every paired guest who started not confident, the share who ended confident. @param {Summary[]} summaries */

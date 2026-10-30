@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   BASELINES, MIN_SAMPLE, baselineOf, change, clientIndex, firstChoiceShares, indexOf, lowSample, meanAfterOf, movedOf, periodRange, priorQuarter,
-  pairedMeansOf, priorityIndex, sameQuarterLastYear, sessionIndex, shiftOf,
+  pairedMeansByScale, pairedMeansOf, priorityIndex, sameQuarterLastYear, sessionIndex, shiftOf,
 } from '../migration/src/lib/results/index-math.js';
 
 /** A session's summary as PMSSessionSummary keeps it (only what the arithmetic reads). */
@@ -104,6 +104,17 @@ describe('change, low sample and the pooled shift', () => {
     const four = summary('4', 'c', 'FY27-Q2', 6, 3, { pairedCount: 6, summary: { scaleMax: 4, pairedBefore: 2, pairedAfter: 3 } });
     assert.deepEqual(pairedMeansOf([one, four]), { before: null, after: null, n: 36, scaleMax: null }, 'means of two scales are not one mean');
     assert.deepEqual(pairedMeansOf([beforeOnly]), { before: null, after: null, n: 0, scaleMax: null });
+  });
+  it('the paired means scale by scale, shortest scale first, each weighed by its own paired guests (the manager, item 278)', () => {
+    const one = summary('1', 'c', 'FY27-Q2', 30, 3, { pairedCount: 30, summary: { scaleMax: 5, pairedBefore: 2, pairedAfter: 3 } });
+    const two = summary('2', 'c', 'FY27-Q2', 10, 3, { pairedCount: 10, summary: { scaleMax: 5, pairedBefore: 3, pairedAfter: 3 } });
+    const four = summary('4', 'c', 'FY27-Q2', 6, 3, { pairedCount: 6, summary: { scaleMax: 4, pairedBefore: 2, pairedAfter: 3 } });
+    const beforeOnly = summary('3', 'c', 'FY27-Q2', 0, null, { beforeCount: 8, summary: { scaleMax: 7, pairedBefore: null, pairedAfter: null } });
+    assert.deepEqual(pairedMeansByScale([one, four, two, beforeOnly]), [
+      { scaleMax: 4, before: 2, after: 3, n: 6 },
+      { scaleMax: 5, before: 2.25, after: 3, n: 40 },
+    ]);
+    assert.deepEqual(pairedMeansByScale([beforeOnly]), []);
   });
 });
 
