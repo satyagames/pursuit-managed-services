@@ -1714,6 +1714,15 @@ WebKit, and on the local site (docs/history/RELEASE-22.md), not on the real site
 285. **The dashboard.** *(Still to see.)* Rebuild summaries and open it as Leadership: **expect** the new section, and a client with two sessions to count its people once.
 286. **For the manager.** *(Still to ask.)* The six open questions in docs/history/RELEASE-23.md, and whether a guest who changes a sent rating should move the numbers (today it does not).
 
+### Prompt 24 (the Activities hub): not checked on a real iPad, projector or the real site
+
+287. **The moment.** *(Still to see.)* On an iPad, finish an activity and return to the hub: the check, the open padlock, the colour change and the sparks play once, and feel smooth. Reload the page: nothing replays. The frames were only measured in Chromium at 4x slower CPU.
+288. **The locked tap, sound and motion.** *(Still to see.)* Tap a locked pill: a shake, a soft knock, no red. Turn Sound off: silence, motion stays. Turn on Reduce motion in the iPad's settings: **expect** the new state at once, with no fade and no sparks, and the sound still there. (The brief's check said a plain fade; the existing rule makes the device's setting no motion at all. The fade is what a device the governor has stepped down shows.)
+289. **Colours.** *(Still to see.)* Open Brand Studio for Kroger and one other client: all four states are readable on both. Look at Ready beside Locked: on a blue client the locked pill is the brighter of the two (question 4 of docs/history/RELEASE-24.md).
+290. **All done.** *(Still to see.)* Finish every activity: the green wave, Finish rises, one burst. The finale on the next screen is as before. The last activity's result screen offers Finish and Back to activities: the wave plays on Back to activities; Finish goes straight to the finale, as it did.
+291. **The sounds, by ear.** *(Still to see.)* Play the four new sounds beside the existing ones at the volume of a meeting room: none louder than the finale, none harsh, the thud still a thud. The numbers only say how loud they are.
+292. **For the manager.** *(Still to ask.)* The four questions in docs/history/RELEASE-24.md.
+
 ### Prompt 20 (the confidence check, Before and After): not verified on SharePoint Online or an iPad
 
 Every guest answers one confidence question before the first activity and after the last; Results show how far confidence moved. Proven on the

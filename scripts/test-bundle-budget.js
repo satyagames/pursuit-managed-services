@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
 import { PAGES, ROOT, analyzePage } from './analyze-bundle.js';
-import { BUDGET, FORBIDDEN, PHASE_8, PHASE_9A, PHASE_9B, PHASE_10B, PHASE_10C1, PHASE_10C2A, PHASE_10C2B, PHASE_10C3, PHASE_10F, PHASE_10G, PHASE_10H, PHASE_10I, PHASE_10J, PHASE_11A, PHASE_11A3, PHASE_11B, PHASE_12, PHASE_13, PHASE_14, PHASE_15, PHASE_16, PHASE_17, PHASE_18, PHASE_19, PHASE_20, PHASE_21A, PHASE_21B, PHASE_21C, PHASE_21D, PHASE_21E, PHASE_21F, PHASE_21G, PHASE_22, PHASE_23, checkBudgets, utilityClasses } from './bundle-budget.js';
+import { BUDGET, FORBIDDEN, PHASE_8, PHASE_9A, PHASE_9B, PHASE_10B, PHASE_10C1, PHASE_10C2A, PHASE_10C2B, PHASE_10C3, PHASE_10F, PHASE_10G, PHASE_10H, PHASE_10I, PHASE_10J, PHASE_11A, PHASE_11A3, PHASE_11B, PHASE_12, PHASE_13, PHASE_14, PHASE_15, PHASE_16, PHASE_17, PHASE_18, PHASE_19, PHASE_20, PHASE_21A, PHASE_21B, PHASE_21C, PHASE_21D, PHASE_21E, PHASE_21F, PHASE_21G, PHASE_22, PHASE_23, PHASE_24, checkBudgets, utilityClasses } from './bundle-budget.js';
 import { SAMPLE_PICTURE_NAMES } from '../migration/src/lib/setup/sample-pictures.js';
 import { pageProblems } from './release-proofs.js';
 
@@ -403,24 +403,33 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
     // (This test compared the build in the tree with those figures until Prompt 23: the newest phase's test below holds the build now.)
   });
 
-  it('Prompt 23 (Art of the Possible, and a guest\'s picture) grew the participant page within its allowance, by the grid, the answer module and the avatar, carried none of the admin\'s or the Results\' parts of it, and grew the admin page within its allowance', (t) => {
+  it("Prompt 23 (Art of the Possible, and a guest's picture) grew the participant page within its allowance, by the grid, the answer module and the avatar, and grew the admin page within its allowance, as measured when it ended", () => {
     assert.equal(PHASE_23.participantBefore, PHASE_22.participantAfter, 'Prompt 23 is measured from where Prompt 22 ended');
     assert.equal(PHASE_23.adminBefore, PHASE_22.adminAfter);
-    const participant = built.participant.htmlGzip - PHASE_23.participantBefore;
-    const admin = built.admin.htmlGzip - PHASE_23.adminBefore;
-    t.diagnostic(`participant ${participant >= 0 ? '+' : ''}${participant} B, admin ${admin >= 0 ? '+' : ''}${admin} B against where Prompt 22 ended`);
-    console.log(`  Prompt 23: the participant page is ${participant >= 0 ? '+' : ''}${participant} B gzip against where Prompt 22 ended (allowance ${PHASE_23.participantAllowance} B), now ${bytes(built.participant.htmlGzip)}; the admin page ${admin >= 0 ? '+' : ''}${admin} B (allowance ${PHASE_23.adminAllowance} B), now ${bytes(built.admin.htmlGzip)} of its ${bytes(BUDGET.admin)} budget`);
     assert.equal(PHASE_23.participantAllowance, 12_000, 'the allowance the brief gave');
-    assert.ok(participant <= PHASE_23.participantAllowance, `the participant page is ${participant} B larger than where Prompt 22 left it`);
+    assert.ok(PHASE_23.participantAfter - PHASE_23.participantBefore <= PHASE_23.participantAllowance, 'the participant page, as measured when Prompt 23 ended');
+    assert.ok(PHASE_23.adminAfter - PHASE_23.adminBefore <= PHASE_23.adminAllowance, 'the admin page, as measured when Prompt 23 ended');
+    // (This test compared the build in the tree with those figures until Prompt 24: the newest phase's test below holds the build now.)
+  });
+
+  it("Prompt 24 (the Activities hub: four states, the moment, sound and particles) grew the participant page within its allowance and its ceiling, and carried nothing of the admin's", (t) => {
+    assert.equal(PHASE_24.participantBefore, PHASE_23.participantAfter, 'Prompt 24 is measured from where Prompt 23 ended');
+    assert.equal(PHASE_24.adminBefore, PHASE_23.adminAfter);
+    const participant = built.participant.htmlGzip - PHASE_24.participantBefore;
+    const admin = built.admin.htmlGzip - PHASE_24.adminBefore;
+    t.diagnostic(`participant ${participant >= 0 ? '+' : ''}${participant} B, admin ${admin >= 0 ? '+' : ''}${admin} B against where Prompt 23 ended`);
+    console.log(`  Prompt 24: the participant page is ${participant >= 0 ? '+' : ''}${participant} B gzip against where Prompt 23 ended (allowance ${PHASE_24.participantAllowance} B), now ${bytes(built.participant.htmlGzip)}; the admin page ${admin >= 0 ? '+' : ''}${admin} B (allowance ${PHASE_24.adminAllowance} B), now ${bytes(built.admin.htmlGzip)} of its ${bytes(BUDGET.admin)} budget`);
+    assert.equal(PHASE_24.participantAllowance, 6_000, 'the allowance the brief gave');
+    assert.ok(participant <= PHASE_24.participantAllowance, `the participant page is ${participant} B larger than where Prompt 23 left it`);
     assert.ok(built.participant.htmlGzip <= BUDGET.participantCeiling, 'and under its ceiling, which is not raised');
     assert.equal(BUDGET.participantCeiling, 450_000, 'the ceiling is not raised');
     assert.equal(BUDGET.admin, 700_000, 'the admin budget is not raised');
-    assert.deepEqual(utilityClasses(built.participant.html), [...PHASE_23.participantUtilities], "the participant page's Tailwind rules are the ones it had");
+    assert.deepEqual(utilityClasses(built.participant.html), [...PHASE_24.participantUtilities], "the participant page's Tailwind rules are the ones it had");
     assert.ok(!/aop-math|whereToStart|criterionProfile|poolAop|MatrixChart|aop-editor|parsePastedRows|defaultCriteria|DEFAULT_CRITERIA|Take photo|Only add a picture|Paste from a spreadsheet/.test(built.participant.html), 'the participant page carries none of the numbers, the editor or the picture dialog');
-    assert.ok(admin <= PHASE_23.adminAllowance, `the admin page is ${admin} B larger than where Prompt 22 left it`);
+    assert.ok(admin <= PHASE_24.adminAllowance, `the admin page is ${admin} B larger than where Prompt 23 left it`);
     assert.ok(built.admin.htmlGzip < BUDGET.admin, `the admin page is under its ${bytes(BUDGET.admin)} budget`);
-    assert.ok(PHASE_23.participantAfter - PHASE_23.participantBefore <= PHASE_23.participantAllowance, 'the participant page, as measured when Prompt 23 ended');
-    assert.ok(PHASE_23.adminAfter - PHASE_23.adminBefore <= PHASE_23.adminAllowance, 'the admin page, as measured when Prompt 23 ended');
+    assert.ok(PHASE_24.participantAfter - PHASE_24.participantBefore <= PHASE_24.participantAllowance, 'the participant page, as measured when Prompt 24 ended');
+    assert.ok(PHASE_24.adminAfter - PHASE_24.adminBefore <= PHASE_24.adminAllowance, 'the admin page, as measured when Prompt 24 ended');
   });
 
   it('the Tailwind rules check can fail: a rule added to the participant page, or one taken away, is found', () => {

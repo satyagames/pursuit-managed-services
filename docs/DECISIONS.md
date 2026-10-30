@@ -87,6 +87,17 @@ One line each: the decision, why, and what enforces it (a test fails if it is br
 | A copy's rows are flagged in its `Layout` until saved, since no column was allowed. | `scripts/test-aop-editor.js` |
 | The word on screen is "people in scope" (open question 4); the share comes before the index (5); ratings are blue and the band alone is red, amber and green (6). | `scripts/test-aop-results.js` |
 
+## The Activities hub (Prompt 24)
+
+| Decision | Enforced by |
+|---|---|
+| The four states are visual only: the lock rule is as it was. | The property check in `scripts/test-pager.js`, over 2,000 random sessions |
+| Sound is synthesised, in `lib/effects/sound-cues.js`; no audio file. | `scripts/test-effects.js`, `scripts/migration-tests/effects-audio.spec.ts` |
+| No new colour token: the states use `--action`, `--success`, `--progress` and the surface tokens. | `scripts/test-hub-look.js` |
+| The moment is a pure plan, and nothing waits for it; no timer outlives the hub. | `scripts/test-hub-moment.js`, `scripts/migration-tests/hub-states.spec.ts` |
+| The sparks are few: 24 live at most, none below the full motion level. | `scripts/test-confetti-plan.js` |
+| The participant page grows at most 6,000 B gzip. | `PHASE_24` in `scripts/bundle-budget.js` |
+
 ## The participant page
 
 | Decision | Why | Enforced by |

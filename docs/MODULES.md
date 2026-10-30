@@ -73,7 +73,7 @@ flowchart LR
 | `migration/src/lib/effects/` | Sounds and confetti, behind one door (`effects.ts`): which moment makes which effect, the cues as data, Web Audio, canvas-confetti. | 6 |
 | `migration/src/lib/exports/` | The files a leader gets: the leader report (data, counting, layout, PDF writer, fonts) and the Live display's summary pack (PDF, PowerPoint) and summary CSV. | 7 |
 | `migration/src/lib/motion/` | The participant screens' motion, behind one door (`motion.ts`): the plan by kind of question and part of a screen, the tokens and shapes (CSS), the level and the governor. | 2 |
-| `migration/src/lib/participant/` | The participant page: the boot sequence, the visit, the activities held for the page's life, the pager's rules, saving answers, screen moves. | 15 |
+| `migration/src/lib/participant/` | The participant page: the boot sequence, the visit, the activities held for the page's life, the pager's rules, saving answers, screen moves. | 16 |
 | `migration/src/lib/results/` | Results counted and shown: the tally, the chart model (every number a chart shows), the palette, the figure on paper, names, the takeaways, where a tooltip goes. | 17 |
 | `migration/src/lib/schema/` | The lists and columns: `pms-schema.js`, the names every page carries, and `pms-schema-meta.js`, everything else about them (Setup, the tests and the generators only). | 3 |
 | `migration/src/lib/settings/` | How a page starts: the browser check, where its settings come from (`pms-config.txt`, the build, its address), which site and lists are its own, and the stop screen. | 8 |
@@ -82,9 +82,9 @@ flowchart LR
 | `migration/src/routes/` | The participant page's screens: Welcome, the Activities hub, the quiz route, the finale, "not live", the preview, and the old addresses that redirect. | 10 |
 | `migration/src/setup/` | Setup's pieces (Svelte): the copy panel, where the lists are, the plan view, and the sample pictures as data. | 5 |
 | `migration/src/unsupported/` | The "needs a recent browser" notice: a page and an ES5 check, put into each HTML shell at build time. | 1 |
-| `scripts/` | Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager. | 149 |
+| `scripts/` | Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager. | 152 |
 | `scripts/local-site/` | The local PCOE stand-in (`npm run local:site`), its scenarios and VJR's dummy dataset, the screenshot harness and the measurements. | 11 |
-| `scripts/migration-tests/` | The Playwright specs of `npm run test:migration`, and their harnesses (`admin-local.ts`, `polling-support.ts`, `fixtures.ts`). | 80 |
+| `scripts/migration-tests/` | The Playwright specs of `npm run test:migration`, and their harnesses (`admin-local.ts`, `polling-support.ts`, `fixtures.ts`). | 81 |
 | `scripts/rehearsal-tests/` | The rehearsal of RUNBOOK.md on the mock with a package's own pages (`npm run test:rehearsal`). | 1 |
 | `scripts/schema-baseline/` | The schema as it was before Phase 10c-2b, and the scripts that translated the request baselines (each baseline names the one that touched it). | 11 |
 | `scripts/styleguide-tests/` | The styleguide's audit (`npm run test:styleguide`). | 1 |
@@ -161,7 +161,7 @@ A client's look: deriving a readable theme from a colour, the stored theme, Bran
 
 - **Imports from:** `lib/common`, `lib/data`, `lib/participant`
 - **Imported by:** `lib/admin`, `lib/data`, `lib/exports`, `lib/participant`, `lib/setup`, `src/admin`, `src/components`, `src/dev`
-- **Node suites that import it:** `test-admin-today.js`, `test-brand-storage.js`, `test-brand.js`, `test-guest-picture.js`, `test-live-view.js`, `test-motion-switch.js`, `test-results-palette.js`, `test-review-9b.js`, `test-sample-pictures.js`, `test-seeds.js`, `test-sharepoint.js`, `test-theme.js`
+- **Node suites that import it:** `test-admin-today.js`, `test-brand-storage.js`, `test-brand.js`, `test-guest-picture.js`, `test-hub-look.js`, `test-live-view.js`, `test-motion-switch.js`, `test-results-palette.js`, `test-review-9b.js`, `test-sample-pictures.js`, `test-seeds.js`, `test-sharepoint.js`, `test-theme.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
@@ -245,14 +245,14 @@ Sounds and confetti, behind one door (`effects.ts`): which moment makes which ef
 
 - **Imports from:** `lib/motion`
 - **Imported by:** `src`, `src/components`, `src/dev`, `src/pager`, `src/routes`
-- **Node suites that import it:** `test-effects.js`
+- **Node suites that import it:** `test-confetti-plan.js`, `test-effects.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
-| `confetti-plan.js` | How much confetti, where from, in which colours. | `DELOITTE_GREEN`, `NARROW_WIDTH`, `NARROW_SCALE`, `parseColor`, `toHex`, `toHsl`, `isRedish`, `tint`, `buildPalette`, `defaultOrigin`, `originFromRect`, `confettiPlan`, `planDuration`, `CONFETTI_SIZES` |
-| `confetti.ts` | The confetti overlay. | `clearConfetti`, `celebrate` |
+| `confetti-plan.js` | How much confetti, where from, in which colours. | 17 exports |
+| `confetti.ts` | The confetti overlay. | `clearConfetti`, `celebrate`, `sparks` |
 | `effect-plan.js` | What each moment in the participant flow should do, and how the sound choice is remembered. | `EFFECTS`, `answerEffect`, `SOUND_KEY`, `readChoice`, `writeChoice`, `soundIsOn`, `UNAVAILABLE_TITLE` |
-| `effects.ts` | The one door to sound and confetti. | 16 exports |
+| `effects.ts` | The one door to sound and confetti. | 21 exports |
 | `sound-cues.js` | The participant sounds, as DATA. | `CUES`, `CUE_NAMES`, `noteEnd`, `cueEnd`, `toneSignature`, `MAX_VOICES`, `RETRIGGER_MS`, `createVoiceGate` |
 | `sound-engine.ts` | Web Audio for the participant cues. | `audioSupported`, `scheduleCue`, `renderCueOffline`, `unlock`, `resumeIfNeeded`, `playCue`, `stopAll`, `setPlaybackSession` |
 
@@ -280,12 +280,12 @@ The participant screens' motion, behind one door (`motion.ts`): the plan by kind
 
 - **Imports from:** nothing of the app
 - **Imported by:** `lib/effects`, `lib/participant`, `src/admin`, `src/components`, `src/pager`, `src/routes`
-- **Node suites that import it:** `test-motion-engine.js`, `test-motion-plan.js`
+- **Node suites that import it:** `test-hub-moment.js`, `test-motion-engine.js`, `test-motion-plan.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
 | `motion-plan.js` | The motion plan of the participant screens (Phase 15): which shape each thing on a screen moves with, for how long, after how much delay and over what distance, as a TABLE keyed by the moment, the kind of question and the part of the screen, never as numbers in a component. | 27 exports |
-| `motion.ts` | The one door to motion on the participant screens (Phase 15). | `motionLevel`, `setMotionEnabled`, `setMotionDirection`, `motion`, `movingCount` |
+| `motion.ts` | The one door to motion on the participant screens (Phase 15). | `motionLevel`, `setMotionEnabled`, `setMotionDirection`, `watchMoment`, `motion`, `movingCount` |
 
 ## `lib/participant/`
 
@@ -293,7 +293,7 @@ The participant page: the boot sequence, the visit, the activities held for the 
 
 - **Imports from:** `lib/brand`, `lib/common`, `lib/data`, `lib/motion`
 - **Imported by:** `lib/admin`, `lib/brand`, `lib/data`, `lib/exports`, `lib/results`, `lib/setup`, `src`, `src/admin`, `src/pager`, `src/routes`
-- **Node suites that import it:** `test-aop-math.js`, `test-aop-results.js`, `test-confidence-check.js`, `test-duplicates.js`, `test-list-namespace.js`, `test-local-site.js`, `test-pager.js`, `test-participant-storage.js`, `test-participant-waits.js`, `test-review-9a.js`, `test-review-9b.js`, `test-session.js`
+- **Node suites that import it:** `test-aop-math.js`, `test-aop-results.js`, `test-confidence-check.js`, `test-duplicates.js`, `test-effects.js`, `test-hub-moment.js`, `test-list-namespace.js`, `test-local-site.js`, `test-pager.js`, `test-participant-storage.js`, `test-participant-waits.js`, `test-review-9a.js`, `test-review-9b.js`, `test-session.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
@@ -303,6 +303,7 @@ The participant page: the boot sequence, the visit, the activities held for the 
 | `boot.js` | What the participant page reads before its first screen, and in what order. | `bootParticipant`, `writesAhead` |
 | `confidence-check.js` | The confidence check, Before and After (Phase 20): where a guest's visit goes next, and how its two answers are named. | 18 exports |
 | `experience.svelte.ts` | Today's experience as the participant screens need it: is anything live, whose it is, how it looks, what it says, and which activities it has. | `experience`, `activityContent`, `showTheme`, `adoptExperience`, `isStale`, `currentActivities`, `adoptWatch`, `sessionCheck`, `knownActivity`, `knownActivities`, `refreshActivities`, `holdsActivities`, `holdActivityContent`, `loadActivity` |
+| `hub-moment-plan.js` | The moment on the Activities hub (Prompt 24): what plays when the hub the guest last saw and the hub drawn now differ. | `MOMENT`, `BEAT_LENGTH`, `LOCKED_LINE`, `WATCH_AT`, `LOCKED_TAP_GAP`, `SHAKE_LENGTH`, `hubMoment`, `beatEnd`, `heldLooks`, `momentAnnouncement`, `lockedTapAllowed`, `hubCount` |
 | `keep-in-view.ts` | A phone or an iPad turned over in the middle of a question. | `keepInView` |
 | `navigation.ts` | The participant page's moves between screens (Welcome, the hub, an activity, the finale), through svelte-spa-router's hash routes. | `navigateTo`, `consumeNavigationData` |
 | `pager-logic.js` | The rules of the participant flow, with no DOM and no Svelte, so scripts/test-pager.js can exercise them with `node --test`. | 29 exports |

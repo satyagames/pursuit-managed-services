@@ -479,3 +479,14 @@ export const PHASE_23 = Object.freeze({
   participantAfter: 176_809, adminAfter: 670_430,
   participantUtilities: PHASE_11A.participantUtilities,
 });
+
+/**
+ * Prompt 24 (the Activities hub: four states, the moment, sound and particles). The participant page gains the moment's plan, the pill's looks and four cues,
+ * no sound file and no library: at most 6,000 B gzip on where Prompt 23 left it. The admin page carries the same hub for Brand Studio's preview: at most 6,000 B
+ * (ASSUMED: the brief names only the participant's). The ceilings are not raised. Measured when the prompt ended: the after figures, where the next one starts.
+ */
+export const PHASE_24 = Object.freeze({
+  participantBefore: PHASE_23.participantAfter, adminBefore: PHASE_23.adminAfter, participantAllowance: 6_000, adminAllowance: 6_000,
+  participantAfter: 181_488, adminAfter: 674_786,
+  participantUtilities: PHASE_11A.participantUtilities,
+});

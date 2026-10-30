@@ -131,6 +131,28 @@ test('a locked tap: the shake, the knock, the polite line, no red; a second tap 
   expect(await brand.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe(colour);
 });
 
+test('every activity done: the stamp, the all-done cue, the green wave down the pills, Finish rises, one medium burst, and Finish still goes to the finale', async ({ page }) => {
+  await open(page, { seed: ['q-h1', 'q-h2', 'q-h3', 'q-b1', 'q-b2'] });
+  const last = pill(page, /Quick pulse/);
+  await last.click();
+  await choice(page, 0).click();
+  await page.getByRole('button', { name: 'Submit', exact: true }).click();
+  await expect(page.getByRole('heading', { name: /Nice work/ })).toBeVisible();
+  await expect(confettiCanvas(page)).toHaveCount(0, { timeout: 8000 });
+  await resetConfetti(page);
+  const before = await readAudio(page);
+  await page.getByRole('button', { name: 'Back to activities' }).click();
+  await expect(page.locator('.activity[data-moment="wave"]').first()).toBeAttached({ timeout: 3000 });
+  await expect(page.getByRole('button', { name: 'Finish', exact: true })).toHaveAttribute('data-moves', 'true', { timeout: 3000 });
+  await expect.poll(async () => contains((await readAudio(page)).oscillators.slice(before.oscillators.length), toneSignature(CUES.allDone)), { timeout: 3000 }).toBe(true);
+  await expect(page.getByText('3 of 3 complete')).toBeVisible();
+  await expect(page.locator('[aria-live="polite"]').filter({ hasText: 'Quick pulse is done. Every activity is done.' })).toHaveCount(1);
+  expect((await readConfetti(page)).maxPerFrame, 'the medium burst came').toBeGreaterThan(24);
+  await expect(confettiCanvas(page), 'and went').toHaveCount(0, { timeout: 8000 });
+  await page.getByRole('button', { name: 'Finish', exact: true }).click();
+  await expect(page.getByRole('heading', { name: /Thank you/ })).toBeVisible();
+});
+
 test('sound off: every beat is silent and the motion stays', async ({ page }) => {
   await open(page, { sound: false });
   await finishHistory(page);
