@@ -4,7 +4,7 @@
 import type { chartOf } from '../../lib/results/results-chart-model.js';
 
 export type Chart = ReturnType<typeof chartOf> & Record<string, any>;
-export type Who = { key: string; name: string; at: string | null; place?: number };
+export type Who = { key: string; name: string; at: string | null; place?: number; picture?: string | null };
 
 /**
  * A tooltip: the value first, then the label, beside the mark it is about. ChartTip draws it in a layer fixed to the window (lib/results/tip-place.js

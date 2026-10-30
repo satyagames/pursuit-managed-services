@@ -1,6 +1,7 @@
 <script lang="ts">
   import { people } from '../../lib/results/results-chart-model.js';
   import BarChart, { type BarRow } from './BarChart.svelte';
+  import MatrixChart from './MatrixChart.svelte';
   import ChartTable from './ChartTable.svelte';
   import NamesPanel from './NamesPanel.svelte';
   import ScaleChart from './ScaleChart.svelte';
@@ -57,6 +58,7 @@
         tip: { value: `Support score ${item.score}`, label: item.label, extra: `${item.points} points · ${item.firsts} first ${item.firsts === 1 ? 'place' : 'places'} · ${people(item.rankers)} ranked it` },
       }));
     }
+    if (chart.kind === 'matrix') return [];
     return chart.options.map((option: any) => {
       const correct = marked && option.isCorrect;
       const tags = [...(correct ? [{ text: 'Correct', tick: true }] : []), ...(option.isTop ? [{ text: 'Top choice' }] : [])];
@@ -88,7 +90,7 @@
   });
 
   // The open answer's names, from the model; when that answer has gone (deleted while open) the panel closes by itself.
-  const open = $derived(chart.kind === 'text' || !withNames || !selected ? null : (chart.options as { id: string; label: string; who: Who[] }[]).find((option) => option.id === selected) ?? null);
+  const open = $derived(chart.kind === 'text' || chart.kind === 'matrix' || !withNames || !selected ? null : (chart.options as { id: string; label: string; who: Who[] }[]).find((option) => option.id === selected) ?? null);
   const announce = $derived(open ? `${chart.kind === 'ranking' ? 'How people ranked' : 'Who picked'} ${open.label}: ${people(open.who.length)}` : '');
 
   function close() {
@@ -129,7 +131,7 @@
   <svelte:element this={`h${level}`} class="result-card__prompt" id={promptId} data-tip-avoid>{chart.prompt}</svelte:element>
   <!-- (The two buttons say what they will do, so they carry no aria-pressed: a toggle changes its words or its pressed state, never both.) -->
   <div class="result-card__bar">
-    <p class="result-card__meta" data-tip-avoid>{chart.answered} answered{marked && chart.gradedLine ? ` · ${chart.gradedLine}` : ''}</p>
+    <p class="result-card__meta" data-tip-avoid>{#if chart.kind === 'matrix'}{wall ? chart.wallLine : chart.metaLine}{:else}{chart.answered} answered{marked && chart.gradedLine ? ` · ${chart.gradedLine}` : ''}{/if}</p>
     <div class="result-card__tools">
       {#if wall && chart.graded}
         <button type="button" class="result-card__tool" data-tip-avoid onclick={() => onToggleAnswer?.()}>{marked ? 'Hide answer' : 'Show answer'}</button>
@@ -141,6 +143,8 @@
   <div class="result-card__body">
     {#if numbers}
       <ChartTable {chart} {marked} />
+    {:else if chart.kind === 'matrix'}
+      <MatrixChart {chart} withNames={withNames && !wall} fit={wall} level={level + 1} />
     {:else if chart.kind === 'text'}
       <WordsChart {chart} chosen={selected} onChoose={(word) => onSelect?.(word)} fit={fit && !spill} headingLevel={level + 1} />
     {:else if chart.kind === 'truefalse' && sides}

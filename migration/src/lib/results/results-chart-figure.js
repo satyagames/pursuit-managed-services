@@ -51,10 +51,11 @@ const clamp = (value) => Math.max(0, Math.min(1, Number(value) || 0));
 /**
  * The chart of one question at (x, 0), `width` wide.
  * @param {any} chart chartOf(question, { names: null })
- * @param {{ x: number, width: number, palette: Palette, measure: Measure, size?: number, maxLabelLines?: number, comments?: number, plot?: number, points?: boolean }} options
+ * @param {{ x: number, width: number, palette: Palette, measure: Measure, size?: number, maxLabelLines?: number, comments?: number, plot?: number, points?: boolean, matrixRows?: number }} options
  * @returns {{ h: number, items: Item[], breaks?: number[] }}
  */
-export function chartFigure(chart, { x, width, palette, measure, size = 8.5, maxLabelLines = 2, comments = 0, plot = 18, points = false }) {
+export function chartFigure(chart, { x, width, palette, measure, size = 8.5, maxLabelLines = 2, comments = 0, plot = 18, points = false, matrixRows = 25 }) {
+  if (chart.kind === 'matrix') return matrixFigure(chart, { x, width, palette, measure, size, maxLabelLines, matrixRows });
   if (chart.kind === 'text') return wordsFigure(chart, { x, width, palette, measure, size, comments });
   if (chart.answered === 0 && chart.kind !== 'scale') return { h: 0, items: [] };
   if (chart.kind === 'truefalse' && chart.sides) return splitFigure(chart, { x, width, palette, measure, size });
@@ -64,6 +65,62 @@ export function chartFigure(chart, { x, width, palette, measure, size = 8.5, max
 
 /** A line of text: one line, its box `w` wide and `h` high, its top at `y`. */
 const line = (x, y, w, h, text, size, color, style = {}) => ({ kind: 'text', x, y, w, h, text, size, color, ...style });
+
+/**
+ * An Art of the Possible heat map (Prompt 23): a row for each sub-process, its people, a shaded cell with the mean for each criterion, its opportunity, and its band with the shape and
+ * the word (never colour alone). The shades are the screen's four steps of the blue ramp; the words on them are white from the third. `matrixRows` is how many are drawn (the pack's page
+ * has room for 10), and a line says how many more there are.
+ */
+function matrixFigure(chart, { x, width, palette, measure, size, maxLabelLines, matrixRows }) {
+  const lh = measure.lineHeight(size);
+  const small = size * 0.88;
+  const smallLh = measure.lineHeight(small);
+  const criteria = chart.criteria ?? [];
+  const peopleWidth = Math.max(10, width * 0.08);
+  const scoreWidth = Math.max(16, width * 0.11);
+  const bandWidth = Math.max(16, width * 0.11);
+  const labelWidth = Math.max(20, width * 0.3);
+  const cellWidth = Math.max(8, (width - labelWidth - peopleWidth - scoreWidth - bandWidth) / Math.max(1, criteria.length));
+  const peopleX = x + labelWidth;
+  const cellX = peopleX + peopleWidth;
+  const scoreX = cellX + cellWidth * criteria.length;
+  const bandX = scoreX + scoreWidth;
+  const items = [];
+  const breaks = [];
+  let y = 0;
+  // The header: each column's name, in as many lines as it takes.
+  const heads = criteria.map((criterion) => measure.wrap(criterion.label, cellWidth - 0.6, small, true, 3));
+  const headHeight = Math.max(1, ...heads.map((lines) => lines.length)) * smallLh + 1;
+  items.push(line(peopleX, y, peopleWidth - 0.5, smallLh, 'People', small, palette.textSecondary, { bold: true, role: 'head' }));
+  heads.forEach((lines, at) => lines.forEach((text, n) => items.push(line(cellX + at * cellWidth, y + n * smallLh, cellWidth - 0.6, smallLh, text, small, palette.textSecondary, { bold: true, role: 'head' }))));
+  items.push(line(scoreX, y, scoreWidth - 0.5, smallLh, 'Opportunity', small, palette.textSecondary, { bold: true, role: 'head' }));
+  items.push(line(bandX, y, bandWidth, smallLh, 'Band', small, palette.textSecondary, { bold: true, role: 'head' }));
+  y += headHeight;
+  breaks.push(y);
+  const bandInk = { High: palette.bandHigh, Medium: palette.bandMedium, Low: palette.bandLow };
+  const shown = chart.rows.slice(0, matrixRows);
+  for (const row of shown) {
+    const labels = measure.wrap(row.label, labelWidth - 1, size, false, maxLabelLines);
+    const height = Math.max(labels.length * lh, lh) + 1.4;
+    labels.forEach((text, at) => items.push(line(x, y + at * lh, labelWidth - 1, lh, text, size, palette.text, { role: 'label' })));
+    items.push(line(peopleX, y, peopleWidth - 0.5, lh, String(row.people), size, palette.text, { role: 'people' }));
+    row.criteria.forEach((cell, at) => {
+      if (cell.tone !== null) items.push({ kind: 'rect', x: cellX + at * cellWidth, y, w: cellWidth - 0.6, h: height - 0.6, fill: palette.ramps[4][cell.tone], role: 'heat' });
+      if (cell.meanText) items.push(line(cellX + at * cellWidth + 0.8, y, cellWidth - 2, lh, cell.meanText, size, cell.tone >= 2 ? palette.surface : palette.text, { bold: true, role: 'value' }));
+    });
+    if (row.opportunityText) items.push(line(scoreX, y, scoreWidth - 0.5, lh, row.opportunityText, size, palette.text, { bold: true, role: 'value' }));
+    items.push(line(bandX, y, bandWidth, lh, row.band ? `${row.mark} ${row.band}` : 'No ratings', small, bandInk[row.band] ?? palette.textSecondary, { bold: true, role: 'band' }));
+    y += height;
+    breaks.push(y);
+  }
+  const more = chart.rows.length - shown.length;
+  if (more > 0) {
+    items.push(line(x, y, width, smallLh, `And ${more} more ${more === 1 ? 'sub-process' : 'sub-processes'}.`, small, palette.textSecondary, { role: 'more' }));
+    y += smallLh;
+    breaks[breaks.length - 1] = y;
+  }
+  return { h: y, items, breaks };
+}
 
 function barsFigure(chart, { x, width, palette, measure, size, maxLabelLines, points }) {
   const lh = measure.lineHeight(size);

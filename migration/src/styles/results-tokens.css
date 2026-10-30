@@ -30,6 +30,11 @@
   /* Deloitte Teal: a second series only (Phase 11c). Black words on it 6.0:1; white words 3.5:1, which fails, so never white on it. */
   --viz-secondary: #0097a9;
 
+  /* An Art of the Possible row's opportunity band (Prompt 23): the only red, amber and green of the Results, always with a shape and a word. Each is 4.5:1 or better on white. */
+  --viz-band-high: #046a38;
+  --viz-band-medium: #8a5a00;
+  --viz-band-low: #b3261e;
+
   /* The blue ramp of a confidence scale, low to high: three, four or five steps (a longer scale shares the five out in order). */
   --viz-ramp-3-1: #6cb1d1;
   --viz-ramp-3-2: #2e8db8;

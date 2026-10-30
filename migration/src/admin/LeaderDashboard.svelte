@@ -405,6 +405,36 @@
         </section>
       </div>
 
+      {#if board.aop}
+        <section class="card dash__card" aria-labelledby="dash-aop" data-testid="dash-aop">
+          <h3 id="dash-aop">Art of the Possible</h3>
+          <ul class="dash__tiles" aria-label="Art of the Possible figures">
+            {#each board.aop.tiles as each (each.id)}
+              <li class="dash__tile">
+                <span class="dash__tile-name">{METRICS[each.id].label}<MetricInfo id={each.id} /></span>
+                <span class="dash__tile-value">{each.text}</span>
+                {#if each.low}<span class="muted small">Low sample (n = {each.n})</span>{/if}
+              </li>
+            {/each}
+          </ul>
+          <div class="dash__table">
+            <table class="dash__grid">
+              <caption class="dash__sr">Art of the Possible by client</caption>
+              <thead><tr><th scope="col">Client</th><th scope="col">Top sub-process</th><th scope="col">People in High band<MetricInfo id="aop-people-high" /></th><th scope="col">Share<MetricInfo id="aop-share" /></th><th scope="col">Index<MetricInfo id="aop-index" /></th></tr></thead>
+              <tbody>
+                {#each board.aop.byClient as row (row.clientId)}
+                  <tr><th scope="row">{row.name}{#if row.low} <span class="muted small">Low sample (n = {row.respondents})</span>{/if}</th><td>{row.top}</td><td>{row.fteHigh} of {row.fteInScope}</td><td>{row.shareText}</td><td>{row.indexText}</td></tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+          {#if board.aop.criteria.length > 0}
+            <p class="muted small">Average rating of each criterion, out of 3: {board.aop.criteria.map((each) => `${each.label} ${each.mean === null ? 'none' : each.mean.toFixed(1)}`).join(', ')}.</p>
+          {/if}
+          {#if board.aop.waiting > 0}<p class="muted small" data-testid="dash-aop-waiting">{board.aop.waiting} {board.aop.waiting === 1 ? 'session' : 'sessions'} in view {board.aop.waiting === 1 ? 'has' : 'have'} no Art of the Possible figures. A session ended before this version has none until Rebuild summaries.</p>{/if}
+        </section>
+      {/if}
+
       <section class="card dash__card" aria-labelledby="dash-themes">
         <h3 id="dash-themes">{METRICS.themes.label}<MetricInfo id="themes" /></h3>
         {#if board.themes.length === 0}<p class="muted">No Survey feedback was written in these sessions.</p>
@@ -501,6 +531,15 @@
     margin: 0 0 1rem;
     font-size: 1.25rem;
     font-weight: 600;
+  }
+
+  .dash__table {
+    overflow-x: auto;
+  }
+
+  .dash__grid {
+    width: 100%;
+    border-collapse: collapse;
   }
 
   .dash__tiles {

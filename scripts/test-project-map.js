@@ -27,5 +27,5 @@ test('every command and gate it names is a script of package.json, and every fil
   }
   for (const page of map.pages) for (const file of [page.shell, page.entry, page.app, page.vite]) assert.ok(existsSync(path.join(ROOT, file)), file);
   for (const file of [...map.sharePoint.schemaFiles, map.sharePoint.reference, ...Object.keys(map.documents), ...Object.keys(map.folders)]) assert.ok(existsSync(path.join(ROOT, file)), file);
-  assert.equal(map.questionTypes.length, 6);
+  assert.equal(map.questionTypes.length, 7); // (6 until Prompt 23)
 });

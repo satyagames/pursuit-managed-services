@@ -286,7 +286,7 @@ Key `auditlog` (on the local server, `server/data/auditlog.json`). One line for 
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | `AppId` | Single line of text | yes | yes | yes | yes |  | 255 |  | no | The record's own id: audit-&lt;UUID>. | admin, setup | admin, setup |
 | `Actor` | Single line of text | yes | no | no | no |  | 255 |  | **yes** | Who did it (a Users.AppId). | admin, setup | admin, setup |
-| `Action` | Single line of text | yes | no | no | no | `grant`, `revoke`, `add-user`, `disable`, `enable`, `migrate`, `settings`, `client` | 255 |  | no | What was done; settings (a reporting setting) and client (a client's Industry or Region) since Prompt 22, in this text column, so no new version. | admin, setup | admin, setup |
+| `Action` | Single line of text | yes | no | no | no | `grant`, `revoke`, `add-user`, `disable`, `enable`, `migrate`, `settings`, `client`, `picture` | 255 |  | no | What was done; settings (a reporting setting) and client (a client's Industry or Region) since Prompt 22, in this text column, so no new version. | admin, setup | admin, setup |
 | `TargetUser` | Single line of text | yes | no | no | no |  | 255 |  | **yes** | To whom (a Users.AppId). | admin, setup | admin, setup |
 | `Role` | Single line of text | yes | no | no | no |  | 255 |  | no | The role, for a grant or a removal. | admin, setup | admin, setup |
 | `ClientId` | Single line of text | yes | no | no | no |  | 255 |  | no | The client, when the role was for one. | admin, setup | admin, setup |

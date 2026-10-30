@@ -260,7 +260,7 @@ export const META = {
     columns: {
       AppId: id('audit-<UUID>'),
       Actor: text('Who did it (a Users.AppId).', { personal: true }),
-      Action: words('What was done; settings (a reporting setting) and client (a client\'s Industry or Region) since Prompt 22, in this text column, so no new version.',['grant', 'revoke', 'add-user', 'disable', 'enable', 'migrate', 'settings', 'client']),
+      Action: words('What was done; settings (a reporting setting) and client (a client\'s Industry or Region) since Prompt 22, in this text column, so no new version.',['grant', 'revoke', 'add-user', 'disable', 'enable', 'migrate', 'settings', 'client', 'picture']),
       TargetUser: text('To whom (a Users.AppId).', { personal: true }),
       Role: text('The role, for a grant or a removal.'),
       ClientId: text('The client, when the role was for one.'),

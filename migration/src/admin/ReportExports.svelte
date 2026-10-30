@@ -3,7 +3,7 @@
   import { embeddedAssetUrl } from '../lib/brand/assets.js';
   import DeloitteWordmark from '../components/DeloitteWordmark.svelte';
   import { APP_NAME } from '../lib/common/app-name.js';
-  import { buildLeaderReport, participantAnswersCsv, reportFileName } from '../lib/exports/leader-report.js';
+  import { buildLeaderReport, hasMatrix, matrixLongCsv, participantAnswersCsv, reportFileName } from '../lib/exports/leader-report.js';
   import { readLeaderReportRecords } from '../lib/exports/leader-report-data.js';
   import { layoutLeaderReport } from '../lib/exports/leader-report-layout.js';
   import { writeLeaderReportPdf, type Wordmark } from '../lib/exports/leader-report-pdf.js';
@@ -114,6 +114,8 @@
       if (kind === 'csv') {
         fileName = reportFileName('participant-answers', sessionId, 'csv');
         save(new Blob([participantAnswersCsv(report)], { type: 'text/csv;charset=utf-8' }), fileName);
+        // (Prompt 23: a session with Art of the Possible gets its long file as well: one line for each guest, sub-process and criterion.)
+        if (hasMatrix(report)) save(new Blob([matrixLongCsv(report)], { type: 'text/csv;charset=utf-8' }), reportFileName('art-of-the-possible', sessionId, 'csv'));
         detail = `${report.participants.length} participants`;
       } else {
         status = 'Getting the report ready...';

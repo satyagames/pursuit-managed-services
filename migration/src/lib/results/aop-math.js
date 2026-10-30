@@ -123,7 +123,10 @@ export function criterionProfile(result) {
   return result.criteria.map((criterion, at) => {
     const cells = result.rows.map((row) => row.criteria[at]);
     const n = cells.reduce((total, cell) => total + cell.n, 0);
-    return { id: criterion.id, label: criterion.label, direction: criterion.direction, n, mean: n ? cells.reduce((total, cell) => total + (cell.mean ?? 0) * cell.n, 0) / n : null };
+    // (How far guests agree on it: the mean over its rated cells of the largest count / n, as a row's agreement is over its criteria.)
+    const rated = cells.filter((cell) => cell.n > 0);
+    const agreement = rated.length ? rated.reduce((total, cell) => total + Math.max(cell.counts[1], cell.counts[2], cell.counts[3]) / cell.n, 0) / rated.length : null;
+    return { id: criterion.id, label: criterion.label, direction: criterion.direction, n, mean: n ? cells.reduce((total, cell) => total + (cell.mean ?? 0) * cell.n, 0) / n : null, agreement };
   });
 }
 
@@ -151,8 +154,9 @@ export function poolAop(sessions) {
     for (const criterion of each.summary.aop.criteria ?? []) {
       if (typeof criterion.mean !== 'number') continue;
       const key = String(criterion.label).trim().toLowerCase();
-      const pool = pools.get(key) ?? { label: criterion.label, direction: criterion.direction, total: 0, weight: 0 };
+      const pool = pools.get(key) ?? { label: criterion.label, direction: criterion.direction, total: 0, weight: 0, agreed: 0 };
       pool.total += criterion.mean * weight;
+      pool.agreed += (Number(criterion.agreement) || 0) * weight;
       pool.weight += weight;
       pools.set(key, pool);
     }
@@ -160,6 +164,6 @@ export function poolAop(sessions) {
   return {
     fteInScope, fteHigh, shareHigh: fteInScope > 0 ? fteHigh / fteInScope : null, clients, rowsRated: having.reduce((total, each) => total + (Number(each.summary.aop.rowsRated) || 0), 0),
     respondents: clients.reduce((total, client) => total + client.respondents, 0),
-    criteria: [...pools.values()].map((pool) => ({ label: pool.label, direction: pool.direction, mean: pool.weight ? pool.total / pool.weight : null, n: pool.weight })),
+    criteria: [...pools.values()].map((pool) => ({ label: pool.label, direction: pool.direction, mean: pool.weight ? pool.total / pool.weight : null, agreement: pool.weight ? pool.agreed / pool.weight : null, n: pool.weight })),
   };
 }

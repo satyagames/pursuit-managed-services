@@ -25,6 +25,7 @@ export const ownerOf = (answer) => answer.clientTrackId ?? (answer.clientId ? `c
  */
 export function nameParticipants({ tracks = [], visits = [], roster = [], answers = [] }) {
   const rosterNames = new Map(roster.map((visitor) => [String(visitor.id), words(visitor.displayName)]));
+  const rosterPictures = new Map(roster.filter((visitor) => visitor.pictureUrl).map((visitor) => [String(visitor.id), visitor.pictureUrl]));
   const byTrack = new Map();
   const byAccount = new Map();
   for (const visit of [...visits].sort((a, b) => String(a.visitedAt ?? '').localeCompare(String(b.visitedAt ?? '')))) {
@@ -56,14 +57,19 @@ export function nameParticipants({ tracks = [], visits = [], roster = [], answer
       seen.set(name.normalize('NFC').toLowerCase(), count);
       if (count > 1) name = `${name} (${count})`;
     }
-    return { key, track, name, unnamed: isUnnamed };
+    // (Prompt 23: a guest's picture comes with their name, and only with it.)
+    const pictureUrl = track?.visitorId ? rosterPictures.get(String(track.visitorId)) : undefined;
+    return { key, track, name, unnamed: isUnnamed, ...(pictureUrl ? { pictureUrl } : {}) };
   });
 }
 
 /**
  * The same people with their names hidden (Prompt 21, decision B's Hide names): "Guest 1", "Guest 2" ..., numbered in the order above, so every
  * Results surface and export that hides names numbers the same person the same way. Named or not, everyone is numbered: a hidden list does not say who
- * had no name. The list given is not changed. @template {{ name: string, unnamed: boolean }} T @param {T[]} people @returns {T[]}
+ * had no name, and (Prompt 23) nobody has a picture: everyone is the silhouette. The list given is not changed. @template {{ name: string, unnamed: boolean, pictureUrl?: string }} T @param {T[]} people @returns {T[]}
  */
-export const withNamesHidden = (people) => people.map((person, at) => ({ ...person, name: `Guest ${at + 1}`, unnamed: false }));
+export const withNamesHidden = (people) => people.map((person, at) => {
+  const { pictureUrl: _face, ...rest } = person;
+  return /** @type {any} */ ({ ...rest, name: `Guest ${at + 1}`, unnamed: false });
+});
 

@@ -17,6 +17,7 @@ import {
   priorQuarter, priorityIndex, sessionIndex, shiftOf,
 } from './index-math.js';
 import { HIDE_NAMES_BY_DEFAULT } from './metric-words.js';
+import { poolAop } from './aop-math.js';
 
 /** The period chips: the fiscal year, its four quarters, a month, or days of one's own. */
 export const SPANS = Object.freeze([
@@ -25,7 +26,7 @@ export const SPANS = Object.freeze([
 ]);
 
 /** What each kind of question is called in the Activity type filter (the leader report's kinds). */
-export const KIND_WORDS = Object.freeze({ graded: 'Quiz', choice: 'Poll', multi: 'Choose several', scale: 'Scale', ranking: 'Ranking', text: 'Survey feedback' });
+export const KIND_WORDS = Object.freeze({ graded: 'Quiz', choice: 'Poll', multi: 'Choose several', scale: 'Scale', ranking: 'Ranking', text: 'Survey feedback', matrix: 'Art of the Possible' });
 
 /**
  * The filters a dashboard opens with: the quarter of `period` (else today's), against the all-client average, every client, names as the setting says.
@@ -129,6 +130,31 @@ const baselineWords = (filters, clientOf) => {
   if (filters.compare === 'client') return words(clientOf.get(filters.compareClient)?.name) || 'the chosen client';
   return 'the all-client average';
 };
+
+/**
+ * The section Art of the Possible (Prompt 23): shown only when a session in view has it. People come from poolAop (a client's people once); clients are compared by share and by the
+ * criteria's averages, never by a sub-process's name. `waiting` is how many sessions in view have no figures yet (ended before this version, or not rebuilt).
+ * @param {any[]} segment @param {(id: string) => string} nameOf @param {number} min
+ */
+function aopSection(segment, nameOf, min) {
+  const pooled = poolAop(segment);
+  if (!pooled) return null;
+  const percent = (share) => (share === null ? '' : `${Math.round(share * 100)}%`);
+  const agreed = [...pooled.criteria].filter((each) => each.agreement !== null).sort((left, right) => right.agreement - left.agreement)[0];
+  const low = lowSample(pooled.respondents, min);
+  return {
+    ...pooled,
+    waiting: segment.filter((each) => !each.summary?.aop).length,
+    tiles: [
+      { id: 'aop-people-high', text: `${pooled.fteHigh} of ${pooled.fteInScope}${pooled.shareHigh === null ? '' : ` (${percent(pooled.shareHigh)})`}`, n: pooled.respondents, low },
+      { id: 'aop-rated', text: String(pooled.rowsRated), n: pooled.respondents, low },
+      { id: 'aop-agreed', text: agreed?.label ?? '', n: pooled.respondents, low },
+    ],
+    byClient: pooled.clients.map((client) => ({
+      ...client, name: nameOf(client.clientId), top: client.top?.name ?? '', shareText: percent(client.shareHigh), indexText: client.opportunityIndex === null ? '' : client.opportunityIndex.toFixed(2), low: lowSample(client.respondents, min),
+    })).sort((left, right) => (right.shareHigh ?? -1) - (left.shareHigh ?? -1) || left.name.localeCompare(right.name)),
+  };
+}
 
 /**
  * Everything the dashboard shows.
@@ -239,7 +265,7 @@ export function dashboardOf({ summaries, clients, filters, startMonth = 6, minSa
     }
     headline = `${opening} ${confidence}${top}.${moving}`;
   }
-  return { headline, window, tiles, byClient, trend, priority, distribution, themes, quotes, minSample: min, empty: !segment.length, hideNames: hide };
+  return { headline, window, tiles, byClient, trend, priority, distribution, themes, quotes, minSample: min, empty: !segment.length, hideNames: hide, aop: aopSection(segment, nameOf, min) };
 }
 
 /** What the filters offer: the years with summaries, the clients' industries and regions, the facilitators, the guest groups and the kinds of question asked. */
@@ -262,12 +288,16 @@ export function filterOptions(summaries, clients) {
  * @param {ReturnType<typeof dashboardOf>} board
  */
 export function reportCsv(board) {
+  // (Prompt 23: a dashboard with Art of the Possible in view has its figures for each client as well; any other's file is as it was.)
+  const aopOf = new Map((board.aop?.byClient ?? []).map((client) => [client.clientId, client]));
+  const aopColumns = board.aop ? ['Top sub-process', 'People in High band', 'People in scope', 'Share in High band %', 'Opportunity index'] : [];
+  const aopCells = (clientId) => { if (!board.aop) return []; const own = aopOf.get(clientId); return own ? [own.top, own.fteHigh, own.fteInScope, own.shareHigh === null ? '' : Math.round(own.shareHigh * 100), own.opportunityIndex === null ? '' : Math.round(own.opportunityIndex * 100) / 100] : ['', '', '', '', '']; };
   const rows = [['Client', 'Session', 'Date', 'Guests', 'Completed', 'Confidence index', 'Session index', 'Low sample', 'Shift %', 'Moved to confident %', 'Guests answered both',
-    'Session shift %', 'Session moved to confident %', 'Session guests answered both']];
+    'Session shift %', 'Session moved to confident %', 'Session guests answered both', ...aopColumns]];
   const round = (value) => (value === null ? '' : Math.round(value));
   const shifts = (each) => [round(each.shift.percent), round(each.moved.percent), each.shift.n];
   for (const client of board.byClient) {
-    for (const each of client.sessions) rows.push([client.name, each.label, each.date, each.guests, each.completed, round(client.index), round(each.index), each.low ? 'Low sample' : '', ...shifts(client), ...shifts(each)]);
+    for (const each of client.sessions) rows.push([client.name, each.label, each.date, each.guests, each.completed, round(client.index), round(each.index), each.low ? 'Low sample' : '', ...shifts(client), ...shifts(each), ...aopCells(client.clientId)]);
   }
   return `${rows.map((row) => row.map(csvCell).join(',')).join('\r\n')}\r\n`;
 }

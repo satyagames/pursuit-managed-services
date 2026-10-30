@@ -12,6 +12,8 @@
 
 import { isCheckActivity } from '../participant/confidence-check.js';
 import { confidenceCheckResults } from './confidence-shift.js';
+import { aopResults } from './aop-math.js';
+import { MATRIX_TYPE } from '../participant/aop-answer.js';
 
 /**
  * @typedef {{ id: string, [key: string]: any }} Row
@@ -51,6 +53,11 @@ export function buildResults({ session, tracks, sections, questions, options, an
         const ranked = question.type === 'ranked-voting';
         const present = pick(optionIndex, question.optionIds);
         const presentIds = present.map((option) => option.id);
+        // (Prompt 23: an Art of the Possible question's numbers are lib/results/aop-math.js's alone. Its answer is no list of option ids, so it has a case of its own: a row's count is the guests who rated it.)
+        if (question.type === MATRIX_TYPE) {
+          const aop = aopResults({ rows: present, criteria: question.criteria ?? [], answers: given });
+          return { ...question, responses: given, respondents: given.length, aop, options: present.map((option, at) => ({ ...option, count: aop.rows[at].n, percent: 0 })) };
+        }
         const own = present.map((option) => ({
           ...option,
           count: given.filter((response) => [response.answer].flat().includes(option.id)).length,

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { people } from '../../lib/results/results-chart-model.js';
+  import GuestAvatar from '../../components/GuestAvatar.svelte';
   import { placeName, timeOf, type Who } from './chart-ui.js';
 
   // Who picked an answer (admin view only): under its card, "Who picked: 1014 Vine Street, Cincinnati (2 people)" and each name with the time they
@@ -31,7 +32,7 @@
     <ul class="names__list">
       {#each who as person (person.key)}
         <li class="names__person">
-          <span class="names__name">{person.name}</span>
+          <span class="names__name">{#if 'picture' in person}<GuestAvatar src={person.picture} size={24} /> {/if}{person.name}</span>
           <span class="names__when">{ranking && person.place ? `${placeName(person.place)}${person.at ? ' · ' : ''}` : ''}{timeOf(person.at)}</span>
         </li>
       {/each}

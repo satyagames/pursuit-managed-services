@@ -425,6 +425,12 @@ function compose(report, measure, logo, noteMissing, palette) {
       // A ranking's caption says what its score means. (A multiple choice's is in the notes below, and so are answers to an option that has gone.)
       if (question.kind === 'ranking' && chart.caption) rows.push(...marked(paragraph(chart.caption, { x: indent, w: cardWidth - 8, size: 8.2, color: palette.textSecondary }), 'caption'));
       const facts = [];
+      // (Prompt 23: Art of the Possible's own lines: where to start, and the disagreements apart.)
+      if (question.kind === 'matrix' && question.respondents > 0) {
+        const names = (list) => list.map((row) => `${row.label} (${row.people})`).join('; ');
+        if (chart.where.start.length > 0) facts.push([`Where to start: ${names(chart.where.start)}`, true]);
+        if (chart.where.discuss.length > 0) facts.push([`Discuss, guests disagree: ${names(chart.where.discuss)}`, false]);
+      }
       if (question.kind === 'text') facts.push([`${plural(question.respondents, 'written answer')}. ${question.respondents > 0 ? 'Each is in “What participants said”, word for word.' : ''}`, false]);
       else if (question.respondents === 0) facts.push(['Nobody answered this question.', false]);
       if (question.firstTry && question.respondents > 0) {
