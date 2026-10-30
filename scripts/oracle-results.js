@@ -14,7 +14,8 @@
 // in KNOWN below, each with its reason; nothing else is let through.
 //
 // Since Phase 20 each seed has a confidence check of its own too (generateCheck), recounted by checkOracle(); since Prompt 21, Phase 5, a dashboard
-// of its own (generateIndexes: clients, sessions over eight quarters), whose indexes indexOracle() recounts from raw scores and choices.
+// of its own (generateIndexes: clients, sessions over eight quarters), whose indexes indexOracle() recounts from raw scores and choices; since Prompt 23 an Art of the
+// Possible question of its own (generateAop), whose opportunity, band and people in the High band aopOracle() recounts, in whole numbers, from the raw stored strings.
 //
 // scripts/test-oracle.js runs a small seeded version of this in `npm test`.
 
@@ -814,6 +815,84 @@ export function indexOracle(fixture) {
   return truth;
 }
 
+// ---- Art of the Possible (Prompt 23) --------------------------------------------------------------------------------------------------
+// A question of its own for each seed: 2 to 25 rows with their people, 2 to 6 criteria of the three directions, and guests who may skip a row, may rate a removed criterion,
+// and may have changed their mind (a later answer that must not count). aopOracle() reads the raw strings with a split of its own and decides each band in whole numbers:
+// with k scored criteria and a row's aligned means a/n, High is 3 x (the sum of a/n) >= 7k, Low is 3 x (the sum) < 5k.
+
+export function generateAop(seed) {
+  const r = random(seed + 900_000);
+  const directions = ['favours', 'against', 'none'];
+  const criteria = Array.from({ length: r.int(2, 6) }, (_, at) => ({ id: `c-${String(seed % 10_000).padStart(4, '0')}${String(at).padStart(2, '0')}`, label: `Criterion ${at + 1}`, direction: r.pick(directions) }));
+  const rows = Array.from({ length: r.int(2, 25) }, (_, at) => ({ id: `row-${seed}-${at}~c-copy`, label: `Row ${at + 1}`, value: r.chance(0.1) ? '' : r.chance(0.2) ? r.int(0, 300) + 0.5 : r.int(0, 300) }));
+  const answers = Array.from({ length: r.chance(0.05) ? 0 : r.int(1, 12) }, (_, guest) => {
+    const write = (tilt) => rows.flatMap((row) => {
+      if (r.chance(0.1)) return [];
+      const cells = [...criteria.filter(() => !r.chance(0.05)).map((criterion) => `${criterion.id}=${tilt ?? r.int(1, 3)}`), ...(r.chance(0.05) ? ['c-removed=2'] : [])];
+      return cells.length ? [`${row.id}:${cells.join(',')}`] : [];
+    });
+    const firstAnswer = write();
+    return { clientTrackId: `g${guest}`, firstAnswer, answer: r.chance(0.3) ? write(r.int(1, 3)) : firstAnswer };
+  });
+  return { seed, criteria, rows, answers };
+}
+
+export function aopOracle({ criteria, rows, answers }) {
+  const gcd = (a, b) => (b === 0 ? a : gcd(b, a % b));
+  const people = (value) => (Number(value) > 0 ? Number(value) : 0);
+  const cells = new Map();
+  for (const { firstAnswer, answer } of answers) {
+    const seen = new Set();
+    for (const list of [firstAnswer, answer]) {
+      for (const entry of list) {
+        const rowId = entry.slice(0, entry.lastIndexOf(':'));
+        for (const cell of entry.slice(entry.lastIndexOf(':') + 1).split(',')) {
+          const [criterionId, level] = cell.split('=');
+          const key = `${rowId} ${criterionId}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          cells.set(key, [...(cells.get(key) ?? []), Number(level)]);
+        }
+      }
+    }
+  }
+  let fteInScope = 0;
+  let fteHigh = 0;
+  const shown = rows.map((row) => {
+    const own = criteria.map((criterion) => ({ criterion, levels: cells.get(`${row.id} ${criterion.id}`) ?? [] }));
+    const scored = own.filter(({ criterion, levels }) => criterion.direction !== 'none' && levels.length > 0);
+    const rated = own.some(({ levels }) => levels.length > 0);
+    if (rated) fteInScope += people(row.value);
+    if (!scored.length) return { id: row.id, band: null, opportunity: null };
+    const whole = scored.reduce((lcm, { levels }) => (lcm * levels.length) / gcd(lcm, levels.length), 1);
+    const sum = scored.reduce((total, { criterion, levels }) => {
+      const given = levels.reduce((all, level) => all + level, 0);
+      return total + (criterion.direction === 'against' ? 4 * levels.length - given : given) * (whole / levels.length);
+    }, 0);
+    const k = scored.length;
+    const band = 3 * sum >= 7 * k * whole ? 'High' : 3 * sum < 5 * k * whole ? 'Low' : 'Medium';
+    if (band === 'High') fteHigh += people(row.value);
+    return { id: row.id, band, opportunity: ((sum / (k * whole) - 1) / 2) * 100 };
+  });
+  return { rows: shown, fteInScope, fteHigh };
+}
+
+/** The numbers as lib/results/aop-math.js gives them, against aopOracle(). */
+export function compareAop(fixture, truth, app) {
+  const result = app.aopMath.aopResults({ rows: fixture.rows, criteria: fixture.criteria, answers: fixture.answers });
+  const diffs = [];
+  const at = (what, mine, theirs) => { diffs.push(`seed ${fixture.seed}, Art of the Possible: ${what}: the app says ${mine}, the oracle ${theirs}`); };
+  // (A criterion the question no longer has is left out of the oracle's sums by the shape of its loop: it walks the criteria the question has now.)
+  truth.rows.forEach((row, index) => {
+    const own = result.rows[index];
+    if (own.band !== row.band) at(`${row.id} band`, own.band, row.band);
+    if ((own.opportunity === null) !== (row.opportunity === null) || Math.abs((own.opportunity ?? 0) - (row.opportunity ?? 0)) > 1e-9) at(`${row.id} opportunity`, own.opportunity, row.opportunity);
+  });
+  if (Math.abs(result.fteInScope - truth.fteInScope) > 1e-9) at('people in scope', result.fteInScope, truth.fteInScope);
+  if (Math.abs(result.fteHigh - truth.fteHigh) > 1e-9) at('people in the High band', result.fteHigh, truth.fteHigh);
+  return diffs;
+}
+
 /** The indexes as lib/results/index-math.js gives them, from the summaries of the fixture's sessions, against indexOracle(). */
 export function compareIndexes(fixture, truth, app) {
   const mean = (values) => (values.length ? values.reduce((total, value) => total + value, 0) / values.length : null);
@@ -865,9 +944,10 @@ export async function loadApp() {
     import('../migration/src/lib/results/results-tally.js'),
   ]);
   const indexMath = await import('../migration/src/lib/results/index-math.js');
+  const aopMath = await import('../migration/src/lib/results/aop-math.js');
   return { ds, buildResults: tally.buildResults, buildLeaderReport: report.buildLeaderReport, participantAnswersCsv: report.participantAnswersCsv, readLeaderReportRecords: data.readLeaderReportRecords,
     readNameSources: names.readNameSources, resultRows: names.resultRows, loadLiveStructure: live.loadLiveStructure, readLive: live.readLive, readSessionResults: results.readSessionResults,
-    createSharePointFake: fake.createSharePointFake, makeReport: node.makeReport, inspectPdf: inspect.inspectPdf, squash: inspect.squash, indexMath };
+    createSharePointFake: fake.createSharePointFake, makeReport: node.makeReport, inspectPdf: inspect.inspectPdf, squash: inspect.squash, indexMath, aopMath };
 }
 
 /** Stores a fixture's raw rows in a new mocked SharePoint and points the data service at it. */
@@ -928,6 +1008,9 @@ export async function run({ from = 1, seeds = 50, pdfEvery = 10, localEvery = 10
       const indexes = generateIndexes(seed);
       diffs.push(...compareIndexes(indexes, indexOracle(indexes), app));
       summaries += indexes.sessions.length;
+      // (Prompt 23) the seed's Art of the Possible question, apart from its session.
+      const aop = generateAop(seed);
+      diffs.push(...compareAop(aop, aopOracle(aop), app));
     }
     if (local.length) {
       // The same sessions on the real local server: the oracle's figures again, and the SharePoint adapter's report, word for word.
