@@ -75,4 +75,20 @@ Faces on the wall as a "who has finished" ring; picture import in the bulk names
 
 ## Figures
 
-GATES
+| Gate | Before (`8f8937f`) | After |
+|---|---:|---:|
+| `check:svelte` | 0 errors | 0 errors |
+| `npm test` | 1,920 of 1,920 | 2,028 of 2,028 |
+| `test:baseline` | 38 | 38 (moved only by the two column names and Setup making them; proof below) |
+| `test:bundle` | 53 | 54 |
+| `test:report` | 158 | 158 |
+| `test:report:mutations` | 64 of 64 | 71 of 71 |
+| `oracle -- --seeds 500` | 0 differences | 0 differences, with Art of the Possible recounted |
+| `test:charts` | 57 | 57 |
+| `test:local-site` | 28 | 29 |
+| Participant page | 167,109 B | 176,809 B (+9,700 of 12,000) |
+| Admin page | 646,950 B recorded | 670,430 B (+23,480 of 35,000) |
+
+**The pins that moved.** Every recorded suite whose reads name `PMSActivityQuestions` or `PMSGuestList`: their `$select` gains one column; `test-provision` and `test-site-ready` also make and read back the two columns (26 and 24 new requests). `scripts/schema-baseline/aop-baselines.js` ran each suite on `8f8937f` and on this tree, request by request; a fresh recording equals the translation in all 16 it changed or checked.
+
+**Browser specs run** (Chromium and WebKit): Setup, version, upgrade, Guests, Content, Results' charts, request baseline, the SharePoint specs, the participant flow and the new spec: 243 passed, 8 skipped, 4 failed. **Three of the four also fail on the untouched `8f8937f`**: `reflow.spec.ts` "every tab at 200%" (a Content client chip, both engines) and `flow.spec.ts` "header" (WebKit). They are not from this prompt, and the reflow one is not in TESTING.md's known list. The fourth was the Guests keyboard order, which gained the new controls and now holds them. The full `npm run test:migration` was not run.

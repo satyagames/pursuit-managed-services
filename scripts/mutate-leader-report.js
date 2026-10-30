@@ -132,8 +132,8 @@ const MUTATIONS = [
     'for (let step = 1; contrastRatio(accent, \'#FFFFFF\') < 1 && step <= 50; step += 1)'],
   // Phase 11b: the drawing and the words on the chart model (each with its file and the suites that hold it).
   ["The leader report's chart counts the LAST answer of a graded question",
-    "answer: graded ? record.first : record.counted,))",
-    "answer: graded ? record.final : record.counted,))",
+    "answer: graded ? record.first : record.counted,",
+    "answer: graded ? record.final : record.counted,",
     { file: "migration/src/lib/exports/leader-report.js", tests: ["scripts/test-leader-report-charts.js"] }],
   ["The leader report prints no headline above a chart",
     "rows.push(...marked(paragraph(chart.headline,",
