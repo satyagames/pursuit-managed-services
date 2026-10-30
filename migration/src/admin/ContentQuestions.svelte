@@ -202,7 +202,7 @@
         {@const questionOptions = optionsByQuestion[question.id] ?? []}
         {@const open = editingId === question.id}
         <li class="row" class:row--open={open} data-question={question.id}>
-          <div class="row__main"><span class="row__title" id={`question-title-${question.id}`}>{question.prompt}</span><span class="muted"><span class="tag">{questionKind(question)}</span> {specs[question.type as QuestionType]?.options === 'none' ? '' : `${questionOptions.length} options`}{questionLayout({ ...question, options: questionOptions } as never) === 'image-grid' && layoutApplies(question.type) ? ' · picture tiles' : ''}</span></div>
+          <div class="row__main"><span class="row__title" id={`question-title-${question.id}`}>{question.prompt}</span><span class="muted"><span class="tag">{questionKind(question)}</span> {specs[question.type as QuestionType]?.options === 'none' || question.type === 'art-of-the-possible' ? '' : `${questionOptions.length} options`}{questionLayout({ ...question, options: questionOptions } as never) === 'image-grid' && layoutApplies(question.type) ? ' · picture tiles' : ''}</span></div>
           <button class="btn" type="button" data-edit-question={question.id} aria-expanded={open} aria-controls={open ? editorId(question.id) : undefined} onclick={() => request(question.id)} disabled={busy || editorBusy}>Edit</button>
           <button class="btn btn--danger" type="button" onclick={() => void deleteQuestion(question)} disabled={busy || editorBusy || open}>Delete</button>
           {#if open}{@render editorFor(question)}{/if}

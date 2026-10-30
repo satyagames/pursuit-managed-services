@@ -408,6 +408,25 @@ describe('Prompt 22: the confidence check on the local site', () => {
     assert.equal(ready.state.lists.sessionsummary.length, 0);
   });
 
+  test('the art-of-the-possible scenario: two lists that differ, a High, a Medium, a Low and a split row, six pictures, a summary each; ready gains nothing', async () => {
+    const { state } = await buildScenario('art-of-the-possible', { pictures: new Map() });
+    const count = (questionId) => state.lists.options.filter((row) => row.QuestionId === questionId).length;
+    assert.deepEqual([count('q-kroger-aop'), count('q-dominos-aop')], [13, 7]);
+    assert.equal(state.lists.options.filter((row) => row.QuestionId === 'q-kroger-aop').reduce((sum, row) => sum + Number(row.OptionValue), 0), 113);
+    const { aopResults } = await import('../migration/src/lib/results/aop-math.js');
+    const answersOf = (sessionId) => state.lists.responses.filter((row) => row.SessionId === sessionId).flatMap((row) => JSON.parse(row.ResponsesJson));
+    const question = state.lists.questions.find((row) => row.AppId === 'q-kroger-aop');
+    const rows = state.lists.options.filter((row) => row.QuestionId === 'q-kroger-aop').map((row) => ({ id: row.AppId, label: row.Label, value: row.OptionValue }));
+    const result = aopResults({ rows, criteria: JSON.parse(question.Criteria), answers: answersOf('kroger-2026-10-14') });
+    assert.deepEqual([...new Set(result.rows.map((row) => row.band))].sort(), ['High', 'Low', 'Medium']);
+    assert.ok(result.rows.some((row) => row.split), 'one split row');
+    assert.equal(state.lists.visitorroster.filter((row) => row.PictureUrl).length, 6, 'six guests have a picture, and the rest the silhouette');
+    assert.deepEqual(state.lists.sessionsummary.map((row) => row.AppId), ['kroger-2026-10-14', 'dominos-2026-10-15']);
+    assert.ok(JSON.parse(state.lists.sessionsummary[0].SummaryJson).aop.fteHigh > 0);
+    const ready = await buildScenario('ready', { pictures: new Map() });
+    assert.equal(ready.state.lists.questions.filter((row) => row.QuestionType === 'art-of-the-possible').length, 0, 'ready gains no such activity');
+  });
+
   test('the Producer\'s card on the Live display, the session\'s Results and the dashboard show the check', async () => {
     const { chromium } = await import('@playwright/test');
     const running = await site({ scenario: 'confidence-check' });

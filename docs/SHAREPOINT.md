@@ -97,6 +97,7 @@ The table, list by list, is in [SHAREPOINT-LISTS.md](../SHAREPOINT-LISTS.md#perm
   answer lists to do their work, and a list's permission is the same for every item in it, so the separation between clients there is the app's alone
   (`can()`, the write guard and the read check). Holding it against someone who goes around the page would need a server component between the page
   and the lists, which this app does not have (no server, by design).
+- **Schema version 9** (Prompt 23): `PMSActivityQuestions.Criteria` and `PMSGuestList.PictureUrl`, both optional. Run Setup before replacing the pages. Guest pictures are files of the picture library named `g-<10 hex>-<10 hex>.<ext>`; a guest's iPad needs read access to the library, and a removed one goes to the site's recycle bin.
 - **The reporting settings and a client's Industry and Region** (Prompt 22) are written to `PMSAppSettings` and `PMSClients`, which the facilitators
   already write (the live session, a client's brand), so SharePoint cannot tell these columns apart: a Super admin alone may change the fiscal-year start
   month and the minimum sample, and whoever has `clients.manage` a client's Industry and Region, **by the page's write guard only** (`FIELD_WRITES`),

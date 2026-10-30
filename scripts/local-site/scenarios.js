@@ -30,6 +30,7 @@ export const SCENARIOS = Object.freeze({
   'pcoe-16oct': 'Calibration: what PCOE showed on 16 Oct 2026 (the older Kroger and Domino\'s content), to compare with the photographs.',
   stress: '60 clients, one session of 400 visits and 30 questions, eight answers of 90 characters.',
   chaos: '"ready", with a fault answered in turn every few requests (429, 503, 500, a dropped connection, an expired write token).',
+  'art-of-the-possible': '"ready" with Art of the Possible (Prompt 23): Kroger\'s 13 sub-processes and Domino\'s 7, ended sessions with summaries, Kroger live again, a High, a Medium, a Low and a split row, six guests with a drawn picture and the rest the silhouette.',
   'confidence-check': '"ready" with the confidence check (Prompt 22): Kroger and Domino\'s ask it; Kroger\'s session of 14 Oct and Domino\'s of 15 Oct ended with Before and After answered (some guests Before only) and their summaries written; Kroger live today with the check, Before answered by most so far.',
 });
 export const EVENT_DATE = '2026-10-16';
@@ -315,6 +316,78 @@ async function confidenceCheckDays(fake, ds, r) {
   return run('c-kroger', 'kroger', EVENT_DATE, { people: 18, beforeOnly: 0, afters: 5, end: false });
 }
 
+// ---- Art of the Possible (Prompt 23) --------------------------------------------------------------------------------------------------
+// ASSUMED: the manager's sample names four of Kroger's 13 rows and their people (113 in all); the file itself is not in this repository, so the other nine are invented to add up.
+const AOP_CRITERIA = (slug) => [['Strategic value', 'against', 'High: this work sets the business apart.'], ['Volume / repeatability', 'favours', 'High: the same work again and again.'], ['Standardisation', 'favours', 'High: one documented way of working.'],
+  ['Compliance / risk', 'against', 'High: a mistake is costly or regulated.'], ['Outsourcing suitability', 'favours', 'High: another team could take it on.']].map(([label, direction, hint], at) => ({ id: `c-${slug === 'kroger' ? 'a' : 'b'}0000${at}`, label, hint, direction }));
+const AOP_ROWS = {
+  kroger: [['Corp accounting – GL', 29, 'high'], ['AP / AR', 28, 'high'], ['Other finance', 11, 'split'], ['Treasury', 8, 'low'], ['Tax', 7, 'low'], ['FP&A', 6, 'medium'], ['Payroll', 5, 'high'], ['Fixed assets', 4, 'high'], ['Intercompany', 4, 'medium'], ['Internal audit', 4, 'low'], ['Regional finance', 4, 'medium'], ['Procurement admin', 3, 'medium'], ['National admin', 0, 'low']],
+  dominos: [['Store accounting', 18, 'high'], ['Franchise billing', 12, 'high'], ['Supply chain finance', 9, 'split'], ['Marketing finance', 6, 'medium'], ['Legal and tax', 5, 'low'], ['Treasury', 4, 'low'], ['Investor relations', 2, 'low']],
+};
+/** A row's tilt as ratings: High-band rows rate High where it favours handing over and Low where it counts against; Low-band rows the other way; a split row is half and half. */
+const aopLevel = (tilt, direction, guest) => {
+  if (tilt === 'medium') return 2;
+  const towards = tilt === 'split' ? guest % 2 === 0 : tilt === 'high';
+  return direction === 'favours' ? (towards ? 3 : 1) : (towards ? 1 : 3);
+};
+/** A face that is nobody: a coloured disc and two eyes, drawn here, as a WebP (no photo of a person is in this repository). Null where the canvas package is not installed. */
+async function drawnPicture(index) {
+  try {
+    const { createCanvas } = await import('@napi-rs/canvas');
+    const canvas = createCanvas(256, 256);
+    const context = canvas.getContext('2d');
+    context.fillStyle = ['#0076a8', '#046a38', '#8a5a00', '#6b3fa0', '#b3261e', '#00547a'][index % 6];
+    context.fillRect(0, 0, 256, 256);
+    context.fillStyle = '#ffe6cc';
+    context.beginPath(); context.arc(128, 120, 70, 0, Math.PI * 2); context.fill();
+    context.fillStyle = '#222222';
+    context.beginPath(); context.arc(102, 110, 8, 0, Math.PI * 2); context.arc(154, 110, 8, 0, Math.PI * 2); context.fill();
+    return new Blob([await canvas.encode('webp', 70)], { type: 'image/webp' });
+  } catch { return null; }
+}
+
+/** Kroger's and Domino's activity, two sessions run to the end with their summaries, and Kroger live again. Returns how many guests have a picture. */
+async function artOfThePossibleDays(fake, ds) {
+  const summaries = await import('../../migration/src/lib/admin/session-summaries.js');
+  const page = await import('../../migration/src/lib/data/dataService.js');
+  page.configure({ sharePoint: fake.settings });
+  const { encodeAnswer } = await import('../../migration/src/lib/participant/aop-answer.js');
+  const rows = visitRows(fake);
+  const made = {};
+  for (const [slug, clientId] of [['kroger', 'c-kroger'], ['dominos', 'c-dominos']]) {
+    const criteria = AOP_CRITERIA(slug);
+    const optionIds = AOP_ROWS[slug].map((_, at) => `o-${slug}-aop-${at + 1}`);
+    for (const [at, [label, people]] of AOP_ROWS[slug].entries()) await ds.createOption({ id: optionIds[at], questionId: `q-${slug}-aop`, ...ds.matrixRowFields({ label, people: String(people) }) });
+    await ds.createQuestion({ id: `q-${slug}-aop`, sectionId: `sec-${slug}-aop`, type: 'art-of-the-possible', prompt: 'Rate each sub-process on five criteria', optionIds, order: 1, criteria });
+    await ds.createSection({ id: `sec-${slug}-aop`, title: 'Art of the Possible', order: 99, enabled: true, industryTags: [], questionIds: [`q-${slug}-aop`], clientId });
+    made[slug] = { criteria, optionIds };
+  }
+  let pictured = 0;
+  const run = async (slug, clientId, date, people, { end = true, rated = people } = {}) => {
+    const { criteria, optionIds } = made[slug];
+    const { session } = await ds.activateClient(clientId, date);
+    for (let index = 0; index < people; index += 1) {
+      const key = `${slug}-${date.slice(5)}-${index + 1}`;
+      const visitor = await ds.createVisitor({ id: `v-${key}`, sessionId: session.id, displayName: `${FIRST[index % FIRST.length]} ${LAST[index % LAST.length]}`, enabled: true, guestGroup: index % 3 === 0 ? 'Finance' : 'Operations' });
+      if (pictured < 6) {
+        const blob = await drawnPicture(index);
+        if (blob) { const { url } = await ds.uploadGuestPicture(session.id, visitor.id, blob); await ds.updateVisitor(visitor.id, { pictureUrl: url }); pictured += 1; }
+      }
+      const createdAt = `${date}T09:${String(index).padStart(2, '0')}:00.000Z`;
+      rows.track({ AppId: `t-${key}`, SessionId: session.id, ClientId: clientId, JoinedVia: 'qr', VisitorId: visitor.id, ParticipantName: visitor.displayName, CreatedAt: createdAt });
+      if (index >= rated) continue;
+      const grid = Object.fromEntries(optionIds.map((id, at) => [id, Object.fromEntries(criteria.map((criterion) => [criterion.id, aopLevel(AOP_ROWS[slug][at][2], criterion.direction, index)]))]));
+      const answer = encodeAnswer(grid);
+      rows.answers(`t-${key}`, session.id, clientId, [{ questionId: `q-${slug}-aop`, answer, firstAnswer: answer, attempts: 1, correct: null, answeredAt: createdAt }]);
+    }
+    if (end) { await ds.endSession(session.id); await summaries.writeSummary(session.id, { writtenBy: ADMIN.name, startMonth: 6 }); } else await ds.updateSession(session.id, { status: 'in-progress' });
+  };
+  await run('kroger', 'c-kroger', '2026-10-14', 10);
+  await run('dominos', 'c-dominos', '2026-10-15', 8);
+  await run('kroger', 'c-kroger', EVENT_DATE, 6, { end: false, rated: 4 });
+  return pictured;
+}
+
 /** Four rankings of five options whose points (5 for first ... 1 for last) are exactly `points`, found by search. */
 function rankingsFor(points) {
   const perms = [];
@@ -469,6 +542,10 @@ export async function buildScenario(name, { pictures = pictureFiles() } = {}) {
         if (name === 'confidence-check') {
           const live = await confidenceCheckDays(fake, ds, r);
           extras.notes.push(`The confidence check: two ended sessions with their summaries, and ${live.id} live with Before answered by everyone and After by 5.`);
+        }
+        if (name === 'art-of-the-possible') {
+          const pictured = await artOfThePossibleDays(fake, ds);
+          extras.notes.push(`Art of the Possible: Kroger's 13 sub-processes and Domino's 7; two ended sessions with summaries, Kroger live again; ${pictured} guests have a drawn picture.`);
         }
         if (name === 'event-day' || name === 'finished') {
           if (name === 'finished') await dominosDone(fake, ds, r);

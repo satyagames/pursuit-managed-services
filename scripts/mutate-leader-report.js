@@ -4,7 +4,7 @@
 // Since Phase 11b the list ends with mutations of the drawing and the words of the files on the chart model (the leader report's results,
 // the Live display's one-page PDF and PowerPoint, the figure, the palette, the iPads line): each names its file and the suites that hold it,
 // and the broken copy is swapped in by a resolve hook (scripts/mutation-redirect.mjs) while those suites run. Phase 13 added 15 more: the takeaways
-// (lib/results/export-summary.js), the leader report's At a glance and activity pages, the summary pack and the summary CSV (64 in all).
+// (lib/results/export-summary.js), the leader report's At a glance and activity pages, the summary pack and the summary CSV (64 then). Prompt 23 added 7 of lib/results/aop-math.js, the only place Art of the Possible's formulas live (71 in all).
 // A mutation the tests do not notice ("survived") is a rule nothing is holding, and this script exits 1.
 //
 //   node scripts/mutate-leader-report.js            (npm run test:report:mutations)
@@ -132,8 +132,8 @@ const MUTATIONS = [
     'for (let step = 1; contrastRatio(accent, \'#FFFFFF\') < 1 && step <= 50; step += 1)'],
   // Phase 11b: the drawing and the words on the chart model (each with its file and the suites that hold it).
   ["The leader report's chart counts the LAST answer of a graded question",
-    "answer: graded ? record.first : record.counted }))",
-    "answer: graded ? record.final : record.counted }))",
+    "answer: graded ? record.first : record.counted,))",
+    "answer: graded ? record.final : record.counted,))",
     { file: "migration/src/lib/exports/leader-report.js", tests: ["scripts/test-leader-report-charts.js"] }],
   ["The leader report prints no headline above a chart",
     "rows.push(...marked(paragraph(chart.headline,",
@@ -271,6 +271,16 @@ if (control.status !== 0) {
   console.error('The tests do not pass on the real file, so a mutation check would prove nothing.\n', control.stdout.slice(-2000));
   process.exit(1);
 }
+MUTATIONS.push(
+  ['Art of the Possible counts a criterion that is against as if it favoured', "criterion.direction === 'against' ? 4 - average : average", 'average', { file: "migration/src/lib/results/aop-math.js", tests: ["scripts/test-aop-math.js","scripts/test-aop-results.js"] }],
+  ['Art of the Possible scores a criterion that is not in the score', "average === null || criterion.direction === 'none' ? undefined", 'average === null ? undefined', { file: "migration/src/lib/results/aop-math.js", tests: ["scripts/test-aop-math.js","scripts/test-aop-results.js"] }],
+  ['Art of the Possible\'s opportunity forgets to take off the 1', "((mean(scored.map((cell) => cell.aligned)) - 1) / 2) * 100", "(mean(scored.map((cell) => cell.aligned)) / 2) * 100", { file: "migration/src/lib/results/aop-math.js", tests: ["scripts/test-aop-math.js","scripts/test-aop-results.js"] }],
+  ['The High band starts above two thirds, not at them', "opportunity >= BAND_HIGH - EPSILON", "opportunity > BAND_HIGH + EPSILON", { file: "migration/src/lib/results/aop-math.js", tests: ["scripts/test-aop-math.js","scripts/test-aop-results.js"] }],
+  ['People in scope count rows nobody rated', "const inScope = shown.filter((row) => row.inScope);", "const inScope = shown;", { file: "migration/src/lib/results/aop-math.js", tests: ["scripts/test-aop-math.js","scripts/test-aop-results.js"] }],
+  ['A later answer overwrites the first rating', "(grid[rowId] ??= {})[criterionId] ??= level;", "(grid[rowId] ??= {})[criterionId] = level;", { file: "migration/src/lib/results/aop-math.js", tests: ["scripts/test-aop-math.js","scripts/test-aop-results.js"] }],
+  ['The dashboard adds a client\'s people for every session', "if (!latest.has(each.clientId) || when(each) >= when(latest.get(each.clientId))) latest.set(each.clientId, each);", "latest.set(each.id, each);", { file: "migration/src/lib/results/aop-math.js", tests: ["scripts/test-aop-math.js","scripts/test-aop-results.js"] }],
+);
+
 const drawingSuites = [...new Set(MUTATIONS.filter((entry) => entry[3]).flatMap((entry) => entry[3].tests))];
 const drawingControl = runWith(drawingSuites, null, null);
 if (drawingControl.status !== 0) {

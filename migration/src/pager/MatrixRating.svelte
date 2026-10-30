@@ -360,7 +360,8 @@
     font-weight: var(--fw-bold);
     text-align: left;
     vertical-align: bottom;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
+    hyphens: auto;
     background: var(--plate);
     border-bottom: 2px solid var(--on-plate);
   }

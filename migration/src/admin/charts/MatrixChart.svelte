@@ -23,7 +23,7 @@
     if (sort === 'order') return list.sort((left, right) => left.order - right.order);
     return list.sort((left, right) => (right.opportunity ?? -1) - (left.opportunity ?? -1) || right.people - left.people || left.order - right.order);
   });
-  const columns = $derived(3 + (chart.criteria?.length ?? 0) + 1);
+  const columns = $derived(1 + (chart.criteria?.length ?? 0) + 4);
   const who = (cell: { who: Who[] }) => cell.who;
 </script>
 
@@ -47,7 +47,7 @@
       <thead>
         <tr>
           <th scope="col">Sub-process</th>
-          {#each chart.criteria as criterion (criterion.id)}<th scope="col" class="aop__n">{criterion.label}{#if criterion.direction === 'against'} <span class="aop__direction">(counts against)</span>{:else if criterion.direction === 'none'} <span class="aop__direction">(not in the score)</span>{/if}</th>{/each}
+          {#each chart.criteria as criterion (criterion.id)}<th scope="col" class="aop__n">{criterion.label}{#if criterion.direction === 'against'}{' '}<span class="aop__direction">(counts against)</span>{:else if criterion.direction === 'none'}{' '}<span class="aop__direction">(not in the score)</span>{/if}</th>{/each}
           <th scope="col" class="aop__n">Opportunity{#if !fit}<MetricInfo id="aop-opportunity" />{/if}</th>
           <th scope="col">Band{#if !fit}<MetricInfo id="aop-band" />{/if}</th>
           <th scope="col" class="aop__n">Agreement{#if !fit}<MetricInfo id="aop-agreement" />{/if}</th>
@@ -68,7 +68,7 @@
             {/each}
             <td class="aop__n"><span class="aop__score">{row.opportunityText}</span>{#if row.opportunity !== null}<span class="aop__track" aria-hidden="true"><span style:width="{row.opportunity}%"></span></span>{/if}</td>
             <td class="aop__band" data-band={row.band}>{row.mark} {row.bandText}</td>
-            <td class="aop__n">{row.agreementText}{#if row.split} <span class="aop__split">⚠ Split</span>{/if}</td>
+            <td class="aop__n">{row.agreementText}{#if row.split}{' '}<span class="aop__split">⚠ Split</span>{/if}</td>
             <td class="aop__n">{row.people}</td>
           </tr>
           {#if open === row.id && !fit}
@@ -78,7 +78,7 @@
                 <ul class="aop__cells">
                   {#each row.criteria as cell (cell.id)}
                     <li>
-                      <strong>{cell.label}</strong>: Low {cell.counts[1]}, Medium {cell.counts[2]}, High {cell.counts[3]}{#if cell.meanText} (average {cell.meanText}){/if}
+                      <strong>{cell.label}</strong>: Low {cell.counts[1]}, Medium {cell.counts[2]}, High {cell.counts[3]}{#if cell.meanText}{' '}(average {cell.meanText}){/if}
                       {#if withNames && who(cell).length > 0}
                         <p class="aop__who">Who said High:</p>
                         <ul class="aop__names">

@@ -219,6 +219,8 @@ The dashboard reads totals, never answers ([RULES.md](RULES.md) has the rules):
 4. **Export.** Export report is a CSV made in the page from the figures; each session's Export (in a client's row) is that session's leader report, read
    as Results always read it.
 5. **Delete session** removes the session's summary with its other data, before the session item.
+- **Art of the Possible and pictures** (Prompt 23). A guest's ratings stay in the page and `sessionStorage` (`cec-matrix:`) and are written by Send, as one answer, through `participantData`. A guest's picture address comes with the guest record the QR scan reads and is kept for the tab (`cec-guest-picture:`), never on the track. Results reads the session's roster when Live results is opened, for someone who may see names with Hide names off, once a session.
+
 6. **The shift by client and by session** (Prompt 22) is worked out in the page from the same summaries (`shiftOf`, `movedOf`, `pairedMeansByScale`): no
    request of its own.
 7. **Reporting settings** (Prompt 22, a Super admin's): opening it reads the settings item (`getAppSettings`); Save sends what changed with

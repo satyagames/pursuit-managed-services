@@ -22,7 +22,7 @@ What each gate proves, how long it takes on the development machine (a Windows l
 | `npm run test:baseline` | Every SharePoint request ten mocked suites send is the one recorded in `scripts/request-baseline/` (part of `npm test`). A difference is a finding, never a reason to re-record. | in `npm test` |
 | `npm run test:bundle` | The three pages' sizes against their budgets, the participant page free of the admin's libraries, and each phase's recorded sizes (part of `npm test`). | 5 s |
 | `npm run test:report` | The leader report, its PDF, the CSVs and the Live display's summary pack, held to sessions worked out by hand and read back with pdf.js. | 4 s |
-| `npm run test:report:mutations` | The report's tests catch each of 64 deliberate breakages of the counting, drawing and wording. | 22 s |
+| `npm run test:report:mutations` | The report's tests catch each of 71 deliberate breakages of the counting, drawing and wording. | 22 s |
 | `npm run oracle -- --seeds 500` | 500 random sessions counted again by rules of the oracle's own, in four time zones, on both adapters: 0 differences. | 6 s |
 | `npm run test:charts` | Every number a Results chart shows, the palette's contrast, the wall's address, where a tooltip goes. | 1 s |
 | `npm run test:local-site` | The local PCOE stand-in answers as PCOE does, and Setup's self-test passes 11 of 11 on it (needs a release package). | 3 s |
@@ -67,6 +67,7 @@ seven sizes.
   real server against a scratch copy of `server/data/`, and drives it through
   `dataService` to exercise track merge/resume, admin restart, and QR token
   lifecycle. Run this after touching `server/`, `lib/data/`, or session/track logic.
+- **Prompt 23's suites** (all part of `npm test`): [scripts/test-aop-math.js](../scripts/test-aop-math.js) (the answer and the formulas, from the brief's session worked by hand), [scripts/test-aop-editor.js](../scripts/test-aop-editor.js) (every limit, paste, a copy's notice, the write guard), [scripts/test-aop-results.js](../scripts/test-aop-results.js) (the chart, the report, the long CSV, the pooling, and no picture in any export), [scripts/test-guest-picture.js](../scripts/test-guest-picture.js) (the name, what may be removed and Delete session, on both adapters). `scripts/oracle-results.js` recounts opportunity, band and people in the High band in whole numbers from the raw strings (`generateAop`, `aopOracle`). The browser side is `art-of-the-possible.spec.ts`, Chromium and WebKit, with pictures in `test-results/art-of-the-possible/`; a chosen picture runs in Chromium only, since Playwright's WebKit on Windows cannot open one. The request baselines followed version 9 by [scripts/schema-baseline/aop-baselines.js](../scripts/schema-baseline/aop-baselines.js).
 - **Phase 17's suites** (all part of `npm test`): [scripts/test-data-surface.js](../scripts/test-data-surface.js) holds the data service's 107 public names, each
   with its kind and arity, to `scripts/data-surface.json` and its count in DECISIONS.md; [scripts/test-data-modules.js](../scripts/test-data-modules.js) holds the shape
   of `lib/data/` (one state instance per page, only `core.js` keeps state and fetches, the facade passes on exactly the surface, no app file imports a part,

@@ -74,6 +74,19 @@ One line each: the decision, why, and what enforces it (a test fails if it is br
 | A new fiscal start month moves the dashboard's windows at once but not the quarters stored on sessions and summaries; they move only when a Super admin confirms **Move stored quarters**. | Rebuild keeps a session's stored Period; nothing stored changes behind the owner's back. | `scripts/test-reporting-settings.js` |
 | Every reader of a session's answers asks the read check (Phase 7: `askRead` in `lib/data/responses.js`). | Phase 4 left the specialised readers out; a refused read sends nothing. | `scripts/test-hardening.js` |
 
+## Art of the Possible and guest pictures (Prompt 23)
+
+| Decision | Enforced by |
+|---|---|
+| Rows are a question's options, criteria its `Criteria` column; no new list. Schema version 9. | `scripts/test-schema.js` |
+| Direction: Strategic value and Compliance / risk count against, the other three favour (ASSUMED, open question 1). | `DEFAULT_CRITERIA`, `scripts/test-aop-editor.js` |
+| Every box must be rated to send (open question 2). | `isAnswerComplete`, `scripts/test-pager.js` |
+| A box counts its first rating; a later answer fills only what the first left empty. | `countedGrid`, `scripts/test-aop-math.js` |
+| People are pooled per client, most recent session. | `poolAop`, `scripts/test-aop-results.js` |
+| A picture is personal data: kept until the session is deleted (open question 3), shown only with a name, in no file. | `scripts/test-aop-results.js`, `scripts/test-guest-picture.js` |
+| A copy's rows are flagged in its `Layout` until saved, since no column was allowed. | `scripts/test-aop-editor.js` |
+| The word on screen is "people in scope" (open question 4); the share comes before the index (5); ratings are blue and the band alone is red, amber and green (6). | `scripts/test-aop-results.js` |
+
 ## The participant page
 
 | Decision | Why | Enforced by |
