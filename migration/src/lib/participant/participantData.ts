@@ -187,7 +187,7 @@ export async function hasAnyAnswer(visit: { sessionId: string; trackId: string; 
  * the session beside them, for a hub that stays open (see experience.currentActivities).
  */
 export async function getProgress(sessionId: string, clientTrackId: string, answeredQuestionIds: string[] | null = null, { withSession = false } = {}): Promise<{
-  sections: { id: string; title: string; description?: string; complete: boolean; questionIds?: string[] }[];
+  sections: { id: string; title: string; description?: string; complete: boolean; questionIds?: string[]; answered?: number; total?: number }[];
   allComplete: boolean;
 }> {
   const visit = currentVisit();
@@ -223,6 +223,8 @@ function progressOf(sections: Activity[], answeredQuestionIds: string[]) {
       return {
         id: section.id, title: section.title, description: section.description ?? undefined, questionIds,
         complete: questionIds.length > 0 && questionIds.every((id) => answered.has(id)),
+        answered: questionIds.filter((id) => answered.has(id)).length,
+        total: questionIds.length,
       };
     });
   return { sections: enabled, allComplete: enabled.length > 0 && enabled.every((section) => section.complete) };

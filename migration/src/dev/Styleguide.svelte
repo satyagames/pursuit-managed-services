@@ -22,9 +22,10 @@
 
   const answerStates: AnswerState[] = ['default', 'selected', 'correct', 'incorrect', 'disabled'];
   const activityStates: { state: ActivityState; label: string }[] = [
-    { state: 'default', label: "Kroger's History" },
+    { state: 'ready', label: "Kroger's History" },
+    { state: 'progress', label: 'Guess the Brand (in progress)' },
     { state: 'done', label: "Kroger's History (done)" },
-    { state: 'locked', label: 'Guess the Brand' },
+    { state: 'locked', label: 'Straight Talk' },
   ];
 
   const presets = [
@@ -177,7 +178,7 @@
     <h2 id="sg-activities">ActivityPill</h2>
     <div class="stack">
       {#each activityStates as item (item.state)}
-        <ActivityPill state={item.state} label={item.label} />
+        <ActivityPill state={item.state} label={item.label} answered={item.state === 'progress' ? 2 : 0} total={4} next={item.state === 'ready'} />
       {/each}
     </div>
   </section>
