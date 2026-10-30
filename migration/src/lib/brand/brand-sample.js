@@ -9,11 +9,13 @@
 /** The name on Welcome and the finale. */
 export const SAMPLE_NAME = 'Jane Doe';
 
-/** The three hub states a participant meets, one of each: finished, open and waiting. */
+/** The four hub states a participant meets, one of each: finished, started, open and waiting. */
 export const SAMPLE_PILLS = Object.freeze([
-  Object.freeze({ id: 'sample-1', title: 'Warm-up round', state: /** @type {const} */ ('done') }),
-  Object.freeze({ id: 'sample-2', title: 'Guess the brand', state: /** @type {const} */ ('default') }),
-  Object.freeze({ id: 'sample-3', title: 'Final round', state: /** @type {const} */ ('locked') }),
+  // (All four states of the hub, so a designer sees the client's colours on each: Prompt 24.)
+  Object.freeze({ id: 'sample-1', title: 'Warm-up round', state: /** @type {const} */ ('done'), answered: 3, total: 3, next: false }),
+  Object.freeze({ id: 'sample-2', title: 'Guess the brand', state: /** @type {const} */ ('progress'), answered: 2, total: 4, next: true }),
+  Object.freeze({ id: 'sample-3', title: 'Straight talk', state: /** @type {const} */ ('ready'), answered: 0, total: 4, next: false }),
+  Object.freeze({ id: 'sample-4', title: 'Final round', state: /** @type {const} */ ('locked'), answered: 0, total: 3, next: false }),
 ]);
 
 /** @type {(id: string, prompt: string, answers: string[], right: number) => Question} */

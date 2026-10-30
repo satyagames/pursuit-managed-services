@@ -64,9 +64,10 @@ test('Welcome, the hub, a question right and wrong, the end of an activity and t
       `);
       await expect(main).toMatchAriaSnapshot(`
         - heading "Kroger Trivia Night" [level=1]
+        - progressbar "Activities complete"
         - list:
           - listitem:
-            - button "Kroger's History"
+            - button "Kroger's History, ready"
           - listitem:
             - button /Guess the Brand/ [disabled]
           - listitem:
@@ -74,7 +75,7 @@ test('Welcome, the hub, a question right and wrong, the end of an activity and t
         - button "Home"
       `);
       // A locked activity says why, in text, inside its own button (a screen reader reads it with the name).
-      await expect(main.getByRole('button', { name: /Guess the Brand/ })).toHaveAccessibleName('Guess the Brand Finish the previous activity');
+      await expect(main.getByRole('button', { name: /Guess the Brand/ })).toHaveAccessibleName('Guess the Brand, locked. Finish the previous activity');
       await expect(main.getByRole('button', { name: /Guess the Brand/ })).toHaveAttribute('aria-disabled', 'true');
     } else if (state === 'question, unanswered') {
       await expect(main).toMatchAriaSnapshot(`

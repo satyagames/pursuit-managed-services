@@ -153,7 +153,7 @@ test('Kroger: the mockup. Its palette, its event title, its activities in order,
   expect(await title.evaluate((element) => getComputedStyle(element).textTransform)).toBe('uppercase');
   await expect(page.getByText("Celebrating 140+ years of Kroger's history and the people who built them.")).toBeVisible();
   await expect(page.locator('button.activity')).toHaveText([/Kroger's History/, /Guess the Brand/, /Confidence Continuum/, /Open Feedback/]);
-  await expect(page.locator('button.activity').nth(0)).toHaveAttribute('data-state', 'default');
+  await expect(page.locator('button.activity').nth(0)).toHaveAttribute('data-state', 'ready');
   await expect(page.locator('button.activity[data-state="locked"]')).toHaveCount(3);
   await expect(page.getByText('Straight Talk'), 'a disabled activity is not shown').toHaveCount(0);
   await shoot(page, 'kroger-hub-820x1180');
@@ -180,7 +180,7 @@ test('Kroger: the mockup. Its palette, its event title, its activities in order,
 
   // Guess the Brand is unlocked now: a 2x2 grid of TEXT tiles (no logos are uploaded), Home Chef right.
   await page.getByRole('button', { name: 'Back to activities' }).click();
-  await expect(page.getByRole('button', { name: "Kroger's History Completed" })).toHaveAttribute('data-state', 'done');
+  await expect(page.getByRole('button', { name: "Kroger's History, done" })).toHaveAttribute('data-state', 'done');
   await page.getByRole('button', { name: /Guess the Brand/ }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Guess the Brand' })).toBeVisible();
   await expect(page.getByText('Solve the hints the best you can and spot the right Kroger brand!')).toBeVisible();

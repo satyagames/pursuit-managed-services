@@ -192,7 +192,7 @@ export async function walkParticipant(page: Page, { pack, clientId }: { pack: Pa
   await expect(page.getByRole('heading', { level: 1, name: /Nice work/ })).toBeVisible();
   await stop('activity done');
   await page.getByRole('button', { name: 'Back to activities' }).click();
-  await expect(page.getByRole('button', { name: /Completed/ }).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: /, done$/ }).first()).toBeVisible();
   await stop('hub: a finished, a current and a locked activity');
 
   // Activity 2: tiles.

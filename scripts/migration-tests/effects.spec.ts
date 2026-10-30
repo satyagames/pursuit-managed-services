@@ -95,6 +95,17 @@ async function step(page: Page, expected: { cue: CueName | null; confetti: Confe
   }
 }
 
+/** Back on the hub after finishing an activity (Prompt 24): the stamp and the journey line's tick, once and in that order (this session is any-order, so nothing unlocks: hub-states.spec.ts has the unlock), then the overlay of the sparks goes. */
+async function returnToHub(page: Page, soundOn: boolean) {
+  const before = await readAudio(page);
+  await page.getByRole('button', { name: 'Back to activities' }).click();
+  const wanted = soundOn ? (['stamp', 'pick'] as const).flatMap((cue) => toneSignature(CUES[cue])) : [];
+  await expect.poll(async () => (await readAudio(page)).oscillators.length - before.oscillators.length, { timeout: 6000 }).toBe(wanted.length);
+  await page.waitForTimeout(1000);
+  expect((await readAudio(page)).oscillators.slice(before.oscillators.length), 'the phrase on the hub, once').toEqual(wanted);
+  await expect(confettiCanvas(page)).toHaveCount(0, { timeout: 6000 });
+}
+
 /** The whole participant flow, one moment at a time. */
 async function playThrough(page: Page, soundOn: boolean) {
   const s = (cue: CueName | null, confetti: ConfettiSize | null, action: () => Promise<unknown>) => step(page, { cue, confetti }, action, { soundOn });
@@ -115,14 +126,14 @@ async function playThrough(page: Page, soundOn: boolean) {
   await s(null, null, () => retry(page).click());
   await s('revealed', null, () => choice(page, 2).click());
   await s('activityComplete', 'medium', () => submit(page).click());
-  await s(null, null, () => page.getByRole('button', { name: 'Back to activities' }).click());
+  await returnToHub(page, soundOn);
   // The logo-tile activity: two right first time.
   await s(null, null, () => activity(page, /Guess the Brand/).click());
   await s('correctFirst', 'small', () => choice(page, 1).click());
   await s(null, null, () => next(page).click());
   await s('correctFirst', 'small', () => choice(page, 3).click());
   await s('activityComplete', 'medium', () => submit(page).click());
-  await s(null, null, () => page.getByRole('button', { name: 'Back to activities' }).click());
+  await returnToHub(page, soundOn);
   // The poll: nothing is graded, so a choice is a soft tick and never a verdict.
   await s(null, null, () => activity(page, /Quick pulse/).click());
   await s('pick', null, () => choice(page, 0).click());
