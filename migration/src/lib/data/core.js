@@ -10,6 +10,7 @@ import { ID, LISTS, selectOf } from '../schema/pms-schema.js';
 import {
   columnsOf, fieldsOf, indexById, kindOf, pause, pick, retryAfterMs, spEncode, spError, spLiteral, spParseObject, spTitleIn,
 } from './encoding.js';
+import { observed } from './read-scope.js';
 import { classifyRefusal, evidenceLine, ladderVerdict, newSessionState, noteAnswer, recoverSession, refusalEvidence, refusalWords, sessionLost } from './session.js';
 
 // ============================================================================
@@ -18,16 +19,16 @@ import { classifyRefusal, evidenceLine, ladderVerdict, newSessionState, noteAnsw
 
 let baseUrl = globalThis.CEC_API_BASE || '/api';
 let sharePoint = globalThis.CEC_SHAREPOINT ?? null;
-let digestPromise;
+let digestPromise; let requestTotal = 0;
 const listMetadata = new Map();
 const listTypes = new Map(); // list -> its item entity type, learnt from any item read or asked for once
 const typeReads = new Map(); // list -> the request for its item type that prepareWrites() made, while it is on its way
 const listColumns = new Map(); // list -> the internal column names it has, once its fields were read
 let batchOff = false; // this page load found $batch unusable, so reads that would share a request go one by one
 let unfinishedScan = null; // a QR scan whose track is written but whose claim is not known to have landed (openQrScan); never stored
-let requestTotal = 0;
 let mustConfigure = false; // requireConfiguration() was called and configure() has not been since: nothing may be sent (Phase 10b)
 let onStop = null; // what the page does when the site's lists are not this build's (lib/settings/start.ts: its stop screen); none for Setup or a test
+let accessGuard = null; // Prompt 21: the page's write guard (lib/access/guard.js), asked before every write; none on the participant page or Setup
 // The ladder's state (Prompt 19, lib/data/session.js): refusals seen, the recovery under way, the cooldown, lists refused, the page's renewer and listeners.
 let session = newSessionState();
 
@@ -50,6 +51,7 @@ export function configure({ baseUrl: url, sharePoint: settings, onStop: stop } =
   unfinishedScan = null;
   mustConfigure = false;
   onStop = stop ?? null;
+  accessGuard = null;
   session = newSessionState(session);
 }
 
@@ -84,11 +86,12 @@ function spSite() {
 
 // `idempotent` marks a write that is safe to send twice (it replaces a whole value, or a repeat is
 // caught by the unique AppId), so a 503/504 is retried for it the way it always was for a GET. `ladder: false` is the ladder's own proofs.
-async function spHttp(method, resource, { body, headers = {}, digest = true, idempotent = false, ladder = true } = {}) {
+async function spHttp(method, resource, { body, headers = {}, digest = true, idempotent = false, ladder = true, signal = undefined } = {}) {
   assertConfigured();
   const root = `${spSite()}/_api`;
   const url = resource.startsWith('https://') ? resource : `${root}${resource}`;
   if (!url.startsWith(`${root}/`)) throw new Error('Unexpected SharePoint pagination URL.');
+  if (accessGuard && method !== 'GET') accessGuard(method, resource, headers, body); // (throws AccessDenied: nothing is sent)
   let sentAgain = false; // a refused request is sent once more at most (a stale token, or the ladder): a write is never sent three times
   let outcome; // this request's recovery, once the ladder has run for it
   for (let attempt = 0; attempt < 4; attempt += 1) {
@@ -99,7 +102,7 @@ async function spHttp(method, resource, { body, headers = {}, digest = true, ide
       headers: { Accept: 'application/json;odata=verbose', ...writeHeaders,
         ...(body === undefined ? {} : { 'Content-Type': body instanceof Blob ? body.type : 'application/json;odata=verbose' }), ...headers },
       body: body === undefined || body instanceof Blob ? body : JSON.stringify(body),
-      signal: AbortSignal.timeout(20_000),
+      signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(20_000)]) : AbortSignal.timeout(20_000), // (a caller's own abort: the people picker's stale search)
     });
     const asked = [429, 503, 504].includes(response.status) ? retryAfterMs(response) : undefined;
     const retryAfter = Number.isFinite(asked) ? asked : undefined; // handed to the caller if every try fails
@@ -371,6 +374,7 @@ async function spSend(method, path, { body, headers = {} }) {
 async function send(method, path, { body, headers } = {}) {
   assertConfigured();
   if (sharePoint) return spSend(method, path, { body, headers });
+  if (accessGuard && method !== 'GET') accessGuard(method, path, headers, body);
   const upload = body instanceof Blob;
   requestTotal += 1;
   const response = await fetch(baseUrl + path, {
@@ -393,18 +397,16 @@ async function send(method, path, { body, headers } = {}) {
 
 const request = async (method, path, body) => (await send(method, path, { body })).data;
 
-/**
- * True when `error` means the backend couldn't be reached or failed on its side (offline,
- * timed out, 5xx), as opposed to it answering "no" (404, 409 and the like). Screens use it
- * to offer a retry instead of a dead end. Part of the adapter: the SharePoint version
- * decides what a connection failure looks like there.
- */
+/** True when `error` means the backend couldn't be reached or failed on its side (offline, timed out, 5xx), as opposed to it answering "no" (404,
+ * 409 and the like). Screens use it to offer a retry instead of a dead end. Part of the adapter: the SharePoint version decides what a connection
+ * failure looks like there. */
 export const isUnreachable = (error) =>
   error instanceof TypeError || // fetch() rejects with this when there is no connection
   ['TimeoutError', 'AbortError'].includes(error?.name) ||
   (typeof error?.status === 'number' && (error.status === 429 || error.status >= 500));
 
 export const isSharePointMode = () => { assertConfigured(); return Boolean(sharePoint); };
+export const setAccessGuard = (guard) => { accessGuard = guard ?? null; }; export const currentAccessGuard = () => accessGuard; // Prompt 21: the page's write guard (null, or configure(), takes it away); the getter is for lib/data/access-people.js
 
 // List operations: the same set a SharePoint list offers. `list` is a logical
 // name (a JSON file here; a SharePoint list after the migration).
@@ -443,13 +445,13 @@ function fits(list, record) {
   }
   return record;
 }
-const listItems = (list) => request('GET', `/${list}`);
+const listItems = (list) => observed(accessGuard, list, undefined, () => request('GET', `/${list}`));
 const createItem = async (list, fields) => request('POST', `/${list}`, fits(list, fields));
 const updateItem = async (list, id, changes) => request('PATCH', itemPath(list, id), fits(list, changes));
 const deleteItem = (list, id) => request('DELETE', itemPath(list, id));
 
 /** Items whose fields equal the given values, e.g. queryItems('tracks', { sessionId }). */
-const queryItems = (list, filters) => request('GET', `/${list}?${new URLSearchParams(filters)}`);
+const queryItems = (list, filters) => observed(accessGuard, list, filters, () => request('GET', `/${list}?${new URLSearchParams(filters)}`));
 
 // Optimistic concurrency, for read-check-write sequences that several iPads can
 // race on (claiming a QR token). Read an item with its version, then write only if

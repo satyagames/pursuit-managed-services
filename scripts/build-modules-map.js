@@ -18,6 +18,7 @@ export const PURPOSE = {
   'migration/src': 'The three entries (`main.ts`, `admin-main.ts`, `setup-main.ts`), the three apps (`App.svelte`, `AdminApp.svelte`, `SetupApp.svelte`) and their page-wide CSS. The HTML shells are `migration/index.html`, `admin.html` and `setup.html`.',
   'migration/src/lib/data': 'The data layer: dataService.js, the door every page imports, over its parts (core.js holds the state and alone talks to SharePoint REST or, on the local server, its JSON API), and grouping of long id lists into short reads. Every page carries it.',
   'migration/src/lib/schema': 'The lists and columns: `pms-schema.js`, the names every page carries, and `pms-schema-meta.js`, everything else about them (Setup, the tests and the generators only).',
+  'migration/src/lib/access': 'Roles and access (Prompt 21): the role matrix (board 10), the one check can(), AccessDenied, the data layer\'s write guard, who is signed in, grants and their guards, the audit writer, the copy of the old admins list.',
   'migration/src/lib/settings': 'How a page starts: the browser check, where its settings come from (`pms-config.txt`, the build, its address), which site and lists are its own, and the stop screen.',
   'migration/src/lib/participant': 'The participant page: the boot sequence, the visit, the activities held for the page\'s life, the pager\'s rules, saving answers, screen moves.',
   'migration/src/lib/common': 'Shared by the pages: the product name, the heading focus rule, kiosk lock-down, the polling schedule and its one timer, the admin page\'s address.',

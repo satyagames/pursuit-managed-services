@@ -117,6 +117,75 @@ seven sizes.
   (recorded from Phase 17's file; `PMS_RECORD_MARKUP=1` records it again, for a deliberate change only), and embedded with its level 3 heading and no
   Back button. The browser side is `content-brand.spec.ts` (the strip, the address, Clients' Brand, a switch that keeps both views, the guards from a
   view out of sight, the bridge, the keyboard, requests, timers and memory, the sticky budget at 1366 by 768 and 1180 by 820, axe and reflow).
+- `node --test scripts/test-confidence-check.js` (also part of `npm test`, Prompt 20): Part 0's proof that `@before`/`@after` records survive the save,
+  the merge, the store and both restarts, and leave every tally as it was; the arithmetic of `lib/results/confidence-shift.js` worked by hand
+  (3, 4 and 5 points, ties on the thresholds, an empty session), its properties over 300 seeds, and the oracle's check block caught when wrong;
+  every row of board 14 against `nextStep()`; the schema (version 4, a site of version 3 brought up with nothing lost); the boot's resume step; the
+  golden-ratio tokens to 1%; Content's rules, the producer's counts, Results' words, the leader report, its CSV and the pack. The request
+  baselines followed the two columns by [scripts/schema-baseline/columns-baselines.js](../scripts/schema-baseline/columns-baselines.js)
+  (`--order`, `--check`, `--write`): the suites run on the last commit's tree and on today's, request by request, and a fresh recording equal to the
+  translation. The browser side is `confidence-check.spec.ts` (Chromium and WebKit; pictures in `test-results/confidence-check/`).
+- `node --test scripts/test-access.js` (also part of `npm test`, Prompt 21, Phase 1): schema version 5 (the three access lists, the two settings, a
+  site of version 4 without them); the role matrix printed and held to board 10, and every write of the app named in `LIST_WRITES`; `can()`
+  for each role, scope, extra, `ValidUntil`, a disabled person, the site owner and the legacy admin; `AccessDenied` and the write guard on
+  SharePoint's and the local server's requests, and in the data layer (nothing refused is sent; `configure()` takes the guard away);
+  `resolveAccess()` in two round trips however many people the site has, kept and read again on demand, and without `$batch`; the sign-in
+  step; grants, the last Super admin, your own roles, a duplicate grant, the audit list; Setup's copy of `PMSAdminUsers` (idempotent, counts) and
+  "Make me a Super admin"; the words. `node --test scripts/test-schema-version.js` holds a site of version 4 stopping with `PMS-LST-011`. The
+  request baselines followed version 5 by [scripts/schema-baseline/access-baselines.js](../scripts/schema-baseline/access-baselines.js)
+  (`--order`, `--check`, `--write`): every recorded suite run on `21cef34`'s tree (where the branch began) and on today's, request by
+  request, the settings' `$select` and the every-list column check translated, only requests of version 5 added, and a fresh recording equal to
+  the translation.
+- `node --test scripts/test-scope.js` (also part of `npm test`, Prompt 21, Phase 4): the menu of each role from the role matrix, Content's edit, view and none, the pickers and their "24 Oct 09:30 Morning workshop" labels, day one (a client nobody was given to is seen by global roles only), the scoped read queries and `scopedReader`, the guard's read check and owners (a session, an activity, a question), a write held to the real client, **one test for every cell of the capability matrix that is not "no"**, **a forbidden write for every role** (`AccessDenied`, nothing sent), the data layer refusing a scoped role's unfiltered or foreign read before any request, and the words "Survey feedback". `node --test scripts/test-guest-group.js`: schema version 7's `GuestGroup`, a pasted line's group, adding a guest with and without one on the mocked SharePoint. `scripts/migration-tests/role-scoping.spec.ts` runs the BUILT admin page signed in as a Producer, a Designer, Leadership, an Admin and a Super admin: each menu, "View only" with its controls off and axe on it, the extra, and the network log of a Producer (no request names the other client or its session); it is in `npm run test:a11y`. The request baselines followed version 7 by [scripts/schema-baseline/guestgroup-baselines.js](../scripts/schema-baseline/guestgroup-baselines.js) (every recorded suite on `dda6eb2`'s tree and on today's, request by request; only Setup's new column added; a fresh recording equal to the translation in all 13).
+- `node --test scripts/test-index-math.js`, `scripts/test-session-summary.js` and `scripts/test-leader-dashboard.js` (all part of `npm test`, Prompt 21, Phase 5): the Leadership dashboard's arithmetic worked out by hand (an index and its divide-by-zero guard, the client, session and priority indexes, change, low sample, the pooled shift, the quarters and the four baselines, and properties over random summaries); a session's summary from the leader report's counts, from four guests worked by hand; who reads which summaries (the read check per role, the places asked for, the mocked reads by `ClientId`, AppId and `Period`); **the request budget: 10,000 answers cost the dashboard the same two requests as none**; and the figures (the tiles, the headline, by client and its sessions, the baselines, low sample, the trend, the priority index, the steps, the themes and names, the filters, the report's CSV). `scripts/oracle-results.js` recounts the indexes of a dashboard of its own for every seed from raw scores and choices (`generateIndexes`, `indexOracle`: 0 differences over 500 seeds). `scripts/migration-tests/leader-dashboard.spec.ts` runs the BUILT admin page as Leadership for a period, Leadership on one client and a Producer: the dashboard opens with its heading focused, nothing of another client and no answer is asked for, the arrow opens a client's sessions in place, the i button shows its words on focus and hides them on Escape, the keyboard reaches the filters, and axe finds nothing; it is in `npm run test:a11y`. The request baselines followed version 8 by [scripts/schema-baseline/summary-baselines.js](../scripts/schema-baseline/summary-baselines.js) (every recorded suite on `ca3a16b`'s tree and on today's, request by request; a fresh recording equal to the translation in all 17); `test-session-delete`'s was amended with `--amend --code` for the summary a delete removes.
+- `node --test scripts/test-hide-names.js` and `scripts/test-access-recheck.js` (both part of `npm test`; the first in `npm run test:report` too, Prompt 21,
+  Phase 6): Hide names over the leader report's Harbour session (everyone Guest 1 to Guest 7 in the order they joined, in the rows, the charts' names, the
+  report, its comments, its PDF read back and All answers (CSV); no recorded name left; off, as before), and a person turned off while the page is open
+  (five minutes between reads, `turned-off` and `role-removed`, never the site owner, every write refused, the words). `scripts/test-leader-dashboard.js`
+  parts 4 and 5 hold the dashboard's empty states and its words. In the browser: `leader-report.spec.ts` (Hide names on Sessions, the PDF and the CSV),
+  `role-scoping.spec.ts` (turned off while open, with the clock moved on five minutes), `leader-dashboard.spec.ts` (no summary yet; the switch shared with
+  Sessions). Three failures of `npm run test:a11y` are older than this phase and fail the same on its starting commit (RELEASE-21F.md).
+- `node --test scripts/test-hardening.js` (part of `npm test`, Prompt 21, Phase 7): the access lists' permissions (the plan's four steps, the findings for
+  a list that still inherits, a member who may change a people list, an audit list a member may edit or no one may add to, the self-test probe's six
+  GETs and a refused read), the answer readers and the Live feed refusing a session not held before any request (and reading one held, and a global role
+  as before), and History of changes (Super admin only; newest first; the filters; pages of 50; no answer shown). In the browser: `users.spec.ts` (History
+  of changes: focus, axe, filters, no write; none for an Admin; now in `npm run test:a11y`) and `setup-provision.spec.ts` (the plan's four steps).
+- Prompt 22: `scripts/test-leader-dashboard.js` part 6 (each client's and session's shift and moved to confident, worked by hand: a client of two
+  sessions of different sizes pooled by paired guests, not a plain mean; no paired guest is "Not measured"; Before only adds nothing; low sample at
+  n below the minimum; the words; the headline only when measured; the CSV's six columns) and part 3's Region filter; `scripts/test-index-math.js`
+  (`pairedMeansByScale` and `pairedMeansOf`, and the oracle's recount of every client's and session's shift and moved in whole numbers, with two plain-mean mutants it must
+  catch); `node --test scripts/test-reporting-settings.js` (part of `npm test`: `settings.manage`, the guarded columns on the local server and on
+  SharePoint, the value rules, the saves and their audit lines, a refused role sends nothing, which stored quarters a new start month leaves behind
+  and the words of the confirmation, moving them). In the browser: `leader-dashboard.spec.ts` (the shift beside each bar, in each row and session, the
+  two i buttons by Tab, Enter, Space and Escape, unique ids, no sideways scroll at 1280, 768 and 375, axe) and `reporting-settings.spec.ts` (a Super
+  admin by keyboard, a refused 0, the low sample tag gone at 3, the start month's two questions and the stored quarters moved, the audit lines; a
+  Producer without the button, an Admin without Results; an Admin's Industry and Region with suggestions; a Designer's labels in Content). The local
+  site has a `confidence-check` scenario (`npm run local:site -- --scenario confidence-check`; `scripts/test-local-site.js` checks it in node and on
+  the Live display, Results and the dashboard).
+- The specs that typed numbers read them since Prompt 22: `setup-provision.spec.ts`, `schema-version.spec.ts`, `schema-upgrade.spec.ts` and the runbook
+  rehearsal take the lists and the version from `lib/schema/pms-schema.js` and an empty or older site's plan from Setup's own `makePlan` / `showPlan`
+  (which `scripts/test-provision.js` holds), so the next new column cannot break them.
+- `node --test scripts/test-sessions-plan.js` (also part of `npm test`, Prompt 21, Phase 3): schema version 6's session columns (and a site of version 5
+  stopping with PMS-LST-011), the period from the fiscal start month, a planned session's id and its -2 and -3 on a duplicate, an old id still found,
+  two sessions on one day for one client and for two (their QR codes and visits with their own session), starting a planned session (the activities
+  added since), the New session form, Planned, Live and Ended, the one-live limit in words, the Client team (registered people only, whole client or
+  selected sessions, the Designer's extra, a Producer refused), the Admin plans and the Producer starts (each refused the other's write, nothing
+  sent), Today's readiness with nothing planned, the day's session picked, and a client's several open sessions. `scripts/migration-tests/client-sessions.spec.ts`
+  runs the BUILT admin page signed in as an Admin and a Producer: planning two sessions on one day, the team (selected sessions, Remove), heading
+  focus, an Admin's Go live off, a Producer picking and starting one of the day's two sessions, the one-live words, and axe on each screen (Chromium
+  and WebKit, 29 Oct 2026); it is in `npm run test:a11y`. The request baselines followed version 6 by
+  [scripts/schema-baseline/sessions-baselines.js](../scripts/schema-baseline/sessions-baselines.js) (every recorded suite on `43a98d4`'s tree and
+  on today's, request by request; only Setup's four new columns added; a fresh recording equal to the translation in all 17), and two (test-named-reads,
+  test-participant-names) were amended with `--amend --code` for Results' 15 sessions to a read.
+- `node --test scripts/test-users.js` (also part of `npm test`, Prompt 21, Phase 2): the People rules and calls on the mocked SharePoint: the list
+  (roles and reach from current rows, the chips, search, Client and Session, Status, pages of 50), the people picker's state machine (two
+  characters, the pause, eight suggestions, a stale search aborted and dropped, Up, Down, Enter, Escape, "unverified", the words a screen reader is
+  told), the directory search through the data layer (at most eight, the abort signal reaches the request, a refusal is not a lost sign-in, the
+  local server has none), adding a person (no role, one audit line, "already there"), turning access off and on, removing a role (its words, "already
+  gone"), the extras, the history, and the guards in the data layer (nothing refused is sent). `scripts/migration-tests/users.spec.ts` runs the BUILT
+  admin page signed in as a Super admin, an Admin and a Producer: the list and its filters, Add user by keyboard alone, Give access, Remove with its
+  confirmation, a refused picker, who sees the tab, heading focus, and axe on each screen (Chromium: 5 of 5 on 29 Oct 2026; not yet run in WebKit).
+  `scripts/sharepoint-fake.js` takes `directory` and `pickerStatus` for the people picker.
 - `node --test scripts/test-session.js` (also part of `npm test`, Prompt 19): the rule book of refusals (`REFUSALS` in
   `migration/src/lib/data/session.js`, each row against its own case, and nothing of a stale write token or a busy site taken for a sign-in), and the
   ladder on the mocked SharePoint with a renewer the test supplies: a stale token as before, a sign-in mended at Step A, one that needs Step B, one

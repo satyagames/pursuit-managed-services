@@ -352,3 +352,118 @@ export const PHASE_19 = Object.freeze({
   participantAfter: 160_367, adminAfter: 585_277,
   participantUtilities: PHASE_11A.participantUtilities,
 });
+
+/**
+ * Prompt 20 (the confidence check, Before and After) grows the participant page by its two screens (routes/ConfidenceCheck.svelte and the
+ * golden-ratio tokens of styles/check-tokens.css), the flow's rules (lib/participant/confidence-check.js) and their use in the boot, Welcome,
+ * the hub, the pager's finish and Thank you (its card). The admin page carries the same rules, the arithmetic (lib/results/confidence-shift.js),
+ * Content's check row, the session's switch, the producer's card and the Results panel. Its Tailwind rules are the ones it had, and the ceiling
+ * is not raised. Measured when the phase ended: participantAfter and adminAfter, where the next phase starts.
+ */
+export const PHASE_20 = Object.freeze({
+  participantBefore: PHASE_19.participantAfter, adminBefore: PHASE_19.adminAfter, participantAllowance: 4_500, adminAllowance: 7_500,
+  participantAfter: 164_582, adminAfter: 592_267,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
+
+/**
+ * Prompt 21, Phase 1 (the access engine) grows the participant page by what the data layer every page carries gained: the schema's three access
+ * lists and two settings, core.js's write-guard hook (no guard is installed there), lib/data/access-reads.js and records.js's read of an older
+ * site's version. None of lib/access (the role matrix, can(), the guard, the grants) is on it. The admin page carries lib/access, the No access
+ * screen, the owner's banner and the sign-in step. Its Tailwind rules are the ones it had, and the ceiling is not raised. Measured when the phase
+ * ended: participantAfter and adminAfter, where the next phase starts.
+ */
+export const PHASE_21A = Object.freeze({
+  participantBefore: PHASE_20.participantAfter, adminBefore: PHASE_20.adminAfter, participantAllowance: 1_500, adminAllowance: 7_000,
+  participantAfter: 165_480, adminAfter: 596_907,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
+
+/**
+ * Prompt 21, Phase 2 (Manage Users) is the admin page's: the People tab (the list, Add user with the people picker, a person's page, Give access),
+ * lib/access's people rules and the picker's. The participant page carries only what the data layer every page carries gained: section 13 of the
+ * data layer (a directory search, a change to a person's row, a role removed: lib/data/access-people.js) and the abort signal of the one request
+ * function. None of lib/access, none of the People screens. Its Tailwind rules are the ones it had, and the ceiling is not raised. Measured when
+ * the phase ended: participantAfter and adminAfter, where the next phase starts.
+ */
+export const PHASE_21B = Object.freeze({
+  participantBefore: PHASE_21A.participantAfter, adminBefore: PHASE_21A.adminAfter, participantAllowance: 1_000, adminAllowance: 14_000,
+  participantAfter: 166_085, adminAfter: 608_919,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
+
+/**
+ * Prompt 21, Phase 3 (clients, sessions several a day, the team) is the admin page's: a client's page (its sessions, New session, its team) and
+ * Today's session picker and the Producer's Start, with lib/admin/session-plan.js and lib/access/team.js. The participant page carries only what the
+ * data layer every page carries gained: section 14 (planSession, startSession: lib/data/planning.js) and a session's five columns of schema version 6
+ * in every read of the sessions. None of lib/access, none of the client's page. Its Tailwind rules are the ones it had, and the ceiling is not
+ * raised. Measured when the phase ended: participantAfter and adminAfter, where the next phase starts.
+ */
+export const PHASE_21C = Object.freeze({
+  participantBefore: PHASE_21B.participantAfter, adminBefore: PHASE_21B.adminAfter, participantAllowance: 600, adminAllowance: 13_000,
+  participantAfter: 166_497, adminAfter: 620_335,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
+
+/**
+ * Prompt 21, Phase 4 (scoping Events, Content and Guests by role) is the admin page's: the menu from the role matrix, Content's view-only mode, the
+ * scoped reads of Today, Guests and Results, lib/access/scope.js and owners.js, and a guest's group in Guests. The participant page carries only what
+ * the data layer every page carries gained: the read check (lib/data/read-scope.js, asked of an access guard it never has) and a guest's column of
+ * schema version 7 in every read of the guest list. None of lib/access, none of the screens. Its Tailwind rules are the ones it had, and the ceiling is
+ * not raised. Measured when the phase ended: participantAfter and adminAfter, where the next phase starts.
+ */
+export const PHASE_21D = Object.freeze({
+  participantBefore: PHASE_21C.participantAfter, adminBefore: PHASE_21C.adminAfter, participantAllowance: 400, adminAllowance: 6_000,
+  participantAfter: 166_683, adminAfter: 623_918,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
+
+/**
+ * Prompt 21, Phase 5 (the Leadership dashboard and its index arithmetic) is the admin page's: the dashboard in Results (lib/results/index-math.js,
+ * session-summary.js, dashboard-model.js, metric-words.js, lib/admin/session-summaries.js and its screens), and a session's summary written when it ends.
+ * The participant page carries only what the data layer every page carries gained: section 15 (saveSessionSummary, readSessionSummaries:
+ * lib/data/summaries.js), the clients' two columns of schema version 8 in every read of the clients, and the summaries' list in the schema file. None of
+ * the dashboard. Its Tailwind rules are the ones it had, and the ceiling is not raised. Measured when the phase ended: participantAfter and adminAfter,
+ * where the next phase starts.
+ */
+export const PHASE_21E = Object.freeze({
+  participantBefore: PHASE_21D.participantAfter, adminBefore: PHASE_21D.adminAfter, participantAllowance: 600, adminAllowance: 30_000,
+  participantAfter: 167_081, adminAfter: 636_734,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
+
+/**
+ * Prompt 21, Phase 6 (polish) is the admin page's: Results' one Hide names switch (the Sessions view, the dashboard, the leader report and the participant
+ * CSV), the dashboard's empty states and words, and the admin page reading a person's access again while it is open (lib/access/resolve.js). The
+ * participant page does not change, to the byte: none of it is in the data layer every page carries, and no new word adds a Tailwind rule. The ceiling is
+ * not raised. Measured when the phase ended: adminAfter, where the next phase starts.
+ */
+export const PHASE_21F = Object.freeze({
+  participantBefore: PHASE_21E.participantAfter, adminBefore: PHASE_21E.adminAfter, participantAllowance: 0, adminAllowance: 4_000,
+  participantAfter: 167_081, adminAfter: 638_134,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
+
+/**
+ * Prompt 21, Phase 7 (hardening) is mostly the admin page's and Setup's: People's History of changes (the audit review, read only) and Setup's check of
+ * the access lists' permissions. The participant page grows by the read check the data layer's answer readers now ask (responses.js, watch.js), which
+ * every page carries and which asks nothing there (no guard). The ceiling is not raised. Measured when the phase ended: adminAfter, where the next
+ * phase starts.
+ */
+export const PHASE_21G = Object.freeze({
+  participantBefore: PHASE_21F.participantAfter, adminBefore: PHASE_21F.adminAfter, participantAllowance: 100, adminAllowance: 4_000,
+  participantAfter: 167_109, adminAfter: 640_183,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
+
+/**
+ * Prompt 22 (closing the audit of Prompts 20 and 21) is the admin page's: the shift and moved to confident by client and by session on the dashboard,
+ * the Region filter, Reporting settings (a Super admin's) and a client's Industry and Region. The participant page does not change, to the byte: the
+ * value checks and the column rules live in lib/access (the write guard, which only the admin page installs), not in the data layer every page carries,
+ * and no new word adds a Tailwind rule. The ceiling is not raised. Measured when the prompt ended: adminAfter, where the next one starts.
+ */
+export const PHASE_22 = Object.freeze({
+  participantBefore: PHASE_21G.participantAfter, adminBefore: PHASE_21G.adminAfter, participantAllowance: 0, adminAllowance: 10_000,
+  participantAfter: 167_109, adminAfter: 646_950,
+  participantUtilities: PHASE_11A.participantUtilities,
+});

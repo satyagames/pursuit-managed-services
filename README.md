@@ -26,8 +26,8 @@ folder and keeps everything in SharePoint lists: there is no server, nothing to 
 | Participant | A welcome in the client's look and words; an Activities hub (one activity at a time, or all open); one question per screen, with Next and Back; a graded question says right or wrong at once, offers one Retry, and reveals the answer after a second wrong pick; progress is saved as each answer is given and a reload picks up where it was; optional sound and confetti; screens that move by the kind of question (the answers come in from both sides; off with the device's reduced motion or the client's switch); works with the keyboard and a screen reader, in portrait and landscape, from a phone to a desktop. |
 | Facilitator | **Today**: pick a client and date, see what is not ready, Go live (verified), choose staff sign-in or guests with personal QR codes, sequential or open activities, End and Reopen, the participant link and its QR. **Guests and QR**: paste names, generate single-use codes, print a sheet of cards. **Results**: every session, newest first (and the newest iPad first), with each person's progress, Restart (under its row) or Remove a visit, **Delete session** (all of a session's data, permanently, after a warning; never the live one), the live charts, the **Live display** and its full-screen **wall** for the projector (no names on it). |
 | Admin | **Clients**: names, slugs, archive, a check-in QR for shared iPads; a row's **Brand** opens that client's look in Content. **Content** is one client's workspace: a client header (its logo, the client picker, Live now) and two views, **Activities** and **Brand**, each kept as it was left while the other shows. **Activities**: the client's activities and questions (a question is edited where it is, in its own row), copy from another client, duplicate, reorder, picture tiles, a preview. **Brand** (Brand Studio lives in Content, beside the client's activities): colours checked for contrast, a logo, a hero and a background, cropped and compressed in the browser, previewed on real participant screens at real device sizes; an **Animations** switch per client (also on Today); "Preview an activity in this look..." once it is saved. |
-| Site owner | **Setup**: shows exactly what the site lacks, creates only that (never deletes or renames), checks every list strictly, marks the site ready, adds admins, seeds two sample clients, and a self-test of the site in 11 steps. |
-| Leaders | **Leader report (PDF)**: at a glance on page 1, then each activity on its own pages, every question as a chart, the counting rules on the last page. **Summary pack (PDF and PowerPoint, 16:9)** from the Live display, with speaker notes. **Summary by activity (CSV)** and **All answers (CSV)**. |
+| Site owner | **Setup**: shows exactly what the site lacks, creates only that (never deletes or renames), checks every list strictly, marks the site ready, adds admins, seeds two sample clients, and a self-test of the site in 12 steps. |
+| Leaders | **Leader report (PDF)**: at a glance on page 1, then each activity on its own pages, every question as a chart, the counting rules on the last page. **Summary pack (PDF and PowerPoint, 16:9)** from the Live display, with speaker notes. **Summary by activity (CSV)** and **All answers (CSV)**. **Hide names** on Results (the dashboard and Sessions alike) numbers everyone Guest 1, Guest 2 in the order they joined, on the screen, in the leader report and in All answers (CSV) (Prompt 21, Phase 6). The **Leadership dashboard** shows each client's confidence index with its shift and how many moved to confident, by client and by session (Prompt 22); a Super admin sets the fiscal-year start month and the minimum sample on **Reporting settings**, and a client's Industry and Region are set on its page. |
 
 ### Question types
 
@@ -38,7 +38,7 @@ folder and keeps everything in SharePoint lists: there is no server, nothing to 
 | True or false (`true-false`) | picks one | graded when one is marked correct | one split bar |
 | Confidence scale (`confidence-continuum`) | picks a place on a scale | the place's value | a column per step, the average as a line, three bands |
 | Ranking (`ranked-voting`) | orders every answer | support score 0 to 100 (100 = everyone ranked it first) | bars of support, with places |
-| Written answer (`open-text-feedback`) | writes up to 1,000 characters | not graded | the words that came up most, and the comments |
+| Survey feedback (`open-text-feedback`) | writes up to 1,000 characters | not graded | the words that came up most, and the comments |
 
 Every number on a chart is worked out in one place, so the screen, the wall, the PDF, the PowerPoint and the CSV agree. Scores use each person's
 **first** answer only.
@@ -94,7 +94,7 @@ Each folder, file and dependency: [docs/MODULES.md](docs/MODULES.md) (generated 
 
 ## SharePoint at a glance
 
-Twelve lists and one picture library, schema version 3. Every column is described in [SHAREPOINT-LISTS.md](SHAREPOINT-LISTS.md); setting up, the
+Sixteen lists and one picture library, schema version 8 (Prompt 21 added who may do what: `PMSUsers`, `PMSRoleAssignments`, `PMSAuditLog`; the admin page's People tab, for a Super admin, manages them, and its History of changes shows every change, read only; its Phase 3 gave a session a start time, a title, its order in the day, a period and when it was planned, so that a client may have several sessions a day, planned on the client's page and started by a Producer on Today). Every column is described in [SHAREPOINT-LISTS.md](SHAREPOINT-LISTS.md); setting up, the
 settings file and what SharePoint does are in [docs/SHAREPOINT.md](docs/SHAREPOINT.md).
 
 | List | Holds |
@@ -107,6 +107,7 @@ settings file and what SharePoint does are in [docs/SHAREPOINT.md](docs/SHAREPOI
 | PMSGuestList, PMSGuestQRCodes | named guests and their single-use codes |
 | PMSVisitLog | one row per browser tab: how staff are named in Results |
 | PMSAppSettings | which session and client are live; the lists' version |
+| PMSSessionSummary | each ended session's totals, which the Leadership dashboard in Results reads instead of every answer (Prompt 21, Phase 5) |
 | PMSAdminUsers | facilitators' names and PIN hashes |
 | PMSClientImages (library) | the clients' pictures |
 
@@ -233,7 +234,7 @@ Proposals, not features: nothing below exists yet. Size: S (days), M (a week or 
 - Import activities from a spreadsheet (CSV or Excel), with a preview before anything is saved. M
 - Session templates: a set of activities to start a client from. M
 - Follow-up questions and an activity's purpose in the content (the dataset has purposes the app has no place for). M ◆
-- A "reveal" line after "Guess the brand" (needs a column: schema version 4). M ◆
+- A "reveal" line after "Guess the brand" (needs a column: schema version 5). M ◆
 - A ranking version of "Straight talk". S ◆
 - Whether Setup's "Seed sample clients" uses VJR's dataset instead of the older pack. S ◆
 
@@ -243,7 +244,7 @@ Proposals, not features: nothing below exists yet. Size: S (days), M (a week or 
 - Retry and Home nearer the answers on an iPad in portrait. S
 - A client's logo on Welcome when it also has a hero. S ◆
 - A lighter scrim for clients with a light background. S ◆
-- A motion profile per activity, chosen in Content (needs a column: schema version 4). M ◆
+- A motion profile per activity, chosen in Content (needs a column: schema version 5). M ◆
 - A motion "personality" per client (calmer, livelier) beside the Animations switch. S ◆
 
 **Facilitation and live**

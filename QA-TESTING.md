@@ -15,7 +15,26 @@
    then production). Below item 194.
 6. Items **205 to 210** (Prompt 19: the "403 Access denied" capture before the new package, an idle or sleeping laptop, unsaved Brand changes and
    the banner, the tenant's session policies from IT, then production). Below item 204. Item 205 is first: it needs the old package.
-7. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
+7. Items **211 to 215** (Prompt 20: the confidence check on a test copy, three iPads, reloads and restarts, the screen on an iPad, the words).
+   Below item 210.
+8. Items **216 to 221** (Prompt 21, Phase 1: who may do what, the upgrade to version 5, an existing admin unchanged, the site owner, the copy of
+   the PIN admins, No access, what "site owner" means on PCOE). Below item 215. Item 217 first after the upgrade: nothing may change for an admin.
+9. Items **222 to 228** (Prompt 21, Phase 2: the people picker on the real site, Add user, Give access, Remove, turning someone off, the guards, an
+   Admin's view, a screen reader). Below item 221. Item 222 first: it decides whether Add user can search the directory.
+10. Items **229 to 236** (Prompt 21, Phase 3: the upgrade to version 6, a session's title on the real site, two sessions on one day and an id taken,
+   the Producer starts, an Admin cannot, the Client team, Safari's date field, a screen reader). Below item 228. Item 229 first: the upgrade.
+11. Items **237 to 245** (Prompt 21, Phase 4: the upgrade to version 7, each role's menu, a Producer's requests, View only, a live session that is not theirs,
+   a guest's group, the new words, a delete that names no client, a screen reader). Below item 236. Item 237 first: the upgrade.
+12. Items **246 to 254** (Prompt 21, Phase 5: the upgrade to version 8, a summary when a session ends, Rebuild, Leadership for a period and on one client,
+   the figures by hand, the i buttons, names, a screen reader). Below item 245. Item 246 first: the upgrade.
+13. Items **255 to 261** (Prompt 21, Phase 6: Hide names on Sessions, in the report and the CSV, one switch; a person turned off or left with no role
+   while the page is open; the dashboard with no summary; the words). Below item 254. No upgrade: the lists stay at version 8.
+14. Items **262 to 273** (Prompt 21, Phase 7, the real-site pass for all of Prompt 21: the access lists' permissions set by hand and what they
+   refuse, the people screens under the lock, directory search, the site owner, the old admins copied, two sessions in a day, Leadership's scope, a person
+   turned off, sign-in renewal with the new reads, History of changes). Below item 261. Item 263 first: it decides whether the lock holds on PCOE.
+15. Items **274 to 278** (Prompt 22: the shift by client and by session, Industry and Region with the Region filter, the minimum sample and who may
+   set it, the fiscal start month on a test copy, and the manager's questions). Below item 273. No upgrade.
+16. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
    160, 161, 164, 165, 166, 167, 168, 169, 170.
 
 **Decided, no change:** 162 (names stay "Last, First") and 163 (the wall page keeps the admin header), VJR, 16 Oct 2026.
@@ -1434,6 +1453,280 @@ tests, not on SharePoint Online:** whether a navigation in a hidden frame renews
     self-test: **expect** it to pass 11 of 11; a refusal seen by that page is listed under it with its SPRequestGuid.
 210. **Then production, and the push.** *(Still to see.)* If 206 to 209 pass, copy the three pages to `Shared Documents/PMS` and push the branch
     `pms-19`. Nothing in the lists changes (version 3), and no setting is new.
+
+### Prompt 21, Phase 1 (roles and access: the engine): not verified on SharePoint Online
+
+People sign in to the admin page with their own account and their roles are rows of three new lists; until Setup copies an old admin into them,
+that admin unlocks with their PIN exactly as before. Proven on the mocked SharePoint and in node tests (RELEASE-21A.md), not on the real site.
+**The lists move to version 5**: three lists and two settings, which Setup adds (with Prompt 20's two columns, on a site of version 3). Use a
+test copy of the site first.
+
+216. **Upgrade a test copy of the site.** *(Still to see.)* Open Setup with this package: **expect** "this version of the app needs version 5"
+    (PMS-LST-011) and the participant and admin pages stopping with PMS-LST-011 until it is done. Show the plan: **expect** `PMSUsers`,
+    `PMSRoleAssignments`, `PMSAuditLog` to create, `PMSAppSettings.FiscalYearStartMonth` and `MinSample` (and, on a site of version 3,
+    Prompt 20's two columns), nothing else. Create, then Mark the site as ready: **expect** "Raised the lists from version 3 to version 5." (or
+    "4 to 5") and the self-test passing.
+217. **An existing admin sees no change.** *(Still to see.)* As an admin who is not a site owner and has no row yet, open admin.html: **expect** the
+    PIN screen, after "Checking your access..." for a moment, and with the PIN every tab as before, Delete session included. F12, Network:
+    **expect** one `$batch` asking who you are and one carrying the two reads of `PMSUsers` and `PMSRoleAssignments`, then the old requests.
+218. **The site owner.** *(Still to see.)* As a site owner, open admin.html: **expect** no PIN, every tab, and the banner "You can see everything
+    because you own this site. Add yourself as a Super admin in Setup." On Setup, under 3. Admins, People and access: **expect** "Signed in as
+    ..., an owner of this site" and **Make me a Super admin**; press it, reload admin.html: **expect** the banner gone.
+219. **Copy the PIN admins.** *(Still to see.)* On Setup, People and access: type each PIN admin's email (leave one empty) and press **Copy into
+    the new lists**: **expect** the counts, and the one left empty named as still on the PIN. That admin reloads admin.html: **expect** no PIN,
+    no Lock, every tab, and Delete session refused in words ("Your access does not allow this (delete a session's data)..."). Press Copy again:
+    **expect** everything "there already". `PMSAuditLog` has a line for each person and role, and no PIN hash anywhere.
+220. **No access.** *(Still to see.)* In `PMSUsers`, set a copied admin's Status to `Disabled` by hand; they reload admin.html: **expect** "Your access
+    to PMS is turned off", their email, and **Copy my details**. Set it back to `Active`.
+221. **What "site owner" means here.** *(Still to see.)* The app treats a site collection administrator, or a member of the site's owners group
+    (`/_api/web/AssociatedOwnerGroup`), as the site owner (ASSUMED). Confirm with the site's owners that this is the right set of people, and
+    ask the manager about the open items of RELEASE-21A.md (the roles a copied admin gets, the indexes left for later phases). *(Record the
+    answers here.)* Then push the branch `pms-21-1`.
+
+### Prompt 21, Phase 2 (Manage Users: the People tab): not verified on SharePoint Online or with a screen reader
+
+A Super admin adds people, gives them roles on clients and sessions and turns access off from a new People tab. Proven on the mocked SharePoint, in
+node tests and in Chromium on the built page (RELEASE-21B.md), not on the real site. No list or column changed: no upgrade of the site is needed.
+
+222. **The people picker on PCOE (ASSUMED).** *(Still to see.)* As a Super admin, open People, press **Add user** and type two letters of a
+    colleague's name. **Expect** suggestions within about a second (at most eight, name, email and job title), and the line under the field saying
+    how many were found. F12, Network: **expect** one `clientPeoplePickerSearchUser` request for a pause in typing, an older one cancelled when you
+    type on. If it is refused or finds nobody who should be there, **expect** "unverified" and that a full email typed and Enter is taken: write
+    down the status the site answered (it decides whether the call stays).
+223. **Add user.** *(Still to see.)* Choose a person and press Add user. **Expect** their page, saying they have no access to any client or session,
+    and a history line "Added from the directory by <you>". `PMSUsers` has their row (Source Directory, AddedBy you) and `PMSAuditLog` one line.
+    Add the same person again: **expect** "That person is in the list already" and their page; no second row.
+224. **Give access and Remove.** *(Still to see.)* On that person's page press **Give access**: a Producer on one client with a last day; then a
+    Leadership on one session. **Expect** both rows with their places and "until <day>", a history line each. Press **Remove** on one: **expect** the
+    confirmation to say what they lose, Cancel to leave it, Remove to take it away (a history line). Give the same access twice: **expect** "already
+    has this access". As the person (another browser), **expect** only what the role allows (Phase 4 narrows the screens; this phase gives the rows).
+225. **Turn access off and on.** *(Still to see.)* On a person's page press **Turn access off** and confirm. **Expect** "Turned off" in the list, and
+    that they see "Your access to PMS is turned off" at their next load; **Turn access on** gives it back with their roles as they were.
+226. **The guards on the real site.** *(Still to see.)* As the only Super admin, try to remove your own row, or turn yourself off: **expect** no such
+    button and, if you force it, "You cannot change your own roles". With two Super admins, the second cannot turn off or remove the first when the first
+    is the only one left. As an Admin, try a Super admin's or an Admin's page: **expect** no Remove or Make buttons and "Only a Super admin can give or
+    remove these."
+227. **What an Admin sees.** *(Still to see.)* As an Admin without the extra: People is there, **Add user** is not; Give access works for a Producer,
+    Designer or Leadership on a client or session. A Super admin switches on "Also allowed to add people" for that Admin: **expect** Add user after a
+    reload. A Producer or a Designer has no People tab.
+228. **A screen reader.** *(Still to see.)* With VoiceOver (iPad or Mac) or NVDA, on People and Add user: **expect** the tab and the heading
+    announced, the chips as buttons that are pressed or not, the field as an editable combobox, "3 people found. Use the up and down arrows, then
+    Enter." when suggestions come, each suggestion read with its name and email as the arrows move, and the dialogs announced with their titles.
+    *(Axe finds nothing and the keyboard path works in Chromium; how it is spoken is only for a person to hear.)* Then push the branch `pms-21-2`.
+
+### Prompt 21, Phase 3 (clients, sessions several a day, the team): not verified on SharePoint Online, an iPad or with a screen reader
+
+An Admin plans a client's sessions ahead, several in one day if needed, and picks its team on the client's page (Clients, **Sessions and team**); a
+Producer starts a planned session on Today, the only thing that makes it live. Proven on the mocked SharePoint, in node tests and in Chromium and
+WebKit on the built page (RELEASE-21C.md), not on the real site. **The lists move to version 6**: four columns of `PMSClientSessions`, which Setup
+adds. Use a test copy of the site first, after items 216 to 228.
+
+229. **Upgrade to version 6.** *(Still to see.)* Open Setup with this package on a site of version 5. **Expect** PMS-LST-011 on the participant and
+    admin pages until then, and **Show the plan** to name exactly `PMSClientSessions.StartTime`, `Sequence`, `Period` and `PlannedDate` (not `Title`:
+    every list has it). **Create**, then **Mark the site as ready**: "Raised the lists from version 5 to version 6." The pages then open as before.
+230. **A session's title on the real site.** *(Still to see.)* Plan a session with a title, then open an older session (one Go live made before this
+    package). **Expect** the new session's title on its row and on Today's session picker, and no title on the older one (SharePoint's `Title` of an
+    older session holds its id, which the screens read as no title). F12, Network: a read of `PMSClientSessions` names `Title` and the four columns.
+231. **Two sessions on one day, and the id taken.** *(Still to see.)* As an Admin, on Kroger's page, plan 09:00 "Morning" and 14:00 (the form asks
+    for a title: give "Afternoon"). **Expect** two rows, "1 of 2 today" and "2 of 2 today", the period (FY27-Q2 for a date in October 2026 with June
+    as the fiscal start, ASSUMED), Planned, and in `PMSClientSessions` the ids `kroger-<date>-0900` and `kroger-<date>-1400`. Plan a second 09:00 on
+    the same day: **expect** the id `kroger-<date>-0900-2` (SharePoint refused the first id as a duplicate; write down the status it answered).
+232. **The Producer starts; QR codes and answers stay with their session.** *(Still to see.)* As a Producer on Kroger's team, on Today pick Kroger,
+    that date and the 09:00 session, press **Go live**: Verified. Check in one iPad by a QR code (Clients, **Generate QR**) and answer one activity.
+    Then pick the 14:00 session: **expect** "One session can be live at a time. Going live with this one takes the place of Kroger, ..." under the
+    button; press **Go live**, check in a second iPad and answer. **Expect** on Results two sessions, each with its own iPad and answers, and the first
+    iPad's unscanned codes no longer working. The known limit: only one session is live at a time.
+233. **An Admin cannot start, a Producer cannot plan.** *(Still to see.)* As an Admin: **expect** no Today in the menu (Phase 4: an Admin has no
+    Events module) and no Go live on the client's page; Today's words "Only a Producer or a Super admin starts a session. You can plan sessions on the
+    client's page under Clients." remain for a role that reaches Today without the right to start. As a Producer, on a date with nothing planned for the client:
+    **expect** the blocker "No session is planned for <client> on <date>." and Go live off. The PIN's legacy admin still goes live as before.
+234. **The Client team.** *(Still to see.)* As an Admin on a client's page, **Add to team**: a Designer, searched by part of the name (only people
+    under People are offered), for **Selected sessions** (one), with **May also edit activities**. **Expect** the row with the session and "may also edit
+    activities" and a line in `PMSAuditLog`. (What a Designer of one session may then change is decided in Phase 4: an activity and a brand belong to
+    the client, so a role given one session only looks at them; item 240.)
+    Press **Remove**: **expect** the confirmation to say what they lose, then the row gone and an audit line. Plan a session with **Use the client
+    team** off: **expect** the team form to open on it.
+235. **Safari: the date, then Go live.** *(Still to see.)* On a Mac or an iPad in Safari, on Today type or pick a date, then press **Go live** at once.
+    **Expect** it to go live on the first press (Safari sends the field's change again when it loses the focus; the page now ignores the same date).
+236. **A screen reader.** *(Still to see.)* With VoiceOver or NVDA, on a client's page: **expect** the heading announced when it opens, the Sessions
+    list read as a table with its column headers, the New session fields with their labels and problems, the team form's Where as a group of two
+    choices, and the Remove confirmation announced with its title. *(Axe finds nothing in Chromium; how it is spoken is only for a person to hear.)*
+    Then push the branch `pms-21-3`.
+237. **The upgrade to version 7.** *(Still to see.)* On a test copy at version 6: **Show the plan** names one new column, `PMSGuestList.GuestGroup`, and nothing
+    else; **Create** adds it; **Mark the site as ready** says "Raised the lists from version 6 to version 7." **Expect** the admin and participant pages of the
+    new build to open, an old build (version 6) to stop with `PMS-LST-012` until the old pages are replaced, and a guest list read before the upgrade to show
+    no group. The column is plain text, not indexed.
+238. **Each role's menu.** *(Still to see.)* On a site with the sample people (Satyadev Super admin, Mathur Admin, Aedla Producer on Kroger, Hussain Designer on
+    Kroger, Lepe Leadership on Kroger), sign in as each. **Expect** Super admin: Today, Clients, Content, Guests and QR, Results, People. Admin: Clients, People
+    (no Today: an Admin plans on the client's page and cannot start a session). Producer: Today, Content, Guests and QR, Results. Designer: Content. Leadership:
+    Results. The PIN screen's legacy admin: all but People, as before.
+239. **A Producer's requests.** *(Still to see.)* As the Kroger Producer on a site with two clients, with the browser's network tab open through Today,
+    Content, Guests and QR and Results: **expect** no request whose address or `$batch` parts name the other client's id or one of its sessions, and no
+    "AccessDenied" message anywhere. (This is the browser's mock in `role-scoping.spec.ts`; the real site's `$batch` is the thing to see.) Then, as a Producer
+    of one session only: **expect** Content to list the client and show its activities and brand to read, and Today, Guests and Results to name that session alone.
+240. **View only.** *(Still to see.)* As the Designer: Content opens on Activities with "View only", every button and field switched off, and Brand editable;
+    give them **May also edit activities** (Clients, Sessions and team) and reload: **expect** Activities editable. As the Producer, Brand shows "View only".
+    Give the Designer one session only: **expect** both views to read and neither to edit.
+241. **A live session that is not theirs.** *(Still to see.)* Go live with the other client, then, as the Kroger Producer, open Today and Guests and QR:
+    **expect** "A session you have not been given is live. You can see only your own clients and sessions here." on Today, and the same idea on Guests and QR;
+    nothing of the other client on screen, and Results unchanged.
+242. **A guest's group.** *(Still to see.)* On Guests and QR in guest mode: add a visitor with a group; paste three lines, one as `Jordan Lee | Finance` and one
+    copied from two spreadsheet columns (name, tab, group); fill **Group for lines with none** and paste a plain name. **Expect** each guest with their group
+    beside the status, **Show guests in** to narrow the list, and the group in `PMSGuestList.GuestGroup` on the real list. A guest with no group has none.
+243. **The new words.** *(Still to see.)* In the question editor the type is **Survey feedback**; in the CSV, the PDF and the PowerPoint exports the question
+    type column and the report's kind say "Survey feedback"; the stored type in `PMSActivityQuestions.QuestionType` is still `open-text-feedback`.
+244. **A delete names no client.** *(Still to see, and a known limit.)* On SharePoint a delete request carries no body, so the page's guard holds it to the
+    list, not the client (`DECISIONS.md`). As the Kroger Producer nothing on screen offers another client's activity, so there is nothing to press; the lists'
+    own permissions are Phase 7's. **Expect** to confirm only that no screen offers it.
+245. **A screen reader.** *(Still to see.)* With VoiceOver or NVDA on a view-only screen: **expect** "View only. Your role can look at ..." read as a status when
+    the view opens and the controls announced as unavailable. *(Axe finds nothing in Chromium; how it is spoken is only for a person to hear.)*
+    Then push the branch `pms-21-4`.
+246. **The upgrade to version 8.** *(Still to see.)* On a test copy at version 7: **Show the plan** names one new list, `PMSSessionSummary` (13 columns, AppId
+    unique, ClientId and Period indexed), and two new columns, `PMSClients.Industry` and `Region`, and nothing else; **Create** makes them; **Mark the site as
+    ready** says "Raised the lists from version 7 to version 8." **Expect** the new pages to open, an old build (version 7) to stop with `PMS-LST-012`, and
+    the clients' two columns to be plain text, not indexed.
+247. **A summary when a session ends.** *(Still to see.)* As the Producer, run a session with three iPads (the confidence check on, a poll, a ranking, a Survey
+    feedback question), then **End session** on Today. **Expect** one item in `PMSSessionSummary` whose AppId is the session's id, with Guests 3, the Before,
+    After and paired counts and means, and SummaryJson holding the title, time, first choices, themes and up to five comments; ending again (Reopen, End)
+    writes the same item over, not a second one. Then turn the list's permission off for a moment and End another session: **expect** "The session ended,
+    but its summary for the dashboard could not be written. Rebuild it from Results." and the session ended all the same.
+248. **Rebuild, and what it costs.** *(Still to see.)* On a site with sessions ended before this build, open Results, **Dashboard**: **expect** "N ended sessions
+    have no summary yet" and **Rebuild summaries**; press it and confirm. **Expect** a count as it goes, about five reads and one write for each session
+    (the network tab), and the figures to include them afterwards. A Leadership account sees no Rebuild.
+249. **Leadership for a period.** *(Still to see.)* As Brian Milder (Leadership, FY27 Q2, all clients): **expect** Results to open on **Leadership dashboard**,
+    every client with a session in the quarter, the headline sentence, six tiles, the index by client with its line at 100, and no request to
+    `PMSParticipantAnswers` in the network tab (the summaries are read by `Period eq 'FY27-Q2'`). A session dated outside his period is in no figure.
+250. **Leadership on one client.** *(Still to see.)* As Annabell Lepe (Leadership on Kroger): **expect** Kroger alone, its index against itself (100, the
+    all-client average being only what she may read: ASSUMED), no request naming another client, and the arrow beside Kroger opening its sessions in place,
+    "24 Oct 09:30 Morning workshop", each with its Export buttons; the leader report downloads for one of them.
+251. **The figures by hand.** *(Still to see.)* For one quarter with two clients, work out on paper each client's mean confidence after (every After score),
+    the all-client mean, and their ratio x 100; compare with the dashboard's index by client, the headline and the CSV of **Export report**. Change the
+    period chips, **Compare with** (the quarter before, the same quarter last year, one client) and the filters (Industry, Facilitator, Activity type, Guest
+    group): **expect** the figures to follow, and a figure under the minimum sample to say "Low sample".
+252. **The i buttons.** *(Still to see.)* With a mouse, hover each i; with the keyboard, Tab to it: **expect** the formula, the meaning and an example, Escape to
+    hide them, and on an iPad a tap to keep them open. The words are those of `lib/results/metric-words.js`.
+253. **Names (decision B).** *(Still to see, and for the manager.)* As Leadership: **expect** the comments to show names, and **Hide names** (More filters) to
+    show Guest 1, Guest 2. Decide which is the default (`HIDE_NAMES_BY_DEFAULT`, one setting). **Save this view** keeps the filters while the page is open
+    only (nothing is kept between page loads: ASSUMED until a place for saved views is decided).
+254. **A screen reader.** *(Still to see.)* With VoiceOver or NVDA on the dashboard: **expect** the heading announced when it opens, the headline read when a
+    filter changes, each tile with its name, the i button as "About Confidence index" with its formula as its description, and the arrow of a client as
+    "Show the sessions of Kroger", expanded or collapsed. *(Axe finds nothing in Chromium and WebKit; how it is spoken is only for a person to hear.)*
+    Then push the branch `pms-21-5`.
+255. **Hide names on Sessions.** *(Still to see.)* As the Producer, on Results, **Sessions**, a session with named guests: tick **Hide names** (beside
+    Refresh): **expect** every row and every chart's names to read Guest 1, Guest 2 ... in the order they joined, and no name anywhere on the card.
+256. **Hide names in the files.** *(Still to see.)* With the switch on, save **Leader report (PDF)** and **All answers (CSV)**: **expect** Guest 1, Guest 2
+    on every page and row, "Names are hidden: each person is shown as Guest 1, Guest 2 … in the order they joined." among the notes, and no recorded
+    name in either file (the counting rules' fixed words still explain "Unnamed participant"). With it off, the names as before.
+257. **One switch.** *(Still to see.)* Tick Hide names on Sessions, press **Dashboard**, open More filters: **expect** it ticked there too; reload the
+    page: **expect** it back at the default (`HIDE_NAMES_BY_DEFAULT`; nothing is kept between page loads). As a Designer or an Admin (no Results) there is
+    nothing to see; a role without `results.names` is never offered it.
+258. **Turned off while the page is open.** *(Still to see.)* As a Producer, open the admin page and leave it on Today. In another browser, as a Super
+    admin, turn that Producer's access off on People. Wait five minutes, then press another tab as the Producer: **expect** "Your access to Pursuit
+    Managed Services was turned off" and that it happened while the page was open; no tab row; nothing more is saved. Within the five minutes the page
+    carries on (ASSUMED enough until Phase 7 locks the lists): say whether that is acceptable.
+259. **A role removed while the page is open.** *(Still to see.)* As item 258, but remove the Producer's only role instead: **expect** "Your access to
+    Pursuit Managed Services has changed". Give a second role instead of removing one: **expect** the menu to follow at the next tab after five minutes.
+260. **The dashboard with no summary.** *(Still to see.)* On a site where no session has ended: **expect** "No session has ended yet" instead of the
+    figures, Export report off. With ended sessions from before version 8 and none rebuilt, as a Producer: **expect** "No summaries yet" and
+    **Rebuild summaries** above it; after Rebuild, the figures.
+261. **The words.** *(Still to see.)* Press **Rebuild summaries**: **expect** the question in plain words, with nothing about requests. Press **Export
+    report**: **expect** a file named like "dashboard-fy27-q2-2026-10-29.csv". Read every new screen of Prompt 21 once more for words that are not plain
+    or not in sentence case, and send back any found. Then push the branch `pms-21-6`.
+
+### Prompt 21, Phase 7 (hardening and the real-site pass): not verified on SharePoint Online
+
+The last phase of Prompt 21. Setup's plan now ends with **who may change the access lists**, four steps a site owner does by hand (Setup changes no
+permission), and its self-test reads what is set; the data layer's answer readers ask the read check as the plain reads do; and People has **History of
+changes** for a Super admin, read only. No list, column or setting changed (version 8); the participant page differs only by that read check, which asks
+nothing there. Proven on the mocked SharePoint and the built pages (RELEASE-21G.md); everything below is the **real-site pass for the whole of Prompt
+21**, in this order, on a test copy of the site first. Items 216 to 261 still hold; these say what only the real site can show.
+
+262. **The package on a test copy.** *(Still to see.)* Replace the three pages (step 21 of the runbook): **expect** no upgrade (the lists stay at
+    version 8) and Setup's self-test to have one step more, "Probe (read-only): who may change the access lists".
+263. **The access lists' permissions.** *(Still to see; ASSUMED until done.)* As a site owner, do the four steps under **Show the plan**, "Who may change
+    the access lists (by hand)": a group "PMS access managers" with the Super admins and the Admins; `PMSUsers` and `PMSRoleAssignments` with their own
+    permissions (the group Contribute, the members Read); a permission level "PMS add only" (View Items, Add Items, Open; not Edit or Delete Items);
+    `PMSAuditLog` with its own permissions (the members "PMS add only"). Run the self-test: **expect** "as planned." for all three. Say whether PCOE lets
+    a site owner make a permission level (a tenant may forbid it), and whether the owners' group's name ends in "Owners".
+264. **What the lists now refuse.** *(Still to see.)* As a Producer (a member, not in the group), open `PMSUsers` and `PMSRoleAssignments` in SharePoint:
+    **expect** no New and no Edit; open `PMSAuditLog`: **expect** New but no Edit or Delete on a line. Then on the admin page as that Producer, run a
+    session end to end (Go live, a visit, End session, Results): **expect** no write refused (each grant, removal and person added writes an audit line
+    as the person who did it, so every member needs Add on `PMSAuditLog`).
+265. **The people screens still work under the lock.** *(Still to see.)* As an Admin in the group, give a Producer a role on a client, remove it; as an
+    Admin with "may also add people", add a person; as a Super admin, give and take Admin: **expect** each to work and to show in **History of changes**.
+    As an Admin **not** in the group (a mistake to try on purpose): **expect** Give access to say SharePoint refused it, in plain words, and nothing half done.
+266. **Directory search.** *(Still to see; item 222 first.)* On **Add user**, type two letters of a colleague's name: **expect** suggestions from the
+    directory. If PCOE refuses the people picker, **expect** "unverified" and a typed email taken.
+267. **The site owner.** *(Still to see; item 221.)* Sign in as a site owner who has no row: **expect** the Super admin banner. Say which group made it
+    (a site collection administrator, or the site's owners group).
+268. **The old admins copied.** *(Still to see; items 217 to 219.)* With a test copy still holding `PMSAdminUsers` rows: before the copy, an old admin
+    unlocks with the PIN as before; Setup's copy (each with an email) makes them Admin, Producer and Designer on all clients; after it, they sign in with
+    no PIN. **Expect** the counts Setup reports to match the rows.
+269. **Two sessions in a day.** *(Still to see; items 231 to 233.)* On Kroger plan 09:00 and 14:00 on one day, run the first, end it, run the second:
+    **expect** each QR code to open its own session, each session's answers only on its own Results card and in its own summary, and "1 of 2 today",
+    "2 of 2 today". Two live at the same moment is not supported (one live session at a time, open item 5).
+270. **Leadership sees only their scope.** *(Still to see; items 249 and 250.)* As Leadership on Kroger, and as Leadership for FY27 Q2 on all clients,
+    open Results with the browser's network tab: **expect** no request naming another client's session or answers for the one on Kroger, and the period
+    holder to see only sessions inside FY27 Q2.
+271. **A person turned off.** *(Still to see; items 258 and 259.)* Turn a Producer off on People while their page is open: **expect** them stopped at the
+    next tab after five minutes at most, and at once on reload ("Your access to Pursuit Managed Services was turned off"). **Not done by the lists**: turning
+    someone off in the app does not take them out of the site's groups, so a person who must lose all access is also removed from the site (say so to
+    the owner of PCOE). Say whether five minutes is acceptable (open item 19).
+272. **Sign-in renewal with the new reads.** *(Still to see; items 205 to 210.)* Leave the admin page open on People, as a Super admin, until SharePoint
+    stops accepting the sign-in (or sleep the laptop for an hour): press another tab. **Expect** the page to renew the sign-in by itself (the access
+    re-read is a GET of `PMSUsers` and `PMSRoleAssignments` and goes through the same renewal), or the one banner with **Reload** and **Details**,
+    never SharePoint's raw "403". After Reload, the same person, the same roles.
+273. **History of changes.** *(Still to see.)* As a Super admin, People, **History of changes**: **expect** every line of `PMSAuditLog` newest first, the
+    filters by what was done, by person and by days, 50 to a page, no button to change anything, and no answer in any line. As an Admin: **expect** no
+    such button (a person's own history is still on their page). Then push the branch `pms-21-7`.
+
+### Prompt 22 (the shift by client, the reporting settings, Industry and Region): not verified on SharePoint Online
+
+No upgrade: the lists stay at version 8 and nothing is added to them. Proven on the mocked SharePoint, in node and in the built pages in Chromium and
+WebKit, and on the local site (docs/history/RELEASE-22.md), not on the real site. Use a test copy for item 277.
+
+274. **The shift by client.** *(Still to see.)* As Leadership, open Results with two clients that have ended sessions with the check: **expect** the
+    card **Confidence index and shift by client**, and beside each client's bar its index, "Shift +N%", "P% moved to confident" and "n of m guests
+    answered both"; the same in each client's row and, with the arrow, in each session. Open one of those sessions on its own (Sessions, or its leader
+    report): **expect** the same shift and moved to confident as its session row. Change **Compare with**: **expect** the index to change and the shift
+    not to.
+275. **Industry and Region.** *(Still to see.)* As an Admin, on two clients' pages (**About this client**) give each an Industry and a Region (the box
+    offers the values already used): **expect** the labels on the client's page and its Clients row, one line each in History of changes. As
+    Leadership, filter the dashboard by an Industry, then by a Region (More filters): **expect** only that client; clear both. As a Designer, Content
+    shows the labels and no way to change them.
+276. **The minimum sample.** *(Still to see.)* As a Super admin, dashboard, **Reporting settings**: try 0 (**expect** "The minimum sample is a whole
+    number, 1 or more." and nothing saved), then 3: **expect** a "Low sample" tag to go from a small client; set it back (empty means 10). As an Admin
+    and as a Producer: **expect** no Reporting settings.
+277. **The fiscal start month, on a test copy.** *(Still to see.)* Change it to July: read the question (what follows at once, and how many sessions
+    and summaries keep June's quarters); after saving, **Move stored quarters** and its second question; **expect** the quarter names on the dashboard,
+    the trend and a client's sessions (Period on its page) to follow July. Set it back to June the same way.
+278. **For the manager.** *(Answered 30 Oct 2026.)* The shift divides by the full scale (5 points: 1 to 5 is +80%), not the largest possible move;
+    a Low sample shift shows its number with the tag; the headline's "(X to Y)" is shown when sessions in view use scales of different lengths, one
+    for each scale. **Expect**, with a 5-point and a 7-point check in view, "(2.0 to 3.0 on the 5-point scale and 4.0 to 5.0 on the 7-point scale)".
+
+### Prompt 20 (the confidence check, Before and After): not verified on SharePoint Online or an iPad
+
+Every guest answers one confidence question before the first activity and after the last; Results show how far confidence moved. Proven on the
+mocked SharePoint, the local server and the built page in Chromium and WebKit (RELEASE-20.md), not on the real site or a real iPad. **The lists
+move to version 4**: two columns, which Setup adds. Use a test copy of the site first.
+
+211. **Upgrade a test copy of the site.** *(Still to see.)* Open Setup on a copy of the site with this package: **expect** "The lists on this site
+    are version 3; this version of the app needs version 4", and Show the plan naming exactly `PMSClientSessions.ConfidenceCheck` and
+    `PMSActivities.Kind`. Press Create, then Mark the site as ready: **expect** "Raised the lists from version 3 to version 4." and the
+    self-test passing. Every session, activity and answer of before is where it was.
+212. **A session with three iPads.** *(Still to see.)* In Content add the client's confidence check, Go live (or switch Confidence check on, on
+    Today's Controls), and on three iPads answer Before, the activities and After. **Expect** the Live display's card to read "Before 3 of 3" and
+    "After 3 of 3", with no names, and Results to show a Confidence shift with "3 of 3 guests answered both" (and "Low sample": under 10).
+213. **Reloads, restarts and an early end.** *(Still to see.)* Reload an iPad on the After screen with a card picked: **expect** the same screen and
+    the card still picked. Restart one visit from Results at an activity: **expect** that iPad back in the activity, Before kept and After asked
+    again at the end; restart another from the very beginning: **expect** Before again. End the session while one guest has not given After:
+    **expect** that guest counted in Before and not in the shift.
+214. **The screen on an iPad.** *(Still to see.)* Upright and sideways: **expect** the five cards and the button without scrolling, the button under
+    the thumb, the text readable at arm's length, the picked card dark with a tick, and a keyboard (if one is attached) moving between cards with
+    the arrows.
+215. **Words and thresholds.** *(Still to see.)* Ask the content owner to confirm the five labels and the 2 / 4 thresholds, and the manager whether
+    the shift divides by the full scale (5) or by the largest possible move (4): `shiftDivisor` in `lib/results/confidence-shift.js`. *(The
+    manager: the full scale, 30 Oct 2026, item 278. The labels and thresholds are still to confirm.)* Then push the branch `pms-20`.
 
 ### Phase 8 (browsers, devices, accessibility, performance, the unsupported-browser page): not verified on a real device, a real screen reader, or the real SharePoint site
 

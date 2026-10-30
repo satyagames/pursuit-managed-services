@@ -15,6 +15,8 @@
   import CopyPanel from './setup/CopyPanel.svelte';
   import ListAddresses from './setup/ListAddresses.svelte';
   import PlanView from './setup/PlanView.svelte';
+  import { permissionSteps } from './lib/setup/list-permissions.js';
+  import AccessPanel from './setup/AccessPanel.svelte';
   import SessionBanner from './admin/SessionBanner.svelte';
 
   // What this page worked out about itself as it started (lib/settings/start.ts): which site and lists are its own, or why it cannot tell.
@@ -320,7 +322,7 @@
     <p class="muted">Reads the site and says which lists, columns and settings are still needed, and what it found that it will not touch. It changes nothing.</p>
     <button class="btn" type="button" onclick={() => void showThePlan()} disabled={busy || blocked || local}>Show the plan</button>
     {#if planStatus}<p class="setup-status setup-status--{kindOf(planStatus)}" role="status" data-testid="plan-status">{planStatus}</p>{/if}
-    {#if plan}<PlanView {plan} />{/if}
+    {#if plan}<PlanView {plan} permissions={permissionSteps(named)} />{/if}
 
     <h3>Create</h3>
     <p class="muted">
@@ -397,6 +399,8 @@
       <button class="btn btn--primary" type="submit" disabled={busy || blocked}>Add an admin</button>
     </form>
     {#if adminStatus}<p class="setup-status setup-status--{adminStatus.startsWith('Added') ? 'success' : adminStatus === 'Adding...' ? 'info' : 'error'}" role="status" data-testid="admin-status">{adminStatus}</p>{/if}
+    <!-- (Prompt 21) Who may do what: on SharePoint, once the lists are this version. -->
+    <AccessPanel active={!local && !blocked && version.state === 'ok'} />
   </section>
 
   <section aria-labelledby="clients-heading">

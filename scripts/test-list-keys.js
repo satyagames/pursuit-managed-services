@@ -66,7 +66,7 @@ describe('the tests name lists by key', () => {
   });
 
   it('every list has a key and a title, and so does the picture library', () => {
-    assert.deepEqual(Object.keys(TITLE), ['clients', 'sessions', 'sections', 'questions', 'options', 'tracks', 'qrtokens', 'appsettings', 'visitorroster', 'uservisitlogs', 'adminusers', 'responses', LIBRARY_KEY]);
+    assert.deepEqual(Object.keys(TITLE), ['clients', 'sessions', 'sections', 'questions', 'options', 'tracks', 'qrtokens', 'appsettings', 'visitorroster', 'uservisitlogs', 'adminusers', 'responses', 'users', 'roleassignments', 'auditlog', 'sessionsummary', LIBRARY_KEY]);
     assert.ok(PHASE_4_COLUMNS.every((name) => /^[a-z]+\.[A-Z]\w+$/.test(name)), 'columns to take away, as `without` takes them');
     const fake = createSharePointFake({ prefix: 'PMS3' });
     assert.equal(fake.titleOf('qrtokens'), `PMS3${TITLE.qrtokens}`);

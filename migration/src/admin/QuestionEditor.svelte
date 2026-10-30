@@ -13,7 +13,7 @@
     'true-false': { label: 'True / False', options: 'fixed', correct: true, min: 2, hint: 'Optionally mark the correct answer.' },
     'confidence-continuum': { label: 'Confidence continuum (scale)', options: 'free', correct: false, min: 2, hint: 'Scale points from lowest to highest.' },
     'ranked-voting': { label: 'Ranked voting', options: 'free', correct: false, min: 2, hint: 'Participants rank options from most to least important.' },
-    'open-text-feedback': { label: 'Open text feedback', options: 'none', correct: false, min: 0, hint: '' },
+    'open-text-feedback': { label: 'Survey feedback', options: 'none', correct: false, min: 0, hint: '' },
   };
 </script>
 

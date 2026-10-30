@@ -11,7 +11,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { hashPin } from '../../migration/src/lib/admin/admin-pin.js';
-import { samplePack } from '../../migration/src/lib/setup/sample-clients.js';
+import { checkContent, samplePack } from '../../migration/src/lib/setup/sample-clients.js';
 import { SAMPLE_PICTURES } from '../../migration/src/lib/setup/sample-pictures.js';
 import { seedSampleClients } from '../../migration/src/lib/setup/sample-seed.js';
 import { seedPack } from '../../migration/src/lib/setup/seed.js';
@@ -30,6 +30,7 @@ export const SCENARIOS = Object.freeze({
   'pcoe-16oct': 'Calibration: what PCOE showed on 16 Oct 2026 (the older Kroger and Domino\'s content), to compare with the photographs.',
   stress: '60 clients, one session of 400 visits and 30 questions, eight answers of 90 characters.',
   chaos: '"ready", with a fault answered in turn every few requests (429, 503, 500, a dropped connection, an expired write token).',
+  'confidence-check': '"ready" with the confidence check (Prompt 22): Kroger and Domino\'s ask it; Kroger\'s session of 14 Oct and Domino\'s of 15 Oct ended with Before and After answered (some guests Before only) and their summaries written; Kroger live today with the check, Before answered by most so far.',
 });
 export const EVENT_DATE = '2026-10-16';
 let builds = 0;
@@ -262,6 +263,58 @@ async function dominosDone(fake, ds, r) {
   return session;
 }
 
+/**
+ * Prompt 22: the confidence check, to be seen without building it by hand. Each client gets the sample pack's check (checkContent), so every session made
+ * after asks it (activateClient switches it on for a client with a check). Two sessions run to the end, each guest answering the activities, Before at the
+ * start and After at the end (the first `beforeOnly` of them left before After); each ended session's summary is written by the dashboard's own code
+ * (lib/admin/session-summaries.js writeSummary, through a data layer on the same site). Then Kroger goes live today with the check: most guests have
+ * answered Before, a few After, which the Producer's card on the Live display counts. Returns the live session.
+ */
+async function confidenceCheckDays(fake, ds, r) {
+  const checks = [checkContent('c-kroger', 'kroger'), checkContent('c-dominos', 'dominos')];
+  await seedPack(ds, { sections: checks.flatMap((each) => each.sections), questions: checks.flatMap((each) => each.questions), options: checks.flatMap((each) => each.options) });
+  const summaries = await import('../../migration/src/lib/admin/session-summaries.js');
+  const page = await import('../../migration/src/lib/data/dataService.js');
+  page.configure({ sharePoint: fake.settings });
+  const rows = visitRows(fake);
+  const run = async (clientId, slug, date, { people, beforeOnly, afters = people, end = true }) => {
+    const { session } = await ds.activateClient(clientId, date);
+    const sections = (await ds.listClientSections(clientId)).filter((section) => section.enabled);
+    const check = sections.find((section) => section.kind === 'confidence-check');
+    const questions = [];
+    const options = new Map();
+    for (const section of sections.filter((each) => each !== check)) {
+      for (const question of await ds.getSectionQuestions(section)) { questions.push(question); options.set(question.id, question.options ?? []); }
+    }
+    const checkQuestion = (await ds.getSectionQuestions(check))[0];
+    const steps = [...checkQuestion.options].sort((a, b) => Number(a.value) - Number(b.value));
+    for (let index = 0; index < people; index += 1) {
+      const id = `t-${slug}-check-${date.slice(5)}-${String(index + 1).padStart(2, '0')}`;
+      const createdAt = `${date}T09:${String(index % 60).padStart(2, '0')}:00.000Z`;
+      rows.track({ AppId: id, SessionId: session.id, ClientId: clientId, JoinedVia: 'manual', SharePointUserId: String(600 + index), CreatedAt: createdAt });
+      // Before on 1 to 3; After the same or one or two steps up, never past the top.
+      const before = r.int(1, 3);
+      const after = Math.min(steps.length, before + r.int(0, 2));
+      const pick = (phase, step, at) => ({ questionId: `${checkQuestion.id}@${phase}`, answer: steps[step - 1].id, firstAnswer: steps[step - 1].id, attempts: 1, correct: null, answeredAt: at });
+      const records = [pick('before', before, createdAt)];
+      if (index >= beforeOnly && index < afters) {
+        records.push(...answersFor(r, { index }, questions, (question) => options.get(question.id) ?? [], { startAt: createdAt, rankings: [[1, 3, 0, 2, 4], [3, 1, 0, 2, 4]] }));
+        records.push(pick('after', after, `${date}T11:${String(index % 60).padStart(2, '0')}:00.000Z`));
+      }
+      rows.answers(id, session.id, clientId, records);
+    }
+    if (!end) await ds.updateSession(session.id, { status: 'in-progress' }); // (the first visit's Click here to begin does this; the rows above were written without it)
+    if (end) {
+      await ds.endSession(session.id);
+      await summaries.writeSummary(session.id, { writtenBy: ADMIN.name, startMonth: 6 });
+    }
+    return session;
+  };
+  await run('c-kroger', 'kroger', '2026-10-14', { people: 20, beforeOnly: 4 });
+  await run('c-dominos', 'dominos', '2026-10-15', { people: 12, beforeOnly: 2 });
+  return run('c-kroger', 'kroger', EVENT_DATE, { people: 18, beforeOnly: 0, afters: 5, end: false });
+}
+
 /** Four rankings of five options whose points (5 for first ... 1 for last) are exactly `points`, found by search. */
 function rankingsFor(points) {
   const perms = [];
@@ -413,6 +466,10 @@ export async function buildScenario(name, { pictures = pictureFiles() } = {}) {
         const loaded = await loadDataset(fake, ds, { withTiles: name === 'tiles', pictures });
         extras.notes.push(...loaded.notes);
         extras.reveals = loaded.records.reveals;
+        if (name === 'confidence-check') {
+          const live = await confidenceCheckDays(fake, ds, r);
+          extras.notes.push(`The confidence check: two ended sessions with their summaries, and ${live.id} live with Before answered by everyone and After by 5.`);
+        }
         if (name === 'event-day' || name === 'finished') {
           if (name === 'finished') await dominosDone(fake, ds, r);
           const { session, unscanned } = await eventDay(fake, ds, r);

@@ -26,9 +26,10 @@
 // Nothing here is kept between page loads.
 
 import { visitGoneNotice } from './visit-notice.js';
+import { STEP_PATHS, checkOf, nextStep } from './confidence-check.js';
 
-/** Paths that need a visit; without one the participant belongs on Welcome. */
-const VISIT_PATHS = ['/agenda', '/quiz', '/feedback', '/thank-you'];
+/** Paths that need a visit; without one the participant belongs on Welcome. (The confidence check's two screens since Phase 20.) */
+const VISIT_PATHS = ['/agenda', '/quiz', '/feedback', '/thank-you', '/check-in', '/check-out'];
 
 /**
  * @typedef {object} BootResult
@@ -138,7 +139,10 @@ export async function bootParticipant(api, { trackId = null, qrToken = null, pat
       result.track = track;
       result.own = own;
       result.userDeferred = !track.visitorId; // a named visitor's page never needs the account's name
-      result.destination = path === '/' ? '/agenda' : null;
+      // (Phase 20: a visit whose session asks the confidence check resumes on its step: Before first, or Thank you once After is given.
+      // Without the check this is the hub, as it always was.)
+      const check = checkOf({ session: result.experience.session, sections: result.experience.sections });
+      result.destination = path === '/' ? STEP_PATHS[nextStep({ check, answers: own?.responses ?? [] })] : null;
     } else if (needsVisit) {
       result.destination = '/welcome';
     }

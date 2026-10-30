@@ -1,10 +1,12 @@
 <script lang="ts">
   import { errorText } from '../lib/admin/session-notice.js';
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
   import { embeddedAssetUrl } from '../lib/brand/assets.js';
   import { viewById } from '../lib/admin/admin-content-views.js';
   import SampleNotice from './SampleNotice.svelte';
+  import ClientTagChips from './ClientTagChips.svelte';
+  import ClientWorkspace from './ClientWorkspace.svelte';
   import { confirmSampleClient, readSessionResponses } from '../lib/admin/adminData.js';
   import { withoutRetiredLogo } from '../lib/brand/retired-logos.js';
   import {
@@ -16,7 +18,7 @@
 
   type Client = {
     id: string; name: string; slug?: string; status?: string; logoUrl?: string | null; primaryColor?: string; secondaryColor?: string; createdAt?: string;
-    theme?: unknown; themeVersion?: number;
+    theme?: unknown; themeVersion?: number; industry?: string | null; region?: string | null;
   };
   type Session = { id: string; clientId: string; date?: string; status?: string };
   type Section = { id: string; clientId?: string | null; enabled?: boolean };
@@ -24,9 +26,11 @@
   type Token = { id: string; clientId: string; sessionId: string; used?: boolean; expiredAt?: string | null; createdAt?: string };
   type CreatedToken = { id: string; sessionId: string };
 
-  let { onToast, adminName = '', onNavigate = () => {} }: {
+  let { onToast, adminName = '', access = null, onNavigate = () => {} }: {
     onToast: (message: string, kind?: 'info' | 'success' | 'error') => void;
     adminName?: string;
+    /** The signed-in person's access (lib/access), for the client's page: who may plan sessions and pick the team (Prompt 21, Phase 3). */
+    access?: any;
     /** Opens another tab: Brand opens Content's Brand view on that client (Phase 18). */
     onNavigate?: (tab: string, to?: { view?: string; clientId?: string; rows?: { settings: unknown[]; clients: unknown[]; sections: unknown[] } }) => void;
   } = $props();
@@ -62,6 +66,8 @@
   let qrWarning = $state('');
   let qrSessionDate = $state('');
   let qrCodes = $state<Token[]>([]);
+  /** The client whose page (its sessions and team) is open, Prompt 21 Phase 3. */
+  let workspace = $state<Client | null>(null);
 
   const rows = $derived(clientRows({ clients, sessions, sections, liveClientId }));
   const editingRow = $derived(editing ? rows.find((row) => row.client.id === editing!.id) ?? null : null);
@@ -271,6 +277,9 @@
   function statusOf(token: Token) { return dataService.qrTokenStatus(token); }
 </script>
 
+{#if workspace}
+  <ClientWorkspace client={workspace} {clients} {access} {onToast} onBack={() => { const back = workspace?.id; workspace = null; void refresh().catch(() => {}); void tick().then(() => document.getElementById(`sessions-${back}`)?.focus()); }} />
+{:else}
 <section class="panel clients-panel" aria-busy={loading || busy}>
   <header class="panel__head">
     <div>
@@ -293,10 +302,12 @@
               {#if row.liveNow}<span class="pill pill--live">LIVE NOW</span>{/if}
               <span class="pill" class:pill--archived={row.archived}>{row.archived ? 'Archived' : 'Active'}</span>
             </span>
+            <ClientTagChips {client} />
             <span class="muted small">{row.activities} activit{row.activities === 1 ? 'y' : 'ies'} ({row.liveActivities} live) · Last live {row.lastLive ?? 'never'}{client.slug ? ` · ${client.slug}` : ''}</span>
             <SampleNotice {client} {busy} onConfirm={() => void confirmSample(client)} />
           </div>
           <div class="row__actions">
+            <button class="btn" id="sessions-{client.id}" type="button" onclick={() => { workspace = client; }} disabled={busy} aria-label="Sessions and team: {client.name}">Sessions and team</button>
             <button class="btn" type="button" onclick={() => onNavigate('content', { view: brand.id, clientId: client.id, rows: { settings: settingsRows, clients, sections } })} disabled={busy} aria-label="{brand.label}: {client.name}">{brand.label}</button>
             <button class="btn" type="button" onclick={() => void generateQr(client)} disabled={busy || row.archived}>Generate QR</button>
             <button class="btn" type="button" onclick={() => openEditor(client)} disabled={busy}>Edit</button>
@@ -326,7 +337,7 @@
           <span id="slug-help" class="small" class:muted={!slugText || !slug} class:error={Boolean(slug) && Boolean(slugText)}>
             {#if slugLocked}Locked: this client already has sessions, and their ids start with the slug.
             {:else if slug && slugText}{slugText}
-            {:else}Session ids are the slug and the date, like {slug || 'kroger'}-2026-10-11. a to z, 0 to 9 and hyphens.{/if}
+            {:else}Session ids are the slug, the date and the start time, like {slug || 'kroger'}-2026-10-11-0930. a to z, 0 to 9 and hyphens.{/if}
           </span>
         </div>
         <label class="field"><span class="field__label">Event title</span><input class="input" bind:value={eventTitle} oninput={() => { titleTouched = true; }} disabled={busy} placeholder={defaultEventTitle(name) || 'KROGER TRIVIA NIGHT'} /></label>
@@ -356,6 +367,7 @@
     </section>
   {/if}
 </section>
+{/if}
 
 <style>
   .client-row {

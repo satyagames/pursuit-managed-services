@@ -3,9 +3,9 @@
 // equality filters; writes sessions and the settings item.
 
 import { LISTS } from '../schema/pms-schema.js';
-import { getItem, queryItems, request, sharePoint, spDecode, spPages, spReadTogether, updateItem } from './core.js';
+import { currentAccessGuard, getItem, queryItems, request, sharePoint, spDecode, spPages, spReadTogether, updateItem } from './core.js';
 import { localFilter, spItemsAddress } from './common.js';
-import { failure, getAppSettings, notMade, unscanned, updateAppSettings, versioned } from './records.js';
+import { failure, getAppSettings, notMade, unscanned, updateAppSettings, versionFirst, versioned } from './records.js';
 
 // ============================================================================
 // 5. The admin's Today and Clients screens
@@ -32,6 +32,8 @@ export async function readLists(queries) {
     return { list, where, none: Object.values(where).some((values) => [values].flat().length === 0) };
   });
   const sent = wanted.filter((query) => !query.none);
+  const guard = currentAccessGuard(); // (Phase 4: a scoped role may name only the places it holds, and the guard learns whose they are)
+  for (const { list, where } of sent) guard?.read?.(list, where);
   let answers;
   if (!sharePoint) {
     answers = await Promise.all(sent.map(({ list, where }) => request('GET', `/${list}${localFilter(where)}`)));
@@ -48,10 +50,12 @@ export async function readLists(queries) {
         rows = await spPages(addresses[position]).catch(list === 'appsettings' ? notMade : (error) => { throw error; });
       }
       return rows.map((row) => spDecode(list, row).item);
-    }));
+    })).catch(sent.some(({ list }) => list === 'appsettings') ? versionFirst : (error) => { throw error; });
+    // (Phase 20: a read refused for a column an older site lacks says the version's stop first, as before the column existed.)
     // The lists' version comes with the AppSettings item: a read of it checks it (above).
     sent.forEach(({ list }, at) => { if (list === 'appsettings') versioned(answers[at].find((row) => row.id === 'default') ?? null); });
   }
+  sent.forEach(({ list }, at) => guard?.learn?.(list, answers[at]));
   let position = 0;
   return wanted.map((query) => (query.none ? [] : answers[position++]));
 }

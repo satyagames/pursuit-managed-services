@@ -17,9 +17,11 @@
   // Live display's CSV, one row per answer option; and all answers, the participant CSV, one row for each person and question. The numbers
   // are lib/exports/leader-report.js's and the chart model's; this component only reads, shows progress and saves the file.
 
-  let { sessionId, clientName = '', onToast }: {
+  let { sessionId, clientName = '', hideNames = false, onToast }: {
     sessionId: string;
     clientName?: string;
+    /** Results' Hide names switch (Prompt 21, decision B): the leader report and the participant CSV name everyone Guest 1, Guest 2 ... */
+    hideNames?: boolean;
     onToast: (message: string, kind?: 'info' | 'success' | 'error') => void;
   } = $props();
 
@@ -106,7 +108,7 @@
       const records = await readLeaderReportRecords(sessionId);
       if (signal.aborted) throw cancelled();
       if (!records) throw new Error('That session no longer exists.');
-      const report = buildLeaderReport(records);
+      const report = buildLeaderReport(records, { hideNames });
       let fileName: string;
       let detail: string;
       if (kind === 'csv') {

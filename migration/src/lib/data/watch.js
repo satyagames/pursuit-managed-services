@@ -5,9 +5,9 @@
 import { READ_CHUNK, RESPONSE, chunked, indexById, pick, spLiteral } from './encoding.js';
 import { getItem, getItems, queryItems, sharePoint, spByAppId, spDecode, spListPath, spReadOrBatch } from './core.js';
 import { spAllRows, spItemsAddress, spOne } from './common.js';
-import { getAppSettings, notMade, versioned } from './records.js';
+import { getAppSettings, notMade, versionFirst, versioned } from './records.js';
 import { inOrder } from './today.js';
-import { PARTICIPANT_SELECT, combineAnswers, decodeResponsesRow, readAnswers, spParticipants } from './responses.js';
+import { PARTICIPANT_SELECT, askRead, combineAnswers, decodeResponsesRow, readAnswers, spParticipants } from './responses.js';
 
 // ============================================================================
 // 8. Pages that stay open: what a timer reads, in one request
@@ -48,7 +48,7 @@ export async function readParticipantWatch({ sessionId = null, trackId = null, c
     ...(sessionId ? { session: spByAppId('sessions', sessionId) } : {}),
     ...(trackId ? { track: spByAppId('tracks', trackId) } : {}),
     ...(clientId ? { owned: spItemsAddress('sections', { clientId }) } : {}),
-  }).catch(notMade);
+  }).catch(notMade).catch(versionFirst);
   const session = sessionId ? spOne('sessions', sessionId, data.session)?.item ?? null : null;
   const owned = clientId ? (await spAllRows(data.owned)).map((row) => spDecode('sections', row).item) : null;
   return {
@@ -75,6 +75,7 @@ export async function readParticipantWatch({ sessionId = null, trackId = null, c
 export async function readLiveFeed(sessionId, { sectionIds = [], tolerant = false } = {}) {
   // `tolerant` (Phase 9b, DI-6): an answer item that is not a list is left out and named in `unreadable`, where it used to stop the feed.
   const damaged = tolerant ? [] : null;
+  askRead(sessionId); // (Prompt 21, Phase 7: the read check, before the batch)
   if (!sharePoint) {
     const [session, tracks, answers, sections] = await Promise.all([
       getItem('sessions', sessionId), queryItems('tracks', { sessionId }), readAnswers(sessionId, damaged), sectionIds.length ? getItems('sections', sectionIds) : null,

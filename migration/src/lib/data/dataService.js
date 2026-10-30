@@ -26,6 +26,14 @@
  *    list-titles.js   section 10, which lists are this copy's
  *    session-calls.js section 11 (Prompt 19), the page's SharePoint sign-in: its renewer, lost and back, the evidence, the keep-alive's read
  *                     (session.js, which core.js imports, holds the rule book of refusals and the ladder's rules; it has no public names)
+ *    access-reads.js  section 12 (Prompt 21), roles and access: who is signed in, their row and their assignments in two indexed reads, the access
+ *                     lists read whole and a row added (the rules are lib/access's; core.js holds the page's write guard, setAccessGuard)
+ *    access-people.js section 13 (Prompt 21, Phase 2), the people screens: a search of the firm's directory, a person's or an assignment's change,
+ *                     an assignment removed; both lists go to the guard's record check first, so its rules hold here as well as on the screen
+ *    planning.js      section 14 (Prompt 21, Phase 3), sessions planned ahead, several a day: a planned session written under its id (-2, -3
+ *                     on a duplicate), and the Producer's Start, the only thing that makes a planned session live
+ *    summaries.js     section 15 (Prompt 21, Phase 5), the sessions' summaries: one written (made, or written over), and the Leadership
+ *                     dashboard's read of those a role holds, by client, session or fiscal period
  *
  * Since Phase 10c-1 it belongs to the pages in migration/ alone. Until then the legacy pages were built from this same file, so it
  * was only ever allowed to grow; they left the branch (the tag legacy-final holds them), that rule went with them, and so did the
@@ -46,7 +54,7 @@
  */
 
 export {
-  configure, requireConfiguration, isUnreachable, isSharePointMode,
+  configure, requireConfiguration, isUnreachable, isSharePointMode, setAccessGuard,
 } from './core.js';
 export {
   runPaced,
@@ -100,3 +108,15 @@ export {
 export {
   setSessionRenewer, onSessionChange, sessionEvidence, lastAnswerAt, checkSession,
 } from './session-calls.js';
+export {
+  readSignedInPerson, readAccessRows, listAccessRecords, addAccessRecord,
+} from './access-reads.js';
+export {
+  searchDirectory, updateAccessRecord, removeAccessRecord,
+} from './access-people.js';
+export {
+  planSession, startSession,
+} from './planning.js';
+export {
+  saveSessionSummary, readSessionSummaries,
+} from './summaries.js';

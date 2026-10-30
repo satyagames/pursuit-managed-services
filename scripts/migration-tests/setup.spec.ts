@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { PHASE_4_COLUMNS, TITLE } from '../sharepoint-fake.js';
-import { newFake, onSite, pageUrl, serveSharePoint, type Fake } from './sharepoint.js';
+import { newFake, onSite, pageUrl, serveSharePoint, type Fake, isRead } from './sharepoint.js';
+import { LISTS } from '../../migration/src/lib/schema/pms-schema.js';
 import { SAMPLE_PICTURES } from '../../migration/src/lib/setup/sample-pictures.js';
 
 // The built Setup page at the approved host's address, against the mocked SharePoint REST. Every
@@ -40,7 +41,7 @@ test('Setup rejects invalid schemas and performs no writes', async ({ page }) =>
   await expect(page.getByRole('button', { name: 'Import Missing Records' })).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Seed sample clients' })).toBeDisabled();
   expect(creates()).toEqual([]);
-  expect(fake.count((entry) => entry.method !== 'GET')).toBe(0);
+  expect(fake.count((entry) => !isRead(entry))).toBe(0);
   expect(served.unexpected).toEqual([]);
 });
 
@@ -71,7 +72,7 @@ test('Setup names every missing list and column with its internal name and type'
     `${TITLE.responses} | TrackId | Single line of text, indexed | Missing.`,
     `${TITLE.responses} | ClientId | Single line of text | Missing.`,
   ]);
-  expect(fake.count((entry) => entry.method !== 'GET'), 'the check creates nothing').toBe(0);
+  expect(fake.count((entry) => !isRead(entry)), 'the check creates nothing').toBe(0);
 });
 
 test('Setup cancellation and malformed JSON never write starter records', async ({ page }) => {
@@ -133,7 +134,7 @@ test('Seed sample clients creates Kroger and Domino\'s once; a second run create
 
   page.once('dialog', (dialog) => dialog.dismiss());
   await section.getByRole('button', { name: 'Seed sample clients' }).click();
-  expect(fake.count((entry) => entry.method !== 'GET'), 'cancelling writes nothing').toBe(0);
+  expect(fake.count((entry) => !isRead(entry)), 'cancelling writes nothing').toBe(0);
 
   page.once('dialog', (dialog) => dialog.accept());
   await section.getByRole('button', { name: 'Seed sample clients' }).click();
@@ -156,18 +157,20 @@ test('Seed sample clients creates Kroger and Domino\'s once; a second run create
   page.once('dialog', (dialog) => dialog.accept());
   await section.getByRole('button', { name: 'Seed sample clients' }).click();
   await expect(section.getByRole('status')).toContainText('Complete: 0 created, 0 completed, 76 already present.');
-  expect(fake.count((entry) => entry.method !== 'GET'), 'the second run writes nothing').toBe(0);
+  expect(fake.count((entry) => !isRead(entry)), 'the second run writes nothing').toBe(0);
   expect(fake.item('questions', 'q-dominos-history-1')!.Prompt).toBe('Edited by an admin');
   expect(fake.lists.get('questions')).toHaveLength(14);
   expect(served.unexpected).toEqual([]);
 });
 
-test('the self-test creates, updates, reads back, is refused a duplicate, lists, batches two reads, asks the site four read-only questions, and deletes what it made', async ({ page }) => {
+test('the self-test creates, updates, reads back, is refused a duplicate, lists, batches two reads, asks the site five read-only questions, and deletes what it made', async ({ page }) => {
   const { fake, served } = await openSetup(page);
   const section = page.getByRole('region', { name: 'SharePoint self-test' });
   await expect(section.getByText('Test site only.')).toBeVisible();
   // (The page has read the version of the lists as it opened: Phase 10c-2b. That read is not the self-test's.)
   await expect(page.getByTestId('lists-version')).toContainText('The lists are the version this app needs.');
+  // (Prompt 22: and People and access has read who has access, which it does as Setup opens since Prompt 21: those reads are not the self-test's either.)
+  await expect(page.getByTestId('super-admins')).toBeVisible();
   fake.reset();
   page.once('dialog', (dialog) => { expect(dialog.message()).toContain('Run it on the test site only.'); void dialog.dismiss(); });
   await section.getByRole('button', { name: 'Run self-test' }).click();
@@ -177,11 +180,15 @@ test('the self-test creates, updates, reads back, is refused a duplicate, lists,
   await section.getByRole('button', { name: 'Run self-test' }).click();
   // (Phase 9b: two read-only probes of the tenant, 3 and 6 requests, joined the seven steps. Phase 10h: a third, one read of each of the twelve lists and a
   // second of each that holds an item: here the AppSettings item and the self-test's own answers. Phase 10i: a fourth, one look at each list, and for each that
-  // holds an item its fields and one item naming every column.)
-  await expect(section.getByRole('status')).toContainText('Passed: 11 of 11 steps, 50 requests.');
+  // holds an item its fields and one item naming every column. Prompt 21, Phase 7: a fifth, who may change the access lists, two reads of each of the three.
+  // Prompt 22: the two probes that read every list grow with the lists (14 and 16 with twelve; LIST_COUNT + 2 and + 4), and the first create costs 2, not 3:
+  // the write token was asked for as Setup opened, by People and access. This line expected 56 and was never reached until then.)
+  const LIST_COUNT = Object.keys(LISTS).length;
+  const steps = [2, 1, 1, 1, 1, 1, 3, 6, 6, LIST_COUNT + 2, LIST_COUNT + 4, 3];
+  await expect(section.getByRole('status')).toContainText(`Passed: 12 of 12 steps, ${steps.reduce((a, b) => a + b, 0)} requests.`);
   const rows = (await section.getByRole('table', { name: 'Self-test steps' }).getByRole('row').allInnerTexts()).slice(1).map((row) => row.split('\t').slice(0, 3).map((cell) => cell.trim()).join(' | '));
   expect(rows).toEqual([
-    'Create a participant item | Pass | 3',
+    `Create a participant item | Pass | ${steps[0]}`,
     'Update it with one write, no read | Pass | 1',
     'Read it back by TrackId | Pass | 1',
     'A second create with the same AppId is refused | Pass | 1',
@@ -189,8 +196,9 @@ test('the self-test creates, updates, reads back, is refused a duplicate, lists,
     'Two reads in one request ($batch) | Pass | 1',
     'Probe (read-only): a Yes/No filter on the guest QR codes\' Used column, written three ways | Pass | 3',
     'Probe (read-only): how long a $filter this site accepts | Pass | 6',
-    'Probe (read-only): columns this site leaves out of a read that names no columns | Pass | 14',
-    'Probe (read-only): columns this site will not return by name | Pass | 16',
+    'Probe (read-only): who may change the access lists | Pass | 6',
+    `Probe (read-only): columns this site leaves out of a read that names no columns | Pass | ${steps[9]}`,
+    `Probe (read-only): columns this site will not return by name | Pass | ${steps[10]}`,
     'Delete everything it made | Pass | 3',
   ]);
   await expect(section.getByRole('row', { name: /columns this site leaves out/ })).toContainText(`Left out of a read that names no columns: ${TITLE.responses}: ClientId.`);
@@ -199,7 +207,8 @@ test('the self-test creates, updates, reads back, is refused a duplicate, lists,
   await expect(section.getByRole('row', { name: /how long a \$filter this site accepts/ })).toContainText('the six lengths 1,000 to 4,000 were all accepted');
   expect(fake.lists.get('responses'), 'nothing is left in the list').toHaveLength(0);
   const touched = fake.requests.flatMap((entry) => [entry, ...(entry.parts ?? [])]);
-  expect(new Set(touched.map((entry) => entry.list ?? (entry.path.endsWith('/$batch') ? 'batch' : 'contextinfo'))), 'it touches Responses, and only reads the other lists').toEqual(new Set([...Object.keys(TITLE).filter((key) => key !== 'logoLibrary'), 'contextinfo', 'batch']));
+  // (No write token: the page holds the one People and access asked for as Setup opened, since Prompt 21.)
+  expect(new Set(touched.map((entry) => entry.list ?? (entry.path.endsWith('/$batch') ? 'batch' : 'contextinfo'))), 'it touches Responses, and only reads the other lists').toEqual(new Set([...Object.keys(TITLE).filter((key) => key !== 'logoLibrary'), 'batch']));
   expect(touched.filter((entry) => entry.list !== 'responses' && entry.list).every((entry) => entry.method === 'GET'), 'the probes only read').toBe(true);
   expect(served.unexpected).toEqual([]);
 });

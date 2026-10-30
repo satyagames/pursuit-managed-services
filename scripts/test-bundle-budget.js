@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
 import { PAGES, ROOT, analyzePage } from './analyze-bundle.js';
-import { BUDGET, FORBIDDEN, PHASE_8, PHASE_9A, PHASE_9B, PHASE_10B, PHASE_10C1, PHASE_10C2A, PHASE_10C2B, PHASE_10C3, PHASE_10F, PHASE_10G, PHASE_10H, PHASE_10I, PHASE_10J, PHASE_11A, PHASE_11A3, PHASE_11B, PHASE_12, PHASE_13, PHASE_14, PHASE_15, PHASE_16, PHASE_17, PHASE_18, PHASE_19, checkBudgets, utilityClasses } from './bundle-budget.js';
+import { BUDGET, FORBIDDEN, PHASE_8, PHASE_9A, PHASE_9B, PHASE_10B, PHASE_10C1, PHASE_10C2A, PHASE_10C2B, PHASE_10C3, PHASE_10F, PHASE_10G, PHASE_10H, PHASE_10I, PHASE_10J, PHASE_11A, PHASE_11A3, PHASE_11B, PHASE_12, PHASE_13, PHASE_14, PHASE_15, PHASE_16, PHASE_17, PHASE_18, PHASE_19, PHASE_20, PHASE_21A, PHASE_21B, PHASE_21C, PHASE_21D, PHASE_21E, PHASE_21F, PHASE_21G, PHASE_22, checkBudgets, utilityClasses } from './bundle-budget.js';
 import { SAMPLE_PICTURE_NAMES } from '../migration/src/lib/setup/sample-pictures.js';
 import { pageProblems } from './release-proofs.js';
 
@@ -313,22 +313,113 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
     // (This test compared the build in the tree with those figures until Prompt 19: the newest phase's test below holds the build now.)
   });
 
-  it('Prompt 19 (SharePoint session resilience) grew the participant page within its allowance, to the same Tailwind rules and under its ceiling, and the admin page within its allowance and its budget', (t) => {
+  it('Prompt 19 (SharePoint session resilience) grew the participant page within its allowance, and the admin page within its allowance, as measured when it ended', () => {
     assert.equal(PHASE_19.participantBefore, PHASE_18.participantAfter, 'Prompt 19 is measured from where Phase 18 ended');
     assert.equal(PHASE_19.adminBefore, PHASE_18.adminAfter);
-    const participant = built.participant.htmlGzip - PHASE_19.participantBefore;
-    const admin = built.admin.htmlGzip - PHASE_19.adminBefore;
-    t.diagnostic(`participant ${participant >= 0 ? '+' : ''}${participant} B, admin ${admin >= 0 ? '+' : ''}${admin} B against where 18 ended`);
-    console.log(`  Prompt 19: the participant page is ${participant >= 0 ? '+' : ''}${participant} B gzip against where 18 ended (allowance ${PHASE_19.participantAllowance} B), now ${bytes(built.participant.htmlGzip)}; the admin page ${admin >= 0 ? '+' : ''}${admin} B (allowance ${PHASE_19.adminAllowance} B), now ${bytes(built.admin.htmlGzip)} of its ${bytes(BUDGET.admin)} budget`);
     assert.ok(PHASE_19.participantAllowance <= 2_500, 'the request layer every page carries, and no more');
-    assert.ok(participant <= PHASE_19.participantAllowance, `the participant page is ${participant} B larger than where 18 left it`);
-    assert.ok(built.participant.htmlGzip <= BUDGET.participantCeiling, 'and under its ceiling, which is not raised');
-    assert.equal(BUDGET.participantCeiling, 450_000, 'the ceiling is not raised');
-    assert.deepEqual(utilityClasses(built.participant.html), [...PHASE_19.participantUtilities], "the participant page's Tailwind rules are the ones it had");
-    assert.ok(admin <= PHASE_19.adminAllowance, `the admin page is ${admin} B larger than where 18 left it`);
-    assert.ok(built.admin.htmlGzip < BUDGET.admin, `the admin page is under its ${bytes(BUDGET.admin)} budget`);
     assert.ok(PHASE_19.participantAfter - PHASE_19.participantBefore <= PHASE_19.participantAllowance, 'the participant page, as measured when 19 ended');
     assert.ok(PHASE_19.adminAfter - PHASE_19.adminBefore <= PHASE_19.adminAllowance, 'the admin page, as measured when 19 ended');
+    // (This test compared the build in the tree with those figures until Prompt 20: the newest phase's test below holds the build now.)
+  });
+
+  it('Prompt 20 (the confidence check) grew the participant page within its allowance, and the admin page within its allowance, as measured when it ended', () => {
+    assert.equal(PHASE_20.participantBefore, PHASE_19.participantAfter, 'Prompt 20 is measured from where Prompt 19 ended');
+    assert.equal(PHASE_20.adminBefore, PHASE_19.adminAfter);
+    assert.ok(PHASE_20.participantAllowance <= 4_500, 'the two check screens and the flow, and no more');
+    assert.ok(PHASE_20.participantAfter - PHASE_20.participantBefore <= PHASE_20.participantAllowance, 'the participant page, as measured when 20 ended');
+    assert.ok(PHASE_20.adminAfter - PHASE_20.adminBefore <= PHASE_20.adminAllowance, 'the admin page, as measured when 20 ended');
+    // (This test compared the build in the tree with those figures until Prompt 21: the newest phase's test below holds the build now.)
+  });
+
+  it('Prompt 21, Phase 1 (the access engine) grew the participant page by the data layer\'s part only, as measured when Phase 1 ended', () => {
+    assert.equal(PHASE_21A.participantBefore, PHASE_20.participantAfter, 'Phase 1 is measured from where Prompt 20 ended');
+    assert.equal(PHASE_21A.adminBefore, PHASE_20.adminAfter);
+    assert.ok(PHASE_21A.participantAllowance <= 1_500, 'the schema\'s three lists, the write hook and the access reads every page carries, and no more');
+    assert.ok(PHASE_21A.participantAfter - PHASE_21A.participantBefore <= PHASE_21A.participantAllowance, 'the participant page, as measured when Phase 1 ended');
+    assert.ok(PHASE_21A.adminAfter - PHASE_21A.adminBefore <= PHASE_21A.adminAllowance, 'the admin page, as measured when Phase 1 ended');
+    // (This test compared the build in the tree with those figures until Phase 2: the newest phase's test below holds the build now.)
+  });
+
+  it('Prompt 21, Phase 2 (Manage Users) grew the participant page by the data layer\'s part only, and the admin page within its allowance, as measured when Phase 2 ended', () => {
+    assert.equal(PHASE_21B.participantBefore, PHASE_21A.participantAfter, 'Phase 2 is measured from where Phase 1 ended');
+    assert.equal(PHASE_21B.adminBefore, PHASE_21A.adminAfter);
+    assert.ok(PHASE_21B.participantAllowance <= 1_000, 'the directory search, the two people calls and the abort signal every page carries, and no more');
+    assert.ok(PHASE_21B.participantAfter - PHASE_21B.participantBefore <= PHASE_21B.participantAllowance, 'the participant page, as measured when Phase 2 ended');
+    assert.ok(PHASE_21B.adminAfter - PHASE_21B.adminBefore <= PHASE_21B.adminAllowance, 'the admin page, as measured when Phase 2 ended');
+    // (This test compared the build in the tree with those figures until Phase 3: the newest phase's test below holds the build now.)
+  });
+
+  it('Prompt 21, Phase 3 (sessions several a day) grew the participant page by the data layer\'s planning part and the sessions\' columns only, and the admin page within its allowance, as measured when Phase 3 ended', () => {
+    assert.equal(PHASE_21C.participantBefore, PHASE_21B.participantAfter, 'Phase 3 is measured from where Phase 2 ended');
+    assert.equal(PHASE_21C.adminBefore, PHASE_21B.adminAfter);
+    assert.ok(PHASE_21C.participantAllowance <= 600, 'planSession, startSession and a session\'s five columns every page carries, and no more');
+    assert.ok(PHASE_21C.participantAfter - PHASE_21C.participantBefore <= PHASE_21C.participantAllowance, 'the participant page, as measured when Phase 3 ended');
+    assert.ok(PHASE_21C.adminAfter - PHASE_21C.adminBefore <= PHASE_21C.adminAllowance, 'the admin page, as measured when Phase 3 ended');
+    // (This test compared the build in the tree with those figures until Phase 4: the newest phase's test below holds the build now.)
+  });
+
+  it('Prompt 21, Phase 4 (scoping by role) grew the participant page by the data layer\'s read check and the guest list\'s column only, and the admin page within its allowance, as measured when Phase 4 ended', () => {
+    assert.equal(PHASE_21D.participantBefore, PHASE_21C.participantAfter, 'Phase 4 is measured from where Phase 3 ended');
+    assert.equal(PHASE_21D.adminBefore, PHASE_21C.adminAfter);
+    assert.ok(PHASE_21D.participantAllowance <= 400, 'the read check and the guest list\'s GuestGroup every page carries, and no more');
+    assert.ok(PHASE_21D.participantAfter - PHASE_21D.participantBefore <= PHASE_21D.participantAllowance, 'the participant page, as measured when Phase 4 ended');
+    assert.ok(PHASE_21D.adminAfter - PHASE_21D.adminBefore <= PHASE_21D.adminAllowance, 'the admin page, as measured when Phase 4 ended');
+    // (This test compared the build in the tree with those figures until Phase 5: the newest phase's test below holds the build now.)
+  });
+
+  it('Prompt 21, Phase 5 (the Leadership dashboard) grew the participant page by the data layer\'s summaries part and the clients\' two columns only, to the same Tailwind rules and under its ceiling, and the admin page within its allowance and its budget', (t) => {
+    assert.equal(PHASE_21E.participantBefore, PHASE_21D.participantAfter, 'Phase 5 is measured from where Phase 4 ended');
+    assert.equal(PHASE_21E.adminBefore, PHASE_21D.adminAfter);
+    const participant = built.participant.htmlGzip - PHASE_21E.participantBefore;
+    const admin = built.admin.htmlGzip - PHASE_21E.adminBefore;
+    t.diagnostic(`participant ${participant >= 0 ? '+' : ''}${participant} B, admin ${admin >= 0 ? '+' : ''}${admin} B against where Phase 4 ended`);
+    console.log(`  Prompt 21e: the participant page is ${participant >= 0 ? '+' : ''}${participant} B gzip against where Phase 4 ended (allowance ${PHASE_21E.participantAllowance} B), now ${bytes(built.participant.htmlGzip)}; the admin page ${admin >= 0 ? '+' : ''}${admin} B (allowance ${PHASE_21E.adminAllowance} B), now ${bytes(built.admin.htmlGzip)} of its ${bytes(BUDGET.admin)} budget`);
+    assert.ok(PHASE_21E.participantAllowance <= 600, 'the summaries part and the clients\' Industry and Region every page carries, and no more');
+    assert.ok(participant <= PHASE_21E.participantAllowance, `the participant page is ${participant} B larger than where Phase 4 left it`);
+    assert.ok(built.participant.htmlGzip <= BUDGET.participantCeiling, 'and under its ceiling, which is not raised');
+    assert.equal(BUDGET.participantCeiling, 450_000, 'the ceiling is not raised');
+    assert.deepEqual(utilityClasses(built.participant.html), [...PHASE_21E.participantUtilities], "the participant page's Tailwind rules are the ones it had");
+    assert.ok(!/lib\/access|AccessDenied|Legacy admin|users\.manage|UserPicker|Add user|Client team|New session|session-plan|ViewOnly|View only|scopedReader|guest-group|index-math|priorityIndex|periodsBetween|Compare with|Leadership dashboard|session-summaries|dashboard-model/.test(built.participant.html), 'the participant page carries none of lib/access, the People screens, the client\'s page or the dashboard');
+    assert.ok(admin <= PHASE_21E.adminAllowance, `the admin page is ${admin} B larger than where Phase 4 left it`);
+    assert.ok(built.admin.htmlGzip < BUDGET.admin, `the admin page is under its ${bytes(BUDGET.admin)} budget`);
+    assert.ok(PHASE_21E.participantAfter - PHASE_21E.participantBefore <= PHASE_21E.participantAllowance, 'the participant page, as measured when Phase 5 ended');
+    assert.ok(PHASE_21E.adminAfter - PHASE_21E.adminBefore <= PHASE_21E.adminAllowance, 'the admin page, as measured when Phase 5 ended');
+  });
+
+  it('Prompt 21, Phase 6 (polish) left the participant page as it was, to the byte, and grew the admin page within its allowance, as measured when it ended', () => {
+    assert.equal(PHASE_21F.participantBefore, PHASE_21E.participantAfter, 'Phase 6 is measured from where Phase 5 ended');
+    assert.equal(PHASE_21F.adminBefore, PHASE_21E.adminAfter);
+    assert.equal(PHASE_21F.participantAllowance, 0, 'the participant page does not change in this phase');
+    assert.equal(PHASE_21F.participantAfter - PHASE_21F.participantBefore, 0, 'the participant page, as measured when Phase 6 ended');
+    assert.ok(PHASE_21F.adminAfter - PHASE_21F.adminBefore <= PHASE_21F.adminAllowance, 'the admin page, as measured when Phase 6 ended');
+    // (This test compared the build in the tree with those figures until Phase 7: the newest phase's test below holds the build now.)
+  });
+
+  it('Prompt 21, Phase 7 (hardening) grew the participant page by the read check in the data layer\'s answer readers only, and the admin page within its allowance, as measured when it ended', () => {
+    assert.equal(PHASE_21G.participantBefore, PHASE_21F.participantAfter, 'Phase 7 is measured from where Phase 6 ended');
+    assert.equal(PHASE_21G.adminBefore, PHASE_21F.adminAfter);
+    assert.ok(PHASE_21G.participantAllowance <= 100, 'one call to the read check, in the answer readers every page carries, and no more');
+    assert.ok(PHASE_21G.participantAfter - PHASE_21G.participantBefore <= PHASE_21G.participantAllowance, 'the participant page, as measured when Phase 7 ended');
+    assert.ok(PHASE_21G.adminAfter - PHASE_21G.adminBefore <= PHASE_21G.adminAllowance, 'the admin page, as measured when Phase 7 ended');
+    // (This test compared the build in the tree with those figures until Prompt 22: the newest phase's test below holds the build now.)
+  });
+
+  it('Prompt 22 (the shift by client, the reporting settings, Industry and Region) left the participant page as it was, to the byte and to the same Tailwind rules, and grew the admin page within its allowance', (t) => {
+    assert.equal(PHASE_22.participantBefore, PHASE_21G.participantAfter, 'Prompt 22 is measured from where Phase 7 ended');
+    assert.equal(PHASE_22.adminBefore, PHASE_21G.adminAfter);
+    const participant = built.participant.htmlGzip - PHASE_22.participantBefore;
+    const admin = built.admin.htmlGzip - PHASE_22.adminBefore;
+    t.diagnostic(`participant ${participant >= 0 ? '+' : ''}${participant} B, admin ${admin >= 0 ? '+' : ''}${admin} B against where Phase 7 ended`);
+    console.log(`  Prompt 22: the participant page is ${participant >= 0 ? '+' : ''}${participant} B gzip against where Phase 7 ended (allowance ${PHASE_22.participantAllowance} B), now ${bytes(built.participant.htmlGzip)}; the admin page ${admin >= 0 ? '+' : ''}${admin} B (allowance ${PHASE_22.adminAllowance} B), now ${bytes(built.admin.htmlGzip)} of its ${bytes(BUDGET.admin)} budget`);
+    assert.equal(PHASE_22.participantAllowance, 0, 'the participant page does not change in this prompt');
+    assert.equal(participant, 0, `the participant page is ${participant} B away from where Phase 7 left it`);
+    assert.equal(BUDGET.participantCeiling, 450_000, 'the ceiling is not raised');
+    assert.deepEqual(utilityClasses(built.participant.html), [...PHASE_22.participantUtilities], "the participant page's Tailwind rules are the ones it had");
+    assert.ok(!/reporting-settings|Reporting settings|settings\.manage|client-tags|About this client|FIELD_WRITES|fieldProblem|shiftWords|pairedMeansOf/.test(built.participant.html), 'the participant page carries none of this prompt\'s screens or rules');
+    assert.ok(admin <= PHASE_22.adminAllowance, `the admin page is ${admin} B larger than where Phase 7 left it`);
+    assert.ok(built.admin.htmlGzip < BUDGET.admin, `the admin page is under its ${bytes(BUDGET.admin)} budget`);
+    assert.equal(PHASE_22.participantAfter, PHASE_22.participantBefore, 'the participant page, as measured when Prompt 22 ended');
+    assert.ok(PHASE_22.adminAfter - PHASE_22.adminBefore <= PHASE_22.adminAllowance, 'the admin page, as measured when Prompt 22 ended');
   });
 
   it('the Tailwind rules check can fail: a rule added to the participant page, or one taken away, is found', () => {

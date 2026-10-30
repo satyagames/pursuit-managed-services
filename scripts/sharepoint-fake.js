@@ -76,7 +76,7 @@
 // proof that a sign-in works. Every answer carries an SPRequestGuid header, as SharePoint's do, so a refusal can be traced.
 
 import { LIBRARY, LISTS, VERSION } from '../migration/src/lib/schema/pms-schema.js';
-import { columnNamesAt, columnsOf } from '../migration/src/lib/schema/pms-schema-meta.js';
+import { META, columnNamesAt, columnsOf } from '../migration/src/lib/schema/pms-schema-meta.js';
 
 export const SITE_URL = 'https://tenant.example/sites/cec';
 
@@ -183,18 +183,33 @@ const LIST_SETTINGS = ['EnableAttachments', 'EnableModeration', 'EnableVersionin
 const FIELD_SETTINGS = ['Indexed', 'EnforceUniqueValues', 'Required'];
 const XML_ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
 const unescapeXml = (text) => text.replace(/&(amp|lt|gt|quot|apos);/g, (_, name) => XML_ENTITIES[name]);
+/** The lists schema version 5 added (Prompt 21, Phase 1), by key: a site Setup made for an earlier version has none of them. */
+export const PHASE_21_LISTS = Object.freeze(Object.keys(LISTS).filter((key) => META[key].since === 5));
+/** The columns of an older list schema version 5 added (Prompt 21, Phase 1), as 'key.Column'. */
+export const PHASE_21_COLUMNS = Object.freeze(['appsettings.FiscalYearStartMonth', 'appsettings.MinSample']);
+/** The columns of PMSClientSessions schema version 6 added (Prompt 21, Phase 3), as 'key.Column': a site Setup made for version 5 lacks them. */
+export const PHASE_21C_COLUMNS = Object.freeze(['sessions.StartTime', 'sessions.Sequence', 'sessions.Period', 'sessions.PlannedDate']);
+/** The column of PMSGuestList schema version 7 added (Prompt 21, Phase 4), as 'key.Column': a site Setup made for version 6 lacks it. */
+export const PHASE_21D_COLUMNS = Object.freeze(['visitorroster.GuestGroup']);
+/** The columns of PMSClients schema version 8 added (Prompt 21, Phase 5), as 'key.Column': a site Setup made for version 7 lacks them. */
+export const PHASE_21E_COLUMNS = Object.freeze(['clients.Industry', 'clients.Region']);
+/** The list schema version 8 added (Prompt 21, Phase 5), by key: PMSSessionSummary. */
+export const PHASE_21E_LISTS = Object.freeze(Object.keys(LISTS).filter((key) => META[key].since === 8));
+/** The columns schema version 4 added (Phase 20), as 'key.Column': what a site Setup made for an earlier version lacks. */
+export const PHASE_20_COLUMNS = Object.freeze(['sections.Kind', 'sessions.ConfidenceCheck']);
+
 /** A column's internal name made from a display name, as SharePoint makes it when no name is asked for: a space is `_x0020_`. */
 const encodedName = (display) => [...String(display)].map((character) => (/[A-Za-z0-9_]/.test(character) ? character : `_x${character.charCodeAt(0).toString(16).padStart(4, '0')}_`)).join('');
 
 /**
  * A list's columns as SharePoint describes them (its /fields), from the schema: type, index, uniqueness, (AppId alone) required, and a date shown
  * as Date & Time (DisplayFormat 1). `version`: the columns as Setup made them for that version of the lists (Phase 10i: version 2 had DisplayName
- * where 3 has GuestName and SignedInName, of the same type).
+ * where 3 has GuestName and SignedInName, of the same type; Phase 20: version 3 had neither PMSActivities.Kind nor PMSClientSessions.ConfidenceCheck).
  */
 const fieldsFor = (key, version = VERSION) => columnsOf(key).map((column, index) => ({
   InternalName: columnNamesAt(key, version)[index], TypeAsString: column.type, Indexed: column.indexed, EnforceUniqueValues: column.unique,
   RichText: false, AppendOnly: false, Required: column.required, ReadOnlyField: false, ...(column.type === 'DateTime' ? { DisplayFormat: 1 } : {}),
-}));
+})).filter((field) => field.InternalName !== null);
 
 /** What a field of a real list carries besides what the app reads (Phase 10j): every read of a list's columns that names none gets all of it. */
 const FIELD_EXTRAS = Object.freeze({
@@ -235,14 +250,20 @@ const fieldAsRead = (select) => (field) => {
  *   AppSettings item `default` says when the site is set up, as Setup writes it when it makes the lists (Phase 10c-2b): this build's VERSION by default (3 since Phase 10i);
  *   another number for a site of another version; null for a site Setup has not run on (no item at all). `listsVersion` (Phase 10i) is the
  *   version the lists' columns are of, this build's unless a test says otherwise: `listsVersion: 2` is a site Setup made for version 2, with its
- *   DisplayName columns, and its settings item says 2 unless `schemaVersion` says otherwise. The item takes no id of the
+ *   DisplayName columns, and its settings item says 2 unless `schemaVersion` says otherwise; `keepColumns` ('key.Column', Phase 20) are columns a later
+ *   version added that such a site has all the same, for a test to write its records with this build's data layer before it takes them off
+ *   (dropColumns). The item takes no id of the
  *   sequence the test's own items get, so their addresses are what they always were. `traps` (Phase 10c-3) are the traps of
  *   ARCHITECTURE-10.md 6.3 (in git history at 7347c72) the fake springs when a column is made or changed: see ALL_TRAPS. `strict` and
  *   `leavesOut` (Phase 10h) are what an item read that names no columns gets: see the top of the file. `{ strict: false }` is the tenant.
  *   `duplicateStatus` and `duplicateCode` (Phase 10h) are how a duplicate is refused: see the top of the file. `refusesByName` (Phase 10i)
  *   is the columns an item read may not name when it would return a row: see the top of the file; `[]` answers every one.
+ *   `ownerGroupId` (Prompt 21) is the id of the site's owners group, `/web/AssociatedOwnerGroup`: an account whose `Groups` holds it is a site owner.
+ *   `directory` (Prompt 21, Phase 2) is the firm's people the people picker (`/SP.UI.ApplicationPages.ClientPeoplePickerWebServiceInterface.clientPeoplePickerSearchUser`)
+ *   finds, as { name, email, jobTitle }; `pickerStatus` makes the picker answer with that status instead (a site that refuses the call).
+ *   `keepColumns` may also name a whole list (by key) that a later version added, for a site of an earlier version that has it all the same.
  */
-export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Casey Example' }, siteUrl = SITE_URL, prefix = SUITE_PREFIX, lists: named = {}, logoLibrary, addresses = {}, listsVersion = VERSION, schemaVersion = listsVersion, traps = {}, strict = true, leavesOut = TENANT_LEAVES_OUT, refusesByName = TENANT_REFUSES_BY_NAME, duplicateStatus = 500, duplicateCode = false, realShape = null } = {}) {
+export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Casey Example' }, ownerGroupId = 3, siteUrl = SITE_URL, prefix = SUITE_PREFIX, lists: named = {}, logoLibrary, addresses = {}, listsVersion = VERSION, schemaVersion = listsVersion, keepColumns = [], traps = {}, strict = true, leavesOut = TENANT_LEAVES_OUT, refusesByName = TENANT_REFUSES_BY_NAME, duplicateStatus = 500, duplicateCode = false, realShape = null, directory = [], pickerStatus = null } = {}) {
   const fields = new Map();
   const lists = new Map();
   /** The other set's rows, by the title a request names: empty unless something went to the wrong lists. */
@@ -264,7 +285,10 @@ export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Ca
       otherLists.set(other, []);
     }
     if (without.includes(key)) continue;
-    fields.set(key, fieldsFor(key, listsVersion).filter((column) => !without.includes(`${key}.${column.InternalName}`)));
+    // (Prompt 21: a list a later version added is not on a site of an earlier one, unless the test keeps it, by key, in `keepColumns`.)
+    if ((META[key].since ?? 0) > listsVersion && !keepColumns.includes(key)) continue;
+    fields.set(key, [...fieldsFor(key, listsVersion), ...fieldsFor(key).filter((column) => keepColumns.includes(`${key}.${column.InternalName}`) && !fieldsFor(key, listsVersion).some((held) => held.InternalName === column.InternalName))]
+      .filter((column) => !without.includes(`${key}.${column.InternalName}`)));
     lists.set(key, []);
   }
   /** What dataService.configure({ sharePoint }) takes for this site. */
@@ -472,6 +496,18 @@ export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Ca
     if (path.endsWith('/contextinfo')) return ok({ GetContextWebInformation: { FormDigestValue: 'digest-token', FormDigestTimeoutSeconds: 1800 } });
     // (`user` may be a function, asked on every request: the local site's personas, Phase 12.)
     if (path.endsWith('/web/currentuser')) return ok(typeof user === 'function' ? user() : user);
+    // The site's owners group (Prompt 21: a member of it is a site owner, and so a Super admin): its id, which a signed-in account's groups are compared with.
+    // The people picker (Prompt 21, Phase 2): what the firm's directory holds that matches the typed text, at most the suggestions asked for, in SharePoint's shape.
+    if (/clientPeoplePickerSearchUser$/.test(path) && method === 'POST') {
+      if (pickerStatus) return error(pickerStatus, 'The people picker is not allowed here.');
+      const query = JSON.parse(request.body ?? '{}').queryParams ?? {};
+      const text = String(query.QueryString ?? '').toLowerCase();
+      const found = directory.filter((person) => `${person.name} ${person.email}`.toLowerCase().includes(text)).slice(0, Number(query.MaximumEntitySuggestions) || 30);
+      return ok({ ClientPeoplePickerSearchUser: JSON.stringify(found.map((person) => ({
+        Key: `i:0#.f|membership|${person.email}`, DisplayText: person.name, IsResolved: true, EntityType: 'User',
+        EntityData: { Email: person.email, Title: person.jobTitle ?? '', Department: '' } }))) });
+    }
+    if (path.endsWith('/web/AssociatedOwnerGroup') && method === 'GET') return ok({ Id: ownerGroupId });
     // The site itself: the light read that proves a sign-in works (Prompt 19).
     if (/\/_api\/web$/.test(path) && method === 'GET') return ok({ Id: idOf(siteUrl) });
     // The site's lists (Phase 10c-3): what Setup's plan reads, and where Create makes a list or the library.
@@ -810,6 +846,18 @@ export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Ca
     },
     /** The stored item with this AppId in one of the test's own lists (by key), or undefined. */
     item: (list, appId) => lists.get(knownKey(list))?.find((row) => row.AppId === appId),
+    /**
+     * Phase 20: takes columns ('key.Column') off the test's own lists, and their values off every item, as if the site had never had them: a
+     * site an older Setup made, holding the records a test wrote there first with this build's data layer (which names every column it reads).
+     * @param {string[]} names
+     */
+    dropColumns(names) {
+      for (const name of names) {
+        const [key, column] = name.split('.');
+        fields.set(knownKey(key), (fields.get(knownKey(key)) ?? []).filter((field) => field.InternalName !== column));
+        for (const row of lists.get(knownKey(key)) ?? []) delete row[column];
+      }
+    },
     /**
      * The whole site as plain data (Phase 12, the local site's persistence): the test's own lists, their columns and settings, the library's
      * files (base64) and the counters, so `importState` on a fake made with the same options puts it back exactly, ids and versions included.

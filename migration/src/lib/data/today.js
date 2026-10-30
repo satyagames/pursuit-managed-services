@@ -9,6 +9,7 @@ import {
   createItem, getItem, getItems, queryItems, request, sharePoint, spEntityType, spFind, spHttp, spListPath, spRefs, updateItem,
 } from './core.js';
 import { failure, getAppSettings, recordUserVisit, unscanned, updateAppSettings } from './records.js';
+import { isCheckActivity } from '../participant/confidence-check.js';
 
 // ============================================================================
 // 3. Today's client and per-participant responses
@@ -46,13 +47,15 @@ export async function activateClient(clientId, dateString) {
   if (!client) throw failure('client-missing', 'That client no longer exists.');
   if (client.status === 'archived') throw failure('client-archived', `${client.name} is archived. Restore it before going live.`);
   const sessionId = sessionIdFor(client, date);
-  const sectionIds = (await listClientSections(clientId)).map((section) => section.id);
+  const owned = await listClientSections(clientId);
+  const sectionIds = owned.map((section) => section.id);
   let session = await getItem('sessions', sessionId);
   if (!session) {
     try {
+      // (Phase 20: a new session asks the confidence check when its client has one with a question; the facilitator can switch it off.)
       session = await createItem('sessions', {
         id: sessionId, clientId, date, sectionIds, activeSectionId: null, status: 'not-started', endedAt: null,
-        participationMode: 'staff', activityFlow: 'sequential',
+        participationMode: 'staff', activityFlow: 'sequential', confidenceCheck: owned.some((section) => isCheckActivity(section) && (section.questionIds ?? []).length > 0),
       });
     } catch (error) {
       if (error.status !== 409) throw error;

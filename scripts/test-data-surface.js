@@ -37,7 +37,7 @@ export function surfaceDifferences(expected, actual) {
 describe('the data service\'s public surface (Phase 17)', () => {
   it('is exactly what scripts/data-surface.json lists: every name, its kind and its arity', () => {
     assert.deepEqual(surfaceDifferences(SURFACE, surfaceOf(ds)), [], 'a change to the surface is a decision: data-surface.json and docs/DECISIONS.md change with it');
-    assert.equal(SURFACE.length, 112); // (Phase 17: 107. Prompt 19: the page's SharePoint sign-in, five names of lib/data/session-calls.js.)
+    assert.equal(SURFACE.length, 124); // (Phase 17: 107. Prompt 19: the page's SharePoint sign-in, five names of lib/data/session-calls.js. Prompt 21: access, five names; Phase 2: three more, lib/data/access-people.js; Phase 3: two, lib/data/planning.js; Phase 5: two, lib/data/summaries.js.)
   });
 
   it('docs/DECISIONS.md states the same number of names, so the surface cannot change without it', async () => {

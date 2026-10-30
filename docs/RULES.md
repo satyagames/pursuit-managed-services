@@ -1407,6 +1407,326 @@ sequence, [DATA-FLOW.md](DATA-FLOW.md#a-refused-sign-in-the-ladder). **None of i
 - **The keep-alive** (`lib/common/session-keepalive.ts`) runs on `page-watch.ts`'s one timer: no timer while hidden, nothing while requests are
   answered, one light read after `SESSION_LIMITS.idleMs`. It decides idle inside its check, not through `enabled` (see RELEASE-19.md).
 
+## Rules from Prompt 20 (the confidence check, Before and After; keep them holding)
+
+The report is [RELEASE-20.md](history/RELEASE-20.md); the steps, [DATA-FLOW.md](DATA-FLOW.md#the-confidence-check-before-and-after). **None of it has met
+SharePoint Online or an iPad**: QA-TESTING.md items 211 to 215.
+
+- **The flow is one list of rules**, `FLOW_RULES` in `lib/participant/confidence-check.js`, and `nextStep()` is the only thing that decides where a
+  visit goes when the session asks the check: Before (`#/check-in`) first, for a late joiner too, never skipped; the activities; After (`#/check-out`)
+  when the last activity is finished (in order) or Finish is pressed on the hub (any order); Thank you. An ended session asks no After. A visit
+  restarted from the very beginning loses both answers; one restarted at an activity keeps Before and loses After. Every row of board 14 is a
+  case in `scripts/test-confidence-check.js`.
+- **A session with the check off, and every client without one, behaves exactly as before**: the same screens, results and exports. The answers
+  CSV gains its two columns only for a session that lists the client's check.
+- **Storage**: the two answers are records `<questionId>@before` and `<questionId>@after` in the visit's `ResponsesJson`, saved, retried, merged,
+  restored and restarted like any answer, through `participantData.ts` (`recordCheckAnswer`); Continue never waits for the network. A card
+  picked and not confirmed is kept in this tab only (`cec-check-pick:`). The Before answer is never shown on the After screen.
+- **The formulas live in `lib/results/confidence-shift.js` and nowhere else**; Results, the Live display, the leader report, the pack and the oracle
+  read them:
+  - Confidence shift (percent) = (mean After − mean Before) / `shiftDivisor(scaleMax)` × 100 over the guests who gave both; `shiftDivisor` is
+    `scaleMax`, the full scale (the manager's choice, 30 Oct 2026, QA item 278; not `scaleMax − 1`, the largest possible move).
+  - Moved to confident = of the paired guests whose Before ≤ `notConfidentMax` (`floor(0.4 × scaleMax)`: 2 of 5, 1 of 3), the share whose After ≥
+    `confidentMin` (`ceil(0.8 × scaleMax)`: 4 of 5, 3 of 3).
+  - `scaleMax` is the check question's highest OptionValue; a Before-only guest counts in the Before totals, never in a shift.
+  - Confidence index = mean After of a group / mean After of the baseline × 100 (a function, for the multi-session dashboard).
+  - `MIN_SAMPLE` is 10 (ASSUMED: no setting may be added). A session's Results show the shift whatever its size, with "N of M guests answered
+    both" and "Low sample" under 10.
+- **The check is not an activity**: not in the guest's list, not in Results by activity, not in "N answers from M iPads" (Before and After are not
+  counted as answers), not a stray answer in the leader report. `buildResults` lifts it into `confidenceCheck`.
+- **The producer's card** on the Live display counts Before and After over the iPads that joined: no name, no score, never on the wall, and no
+  request of its own.
+- **The screens** are built from the tokens of `styles/check-tokens.css` (a ratio test holds them to 1%); where they differ from the page's own
+  rules, the page's win (the stage's gutter, the page's button, body text 16 px or more).
+
+## Rules from Prompt 21, Phase 1 (roles and access: the engine; keep them holding)
+
+The report is [RELEASE-21A.md](history/RELEASE-21A.md); the steps, [DATA-FLOW.md](DATA-FLOW.md#signing-in-to-the-admin-page-prompt-21). **None of it has met
+SharePoint Online**: QA-TESTING.md items 216 to 221.
+
+- **Schema version 5**: `PMSUsers` (a person, AppId their email in lower case, `Status` Active or Disabled), `PMSRoleAssignments` (one row for each
+  person, role and place, AppId `user|role|scope|place`), `PMSAuditLog` (only grows) and `PMSAppSettings.FiscalYearStartMonth` and `MinSample`
+  (empty reads as 6 and 10, ASSUMED). Indexed: exactly what Phase 1 filters on, AppId and `PMSRoleAssignments.UserKey`; the brief's other indexes
+  come with the phase that first filters on them. A page on lists of version 4 or older stops with `PMS-LST-011`: its full read of the settings item
+  is refused (400), so it reads the item's version alone (`versionSelect()`), one request more on such a site only.
+- **The role matrix is reviewed data**: `lib/access/access-matrix.js` holds board 10 of the approved wireframes cell by cell (`MATRIX`), the places
+  each role may have (`ROLE_SCOPES`), the extras (`content.edit` for a Designer, `users.manage` for an Admin) and `LIST_WRITES`, the actions that
+  allow each write to each list. `scripts/test-access.js` prints it and fails on any change. Rules only allow, and add up.
+- **One check**: `can(access, action, target)` in `lib/access/can.js`, with `ValidUntil` honoured at the call (its whole last day), a disabled
+  person allowed nothing, the site owner always a Super admin. An empty target asks "anywhere"; a client's role covers its client, a session's its
+  session, a period's every session dated inside it.
+- **The data layer asks before every write**: `core.js` holds the page's write guard (`setAccessGuard`) and calls it in `spHttp` and the local
+  `send()`; `lib/access/guard.js` reads the change from the request (list, create, update or delete), and throws `AccessDenied` (code
+  `access-denied`, no `status`, plain words) when no action of its `LIST_WRITES` row is allowed, before anything is sent. Only the admin page
+  installs one; the participant page and Setup install none. ASSUMED until Phase 4: a write whose item names no client is allowed when the role has
+  the action anywhere.
+- **Sign-in on the admin page**: who is signed in (one request), then their row and assignments (two indexed reads, one `$batch`), kept for the page.
+  The site owner (a site collection administrator or a member of the owners group, ASSUMED) enters as a Super admin, with a banner until they have a
+  row of their own; a listed, active person with a current role enters with no PIN and no Lock; a disabled person, or one with no current role,
+  sees No access; anyone not listed gets the PIN screen exactly as before, and a PIN gives the legacy admin, everything the Phase 20 admin page did.
+- **The switch-over** is Setup's copy of `PMSAdminUsers` (People and access, under 3. Admins): each admin given an email becomes Admin, Producer and
+  Designer on all clients (ASSUMED, for the manager), idempotent, with counts; `PMSAdminUsers` is left as it was. Setup lists the Super admins now.
+- **Grants**: `grantRole()` writes the row and one audit line, and a duplicate is "already granted"; only a Super admin gives Super admin, Admin or
+  Leadership for a period; nobody changes their own roles (the site owner's own Super admin row aside); `revokeProblem()` keeps one Super admin.
+- **The audit list only grows** (the guard refuses a change to a line), and a line never holds an answer (`writeAudit` refuses one).
+
+## Rules from Prompt 21, Phase 2 (Manage Users: the People tab; keep them holding)
+
+The report is [RELEASE-21B.md](history/RELEASE-21B.md); the steps, [DATA-FLOW.md](DATA-FLOW.md#people-prompt-21-phase-2). **None of it has met SharePoint
+Online**: QA-TESTING.md items 222 to 228. Boards 3 and 4 of the approved wireframes.
+
+- **The People tab** (`admin/AdminPeople.svelte`, `UserDetail.svelte`, `UserAdd.svelte`, `UserPicker.svelte`, `GiveAccess.svelte`) is in the menu only
+  for a person whose access has `users.view` (a Super admin, or an Admin, who may look: `canView`), never for a PIN's legacy admin; `shownTabs` in
+  `AdminApp.svelte` filters the tabs table. Add user shows only with `users.manage` (a Super admin, or an Admin with the extra, decision C). A screen
+  never decides access alone: the data layer asks the same rules again.
+- **The list** (`lib/access/people.js`, no DOM): one row for each person, with the roles and the reach their current assignment rows give (an ended
+  access is not a role; the person's own page shows it as ended); role chips (All, Super admins, Admins, Producers, Designers, Leadership); search
+  by name or email; a Client filter, and a Session filter that lists that client's sessions by date, time and title once a client is picked; Status;
+  pages of 50. The four lists are read once in full pages and filtered in the page (ASSUMED: hundreds of people, below the 5,000-item view limit;
+  Phase 7 revisits it). No index was added: nothing here filters on a column the lists do not already index.
+- **Add user** searches the firm's directory as you type: `lib/access/picker.js` (two characters, a 250 ms pause, at most eight suggestions, one search
+  in flight, a newer search aborts the older and its answer is dropped, Up and Down go round, Enter chooses, Escape closes the list before the
+  dialog), `dataService.searchDirectory` sends `POST /_api/SP.UI.ApplicationPages.ClientPeoplePickerWebServiceInterface.clientPeoplePickerSearchUser`
+  (verbose JSON, `ladder: false`, so that a refusal is not taken for a lost sign-in; the write guard lets it pass: it changes nothing). **ASSUMED** that
+  the real PCOE site allows it (QA item 222); if it is refused, or on the local server, the screen says "unverified" and takes a full email typed by
+  hand (`Source` Typed). Adding a person writes their row and one audit line and gives **no access**; Give access is on the person's own page.
+- **A person's page**: Turn access off or on (`PMSUsers.Status`; never deleted, decision J); Super admin and Admin for all clients, and the Admin's
+  extra "also allowed to add people" (a Super admin's to give); the access to clients and sessions, each with its end date and Remove, whose
+  confirmation says what they lose (`loseWords`); **Give access** (`GiveAccess.svelte`: an existing person gets Producer, Designer or Leadership on one
+  client or one session, with an optional last day, a Designer's "may also edit activities" extra, and, for a Super admin, Leadership for all clients
+  in a period) is not Add user; and a read-only history from the audit list (`historyOf`), read whole and filtered in the page (ASSUMED: the audit
+  list stays far below 5,000 lines; the phase that filters it on the server indexes `TargetUser`).
+- **The guards also live in the data layer**: `lib/data/access-people.js` (`updateAccessRecord`, `removeAccessRecord`) reads both lists and hands the
+  row to the guard's `record()` (`lib/access/guard.js`), which applies `revokeProblem` and `disableProblem` (`lib/access/grants.js`): you cannot change
+  your own roles or turn yourself off, at least one Super admin remains, and an Admin never touches a Super admin or Admin row. A refusal is
+  `AccessDenied` in words and nothing is sent. A role already gone is "already", not an error; a grant given twice is "already has this access".
+- **Every change is one audit line** (`add-user`, `grant` (also an extra switched), `revoke`, `disable`, `enable`), written by `lib/access/people-ops.js`.
+- **`core.js` is at its 600 lines**: the two changes it took (the request function's own abort signal, and `currentAccessGuard`, the guard's getter)
+  are on lines that already existed. New calls go in `access-people.js` or a part of their own.
+- **Tailwind reads every word under `migration/`**: the People files use lists (`ul.rows`), not table markup, and keep class words out of comments;
+  the participant page's rules are unchanged (`npm run test:bundle`). A component's name must not be a retired list's title (`AdminUsers` was one:
+  `scripts/test-shown-names.js`), so the tab's screen is `AdminPeople`.
+
+## Rules from Prompt 21, Phase 3 (clients, sessions several a day, the team; keep them holding)
+
+The report is [RELEASE-21C.md](history/RELEASE-21C.md); the steps, [DATA-FLOW.md](DATA-FLOW.md#a-clients-sessions-and-team-prompt-21-phase-3). **None of it
+has met SharePoint Online**: QA-TESTING.md items 229 to 236. Boards 5 and 6 of the approved wireframes.
+
+- **Schema version 6**: `PMSClientSessions` gains `StartTime` (text `HH:mm`), `Sequence` (a number: its place among its client's sessions that day, in
+  the order they were planned), `Period` (text, like `FY27-Q2`) and `PlannedDate` (when an Admin planned it, ASSUMED: the brief names the column, not
+  what it holds). A session's title is SharePoint's own `Title`, where the data layer has always written a session's id: a title equal to the id
+  reads as none (`sessionTitle`, `lib/access/people.js`). Every read of the sessions names the four, so a site of version 5 stops with PMS-LST-011
+  until Setup has added them. **Nothing new is indexed**: the brief marks `Period` as indexed, and the rule is exactly what a recorded request
+  filters on (`scripts/test-schema.js`); the Leadership dashboard (Phase 5) indexes it when it filters on it. `PMSClients.Industry` and `Region` and
+  `PMSGuestList.GuestGroup` are left to Phases 4 and 5: no screen of this phase uses them.
+- **A session's id is opaque.** A planned one is `<slug>-<yyyy-mm-dd>-<hhmm>` (`plannedSessionId`, `lib/admin/session-plan.js`), built once; when
+  SharePoint refuses it as a duplicate the data layer tries `-2`, then `-3`, up to `-9` (`planSession`, `lib/data/planning.js`). An existing id,
+  `<slug>-<yyyy-mm-dd>` or older, keeps working everywhere. Nothing reads a date or a time out of an id: QR codes carry a code's own id, results and
+  exports group by the session's id and only make a file name safe with it. An id is up to 58 characters now (51 before), so a read by many session
+  ids takes 15 to an address (`NAME_SOURCE_SESSIONS` in `lib/admin/admin-results.js`, `SESSIONS_TO_A_READ` in `admin-clients.js`; 20 of the longer
+  ids made 2,013 characters on the real site's address).
+- **The period** of a session is worked out from its date and `PMSAppSettings.FiscalYearStartMonth` (empty reads as June, ASSUMED) when it is
+  planned (`periodOf`): the fiscal year is named by the year it ends in (ASSUMED), a quarter is three months from the start month. A session made
+  before version 6 shows its date's period.
+- **A client's page** (`admin/ClientWorkspace.svelte`, opened by **Sessions and team** on Clients) has the client's **Sessions**
+  (`ClientSessions.svelte`: date and time, title, period, label, team; the latest day first, a day by start time, "1 of 2 today"), **New session** (a
+  date and a start time; a title when the client has another session that day; "Use the client team": on, the client's team covers it; off, the
+  team form opens on the new session) for a person who may create clients and sessions (`clients.manage`), and the **Client team**
+  (`ClientTeam.svelte`, `lib/access/team.js`): Producer, Designer or Leadership, among the people registered (and active) under People only, for the
+  whole client (one row) or for selected sessions (one row each, with the client named on it), a Designer's "may also edit activities"
+  (`content.edit`), and Remove with `loseWords`; each change one audit line (`grantRole`, `removeRole`); Add and Remove for `team.assign` only (an
+  Admin, a Super admin; not the PIN's legacy admin, which has nothing about people).
+- **Planned, Live and Ended** are labels of the existing Status values (`stageOf`): Ended when `completed`; Live while it is the session
+  `PMSAppSettings` names; Planned otherwise, a session that was visited and is no longer the live one included (ASSUMED).
+- **The Admin plans, the Producer starts.** Making a session is `clients.manage`'s alone (`LIST_WRITES.sessions.create`, no longer `events.run`).
+  Today offers the client's sessions of the day when one was planned (`daySessionsOf`, `sessionChoiceWords`) and its Go live is the data layer's
+  `startSession` (`startPlannedSession`): the activities added since planning join it, the codes nobody scanned for the session it replaces stop
+  working, and the settings item names it. It is the only thing that makes a planned session live, and only a person with `events.run` may press it
+  (a Producer, a Super admin, the PIN's legacy admin): an Admin is told who may. With nothing planned for the client that day, a person who may plan
+  as well as run goes live as before (`activateClient`, the day's session `<slug>-<date>`), so that an existing admin's day does not change until
+  the switch-over; anyone else meets the blocker "No session is planned for <client> on <date>." (`evaluateReadiness`, `mayPlan`).
+- **One session is live at a time** (`PMSAppSettings.ActiveSessionId`): a known limit of this release, not solved. The client's page says it, and
+  Today says what going live with another session does (`oneLiveWords`); starting one ends nothing.
+- **A client's several open sessions**: the confidence check may not be deleted while any open session of the client asks it (`checkDeleteRefusal`
+  takes them all; Content reads the client's sessions by `ClientId`).
+- **Safari sends a date field's change again when it loses the focus**: Today ignores a date pick that did not change the date, so that pressing Go
+  live does not re-check readiness under the press.
+- **Day one**: existing clients and sessions keep their ids; until a client has a team, only Super admins and Admins see it on the screens Phase 4
+  scopes (this phase gives the rows; Phase 4 builds the menus and screens from them).
+- **`core.js` is still at its 600 lines**: the two calls are a part of their own, `lib/data/planning.js` (section 14). The Sessions list is a
+  `<table>` with a caption and column headers: the word was already under `migration/`, and the participant page's Tailwind rules are unchanged.
+
+## Rules from Prompt 21, Phase 4 (scoping Events, Content and Guests by role; keep them holding)
+
+Every module of the admin page shows only what the person's role and its assignments allow (boards 7, 8 and 10). One rule file, `lib/access/scope.js`, and
+one owner registry, `lib/access/owners.js`, both reading the role matrix; the data layer asks the page's guard before it reads.
+
+1. **The menu is the role matrix's.** `TAB_ACTIONS` names the actions that open each tab; a tab shows when the role may at least look at one of them
+   (`tabsFor`, `tabAllowed`). Producer: Today, Content, Guests and QR, Results. Designer: Content. Leadership: Results. Admin: Clients and People. Super
+   admin: all six. The PIN's legacy admin: all but People, as before the switch-over. An address for a tab the role does not open is not followed (the
+   first tab it does open is shown). An Admin has no Today: they plan on the client's page, and Today's words for someone who may not start remain for
+   any role that reaches it (this changed Phase 3's `client-sessions.spec.ts` test of an Admin on Today, whose assertion is now that the tab is absent).
+2. **View only is shown, not left out.** `contentModes(access, clientId)` gives each of Content's views 'edit', 'view' or 'none'. Editing needs the action
+   for the whole client (`can()` with the client); a role that holds a Content action on the client (or one of its sessions) otherwise sees both views to
+   read, wrapped in `admin/ViewOnly.svelte` (a notice and a disabled fieldset). DECIDED: the client owns its activities and its brand, so a Designer or
+   Producer given one session only looks at them; the extra (`content.edit`) lets a client's Designer edit the activities, never a session's.
+3. **A scoped role's requests name only the places it holds.** `reachOf(access)` gives the clients held whole, the sessions held one by one (with their
+   clients, shown to read) and the periods; `readQueries(reach, list)` builds the `readLists` queries (the same plain query for a global role, so the
+   requests it always sent are unchanged; `where` by id or `ClientId`, fifteen to an address, otherwise); `scopedReader(readLists, reach, readable)` does it for a
+   screen that asks for the plain lists (Today) and leaves out a read by id of a session it does not hold. A person with no place reads nothing.
+4. **The guard asks before it reads.** `guard.read(list, where)` throws `AccessDenied` for a scoped role that names no place or another's; `guard.learn`
+   is told every read's rows, so a session's client and date, an activity's client and a question's activity are known (an activity names its questions).
+   `readLists`, `listItems` and `queryItems` ask it first (`lib/data/read-scope.js`, which imports nothing); the participant page and Setup install no
+   guard and are asked nothing. A session read by id before its client is known is refused for a client-scoped role: the screens read the client's
+   sessions first (Guests and QR does so before it reads the live session).
+5. **A write is held to the real client.** `targetOf` takes the client from the body (a section, a session, a code, a guest), or from the owners
+   (a question's activity, an option's question, a session's start). An owner not known is `UNKNOWN_OWNER`, a client no assignment names, so a scoped role is
+   refused and a global role is not. A write with no body (a SharePoint delete) names nothing and is held to the list, as before: Phase 7 hardens the lists.
+   An allowed create tells the owners what it made, so what is made next under it is theirs at once.
+6. **Day one.** A client nobody was given to is covered only by a global role: nothing more is needed for Super admins and Admins to be the only people
+   who see it.
+7. **Buttons show for the actions a role has.** Results offers Live display (`results.live`), Delete session (`results.delete`), the exports
+   (`results.export`) and Remove or Restart a visit (`events.run`) only to those who have them, for that session.
+8. **A live session that is not theirs.** Today says "A session you have not been given is live" (the status 'elsewhere'), and Guests and QR says the same
+   in its own words; nothing of that session is read.
+9. **A guest's group (schema version 7).** `PMSGuestList.GuestGroup` is optional text, not indexed until a screen filters on it (Phase 5). A paste may
+   end a line with a bar or a tab and the group (`parseGuestList`); the form has a group, and `addGuests` takes `{ name, group }` as well as a name; a guest
+   with no group is written exactly as before. Guests and QR narrows its list by group. `PMSClients.Industry` and `Region` are left to Phase 5 (the first
+   screen that filters on them), so that the lists change when a reader needs them.
+10. **Survey feedback.** The question type once shown as "Open text feedback" and, in the exports, "Written answer" is "Survey feedback" on screen and in
+    the CSV, the PDF and the PowerPoint; the stored key `open-text-feedback` is unchanged.
+11. **Words that Tailwind reads.** `lib/access/scope.js` and the schema's descriptions are read for class names like every file under `migration/`: the
+    word "table" in a comment added a rule to the participant page (found by `npm run test:bundle`); say "matrix" or "list" instead.
+12. **Request baselines** were translated for version 7's one column by `scripts/schema-baseline/guestgroup-baselines.js` (every recorded suite on
+    `dda6eb2`'s tree and on today's, request by request; a fresh recording equal to the translation in all 13), never recorded again.
+
+## Rules from Prompt 21, Phase 5 (the Leadership dashboard and its index arithmetic; keep them holding)
+
+Results is a leader's view as well (boards 9 and 12): `admin/LeaderDashboard.svelte`, from the sessions' summaries, never every answer. The arithmetic is
+`lib/results/index-math.js`, the figures `lib/results/dashboard-model.js`, their words `lib/results/metric-words.js`, the summary `lib/results/session-summary.js`.
+
+1. **An index is a ratio.** `indexOf(segment, baseline)` = segment / baseline x 100, null (never Infinity) when the baseline is zero, missing or not a number
+   (ASSUMED, open item 3: a ratio, not a difference). The **confidence index** is a group's mean After (every After score, each session weighed by its
+   Afters) over the baseline's; the **session index** is a session's mean After over its client's mean in view; the **priority index** is an option's share
+   of first choices (polls with no correct answer, and the option a ranking puts first; options grouped by label, case and spaces aside) over its share in
+   the baseline; **change** is now minus the quarter before, in points; the **pooled shift** is every paired guest's (After - Before) as a share of their
+   session's scale (`confidence-shift.js`'s divisor); **moved to confident** adds the sessions' counts. **Low sample** is under `PMSAppSettings.MinSample`
+   (10 when empty, ASSUMED); a low figure is shown and marked, never hidden (the manager's choice, QA item 278).
+2. **The baselines.** All-client average (the default: every summary the person may read, in the same days), the quarter before, the same quarter last
+   year (each quarter in view moved back), one chosen client. Quarters come from `FiscalYearStartMonth` (June when empty, ASSUMED) through `periodOf`,
+   `periodRange` and `periodsBetween`. A person who holds one client sees its index against itself, 100 (ASSUMED: the baseline is what they may read).
+3. **The dashboard reads summaries.** `PMSSessionSummary` (schema version 8) holds one item for each session, keyed by the session's id: its totals, the
+   check's counts and means, and SummaryJson (title, time, writer, the paired means and scale, moved, the Before and After steps, first choices, kinds of
+   question, guest groups, feedback themes and up to five comments with their author). Its numbers are the leader report's (`buildLeaderReport`, first
+   answers only): nothing is counted twice. `readDashboard` sends two requests, the summaries and the clients, whatever the answers
+   (`scripts/test-leader-dashboard.js`: 10,000 answers cost what none do).
+4. **A summary is written when a session ends** (Today's End session, after the session is ended: one read of the leader report's records and one write,
+   made or written over; a failure ends nothing and says to Rebuild) **and by Rebuild** (the dashboard, for ended sessions without one, for a person who may
+   run sessions: each costs the leader report's reads of that session and a write; it says so before it starts). Delete session removes the summary too.
+5. **Each person reads their scope.** By `ClientId` for the clients held whole, by AppId for the sessions held one by one, by `Period` for a Leadership
+   period (the quarters it touches, the days outside it dropped in the page); a global role reads the list whole. The read check (`owners.js`) refuses
+   anything else before a request is sent. A Producer sees the same dashboard, limited to their clients.
+6. **Results has two views.** `admin/ResultsTab.svelte`: Dashboard and Sessions; a role that runs no session (Leadership) opens on the dashboard, every
+   other on Sessions as before (this changed Phase 4's `role-scoping.spec.ts` test of Leadership's cards, which now opens Sessions first). Only the view
+   shown is mounted.
+7. **The board.** Filters (period chips FY, Q1 to Q4, Month, Custom; Compare with; Clients; Industry; More filters: Facilitator, the summary's writer,
+   ASSUMED; Activity type; Guest group; Minimum sample; Hide names), Save this view (kept while the page is open: nothing is kept in the browser between
+   loads, ASSUMED), Reset, Export report (one CSV row a session, through `csvCell`); the headline sentence built from the numbers; six tiles; the index by
+   client against a line at 100; the trend of the four quarters up to the one in view, each against their mean (ASSUMED); By client with an arrow that opens
+   the client's sessions in place, each with its own Export; the priority index; the steps Before and After (the most common scale); Survey feedback themes
+   and comments. **Every figure has an i button** (`admin/MetricInfo.svelte`: hover, focus or a press shows the formula, meaning and example; Escape hides
+   it), worded once in `metric-words.js`.
+8. **Names follow decision B.** Comments show names, with **Hide names** giving Guest 1, Guest 2; `HIDE_NAMES_BY_DEFAULT` (one setting) turns the default
+   round; a role without `results.names` never sees a name.
+9. **Industry and Region** (`PMSClients`, version 8) are optional text the dashboard filters by in the page: not indexed (the index rule: exactly what a
+   recorded request filters on; the summaries' `ClientId` and `Period` are). `PMSClientSessions.Period` stays unindexed: the dashboard filters the
+   summaries, not the sessions.
+10. **Request baselines** were translated for version 8 by `scripts/schema-baseline/summary-baselines.js` (every recorded suite on `ca3a16b`'s tree and on
+    today's, request by request; a fresh recording equal to the translation in all 17); Delete session's removal of the summary amended
+    `test-session-delete`'s with `--amend --code`.
+
+## Rules from Prompt 21, Phase 6 (polish; keep them holding)
+
+1. **Hide names is one switch for every Results surface.** `admin/ResultsTab.svelte` holds it, kept while the page is open and starting from
+   `HIDE_NAMES_BY_DEFAULT` (decision B's one setting), and gives it to the dashboard (More filters) and to Sessions (the head, beside Refresh). With it on,
+   everyone in a session is "Guest 1", "Guest 2" ..., numbered in the order they joined (`withNamesHidden` in `lib/results/participant-names.js`, the one
+   rule that names a participant): the Sessions rows and each chart's names (`resultRows` and `namesFor` with `{ hide }`), and the leader report's pages,
+   comments and answers to removed questions and All answers (CSV) (`buildLeaderReport(records, { hideNames })`, which adds `NAMES_HIDDEN_NOTE` to its notes
+   and says how people are shown above What participants said). A role without `results.names` never sees a name and is not offered the switch. The wall,
+   the Live display's PDF and PowerPoint and the summary CSV have no names at all, so nothing there changes; `COUNTING_RULES` is unchanged.
+2. **A person turned off while the page is open is stopped.** The admin page reads the access again (`resolveAccess(..., { refresh: true })`, the
+   requests of sign-in) when a tab is opened or the page is shown again, at most once every `RECHECK_AFTER_MS` (five minutes, ASSUMED: a normal visit asks
+   nothing more). When `lostAccess` says `turned-off` (disabled) or `role-removed` (no current role, an end date passed, the row gone), the write guard
+   gets `withoutGrants` (every write refused) and No access says what happened (`noAccessWords`). The site owner never loses access (decision I). A changed
+   role changes the menu; a read that fails leaves the page as it was. A guardrail: Phase 7's list permissions are the boundary.
+3. **The dashboard's empty states** (`emptyStateOf` in `lib/results/dashboard-model.js`, shown instead of the filters and figures). A person given no client,
+   session or period: "No clients to show yet", and nothing is read (in practice such a person meets No access at sign-in, since `grantsOf` drops a row
+   that names no place). No summary: "No session has ended yet", or "No summaries yet" when ended sessions wait for Rebuild. A session that ended with
+   nobody answering reads "None yet" and "Not measured", never NaN.
+4. **The words.** Rebuild asks with `rebuildQuestion` (nothing about requests); Export report saves `dashboardFileName`'s
+   "dashboard-fy27-q2-2026-10-29.csv", named like the other exports. "Survey feedback" is the word wherever the type is shown (Phase 4); the stored key
+   `open-text-feedback` is unchanged.
+5. **The participant page did not change** (`PHASE_21F` in `scripts/bundle-budget.js`: +0 B and the same Tailwind rules).
+
+## Rules from Prompt 21, Phase 7 (hardening; keep them holding)
+
+1. **The access lists' own permissions are a site owner's, by hand.** `lib/setup/list-permissions.js` names them: `PMSUsers` and `PMSRoleAssignments`
+   written only by the group "PMS access managers" (the Super admins and the Admins, who give team roles) and the site's owners, read by the members;
+   `PMSAuditLog` taking new lines from the members through a permission level "PMS add only" (View, Add, Open; no Edit, no Delete). Setup's plan ends with
+   those four steps (`permissionSteps`, shown by `setup/PlanView.svelte`) and **changes no permission itself**; its self-test reads each list's
+   `HasUniqueRoleAssignments` and role assignments (`permissionProbe`, two GETs a list, no item) and says what differs (`permissionFindings`). The names,
+   and that the owners' group's name ends in "Owners", are **ASSUMED** until tried on PCOE (QA item 263).
+2. **The separation between clients in the content lists is the app's.** Producers and Designers must write the content, session and answer lists to do
+   their work, and SharePoint's permissions are per list, not per client: someone who calls SharePoint's REST address by hand can write another client's
+   items there. The page refuses it (`can()`, the write guard, the read check); only a server component between the page and the lists could hold it
+   against a person who goes around the page. Written down in [SHAREPOINT.md](SHAREPOINT.md#who-may-do-what).
+3. **Every reader of a session's answers asks the read check.** `readAnswers` (so `readSessionResponses`, `readSessionResponsesChecked` and the leader
+   report), `listSessionParticipants` and the Live display's `readLiveFeed` call `askRead` in `lib/data/responses.js` (the guard's `read`, as
+   `read-scope.js` asks it for the plain reads) before any request; a session the person does not hold is `AccessDenied` and nothing is sent. The
+   participant page installs no guard, so nothing is asked there. `getParticipantResponses` (by a visit) and the QR scan's reads are the participant
+   page's and are not checked.
+4. **History of changes** (`admin/AuditReview.svelte`, opened from People) is a Super admin's alone (`audit.view` in the matrix: Super admin Yes, every
+   other role no; an Admin keeps a person's own history on their page). It reads `PMSAuditLog` once and writes nothing; `lib/access/audit-review.js`
+   filters it by what was done, by a person (who did it or to whom, by name or email) and by days, newest first, 50 to a page, and never shows a detail
+   that looks like an answer.
+5. **The participant page** grew by the read check alone (`PHASE_21G` in `scripts/bundle-budget.js`: +28 B gzip, allowance 100 B, the same Tailwind
+   rules, the 450,000 B ceiling not raised).
+
+## Rules from Prompt 22 (the shift by client, the reporting settings, Industry and Region; keep them holding)
+
+1. **The shift by client and by session is `shiftOf` and `movedOf` of that group.** `lib/results/dashboard-model.js` gives each `byClient` row and each
+   of its sessions `shift` (`shiftOf(mine)`, `shiftOf([each])`), `moved` (`movedOf`) and `shiftLow` / `movedLow` by the tiles' rule (the shift low on its
+   paired guests, moved on those who started not confident; nothing measured is not low). No second formula: a client's shift is weighed by its paired
+   guests, never a plain mean of its sessions' percents (`scripts/test-index-math.js` catches that mutant through the oracle). **The shift is the change
+   on the scale itself: it is not compared with the baseline and ignores "Compare with"** (the i words say so).
+2. **The screen.** The card is **Confidence index and shift by client**: under each bar "Shift +24%", "8% moved to confident" and "16 of 20 guests
+   answered both" (`shiftWords`), with "Low sample (n = x)" beside a low figure, which is shown, never hidden; the same in each client's row and each
+   session's. Two i buttons (Confidence shift, Moved to confident) head the column. Bars are `aria-hidden`; every figure is text. Each i button's words
+   have an id of their own (`MetricInfo`, `$props.id()`).
+3. **The headline** adds "Guests moved N% up (or down) the scale (X to Y), and P% of those who started not confident ended confident." only when the
+   shift is measured; X and Y are the paired guests' means (`pairedMeansByScale`); when the sessions in view use scales of different lengths, each
+   scale gives its own, "2.0 to 3.0 on the 5-point scale and 4.0 to 5.0 on the 7-point scale" (the manager's choice, QA item 278); "low sample" joins them when the shift tile is low. **Export report** adds `Shift %`, `Moved to confident %`,
+   `Guests answered both` for the client and `Session shift %`, `Session moved to confident %`, `Session guests answered both`, whole numbers.
+4. **Region** filters like Industry (`filters.region`, `filterOptions().regions`), under More filters: Period, Compare with, Clients and Industry stay
+   the four in view.
+5. **The reporting settings are a Super admin's alone** (`settings.manage`: Super admin Yes, every other role no). Reporting settings
+   (`admin/ReportingSettings.svelte`, opened from the dashboard) sets `FiscalYearStartMonth` (January to December) and `MinSample` (a whole number, 1 or
+   more; empty means 10) with `updateAppSettings`, and writes one audit line (`settings`: who, the old value and the new).
+6. **A client's Industry and Region** are set on its page (**About this client**, `admin/ClientAbout.svelte`) by whoever has `clients.manage`, with the
+   values other clients use as suggestions; plain text, trimmed, spaces single, at most 60 characters, empty allowed (`lib/admin/client-tags.js`); one
+   audit line (`client`). They show as labels on the client's page, its Clients row, its dashboard row and in Content (to read).
+7. **The guarded columns.** `FIELD_WRITES` in `lib/access/access-matrix.js` names the columns a list's rule does not decide alone: the two settings need
+   `settings.manage` (the settings item takes the live session from a Producer), Industry and Region need `clients.manage` (a client takes its brand from
+   a Designer). The write guard asks it, and `lib/access/field-values.js`'s value rules, before anything is sent: another role is `AccessDenied`, a value
+   out of range is refused in plain words (`invalid-value`). The participant page and Setup install no guard and write none of these columns.
+8. **What a new fiscal start month moves.** At once: the dashboard's year and quarter chips and the days each covers, which sessions are in view (by
+   date), the all-client and one-client baselines, the tiles, the index and shift by client, and the quarter of every session planned after. Kept: the
+   `Period` stored on each session when it was planned and copied into its summary, so the trend by quarter, a client's change since the quarter before,
+   the quarter-before and same-quarter-last-year baselines, the Fiscal year list and a Leadership period's reads keep the old quarters. The confirmation
+   says both; the dashboard's Rebuild cannot move them (it writes only missing summaries and keeps a session's stored Period), so the screen offers
+   **Move stored quarters** (`moveStoredPeriods`: each session's Period, each summary written again whole), only on the person's second yes.
+9. **The participant page does not change**, to the byte (`PHASE_22`: +0 B, the same Tailwind rules); the admin page within its allowance.
+
 ## Before finishing a change
 
 - Always: `npm run check:svelte` and `npm test` (the documents, the module map and the project map among it). If you added, moved or renamed a
@@ -1439,6 +1759,7 @@ sequence, [DATA-FLOW.md](DATA-FLOW.md#a-refused-sign-in-the-ladder). **None of i
 - If you touched Setup's plan, Create, Mark the site as ready, Add an admin, the seed-file import or the fake's site building: run `npm run test:provision`,
   `npm run test:baseline`, `npm run test:namespace` and `npm run test:bundle`, then `setup-provision.spec.ts` and `setup.spec.ts` in all three engines, and see
   "Rules from Phase 10c-3".
+- If you touched who sees or reads what (`lib/access/scope.js`, `owners.js`, `guard.js`, `lib/data/read-scope.js`, a screen's reads or the buttons a role gets): run `node --test scripts/test-scope.js scripts/test-access.js`, `npm run test:baseline` (a global role's requests must not change) and `role-scoping.spec.ts` in Chromium and WebKit; every action must appear in the role matrix and every non-"no" cell must have its test.
 - If you touched a list or a column: change `migration/src/lib/schema/pms-schema.js` and `pms-schema-meta.js` together, run `npm run build:lists-reference`,
   `npm run test:schema`, `npm run test:baseline` and `npm run test:bundle` (the participant page carries `pms-schema.js`), and see "Rules from Phase 10c-2b".
 - If you touched the sample pictures, `lib/setup/sample-seed.js`, `lib/setup/sample-clients.js` or Setup's seed: run `npm run test:sample-pictures`, `npm run test:baseline`,

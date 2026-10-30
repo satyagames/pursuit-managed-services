@@ -66,3 +66,18 @@ export function unreadableText(results, wall) {
  * @param {{ clientId: string, date?: string, status?: string }} session @param {{ id: string, name: string }[]} clients
  */
 export const sessionLabel = (session, clients) => `${clients.find((client) => client.id === session.clientId)?.name ?? session.clientId} · ${session.date ?? ''} · ${session.status ?? ''}`;
+
+/**
+ * The producer's card of the confidence check (Phase 20): how many guests have given Before and After, of those who joined, and each as a
+ * share for its bar. Counts only: no name and no score. Null when the session does not ask the check.
+ * @param {{ measured?: boolean, guests: number, answeredBefore: number, answeredAfter: number } | null | undefined} check
+ */
+export function checkProgress(check) {
+  if (!check?.measured) return null;
+  const share = (count) => (check.guests > 0 ? Math.min(100, (count / check.guests) * 100) : 0);
+  return {
+    guests: check.guests,
+    before: { count: check.answeredBefore, percent: share(check.answeredBefore) },
+    after: { count: check.answeredAfter, percent: share(check.answeredAfter) },
+  };
+}

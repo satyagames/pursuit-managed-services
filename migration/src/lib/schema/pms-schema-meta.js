@@ -9,7 +9,8 @@
 // Number, DateTime, Boolean (Yes/No). A column of chosen words is Text, and `values` are the words the app writes (schema v2: a
 // Choice column would turn every new word into a change to the list). Every column must exist on the list; none but AppId is
 // required to hold a value (`required`, SharePoint's "Require that this column contains information"). `reads` and `writes` name the
-// pages: participant, admin, setup. A Yes/No column defaults to No, and every date column shows Date & Time (`format`). Text of one
+// pages: participant, admin, setup. `since` is the version of the lists that added a column (none: it was there by version 3), or, on a list, the version that
+// added the whole list (Prompt 21: version 5). A Yes/No column defaults to No, and every date column shows Date & Time (`format`). Text of one
 // line holds 255 characters at most (`max`: the app's own limit where it is lower). Growth figures are ARCHITECTURE-10.md 4.1's (in git history at 7347c72): an ASSUMPTION of 100 events a year with 60 people
 // each, to be replaced with real figures.
 import { ID, LIBRARY, LISTS, VERSION } from './pms-schema.js';
@@ -41,18 +42,20 @@ export const META = {
       PrimaryColor: text('The client\'s main colour as #rrggbb, written from the theme on every save; read by the Live display and the exports.', { reads: [ADMIN] }),
       SecondaryColor: text('A second colour as #rrggbb, written from the theme on every save.', { reads: [ADMIN] }),
       CreatedAt: when('When the client was made; with the id, it is how a sample client is recognised.'),
-      Slug: text('The client\'s short name (a-z, 0-9 and single hyphens, at most 40): the first part of each day\'s session id and of its pictures\' names. Locked once the client has a session.', { max: 40, default: 'made from the name when empty' }),
+      Slug: text('The client\'s short name (a-z, 0-9 and single hyphens, at most 40): the first part of each of its sessions\' ids and of its pictures\' names. Locked once the client has a session.', { max: 40, default: 'made from the name when empty' }),
       ThemeJson: note('The client\'s look and words as JSON: { version, primary, accent, plate?, tokens, assets, copy, sample? }. About 800 characters.', { max: 60_000 }),
       ThemeVersion: column('Number', 'Raised by one on every save of the look; a participant page does not trust tokens stored for another version.'),
       Status: words('Whether the client can go live: an archived client is shown to nobody.', ['active', 'archived'], { default: 'empty reads as active' }),
+      Industry: text('The client\'s industry, an optional tag the Leadership dashboard filters by, in the page (Prompt 21, Phase 5). ASSUMED free text (open item 4), at most 60 characters, set on the client\'s page by whoever has clients.manage (Prompt 22).', { default: 'empty: no industry', reads: [ADMIN], writes: [ADMIN], since: 8 }),
+      Region: text('The client\'s region, an optional tag like Industry (Prompt 21, Phase 5). ASSUMED free text (open item 4), set like Industry (Prompt 22).', { default: 'empty: no region', reads: [ADMIN], writes: [ADMIN], since: 8 }),
     },
   },
   sessions: {
-    purpose: 'One item for each client and day: the session participants join when it is live.',
+    purpose: 'One item for each session: what participants join when it is live. A client may have several in one day (Prompt 21, Phase 3).',
     reads: [PARTICIPANT, ADMIN], writes: [ADMIN, PARTICIPANT],
     growth: { perEvent: '1', perYear: '100' },
     columns: {
-      AppId: id('<slug>-<yyyy-mm-dd>'),
+      AppId: id('<slug>-<yyyy-mm-dd>-<hhmm> for a session planned on the client\'s page (version 6), then -2, -3 when that id is taken; <slug>-<yyyy-mm-dd> for one Go live made, which keeps working. Opaque: nothing reads a date or a time out of it'),
       ClientId: text('The client the session is for (a Clients.AppId).'),
       SessionDate: when('The day of the session, stored as <date>T00:00:00Z and read back as YYYY-MM-DD.'),
       SectionIds: json('The session\'s activities as a JSON list of Sections.AppId, in order: results are counted over it.'),
@@ -61,6 +64,12 @@ export const META = {
       EndedAt: when('When the facilitator ended the session; empty while it is open.'),
       ParticipationMode: words('How people are identified: by their own sign-in (staff), or by a personal QR code each (client-visit).', ['staff', 'client-visit'], { default: 'staff' }),
       ActivityFlow: words('Whether each activity waits for the one before it (sequential) or all are open.', ['sequential', 'open'], { default: 'sequential' }),
+      ConfidenceCheck: column('Boolean', 'Whether the session asks the client\'s confidence check before the first activity and after the last (Phase 20). A new session says Yes when its client has a check with a question; one made before version 4 says No.', { default: 'No', writes: [ADMIN], since: 4 }),
+      Title: text('The session\'s title, shown beside its date and time; needed when its client has another session that day. This IS the built-in Title column: a session made before version 6 holds its id here, which reads as no title.', { default: 'the id, for a session made before version 6', writes: [ADMIN] }),
+      StartTime: text('When the session starts, as HH:mm (24-hour clock, the site\'s local time), from the New session form.', { max: 5, default: 'empty for a session made before version 6', writes: [ADMIN], since: 6 }),
+      Sequence: column('Number', 'The session\'s place among its client\'s sessions that day, in the order they were planned (1, 2...). The screens say "1 of 2 today" by start time.', { default: 'empty for a session made before version 6', writes: [ADMIN], since: 6 }),
+      Period: text('The fiscal period of the session\'s date, like FY27-Q2, from PMSAppSettings.FiscalYearStartMonth when it was planned. Not indexed until a screen filters on it (the Leadership dashboard).', { max: 20, default: 'empty for a session made before version 6: the screens show the period of its date', writes: [ADMIN], since: 6 }),
+      PlannedDate: when('When an Admin planned the session (ASSUMED: the brief names the column, not what it holds).', { writes: [ADMIN], since: 6 }),
     },
   },
   sections: {
@@ -76,6 +85,7 @@ export const META = {
       QuestionIds: json('The activity\'s questions as a JSON list of Questions.AppId, in order.'),
       ClientId: text('The client the activity belongs to (a Clients.AppId). An activity with none is shown to nobody.'),
       Description: note('The one-line subtitle under the activity\'s title.'),
+      Kind: words('What the activity is: one of the client\'s activities, or its confidence check (Phase 20), the one question asked before the first activity and after the last, which is never in the guest\'s list of activities. A client has one check at most.', ['activity', 'confidence-check'], { default: 'empty reads as activity', since: 4 }),
     },
   },
   questions: {
@@ -151,6 +161,8 @@ export const META = {
       ActiveClientId: text('The live client (a Clients.AppId). With none named, nothing is live.'),
       ActivatedAt: when('When Go live was last pressed: open pages notice a change by it.'),
       SchemaVersion: column('Number', `The version of these lists (${VERSION}). Setup writes it when it makes the lists, and raises an earlier version once the check of this one is clean; every page reads it with the item and stops on another version. Never written by hand.`, { writes: [SETUP] }),
+      FiscalYearStartMonth: column('Number', 'The month the firm\'s fiscal year starts in, 1 to 12 (Prompt 21): quarters and periods are counted from it. ASSUMED June (6) until the manager confirms it; a Super admin sets it on Reporting settings (Prompt 22).', { default: 'empty reads as 6 (June, ASSUMED)', reads: [ADMIN], writes: [ADMIN], since: 5 }),
+      MinSample: column('Number', 'The fewest answers a leader\'s figure is shown for without a "low sample" mark (Prompt 21, used from Phase 5). ASSUMED 10 until the manager confirms it; a Super admin sets it on Reporting settings, a whole number of 1 or more (Prompt 22).', { default: 'empty reads as 10', reads: [ADMIN], writes: [ADMIN], since: 5 }),
     },
   },
   visitorroster: {
@@ -162,6 +174,7 @@ export const META = {
       SessionId: text('The guest\'s session (a Sessions.AppId).'),
       GuestName: text('The guest\'s name, cut to 60 letters by the screen. Called DisplayName until version 3: SharePoint gives every list item a property of that name, and the real site would not return a column called DisplayName by name (15 Oct 2026).', { max: 60, personal: true }),
       Enabled: column('Boolean', 'Whether the guest\'s code may still be used.', { default: 'No' }),
+      GuestGroup: text('An optional tag for the guest (a team, a company, a delegation), set when the guest is added or imported, cut to 60 letters by the screen. The Guest filter of the leader\'s dashboard reads it. Not indexed until a screen filters on it (Phase 5).', { max: 60, default: 'empty', writes: [ADMIN], since: 7 }),
     },
   },
   uservisitlogs: {
@@ -205,6 +218,75 @@ export const META = {
       ClientId: text('The client (a Clients.AppId).'),
     },
   },
+  users: {
+    purpose: 'One item for each person who may use the admin page (Prompt 21): who they are and whether they are active. Adding a person gives them no access; their assignments do.',
+    reads: [ADMIN, SETUP], writes: [ADMIN, SETUP], since: 5,
+    growth: { perEvent: '0', perYear: 'tens of people in total' },
+    columns: {
+      AppId: id('the person\'s email in lower case'),
+      FullName: text('The person\'s name as the directory gives it ("Last, First").', { personal: true }),
+      Email: text('The person\'s email, in lower case: how a signed-in account finds its row.', { personal: true }),
+      LoginName: text('The account\'s SharePoint login name (i:0#.f|membership|<email>), when the directory gave one.', { personal: true }),
+      JobTitle: text('The person\'s job title, when the directory gave one.', { personal: true }),
+      Status: words('Whether the person may sign in: a leaver is disabled, never deleted (decision J), and every role stops at once.', ['Active', 'Disabled'], { default: 'Active' }),
+      Source: words('Where the person came from: the directory search, or an email typed by hand (unverified).', ['Directory', 'Typed']),
+      AddedBy: text('Who added the person (a Users.AppId).', { personal: true }),
+    },
+  },
+  roleassignments: {
+    purpose: 'One item for each person, role and place (Prompt 21, decision H): roles only allow, and they add up. A duplicate grant is refused by its unique AppId.',
+    reads: [ADMIN, SETUP], writes: [ADMIN, SETUP], since: 5,
+    growth: { perEvent: '0 to 5 (a client\'s team)', perYear: 'hundreds at most' },
+    columns: {
+      AppId: id('user|role|scope|place: the person\'s key, the role, the scope and the client, the session or the period (from..to), empty when global'),
+      UserKey: text('The person (a Users.AppId): how a signed-in account finds its roles.', { personal: true }),
+      Role: words('The role given, one of the five of the role matrix (lib/access/access-matrix.js).', ['Super admin', 'Admin', 'Producer', 'Designer', 'Leadership']),
+      ScopeType: words('Where the role applies: everywhere, one client, one session, or every client\'s sessions dated inside a period (Leadership only).', ['global', 'client', 'session', 'period']),
+      ClientId: text('The client (a Clients.AppId), when the scope is a client or a session; empty when global.'),
+      SessionId: text('The session (a Sessions.AppId), when the scope is a session.'),
+      PeriodFrom: when('The first day of the period, when the scope is a period.'),
+      PeriodTo: when('The last day of the period, when the scope is a period.'),
+      ValidUntil: when('The last day the role works, if it ends (Prompt 21, decision G); empty: it does not end.'),
+      Extras: text('What an Option cell of the role matrix is switched on for this assignment, comma-separated: content.edit (a Designer may also edit activities), users.manage (an Admin may also add people).', { default: 'empty: no extra' }),
+      GrantedBy: text('Who gave the role (a Users.AppId).', { personal: true }),
+    },
+  },
+  auditlog: {
+    purpose: 'One line for each grant, removal, added person and disable (Prompt 21, decision J), and for each change of a reporting setting or of a client\'s Industry or Region (Prompt 22). Lines are only ever added; none holds an answer.',
+    reads: [ADMIN, SETUP], writes: [ADMIN, SETUP], since: 5,
+    growth: { perEvent: '0 to 5', perYear: 'hundreds' },
+    columns: {
+      AppId: id('audit-<UUID>'),
+      Actor: text('Who did it (a Users.AppId).', { personal: true }),
+      Action: words('What was done; settings (a reporting setting) and client (a client\'s Industry or Region) since Prompt 22, in this text column, so no new version.',['grant', 'revoke', 'add-user', 'disable', 'enable', 'migrate', 'settings', 'client']),
+      TargetUser: text('To whom (a Users.AppId).', { personal: true }),
+      Role: text('The role, for a grant or a removal.'),
+      ClientId: text('The client, when the role was for one.'),
+      SessionId: text('The session, when the role was for one.'),
+      Detail: text('A few words more, 255 characters at most, never an answer.'),
+      OccurredAt: when('When it was done, by the clock of the device that did it; SharePoint\'s own Created says the same by the site\'s clock.'),
+    },
+  },
+  sessionsummary: {
+    purpose: 'One item for each session that has ended (Prompt 21, Phase 5): its totals, written when it ends and by the dashboard\'s Rebuild, so that the Leadership dashboard reads one item a session and never every answer. Its numbers are the leader report\'s (first answers only); it holds no answer but a few Survey feedback comments.',
+    reads: [ADMIN], writes: [ADMIN], since: 8,
+    growth: { perEvent: '1', perYear: 'one for each session (hundreds)' },
+    columns: {
+      AppId: id('the session\'s id (a Sessions.AppId): one summary a session, written again when it is rebuilt'),
+      ClientId: text('The session\'s client (a Clients.AppId): a dashboard scoped to clients reads their summaries by it.'),
+      Period: text('The session\'s fiscal period, like FY27-Q2 (its stored Period, else its date\'s): a Leadership role for a period reads the summaries by it.', { max: 20 }),
+      SessionDate: when('The session\'s day: the dashboard\'s Month and Custom filters.'),
+      Guests: column('Number', 'Everyone who opened the session (the leader report\'s participants).'),
+      Answers: column('Number', 'Answers to the session\'s activities, first answers only (the confidence check is not an activity).'),
+      Completed: column('Number', 'Guests who gave a final answer to every question of every activity switched on.'),
+      BeforeCount: column('Number', 'Guests who gave the confidence check\'s Before; 0 when the session does not ask it.'),
+      AfterCount: column('Number', 'Guests who gave its After; 0 when the session does not ask it.'),
+      PairedCount: column('Number', 'Guests who gave both.'),
+      MeanBefore: column('Number', 'The mean of every Before score; empty when there is none.', { default: 'empty: not measured' }),
+      MeanAfter: column('Number', 'The mean of every After score (the confidence index\'s mean); empty when there is none.', { default: 'empty: not measured' }),
+      SummaryJson: note('The rest as JSON (lib/results/session-summary.js): the title, start time and writer, the paired means and scale, moved to confident, the Before and After steps, first choices, kinds of question, guest groups, Survey feedback themes and up to five comments with their author. A few thousand characters at most.', { default: '{}' }),
+    },
+  },
 };
 
 /**
@@ -224,11 +306,14 @@ export const retiredColumn = (key, name) => (RETIRED[key] ?? []).find((column) =
 
 /**
  * The names of the columns of the list `key` as Setup made them for `version` (this build's when left out): the columns of version 2 had
- * DisplayName where version 3 has GuestName and SignedInName. What the mock builds an older site from.
+ * DisplayName where version 3 has GuestName and SignedInName, and a column a later version added (`since`, Phase 20) is null there, so the
+ * names stay aligned with columnsOf(). What the mock builds an older site from.
  * @param {string} key @param {number} [version]
+ * @returns {(string | null)[]}
  */
-export const columnNamesAt = (key, version = VERSION) => Object.keys(META[key].columns)
-  .map((name) => (RETIRED[key] ?? []).find((column) => column.now === name && version <= column.lastIn)?.name ?? name);
+export const columnNamesAt = (key, version = VERSION) => Object.entries(META[key].columns)
+  .map(([name, spec]) => (Math.max(spec.since ?? 0, META[key].since ?? 0) > version ? null
+    : (RETIRED[key] ?? []).find((column) => column.now === name && version <= column.lastIn)?.name ?? name));
 
 /** The picture library: its title before any prefix, and what it holds. */
 export const LIBRARY_META = {

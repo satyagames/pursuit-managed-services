@@ -141,14 +141,14 @@ for (const [label, open] of [['the mocked SharePoint REST', onSharePoint], ['the
 }
 
 describe('what the screen reads for the names', () => {
-  it('on SharePoint, one request for up to twenty sessions (two lists side by side), none for no session, and a guest session needs none at all', async () => {
+  it('on SharePoint, one request for up to fifteen sessions to a read (twenty until Prompt 21, Phase 3; two lists side by side), none for no session, and a guest session needs none at all', async () => {
     const { fake, session } = await onSharePoint();
     fake.reset();
     const found = await readNameSources([session.id]);
     assert.equal(fake.count((entry) => !entry.path.endsWith('/contextinfo')), 1, fake.requests.map((entry) => `${entry.method} ${entry.path}`).join('\n'));
     assert.equal(found.get(session.id).roster.length > 0, true, 'the roster came back');
     assert.equal(found.get(session.id).visits.length > 0, true, 'and the visit log');
-    // Twenty sessions in a read; twenty-one are two reads side by side, still ONE request.
+    // Fifteen sessions in a read (twenty until Prompt 21, Phase 3: a planned session's id is longer); twenty-one are two reads side by side, still ONE request.
     fake.reset();
     const many = await readNameSources(Array.from({ length: 21 }, (_unused, index) => (index === 0 ? session.id : `no-such-session-${index}`)));
     assert.equal(fake.count((entry) => !entry.path.endsWith('/contextinfo')), 1);

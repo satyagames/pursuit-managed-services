@@ -14,15 +14,22 @@
   import AdminClients from './admin/AdminClients.svelte';
   import AdminContent from './admin/AdminContent.svelte';
   import AdminGuests from './admin/AdminGuests.svelte';
-  import AdminResults from './admin/AdminResults.svelte';
+  import ResultsTab from './admin/ResultsTab.svelte';
   import AdminToday from './admin/AdminToday.svelte';
+  import AdminPeople from './admin/AdminPeople.svelte';
   import LiveDisplay from './admin/LiveDisplay.svelte';
   import PrintSheet from './admin/PrintSheet.svelte';
   import SessionBanner from './admin/SessionBanner.svelte';
   import { createKeepAlive } from './lib/common/session-keepalive.js';
+  import NoAccess from './admin/NoAccess.svelte';
+  import { lostAccess, recheckDue, resolveAccess, signInStep, withoutGrants } from './lib/access/resolve.js';
+  import { legacyAccess } from './lib/access/can.js';
+  import { tabAllowed, tabsFor } from './lib/access/scope.js';
+  import { writeGuard } from './lib/access/guard.js';
+  import { OWNER_BANNER } from './lib/access/access-words.js';
 
   type Admin = { id: string; name?: string };
-  type Tab = 'today' | 'clients' | 'content' | 'guests' | 'results';
+  type Tab = 'today' | 'clients' | 'content' | 'guests' | 'results' | 'users';
   type ContentRows = { settings: unknown[]; clients: unknown[]; sections: unknown[] };
 
   // The day's work first. Content is the old Activities and Content tabs in one, scoped by client (Phase 5b).
@@ -32,12 +39,14 @@
     { id: 'content', title: 'Content' },
     { id: 'guests', title: 'Guests and QR' },
     { id: 'results', title: 'Results' },
+    { id: 'users', title: 'People' },
   ];
   /** The address of the guest QR sheet. It is a view of this page, not a tab: Back returns to Guests and QR. */
   const PRINT_HASH = '#print-guests';
 
   /** This copy's label, from its settings ("Test, folder 3"): shown in the bar, so that two folders on one site can be told apart. */
   const label = typeof deployment()?.settings?.label === 'string' ? String(deployment()?.settings?.label) : '';
+
 
   let loginHeading = $state<HTMLElement>();
   let pinField = $state<HTMLInputElement>();
@@ -60,6 +69,79 @@
   /** The Live display as the wall (Phase 11a: `#live-display/<id>/wall`, what "Open in a new tab" opens): the charts with no names in the page. */
   let wallPage = $state(false);
 
+  // Sign-in (Prompt 21, lib/access): on SharePoint the page first asks who is signed in and reads their row and roles. A listed, active person with a
+  // current role, and the site owner (a Super admin, with a banner until they have a row of their own), enter without a PIN; a disabled person, or
+  // one with no current role, sees No access; anyone not listed gets the PIN screen exactly as before, and a PIN gives the Phase 20 admin page (the
+  // legacy admin). The data layer then checks every write against that access (lib/access/guard.js). On the local server nobody is signed in: the PIN.
+  const onSharePoint = (() => { try { return dataService.isSharePointMode(); } catch { return false; } })();
+  let signIn = $state<'checking' | 'pin' | 'no-access'>(onSharePoint ? 'checking' : 'pin');
+  let access = $state<any>(null);
+  /** The tabs this person's role may open: the menu is the role matrix's (lib/access/scope.js, Phase 4), for a Producer, a Designer or Leadership as for a Super admin. Before there is an access, none but People is shown, as before. */
+  const shownTabs = $derived(access ? tabsFor(access, tabs) : tabs.filter((tab) => tab.id !== 'users'));
+  let noAccessReason = $state<string | null>(null);
+  let ownerBanner = $state(false);
+  /** Whether the admin came in with a PIN: only then is there a Lock, back to the PIN. */
+  let viaPin = $state(true);
+  const supportWords = (() => {
+    const support = deployment()?.settings?.support as { name?: string; contact?: string } | undefined;
+    return support?.name ? `${support.name}${support.contact ? ` (${support.contact})` : ''}` : '';
+  })();
+
+  /** Installs the data layer's write guard for an access (or takes it away). */
+  function guardWith(next: any) {
+    access = next;
+    dataService.setAccessGuard(next ? writeGuard(next, onSharePoint ? dataService.sharePointListTitles() : {}) : null);
+  }
+
+  async function checkAccess() {
+    try {
+      const found = await resolveAccess(dataService);
+      accessReadAt = Date.now();
+      const step = signInStep(found);
+      access = found;
+      if (step.step === 'enter') {
+        guardWith(found);
+        ownerBanner = step.banner === 'owner';
+        viaPin = false;
+        admin = { id: found.person?.key ?? 'admin', name: found.person?.name ?? '' };
+        openShell();
+        return;
+      }
+      if (step.step === 'no-access') {
+        noAccessReason = step.reason;
+        signIn = 'no-access';
+        return;
+      }
+    } catch {
+      // (The access lists could not be read: the PIN, as before. A site whose lists are not this build's has stopped the page already.)
+    }
+    signIn = 'pin';
+  }
+  if (onSharePoint) void checkAccess();
+
+  // Turned off while the page is open (Prompt 21, Phase 6; lib/access/resolve.js): the access is read again when a tab is opened or the page is shown
+  // again, at most once every RECHECK_AFTER_MS, so a normal visit asks nothing more. A person who may no longer enter is stopped: every write is
+  // refused and No access says what happened. A changed role changes the menu. A read that fails leaves the page as it was (the next tab tries again).
+  let accessReadAt = Date.now();
+  async function recheckAccess() {
+    if (!admin || viaPin || !access?.person || !recheckDue(accessReadAt, Date.now())) return;
+    accessReadAt = Date.now();
+    try {
+      const next = await resolveAccess(dataService, { refresh: true });
+      const lost = lostAccess(next);
+      if (!lost) { guardWith(next); return; }
+      guardWith(withoutGrants(next));
+      admin = null;
+      printing = false;
+      liveDisplay = null;
+      wallPage = false;
+      noAccessReason = lost;
+      signIn = 'no-access';
+    } catch {
+      // (Not read: the page carries on with the access it had.)
+    }
+  }
+
   // The sign-in keep-alive (Prompt 19, lib/common/session-keepalive.ts), on SharePoint and while the admin is in: one light read after a long idle.
   $effect(() => {
     if (!admin || !dataService.isSharePointMode()) return;
@@ -77,7 +159,7 @@
   }
 
   // Content's addresses (#content, #content/brand, the old #sections of the Activities tab) are its views' (lib/admin/admin-content-views.js).
-  const tabFromHash = (): Tab | null => (viewOfHash(window.location.hash) !== null ? 'content' : tabs.find((tab) => `#${tab.id}` === window.location.hash)?.id ?? null);
+  const tabFromHash = (): Tab | null => (viewOfHash(window.location.hash) !== null ? 'content' : shownTabs.find((tab) => `#${tab.id}` === window.location.hash)?.id ?? null);
   /** The address of a tab: Content's carries its view. */
   const hashOf = (tab: Tab) => (tab === 'content' ? hashOfView(contentView) : `#${tab}`);
 
@@ -93,15 +175,11 @@
         pin = '';
         return;
       }
+      guardWith(legacyAccess(access?.person ?? null));
+      viaPin = true;
       admin = result as Admin;
-      printing = window.location.hash === PRINT_HASH;
-      const view = liveOfHash(window.location.hash);
-      liveDisplay = view?.sessionId ?? null;
-      wallPage = view?.wall ?? false;
-      activeTab = printing ? 'guests' : liveDisplay !== null ? 'results' : tabFromHash() ?? 'today';
-      if (activeTab === 'content') setContentView(viewOfHash(window.location.hash) ?? DEFAULT_VIEW);
       pin = '';
-      void newScreen();
+      openShell();
     } catch (cause) {
       const support = deployment()?.settings?.support as { name?: string; contact?: string } | undefined;
       error = unlockFailureText(cause, { isUnreachable: dataService.isUnreachable, adminsList: dataService.sharePointListTitles().adminusers, support });
@@ -110,6 +188,20 @@
       // The field was disabled while the PIN was checked, and a disabled field drops focus: after a wrong PIN, put the person back in it.
       if (!admin) void tick().then(() => pinField?.focus());
     }
+  }
+
+  /** The shell opens where the address says (a tab, the Live display, the QR sheet), and says where the person is. */
+  function openShell() {
+    printing = window.location.hash === PRINT_HASH;
+    const view = liveOfHash(window.location.hash);
+    liveDisplay = view?.sessionId ?? null;
+    wallPage = view?.wall ?? false;
+    // (An address for a screen the role does not open is not followed: the first tab it does open is shown.)
+    if (printing && access && !tabAllowed(access, 'guests')) printing = false;
+    if (liveDisplay !== null && access && !tabAllowed(access, 'results')) { liveDisplay = null; wallPage = false; }
+    activeTab = printing ? 'guests' : liveDisplay !== null ? 'results' : tabFromHash() ?? shownTabs[0]?.id ?? 'today';
+    if (activeTab === 'content') setContentView(viewOfHash(window.location.hash) ?? DEFAULT_VIEW);
+    void newScreen();
   }
 
   /**
@@ -135,6 +227,7 @@
   async function lock() {
     // A screen with unsaved changes (Brand Studio) asks first.
     if (!(await mayLeave())) return;
+    guardWith(null);
     admin = null;
     printing = false;
     liveDisplay = null;
@@ -188,7 +281,8 @@
    * the rows Clients has just read (`to.rows`), so that it reads nothing more.
    */
   async function open(tab: string, to: { view?: string; clientId?: string; rows?: ContentRows } = {}): Promise<boolean> {
-    const next = tabs.find((entry) => entry.id === tab)?.id;
+    void recheckAccess();
+    const next = shownTabs.find((entry) => entry.id === tab)?.id;
     if (!next) return false;
     if (next !== activeTab && !(await mayLeave())) return false;
     const entering = next !== activeTab || liveDisplay !== null;
@@ -223,13 +317,13 @@
 
   function onTabKeydown(event: KeyboardEvent, index: number) {
     let next = index;
-    if (event.key === 'ArrowRight') next = (index + 1) % tabs.length;
-    else if (event.key === 'ArrowLeft') next = (index - 1 + tabs.length) % tabs.length;
+    if (event.key === 'ArrowRight') next = (index + 1) % shownTabs.length;
+    else if (event.key === 'ArrowLeft') next = (index - 1 + shownTabs.length) % shownTabs.length;
     else if (event.key === 'Home') next = 0;
-    else if (event.key === 'End') next = tabs.length - 1;
+    else if (event.key === 'End') next = shownTabs.length - 1;
     else return;
     event.preventDefault();
-    void open(tabs[next].id).then((opened) => document.getElementById(`admin-tab-${opened ? tabs[next].id : activeTab}`)?.focus());
+    void open(shownTabs[next].id).then((opened) => document.getElementById(`admin-tab-${opened ? shownTabs[next].id : activeTab}`)?.focus());
   }
 </script>
 
@@ -238,8 +332,19 @@
 </svelte:head>
 
 <svelte:window onhashchange={onHashChange} />
+<svelte:document onvisibilitychange={() => { if (document.visibilityState === 'visible') void recheckAccess(); }} />
 
-{#if !admin}
+{#if !admin && signIn === 'no-access'}
+  <NoAccess person={access?.person ?? null} reason={noAccessReason} support={supportWords} />
+{:else if !admin && signIn === 'checking'}
+  <main class="login">
+    <div class="login__brand"><div class="login__wordmark"><DeloitteWordmark /></div></div>
+    <div class="login__card">
+      <h1>Admin</h1>
+      <p class="muted" role="status">Checking your access...</p>
+    </div>
+  </main>
+{:else if !admin}
   <main class="login">
     <div class="login__brand"><div class="login__wordmark"><DeloitteWordmark /></div></div>
     <form class="login__card" autocomplete="off" onsubmit={unlock}>
@@ -262,33 +367,36 @@
         {#if label}<span class="shell__label" data-testid="copy-label">{label}</span>{/if}
       </div>
       <span class="shell__user">{admin.name ?? ''}</span>
-      <button class="btn btn--bar" type="button" onclick={() => void lock()}>Lock</button>
+      {#if viaPin}<button class="btn btn--bar" type="button" onclick={() => void lock()}>Lock</button>{/if}
     </header>
     <nav class="shell__nav" aria-label="Admin sections">
       <div class="tabs" role="tablist">
-        {#each tabs as tab, index (tab.id)}
+        {#each shownTabs as tab, index (tab.id)}
           <button id={`admin-tab-${tab.id}`} class="tab" type="button" role="tab" aria-controls="admin-panel" aria-selected={activeTab === tab.id} tabindex={activeTab === tab.id ? 0 : -1} onkeydown={(event) => onTabKeydown(event, index)} onclick={() => void open(tab.id)}>{tab.title}</button>
         {/each}
       </div>
     </nav>
     <SessionBanner onBack={() => showToast('Reconnected.', 'success')} />
+    {#if ownerBanner}<p class="notice owner-banner" role="status" data-testid="owner-banner">{OWNER_BANNER}</p>{/if}
 
     <div id="admin-panel" class="shell__body" role="tabpanel" aria-labelledby={`admin-tab-${activeTab}`} tabindex="0">
       {#if activeTab === 'today'}
-        <AdminToday onToast={showToast} onNavigate={(tab) => void open(tab)} onLiveDisplay={(sessionId) => void openLiveDisplay(sessionId)} />
+        <AdminToday {access} onToast={showToast} onNavigate={(tab) => void open(tab)} onLiveDisplay={(sessionId) => void openLiveDisplay(sessionId)} />
       {:else if activeTab === 'clients'}
-        <AdminClients onToast={showToast} adminName={admin.name ?? ''} onNavigate={(tab, to) => void open(tab, to)} />
+        <AdminClients {access} onToast={showToast} adminName={admin.name ?? ''} onNavigate={(tab, to) => void open(tab, to)} />
       {:else if activeTab === 'content'}
-        <AdminContent onToast={showToast} adminName={admin.name ?? ''} view={contentView} clientRequest={contentClient} rows={contentRows} onView={setContentView} />
+        <AdminContent {access} onToast={showToast} adminName={admin.name ?? ''} view={contentView} clientRequest={contentClient} rows={contentRows} onView={setContentView} />
       {:else if activeTab === 'guests'}
-        <AdminGuests onToast={showToast} onNavigate={(tab) => void open(tab)} onPrint={openPrintSheet} />
+        <AdminGuests {access} onToast={showToast} onNavigate={(tab) => void open(tab)} onPrint={openPrintSheet} />
+      {:else if activeTab === 'users'}
+        <AdminPeople {access} onToast={showToast} />
       {:else if activeTab === 'results'}
         {#if liveDisplay !== null}
           {#key `${liveDisplay}|${wallPage}`}
             <LiveDisplay sessionId={liveDisplay} {wallPage} onToast={showToast} onOpen={(sessionId) => void openLiveDisplay(sessionId)} onBack={closeLiveDisplay} />
           {/key}
         {:else}
-          <AdminResults onToast={showToast} onLiveDisplay={(sessionId) => void openLiveDisplay(sessionId)} />
+          <ResultsTab {access} onToast={showToast} onLiveDisplay={(sessionId) => void openLiveDisplay(sessionId)} />
         {/if}
       {/if}
     </div>

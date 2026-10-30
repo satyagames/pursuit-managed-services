@@ -3,8 +3,10 @@
   import * as dataService from '../lib/data/dataService.js';
   import {
     POLL_MS, blockedReason, evaluateReadiness, goLive, isCalendarDate, liveStatus, loadReadinessInputs, loadToday, localDate, makeSessionLive,
-    needsSwitchConfirmation, pollToday, switchDialog,
+    needsSwitchConfirmation, pollToday, startPlannedSession, switchDialog,
   } from '../lib/admin/admin-today.js';
+  import { daySessionPick, daySessionsOf, oneLiveWords, sessionChoiceWords } from '../lib/admin/session-plan.js';
+  import { can } from '../lib/access/can.js';
   import { participantPageUrl, qrImage } from '../lib/admin/admin-links.js';
   import {
     failureText as failed, goLiveLabel, goLiveWhy, levelCounts, otherSessionsOf, pickableClients, readinessSummary, sinceText, upsertSession as upsert,
@@ -16,9 +18,10 @@
   import TodaySessions from './TodaySessions.svelte';
   import TodayShare from './TodayShare.svelte';
   import TodayStatus from './TodayStatus.svelte';
+  import { writeSummary } from '../lib/admin/session-summaries.js';
 
   type Client = { id: string; name: string; status?: string; logoUrl?: string | null; theme?: { assets?: { logo?: string | null; hero?: string | null } } | null };
-  type Session = { id: string; clientId: string; date?: string; status?: string; participationMode?: string; activityFlow?: string };
+  type Session = { id: string; clientId: string; date?: string; status?: string; participationMode?: string; activityFlow?: string; confidenceCheck?: boolean | null };
   type Section = { id: string; title: string; enabled?: boolean; clientId?: string | null; questionIds?: string[] };
   type Settings = { id?: string; activeSessionId?: string | null; activeClientId?: string | null; activatedAt?: string | null };
   type Status = ReturnType<typeof liveStatus>;
@@ -29,7 +32,9 @@
     run: () => Promise<{ session: Session; client: Client; settings: Settings | null; verified: boolean }>;
   };
 
-  let { onToast, onNavigate, onLiveDisplay }: {
+  let { access = null, onToast, onNavigate, onLiveDisplay }: {
+    /** The signed-in person's access (lib/access): who may start a session, and who may also make the day's one (Prompt 21, Phase 3). */
+    access?: any;
     onToast: (message: string, kind?: 'info' | 'success' | 'error') => void;
     onNavigate: (tab: string) => void;
     /** Opens the Live display (Results) for a session. */
@@ -55,6 +60,10 @@
   // The picker.
   let clientId = $state('');
   let date = $state(today);
+  /** The session picked among the client's sessions that day (Prompt 21, Phase 3: several may be planned); null for the day's first open one. */
+  let pickedSessionId = $state<string | null>(null);
+  /** The date the last pick was made for (not state: nothing draws it). */
+  let pickedDate = today;
   let inputsBusy = $state(false);
 
   // Actions.
@@ -78,21 +87,32 @@
 
   const client = $derived(clients.find((entry) => entry.id === clientId) ?? null);
   const dateValid = $derived(isCalendarDate(date));
-  const targetId = $derived(client && dateValid ? dataService.sessionIdFor(client, date) as string : '');
-  const target = $derived(sessions.find((session) => session.id === targetId) ?? null);
+  // (Prompt 21, Phase 3: an Admin plans sessions on the client's page and a Producer starts one here. With nothing planned for the client that day, a
+  // person who may plan as well as run (the PIN's legacy admin, a Super admin) goes live as before: Go live makes the day's session, <slug>-<date>.)
+  const legacyId = $derived(client && dateValid ? dataService.sessionIdFor(client, date) as string : '');
+  const daySessions = $derived(client && dateValid ? daySessionsOf(sessions, client.id, date) : []);
+  const target = $derived(client && dateValid ? daySessionPick(sessions, client.id, date, pickedSessionId) : null);
+  const targetId = $derived(target?.id ?? legacyId);
+  /** The day has a session planned on the client's page (not only the one Go live made): Today offers the choice. */
+  const planned = $derived(daySessions.some((session) => session.id !== legacyId));
+  const sessionChoices = $derived(planned ? daySessions.map((session) => ({ id: session.id, label: sessionChoiceWords(session, daySessions, settings) })) : []);
+  const mayRun = $derived(!access || can(access, 'events.run', { clientId: client?.id }));
+  const mayPlan = $derived(!access || can(access, 'clients.manage', { clientId: client?.id }));
   const controlSession = $derived(sessions.find((session) => session.id === settings?.activeSessionId) ?? null);
   /** The live session's client, for the Animations switch. */
   const controlClient = $derived(controlSession ? clients.find((entry) => entry.id === controlSession.clientId) ?? null : null);
   const rows = $derived(evaluateReadiness({
-    client, date: dateValid ? date : today, today, sections, questions, options, sessions, clients, target, roster, schema,
+    client, date: dateValid ? date : today, today, sections, questions, options, sessions, clients, target, roster, schema, mayPlan,
   } as never));
   const counts = $derived(levelCounts(rows));
   const blockers = $derived(counts.blockers);
   const warnings = $derived(counts.warnings);
   const alreadyLive = $derived(status.live && status.session?.id === targetId);
   const busy = $derived(checking || goingLive || controlsBusy);
-  const why = $derived(goLiveWhy({ loaded, client, dateValid, inputsBusy, blockers, reason: blockers > 0 ? blockedReason(rows) : null, alreadyLive, date }));
-  const canGo = $derived(loaded && Boolean(client) && dateValid && !inputsBusy && blockers === 0 && !alreadyLive && !busy);
+  const why = $derived(goLiveWhy({ loaded, client, dateValid, inputsBusy, blockers, reason: blockers > 0 ? blockedReason(rows) : null, alreadyLive, date, mayRun }));
+  const canGo = $derived(loaded && Boolean(client) && dateValid && !inputsBusy && blockers === 0 && !alreadyLive && !busy && mayRun);
+  /** The known limit, said plainly when going live would take the place of another live session. */
+  const oneLive = $derived(targetId ? oneLiveWords(status, { id: targetId }) : '');
   const pickable = $derived(pickableClients(clients, clientId));
   const otherSessions = $derived(otherSessionsOf(sessions, settings?.activeSessionId, status.live));
 
@@ -125,7 +145,7 @@
 
   async function reload({ keepPicker = false } = {}) {
     try {
-      const data = await loadToday(dataService, { clientId: keepPicker ? clientId : null, date: dateValid ? date : today, keepClient: keepPicker });
+      const data = await loadToday(dataService, { clientId: keepPicker ? clientId : null, date: dateValid ? date : today, keepClient: keepPicker, sessionId: keepPicker ? pickedSessionId : null, access });
       if (!alive) return;
       clients = data.clients as Client[];
       sessions = data.sessions as Session[];
@@ -156,7 +176,7 @@
         await reload({ keepPicker: true });
         return;
       }
-      const inputs = await loadReadinessInputs(dataService, { client, date: dateValid ? date : today, sections, sessions });
+      const inputs = await loadReadinessInputs(dataService, { client, date: dateValid ? date : today, sections, sessions, sessionId: target?.id ?? null, access });
       if (!alive || version !== inputsVersion) return;
       questions = inputs.questions;
       options = inputs.options;
@@ -170,15 +190,30 @@
 
   async function pickClient(event: Event) {
     clientId = (event.currentTarget as HTMLSelectElement).value;
+    pickedSessionId = null;
+    verified = '';
+    problem = '';
+    await recheckInputs();
+  }
+
+  /** A session picked among the client's sessions that day: its roster may differ. */
+  async function pickSession(event: Event) {
+    pickedSessionId = (event.currentTarget as HTMLSelectElement).value || null;
     verified = '';
     problem = '';
     await recheckInputs();
   }
 
   async function pickDate() {
+    // (Safari sends a date field's change again when it loses the focus, as when Go live is pressed: the same date is not a new pick, and must not
+    // re-check readiness under the press, which would land on a button that is off for that moment.)
+    if (date === pickedDate) return;
+    pickedDate = date;
+    pickedSessionId = null;
     verified = '';
     problem = '';
     if (!dateValid) return;
+    if (planned) { await recheckInputs(); return; }
     // The date decides which session the client would go live with, and so which roster counts.
     if (target?.participationMode === 'client-visit' || roster !== null) await recheckInputs();
   }
@@ -188,7 +223,7 @@
     polling = true;
     const began = epoch;
     try {
-      const next = await pollToday(dataService, { settings, clients });
+      const next = await pollToday(dataService, { settings, clients, access });
       if (!alive || began !== epoch) return;
       pollError = '';
       if (next.changed && next.settings?.activeSessionId !== settings?.activeSessionId) {
@@ -212,6 +247,11 @@
   function goLiveWanted(): Wanted | null {
     if (!client || !targetId) return null;
     const chosen = client;
+    // A planned session: the Producer's Start. The day's session Go live made (or will make), as before.
+    if (target && target.id !== legacyId) {
+      const id = target.id;
+      return { sessionId: id, client: chosen, date, run: () => startPlannedSession(dataService, id) as ReturnType<Wanted['run']> };
+    }
     return { sessionId: targetId, client: chosen, date, run: () => goLive(dataService, { clientId: chosen.id, date }) as ReturnType<Wanted['run']> };
   }
 
@@ -242,7 +282,7 @@
   }
 
   async function applyPoll() {
-    const next = await pollToday(dataService, { settings, clients });
+    const next = await pollToday(dataService, { settings, clients, access });
     if (!alive) return;
     settings = next.settings as Settings | null;
     clients = next.clients as Client[];
@@ -322,6 +362,24 @@
     }
   }
 
+  /** Phase 20: the live session's confidence check, on or off. */
+  async function setCheck(on: boolean) {
+    if (!controlSession || controlsBusy || (controlSession.confidenceCheck === true) === on) return;
+    controlsBusy = true;
+    epoch += 1;
+    problem = '';
+    try {
+      const updated = await dataService.updateSession(controlSession.id, { confidenceCheck: on }) as Session;
+      sessions = upsert(sessions, { ...controlSession, ...updated, confidenceCheck: on });
+      onToast(`The confidence check is ${on ? 'on' : 'off'}`, 'success');
+    } catch (cause) {
+      problem = failed(cause, 'Could not change the confidence check.');
+    } finally {
+      epoch += 1;
+      controlsBusy = false;
+    }
+  }
+
   async function endIt(session: Session) {
     if (controlsBusy) return;
     const owner = nameOf(session.clientId);
@@ -336,6 +394,10 @@
       status = liveStatus({ settings, session: { ...session, ...ended, status: 'completed' }, clients } as never);
       verified = '';
       onToast('Session ended', 'success');
+      // (Prompt 21, Phase 5) its summary for the Leadership dashboard, from its answers as they are now: one more read of the session and one write. A
+      // failure ends nothing: the session has ended, and Rebuild on the dashboard writes the summary later.
+      void writeSummary(session.id, { writtenBy: access?.person?.name ?? '', startMonth: (settings as { fiscalYearStartMonth?: number } | null)?.fiscalYearStartMonth ?? undefined })
+        .catch(() => { if (alive) onToast('The session ended, but its summary for the dashboard could not be written. Rebuild it from Results.', 'error'); });
     } catch (cause) {
       if (alive) { problem = failed(cause, 'Could not end the session.'); onToast(problem, 'error'); }
     } finally {
@@ -403,6 +465,7 @@
           <TodayGoLive
             {pickable} {clientId} bind:date {busy} {canGo} label={goLiveLabel({ goingLive, checking, alreadyLive })} {why} {verified} {problem}
             onPickClient={pickClient} onPickDate={() => void pickDate()} onGo={() => void attempt(goLiveWanted())} {onNavigate}
+            {sessionChoices} sessionId={target?.id ?? ''} onPickSession={(event) => void pickSession(event)} {oneLive}
           />
         </section>
 
@@ -422,7 +485,7 @@
           <h3 id="controls-heading">Controls</h3>
           <TodayControls
             {controlSession} {controlClient} owner={controlSession ? nameOf(controlSession.clientId) : ''} live={status.live} {controlsBusy}
-            onSetMode={(mode) => void setMode(mode)} onSetFlow={(flow) => void setFlow(flow)} onEnd={(session) => void endIt(session)} onReopen={(session) => void reopenIt(session)}
+            onSetMode={(mode) => void setMode(mode)} onSetFlow={(flow) => void setFlow(flow)} onSetCheck={(on) => void setCheck(on)} onEnd={(session) => void endIt(session)} onReopen={(session) => void reopenIt(session)}
             onMotionSaved={(written) => { clients = clients.map((entry) => (entry.id === written.id ? { ...entry, theme: written.theme as Client['theme'] } : entry)); }} {onToast}
           />
         </section>

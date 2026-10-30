@@ -3,6 +3,8 @@
   import { experience, knownActivities } from '../lib/participant/experience.svelte.js';
   import ActivityPager from '../pager/ActivityPager.svelte';
   import Agenda from './Agenda.svelte';
+  import ConfidenceCheck from './ConfidenceCheck.svelte';
+  import { sessionCheck } from '../lib/participant/experience.svelte.js';
   import Welcome from './Welcome.svelte';
   import { setMotionDirection } from '../lib/motion/motion.js';
 
@@ -16,14 +18,20 @@
   /** A move between the preview's screens comes in as a participant's would. */
   const show = (next: string) => { setMotionDirection('jump'); screen = next; };
   const pills = $derived(knownActivities().map((activity) => ({ id: activity.id, title: activity.title, state: 'default' as const })));
-  const go = (path: string) => { show(path.startsWith('/quiz/') ? path.slice(6) : path === '/welcome' ? 'welcome' : screen); };
+  const go = (path: string) => { show(path.startsWith('/quiz/') ? path.slice(6) : path === '/welcome' ? 'welcome' : path === '/thank-you' && hasCheck ? 'check-out' : screen); };
+  // The client's confidence check (Phase 20), read-only: Before after Welcome, After from the hub's Finish.
+  const hasCheck = sessionCheck({ preview: true }) !== null;
+  const pillsShown = $derived(pills.filter((pill) => pill.id !== sessionCheck({ preview: true })?.section.id));
 </script>
 
 <p class="pms-ribbon" role="status">Preview · nothing is saved</p>
 {#if screen === 'welcome'}
-  <Welcome preview={{ view: experience, name: '', onbegin: () => { show('hub'); } }} />
+  <Welcome preview={{ view: experience, name: '', onbegin: () => { show(hasCheck ? 'check-in' : 'hub'); } }} />
+{:else if screen === 'check-in' || screen === 'check-out'}
+  <ConfidenceCheck phase={screen === 'check-in' ? 'before' : 'after'} preview />
+  <div class="pms-back"><PillButton variant="secondary" size="md" onclick={() => { show(screen === 'check-in' ? 'hub' : 'welcome'); }}>{screen === 'check-in' ? 'On to the activities' : 'Back to the start'}</PillButton></div>
 {:else if screen === 'hub'}
-  <Agenda preview={{ pills, eventTitle: experience.eventTitle, eventSubtitle: experience.eventSubtitle, clientName: experience.clientName, go }} />
+  <Agenda preview={{ pills: pillsShown, eventTitle: experience.eventTitle, eventSubtitle: experience.eventSubtitle, clientName: experience.clientName, allDone: hasCheck, go }} />
 {:else}
   <ActivityPager sectionId={screen} preview />
   <div class="pms-back"><PillButton variant="secondary" size="md" onclick={() => { show('hub'); }}>Back to activities</PillButton></div>

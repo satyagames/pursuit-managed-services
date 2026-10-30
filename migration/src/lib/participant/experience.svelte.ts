@@ -13,6 +13,7 @@ import * as dataService from '../data/dataService.js';
 import { DEFAULT_BRAND, applyBrand } from '../brand/branding.js';
 import { embeddedAssetUrl } from '../brand/assets.js';
 import { createActivityContent } from './activity-content.js';
+import { checkOf } from './confidence-check.js';
 import { APP_NAME } from '../common/app-name.js';
 import { clientView } from '../brand/brand.svelte.js';
 import { resolveClientTheme } from '../brand/client-theme.js';
@@ -24,13 +25,15 @@ import { setMotionEnabled } from '../motion/motion.js';
 export type Activity = {
   id: string;
   title: string;
+  /** PMSActivities.Kind (Phase 20): 'confidence-check' for the client's check, which is never one of the guest's activities. */
+  kind?: string | null;
   description?: string | null;
   order?: number;
   enabled?: boolean;
   questionIds?: string[];
   clientId?: string | null;
 };
-type Session = { id: string; clientId: string; date?: string; status?: string; participationMode?: string; activityFlow?: string | null };
+type Session = { id: string; clientId: string; date?: string; status?: string; participationMode?: string; activityFlow?: string | null; confidenceCheck?: boolean | null };
 type Client = { id: string; name?: string; logoUrl?: string | null; primaryColor?: string | null; secondaryColor?: string | null; theme?: unknown; themeVersion?: number | null };
 export type LiveExperience = {
   status: 'live' | 'not-live' | 'archived';
@@ -205,6 +208,15 @@ export function adoptWatch({ session, sections }: { session: Session | null; sec
   if (sections && JSON.stringify(sections) !== JSON.stringify(activities)) { activities = sections; changed = true; }
   if (changed) experience.activitiesVersion += 1;
 }
+
+/**
+ * The confidence check today's session asks (Phase 20): the client's check activity and its question, from what the page holds (the session
+ * as last read, its ConfidenceCheck, and the client's activities), or null. No request. `preview` asks for the client's check whatever a
+ * session says (the facilitator's preview, which has no session).
+ */
+export const sessionCheck = ({ preview = false } = {}): { section: Activity; questionId: string } | null => checkOf({
+  session: preview ? { confidenceCheck: true } : liveSession, sections: activities,
+}) as { section: Activity; questionId: string } | null;
 
 /** An activity the page already knows about (from boot or the hub's last refresh), or null. */
 export const knownActivity = (sectionId: string) => activities.find((section) => section.id === sectionId) ?? null;

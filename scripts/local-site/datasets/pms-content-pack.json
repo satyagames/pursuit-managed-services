@@ -3,7 +3,7 @@
   "sessionFlow": [
     { "order": 1, "activity": "Straight talk", "purpose": "Surface top priorities" },
     { "order": 2, "activity": "Confidence continuum", "purpose": "Gauge confidence in Deloitte" },
-    { "order": 3, "activity": "Open feedback", "purpose": "Capture what matters in the client’s own words" },
+    { "order": 3, "activity": "Survey feedback", "purpose": "Capture what matters in the client’s own words" },
     { "order": 4, "activity": "MCQ", "purpose": "Warm up with a quick quiz" },
     { "order": 5, "activity": "Guess the brand", "purpose": "Close on a light note" }
   ],
@@ -27,7 +27,7 @@
           ]
         },
         {
-          "key": "open-feedback", "title": "Open feedback", "type": "open-text-feedback",
+          "key": "open-feedback", "title": "Survey feedback", "type": "open-text-feedback",
           "description": "Tell us what would make this partnership a success",
           "questions": [
             { "prompt": "What is the one thing we must get right for this program to succeed in your eyes?" },
@@ -80,7 +80,7 @@
           ]
         },
         {
-          "key": "open-feedback", "title": "Open feedback", "type": "open-text-feedback",
+          "key": "open-feedback", "title": "Survey feedback", "type": "open-text-feedback",
           "descriptionGiven": false,
           "questions": [
             { "prompt": "Where does the gap between the customer experience you want and what you deliver today show up most?" },
@@ -132,7 +132,7 @@
           ]
         },
         {
-          "key": "open-feedback", "title": "Open feedback", "type": "open-text-feedback",
+          "key": "open-feedback", "title": "Survey feedback", "type": "open-text-feedback",
           "descriptionGiven": false,
           "questions": [
             { "prompt": "What would a perfect order look like from tap to doorstep, and where does it break today?" },

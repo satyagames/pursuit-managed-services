@@ -232,7 +232,8 @@ export function explain(before, after) {
 export async function exportLastCommit() {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'pms-last-commit-'));
   await promisify(exec)(`git archive --format=tar HEAD | tar -x -C "${dir}"`, { cwd: ROOT, maxBuffer: 64 * 1024 * 1024 });
-  await symlink(path.join(ROOT, 'node_modules'), path.join(dir, 'node_modules'), 'dir');
+  // (A junction on Windows, where a directory symlink needs a privilege a checkout does not have: Phase 20.)
+  await symlink(path.join(ROOT, 'node_modules'), path.join(dir, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
   return dir;
 }
 

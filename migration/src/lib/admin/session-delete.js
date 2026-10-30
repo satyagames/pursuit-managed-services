@@ -21,12 +21,17 @@ export const SESSION_OWNED = Object.freeze([
   Object.freeze({ list: 'tracks', key: 'sessionId', what: 'iPads' }),
   Object.freeze({ list: 'visitorroster', key: 'sessionId', what: 'guest list' }),
   Object.freeze({ list: 'qrtokens', key: 'sessionId', what: 'guest codes' }),
+  // (Prompt 21, Phase 5: the session's summary for the dashboard, keyed by the session's id, holds its totals and a few comments with their author.)
+  Object.freeze({ list: 'sessionsummary', key: 'id', what: 'dashboard summary' }),
   Object.freeze({ list: 'sessions', key: 'id', what: 'the session' }),
 ]);
 
 /** The lists that name a session and are never changed by a delete, and why. */
 export const KEPT = Object.freeze([
   Object.freeze({ list: 'appsettings', field: 'activeSessionId', why: 'It names the live session, which is refused; it is read, never written.' }),
+  // (Prompt 21) who was given a session, and the audit list, are not the session's data: decision J keeps every line of the audit list.
+  Object.freeze({ list: 'roleassignments', field: 'sessionId', why: 'A role given for a session is access, not the session\'s data; a role for a deleted session matches nothing.' }),
+  Object.freeze({ list: 'auditlog', field: 'sessionId', why: 'The audit list only grows (decision J): its lines are kept whatever is deleted.' }),
 ]);
 
 /** A delete of a session's data: what the screen says, in one place. */

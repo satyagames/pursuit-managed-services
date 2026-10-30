@@ -1,0 +1,84 @@
+[
+  {
+    "id": "vsatyadev@deloitte.com|Super admin|global|",
+    "userKey": "vsatyadev@deloitte.com",
+    "role": "Super admin",
+    "scopeType": "global",
+    "clientId": "",
+    "sessionId": "",
+    "extras": "",
+    "grantedBy": "vsatyadev@deloitte.com"
+  },
+  {
+    "id": "pmedichalam@deloitte.com|Super admin|global|",
+    "userKey": "pmedichalam@deloitte.com",
+    "role": "Super admin",
+    "scopeType": "global",
+    "clientId": "",
+    "sessionId": "",
+    "extras": "",
+    "grantedBy": "vsatyadev@deloitte.com"
+  },
+  {
+    "id": "srkolachana@deloitte.com|Super admin|global|",
+    "userKey": "srkolachana@deloitte.com",
+    "role": "Super admin",
+    "scopeType": "global",
+    "clientId": "",
+    "sessionId": "",
+    "extras": "",
+    "grantedBy": "vsatyadev@deloitte.com"
+  },
+  {
+    "id": "pulmathur@deloitte.com|Admin|global|",
+    "userKey": "pulmathur@deloitte.com",
+    "role": "Admin",
+    "scopeType": "global",
+    "clientId": "",
+    "sessionId": "",
+    "extras": "",
+    "grantedBy": "vsatyadev@deloitte.com"
+  },
+  {
+    "id": "raedla@deloitte.com|Producer|client|c-kroger",
+    "userKey": "raedla@deloitte.com",
+    "role": "Producer",
+    "scopeType": "client",
+    "clientId": "c-kroger",
+    "sessionId": "",
+    "extras": "",
+    "grantedBy": "vsatyadev@deloitte.com"
+  },
+  {
+    "id": "mohammadahussain@deloitte.com|Designer|client|c-kroger",
+    "userKey": "mohammadahussain@deloitte.com",
+    "role": "Designer",
+    "scopeType": "client",
+    "clientId": "c-kroger",
+    "sessionId": "",
+    "extras": "",
+    "grantedBy": "vsatyadev@deloitte.com"
+  },
+  {
+    "id": "bmilder@deloitte.com|Leadership|period|2026-09-01..2026-11-30",
+    "userKey": "bmilder@deloitte.com",
+    "role": "Leadership",
+    "scopeType": "period",
+    "clientId": "",
+    "sessionId": "",
+    "periodFrom": "2026-09-01T00:00:00.000Z",
+    "periodTo": "2026-11-30T00:00:00.000Z",
+    "extras": "",
+    "grantedBy": "vsatyadev@deloitte.com"
+  },
+  {
+    "id": "ablepe@deloitte.com|Leadership|client|c-kroger",
+    "userKey": "ablepe@deloitte.com",
+    "role": "Leadership",
+    "scopeType": "client",
+    "clientId": "c-kroger",
+    "sessionId": "",
+    "extras": "",
+    "grantedBy": "vsatyadev@deloitte.com"
+  }
+]

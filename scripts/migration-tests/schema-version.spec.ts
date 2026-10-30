@@ -1,11 +1,16 @@
 import { test, expect } from '@playwright/test';
 import { sha256Hex } from '../../migration/src/lib/admin/sha256.js';
 import { TITLE } from '../sharepoint-fake.js';
-import { newFake, pageUrl, serveSharePoint } from './sharepoint.js';
+import { isRead, newFake, pageUrl, serveSharePoint } from './sharepoint.js';
+import { VERSION } from '../../migration/src/lib/schema/pms-schema.js';
+
+// (Prompt 22: this build's version is read from the schema, and a newer one is VERSION + 1. Typed out, they said 4 and 5 until Prompt 21 made 5 to 8
+// older versions and the newer case went stale.)
+const NEWER = VERSION + 1;
 
 // Phase 10c-2b, part E, in the BUILT pages, against the mocked SharePoint REST: the version of the lists (SchemaVersion on the AppSettings item
 // every page reads first). The participant and admin pages stop on lists of another version with 10b's coded stop screen; Setup opens and says
-// which case it is. On version 3 (2 until Phase 10i) every page works (every other spec runs on such a site). Nothing here has met the real tenant: a page opened
+// which case it is. On this build's version (VERSION: 8 since Prompt 21 Phase 5; 4 since Phase 20, 3 before, 2 until Phase 10i) every page works (every other spec runs on such a site). Nothing here has met the real tenant: a page opened
 // there before Setup has run is QA-TESTING.md's to see.
 
 const PIN = '2468';
@@ -16,7 +21,7 @@ const site = (version: number | null) => {
   return fake;
 };
 
-for (const [version, code] of [[null, 'PMS-LST-010'], [2, 'PMS-LST-011'], [4, 'PMS-LST-012']] as const) {
+for (const [version, code] of [[null, 'PMS-LST-010'], [2, 'PMS-LST-011'], [3, 'PMS-LST-011'], [VERSION - 1, 'PMS-LST-011'], [NEWER, 'PMS-LST-012']] as const) {
   test(`the participant page on lists ${version === null ? 'that were never set up' : `of version ${version}`} stops with ${code}, at its first read`, async ({ page }) => {
     const fake = site(version);
     await serveSharePoint(page, fake);
@@ -59,16 +64,17 @@ test('the admin page on a site with no lists at all stops with PMS-LST-010 at th
 
 for (const [version, words] of [
   [null, "This site's lists have not been set up for this app yet. "],
-  [2, "This site's lists need an update before this version of the app can use them. The lists on this site are version 2; this version of the app needs version 3. Open Setup (setup.html, in the same folder as this page), press Show the plan, then Create, then Mark the site as ready: a clean Create does the last step by itself."],
-  [4, 'This site has been updated for a newer version of the app. The lists on this site are version 4; these files are for version 3. Upload the newer files.'],
-  [3, 'The lists are the version this app needs.'],
-] as const) {
+  [2, `This site's lists need an update before this version of the app can use them. The lists on this site are version 2; this version of the app needs version ${VERSION}. Open Setup (setup.html, in the same folder as this page), press Show the plan, then Create, then Mark the site as ready: a clean Create does the last step by itself.`],
+  [NEWER, `This site has been updated for a newer version of the app. The lists on this site are version ${NEWER}; these files are for version ${VERSION}. Upload the newer files.`],
+  [VERSION, 'The lists are the version this app needs.'],
+]) {
   test(`Setup opens on lists ${version === null ? 'that were never set up' : `of version ${version}`}, and says so`, async ({ page }) => {
     const fake = site(version);
     await serveSharePoint(page, fake);
     await page.goto(pageUrl('setup.html'));
     await expect(page.getByTestId('lists-version')).toContainText(words);
     await expect(page.getByRole('button', { name: 'Check Lists' })).toBeEnabled();
-    expect(fake.requests.filter((entry) => entry.method !== 'GET' && !/contextinfo/.test(entry.path)), 'it only reads').toEqual([]);
+    // (A $batch whose every part is a GET is a read: since Prompt 21 Setup asks who is signed in and the owners group in one.)
+    expect(fake.requests.filter((entry) => !isRead(entry)), 'it only reads').toEqual([]);
   });
 }

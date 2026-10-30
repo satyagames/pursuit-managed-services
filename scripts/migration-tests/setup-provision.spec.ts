@@ -1,12 +1,21 @@
 import { test, expect, type Page } from '@playwright/test';
 import { sha256Hex } from '../../migration/src/lib/admin/sha256.js';
 import { newFake, pageUrl, serveSharePoint, type Fake } from './sharepoint.js';
+import { LIBRARY, LISTS, VERSION } from '../../migration/src/lib/schema/pms-schema.js';
+import { makePlan } from '../../migration/src/lib/setup/provision.js';
 
 // Phase 10c-3: the built Setup page prepares a site, against the mocked SharePoint REST (scripts/sharepoint-fake.js). Nothing reaches a real
 // tenant: what the real site answers to each request is QA-TESTING.md's to see.
 
 /** Every list of the schema and the picture library, by key: `without` all of them is a site with nothing of the app on it. */
-const EVERYTHING = ['clients', 'sessions', 'sections', 'questions', 'options', 'tracks', 'qrtokens', 'appsettings', 'visitorroster', 'uservisitlogs', 'adminusers', 'responses', 'logoLibrary'];
+// (Prompt 22: read from the schema. Typed out, it missed Prompt 21's four lists, and its counts went stale at every new column.)
+const EVERYTHING = [...Object.keys(LISTS), 'logoLibrary'];
+/** What Show the plan says of a site with nothing on it, and what Create then makes (one write each), from Setup's own plan of an empty site. */
+const EMPTY = makePlan({ lists: new Map(), fields: new Map(), reads: 0 }, { ...Object.fromEntries(Object.entries(LISTS).map(([key, list]) => [key, list.title])), logoLibrary: LIBRARY });
+const PLAN_WORDS = `${EMPTY.summary}.`;
+const WRITES = EMPTY.lists.length + EMPTY.columns.length + EMPTY.settings.length;
+const CREATED = new RegExp(`^Created ${EMPTY.lists.length} lists, ${EMPTY.columns.length} columns and ${EMPTY.settings.length} settings in [\\d.]+ s \\(${WRITES} writes\\)\\.$`);
+const READY_WORDS = `The site is marked ready: every list passed the check, and the settings item of PMSAppSettings now says version ${VERSION}.`;
 
 async function openSetup(page: Page, fake: Fake) {
   const served = await serveSharePoint(page, fake);
@@ -23,11 +32,11 @@ test('Show the plan on a site with nothing on it: every list, column and setting
   const fake = newFake({ without: EVERYTHING, schemaVersion: null });
   const served = await openSetup(page, fake);
   await showPlan(page);
-  await expect(page.getByTestId('plan-summary')).toHaveText('13 lists, 89 columns, 47 settings to create.');
+  await expect(page.getByTestId('plan-summary')).toHaveText(PLAN_WORDS);
   const activities = page.locator('[data-testid="plan"] [data-list="sections"]');
   await expect(activities.getByRole('heading', { name: 'PMSActivities (new)' })).toBeVisible();
   await expect(activities).toContainText('Create the list PMSActivities.');
-  await expect(activities).toContainText('Create 7 columns: AppId, SortOrder, Enabled, IndustryTags, QuestionIds, ClientId, Description.');
+  await expect(activities).toContainText('Create 8 columns: AppId, SortOrder, Enabled, IndustryTags, QuestionIds, ClientId, Description, Kind.');
   await expect(activities).toContainText('Turn attachments off, content approval off.');
   // The internal names and definitions are there, folded away.
   await activities.getByText('Technical details').click();
@@ -42,6 +51,10 @@ test('Show the plan on a complete site says "Nothing to create", and names what 
   await showPlan(page);
   await expect(page.getByTestId('plan-summary')).toHaveText('Nothing to create.');
   await expect(page.getByTestId('plan-settled')).toContainText('Already as the app needs: PMSClients, PMSClientSessions');
+  // (Prompt 21, Phase 7: the access lists' permissions, which a site owner sets by hand; Setup writes none of them.)
+  await expect(page.getByTestId('plan-permissions').getByRole('listitem')).toHaveCount(4);
+  await expect(page.getByTestId('plan-permissions')).toContainText('PMSUsers and PMSRoleAssignments: stop inheriting permissions');
+  await expect(page.getByTestId('plan-permissions')).toContainText('PMSAuditLog: stop inheriting permissions');
   expect(fake.writes()).toEqual([]);
 });
 
@@ -74,14 +87,14 @@ test('Create is off until the plan has been shown, then carries it out, says wha
   await lists(page).getByRole('button', { name: 'Create', exact: true }).click();
   expect(fake.writes(), 'cancelling writes nothing').toEqual([]);
   await create(page);
-  await expect(page.getByTestId('create-progress')).toHaveText(/^Created 13 lists, 89 columns and 47 settings in [\d.]+ s \(149 writes\)\.$/, { timeout: 30_000 });
+  await expect(page.getByTestId('create-progress')).toHaveText(CREATED, { timeout: 30_000 });
   await expect(page.getByTestId('plan-status')).toHaveText('The site was read again after Create.');
   await expect(page.getByTestId('plan-summary')).toHaveText('Nothing to create.');
   await expect(lists(page).getByRole('button', { name: 'Create', exact: true })).toBeDisabled();
   // A clean Create marks the site as ready by itself (part D).
-  await expect(page.getByTestId('ready-status')).toHaveText('The site is marked ready: every list passed the check, and the settings item of PMSAppSettings now says version 3.');
+  await expect(page.getByTestId('ready-status')).toHaveText(READY_WORDS);
   await expect(page.getByTestId('lists-version')).toHaveText('The lists are the version this app needs.');
-  expect(fake.lists.size).toBe(12);
+  expect(fake.lists.size).toBe(Object.keys(LISTS).length); // (12 until Prompt 21; read from the schema since Prompt 22)
   expect(fake.libraryPresent).toBe(true);
   expect(fake.requests.some((entry) => entry.method === 'DELETE')).toBe(false);
   expect(served.unexpected).toEqual([]);
@@ -100,7 +113,7 @@ test('the version-history choice is unticked by default and changes the plan, wi
   await expect(page.locator('[data-testid="plan"] [data-list="sessions"]')).toContainText('Turn attachments off, content approval off.');
   expect(fake.count(), 'worked out again from the same reads').toBe(reads);
   await create(page);
-  await expect(page.getByTestId('create-progress')).toHaveText(/^Created 13 lists/, { timeout: 30_000 });
+  await expect(page.getByTestId('create-progress')).toHaveText(new RegExp(`^Created ${EMPTY.lists.length} lists`), { timeout: 30_000 });
   expect(fake.listSettings('tracks')!.EnableVersioning).toBe(false);
   expect(fake.listSettings('sessions')!.EnableVersioning).toBe(true);
 });
@@ -115,7 +128,7 @@ test('an account that may not create lists: Create stops at the first write and 
   await expect(page.getByTestId('create-made')).toHaveText('Nothing was made before it stopped.');
   await expect(page.getByTestId('create-technical')).toContainText('403 at: create the list PMSClients. Access denied.');
   expect(fake.writes()).toHaveLength(1);
-  await expect(page.getByTestId('plan-summary')).toHaveText('13 lists, 89 columns, 47 settings to create.');
+  await expect(page.getByTestId('plan-summary')).toHaveText(PLAN_WORDS);
 });
 
 // ---- Ready (Phase 10c-3, part D) ------------------------------------------------------------------------------------------------------------
@@ -134,7 +147,7 @@ test('before the site is marked ready the participant and admin pages stop with 
   await showPlan(page);
   await create(page);
   await expect(page.getByTestId('ready-status')).toContainText('The site is marked ready', { timeout: 30_000 });
-  expect(fake.item('appsettings', 'default')).toMatchObject({ Title: 'default', AppId: 'default', SchemaVersion: 3 });
+  expect(fake.item('appsettings', 'default')).toMatchObject({ Title: 'default', AppId: 'default', SchemaVersion: VERSION });
 
   await page.goto(pageUrl('index.html'));
   await expect(page.getByRole('heading', { name: "Today's experience isn't live yet" })).toBeVisible();
@@ -225,10 +238,10 @@ test('a new site from nothing: plan, Create (which marks it ready), an admin, th
   await expect(page.getByTestId('lists-version')).toContainText("This site's lists have not been set up for this app yet");
 
   await showPlan(page);
-  await expect(page.getByTestId('plan-summary')).toHaveText('13 lists, 89 columns, 47 settings to create.');
+  await expect(page.getByTestId('plan-summary')).toHaveText(PLAN_WORDS);
   await create(page);
-  await expect(page.getByTestId('create-progress')).toHaveText(/^Created 13 lists, 89 columns and 47 settings in [\d.]+ s \(149 writes\)\.$/, { timeout: 60_000 });
-  await expect(page.getByTestId('ready-status')).toHaveText('The site is marked ready: every list passed the check, and the settings item of PMSAppSettings now says version 3.');
+  await expect(page.getByTestId('create-progress')).toHaveText(CREATED, { timeout: 60_000 });
+  await expect(page.getByTestId('ready-status')).toHaveText(READY_WORDS);
   await expect(page.getByTestId('lists-version')).toHaveText('The lists are the version this app needs.');
   await expect(page.getByTestId('plan-summary')).toHaveText('Nothing to create.');
 
@@ -255,7 +268,7 @@ test('a new site from nothing: plan, Create (which marks it ready), an admin, th
   await page.getByRole('button', { name: 'Click here to begin' }).click();
   await expect(page.locator('button.activity').first()).toBeVisible();
   await expect.poll(() => fake.lists.get('tracks')!.length, { message: 'the participant\'s visit is on the site' }).toBe(1);
-  expect(fake.item('appsettings', 'default')).toMatchObject({ SchemaVersion: 3, ActiveClientId: 'c-kroger' });
+  expect(fake.item('appsettings', 'default')).toMatchObject({ SchemaVersion: VERSION, ActiveClientId: 'c-kroger' });
   expect(fake.strays, 'nothing reached a list that is not this copy\'s').toEqual([]);
   expect(fake.requests.some((entry) => entry.method === 'DELETE')).toBe(false);
   expect(served.unexpected).toEqual([]);

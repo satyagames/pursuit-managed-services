@@ -76,6 +76,17 @@ sequenceDiagram
   client, activities and the guest; the new visit beside the activities' content; then the claim, ONE write with `If-Match` on the code's version,
   so only one device can win. The loser removes the visit it wrote.
 
+### The confidence check, Before and After
+
+Prompt 20. When the live session's `ConfidenceCheck` is Yes and the client has a check (an activity of `Kind` `confidence-check` with a question),
+`nextStep()` in `lib/participant/confidence-check.js` decides each move: the boot (a resumed visit), Welcome, the hub, the pager's last activity and
+Thank you all ask it. Before (`#/check-in`) comes first; the hub sends a visit without it back there. After (`#/check-out`) comes when the last
+activity is finished, or when Finish is pressed on the hub of an any-order session; an ended session asks none. Each answer is one more record in
+the visit's own item (`<questionId>@before`, `<questionId>@after`), saved by the same store as every answer; the check's question and options are
+the client's activities' content, read with them, so no request is added. Thank you shows "Your confidence moved up / stayed the same / moved
+down" once both exist. A restart at an activity drops that activity's answers and After (on the device and in the list); from the very beginning,
+everything. On the facilitator's side the session's results carry `confidenceCheck` (`buildResults`), from the answers and activities already read.
+
 ## The facilitator
 
 ```mermaid
@@ -123,6 +134,118 @@ sequenceDiagram
 The lists and their order are `SESSION_OWNED`; nothing else is read for writing, and the client, its content, the admins and the settings item are never
 written. A participant page open on that session is at Welcome already (a session that can be deleted is not the live one); a printed guest code of it
 is no longer recognised; the Live display open on it says "That session no longer exists."
+
+## Signing in to the admin page (Prompt 21)
+
+The admin page, on SharePoint, once its lists are this build's version (Phase 1 of Prompt 21; [RULES.md](RULES.md) has the rules):
+
+1. **Who is this?** `resolveAccess()` (`lib/access/resolve.js`) asks the data layer (`readSignedInPerson`, `lib/data/access-reads.js`) for the
+   signed-in account (`/web/currentuser`: its name, email, login name, whether it is a site collection administrator, its groups) and the site's
+   owners group, in one `$batch`. The person's key is their email in lower case.
+2. **Their row and roles**: `readAccessRows(key)` reads the `PMSUsers` item whose AppId is the key and the `PMSRoleAssignments` items whose
+   `UserKey` is the key, two indexed reads in one `$batch` (one by one where the site will not batch). The answer is kept for the page.
+3. **Which screen**: `signInStep()`. The site owner enters as a Super admin (a banner until a Super admin row of their own exists); a listed,
+   active person with a current role enters, with no PIN; a disabled person, or one with no current role, sees No access
+   (`admin/NoAccess.svelte`); anyone not listed gets the PIN screen as before, and a PIN unlocks the Phase 20 admin page (the legacy admin). If
+   the reads fail, the PIN screen too. On the local server nobody is signed in: the PIN.
+4. **Every write after that** is asked of the page's write guard (`lib/access/guard.js`, installed with `dataService.setAccessGuard`) inside the
+   data layer before it is sent. A refusal is `AccessDenied`, in words, and nothing is sent. Lock (PIN only) takes the guard away.
+
+Setup's People and access reads `PMSUsers` and `PMSRoleAssignments` whole (`listAccessRecords`) to list the Super admins, and writes through
+`lib/access` (`makeMeSuperAdmin`, `migrateAdmins`): a person's row, their roles, and a line in `PMSAuditLog` for each.
+
+## People (Prompt 21, Phase 2)
+
+The admin page's People tab, for a person whose access allows it ([RULES.md](RULES.md) has the rules):
+
+1. **Open**: `listAccessRecords` reads `PMSUsers` and `PMSRoleAssignments` whole (pages of the lists' own size), and `listClients` and `listSessions`
+   read the clients and sessions: four reads, once. The list, its filters and its pages are worked out in the page (`lib/access/people.js`).
+2. **Add user**: each pause in typing sends one `clientPeoplePickerSearchUser` (an earlier one still in flight is aborted); a choice, or a typed
+   email, becomes `addPerson()`: one `PMSUsers` item (a duplicate is 409, "in the list already") and one `PMSAuditLog` line. No role is written.
+3. **A person's page** reads `PMSAuditLog` whole once, for the history. **Give access** is `grantRole()` (one `PMSRoleAssignments` item, one audit
+   line); **Remove** is `removeRole()`; **Turn access off** and an extra are `updateAccessRecord()`. Each of these first reads both access lists
+   (`lib/data/access-people.js`) and asks the guard's `record()` check, which refuses your own roles, the last Super admin and an Admin touching a
+   Super admin or Admin row, before anything is sent; then it writes, then writes its audit line, and the list is read again.
+
+## A client's sessions and team (Prompt 21, Phase 3)
+
+A client's page (Clients, **Sessions and team**) and Today's start ([RULES.md](RULES.md) has the rules):
+
+1. **Open**: one `readLists` of the settings item and the client's sessions (by the indexed `ClientId`; one `$batch` on SharePoint), beside
+   `listAccessRecords` of `PMSUsers` and `PMSRoleAssignments` read whole: three reads, once, and again after each change.
+2. **New session**: `planSession()` reads the client's activities (by `ClientId`) and writes one `PMSClientSessions` item under the id the page gave it
+   (`<slug>-<yyyy-mm-dd>-<hhmm>`, with the period and the order in the day worked out in the page); a 409 (a duplicate) is tried again as `-2`, `-3`.
+   It needs `clients.manage`: the write guard refuses anyone else before anything is sent.
+3. **Client team**: Add is `grantRole()` for each place (one `PMSRoleAssignments` item and one audit line each); Remove is `removeRole()`, which reads
+   both access lists for the guard's `record()` check first, as on People.
+4. **Today, a planned session**: Go live is `startSession()`: the settings item, the session, its client and its activities, a `MERGE` of the session's
+   activities when some were added since it was planned, the codes nobody scanned for the session it replaces marked used, the settings item written
+   (`events.run`), then one read of the settings item to prove it. With nothing planned for the client that day, Go live is `activateClient()` as before.
+   One session is live at a time: the settings item names one.
+
+## What a scoped role reads (Prompt 21, Phase 4)
+
+The admin page installs the write guard after sign-in (`lib/access/guard.js`); since Phase 4 the guard also checks reads and learns whose things are
+([RULES.md](RULES.md) has the rules):
+
+1. **Menu.** `tabsFor(access, tabs)` (the role matrix's) decides the tabs; the first one the role opens is the page it opens on.
+2. **Today.** `loadToday` and `pollToday` read through `readerOf(api, access)`: for a global role `api.readLists`, as always; for a scoped role
+   `scopedReader`, which turns the plain reads of clients, sessions and activities into `where` reads for the places held and does not send a read by id of
+   a session it has not found to be readable. A live session the person does not hold is status 'elsewhere'.
+3. **Content.** `AdminContent` sends `[appsettings, clients, sections]` for a global role (three plain reads in one `$batch`) and the same lists by `id` and
+   `ClientId` for a scoped one; each view is `edit`, `view` (read only, `ViewOnly`) or `none` for the picked client (`contentModes`).
+4. **Guests and QR.** A scoped role first reads its sessions (`readQueries`), which teaches the guard whose each is; the live session and its roster, codes,
+   visits and answers are then read by session. A live session that is not theirs throws `AccessDenied`, which the screen says in words.
+5. **Results.** `readBasics` lists the sessions and clients for a scoped role by `readQueries`, filters the sessions to the ones the role may see
+   (a period of Leadership by date), and reads the codes of those sessions fifteen to an address; a global role reads `listSessions`, `listClients`
+   and `listQrTokens` as always.
+6. **The guard.** Every `readLists`, `listItems` and `queryItems` asks `guard.read(list, where)` first (nothing is sent when it throws) and tells
+   `guard.learn(list, rows)` what came back. A global role is asked nothing.
+
+## The Leadership dashboard (Prompt 21, Phase 5)
+
+The dashboard reads totals, never answers ([RULES.md](RULES.md) has the rules):
+
+1. **When a session ends.** Today's End session ends it (`endSession`), then `writeSummary` (`lib/admin/session-summaries.js`) reads the leader report's
+   records of that session (`readLeaderReportRecords`: the session, its activities, tracks, visits, roster, questions, options and answers), builds the
+   report (`buildLeaderReport`), takes the summary from it (`summaryOf`) and writes one item of `PMSSessionSummary` under the session's id
+   (`saveSessionSummary`: made, or written over when SharePoint answers 409). A failure ends nothing.
+2. **Rebuild.** For a person who may run sessions, the dashboard lists the ended sessions they may run (`readQueries` of the sessions) without a summary, and
+   writes theirs one after another (`rebuildSummaries`), the same way.
+3. **Opening the dashboard.** `getAppSettings` (the fiscal start month and the minimum sample), then `readDashboard`: the summaries (`readSessionSummaries`:
+   whole for a global role; by `ClientId`, AppId or `Period`, fifteen to an address, for a scoped one) beside the clients (`readQueries` of the clients), two
+   requests. The read check holds a scoped role to its places before anything is sent. Every figure is then worked out in the page
+   (`dashboardOf`), filters included: a filter sends nothing.
+4. **Export.** Export report is a CSV made in the page from the figures; each session's Export (in a client's row) is that session's leader report, read
+   as Results always read it.
+5. **Delete session** removes the session's summary with its other data, before the session item.
+6. **The shift by client and by session** (Prompt 22) is worked out in the page from the same summaries (`shiftOf`, `movedOf`, `pairedMeansByScale`): no
+   request of its own.
+7. **Reporting settings** (Prompt 22, a Super admin's): opening it reads the settings item (`getAppSettings`); Save sends what changed with
+   `updateAppSettings` (the item, then its merge) and one audit line (`addAccessRecord`). A new start month first reads the sessions and the summaries
+   whole (two requests, side by side) to count the stored quarters it would leave behind; **Move stored quarters** then writes each session's `Period`
+   (`updateSession`), reads those summaries by AppId and writes each again whole (`saveSessionSummary`: made, refused as a duplicate, written over),
+   and one audit line. Nothing is read or written for answers.
+8. **About this client** (Prompt 22): Save sends what changed of Industry and Region with `updateClient` and one audit line; the suggestions come from
+   the clients Clients has already read.
+
+## Hide names and an access that changes while the page is open (Prompt 21, Phase 6)
+
+1. **Hide names** sends nothing: the names a screen or a file prints are worked out in the page from what was already read (`withNamesHidden` over
+   `nameParticipants`), so turning it on or off renames the Sessions cards from what they hold, and the next export is made with it.
+2. **The access read again.** On opening a tab or coming back to the page, at most once every five minutes (`RECHECK_AFTER_MS`, ASSUMED), the admin page
+   asks again who is signed in and reads their `PMSUsers` row and `PMSRoleAssignments` rows (`resolveAccess` with `refresh`: the requests of sign-in, three
+   on SharePoint). A person who may still enter keeps working (a changed role changes the menu); one turned off is stopped, and every write after that
+   is refused before it is sent. Nothing is read again on the local server, where nobody is signed in, or after a PIN.
+
+## The access lists' permissions and History of changes (Prompt 21, Phase 7)
+
+1. **Setup's self-test** reads, for each of `PMSUsers`, `PMSRoleAssignments` and `PMSAuditLog`, whether it has its own permissions and who holds which
+   level (`/web/lists/getbytitle(...)?$select=HasUniqueRoleAssignments` and `.../roleassignments?$expand=Member,RoleDefinitionBindings`): six GETs, no
+   item, nothing written. Setup's plan shows the steps; nothing sends them.
+2. **History of changes** reads `PMSAuditLog` whole, once, as a person's history does (ASSUMED far below 5,000 lines), and filters it in the page.
+3. **A session's answers and the Live feed** ask the page's read check before their first request (`askRead`): a scoped role's refused read sends
+   nothing, as the plain reads already did since Phase 4.
 
 ## How often each open page looks
 

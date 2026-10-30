@@ -5,10 +5,10 @@
   import { STAFF_MODE_WARNING, isStaffMode } from '../lib/admin/admin-today.js';
   import MotionSwitch from './MotionSwitch.svelte';
 
-  type Session = { id: string; clientId: string; date?: string; status?: string; participationMode?: string; activityFlow?: string };
+  type Session = { id: string; clientId: string; date?: string; status?: string; participationMode?: string; activityFlow?: string; confidenceCheck?: boolean | null };
   type Client = { id: string; name: string; theme?: unknown };
 
-  let { controlSession, controlClient, owner, live, controlsBusy, onSetMode, onSetFlow, onEnd, onReopen, onMotionSaved, onToast }: {
+  let { controlSession, controlClient, owner, live, controlsBusy, onSetMode, onSetFlow, onSetCheck, onEnd, onReopen, onMotionSaved, onToast }: {
     controlSession: Session | null;
     /** The live session's client, for the Animations switch. */
     controlClient: Client | null;
@@ -18,6 +18,8 @@
     controlsBusy: boolean;
     onSetMode: (mode: 'client-visit' | 'staff') => void;
     onSetFlow: (flow: string) => void;
+    /** Phase 20: the session's confidence check, on or off. */
+    onSetCheck: (on: boolean) => void;
     onEnd: (session: Session) => void;
     onReopen: (session: Session) => void;
     onMotionSaved: (written: { id: string; theme?: unknown }) => void;
@@ -47,6 +49,10 @@
     {#each flowChoices as flow (flow.id)}
       <label class="choice"><input type="radio" name="flow" checked={(controlSession.activityFlow ?? 'sequential') === flow.id} onchange={() => onSetFlow(flow.id)} /><span>{flow.title}</span><span class="muted small">{flow.hint}</span></label>
     {/each}
+  </fieldset>
+  <fieldset class="field" disabled={controlsBusy || controlSession.status === 'completed'}>
+    <legend class="field__label">Confidence check</legend>
+    <label class="choice"><input type="checkbox" checked={controlSession.confidenceCheck === true} onchange={(event) => onSetCheck((event.currentTarget as HTMLInputElement).checked)} /><span>Ask it before the first activity and after the last</span><span class="muted small">Needs a confidence check in Content.</span></label>
   </fieldset>
   {#if controlClient}
     <MotionSwitch client={controlClient} compact onSaved={onMotionSaved} {onToast} />

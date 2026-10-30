@@ -5,6 +5,7 @@
 // render what this says; the data work (copying, bulk guests, codes) is migration/src/lib/data/dataService.js,
 // section 6.
 
+import { isCheckActivity } from '../participant/confidence-check.js';
 import { isRecordSettled } from '../participant/pager-logic.js';
 
 /** The longest guest name kept. A name is printed large on a card, so a long one would not fit it. */
@@ -68,7 +69,22 @@ const byOrder = (a, b) => (Number(a.order) || 0) - (Number(b.order) || 0) || Str
  * @param {S[]} sections @param {string} clientId
  * @returns {S[]}
  */
-export const activitiesOfClient = (sections, clientId) => sections.filter((section) => section.clientId === clientId).sort(byOrder);
+export const activitiesOfClient = (sections, clientId) => sections.filter((section) => section.clientId === clientId && !isCheckActivity(section)).sort(byOrder);
+
+/**
+ * The client's confidence check (Phase 20): its activity of Kind confidence-check, or null. It is not one of the client's activities
+ * (activitiesOfClient leaves it out): Content shows it as a row of its own above them, it is never reordered among them, and it is not copied.
+ * @param {{ id: string, clientId?: string | null, kind?: unknown, order?: number }[]} sections @param {string} clientId
+ */
+export const checkOfClient = (sections, clientId) => sections.filter((section) => section.clientId === clientId && isCheckActivity(section)).sort(byOrder)[0] ?? null;
+
+/**
+ * Why the client's check may not be deleted now, or '' when it may: a session of the client that is open (not ended) and asks it. Since Prompt 21,
+ * Phase 3 a client may have several open sessions (planned ahead, several a day), and any one of them that asks it refuses.
+ * @param {{ status?: string, confidenceCheck?: boolean | null } | { status?: string, confidenceCheck?: boolean | null }[] | null} open the client's sessions (or one)
+ */
+export const checkDeleteRefusal = (open) => ([open ?? []].flat().some((session) => session && session.status !== 'completed' && session.confidenceCheck === true)
+  ? 'The confidence check is asked in an open session. End that session, or switch its confidence check off on Today, before deleting it.' : '');
 
 /**
  * What is wrong with an activity's title, or ''. A client's activities must read differently from one
@@ -228,6 +244,53 @@ export function parseGuestNames(text, { existing = [], maxLength = MAX_GUEST_NAM
   }
   return { names, duplicates, blankLines, shortened };
 }
+
+/** The longest a guest's group may be (the column holds 60; Prompt 21, Phase 4). */
+export const MAX_GUEST_GROUP = 60;
+/** A group as the list keeps it: tidy, and cut to its length. @param {unknown} value */
+export const tidyGroup = (value) => Array.from(collapse(value)).slice(0, MAX_GUEST_GROUP).join('').trim();
+
+/**
+ * Reads a pasted guest list with its groups (Prompt 21, Phase 4): as parseGuestNames, and a line may end with a group after a bar or a tab
+ * ("Jordan Lee | Finance", or two columns pasted from a sheet); every name of that line is in it. A line that names none takes `group`, the
+ * form's own (empty for none).
+ * @param {string} text @param {{ existing?: string[], maxLength?: number, group?: string }} [options]
+ * @returns {{ guests: { name: string, group: string }[], duplicates: { name: string, reason: 'on-roster' | 'in-paste' }[], blankLines: number, shortened: string[] }}
+ */
+export function parseGuestList(text, { existing = [], maxLength = MAX_GUEST_NAME, group = '' } = {}) {
+  const seen = new Set(existing.map(guestKey));
+  const inPaste = new Set();
+  const guests = [];
+  const duplicates = [];
+  const shortened = [];
+  let blankLines = 0;
+  for (const line of String(text ?? '').split(/\r\n|\r|\n/)) {
+    if (!collapse(line)) { blankLines += 1; continue; }
+    const cut = line.search(/[|\t]/);
+    const names = cut === -1 ? line : line.slice(0, cut);
+    const given = cut === -1 ? '' : tidyGroup(line.slice(cut + 1));
+    for (const piece of names.split(/[,;]/)) {
+      let name = collapse(piece);
+      if (!name) continue;
+      const letters = Array.from(name);
+      if (letters.length > maxLength) {
+        shortened.push(name);
+        name = letters.slice(0, maxLength).join('').trim();
+      }
+      const key = guestKey(name);
+      if (inPaste.has(key)) { duplicates.push({ name, reason: 'in-paste' }); continue; }
+      inPaste.add(key);
+      if (seen.has(key)) { duplicates.push({ name, reason: 'on-roster' }); continue; }
+      guests.push({ name, group: given || tidyGroup(group) });
+    }
+  }
+  return { guests, duplicates, blankLines, shortened };
+}
+
+/** The groups on a guest list, once each, alphabetically. @param {{ guestGroup?: string | null }[]} visitors */
+export const guestGroups = (visitors) => [...new Set(visitors.map((visitor) => collapse(visitor.guestGroup)).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+/** The guests of one group ('' for all). @template {{ guestGroup?: string | null }} T @param {T[]} visitors @param {string} group */
+export const inGroup = (visitors, group) => (group ? visitors.filter((visitor) => collapse(visitor.guestGroup) === group) : visitors);
 
 /** "3 new, 2 duplicates skipped" and what else the paste had. @param {ReturnType<typeof parseGuestNames>} parsed */
 export function pasteSummary(parsed) {

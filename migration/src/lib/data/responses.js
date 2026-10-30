@@ -4,8 +4,9 @@
 
 import { ID } from '../schema/pms-schema.js';
 import { RESPONSE, pause, spLiteral } from './encoding.js';
-import { getItem, itemPath, listTypes, request, send, sharePoint, spDecode, spEntityType, spHttp, spListPath, spPages, updateItem } from './core.js';
+import { currentAccessGuard, getItem, itemPath, listTypes, request, send, sharePoint, spDecode, spEntityType, spHttp, spListPath, spPages, updateItem } from './core.js';
 import { failure, versioned } from './records.js';
+import { parseCheckId } from '../participant/confidence-check.js';
 
 // ---- Responses, one item per participant ------------------------------------------
 // The item's AppId is the participant's track id (unique), TrackId repeats it in an indexed column,
@@ -240,14 +241,18 @@ export async function deleteParticipantResponses(trackId) {
   return { removed: found.length };
 }
 
-/** Drops answers from a participant's own item: all of them, or only those to `questionIds`. Resolves to { removed }. */
-async function removeParticipantAnswers(trackId, questionIds = null) {
+/**
+ * Drops answers from a participant's own item: all of them, or only those to `questionIds` (and, with `after`, the confidence check's After,
+ * Phase 20, which is asked again once the restarted activity is done again). Resolves to { removed }.
+ */
+async function removeParticipantAnswers(trackId, questionIds = null, { after = false } = {}) {
   if (questionIds?.length === 0) return { removed: 0 };
   const store = participants();
   for (let attempt = 0; ; attempt += 1) {
     const [found] = await store.findAll(trackId, true);
     const held = found ? answerRecords(found.item.responses) : [];
-    const kept = held.filter((record) => questionIds !== null && !questionIds.includes(record.questionId));
+    const kept = held.filter((record) => questionIds !== null && !questionIds.includes(record.questionId)
+      && !(after && parseCheckId(record.questionId)?.phase === 'after'));
     if (kept.length === held.length) return { removed: 0 };
     try {
       // Unlike the participant's own saves this one checks the version: the device may be writing too.
@@ -262,7 +267,7 @@ async function removeParticipantAnswers(trackId, questionIds = null) {
 
 /**
  * Admin control: sends one visit back to the start of an activity (`sectionId`), or to the very beginning when none is given.
- * That visit's answers are removed from the participant's own item, so the session's other visits and their tallies are
+ * That visit's answers are removed from the participant's own item (at an activity: that activity's, and the confidence check's After), so the session's other visits and their tallies are
  * untouched; then the track is stamped, and the iPad sees `restartedAt` change and jumps there. Resolves to { removed }.
  */
 export async function restartParticipantTrack(clientTrackId, { sectionId = null } = {}) {
@@ -272,7 +277,8 @@ export async function restartParticipantTrack(clientTrackId, { sectionId = null 
     if (!section) throw failure('section-missing', 'That module no longer exists.');
     questionIds = section.questionIds ?? [];
   }
-  const { removed } = await removeParticipantAnswers(clientTrackId, questionIds);
+  // (At an activity, the confidence check's Before stays and its After goes: Phase 20, board 14.)
+  const { removed } = await removeParticipantAnswers(clientTrackId, questionIds, { after: sectionId !== null });
   if (!(await getItem('tracks', clientTrackId))) throw failure('track-missing', 'That client track no longer exists.');
   // Stamp it after the answers are gone, so an iPad reacting to the stamp never sees stale ones.
   await updateItem('tracks', clientTrackId, { restartedAt: new Date().toISOString(), restartSectionId: sectionId });
@@ -285,6 +291,7 @@ export async function restartParticipantTrack(clientTrackId, { sectionId = null 
  * 60 participants is one query on the indexed SessionId.
  */
 export async function listSessionParticipants(sessionId, { pageSize = 100, cursor = null } = {}) {
+  askRead(sessionId);
   const { items, next } = await participants().page(sessionId, pageSize, cursor);
   return {
     items: items.map((item) => ({ trackId: item.trackId, sessionId: item.sessionId ?? sessionId, clientId: item.clientId ?? null, responses: answerRecords(item.responses) })),
@@ -311,7 +318,12 @@ export async function readSessionResponsesChecked(sessionId) {
   return { answers: await readAnswers(sessionId, unreadable), unreadable };
 }
 
+// Prompt 21, Phase 7: a session's answers are read only for a session the page's read check allows (lib/access/guard.js `read`, as the plain reads ask it
+// through read-scope.js); it throws AccessDenied and nothing is sent. The participant page and Setup install no guard, so nothing is asked there.
+const askRead = (sessionId) => currentAccessGuard()?.read?.('responses', { sessionId });
+
 async function readAnswers(sessionId, damaged) {
+  askRead(sessionId);
   const store = participants();
   const items = [];
   let cursor = null;
@@ -341,6 +353,6 @@ function combineAnswers(items) {
 
 // Shared with the other parts of lib/data (dataService.js does not pass these on).
 export {
-  PARTICIPANT_SELECT, answerRecord, answerRecords, combineAnswers, decodeResponsesRow, participantFields, participantItem, participants, readAnswers,
+  PARTICIPANT_SELECT, answerRecord, answerRecords, askRead, combineAnswers, decodeResponsesRow, participantFields, participantItem, participants, readAnswers,
   spParticipants,
 };

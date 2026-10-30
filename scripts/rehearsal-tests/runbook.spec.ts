@@ -8,7 +8,9 @@ import { SAMPLE_PICTURES } from '../../migration/src/lib/setup/sample-pictures.j
 import { seedSampleClients } from '../../migration/src/lib/setup/sample-seed.js';
 import { sha256Hex } from '../../migration/src/lib/admin/sha256.js';
 import { FOLDER_URL, SETTINGS_TEXT, SITE, TIMING_CHECK } from '../release-docs.js';
-import { TITLE, createSharePointFake } from '../sharepoint-fake.js';
+import { PHASE_20_COLUMNS, PHASE_21_COLUMNS, PHASE_21C_COLUMNS, PHASE_21D_COLUMNS, PHASE_21E_COLUMNS, TITLE, createSharePointFake } from '../sharepoint-fake.js';
+import { LIBRARY, LISTS, VERSION } from '../../migration/src/lib/schema/pms-schema.js';
+import { makePlan, showPlan, siteApi } from '../../migration/src/lib/setup/provision.js';
 import { emptyRoom, scrollProblems, tipProblems } from '../migration-tests/results-charts-support.js';
 
 // Phase 10f, part D: RUNBOOK.md rehearsed on the mocked SharePoint REST, with the pages OF THE RELEASE PACKAGE (not a dev build), served at the new
@@ -48,7 +50,14 @@ import { emptyRoom, scrollProblems, tipProblems } from '../migration-tests/resul
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const SHOTS = path.join(ROOT, 'test-results', 'rehearsal');
 const PAGES = ['index.html', 'admin.html', 'setup.html'];
-const EVERYTHING = ['clients', 'sessions', 'sections', 'questions', 'options', 'tracks', 'qrtokens', 'appsettings', 'visitorroster', 'uservisitlogs', 'adminusers', 'responses', 'logoLibrary'];
+// (Prompt 22: the lists, this build's version and an empty site's plan are read, not typed. Typed out they said 12 lists, version 3 and 89 columns, and
+// the sites of version 2 and 3 below lacked every column this build's data layer names since: SINCE_2, kept while their records are written.)
+const EVERYTHING = [...Object.keys(LISTS), 'logoLibrary'];
+const LIST_COUNT = Object.keys(LISTS).length;
+const EMPTY = makePlan({ lists: new Map(), fields: new Map(), reads: 0 }, { ...Object.fromEntries(Object.entries(LISTS).map(([key, list]) => [key, list.title])), logoLibrary: LIBRARY });
+const createdWords = (plan: { lists: unknown[]; columns: unknown[]; settings: unknown[] }) => new RegExp(`^Created ${plan.lists.length} lists?, ${plan.columns.length} columns? and ${plan.settings.length} settings? in [\\d.]+ s \\(${plan.lists.length + plan.columns.length + plan.settings.length} writes\\)\\.$`);
+const READY_WORDS = `The site is marked ready: every list passed the check, and the settings item of PMSAppSettings now says version ${VERSION}.`;
+const SINCE_2 = [...PHASE_20_COLUMNS, ...PHASE_21_COLUMNS, ...PHASE_21C_COLUMNS, ...PHASE_21D_COLUMNS, ...PHASE_21E_COLUMNS];
 const PIN = '482916';
 const TODAY = new Date().toLocaleDateString('en-CA');
 const PICTURES = path.join(ROOT, 'migration', 'src', 'assets', 'sample-pictures');
@@ -132,7 +141,7 @@ async function selfTest(page: Page, label: string, browserName: string, refused 
   await section.getByRole('button', { name: 'Run self-test' }).click();
   // Playwright's WebKit drops the boundary of a fulfilled $batch reply (migration/playwright.config.ts says so), so the batch step fails there and only there.
   if (browserName === 'webkit') await expect(section.getByRole('status')).toHaveText('Self-test failed: Two reads in one request ($batch).', { timeout: 30_000 });
-  else await expect(section.getByRole('status')).toContainText('Passed: 11 of 11 steps', { timeout: 30_000 });
+  else await expect(section.getByRole('status')).toContainText('Passed: 12 of 12 steps', { timeout: 30_000 }); // (11 until Prompt 21 Phase 7's permission probe)
   await expect(section.getByRole('row', { name: /A second create with the same AppId is refused/ })).toContainText('Refused: AppId enforces unique values.');
   await expect(section.getByRole('row', { name: /columns this site leaves out/ })).toContainText(new RegExp(`Left out of a read that names no columns: [^.]*${TITLE.sections}: ClientId`));
   await expect(section.getByRole('row', { name: /columns this site will not return by name/ })).toContainText(refused);
@@ -253,7 +262,7 @@ test('the runbook on an empty site: This copy of the app, the plan, Create, read
   await page.goto(`${FOLDER_URL}/setup.html`);
   const copy = page.getByRole('region', { name: /This copy of the app/ });
   await expect(copy).toContainText(`${SITE} (from this page's address)`);
-  await expect(copy).toContainText('PMSClients, PMSClientSessions, ... (12) (no prefix from pms-config.txt)');
+  await expect(copy).toContainText(`PMSClients, PMSClientSessions, ... (${LIST_COUNT}) (no prefix from pms-config.txt)`);
   await expect(copy).toContainText('PMSClientImages');
   await expect(copy).toContainText('PMS (from pms-config.txt)');
   await expect(copy).toContainText(`${path.basename(site.pkg)} (built in)`);
@@ -261,13 +270,13 @@ test('the runbook on an empty site: This copy of the app, the plan, Create, read
 
   // 4. Show the plan. (Phase 10h: Create can be seen.)
   await lists(page).getByRole('button', { name: 'Show the plan' }).click();
-  await expect(page.getByTestId('plan-summary')).toHaveText('13 lists, 89 columns, 47 settings to create.');
+  await expect(page.getByTestId('plan-summary')).toHaveText(`${EMPTY.summary}.`);
   expect(await seen(page, 'Create'), 'Create can be seen').toBe(true);
   await shoot(page, `empty-${browserName}-step04-plan`);
 
   // 5. Create (it marks the site ready by itself when it ends clean).
   await create(page);
-  await expect(page.getByTestId('create-progress')).toHaveText(/^Created 13 lists, 89 columns and 47 settings in [\d.]+ s \(149 writes\)\.$/, { timeout: 90_000 });
+  await expect(page.getByTestId('create-progress')).toHaveText(createdWords(EMPTY), { timeout: 90_000 });
   await shoot(page, `empty-${browserName}-step05-create`);
 
   // 6. Check Lists: every row Ready.
@@ -276,9 +285,9 @@ test('the runbook on an empty site: This copy of the app, the plan, Create, read
   await shoot(page, `empty-${browserName}-step06-check`);
 
   // 7. Mark the site as ready: Create did it already, so pressing it writes nothing.
-  await expect(page.getByTestId('ready-status')).toHaveText('The site is marked ready: every list passed the check, and the settings item of PMSAppSettings now says version 3.');
+  await expect(page.getByTestId('ready-status')).toHaveText(READY_WORDS);
   await lists(page).getByRole('button', { name: 'Mark the site as ready' }).click();
-  await expect(page.getByTestId('ready-status')).toHaveText('The site was already marked ready (version 3). Nothing was written.');
+  await expect(page.getByTestId('ready-status')).toHaveText(`The site was already marked ready (version ${VERSION}). Nothing was written.`);
   await shoot(page, `empty-${browserName}-step07-ready`);
 
   await fromAdminToResults(page, browser, site, `empty-${browserName}`, browserName);
@@ -326,7 +335,7 @@ test('the runbook on a hand-built site with one misnamed column: the plan report
   // 5. Create: the one column and its index, then the site is marked ready by itself.
   await create(page);
   await expect(page.getByTestId('create-progress')).toHaveText(/^Created 0 lists, 1 column and 1 setting in [\d.]+ s \(2 writes\)\.$/, { timeout: 60_000 });
-  await expect(page.getByTestId('ready-status')).toHaveText('The site is marked ready: every list passed the check, and the settings item of PMSAppSettings now says version 3.');
+  await expect(page.getByTestId('ready-status')).toHaveText(READY_WORDS);
 
   // 6. Check Lists.
   await lists(page).getByRole('button', { name: 'Check Lists' }).click();
@@ -395,9 +404,9 @@ test('a site of version 2 (the 10i note\'s case): the plan, Create, raised to ve
   // The site as it was on 15 Oct 2026: lists Setup made for version 2 (with their DisplayName columns), an admin, the sample clients with their pictures,
   // Domino's live and a member of staff's visit logged under DisplayName. The earlier pages' records are stood for by the data layer (the item said 3 while
   // they were written, and says 2 again before the note begins).
-  const fake = tenant({ prefix: '', siteUrl: SITE, listsVersion: 2 });
+  const fake = tenant({ prefix: '', siteUrl: SITE, listsVersion: 2, keepColumns: SINCE_2 });
   fake.add('adminusers', { AppId: 'admin-pcoe', Title: 'Asha Rao', Name: 'Asha Rao', PinHash: sha256Hex(PIN) });
-  fake.item('appsettings', 'default')!.SchemaVersion = 3;
+  fake.item('appsettings', 'default')!.SchemaVersion = VERSION;
   const restore = fake.install();
   let sessionId = '';
   try {
@@ -409,7 +418,17 @@ test('a site of version 2 (the 10i note\'s case): the plan, Create, raised to ve
   } finally {
     restore();
   }
+  fake.dropColumns(SINCE_2);
   fake.item('appsettings', 'default')!.SchemaVersion = 2;
+  // What Show the plan should say: Setup's own plan of this very site (scripts/test-provision.js holds the plan itself).
+  const restoreForPlan = fake.install();
+  let expected: Awaited<ReturnType<typeof showPlan>>['plan'];
+  try {
+    dataService.configure({ sharePoint: fake.settings });
+    expected = (await showPlan(siteApi(dataService), dataService.sharePointListTitles())).plan;
+  } finally {
+    restoreForPlan();
+  }
   const pkg = await packageFolder();
   const site: Site = { fake, pkg, settings: await packageSettings(pkg), unexpected: [], pictures: [] };
   await page.setViewportSize({ width: 1366, height: 900 });
@@ -422,25 +441,25 @@ test('a site of version 2 (the 10i note\'s case): the plan, Create, raised to ve
   await expect(page.getByText('Details: PMS-LST-011')).toBeVisible();
   await page.goto(`${FOLDER_URL}/setup.html`);
   await expect(page.getByRole('region', { name: /This copy of the app/ })).toContainText(`${path.basename(site.pkg)} (built in)`);
-  await expect(page.getByTestId('lists-version')).toContainText('The lists on this site are version 2; this version of the app needs version 3.');
-  await expect(page.getByTestId('lists-version')).toContainText('(PMS-LST-011, SchemaVersion 2, this build needs 3)');
+  await expect(page.getByTestId('lists-version')).toContainText(`The lists on this site are version 2; this version of the app needs version ${VERSION}.`);
+  await expect(page.getByTestId('lists-version')).toContainText(`(PMS-LST-011, SchemaVersion 2, this build needs ${VERSION})`);
   await shoot(page, `pcoe-v2-${browserName}-note2-setup`);
 
-  // 3. Show the plan: the two columns and nothing else; the two old DisplayName columns are harmless.
+  // 3. Show the plan: the two columns of version 3 and everything since, as Setup plans them; the two old DisplayName columns are harmless.
   await lists(page).getByRole('button', { name: 'Show the plan' }).click();
-  await expect(page.getByTestId('plan-summary')).toHaveText('0 lists, 2 columns, 0 settings to create.');
-  await expect(page.locator('[data-testid="plan"] [data-list="visitorroster"]')).toContainText('Create 1 column: GuestName.');
+  await expect(page.getByTestId('plan-summary')).toHaveText(`${expected!.summary}.`);
+  await expect(page.locator('[data-testid="plan"] [data-list="visitorroster"]')).toContainText('GuestName');
   await expect(page.locator('[data-testid="plan"] [data-list="uservisitlogs"]')).toContainText('Create 1 column: SignedInName.');
   await expect(page.locator('[data-testid="plan"] [data-harmless="true"]')).toHaveCount(2);
   await shoot(page, `pcoe-v2-${browserName}-note3-plan`);
 
   // 4 and 5. Create, which ends clean and marks the site as ready by itself: the version is raised.
   await create(page);
-  await expect(page.getByTestId('create-progress')).toHaveText(/^Created 0 lists, 2 columns and 0 settings in [\d.]+ s \(2 writes\)\.$/, { timeout: 60_000 });
-  await expect(page.getByTestId('ready-status')).toHaveText('Raised the lists from version 2 to version 3.');
+  await expect(page.getByTestId('create-progress')).toHaveText(createdWords(expected!), { timeout: 90_000 });
+  await expect(page.getByTestId('ready-status')).toHaveText(`Raised the lists from version 2 to version ${VERSION}.`);
   await expect(page.getByTestId('lists-version')).toHaveText('The lists are the version this app needs.');
   await shoot(page, `pcoe-v2-${browserName}-note5-raised`);
-  expect(fake.item('appsettings', 'default')!.SchemaVersion).toBe(3);
+  expect(fake.item('appsettings', 'default')!.SchemaVersion).toBe(VERSION);
 
   // 6. Check Lists: every row Ready.
   await lists(page).getByRole('button', { name: 'Check Lists' }).click();
@@ -495,7 +514,7 @@ test('a site of version 2 (the 10i note\'s case): the plan, Create, raised to ve
   await expect(ipad.getByText(`${history.questionIds.length} of ${history.questionIds.length} right on the first try`)).toBeVisible({ timeout: 15_000 });
   await context.close();
   await page.getByRole('button', { name: 'Refresh' }).click();
-  await expect(titles).toHaveText(['Unnamed participant 1', 'Jordan Lee'], { timeout: 15_000 });
+  await expect(titles).toHaveText(['Jordan Lee', 'Unnamed participant 1'], { timeout: 15_000 }); // (newest first since Phase 16: lib/admin/admin-results.js ROW_ORDER)
   await shoot(page, `pcoe-v2-${browserName}-note10-results`);
   expect(site.unexpected).toEqual([]);
   expect(fake.strays, 'nothing reached a list that is not this copy\'s').toEqual([]);
@@ -506,9 +525,10 @@ test('the 10j note\'s case, the PCOE site of version 3: the pages replaced, Setu
   // The site as it is after pms-da9fc8d on 15 Oct 2026: lists Setup made for version 2 and brought to version 3 (the old DisplayName columns stay beside
   // GuestName and SignedInName), an admin, the sample clients with their pictures, Domino's live, and a visit of before the upgrade whose sign-in name is
   // in the old column. The earlier pages' records are stood for by the data layer.
-  const fake = tenant({ prefix: '', siteUrl: SITE, listsVersion: 2 });
+  // (Prompt 22: since this build needs version ${VERSION}, the site is as Setup leaves it after raising it: every column since version 2 is there.)
+  const fake = tenant({ prefix: '', siteUrl: SITE, listsVersion: 2, keepColumns: SINCE_2 });
   for (const [key, name] of [['visitorroster', 'GuestName'], ['uservisitlogs', 'SignedInName']]) fake.fields.get(key)!.push({ ...fake.field(key, 'DisplayName')!, InternalName: name });
-  fake.item('appsettings', 'default')!.SchemaVersion = 3;
+  fake.item('appsettings', 'default')!.SchemaVersion = VERSION;
   fake.add('adminusers', { AppId: 'admin-pcoe', Title: 'Asha Rao', Name: 'Asha Rao', PinHash: sha256Hex(PIN) });
   const restore = fake.install();
   let sessionId = '';
@@ -582,7 +602,7 @@ test('the 10j note\'s case, the PCOE site of version 3: the pages replaced, Setu
   await page.getByRole('textbox', { name: 'PIN' }).fill(PIN);
   await page.getByRole('button', { name: 'Unlock' }).click();
   const titles = page.locator(`[data-session="${sessionId}"] .row__title`);
-  await expect(titles).toHaveText(['Unnamed participant 1', 'Casey Example'], { timeout: 15_000 });
+  await expect(titles).toHaveText(['Casey Example', 'Unnamed participant 1'], { timeout: 15_000 }); // (newest first since Phase 16)
   await shoot(page, `pcoe-v3-${browserName}-note7-results`);
 
   // 8. An iPad checks in with the guest's code; one activity to its end, back to the hub, and the other opens at once: no read of its questions.
@@ -610,7 +630,7 @@ test('the 10j note\'s case, the PCOE site of version 3: the pages replaced, Setu
   await shoot(ipad, `pcoe-v3-${browserName}-note8-other`);
   await context.close();
   await page.getByRole('button', { name: 'Refresh' }).click();
-  await expect(titles).toHaveText(['Unnamed participant 1', 'Casey Example', 'Jordan Lee'], { timeout: 15_000 });
+  await expect(titles).toHaveText(['Jordan Lee', 'Casey Example', 'Unnamed participant 1'], { timeout: 15_000 }); // (newest first since Phase 16)
   await shoot(page, `pcoe-v3-${browserName}-note8-results`);
   expect(site.unexpected).toEqual([]);
   expect(fake.strays, 'nothing reached a list that is not this copy\'s').toEqual([]);
@@ -620,9 +640,10 @@ test('the 10j note\'s case, the PCOE site of version 3: the pages replaced, Setu
 test('the runbook\'s note for the PCOE site (Phase 11a): the pages replaced, Setup as it is, a named guest by QR code on an iPad, their name on the bar they picked, the numbers, and the wall with no names and Show answer', async ({ browser, browserName }) => {
   // The site as pms-0a1c701 left it on 15 Oct 2026: lists of version 3 (the old DisplayName columns beside the new ones), an admin, the sample clients
   // with their pictures, and Domino's live. The earlier pages' records are stood for by the data layer.
-  const fake = tenant({ prefix: '', siteUrl: SITE, listsVersion: 2 });
+  // (Prompt 22: since this build needs version ${VERSION}, the site is as Setup leaves it after raising it: every column since version 2 is there.)
+  const fake = tenant({ prefix: '', siteUrl: SITE, listsVersion: 2, keepColumns: SINCE_2 });
   for (const [key, name] of [['visitorroster', 'GuestName'], ['uservisitlogs', 'SignedInName']]) fake.fields.get(key)!.push({ ...fake.field(key, 'DisplayName')!, InternalName: name });
-  fake.item('appsettings', 'default')!.SchemaVersion = 3;
+  fake.item('appsettings', 'default')!.SchemaVersion = VERSION;
   fake.add('adminusers', { AppId: 'admin-pcoe', Title: 'Asha Rao', Name: 'Asha Rao', PinHash: sha256Hex(PIN) });
   const restore = fake.install();
   let sessionId = '';

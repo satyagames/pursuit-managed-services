@@ -26,12 +26,12 @@ export async function wordmarkFromComponent() {
 /**
  * Records to a finished PDF. Resolves to the report (data), the pages (layout), the bytes, and how long each step took.
  * @param {import('../migration/src/lib/exports/leader-report.js').ReportRecords} records
- * @param {{ generatedAt?: string, timeZone?: string, logo?: { data: string, width: number, height: number } | null, onProgress?: (progress: { page: number, pages: number }) => void, signal?: AbortSignal | null, pause?: () => Promise<void> }} [options]
+ * @param {{ generatedAt?: string, timeZone?: string, logo?: { data: string, width: number, height: number } | null, onProgress?: (progress: { page: number, pages: number }) => void, signal?: AbortSignal | null, pause?: () => Promise<void>, hideNames?: boolean }} [options]
  */
-export async function makeReport(records, { generatedAt = '2026-10-12T09:30:00.000Z', timeZone = 'UTC', logo = null, onProgress, signal = null, pause = async () => {} } = {}) {
+export async function makeReport(records, { generatedAt = '2026-10-12T09:30:00.000Z', timeZone = 'UTC', logo = null, onProgress, signal = null, pause = async () => {}, hideNames = false } = {}) {
   const [fonts, wordmark] = await Promise.all([loadReportFonts(), wordmarkFromComponent()]);
   const started = performance.now();
-  const report = buildLeaderReport(records, { generatedAt, timeZone });
+  const report = buildLeaderReport(records, { generatedAt, timeZone, hideNames });
   const counted = performance.now();
   const measure = createMeasure(fonts);
   const { pages, missing } = layoutLeaderReport(report, measure, { logo, palette: nodePalette() });

@@ -20,7 +20,7 @@ import { LISTS, selectOf } from '../migration/src/lib/schema/pms-schema.js';
 import { activitiesOfClient } from '../migration/src/lib/admin/admin-content.js';
 import { clientUsage, recentCodes } from '../migration/src/lib/admin/admin-clients.js';
 import { evaluateReadiness, goLive, loadToday, pollToday } from '../migration/src/lib/admin/admin-today.js';
-import { readNameSources } from '../migration/src/lib/admin/admin-results.js';
+import { NAME_SOURCE_SESSIONS, readNameSources } from '../migration/src/lib/admin/admin-results.js';
 import { markReady, siteApi } from '../migration/src/lib/setup/provision.js';
 import { PROBE_LEFT_OUT, schemaSpecs, selfTestProbes } from '../migration/src/lib/setup/setup-checks.js';
 import { readSessionResults } from '../migration/src/lib/results/session-results.js';
@@ -199,9 +199,16 @@ describe('every item read the data layer and Setup can send names its columns', 
     await readNameSources([sessionId]);
     await ds.readLiveFeed(sessionId, { sectionIds: KROGER, tolerant: true });
     await ds.endSession(sessionId);
+    // (Prompt 21, Phase 5) the dashboard: the session's summary written when it ends, then the summaries read whole, and by client, session and period.
+    await ds.saveSessionSummary({ id: sessionId, clientId: 'c-kroger', period: 'FY27-Q2', sessionDate: DAY, guests: 1, answers: 1, completed: 0, beforeCount: 0, afterCount: 0, pairedCount: 0, meanBefore: null, meanAfter: null, summaryJson: {} });
+    await ds.readSessionSummaries();
+    await ds.readSessionSummaries({ clientIds: ['c-kroger'], sessionIds: [sessionId], periods: ['FY27-Q2'] });
     // Setup: the version, the admins, the check, Mark ready (already ready: it reads the settings item and writes nothing).
     await ds.getAppSettings();
     await ds.listAdminUsers();
+    // (Prompt 21) the admin page's sign-in: the person's row and assignments; Setup's list of Super admins and its copy of the old admins.
+    await ds.readAccessRows('pulmathur@deloitte.com');
+    for (const key of ['users', 'roleassignments', 'auditlog']) await ds.listAccessRecords(key);
     const ready = await markReady(siteApi(ds), ds.sharePointListTitles(), { check: () => ds.checkSharePointSchema({ specs: schemaSpecs }) });
     assert.equal(ready.ready, true, ready.words);
 
@@ -230,8 +237,9 @@ describe('every item read the data layer and Setup can send names its columns', 
         found.push({ where: `${path.relative(ROOT, file).split(path.sep).join('/')}:${at + 1}`, line: line.trim() });
       });
     }
-    // (A probe's query that names its own columns is sent as it is; one that names none is given the list's: probeSharePointRead.)
-    const named = (line) => /selectOf\(|PARTICIPANT_SELECT|\/\\\$select=\/\.test\(query\) \? .*: spItems\(list, query\)/.test(line);
+    // (A probe's query that names its own columns is sent as it is; one that names none is given the list's: probeSharePointRead. Prompt 21: the
+    // settings item's version alone, read on a site of an older version that refuses the full read, names its three columns through versionSelect.)
+    const named = (line) => /selectOf\(|versionSelect\(|PARTICIPANT_SELECT|\/\\\$select=\/\.test\(query\) \? .*: spItems\(list, query\)/.test(line);
     assert.deepEqual(found.filter((entry) => !named(entry.line)).map((entry) => `${entry.where}: ${entry.line}`), []);
     assert.ok(found.some((entry) => entry.where.startsWith('migration/src/lib/data/') && /selectOf\(/.test(entry.line)), 'the data layer builds its item reads with selectOf');
     assert.equal(found.filter((entry) => entry.where.startsWith('migration/src/lib/setup/provision.js')).length, 2, 'Setup\'s two reads of the settings item');
@@ -241,7 +249,7 @@ describe('every item read the data layer and Setup can send names its columns', 
   });
 
   it('selectOf names SharePoint\'s Id, AppId and every column of the list, once, and nothing else', () => {
-    assert.equal(selectOf('sections'), '$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description');
+    assert.equal(selectOf('sections'), '$select=Id,AppId,Title,SortOrder,Enabled,IndustryTags,QuestionIds,ClientId,Description,Kind'); // (Kind: Phase 20)
     assert.equal(selectOf('responses'), '$select=Id,AppId,SessionId,ResponsesJson,TrackId,ClientId');
     for (const key of Object.keys(LISTS)) {
       const named = selectOf(key).slice('$select='.length).split(',');
@@ -251,15 +259,17 @@ describe('every item read the data layer and Setup can send names its columns', 
     }
   });
 
-  it('the longest addresses, on the real site\'s address: naming the columns adds the same to every read of a list (at most 164 characters); printed', async () => {
+  it('the longest addresses, on the real site\'s address: naming the columns adds the same to every read of a list (at most 171 characters since Prompt 21 Phase 3; 164 before); printed', async () => {
     const fake = await site({ siteUrl: 'https://internal.global.deloitteonline.com/sites/PCOE' });
     // The reads that carry the most ids (lib/data/read-groups.js, admin-clients.js, admin-results.js), each id as long as it can be: a session id is a slug of
-    // 40 and a date (51 characters), a question id a UUID (36). As a browser sends them: spaces and quotes encoded.
-    const session = (index) => `${'a'.repeat(40)}-2026-10-${String(index + 10).padStart(2, '0')}`;
+    // 40, a date, a start time and the last try of a duplicate (Prompt 21, Phase 3: <slug>-<yyyy-mm-dd>-<hhmm>-9, 58 characters; 51 before), a question id a
+    // UUID (36). As a browser sends them: spaces and quotes encoded.
+    const session = (index) => `${'a'.repeat(40)}-2026-10-${String(index + 10).padStart(2, '0')}-1430-9`;
     const cases = [
       ['PMSParticipants by 15 sessions (Clients: what uses a client)', { list: 'tracks', where: { sessionId: Array.from({ length: 15 }, (_, index) => session(index)) } }, 1_700],
       ['PMSAnswerOptions by 20 questions (an activity\'s content)', { list: 'options', where: { questionId: Array.from({ length: 20 }, () => crypto.randomUUID()) } }, 1_700],
-      ['PMSVisitLog by 20 sessions (Results: who is who, readNameSources; over 1,500 since Phase 10c-2a)', { list: 'uservisitlogs', where: { sessionId: Array.from({ length: 20 }, (_, index) => session(index)) } }, 2_000],
+      // (Prompt 21, Phase 3: as many sessions as readNameSources puts in a read; 20 of the longer ids made 2,013 characters.)
+      [`PMSVisitLog by ${NAME_SOURCE_SESSIONS} sessions (Results: who is who, readNameSources; over 1,500 since Phase 10c-2a)`, { list: 'uservisitlogs', where: { sessionId: Array.from({ length: NAME_SOURCE_SESSIONS }, (_, index) => session(index)) } }, 2_000],
     ];
     for (const [what, query, most] of cases) {
       fake.reset();
@@ -271,8 +281,10 @@ describe('every item read the data layer and Setup can send names its columns', 
       assert.equal(sent.length - without.length, selectOf(query.list).length + 1, 'the columns, named once, at the end');
       assert.ok(sent.length <= most, `${what}: ${sent.length} characters`);
     }
-    assert.ok(Object.keys(LISTS).every((key) => selectOf(key).length <= selectOf('tracks').length), 'the participants\' visits name the most columns');
+    // (Prompt 21, Phase 3: a session's five columns of version 6 make PMSClientSessions the list that names the most; until then it was the visits'.)
+    assert.ok(Object.keys(LISTS).every((key) => selectOf(key).length <= selectOf('sessions').length), 'the sessions name the most columns');
     assert.equal(selectOf('tracks').length + 1, 164);
+    assert.equal(selectOf('sessions').length + 1, 171);
   });
 });
 
@@ -330,9 +342,9 @@ describe('Setup\'s self-test asks what this site leaves out of a read that names
     await ds.beginVisit(crypto.randomUUID(), `kroger-${DAY}`, 'c-kroger');
     const { detail, requests } = await run(fake);
     assert.equal(detail, `Left out of a read that names no columns: ${TITLE.sessions}: ClientId; ${TITLE.sections}: ClientId; ${TITLE.tracks}: ClientId. `
-      + `Read one item of 7 lists; empty, so not read again: ${TITLE.qrtokens}, ${TITLE.visitorroster}, ${TITLE.uservisitlogs}, ${TITLE.adminusers}, ${TITLE.responses}. `
+      + `Read one item of 7 lists; empty, so not read again: ${TITLE.qrtokens}, ${TITLE.visitorroster}, ${TITLE.uservisitlogs}, ${TITLE.adminusers}, ${TITLE.responses}, ${TITLE.users}, ${TITLE.roleassignments}, ${TITLE.auditlog}, ${TITLE.sessionsummary}. `
       + 'The app names its columns in every read (Phase 10h), so nothing depends on this answer.');
-    assert.equal(requests.length, 12 + 7, 'one read of each list, and a second of each that has an item');
+    assert.equal(requests.length, 16 + 7, 'one read of each list (fifteen since Prompt 21, sixteen since its Phase 5), and a second of each that has an item');
     assert.ok(requests.every((entry) => entry.method === 'GET'), 'it only reads');
   });
 

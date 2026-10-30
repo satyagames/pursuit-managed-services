@@ -22,6 +22,11 @@
     "arity": 1
   },
   {
+    "name": "addAccessRecord",
+    "kind": "function",
+    "arity": 2
+  },
+  {
     "name": "addAdminUser",
     "kind": "function",
     "arity": 1
@@ -262,6 +267,11 @@
     "arity": 0
   },
   {
+    "name": "listAccessRecords",
+    "kind": "function",
+    "arity": 1
+  },
+  {
     "name": "listAdminUsers",
     "kind": "function",
     "arity": 0
@@ -342,6 +352,11 @@
     "arity": 1
   },
   {
+    "name": "planSession",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
     "name": "prepareWrites",
     "kind": "async function",
     "arity": 1
@@ -377,6 +392,11 @@
     "arity": 2
   },
   {
+    "name": "readAccessRows",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
     "name": "readActivityContent",
     "kind": "async function",
     "arity": 1
@@ -407,6 +427,16 @@
     "arity": 1
   },
   {
+    "name": "readSessionSummaries",
+    "kind": "async function",
+    "arity": 0
+  },
+  {
+    "name": "readSignedInPerson",
+    "kind": "async function",
+    "arity": 0
+  },
+  {
     "name": "recordParticipantVisit",
     "kind": "async function",
     "arity": 1
@@ -415,6 +445,11 @@
     "name": "recordUserVisit",
     "kind": "async function",
     "arity": 1
+  },
+  {
+    "name": "removeAccessRecord",
+    "kind": "async function",
+    "arity": 2
   },
   {
     "name": "removeClientAsset",
@@ -467,6 +502,16 @@
     "arity": 1
   },
   {
+    "name": "saveSessionSummary",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "searchDirectory",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
     "name": "sendToSharePoint",
     "kind": "async function",
     "arity": 4
@@ -480,6 +525,11 @@
     "name": "sessionIdFor",
     "kind": "function",
     "arity": 2
+  },
+  {
+    "name": "setAccessGuard",
+    "kind": "function",
+    "arity": 1
   },
   {
     "name": "setSessionParticipationMode",
@@ -505,6 +555,16 @@
     "name": "slugify",
     "kind": "function",
     "arity": 1
+  },
+  {
+    "name": "startSession",
+    "kind": "async function",
+    "arity": 1
+  },
+  {
+    "name": "updateAccessRecord",
+    "kind": "async function",
+    "arity": 3
   },
   {
     "name": "updateAppSettings",

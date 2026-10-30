@@ -13,6 +13,9 @@
 // and the app disagree, one of them is wrong, and the run prints which figure, for which seed. Known, deliberate differences are
 // in KNOWN below, each with its reason; nothing else is let through.
 //
+// Since Phase 20 each seed has a confidence check of its own too (generateCheck), recounted by checkOracle(); since Prompt 21, Phase 5, a dashboard
+// of its own (generateIndexes: clients, sessions over eight quarters), whose indexes indexOracle() recounts from raw scores and choices.
+//
 // scripts/test-oracle.js runs a small seeded version of this in `npm test`.
 
 import { cp, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
@@ -658,15 +661,213 @@ export async function compare(fixture, truth, app, { zone = 'UTC', pdf = false, 
   return { diffs, report };
 }
 
+// ---- The confidence check (Phase 20) --------------------------------------------------------------------------------------------------
+//
+// A session's check from a seed of its own (so the sessions above are the ones they always were): a scale of 3 to 6 points, up to 40 guests,
+// each with a Before, an After, both or neither, and records that are not scores (an answer that is no option, another question's, one with
+// no visit). checkOracle() works the numbers out again with rules of its own, in whole numbers where it can: the paired guests, the shift as
+// a share of the top of the scale, "not confident" as 5 x score <= 2 x top and "confident" as 5 x score >= 4 x top.
+
+export function generateCheck(seed) {
+  const rand = random(seed * 7919 + 20);
+  const top = rand.int(3, 6);
+  const options = Array.from({ length: top }, (_, at) => ({ id: `chk-o${at + 1}`, questionId: 'chk-q', label: `Step ${at + 1}`, value: rand.chance(0.2) ? String(at + 1) : at + 1, correct: false, imageUrl: null }));
+  const tracks = Array.from({ length: rand.int(0, 40) }, (_, at) => ({ id: `chk-t${at}`, sessionId: 'chk-s', clientId: 'c-chk' }));
+  const answers = [];
+  const pickScore = () => (rand.chance(0.05) ? 'not-an-option' : `chk-o${rand.int(1, top)}`);
+  for (const track of tracks) {
+    if (rand.chance(0.8)) answers.push({ questionId: 'chk-q@before', clientTrackId: track.id, answer: pickScore() });
+    if (rand.chance(0.7)) answers.push({ questionId: 'chk-q@after', clientTrackId: track.id, answer: pickScore() });
+    if (rand.chance(0.1)) answers.push({ questionId: 'other-q@before', clientTrackId: track.id, answer: 'chk-o1' });
+  }
+  if (rand.chance(0.3)) answers.push({ questionId: 'chk-q@after', clientTrackId: null, answer: 'chk-o1' });
+  return {
+    seed, top, tracks, options, answers: rand.shuffle(answers), on: rand.chance(0.9),
+    section: { id: 'chk-sec', title: 'Confidence check', kind: 'confidence-check', enabled: true, order: 0, questionIds: ['chk-q'], clientId: 'c-chk' },
+    question: { id: 'chk-q', sectionId: 'chk-sec', type: 'confidence-continuum', prompt: 'How confident?', optionIds: options.map((option) => option.id), order: 1 },
+  };
+}
+
+export function checkOracle(fixture) {
+  const score = new Map(fixture.options.map((option) => [option.id, Number(option.value)]));
+  const guests = new Map();
+  for (const answer of fixture.answers) {
+    const phase = answer.questionId === 'chk-q@before' ? 'before' : answer.questionId === 'chk-q@after' ? 'after' : null;
+    if (!phase || !answer.clientTrackId || !score.has(answer.answer)) continue;
+    guests.set(answer.clientTrackId, { ...guests.get(answer.clientTrackId), [phase]: score.get(answer.answer) });
+  }
+  const all = [...guests.values()];
+  const pairs = all.filter((guest) => guest.before !== undefined && guest.after !== undefined);
+  const sum = (values) => values.reduce((total, value) => total + value, 0);
+  const started = pairs.filter((guest) => 5 * guest.before <= 2 * fixture.top);
+  const moved = started.filter((guest) => 5 * guest.after >= 4 * fixture.top).length;
+  return {
+    guests: fixture.tracks.length,
+    answeredBefore: all.filter((guest) => guest.before !== undefined).length,
+    answeredAfter: all.filter((guest) => guest.after !== undefined).length,
+    answeredBoth: pairs.length,
+    shift: fixture.on && pairs.length ? (sum(pairs.map((guest) => guest.after - guest.before)) / pairs.length / fixture.top) * 100 : null,
+    started: fixture.on ? started.length : 0,
+    moved: fixture.on && started.length ? (moved / started.length) * 100 : null,
+    distribution: Array.from({ length: fixture.top }, (_, at) => [all.filter((guest) => guest.before === at + 1).length, all.filter((guest) => guest.after === at + 1).length]),
+  };
+}
+
+/** The check's numbers as the app gives them (buildResults, and the leader report's model), against checkOracle(). */
+export function compareCheck(fixture, truth, app) {
+  const session = { id: 'chk-s', clientId: 'c-chk', date: '2026-10-27', sectionIds: ['chk-sec'], status: 'completed', confidenceCheck: fixture.on };
+  const records = { session, tracks: fixture.tracks, sections: [fixture.section], questions: [fixture.question], options: fixture.options, answers: fixture.answers };
+  const diffs = [];
+  const seen = (what, mine, theirs) => { if (!close(mine, theirs)) diffs.push(`seed ${fixture.seed} (check): ${what} is ${theirs}, the oracle says ${mine}`); };
+  const check = app.buildResults(records).confidenceCheck;
+  for (const key of ['guests', 'answeredBefore', 'answeredAfter', 'answeredBoth']) seen(key, truth[key], check[key]);
+  seen('the shift', truth.shift, check.shift?.percent ?? null);
+  seen('those who started not confident', truth.started, check.moved.started);
+  seen('moved to confident', truth.moved, check.moved.percent);
+  truth.distribution.forEach(([before, after], at) => { seen(`Before on step ${at + 1}`, before, check.distribution[at]?.before ?? null); seen(`After on step ${at + 1}`, after, check.distribution[at]?.after ?? null); });
+  const reported = app.buildLeaderReport({ ...records, client: { id: 'c-chk', name: 'Check' } }).summary.confidence;
+  seen('the leader report\'s shift', truth.shift, reported?.shift?.percent ?? null);
+  seen('the leader report\'s moved to confident', truth.moved, reported?.moved?.percent ?? null);
+  return diffs;
+}
+
+// ---- The Leadership dashboard's indexes (Prompt 21, Phase 5) ---------------------------------------------------------------------------------
+//
+// A seed of its own makes 2 to 5 clients and 3 to 15 sessions over eight quarters, each session with its raw After scores, its paired Before and After
+// on a scale of 3 to 6, and the labels its guests chose first (one option spelt several ways). indexOracle() works every index out again from those raw
+// numbers, in whole numbers where it can (a ratio of sums, a quarter by its year and number), and compareIndexes() asks lib/results/index-math.js the
+// same of the summaries the sessions would have (their counts and means).
+
+const QUARTERS = ['FY26-Q1', 'FY26-Q2', 'FY26-Q3', 'FY26-Q4', 'FY27-Q1', 'FY27-Q2', 'FY27-Q3', 'FY27-Q4'];
+const FIRST_LABELS = [['Speed', ' speed', 'SPEED '], ['Cost', 'cost'], ['Trust'], ['Data  quality', 'data quality']];
+
+export function generateIndexes(seed) {
+  const rand = random(seed * 104729 + 21);
+  const clients = Array.from({ length: rand.int(2, 5) }, (_, at) => `c${at}`);
+  const sessions = Array.from({ length: rand.int(3, 15) }, (_, at) => {
+    const top = rand.int(3, 6);
+    const afters = Array.from({ length: rand.chance(0.15) ? 0 : rand.int(1, 40) }, () => rand.int(1, top));
+    const pairs = Array.from({ length: rand.int(0, 20) }, () => [rand.int(1, top), rand.int(1, top)]);
+    const firsts = Array.from({ length: rand.int(0, 30) }, () => rand.pick(rand.pick(FIRST_LABELS)));
+    return { id: `s${at}`, clientId: rand.pick(clients), period: rand.pick(QUARTERS), top, afters, pairs, firsts };
+  });
+  return { seed, clients, sessions, period: rand.pick(QUARTERS) };
+}
+
+export function indexOracle(fixture) {
+  const sum = (values) => values.reduce((total, value) => total + value, 0);
+  const key = (label) => label.toLowerCase().split(' ').filter(Boolean).join(' ');
+  const ratio = (top, bottom) => (bottom === 0 ? null : (top * 100) / bottom);
+  const [, year, quarter] = /^FY(\d\d)-Q(\d)$/.exec(fixture.period).map(Number);
+  const name = (y, q) => `FY${String(y).padStart(2, '0')}-Q${q}`;
+  const prior = quarter === 1 ? name(year - 1, 4) : name(year, quarter - 1);
+  const lastYear = name(year - 1, quarter);
+  const inPeriod = (period) => fixture.sessions.filter((session) => session.period === period);
+  // (A mean of means weighed by count is the plain mean of every score: sum over count.)
+  const meanIndex = (group, base) => {
+    const [groupSum, groupN, baseSum, baseN] = [sum(group.flatMap((s) => s.afters)), group.flatMap((s) => s.afters).length, sum(base.flatMap((s) => s.afters)), base.flatMap((s) => s.afters).length];
+    if (!groupN || !baseN || !baseSum) return null;
+    return ratio(groupSum * baseN, groupN * baseSum);
+  };
+  const shares = (group) => {
+    const counts = new Map();
+    for (const label of group.flatMap((s) => s.firsts)) counts.set(key(label), (counts.get(key(label)) ?? 0) + 1);
+    return { counts, total: sum([...counts.values()]) };
+  };
+  const now = inPeriod(fixture.period);
+  const everyone = shares(now);
+  const truth = { clients: {}, sessions: {}, priority: {}, baselines: {} };
+  for (const client of fixture.clients) {
+    const mine = now.filter((session) => session.clientId === client);
+    truth.clients[client] = meanIndex(mine, now);
+    for (const session of mine) truth.sessions[session.id] = meanIndex([session], mine);
+    const own = shares(mine);
+    for (const [label] of everyone.counts) {
+      truth.priority[`${client}/${label}`] = own.total ? ratio((own.counts.get(label) ?? 0) * everyone.total, own.total * everyone.counts.get(label)) : null;
+    }
+    truth.baselines[`${client}/prior-quarter`] = meanIndex(mine, inPeriod(prior));
+    truth.baselines[`${client}/last-year`] = meanIndex(mine, inPeriod(lastYear));
+  }
+  const pairs = now.flatMap((session) => session.pairs.map(([before, after]) => ({ before, after, top: session.top })));
+  truth.shift = pairs.length ? sum(pairs.map((pair) => ((pair.after - pair.before) * 100) / pair.top)) / pairs.length : null;
+  // "Not confident" is 5 x score <= 2 x top, "confident" 5 x score >= 4 x top (as checkOracle above).
+  const started = pairs.filter((pair) => 5 * pair.before <= 2 * pair.top);
+  truth.moved = started.length ? (started.filter((pair) => 5 * pair.after >= 4 * pair.top).length * 100) / started.length : null;
+  // Prompt 22: each client's and each session's shift and moved, guest by guest, in whole numbers: every move counted in sixtieths of a percent point
+  // (60 is a multiple of every scale of 3 to 6), divided once at the end.
+  const pairsOf = (group) => group.flatMap((session) => session.pairs.map(([before, after]) => ({ before, after, top: session.top })));
+  const shiftIn = (group) => {
+    const all = pairsOf(group);
+    return all.length ? sum(all.map((pair) => (pair.after - pair.before) * 100 * (60 / pair.top))) / (60 * all.length) : null;
+  };
+  const movedIn = (group) => {
+    const low = pairsOf(group).filter((pair) => 5 * pair.before <= 2 * pair.top);
+    return low.length ? (low.filter((pair) => 5 * pair.after >= 4 * pair.top).length * 100) / low.length : null;
+  };
+  truth.clientShift = {}; truth.clientMoved = {}; truth.sessionShift = {}; truth.sessionMoved = {};
+  for (const client of fixture.clients) {
+    const mine = now.filter((session) => session.clientId === client);
+    truth.clientShift[client] = shiftIn(mine);
+    truth.clientMoved[client] = movedIn(mine);
+    for (const session of mine) { truth.sessionShift[session.id] = shiftIn([session]); truth.sessionMoved[session.id] = movedIn([session]); }
+  }
+  return truth;
+}
+
+/** The indexes as lib/results/index-math.js gives them, from the summaries of the fixture's sessions, against indexOracle(). */
+export function compareIndexes(fixture, truth, app) {
+  const mean = (values) => (values.length ? values.reduce((total, value) => total + value, 0) / values.length : null);
+  const notConfident = (top) => Math.floor(0.4 * top + 1e-9);
+  const confident = (top) => Math.ceil(0.8 * top - 1e-9);
+  const summaries = fixture.sessions.map((session) => {
+    const started = session.pairs.filter(([before]) => before <= notConfident(session.top));
+    const options = new Map();
+    for (const label of session.firsts) options.set(label, (options.get(label) ?? 0) + 1);
+    return {
+      id: session.id, clientId: session.clientId, period: session.period, afterCount: session.afters.length, meanAfter: mean(session.afters), pairedCount: session.pairs.length,
+      summary: {
+        scaleMax: session.top, pairedBefore: mean(session.pairs.map(([before]) => before)), pairedAfter: mean(session.pairs.map(([, after]) => after)),
+        moved: { started: started.length, moved: started.filter(([, after]) => after >= confident(session.top)).length },
+        firstChoices: [{ questionId: 'q', prompt: 'First?', options: [...options].map(([label, count]) => ({ label, count })) }],
+      },
+    };
+  });
+  const diffs = [];
+  const seen = (what, mine, theirs) => { if (!close(mine, theirs)) diffs.push(`seed ${fixture.seed} (indexes): ${what} is ${theirs}, the oracle says ${mine}`); };
+  const math = app.indexMath;
+  const now = math.baselineOf(summaries, { kind: 'all', periods: [fixture.period] });
+  for (const client of fixture.clients) {
+    const mine = now.filter((each) => each.clientId === client);
+    seen(`${client}'s index`, truth.clients[client], math.clientIndex(mine, now));
+    for (const each of mine) seen(`${each.id}'s index against ${client}`, truth.sessions[each.id], math.sessionIndex(each, mine));
+    for (const label of Object.keys(truth.priority).filter((entry) => entry.startsWith(`${client}/`)).map((entry) => entry.slice(client.length + 1))) {
+      seen(`${client}'s priority index of "${label}"`, truth.priority[`${client}/${label}`], math.priorityIndex(label, mine, now));
+    }
+    for (const kind of ['prior-quarter', 'last-year']) seen(`${client} against ${kind}`, truth.baselines[`${client}/${kind}`], math.clientIndex(mine, math.baselineOf(summaries, { kind, periods: [fixture.period] })));
+    // (Prompt 22: what the dashboard shows beside each client's bar and in each session's row, from the same two calls.)
+    seen(`${client}'s shift`, truth.clientShift[client], math.shiftOf(mine).percent);
+    seen(`${client}'s moved to confident`, truth.clientMoved[client], math.movedOf(mine).percent);
+    for (const each of mine) {
+      seen(`${each.id}'s shift`, truth.sessionShift[each.id], math.shiftOf([each]).percent);
+      seen(`${each.id}'s moved to confident`, truth.sessionMoved[each.id], math.movedOf([each]).percent);
+    }
+  }
+  seen('the pooled shift', truth.shift, math.shiftOf(now).percent);
+  seen('moved to confident', truth.moved, math.movedOf(now).percent);
+  return diffs;
+}
+
 /** The app modules the comparison drives. Loaded here, away from the oracle, so that the oracle above cannot reach them. */
 export async function loadApp() {
-  const [ds, report, data, names, live, fake, node, inspect, results] = await Promise.all([
+  const [ds, report, data, names, live, fake, node, inspect, results, tally] = await Promise.all([
     import('../migration/src/lib/data/dataService.js'), import('../migration/src/lib/exports/leader-report.js'), import('../migration/src/lib/exports/leader-report-data.js'),
     import('../migration/src/lib/admin/admin-results.js'), import('../migration/src/lib/admin/live-session.js'), import('./sharepoint-fake.js'), import('./leader-report-node.js'), import('./pdf-inspect.js'), import('../migration/src/lib/results/session-results.js'),
+    import('../migration/src/lib/results/results-tally.js'),
   ]);
-  return { ds, buildLeaderReport: report.buildLeaderReport, participantAnswersCsv: report.participantAnswersCsv, readLeaderReportRecords: data.readLeaderReportRecords,
+  const indexMath = await import('../migration/src/lib/results/index-math.js');
+  return { ds, buildResults: tally.buildResults, buildLeaderReport: report.buildLeaderReport, participantAnswersCsv: report.participantAnswersCsv, readLeaderReportRecords: data.readLeaderReportRecords,
     readNameSources: names.readNameSources, resultRows: names.resultRows, loadLiveStructure: live.loadLiveStructure, readLive: live.readLive, readSessionResults: results.readSessionResults,
-    createSharePointFake: fake.createSharePointFake, makeReport: node.makeReport, inspectPdf: inspect.inspectPdf, squash: inspect.squash };
+    createSharePointFake: fake.createSharePointFake, makeReport: node.makeReport, inspectPdf: inspect.inspectPdf, squash: inspect.squash, indexMath };
 }
 
 /** Stores a fixture's raw rows in a new mocked SharePoint and points the data service at it. */
@@ -706,6 +907,8 @@ export async function run({ from = 1, seeds = 50, pdfEvery = 10, localEvery = 10
   const diffs = [];
   const local = [];
   let people = 0;
+  let checks = 0;
+  let summaries = 0;
   try {
     for (let seed = from; seed < from + seeds; seed += 1) {
       const fixture = generate(seed);
@@ -717,6 +920,14 @@ export async function run({ from = 1, seeds = 50, pdfEvery = 10, localEvery = 10
       people += truth.people.length;
       if (localEvery > 0 && seed % localEvery === 0) local.push({ fixture, truth, zone, report: found.report });
       if (verbose) console.log(`seed ${seed}: ${truth.people.length} people, ${truth.summary.questionCount} questions, ${zone}${fixture.edits.length ? `; ${fixture.edits.join(', ')}` : ''}: ${found.diffs.length ? `${found.diffs.length} DIFFERENCE(S)` : 'agrees'}`);
+      // (Phase 20) the seed's confidence check, apart from its session.
+      const check = generateCheck(seed);
+      diffs.push(...compareCheck(check, checkOracle(check), app));
+      checks += check.tracks.length;
+      // (Prompt 21, Phase 5) the seed's dashboard indexes, apart from its session.
+      const indexes = generateIndexes(seed);
+      diffs.push(...compareIndexes(indexes, indexOracle(indexes), app));
+      summaries += indexes.sessions.length;
     }
     if (local.length) {
       // The same sessions on the real local server: the oracle's figures again, and the SharePoint adapter's report, word for word.
@@ -738,7 +949,7 @@ export async function run({ from = 1, seeds = 50, pdfEvery = 10, localEvery = 10
     globalThis.fetch = realFetch;
     app.ds.configure({ baseUrl: '/api' });
   }
-  return { diffs, checked: seeds, people, local: local.length, zones };
+  return { diffs, checked: seeds, people, checks, summaries, local: local.length, zones };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
@@ -748,6 +959,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const outcome = await run(options);
   for (const line of outcome.diffs.slice(0, 60)) console.log(line);
   if (outcome.diffs.length > 60) console.log(`... and ${outcome.diffs.length - 60} more`);
-  console.log(`\n${outcome.checked} sessions (seeds ${options.from} to ${options.from + options.seeds - 1}), ${outcome.people} participants, ${outcome.local} also on the local server, zones ${outcome.zones.join(', ')}: ${outcome.diffs.length} difference(s) in ${((Date.now() - started) / 1000).toFixed(1)} s`);
+  console.log(`\n${outcome.checked} sessions (seeds ${options.from} to ${options.from + options.seeds - 1}), ${outcome.people} participants (and ${outcome.checks} guests of a confidence check, and ${outcome.summaries} session summaries of a dashboard), ${outcome.local} also on the local server, zones ${outcome.zones.join(', ')}: ${outcome.diffs.length} difference(s) in ${((Date.now() - started) / 1000).toFixed(1)} s`);
   process.exit(outcome.diffs.length ? 1 : 0);
 }
