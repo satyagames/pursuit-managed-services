@@ -11,11 +11,12 @@
   import { motion, setMotionDirection } from '../lib/motion/motion.js';
   import {
     chooseGraded, correctOptionIds, firstTryScore, firstUnansweredIndex, gradedAnnouncement, gradedRecord,
-    gradedStateFromRecord, greetingName, isAnswerComplete, isGraded, isGradedResolved, isRecordSettled, normalizeAnswer,
-    retryGraded, startGraded, toggleChoice, toggleRank, ungradedRecord,
+    gradedStateFromRecord, greetingName, isAnswerComplete, isGraded, isGradedResolved, isRecordSettled, matrixLeft, normalizeAnswer,
+    retryGraded, sendLabel, startGraded, toggleChoice, toggleRank, ungradedRecord,
     type Answer, type GradedState, type Question,
   } from '../lib/participant/pager-logic.js';
-  import { answerRecord, flushActivity, getSavedAnswers, knownProgress, loadFailure, pendingAnswers, recordAnswer, visitStepPath } from '../lib/participant/participantData.js';
+  import { answerRecord, dropMatrixDraft, flushActivity, getSavedAnswers, keepMatrixDraft, knownProgress, loadFailure, matrixDraft, pendingAnswers, recordAnswer, visitStepPath } from '../lib/participant/participantData.js';
+  import { MATRIX_TYPE } from '../lib/participant/aop-answer.js';
   import { participant } from '../lib/participant/session.svelte.js';
   import { isSignedOut } from '../lib/participant/sign-in.js';
   import { APP_NAME } from '../lib/common/app-name.js';
@@ -66,6 +67,10 @@
   const question = $derived<Question | undefined>(questions[index]);
   const graded = $derived(question ? isGraded(question) : false);
   const isLast = $derived(index === questions.length - 1);
+  /** An Art of the Possible question (Prompt 23): its Send says how many boxes are left. */
+  const isMatrix = $derived(question?.type === MATRIX_TYPE);
+  const matrixBoxesLeft = $derived(question && isMatrix ? matrixLeft(question, drafts[question.id]) : 0);
+  const hasMatrix = $derived(questions.some((entry) => entry.type === MATRIX_TYPE));
   const settled = $derived(!question ? false : graded ? isGradedResolved(gradedState) : isAnswerComplete(question, drafts[question.id]));
   const name = $derived(greetingName({
     participantName: participant.participantName,
@@ -123,6 +128,9 @@
     for (const entry of questions) {
       const held = answerRecord(entry.id);
       if (held && isRecordSettled(held)) answered.set(entry.id, held.correct === null ? held.answer : held.firstAnswer);
+      // (Prompt 23: a row or a criterion was added since this guest sent their ratings: the question is open again, with those boxes empty.)
+      if (entry.type === MATRIX_TYPE && answered.has(entry.id) && matrixLeft(entry, answered.get(entry.id)) > 0) answered.delete(entry.id);
+      if (entry.type === MATRIX_TYPE) restoreMatrix(entry, answered.get(entry.id) ?? saved.get(entry.id));
     }
     const waiting = pendingAnswers(sectionId).filter(isRecordSettled);
     savedAnswers = answered;
@@ -150,6 +158,31 @@
     restoreSettled(questions[index]);
     phase = 'question';
     void finish();
+  }
+
+  /** An Art of the Possible question's ratings: what the guest had not sent yet (this tab, after a reload or a lock screen), else what they sent (Prompt 23). */
+  function restoreMatrix(target: Question, sent: Answer | undefined) {
+    const held = matrixDraft(target.id) ?? (Array.isArray(sent) ? sent : null);
+    if (held) drafts[target.id] = held;
+  }
+
+  /** "Change my ratings", from the finished screen: back to the first such question, with what was sent (Prompt 23). */
+  async function changeRatings() {
+    const at = questions.findIndex((entry) => entry.type === MATRIX_TYPE);
+    if (at < 0) return;
+    index = at;
+    restoreMatrix(questions[at], answerRecord(questions[at].id)?.answer ?? savedAnswers.get(questions[at].id));
+    gradedState = startGraded();
+    saveFailed = false;
+    setMotionDirection('back');
+    phase = 'question';
+    await focusQuestion();
+  }
+
+  function setMatrix(answer: string[]) {
+    if (!question || saving || demo) return;
+    drafts[question.id] = answer;
+    if (!preview) keepMatrixDraft(question.id, answer);
   }
 
   function restoreSettled(target: Question) {
@@ -280,6 +313,7 @@
       if (!isAnswerComplete(question, draft)) return;
       const answer = normalizeAnswer(question, draft);
       recordAnswer(sectionId, ungradedRecord(question, answer, answerRecord(question.id)));
+      if (isMatrix) dropMatrixDraft(question.id);
     }
     if (isLast) { await finish(); return; }
     setMotionDirection('forward');
@@ -346,7 +380,7 @@
   const finishAll = () => { if (!demo) void navigateTo(visitStepPath({ allDone, finishing: true }), false, handoff()); };
   const goHome = () => { if (!demo) void navigateTo('/welcome'); };
 
-  const primaryLabel = $derived(saving ? 'Saving...' : saveFailed ? "Couldn't save, Retry" : isLast ? 'Submit' : 'Next');
+  const primaryLabel = $derived(saving ? 'Saving...' : saveFailed ? "Couldn't save, Retry" : isMatrix ? sendLabel(matrixBoxesLeft) : isLast ? 'Submit' : 'Next');
   const retrying = $derived(graded && gradedState.phase === 'wrong');
 </script>
 
@@ -368,6 +402,7 @@
       onback={backToActivities}
       onfinish={finishAll}
       onhome={goHome}
+      onchange={hasMatrix ? () => void changeRatings() : undefined}
     />
   {:else}
     <header class="pms-head" use:motion={{ role: 'title', type: question?.type, count: question?.options.length }}>
@@ -402,6 +437,7 @@
               onrank={rank}
               onclearrank={clearRanking}
               ontext={typeText}
+              onmatrix={setMatrix}
             />
           </div>
         </div>

@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import { describe, it, test } from 'node:test';
 import {
   MAX_TEXT_LENGTH, MAX_WRONG_TRIES, activityStates, chooseGraded, correctOptionIds, firstTryScore, firstUnansweredIndex, gradedAnnouncement,
   gradedOptionState, gradedRecord, gradedStateFromRecord, greetingName, hiLine, isAnswerComplete, isGraded, isGradedResolved,
-  isRecordSettled, letterFor, normalizeAnswer, questionLayout, retryGraded, showsLetters, startGraded, toggleChoice, toggleRank, ungradedRecord, usesTiles,
+  isRecordSettled, letterFor, matrixLeft, normalizeAnswer, sendLabel, questionLayout, retryGraded, showsLetters, startGraded, toggleChoice, toggleRank, ungradedRecord, usesTiles,
 } from '../migration/src/lib/participant/pager-logic.js';
 
 // The rules the participant pager follows, with no browser: graded feedback and Retry, validation
@@ -267,4 +267,34 @@ test('a wrong first try on a question that then lost its key is settled by the n
   assert.equal(held.answer, 'o3');
   assert.equal(held.attempts, MAX_WRONG_TRIES);
   await store.flush(visit, 'sec');
+});
+
+describe('Art of the Possible in the pager (Prompt 23)', () => {
+  const criteria = [{ id: 'c-aaaaaa', label: 'Volume', direction: 'favours' }, { id: 'c-bbbbbb', label: 'Risk', direction: 'against' }];
+  const question = { id: 'q', prompt: 'Rate', type: 'art-of-the-possible', criteria, options: [{ id: 'a', label: 'A', value: 3 }, { id: 'b', label: 'B', value: 1 }] };
+  const full = ['a:c-aaaaaa=1,c-bbbbbb=2', 'b:c-aaaaaa=3,c-bbbbbb=3'];
+  it('is complete only when every box is rated, and the type never falls into the default case', () => {
+    assert.equal(isAnswerComplete(question, undefined), false);
+    assert.equal(isAnswerComplete(question, 'a'), false);
+    assert.equal(isAnswerComplete(question, ['a:c-aaaaaa=1']), false);
+    assert.equal(isAnswerComplete(question, full), true);
+    assert.equal(isAnswerComplete({ ...question, options: [] }, []), false);
+  });
+  it('a removed row is not asked for, an added row is, and a damaged entry is a box left, not a crash', () => {
+    assert.equal(matrixLeft({ ...question, options: [question.options[0]] }, full), 0);
+    assert.equal(matrixLeft({ ...question, options: [...question.options, { id: 'c', label: 'C' }] }, full), 2);
+    assert.equal(matrixLeft(question, ['a:c-aaaaaa=9,c-bbbbbb=2', 'nonsense', 'b:c-aaaaaa=3,c-bbbbbb=3']), 1);
+    assert.equal(isAnswerComplete(question, ['a:c-aaaaaa=9,c-bbbbbb=2', 'b:c-aaaaaa=3,c-bbbbbb=3']), false);
+  });
+  it('what is saved holds only the rows and criteria the question has now', () => {
+    assert.deepEqual(normalizeAnswer(question, [...full, 'gone:c-aaaaaa=1']), full);
+  });
+  it('Send says how many boxes are left', () => {
+    assert.deepEqual([sendLabel(0), sendLabel(1), sendLabel(24)], ['Send', 'Send (1 box left)', 'Send (24 boxes left)']);
+  });
+  it('is never graded, and its record is one attempt with no verdict', () => {
+    assert.equal(isGraded(question), false);
+    assert.deepEqual(ungradedRecord(question, full), { questionId: 'q', answer: full, firstAnswer: full, attempts: 1, correct: null });
+    assert.equal(isRecordSettled(ungradedRecord(question, full)), true);
+  });
 });

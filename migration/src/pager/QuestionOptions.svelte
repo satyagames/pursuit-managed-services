@@ -3,12 +3,14 @@
   import type { AnswerState } from '../components/index.js';
   import { arrowKeys } from '../lib/participant/roving.js';
   import { motion } from '../lib/motion/motion.js';
+  import { MATRIX_TYPE } from '../lib/participant/aop-answer.js';
+  import MatrixRating from './MatrixRating.svelte';
   import {
     MAX_TEXT_LENGTH, gradedOptionState, isGraded, letterFor, showsLetters, usesTiles,
     type Answer, type GradedState, type Question,
   } from '../lib/participant/pager-logic.js';
 
-  let { question, labelledby, graded, draft, preview = false, showKey = false, onchoose, ontoggle, onrank, onclearrank, ontext }: {
+  let { question, labelledby, graded, draft, preview = false, showKey = false, onchoose, ontoggle, onrank, onclearrank, ontext, onmatrix = () => {} }: {
     question: Question;
     /** Id of the heading that names the group. */
     labelledby: string;
@@ -28,6 +30,8 @@
     onrank: (optionId: string) => void;
     onclearrank: () => void;
     ontext: (value: string) => void;
+    /** An Art of the Possible question's ratings changed (Prompt 23). */
+    onmatrix?: (answer: string[]) => void;
   } = $props();
 
   const tiles = $derived(usesTiles(question));
@@ -60,7 +64,10 @@
   const moveOf = (index: number) => ({ role: 'options' as const, type: question.type, index, count: question.options.length });
 </script>
 
-{#if question.type === 'open-text-feedback'}
+{#if question.type === MATRIX_TYPE}
+  <!-- (Prompt 23. In a preview the boxes answer to the hand and nothing is written: its pager keeps no draft and saves nothing.) -->
+  <MatrixRating {question} {labelledby} draft={list} onchange={onmatrix} />
+{:else if question.type === 'open-text-feedback'}
   <textarea
     class="pms-text"
     rows="6"

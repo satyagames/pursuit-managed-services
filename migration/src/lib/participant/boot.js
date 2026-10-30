@@ -37,6 +37,7 @@ const VISIT_PATHS = ['/agenda', '/quiz', '/feedback', '/thank-you', '/check-in',
  * @property {{ id: string | null, displayName: string } | null} user The signed-in account, when it was asked for.
  * @property {boolean} userDeferred A staff visit was resumed: ask who is signed in once the screen is up.
  * @property {any | null} track The visit this page carries on (resumed, or just claimed from a QR code).
+ * @property {string | null} pictureUrl A guest's picture, from the guest record a QR scan read (Prompt 23).
  * @property {{ responses: any[], ref: unknown } | null | undefined} own The visit's saved answers; undefined when they were not read.
  * @property {boolean} accountChecked The staff member's earlier visit was looked for (so Welcome need not look again).
  * @property {any | null} accountTrack A staff member's earlier visit to today's session, offered on Welcome.
@@ -57,7 +58,7 @@ const VISIT_PATHS = ['/agenda', '/quiz', '/feedback', '/thank-you', '/check-in',
 export async function bootParticipant(api, { trackId = null, qrToken = null, path = '/', content = null } = {}) {
   /** @type {BootResult} */
   const result = {
-    experience: /** @type {any} */ (null), user: null, userDeferred: false, track: null, own: undefined,
+    experience: /** @type {any} */ (null), user: null, userDeferred: false, track: null, pictureUrl: null, own: undefined,
     accountChecked: false, accountTrack: null, accountOwn: undefined, notice: '', code: null, destination: null,
     keepTrackInUrl: false, claimed: false,
   };
@@ -85,6 +86,7 @@ export async function bootParticipant(api, { trackId = null, qrToken = null, pat
       if (result.experience.status === 'live') void content?.start(result.experience.sections);
       try {
         result.track = await scan.claim();
+        result.pictureUrl = scan.pictureUrl ?? null;
         result.claimed = true;
         result.own = null; // a visit that began a moment ago has saved nothing
       } catch (cause) {

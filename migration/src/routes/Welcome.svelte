@@ -12,6 +12,7 @@
   import { visitBegun, visitIdFor } from '../lib/participant/visit-id.js';
   import { APP_NAME } from '../lib/common/app-name.js';
   import { motion } from '../lib/motion/motion.js';
+  import GuestAvatar from '../components/GuestAvatar.svelte';
 
   type StaffTrack = ParticipantTrack & { sharePointUserId?: string | null; visitorId?: string | null };
   /** What Welcome draws from, when it is not today's live experience: Brand Studio's preview of a draft. */
@@ -115,7 +116,7 @@
     </div>
   {:else}
     <div class="pms-words" use:motion={{ role: 'title' }}>
-      <h1 bind:this={heading} tabindex="-1">{hiLine(name)}</h1>
+      <h1 bind:this={heading} tabindex="-1">{#if !preview && participant.visitorId}<GuestAvatar src={participant.pictureUrl} size={56} /> {/if}{hiLine(name)}</h1>
       <p class="pms-line">{view.welcomeLine || `Welcome to the ${view.clientName} experience.`}</p>
       {#if !preview && !participant.activeSession && !participant.clientTrackId}
         <p class="pms-line pms-soft">Your facilitator has not selected an active session yet.</p>

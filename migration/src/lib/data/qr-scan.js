@@ -243,7 +243,7 @@ export async function openQrScan(tokenId) {
     await starting;
     return track.item;
   };
-  return { experience: await experienceFor(records), user: records.user, failure: null, claim };
+  return { experience: await experienceFor(records), user: records.user, failure: null, claim, pictureUrl: visitor?.pictureUrl ?? null };
 }
 
 // ---- A visit begun from Welcome (Phase 9a) ---------------------------------------------------------

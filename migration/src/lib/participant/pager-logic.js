@@ -4,8 +4,11 @@
 // Plain JS with JSDoc on purpose, like theme.js: node runs it directly and TypeScript still
 // reads the types from the comments.
 
+import { MATRIX_TYPE, cellsLeft, decodeAnswer, encodeAnswer } from './aop-answer.js';
+
 /** @typedef {{ id: string, label: string, value?: unknown, correct?: boolean | null, imageUrl?: string | null }} Option */
-/** @typedef {{ id: string, prompt: string, type: string, order?: number, layout?: string | null, options: Option[] }} Question */
+/** @typedef {{ id: string, label: string, hint?: string, direction: string }} Criterion */
+/** @typedef {{ id: string, prompt: string, type: string, order?: number, layout?: string | null, options: Option[], criteria?: Criterion[] }} Question */
 /** @typedef {string | string[]} Answer */
 /** @typedef {'choosing' | 'wrong' | 'correct' | 'revealed'} GradedPhase */
 /** @typedef {{ phase: GradedPhase, attempts: number, firstAnswer: string | null, choice: string | null }} GradedState */
@@ -188,6 +191,15 @@ export function ungradedRecord(question, answer, earlier = null) {
 
 // ---- Ungraded questions: validation and the saved shape --------------------------------------
 
+/** An Art of the Possible question's rows and criteria as they are now. @param {Question} question */
+const matrixShape = (question) => ({ rows: question.options, criteria: question.criteria ?? [] });
+
+/** The boxes left in a draft or a stored answer of an Art of the Possible question (a row added since counts; a removed one does not). @param {Question} question @param {Answer | undefined} draft */
+export const matrixLeft = (question, draft) => cellsLeft(decodeAnswer(draft, matrixShape(question)).grid, matrixShape(question));
+
+/** The Send button's words: how many boxes are left, until none is. @param {number} left */
+export const sendLabel = (left) => (left === 0 ? 'Send' : `Send (${left} ${left === 1 ? 'box' : 'boxes'} left)`);
+
 /**
  * Whether the draft may be submitted. Kept from the old Quiz: every option ranked exactly once,
  * at least one box ticked, an option chosen, some text typed.
@@ -197,6 +209,8 @@ export function ungradedRecord(question, answer, earlier = null) {
 export function isAnswerComplete(question, draft) {
   const ids = new Set(question.options.map((option) => option.id));
   switch (question.type) {
+    case MATRIX_TYPE:
+      return matrixLeft(question, draft) === 0 && question.options.length > 0;
     case 'ranked-voting':
       return Array.isArray(draft) && draft.length === question.options.length
         && new Set(draft).size === draft.length && draft.every((id) => ids.has(id));
@@ -212,6 +226,7 @@ export function isAnswerComplete(question, draft) {
 /** What gets saved for a draft: open text is trimmed and capped, lists are copied. @param {Question} question @param {Answer} draft @returns {Answer} */
 export function normalizeAnswer(question, draft) {
   if (question.type === 'open-text-feedback') return String(draft).trim().slice(0, MAX_TEXT_LENGTH);
+  if (question.type === MATRIX_TYPE) return encodeAnswer(decodeAnswer(draft, matrixShape(question)).grid);
   return Array.isArray(draft) ? [...draft] : draft;
 }
 

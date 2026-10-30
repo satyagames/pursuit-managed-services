@@ -7,6 +7,7 @@ import { RESPONSE, pause, spLiteral } from './encoding.js';
 import { currentAccessGuard, getItem, itemPath, listTypes, request, send, sharePoint, spDecode, spEntityType, spHttp, spListPath, spPages, updateItem } from './core.js';
 import { failure, versioned } from './records.js';
 import { parseCheckId } from '../participant/confidence-check.js';
+import { MAX_MATRIX_ANSWER } from '../participant/aop-answer.js';
 
 // ---- Responses, one item per participant ------------------------------------------
 // The item's AppId is the participant's track id (unique), TrackId repeats it in an indexed column,
@@ -63,6 +64,10 @@ function participantFields({ trackId, sessionId, clientId = null, responses }) {
     const record = answerRecord({ ...entry, answeredAt: entry.answeredAt ?? new Date().toISOString() });
     if ([record.answer, record.firstAnswer].some((value) => typeof value === 'string' && value.length > MAX_ANSWER_TEXT)) {
       throw failure('answer-too-long', `An answer can be ${MAX_ANSWER_TEXT} characters at most.`);
+    }
+    // (Prompt 23: a list of ratings has its own cap; the whole list's cap below is unchanged.)
+    if ([record.answer, record.firstAnswer].some((value) => Array.isArray(value) && value.join('').length > MAX_MATRIX_ANSWER)) {
+      throw failure('answer-too-long', 'This answer is too long to store.');
     }
     records.set(record.questionId, record);
   }

@@ -3,10 +3,13 @@
    * "Hi Jane!" in the header of every screen but Welcome (which says it in its own body). It wraps when it must (a long name, a narrow window, larger text) and
    * is never shortened: Phase 8 found it cut to "Hi Casey..." at 320 px, which is a loss of what the page says (WCAG 1.4.10, reflow).
    */
-  let { text }: { text: string } = $props();
+  import GuestAvatar from './GuestAvatar.svelte';
+
+  // (Prompt 23: a guest's own header shows their picture, or the silhouette, beside the words; a member of staff has neither.)
+  let { text, guest = false, picture = null }: { text: string; guest?: boolean; picture?: string | null } = $props();
 </script>
 
-<span class="pms-hi">{text}</span>
+{#if guest}<GuestAvatar src={picture} size={32} />{/if}<span class="pms-hi">{text}</span>
 
 <style>
   .pms-hi {

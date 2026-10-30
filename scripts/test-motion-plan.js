@@ -23,7 +23,7 @@ const DIRECTED = DIRECTIONS.filter((direction) => direction !== 'none');
 describe('the plan is whole', () => {
   it('names every kind of question the schema allows, no more and no fewer', () => {
     assert.deepEqual([...QUESTION_TYPES].sort(), [...META.questions.columns.QuestionType.values].sort());
-    assert.equal(QUESTION_TYPES.length, 6);
+    assert.equal(QUESTION_TYPES.length, 7); // (6 until Prompt 23)
   });
 
   it('every moment x kind x part x direction at the full level resolves to a real shape and real tokens, or to nothing', () => {

@@ -62,7 +62,7 @@ export const TOKENS = Object.freeze({
 export const SHAPES = Object.freeze(/** @type {const} */ (['rise', 'from-left', 'from-right', 'converge-left', 'converge-right', 'draw-x', 'pop', 'settle', 'nudge', 'fade', 'none']));
 
 /** The kinds of question (Questions.QuestionType's allowed words, lib/schema/pms-schema-meta.js). */
-export const QUESTION_TYPES = Object.freeze(['single-select', 'multi-select', 'true-false', 'confidence-continuum', 'ranked-voting', 'open-text-feedback']);
+export const QUESTION_TYPES = Object.freeze(['single-select', 'multi-select', 'true-false', 'confidence-continuum', 'ranked-voting', 'open-text-feedback', 'art-of-the-possible']);
 export const ROLES = Object.freeze(/** @type {const} */ (['hero', 'title', 'rule', 'meta', 'question', 'options', 'actions', 'card', 'item']));
 export const DIRECTIONS = Object.freeze(/** @type {const} */ (['forward', 'back', 'jump', 'none']));
 
@@ -86,6 +86,7 @@ const OPTIONS_BY_TYPE = Object.freeze({
   'confidence-continuum': 'in-order',
   'ranked-voting': 'alternate',
   'open-text-feedback': 'rise',
+  'art-of-the-possible': 'rise', // (Prompt 23: one panel, which rises whole; no box moves by itself)
 });
 
 /** The entrance of each part of a screen, before direction is applied. `offset` is where its turn starts, in steps. */

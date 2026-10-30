@@ -9,6 +9,7 @@
 
 :root {
   --motion-duration-instant: 90ms;
+  --motion-duration-cell: 120ms;
   --motion-duration-quick: 160ms;
   --motion-duration-base: 320ms;
   --motion-duration-slow: 400ms;
