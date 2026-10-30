@@ -90,6 +90,7 @@
 
   function questionKind(question: Question): string {
     const questionOptions = optionsByQuestion[question.id] ?? [];
+    if (question.type === 'art-of-the-possible') return `Art of the Possible: ${questionOptions.length} sub-processes by ${question.criteria?.length ?? 0} criteria`;
     if (question.type === 'single-select') return questionOptions.some((option) => option.correct === true) ? 'MCQ' : 'Poll';
     return specs[question.type as QuestionType]?.label ?? question.type;
   }
@@ -171,7 +172,7 @@
 
 {#snippet editorFor(question: Question | null)}
   {@const key = question?.id ?? NEW}
-  <QuestionEditor bind:this={editor} bind:busy={editorBusy} {question} held={question ? optionsByQuestion[question.id] ?? [] : []} {sectionId} {clientSlug}
+  <QuestionEditor bind:this={editor} bind:busy={editorBusy} {question} held={question ? optionsByQuestion[question.id] ?? [] : []} {sectionId} clientId={section.clientId ?? null} siblings={questions.filter((other) => other.id !== question?.id).length} {clientSlug}
     id={editorId(key)} labelledBy={question ? `${editorId(key)}-heading question-title-${key}` : `${editorId(key)}-heading`} seed={question ? null : seed}
     {onToast} {onChanged} onSaved={saved} onCancel={cancelled} onDirty={(now, draft) => { dirty = now; typed = draft; }} onGone={questionGone} />
 {/snippet}

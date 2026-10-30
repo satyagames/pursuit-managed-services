@@ -8,7 +8,7 @@
   type Question = { id: string; type: string; prompt: string; optionIds?: string[] };
   type Option = { id: string; questionId: string; label: string };
   type Content = { sections: Section[]; questions: Question[]; options: Option[] };
-  type Plan = { items: unknown[]; skipped: { source: Section; reason: string; message: string }[]; totals: { activities: number; questions: number; options: number } };
+  type Plan = { notices: string[]; items: unknown[]; skipped: { source: Section; reason: string; message: string }[]; totals: { activities: number; questions: number; options: number } };
   type Progress = { written: number; total: number; activity: string; activityIndex: number; activities: number };
   type Result = { copied: { source: Section }[]; skipped: { source: Section; message: string }[]; failed: { source: Section; error: Error }[]; notAttempted: Section[]; stopped: string | null; liveSessionSynced: boolean | null };
 
@@ -46,9 +46,9 @@
   const questionIndex = $derived(new Map((content?.questions ?? []).map((question) => [question.id, question])));
   const optionIds = $derived(new Set((content?.options ?? []).map((option) => option.id)));
   const chosen = $derived((content?.sections ?? []).filter((section) => picked.includes(section.id)));
-  const everything = $derived(content ? dataService.planCopy({ ...content, toClientId: target.id, targetSections }) as Plan : null);
+  const everything = $derived(content ? dataService.planCopy({ ...content, toClientId: target.id, targetSections, fromClientName: source?.name ?? '', toClientName: target.name }) as Plan : null);
   const skippedIds = $derived(new Set((everything?.skipped ?? []).map((entry) => entry.source.id)));
-  const plan = $derived(content ? dataService.planCopy({ ...content, sections: chosen, toClientId: target.id, targetSections }) as Plan : null);
+  const plan = $derived(content ? dataService.planCopy({ ...content, sections: chosen, toClientId: target.id, targetSections, fromClientName: source?.name ?? '', toClientName: target.name }) as Plan : null);
   const willSkip = $derived(plan?.skipped ?? []);
   const archived = $derived(target.status === 'archived');
 
@@ -110,6 +110,7 @@
     try {
       result = await dataService.copyActivities({
         toClientId: target.id,
+        fromClientName: source?.name ?? '',
         content: { sections: chosen, questions: content.questions, options: content.options },
         onProgress: (step: Progress) => { progress = step; },
         signal: controller.signal,
@@ -175,7 +176,7 @@
           {#if chosen.length === 0}
             <span class="muted">Tick the activities to copy.</span>
           {:else if plan && plan.totals.activities > 0}
-            <strong>Copying {copyTotalsText(plan.totals)} to {target.name}.</strong>
+            <strong>Copying {copyTotalsText(plan.totals)} to {target.name}.</strong>{#each plan.notices as notice}<span class="notice small" role="note" data-testid="copy-notice">{notice}</span>{/each}
             They start switched off, so no participant sees them until you switch them on.
           {:else}
             <strong>Nothing to copy.</strong>

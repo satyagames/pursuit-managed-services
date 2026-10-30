@@ -7,6 +7,7 @@ import { createItem, deleteItem, getItem, getItems, queryItems, updateItem } fro
 import { PACE, runPaced } from './common.js';
 import { failure, getAppSettings } from './records.js';
 import { readLists } from './today-clients.js';
+import { COPIED_FROM } from '../schema/aop-rules.js';
 /** @typedef {import('./common.js').PaceOptions} PaceOptions */
 
 // ============================================================================
@@ -25,7 +26,7 @@ import { readLists } from './today-clients.js';
 // adapter itself already waits out a 429 or 503 for as long as Retry-After asks.
 
 /** @typedef {{ id: string, title: string, order?: number, enabled?: boolean, questionIds?: string[], clientId?: string | null, description?: string | null, industryTags?: string[] }} SectionRecord */
-/** @typedef {{ id: string, type: string, prompt: string, sectionId?: string, optionIds?: string[], order?: number, layout?: string | null }} QuestionRecord */
+/** @typedef {{ id: string, type: string, prompt: string, sectionId?: string, optionIds?: string[], order?: number, layout?: string | null, criteria?: unknown[] }} QuestionRecord */
 /** @typedef {{ id: string, questionId: string, label: string, value?: any, correct?: boolean | null, imageUrl?: string | null }} OptionRecord */
 /** @typedef {{ sections: SectionRecord[], questions: QuestionRecord[], options: OptionRecord[] }} ActivityContent */
 
@@ -83,9 +84,9 @@ export function copyTitle(title, taken) {
  * description travel only when they have a value, so a site whose list lacks that column is never asked
  * to store one. Resolves to { items, skipped, totals }, where an item is
  * { source, section, questions, options } holding the records to create.
- * @param {ActivityContent & { toClientId: string, targetSections?: SectionRecord[], ids?: 'derived' | 'random', retitle?: boolean, makeId?: () => string }} plan
+ * @param {ActivityContent & { toClientId: string, targetSections?: SectionRecord[], ids?: 'derived' | 'random', retitle?: boolean, makeId?: () => string, fromClientName?: string, toClientName?: string }} plan
  */
-export function planCopy({ sections, questions, options, toClientId, targetSections = [], ids = 'derived', retitle = false, makeId = () => crypto.randomUUID() }) {
+export function planCopy({ sections, questions, options, toClientId, targetSections = [], ids = 'derived', retitle = false, makeId = () => crypto.randomUUID(), fromClientName = '', toClientName = '' }) {
   const questionIndex = new Map(questions.map((question) => [question.id, question]));
   const optionsOf = new Map();
   for (const option of options) optionsOf.set(option.questionId, [...(optionsOf.get(option.questionId) ?? []), option]);
@@ -94,6 +95,7 @@ export function planCopy({ sections, questions, options, toClientId, targetSecti
   let order = Math.max(0, ...targetSections.map((section) => Number(section.order) || 0));
   const items = [];
   const skipped = [];
+  const notices = new Set();
   const newId = (sourceId) => (ids === 'random' ? makeId() : copyIdFor(sourceId, toClientId));
 
   for (const source of sections) {
@@ -130,7 +132,12 @@ export function planCopy({ sections, questions, options, toClientId, targetSecti
       copiedQuestions.push({
         id: copiedQuestionId, sectionId, type: question.type, prompt: question.prompt, optionIds: copiedIds, order: question.order ?? copiedQuestions.length + 1,
         ...(question.layout ? { layout: question.layout } : {}),
+        // (Prompt 23: an Art of the Possible question's criteria travel, and so do its rows, which are its options, so the Designer starts from something. Rows copied to
+        // another client are that client's only once they are saved there: the copy's Layout, which this type has no other use for, says whose they are until then.)
+        ...(Array.isArray(question.criteria) && question.criteria.length ? { criteria: question.criteria } : {}),
+        ...(question.type === 'art-of-the-possible' && ids === 'derived' ? { layout: `${COPIED_FROM}${String(fromClientName).slice(0, 200)}` } : {}),
       });
+      if (question.type === 'art-of-the-possible' && ids === 'derived') notices.add(`This list is ${fromClientName || 'another client'}'s. Replace the sub-processes before using it${toClientName ? ` for ${toClientName}` : ''}.`);
     }
     items.push({
       source,
@@ -146,6 +153,7 @@ export function planCopy({ sections, questions, options, toClientId, targetSecti
   return {
     items,
     skipped,
+    notices: [...notices],
     totals: {
       activities: items.length,
       questions: items.reduce((sum, item) => sum + item.questions.length, 0),
@@ -193,7 +201,7 @@ export async function addSectionsToLiveSession(clientId, sectionIds) {
  * Pass `content` ({ sections, questions, options }, as the screen showed it) to copy exactly that;
  * otherwise `sectionIds` are read. `onProgress({ written, total, activity, activityIndex, activities })`
  * is called after each record.
- * @param {{ toClientId: string, sectionIds?: string[], content?: ActivityContent | null, ids?: 'derived' | 'random', retitle?: boolean, onProgress?: (step: { written: number, total: number, activity: string, activityIndex: number, activities: number }) => void } & PaceOptions} options
+ * @param {{ toClientId: string, sectionIds?: string[], content?: ActivityContent | null, ids?: 'derived' | 'random', retitle?: boolean, fromClientName?: string, onProgress?: (step: { written: number, total: number, activity: string, activityIndex: number, activities: number }) => void } & PaceOptions} options
  * Resolves to
  *   { client, copied: [{ source, section, questions, options }], skipped, failed: [{ source, error }],
  *     notAttempted: [source], totals, stopped, liveSessionSynced }, where liveSessionSynced is true when the
@@ -201,7 +209,7 @@ export async function addSectionsToLiveSession(clientId, sectionIds) {
  * false when the session could not be updated.
  */
 export async function copyActivities({
-  toClientId, sectionIds = [], content = null, ids = 'derived', retitle = false,
+  toClientId, sectionIds = [], content = null, ids = 'derived', retitle = false, fromClientName = '',
   concurrency = PACE.concurrency, gapMs = null, onProgress = () => {}, signal = null,
 } = {}) {
   const client = await getItem('clients', toClientId);
@@ -213,7 +221,7 @@ export async function copyActivities({
     source = { sections, ...(await readActivityContent(sections)) };
   }
   const targetSections = await queryItems('sections', { clientId: toClientId });
-  const plan = planCopy({ ...source, toClientId, targetSections, ids, retitle });
+  const plan = planCopy({ ...source, toClientId, targetSections, ids, retitle, fromClientName, toClientName: client.name });
   const copied = [];
   const failed = [];
   let stopped = null;
