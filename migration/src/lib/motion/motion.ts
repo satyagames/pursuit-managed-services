@@ -185,6 +185,11 @@ function watch(): void {
   requestAnimationFrame(step);
 }
 
+/** Another moment for the governor to watch (the hub's, Prompt 24): counted as an entrance is, and nothing if it has stopped watching or one is being watched. */
+export function watchMoment(): void {
+  if (typeof window !== 'undefined' && motionLevel() !== 'none' && governorState().watching) watch();
+}
+
 /**
  * `use:motion={{ role, type, index, count, label, verdict }}`. The element moves when it arrives with a new screen, and again when its
  * verdict changes to one; a refresh that hands it new values does neither.

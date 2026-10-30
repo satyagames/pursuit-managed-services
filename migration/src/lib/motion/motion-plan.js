@@ -56,6 +56,8 @@ export const TOKENS = Object.freeze({
   distance: Object.freeze({ near: 'clamp(0.5rem, 3vw, 1.25rem)', far: 'clamp(1rem, 6vw, 2.5rem)' }),
   /** How far a wrong answer is shaken. */
   nudge: '0.375rem',
+  /** The hub's moment (Prompt 24; the beats themselves are lib/participant/hub-moment-plan.js), ms. Each is a --motion-hub-* in the CSS. */
+  hub: Object.freeze({ fade: 150, wave: 60, journey: 180, shackle: 220, crossfade: 260, shake: 280, stamp: 400, sweep: 500, pulse: 1200 }),
 });
 
 /** Shapes the CSS defines, and nothing else (a recipe naming another is a test failure). */
