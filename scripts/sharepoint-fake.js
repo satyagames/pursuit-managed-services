@@ -193,6 +193,8 @@ export const PHASE_21C_COLUMNS = Object.freeze(['sessions.StartTime', 'sessions.
 export const PHASE_21D_COLUMNS = Object.freeze(['visitorroster.GuestGroup']);
 /** The columns of PMSClients schema version 8 added (Prompt 21, Phase 5), as 'key.Column': a site Setup made for version 7 lacks them. */
 export const PHASE_21E_COLUMNS = Object.freeze(['clients.Industry', 'clients.Region']);
+/** The columns schema version 9 added (Prompt 23), as 'key.Column': a site Setup made for version 8 lacks them. */
+export const PHASE_23_COLUMNS = Object.freeze(['questions.Criteria', 'visitorroster.PictureUrl']);
 /** The list schema version 8 added (Prompt 21, Phase 5), by key: PMSSessionSummary. */
 export const PHASE_21E_LISTS = Object.freeze(Object.keys(LISTS).filter((key) => META[key].since === 8));
 /** The columns schema version 4 added (Phase 20), as 'key.Column': what a site Setup made for an earlier version lacks. */

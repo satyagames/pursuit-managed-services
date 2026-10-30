@@ -95,11 +95,12 @@ export const META = {
     columns: {
       AppId: id('free-form, as an activity\'s'),
       SectionId: text('The activity the question is in (a Sections.AppId); the other way round from Sections.QuestionIds, which is what is read.'),
-      QuestionType: words('The kind of question.', ['single-select', 'multi-select', 'true-false', 'confidence-continuum', 'ranked-voting', 'open-text-feedback']),
+      QuestionType: words('The kind of question.', ['single-select', 'multi-select', 'true-false', 'confidence-continuum', 'ranked-voting', 'open-text-feedback', 'art-of-the-possible']),
       Prompt: note('The question\'s words.'),
       OptionIds: json('The question\'s answers as a JSON list of Options.AppId, in order.'),
       SortOrder: column('Number', 'The question\'s place in its activity. Not called Order: SharePoint keeps that name for itself.'),
       Layout: words('How the answers are laid out: a list of pills, or a grid of picture tiles.', ['text-list', 'image-grid'], { default: 'empty reads as a list' }),
+      Criteria: json('An Art of the Possible question\'s criteria as a JSON list of { id, label, hint, direction } (Prompt 23): 2 to 6, at most 1,800 characters. Its sub-processes are its answers (PMSAnswerOptions). Empty on every other question.', { max: 1800, reads: [PARTICIPANT, ADMIN], writes: [ADMIN], since: 9 }),
     },
   },
   options: {
@@ -175,6 +176,7 @@ export const META = {
       GuestName: text('The guest\'s name, cut to 60 letters by the screen. Called DisplayName until version 3: SharePoint gives every list item a property of that name, and the real site would not return a column called DisplayName by name (15 Oct 2026).', { max: 60, personal: true }),
       Enabled: column('Boolean', 'Whether the guest\'s code may still be used.', { default: 'No' }),
       GuestGroup: text('An optional tag for the guest (a team, a company, a delegation), set when the guest is added or imported, cut to 60 letters by the screen. The Guest filter of the leader\'s dashboard reads it. Not indexed until a screen filters on it (Phase 5).', { max: 60, default: 'empty', writes: [ADMIN], since: 7 }),
+      PictureUrl: text('The address of the guest\'s optional picture in the picture library (Prompt 23): a face, so personal data, shown only where names may be shown. Its file name holds no name of a person; the file is removed with the picture, the guest or the session.', { default: 'empty: the guest shows the silhouette', writes: [ADMIN], since: 9, personal: true }),
     },
   },
   uservisitlogs: {

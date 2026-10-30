@@ -1,13 +1,13 @@
 import { test, expect, type Page } from '@playwright/test';
 import { sha256Hex } from '../../migration/src/lib/admin/sha256.js';
 import { newFake, onSite, pageUrl, seedAndGoLive, serveSharePoint, type Fake } from './sharepoint.js';
-import { PHASE_20_COLUMNS, PHASE_21_COLUMNS, PHASE_21C_COLUMNS, PHASE_21D_COLUMNS, PHASE_21E_COLUMNS } from '../sharepoint-fake.js';
+import { PHASE_20_COLUMNS, PHASE_21_COLUMNS, PHASE_21C_COLUMNS, PHASE_21D_COLUMNS, PHASE_21E_COLUMNS, PHASE_23_COLUMNS } from '../sharepoint-fake.js';
 import { VERSION } from '../../migration/src/lib/schema/pms-schema.js';
 import { showPlan, siteApi } from '../../migration/src/lib/setup/provision.js';
 
 // (Prompt 22: this build's version and the plan are read, not typed: the spec said version 4 and "4 columns" until Prompt 21 made it 8, and the
 // columns since version 2 are every column this build's data layer names that a site of version 2 lacks.)
-const SINCE_2 = [...PHASE_20_COLUMNS, ...PHASE_21_COLUMNS, ...PHASE_21C_COLUMNS, ...PHASE_21D_COLUMNS, ...PHASE_21E_COLUMNS];
+const SINCE_2 = [...PHASE_20_COLUMNS, ...PHASE_21_COLUMNS, ...PHASE_21C_COLUMNS, ...PHASE_21D_COLUMNS, ...PHASE_21E_COLUMNS, ...PHASE_23_COLUMNS];
 const NEWER = VERSION + 1;
 
 // Phase 10i, part C, in the BUILT pages, against the mocked SharePoint REST in the real site's modes (`strict: false`: ClientId and DisplayName left out of a

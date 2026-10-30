@@ -33,6 +33,10 @@
 // PMSClients gains Industry and Region (optional tags for the dashboard's filters, which filter in the page: not indexed). A site of version 7 lacks
 // them, and every read of the clients names them, so a page of this build stops there (PMS-LST-011) until Setup has added them.
 //
+// Schema version 9 (Prompt 23): Art of the Possible and a guest's picture. PMSActivityQuestions gains Criteria (a JSON list, an Art of the Possible
+// question's criteria; empty on every other question) and PMSGuestList gains PictureUrl (the address of the guest's optional picture). A site of version 8
+// lacks both, and every read of those two lists names them, so a page of this build stops there (PMS-LST-011) until Setup has added them.
+//
 // A list is its title before any prefix (the settings may put one in front, or name the list outright) and its fields: the
 // property of a record, then the internal name of the column that holds it, then its kind when it is not text: `number`,
 // `yesno`, `date`, `array` (a JSON list kept as plain text) or `object` (a JSON object kept as plain text); then `indexed` for a
@@ -43,11 +47,11 @@
 /** The column every list is keyed by: the app's own id of a record, never SharePoint's numeric ID. Indexed and unique. */
 export const ID = 'AppId';
 /**
- * The version of the lists this build is made for (Phase 10c-2b: schema v2; Phase 10i: 3; Phase 20: 4; Prompt 21: 5; Prompt 21, Phase 3: 6; Phase 4: 7; Phase 5: 8). The site says its own in PMSAppSettings.SchemaVersion,
+ * The version of the lists this build is made for (Phase 10c-2b: schema v2; Phase 10i: 3; Phase 20: 4; Prompt 21: 5; Prompt 21, Phase 3: 6; Phase 4: 7; Phase 5: 8; Prompt 23: 9). The site says its own in PMSAppSettings.SchemaVersion,
  * which Setup writes when it makes the lists, and raises once it has added what a newer version needs; a page on lists of another version stops
  * (dataService, PMS-LST-010 to 012).
  */
-export const VERSION = 8;
+export const VERSION = 9;
 /** The picture library's title before any prefix. */
 export const LIBRARY = 'PMSClientImages';
 
@@ -59,6 +63,7 @@ const list = (title, fields) => ({
     const spec = { column, kind: words.find((word) => KINDS.includes(word)) ?? 'text' };
     if (column === ID || words.includes('indexed')) spec.indexed = true;
     if (words.includes('long')) spec.long = true;
+    if (words.includes('optional')) spec.optional = true; // (an `array` left off a record when the column is empty: the record of a plain question is what it was)
     return [field, spec];
   })),
 });
@@ -78,7 +83,7 @@ export const LISTS = {
     clientId: 'ClientId indexed', description: 'Description long', kind: 'Kind',
   }),
   questions: list('PMSActivityQuestions', {
-    id: ID, sectionId: 'SectionId', type: 'QuestionType', prompt: 'Prompt long', optionIds: 'OptionIds array', order: 'SortOrder number', layout: 'Layout',
+    id: ID, sectionId: 'SectionId', type: 'QuestionType', prompt: 'Prompt long', optionIds: 'OptionIds array', order: 'SortOrder number', layout: 'Layout', criteria: 'Criteria array optional',
   }),
   options: list('PMSAnswerOptions', { id: ID, questionId: 'QuestionId indexed', label: 'Label', value: 'OptionValue', correct: 'Correct yesno', imageUrl: 'ImageUrl' }),
   tracks: list('PMSParticipants', {
@@ -93,7 +98,7 @@ export const LISTS = {
   appsettings: list('PMSAppSettings', { id: ID, activeSessionId: 'ActiveSessionId', activeClientId: 'ActiveClientId', activatedAt: 'ActivatedAt date', schemaVersion: 'SchemaVersion number',
     fiscalYearStartMonth: 'FiscalYearStartMonth number', minSample: 'MinSample number',
   }),
-  visitorroster: list('PMSGuestList', { id: ID, sessionId: 'SessionId indexed', displayName: 'GuestName', enabled: 'Enabled yesno', guestGroup: 'GuestGroup' }),
+  visitorroster: list('PMSGuestList', { id: ID, sessionId: 'SessionId indexed', displayName: 'GuestName', enabled: 'Enabled yesno', guestGroup: 'GuestGroup', pictureUrl: 'PictureUrl' }),
   uservisitlogs: list('PMSVisitLog', {
     id: ID, sessionId: 'SessionId indexed', clientId: 'ClientId', page: 'Page', entryMode: 'EntryMode', sharePointUserId: 'SharePointUserId', displayName: 'SignedInName',
     visitorId: 'VisitorId', visitorName: 'VisitorName', trackId: 'TrackId', visitedAt: 'VisitedAt date',
