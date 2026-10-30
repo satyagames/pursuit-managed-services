@@ -70,6 +70,7 @@
   <span class="text">
     <span class="label">{label}</span>
     {#if painted === 'locked'}<span class="caption" id={captionId}>{lockedCaption}</span>
+    {:else if painted === 'done'}<span class="caption">Done</span>
     {:else if painted === 'progress'}<span class="caption">{progressWords}</span>
     {:else if painted === 'ready' && readyWords}<span class="caption">{readyWords}</span>{/if}
   </span>

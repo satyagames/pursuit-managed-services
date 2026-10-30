@@ -33,7 +33,7 @@ What each gate proves, how long it takes on the development machine (a Windows l
 **Known flakes:** two tests read a record back the moment the screen says it is saved, before the write has landed, and fail now and then on this
 machine: `admin-today.spec.ts` "slugs" (3 of 3 on the untouched commit of Phase 13) and `brand-studio.spec.ts` "an answer tile's picture can be uploaded
 in Content" (7 of 9 runs on the untouched `1ab63bd`, 6 of 9 on Phase 14's branch). Neither is a regression of a change unless it fails differently. Also on
-this machine, before and after every change, in WebKit on Windows: 17 tests of `effects-audio.spec.ts`, `brand-smoke.spec.ts`, `flow.spec.ts` (a tile whose picture fails) and one `keyboard.spec.ts` test fail.
+this machine, before and after every change, in WebKit on Windows: 25 tests of `effects-audio.spec.ts`, `brand-smoke.spec.ts`, `flow.spec.ts` (a tile whose picture fails) and one `keyboard.spec.ts` test fail.
 
 **One browser, one file:** `npx playwright test --config migration/playwright.config.ts --project=chromium scripts/migration-tests/flow.spec.ts`
 (build the pages first: `npm run build:svelte:release`). What does not run in an engine, and why, is listed at the top of

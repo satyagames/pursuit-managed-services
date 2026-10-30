@@ -47,27 +47,41 @@ A-weighted level while sounding, target about -22 dB, within 2 dB of the others.
 
 | Cue | Peak (dBFS) | Level (dB A) | Audible (s) | Max (s) |
 |---|---|---|---|---|
-| `stamp` | CUE_STAMP_PEAK | CUE_STAMP_LEVEL | CUE_STAMP_SECONDS | 0.25 |
-| `unlock` | CUE_UNLOCK_PEAK | CUE_UNLOCK_LEVEL | CUE_UNLOCK_SECONDS | 0.6 |
-| `locked` | CUE_LOCKED_PEAK | CUE_LOCKED_LEVEL | CUE_LOCKED_SECONDS | 0.25 |
-| `allDone` | CUE_ALLDONE_PEAK | CUE_ALLDONE_LEVEL | CUE_ALLDONE_SECONDS | 0.8 |
+| `stamp` | -5.7 | -23.3 | 0.113 | 0.25 |
+| `unlock` | -7.3 | -22.4 | 0.300 | 0.6 |
+| `locked` | -5.4 | -23.2 | 0.197 | 0.25 |
+| `allDone` | -11.0 | -22.1 | 0.444 | 0.8 |
 
 ## Long frames
 
-Chromium, CPU four times slower, a complete-then-return (`hub-states.spec.ts`): PERF_LINE. This stand-in is not an iPad: QA 287 is where a person judges it. The hub's paint cost was not measured apart from these frames.
+Chromium, CPU four times slower, a complete-then-return (`hub-states.spec.ts`): 91 frames after the first 8, p50 16.7 ms, p95 16.8 ms, longest 16.8 ms, none over 50 ms. This stand-in is not an iPad: QA 287 is where a person judges it. The hub's paint cost was not measured apart from these frames.
 
 ## Page sizes (gzip)
 
 | Page | Before | After | Change | Allowance |
 |---|---|---|---|---|
-| Participant | 176,809 B | SIZE_PARTICIPANT B | SIZE_PARTICIPANT_DELTA B | 6,000 B (ceiling 450,000 B) |
-| Admin | 670,430 B | SIZE_ADMIN B | SIZE_ADMIN_DELTA B | 6,000 B (budget 700,000 B) |
+| Participant | 176,809 B | 181,511 B | +4,702 B | 6,000 B (ceiling 450,000 B) |
+| Admin | 670,430 B | 674,795 B | +4,365 B | 6,000 B (budget 700,000 B) |
 
 ## Gates
 
 | Gate | Before (`pms-23`) | After |
 |---|---|---|
-GATES_ROWS
+| `check:svelte` | 0 errors | 0 errors |
+| The hub's quick suites, before the work (pager, effects, motion plan and engine, theme, waits) | 160 of 160 | Followed by the whole of `npm test`, below |
+| `npm test` | Not run on `pms-23` in this prompt | 2,064 of 2,064, after the last change |
+| `test:bundle` | Prompt 23's figures | Pass, participant +4,702 B |
+| `effects-audio.spec.ts`, Chromium | Not run on `pms-23` in this prompt | 25 of 25 |
+| `hub-states.spec.ts`, `hub-situations.spec.ts` | New | Pass, Chromium and WebKit (one skip: the frames are Chromium only) |
+| Browser subset, two browsers: a11y, keyboard, aria, reflow, contrast, motion, unsupported, effects, flow, participant, clients, brand-studio, devices, focus, alignment, sample-pictures, latency | Only the failures below were compared | 461 passed, 34 failed, 4 skipped; one of the 34 fixed since (below) |
+| Full `test:migration`, `test:report:mutations`, `oracle`, `test:charts` | Not run | Not run: left to the final round |
+
+The 34 browser failures:
+
+- **Fixed:** `brand-studio.spec.ts` "lay Welcome and the hub out the same way", in both browsers (2 of the 34). A done pill had no caption and was shorter than the real hub's first pill. It now carries the board's "Done" caption.
+- **Also failing on `pms-23`, checked in this prompt:** `contrast.spec.ts` admin (Live display ring, 1.64:1) and `devices.spec.ts` admin at iPhone landscape, in Chromium.
+- **Already recorded as faults of this machine or of earlier work, not rerun on `pms-23`:** `reflow.spec.ts` admin at 200% in both browsers, `flow.spec.ts` header, `keyboard.spec.ts` admin and the 25 of `effects-audio.spec.ts` in WebKit on Windows. That last one was 17 tests before the four cues added 8, so **the new cues have not been measured in WebKit here**.
+- **Order-dependent, and the same on `pms-23`:** `brand-studio.spec.ts` "an answer tile's picture", Chromium: it fails in a run of the whole file and passes alone, on both builds.
 
 ## Proposed, not done
 
