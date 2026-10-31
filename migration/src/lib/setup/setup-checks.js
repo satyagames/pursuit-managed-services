@@ -99,7 +99,7 @@ export const sizeWarning = (title, count) => (count >= SIZE_WARNINGS[0] ? `${tit
 
 /** Each list's ItemCount (one small read each; Setup's alone), with the sentence for any that has grown. @param {Probe} probe @param {Record<string, string>} titles */
 async function listSizes(probe, titles) {
-  const read = await Promise.all(Object.values(titles).map(async (title) => ({ title, answer: await probe(null, `/web/lists/getbytitle('${title.replace(/'/g, "''")}')?$select=ItemCount`) })));
+  const read = await Promise.all(Object.entries(titles).filter(([key]) => key !== 'logoLibrary').map(async ([, title]) => ({ title, answer: await probe(null, `/web/lists/getbytitle('${title.replace(/'/g, "''")}')?$select=ItemCount`) })));
   const counts = read.filter(({ answer }) => answer.ok).map(({ title, answer }) => ({ title, count: Number(answer.data?.ItemCount ?? 0) }));
   const warnings = counts.map(({ title, count }) => sizeWarning(title, count)).filter(Boolean);
   const list = counts.map(({ title, count }) => `${title} ${count.toLocaleString('en-US')}`).join(', ');
