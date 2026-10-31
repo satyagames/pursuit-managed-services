@@ -1,6 +1,6 @@
 # Prompt 26: speed, paging and scale
 
-Branch `pms-26`, made from `c39b40d` (the tip of `pms-25`). Not pushed. Nothing here has been run on the real site.
+Branch `pms-26`, made from `c39b40d` (the tip of `pms-25`). Not pushed. Package `pms-806f04a` (its pages are this branch's; the commits after it change a test, a figure and this note). Nothing here has been run on the real site.
 
 Behaviour, permissions, saved data and every number on a screen are as they were, with the exceptions listed under "What a person will see". No new list, column, dependency or `pms-config.txt` key.
 
@@ -88,8 +88,8 @@ The fake, with 0.4 s on every request; the real site's are QA-TESTING.md item 29
 
 | Page | Before | After |
 |---|---|---|
-| Participant | 181,605 B | PARTICIPANT_AFTER B |
-| Admin | 675,595 B | ADMIN_AFTER B |
+| Participant | 181,605 B | 180,279 B |
+| Admin | 675,595 B | 673,935 B |
 
 ## Proposed, not done
 
@@ -103,4 +103,18 @@ Bearer tokens through MSAL.js; an SPFx build; the Azure Function relay; Housekee
 
 ## Gates
 
-GATES_TABLE
+| Gate | Before | After |
+|---|---|---|
+| `check:svelte` | 0 errors, 0 warnings | 0 errors, 0 warnings |
+| `npm test` (holds `test:baseline`, `test:bundle`) | 2,073 pass | 2,127 tests; 2,127 pass. One later run: 2 failures of `test-store.js` (a read meeting a write on Windows), which passed 3 of 3 alone. Not changed by this prompt: **watch it** |
+| `test:report` | 158 pass | 158 pass |
+| `test:report:mutations` | 71 of 71 | 71 of 71 |
+| `oracle -- --seeds 500` | 0 differences | 0 differences |
+| `test:charts` | 57 pass | 67 pass |
+| `test:local-site` | not run | 29 of 29 |
+| `console:errors` | clean | clean, on the package's pages |
+| Page sizes | above | above |
+
+**Browsers: Chromium only, the whole suite: 593 of 603 passed** on the commit before the last fixes. Of the ten: five were this prompt's pins in specs (`request-baseline`, `settings-file`, `setup`, `sharepoint` twice), now passing. Five are not this prompt's: `admin-today` "slugs" (a known flake), `contrast` (the Live display's ring, 1.64:1), `devices` (Content's strip on an iPhone in landscape), `reflow` (Content's chip at 200%), all recorded in RELEASE-22 or RELEASE-24, and `confidence-check` "axe on Before and After", which **also fails on pms-25's own pages** (run in this prompt) and is recorded nowhere before now.
+
+**Not run:** WebKit, so the Pager, the bubble and the sign-in words are unproved on Safari's engine; Firefox does not start here; `test:rehearsal`. The pop-up has a unit test with a stand-in window and has never opened in a browser: `users.spec.ts` and the rest do not press Sign in again. A `test-store.js` run and the WebKit run belong to the final round.

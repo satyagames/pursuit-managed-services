@@ -384,7 +384,7 @@ describe('the acceptance test of the stand-in', () => {
       page.once('dialog', (dialog) => { void dialog.accept(); });
       await section.getByRole('button', { name: 'Run self-test' }).click();
       await section.getByRole('status').filter({ hasText: /Passed|failed/ }).waitFor({ timeout: 60_000 });
-      assert.match(await section.getByRole('status').textContent(), /Passed: 12 of 12 steps/, 'twelve since Prompt 21 Phase 7 (the permission probe)');
+      assert.match(await section.getByRole('status').textContent(), /Passed: 13 of 13 steps/, 'thirteen since Prompt 26 (the size watch); twelve since Prompt 21 Phase 7 (the permission probe)');
       assert.deepEqual(outside, [], 'no request left the site');
     } finally {
       await browser.close();
