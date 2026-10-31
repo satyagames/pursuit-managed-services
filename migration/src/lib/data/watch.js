@@ -3,7 +3,7 @@
 // cost. Read-only; a busy answer is thrown for the caller's timer to back off.
 
 import { ID } from '../schema/pms-schema.js';
-import { READ_CHUNK, RESPONSE, chunked, columnsOf, indexById, pick, spLiteral } from './encoding.js';
+import { READ_CHUNK, RESPONSE, chunked, columnsOf, indexById, nextOf, pick, rowsIn, spLiteral } from './encoding.js';
 import { getItem, getItems, queryItems, sharePoint, spByAppId, spDecode, spListPath, spReadOrBatch } from './core.js';
 import { spAllRows, spItemsAddress, spOne } from './common.js';
 import { getAppSettings, notMade, versionFirst, versioned } from './records.js';
@@ -108,13 +108,13 @@ export async function readLiveFeed(sessionId, { sectionIds = [], tolerant = fals
     // The activities, in groups of 20 ids to an address (Phase 9b): the feed is one batch whatever the session holds.
     ...Object.fromEntries(chunked(sectionIds, READ_CHUNK).map((group, at) => [`sections${at}`, spItemsAddress('sections', { id: group })])),
   });
-  const rows = data.responses.results ?? data.responses.value ?? [];
+  const rows = rowsIn(data.responses);
   const items = rows.filter((row) => row[RESPONSE.trackId]).flatMap((row) => {
     const found = decodeResponsesRow(row, damaged);
     return found ? [{ ...found.item, trackId: row[RESPONSE.trackId] }] : [];
   });
   // A session with more than one page of participants reads the rest one page at a time, as readSessionResponses() does.
-  let cursor = data.responses.__next ?? data.responses['@odata.nextLink'] ?? data.responses['odata.nextLink'] ?? null;
+  let cursor = nextOf(data.responses);
   let more = 0;
   while (cursor) {
     const page = await spParticipants.page(sessionId, 200, cursor, damaged);

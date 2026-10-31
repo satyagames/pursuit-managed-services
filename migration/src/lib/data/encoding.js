@@ -16,6 +16,10 @@ const columnMaps = Object.fromEntries(Object.entries(LISTS).map(([list, { fields
   Object.fromEntries(Object.entries(fields).map(([key, { column }]) => [key, column]))]));
 /** Every field of a list the adapter can read or write, and its column. */
 const columnsOf = (list) => columnMaps[list];
+/** The link to the next page of a list read, in whichever format it came. */
+const nextOf = (payload) => payload?.__next ?? payload?.['odata.nextLink'] ?? null;
+/** The rows of a list read's payload, in whichever format it came. */
+const rowsIn = (payload) => payload?.results ?? payload?.value ?? [];
 const kindOf = (list, key) => LISTS[list].fields[key]?.kind;
 /** The columns of a participant's own Responses item, which the fast paths below read and write by hand. */
 const RESPONSE = columnsOf('responses');
@@ -72,6 +76,6 @@ const READ_CHUNK = 20;
 
 // Shared with the other parts of lib/data (dataService.js does not pass these on).
 export {
-  READ_CHUNK, RESPONSE, chunked, columnsOf, distinct, fieldsOf, indexById, kindOf, pause, pick, retryAfterMs, spEncode, spError, spLibraryIn,
+  READ_CHUNK, RESPONSE, chunked, columnsOf, nextOf, rowsIn, distinct, fieldsOf, indexById, kindOf, pause, pick, retryAfterMs, spEncode, spError, spLibraryIn,
   spLiteral, spParseObject, spTitleIn,
 };

@@ -9,6 +9,7 @@ import { createAnswerStore } from '../migration/src/lib/participant/answer-store
 import { CONTENT_MAX_AGE_MS, createActivityContent } from '../migration/src/lib/participant/activity-content.js';
 import { samplePack } from '../migration/src/lib/setup/sample-clients.js';
 import { seedPack } from '../migration/src/lib/setup/seed.js';
+import { forgetReads, heldRead, holdRead } from '../migration/src/lib/admin/list-cache.js';
 import { createSharePointFake } from './sharepoint-fake.js';
 
 const KROGER = 'c-kroger';
@@ -164,5 +165,33 @@ describe('on a site with content', () => {
       assert.ok(parts.length > 10);
       for (const part of parts) assert.match(part.query, /\$select=InternalName,TypeAsString/);
     });
+  });
+});
+
+describe('what the admin page holds of a read', () => {
+  it('stands until this page writes; a read says whether anything differs, so another person\'s write shows at the next read', () => {
+    forgetReads();
+    assert.equal(heldRead('clients', 0), null);
+    assert.equal(holdRead('clients', [{ id: 'a' }], 0), true, 'the first read: draw');
+    assert.deepEqual(heldRead('clients', 0), [{ id: 'a' }]);
+    assert.equal(holdRead('clients', [{ id: 'a' }], 0), false, 'the same again: no redraw');
+    assert.equal(holdRead('clients', [{ id: 'a' }, { id: 'b' }], 0), true, 'another person added one: draw');
+    assert.equal(heldRead('clients', 1), null, 'this page wrote: not held');
+  });
+  it('a write counts, a read and the write token do not, on the data layer', async () => {
+    const fake = createSharePointFake();
+    fake.install();
+    ds.configure({ sharePoint: fake.settings });
+    const before = ds.writesSent();
+    await ds.listClients();
+    assert.equal(ds.writesSent(), before);
+    await ds.createClient({ id: 'c-w', name: 'W', slug: 'w' });
+    assert.equal(ds.writesSent(), before + 1);
+    globalThis.fetch = realFetch;
+  });
+  it('nothing of it is in browser storage', async () => {
+    const { readFile } = await import('node:fs/promises');
+    const source = await readFile(new URL('../migration/src/lib/admin/list-cache.js', import.meta.url), 'utf8');
+    assert.doesNotMatch(source.replace(/^\/\/.*$/gm, ''), /localStorage|sessionStorage/);
   });
 });

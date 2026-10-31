@@ -81,17 +81,6 @@ export function createActivityContent({ api, now = () => Date.now() }) {
     },
 
     /**
-     * In the background: the questions and options of every enabled activity of `sections`, read afresh whether held or not (the hub's
-     * refresh). Never rejects.
-     * @param {any[]} sections
-     */
-    refresh(sections) {
-      const ids = questionIdsOf(openable(sections)).filter((id) => !beingRead(id));
-      if (!ids.length) return Promise.resolve();
-      return read(ids).catch((cause) => { console.warn('Could not read the activities\' questions again.', cause); });
-    },
-
-    /**
      * The questions of `section`, each with its options, in the order the activity lists them: at once when they are held, after the read on
      * its way when one is reading them, and otherwise read now, together with whatever else of `sections` is not held yet (an activity opened
      * before anything was read reads them all, once). Rejects when that read fails.

@@ -363,7 +363,7 @@ test('a failed save shows "Couldn\'t save, Retry", keeps every answer, and retry
   await expect(page.getByRole('button', { name: 'Saving...' })).toBeDisabled();
   const retry = page.getByRole('button', { name: "Couldn't save, Retry" });
   await expect(retry).toBeVisible({ timeout: 10_000 });
-  await expect(page.getByRole('alert')).toContainText('kept on this device');
+  await expect(page.getByRole('alert')).toContainText('Saved on this iPad');
   expect(fixture.writes, 'two answers saved, then three tries, with backoff, for the third').toBe(2 + 3);
   await expect(choice(page, 0)).toHaveAttribute('data-state', 'correct');
   const held = await page.evaluate(() => JSON.parse(sessionStorage.getItem('cec-answers:track-a') ?? 'null'));

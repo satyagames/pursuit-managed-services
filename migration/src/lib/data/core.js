@@ -8,7 +8,7 @@
 
 import { ID, LISTS, selectOf } from '../schema/pms-schema.js';
 import {
-  columnsOf, fieldsOf, indexById, kindOf, pause, pick, retryAfterMs, spEncode, spError, spLiteral, spParseObject, spTitleIn,
+  columnsOf, fieldsOf, indexById, kindOf, nextOf, pause, rowsIn, pick, retryAfterMs, spEncode, spError, spLiteral, spParseObject, spTitleIn,
 } from './encoding.js';
 import { observed } from './read-scope.js';
 import { classifyRefusal, evidenceLine, ladderVerdict, newSessionState, noteAnswer, recoverSession, refusalEvidence, refusalWords, sessionLost } from './session.js';
@@ -20,6 +20,7 @@ import { classifyRefusal, evidenceLine, ladderVerdict, newSessionState, noteAnsw
 let baseUrl = globalThis.CEC_API_BASE || '/api';
 let sharePoint = globalThis.CEC_SHAREPOINT ?? null;
 let digestPromise; let requestTotal = 0;
+let writeTotal = 0; // writes this page has sent (Prompt 26: what the admin page's memory of a read is checked against)
 const listMetadata = new Map();
 const listColumns = new Map(); // list -> the internal column names it has, once its fields were read
 let batchOff = false; // this page load found $batch unusable, so reads that would share a request go one by one
@@ -73,6 +74,7 @@ function assertConfigured() {
 const JSON_PLAIN = 'application/json;odata=nometadata';
 const JSON_VERSIONED = 'application/json;odata=minimalmetadata';
 const JSON_TYPED = 'application/json;odata=verbose';
+const BATCH_MOST = 20;
 const acceptOf = (resource) => (/\$filter=AppId eq /.test(resource) ? JSON_VERSIONED : JSON_PLAIN);
 const contentTypeOf = (text) => (/"__metadata":/.test(text) ? JSON_TYPED : JSON_PLAIN);
 const spTitle = (list) => spTitleIn(sharePoint, list);
@@ -104,6 +106,7 @@ async function spHttp(method, resource, { body, headers = {}, digest = true, ide
   for (let attempt = 0; attempt < 4; attempt += 1) {
     const writeHeaders = method === 'GET' || !digest ? {} : { 'X-RequestDigest': await spDigest() };
     requestTotal += 1;
+    if (method !== 'GET' && resource !== '/contextinfo') writeTotal += 1;
     const response = await fetch(url, {
       method, credentials: 'same-origin', cache: 'no-store',
       headers: { Accept: acceptOf(resource), ...writeHeaders,
@@ -194,8 +197,8 @@ async function spPages(resource) {
   const items = [];
   while (resource) {
     const { data } = await spHttp('GET', resource);
-    items.push(...(data.results ?? data.value ?? []));
-    resource = data.__next ?? data['@odata.nextLink'] ?? data['odata.nextLink'];
+    items.push(...rowsIn(data));
+    resource = nextOf(data);
   }
   return items;
 }
@@ -214,7 +217,7 @@ function spDecode(list, raw) {
     else if (key === 'value' && value !== null && value !== '' && value !== undefined && String(Number(value)) === value) value = Number(value);
     if (value !== undefined) item[key] = value;
   }
-  return { item, numericId: raw.Id, etag: raw['odata.etag'] ?? raw['@odata.etag'] };
+  return { item, numericId: raw.Id, etag: raw['odata.etag'] };
 }
 
 // The properties of a column the check below reads, and only those (Phase 10j): a real list answers a read of its columns that names none
@@ -356,6 +359,7 @@ async function send(method, path, { body, headers } = {}) {
   if (accessGuard && method !== 'GET') accessGuard(method, path, headers, body);
   const upload = body instanceof Blob;
   requestTotal += 1;
+  if (method !== 'GET') writeTotal += 1;
   const response = await fetch(baseUrl + path, {
     method,
     headers: body === undefined ? headers : { 'Content-Type': upload ? body.type : 'application/json', ...headers },
@@ -383,6 +387,9 @@ export const isUnreachable = (error) =>
   error instanceof TypeError || // fetch() rejects with this when there is no connection
   ['TimeoutError', 'AbortError'].includes(error?.name) ||
   (typeof error?.status === 'number' && (error.status === 429 || error.status >= 500));
+
+/** How many writes this page has sent. */
+export const writesSent = () => writeTotal;
 
 export const isSharePointMode = () => { assertConfigured(); return Boolean(sharePoint); };
 export const setAccessGuard = (guard) => { accessGuard = guard ?? null; }; export const currentAccessGuard = () => accessGuard; // Prompt 21: the page's write guard (null, or configure(), takes it away); the getter is for lib/data/access-people.js
@@ -468,6 +475,11 @@ const spRefs = new WeakMap();
  */
 async function spBatch(resources) {
   assertConfigured();
+  // (At most BATCH_MOST reads to a request, Prompt 26: docs/SHAREPOINT.md. Longer lists go as several batches, side by side.)
+  if (resources.length > BATCH_MOST) {
+    const groups = Array.from({ length: Math.ceil(resources.length / BATCH_MOST) }, (_, at) => resources.slice(at * BATCH_MOST, (at + 1) * BATCH_MOST));
+    return (await Promise.all(groups.map(spBatch))).flat();
+  }
   const root = `${spSite()}/_api`;
   const boundary = `batch_${crypto.randomUUID()}`;
   const body = [

@@ -1762,7 +1762,7 @@ describe('the boundaries this phase relies on', () => {
     // (Prompt 23: an Art of the Possible row's fields, and a guest's picture.)
     'matrixRowFields', 'removeGuestPicture', 'uploadGuestPicture',
     'COPY_SEPARATOR', 'MAX_ANSWER_TEXT', 'MAX_RESPONSES_JSON', 'activateClient', 'activateSession', 'addAdminUser', 'addGuests', 'addSectionsToLiveSession',
-    'beginVisit', 'checkSession', 'checkSharePointLists', 'checkSharePointSchema', 'configure', 'copyActivities',
+    'beginVisit', 'checkSession', 'checkSignedIn', 'checkSharePointLists', 'checkSharePointSchema', 'configure', 'copyActivities',
     'copyIdFor', 'copyTitle', 'createClient', 'createOption', 'createQuestion', 'createSection', 'createSession', 'createVisitor', 'deleteActivity', 'deleteByKey',
     'deleteClient', 'deleteOption', 'deleteParticipantResponses', 'deleteQuestion', 'deleteSession', 'duplicateActivity',
     'endSession', 'findOpenSession', 'getAppSettings', 'getClient', 'getClientActivities', 'getClientTrack', 'getCurrentUser', 'getLanUrls',
@@ -1776,7 +1776,7 @@ describe('the boundaries this phase relies on', () => {
     'removeEmptyVisit', 'reopenSession', 'requireConfiguration', 'responseOwner', 'restartParticipantTrack',
     'resumeClientTrack', 'runPaced', 'runParticipantSelfTest', 'saveParticipantResponses', 'sendToSharePoint', 'sessionEvidence', 'sessionIdFor',
     'setSessionParticipationMode', 'setSessionRenewer', 'setVisitorEnabled', 'sharePointListTitles', 'skipColumnChecks', 'slugify', 'updateAppSettings', 'updateClient', 'updateClientWith', 'updateOption',
-    'updateQrToken', 'updateQuestion', 'updateSection', 'updateSession', 'updateVisitor', 'uploadClientAsset',
+    'updateQrToken', 'updateQuestion', 'updateSection', 'updateSession', 'updateVisitor', 'uploadClientAsset', 'writesSent',
     // (Prompt 21: roles and access.)
     'addAccessRecord', 'listAccessRecords', 'readAccessRows', 'readSignedInPerson', 'setAccessGuard',
     // (Prompt 21, Phase 2: the people screens' three, lib/data/access-people.js.)
@@ -1808,7 +1808,7 @@ describe('the boundaries this phase relies on', () => {
     // import, Setup's alone, went to migration/src/lib/setup/setup-import.js. Still 103. Phase 10j: prepareWrites, 104. Phase 15: updateClientWith, 105. Phase 16: listItemKeys and deleteByKey, for
     // lib/admin/session-delete.js, 107. Prompt 19: the page's SharePoint sign-in (lib/data/session-calls.js), setSessionRenewer, onSessionChange,
     // sessionEvidence, lastAnswerAt and checkSession, 112. Prompt 21: setAccessGuard and lib/data/access-reads.js's four, 117; Phase 2: three of lib/data/access-people.js, 120; Phase 3: planSession and startSession, lib/data/planning.js, 122; Phase 5: readSessionSummaries and saveSessionSummary, lib/data/summaries.js, 124.)
-    assert.equal(EXPORTS.length, 128); // (124 until Prompt 23; 127 until Prompt 26)
+    assert.equal(EXPORTS.length, 130); // (124 until Prompt 23; 127 until Prompt 26)
     assert.equal(GONE.length, 30);
     for (const name of GONE) assert.ok(!(name in ds), `${name} is back`);
   });

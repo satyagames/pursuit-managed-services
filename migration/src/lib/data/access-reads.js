@@ -5,7 +5,7 @@
 // it holds the requests and nothing else. Built on the generic calls of core.js; keeps nothing.
 
 import { createItem, getItem, listItems, queryItems, sharePoint, spByAppId, spDecode, spHttp, spItems, spReadTogether } from './core.js';
-import { spLiteral } from './encoding.js';
+import { rowsIn, spLiteral } from './encoding.js';
 
 /** The lists of section 12. */
 const ACCESS_LISTS = Object.freeze(['users', 'roleassignments', 'auditlog']);
@@ -13,7 +13,7 @@ const accessList = (key) => {
   if (!ACCESS_LISTS.includes(key)) throw new Error(`Not an access list: ${key}.`);
   return key;
 };
-const rowsOf = (payload) => (Array.isArray(payload) ? payload : payload?.results ?? payload?.value ?? []); // (an expanded list is an array in the plain format)
+const rowsOf = (payload) => (Array.isArray(payload) ? payload : rowsIn(payload)); // (an expanded list is an array in the plain format)
 
 /**
  * Reads `resources` in one $batch where the site batches, and one by one where it does not (or for a part that did not come back). A read whose

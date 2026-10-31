@@ -3,7 +3,7 @@
 // visits. Reads and writes the answers list on both backends; the participant page saves only through lib/participant/participantData.ts.
 
 import { ID } from '../schema/pms-schema.js';
-import { RESPONSE, pause, spLiteral } from './encoding.js';
+import { RESPONSE, pause, spLiteral, nextOf, rowsIn } from './encoding.js';
 import { JSON_VERSIONED, currentAccessGuard, getItem, itemPath, request, send, sharePoint, spDecode, spHttp, spListPath, spPages, updateItem } from './core.js';
 import { failure, versioned } from './records.js';
 import { parseCheckId } from '../participant/confidence-check.js';
@@ -141,13 +141,13 @@ const spParticipants = {
   /** One page of a session's participant items, straight from the indexed SessionId. */
   async page(sessionId, top, cursor, damaged = null) {
     const { data } = await spHttp('GET', cursor ?? `${spListPath('responses')}/items?$filter=${RESPONSE.sessionId} eq ${spLiteral(sessionId)}&${PARTICIPANT_SELECT}&$top=${top}`);
-    const rows = data.results ?? data.value ?? [];
+    const rows = rowsIn(data);
     return {
       items: rows.filter((row) => row[RESPONSE.trackId]).flatMap((row) => {
         const found = decodeResponsesRow(row, damaged);
         return found ? [{ ...found.item, trackId: row[RESPONSE.trackId] }] : [];
       }),
-      next: data.__next ?? data['@odata.nextLink'] ?? data['odata.nextLink'] ?? null,
+      next: nextOf(data),
     };
   },
 };

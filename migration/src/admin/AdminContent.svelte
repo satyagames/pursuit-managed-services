@@ -2,6 +2,7 @@
   import { errorText } from '../lib/admin/session-notice.js';
   import { onMount, tick, untrack } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
+  import { heldRead, holdRead } from '../lib/admin/list-cache.js';
   import { activitiesOfClient, defaultClientId, lastClientId, rememberClient } from '../lib/admin/admin-content.js';
   import { CONTENT_VIEWS, DEFAULT_VIEW, lookWord, stepView, viewBadge, viewById } from '../lib/admin/admin-content-views.js';
   import { mayLeave } from '../lib/admin/unsaved.js';
@@ -97,6 +98,8 @@
     return () => { active = false; };
   });
 
+  type ContentRead = [Settings[], Client[], Section[]];
+
   /** One batch on SharePoint: who is live, the clients, and every activity (or the same three as Clients has just read them). */
   async function load() {
     const given = untrack(() => rows);
@@ -110,7 +113,23 @@
       settingRows = answers[0] as Settings[];
       clientRows = answers.slice(1, 1 + wanted[0].length).flat() as Client[];
       sectionRows = answers.slice(1 + wanted[0].length).flat() as Section[];
-    } else [settingRows, clientRows, sectionRows] = await dataService.readLists([{ list: 'appsettings' }, { list: 'clients' }, { list: 'sections' }]) as unknown as [Settings[], Client[], Section[]];
+    } else {
+      // (Prompt 26: a global role's three reads are drawn at once from what this page last read, and read again behind: lib/admin/list-cache.js.)
+      const held = heldRead('content', dataService.writesSent() as number) as ContentRead | null;
+      if (held) {
+        adoptRows(held);
+        void (dataService.readLists([{ list: 'appsettings' }, { list: 'clients' }, { list: 'sections' }]) as unknown as Promise<ContentRead>).then((read) => {
+          if (holdRead('content', read, dataService.writesSent() as number)) adoptRows(read);
+        }).catch(() => { /* what is held stands; the next read says what is wrong */ });
+        return;
+      }
+      [settingRows, clientRows, sectionRows] = await dataService.readLists([{ list: 'appsettings' }, { list: 'clients' }, { list: 'sections' }]) as unknown as ContentRead;
+      holdRead('content', [settingRows, clientRows, sectionRows], dataService.writesSent() as number);
+    }
+    adoptRows([settingRows, clientRows, sectionRows]);
+  }
+
+  function adoptRows([settingRows, clientRows, sectionRows]: ContentRead) {
     const settings = settingRows.find((row) => row.id === 'default');
     // (The live client is the one AppSettings names: Go live writes it beside the session.)
     const live = settings?.activeSessionId ? settings.activeClientId ?? null : null;

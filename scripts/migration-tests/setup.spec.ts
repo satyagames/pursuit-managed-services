@@ -185,7 +185,7 @@ test('the self-test creates, updates, reads back, is refused a duplicate, lists,
   // the write token was asked for as Setup opened, by People and access. This line expected 56 and was never reached until then.)
   const LIST_COUNT = Object.keys(LISTS).length;
   const steps = [2, 1, 1, 1, 1, 1, 3, 6, 6, LIST_COUNT + 2, LIST_COUNT + 4, 3];
-  await expect(section.getByRole('status')).toContainText(`Passed: 12 of 12 steps, ${steps.reduce((a, b) => a + b, 0)} requests.`);
+  await expect(section.getByRole('status')).toContainText(`Passed: 13 of 13 steps, ${steps.reduce((a, b) => a + b, 0)} requests.`);
   const rows = (await section.getByRole('table', { name: 'Self-test steps' }).getByRole('row').allInnerTexts()).slice(1).map((row) => row.split('\t').slice(0, 3).map((cell) => cell.trim()).join(' | '));
   expect(rows).toEqual([
     `Create a participant item | Pass | ${steps[0]}`,

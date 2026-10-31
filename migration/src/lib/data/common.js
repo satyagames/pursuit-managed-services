@@ -3,12 +3,12 @@
 // paced bulk work (runPaced). Built on core.js; keeps no state of its own.
 
 import { ID, selectOf } from '../schema/pms-schema.js';
-import { columnsOf, pause, spEncode, spLiteral } from './encoding.js';
+import { columnsOf, nextOf, pause, rowsIn, spEncode, spLiteral } from './encoding.js';
 import { sharePoint, spDecode, spHttp, spItems, spListPath, spPages, spTitle } from './core.js';
 
 /** The one item in an AppId query's payload as { item, etag, ref }, or null: what spFind() makes of the same read. */
 function spOne(list, id, data) {
-  const rows = data?.results ?? data?.value ?? [];
+  const rows = rowsIn(data);
   if (rows.length > 1) throw new Error(`Duplicate ${ID} ${id} in ${spTitle(list)}.`);
   if (rows.length === 0) return null;
   const found = spDecode(list, rows[0]);
@@ -82,8 +82,8 @@ export async function runPaced(items, worker, { concurrency = PACE.concurrency, 
 
 /** The rows of a list read (its first page's payload), with any further pages read after it. */
 async function spAllRows(payload) {
-  const next = payload.__next ?? payload['@odata.nextLink'] ?? payload['odata.nextLink'];
-  return [...(payload.results ?? payload.value ?? []), ...(next ? await spPages(next) : [])];
+  const next = nextOf(payload);
+  return [...rowsIn(payload), ...(next ? await spPages(next) : [])];
 }
 
 // Shared with the other parts of lib/data (dataService.js does not pass these on).

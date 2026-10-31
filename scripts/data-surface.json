@@ -62,6 +62,11 @@
     "arity": 0
   },
   {
+    "name": "checkSignedIn",
+    "kind": "async function",
+    "arity": 0
+  },
+  {
     "name": "configure",
     "kind": "function",
     "arity": 0
@@ -635,5 +640,10 @@
     "name": "uploadGuestPicture",
     "kind": "async function",
     "arity": 3
+  },
+  {
+    "name": "writesSent",
+    "kind": "function",
+    "arity": 0
   }
 ]

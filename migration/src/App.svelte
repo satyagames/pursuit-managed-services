@@ -15,6 +15,7 @@
   import { visitGoneNotice } from './lib/participant/visit-notice.js';
   import { clearTrack, offerEarlierVisit, participant, setGuestPicture, setTrack, type ParticipantTrack } from './lib/participant/session.svelte.js';
   import { isSignedOut } from './lib/participant/sign-in.js';
+  import { openSignInPopup } from './lib/common/sign-in-popup.js';
   import { navigateTo } from './lib/participant/navigation.js';
   import Agenda from './routes/Agenda.svelte';
   import Quiz from './routes/Quiz.svelte';
@@ -290,6 +291,16 @@
    * What it can find: something else is live now, the track was removed or restarted, the session ended (or was reopened),
    * and the hub's activities or flow changed. It throws when it cannot reach the server, and the timer backs off.
    */
+  let signInBlocked = $state(false);
+  /** Sign in again (Prompt 26), only ever from the tap: the screen stays as it is, and what is waiting is sent once the sign-in works. */
+  async function signInAgain() {
+    signInBlocked = !await openSignInPopup(window.location.href, () => dataService.checkSignedIn());
+    if (signInBlocked) return;
+    participant.signedOut = false;
+    resumePendingSaves();
+    void watcher?.checkNow();
+  }
+
   let activitiesStamp = '';
   async function checkServer(): Promise<{ requests: number }> {
     const trackId = participant.clientTrackId;
@@ -420,9 +431,10 @@
     <p class="notice" role="status">{restartMessage}</p>
   {/if}
   {#if participant.signedOut}
-    <!-- Not a lost connection: waiting does not mend it. Unsaved answers are in this tab's storage and are sent after the reload. -->
+    <!-- Not a lost connection: waiting does not mend it. Unsaved answers are in this tab's storage and are sent after signing in again, or after the reload. -->
     <div class="connection" role="alert">
-      <span>Your sign-in has expired. Reload this page to sign in again. Your answers are kept on this device.</span>
+      <span>Your sign-in has expired. Saved on this iPad. It will send when you are signed in again.{signInBlocked ? ' If no window opened, press Reload.' : ''}</span>
+      <button type="button" onclick={() => void signInAgain()}>Sign in again</button>
       <button type="button" onclick={() => window.location.reload()}>Reload</button>
     </div>
   {:else if participant.connectionLost}

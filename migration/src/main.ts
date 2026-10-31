@@ -1,6 +1,7 @@
 import './lib/settings/support.js';
 import { startPage } from './lib/settings/start.js';
 import * as dataService from './lib/data/dataService.js';
+import { closeSignInPopup, isSignInPopup } from './lib/common/sign-in-popup.js';
 import { installKiosk } from './lib/common/kiosk.js';
 import { mounted } from './lib/settings/support.js';
 import './styles/legacy/app.css';
@@ -12,6 +13,7 @@ import './styles/base.css';
 import './lib/motion/motion-tokens.css';
 import './app.css';
 
+if (isSignInPopup()) closeSignInPopup();
 const target = document.getElementById('app');
 if (!target) throw new Error('Missing Svelte application mount point.');
 

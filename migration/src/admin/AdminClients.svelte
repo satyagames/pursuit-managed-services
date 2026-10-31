@@ -4,6 +4,7 @@
   import * as dataService from '../lib/data/dataService.js';
   import { PER_PAGE, hashWithPage, pageOfHash, pageRows, pagerState } from '../lib/common/paging.js';
   import { focusHeading } from '../lib/common/focus.js';
+  import { heldRead, holdRead } from '../lib/admin/list-cache.js';
   import Pager from './Pager.svelte';
   import { embeddedAssetUrl } from '../lib/brand/assets.js';
   import { viewById } from '../lib/admin/admin-content-views.js';
@@ -38,6 +39,7 @@
     onNavigate?: (tab: string, to?: { view?: string; clientId?: string; rows?: { settings: unknown[]; clients: unknown[]; sections: unknown[] } }) => void;
   } = $props();
   /** Content's view of a client's look, which Brand opens. */
+  type ClientRead = [{ id: string; activeSessionId?: string; activeClientId?: string }[], Client[], Session[], Section[]];
   const brand = viewById('brand');
   const localHosts = ['localhost', '127.0.0.1', '[::1]'];
 
@@ -97,10 +99,18 @@
 
   /** One batch on SharePoint: the clients, who is live, and what the derived columns are made from. */
   async function refresh() {
+    // (Prompt 26: drawn at once from what this page last read, while the read goes on behind; lib/admin/list-cache.js. A write this page sent means it is not held.)
+    const held = heldRead('clients', dataService.writesSent() as number);
+    if (held) { adopt(held as ClientRead); loading = false; }
     // (Each client's counts come from these two grouped reads, never one read a client. The sessions are an index since Prompt 26.)
-    const [settingRows, clientRowsRead, sessionRows, sectionRows] = await dataService.readLists([
+    const read = await dataService.readLists([
       { list: 'appsettings' }, { list: 'clients' }, { list: 'sessions', columns: ['clientId', 'date', 'status', 'endedAt'] }, { list: 'sections' },
-    ] as never) as [{ id: string; activeSessionId?: string; activeClientId?: string }[], Client[], Session[], Section[]];
+    ] as never) as unknown as ClientRead;
+    if (holdRead('clients', read, dataService.writesSent() as number)) adopt(read);
+    error = '';
+  }
+
+  function adopt([settingRows, clientRowsRead, sessionRows, sectionRows]: ClientRead) {
     clients = clientRowsRead;
     settingsRows = settingRows;
     sessions = sessionRows;
@@ -109,7 +119,6 @@
     const active = settings?.activeSessionId ? sessionRows.find((session) => session.id === settings.activeSessionId) ?? null : null;
     const status = liveStatus({ settings, session: active, clients: clientRowsRead } as never);
     liveClientId = status.live ? status.client.id : null;
-    error = '';
   }
 
   /** "Mark as confirmed" on a sample client (Phase 9b, SAM-2): who and when are stored in its ThemeJson. */

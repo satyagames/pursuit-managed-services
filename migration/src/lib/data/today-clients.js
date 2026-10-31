@@ -3,6 +3,7 @@
 // equality filters; writes sessions and the settings item.
 
 import { LISTS } from '../schema/pms-schema.js';
+import { nextOf, rowsIn } from './encoding.js';
 import { currentAccessGuard, getItem, queryItems, request, sharePoint, spDecode, spPages, spReadTogether, updateItem } from './core.js';
 import { localFilter, spItemsAddress } from './common.js';
 import { failure, getAppSettings, notMade, unscanned, updateAppSettings, versionFirst, versioned } from './records.js';
@@ -45,8 +46,8 @@ export async function readLists(queries) {
       const first = together[position];
       let rows;
       if (first) {
-        const next = first.__next ?? first['@odata.nextLink'] ?? first['odata.nextLink'];
-        rows = [...(first.results ?? first.value ?? []), ...(next ? await spPages(next) : [])];
+        const next = nextOf(first);
+        rows = [...rowsIn(first), ...(next ? await spPages(next) : [])];
       } else {
         rows = await spPages(addresses[position]).catch(list === 'appsettings' ? notMade : (error) => { throw error; });
       }

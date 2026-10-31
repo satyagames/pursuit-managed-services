@@ -3,7 +3,7 @@
 // session, the client and its activities; writes the visit, the claim on the code (If-Match) and the session's status.
 
 import { ID } from '../schema/pms-schema.js';
-import { pause, spEncode } from './encoding.js';
+import { pause, spEncode, nextOf, rowsIn } from './encoding.js';
 import {
   createItem, deleteItem, getItem, getItemWithVersion, holdScan, isUnreachable, queryItems, sharePoint, spByAppId, spDecode, spDigest,
   spFind, spHttp, spListPath, spMade, spMerge, spPages, spReadTogether, spTitle, unfinishedScan,
@@ -56,15 +56,15 @@ const spScan = {
       read('user').catch((cause) => { console.warn('Could not read the signed-in SharePoint display name.', cause); return null; }),
       read('earlier').catch(() => null), // a scan must never fail for this
     ]);
-    const next = owned.__next ?? owned['@odata.nextLink'] ?? owned['odata.nextLink'];
-    const rows = [...(owned.results ?? owned.value ?? []), ...(next ? await spPages(next) : [])];
+    const next = nextOf(owned);
+    const rows = [...rowsIn(owned), ...(next ? await spPages(next) : [])];
     return {
       session: spOne('sessions', sessionId, session),
       client: spOne('clients', clientId, client)?.item ?? null,
       owned: rows.map((row) => spDecode('sections', row).item),
       visitor: spOne('visitorroster', visitorId, visitor)?.item ?? null,
       user: user ? { id: user.Id == null ? null : String(user.Id), displayName: typeof user.Title === 'string' ? user.Title.trim() : '' } : null,
-      earlier: (earlier?.results ?? earlier?.value ?? []).map((row) => { const found = spDecode('tracks', row); return { item: found.item, ref: { id: found.numericId } }; }),
+      earlier: rowsIn(earlier).map((row) => { const found = spDecode('tracks', row); return { item: found.item, ref: { id: found.numericId } }; }),
     };
   },
   /** The same item spCreate() would write, without first reading every column of the list. AppId is unique, so a repeat can't make a second. */

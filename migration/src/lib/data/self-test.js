@@ -3,7 +3,7 @@
 // $batch the participant page relies on, and deletes everything it made. Run on the test site only.
 
 import { ID } from '../schema/pms-schema.js';
-import { RESPONSE, spLiteral } from './encoding.js';
+import { RESPONSE, rowsIn, spLiteral } from './encoding.js';
 import { requestTotal, sharePoint, spBatch, spHttp, spItems, spListPath, spSite, spTitle } from './core.js';
 import { PARTICIPANT_SELECT, answerRecord, participantFields, participantItem, participants } from './responses.js';
 
@@ -19,7 +19,7 @@ export async function probeSharePointRead(list, query) {
   const address = !list ? query : /\$select=/.test(query) ? `${spListPath(list)}/items?${query}` : spItems(list, query);
   try {
     const { data } = await spHttp('GET', address);
-    return { ok: true, rows: (data.results ?? data.value ?? []).length, length: `${spSite()}/_api${address}`.length, data };
+    return { ok: true, rows: rowsIn(data).length, length: `${spSite()}/_api${address}`.length, data };
   } catch (error) {
     return { ok: false, status: error?.status, message: String(error?.message ?? error).replace(/^SharePoint \(\d+\):\s*/, '').replace(/\s+/g, ' ').slice(0, 140) };
   }
@@ -120,7 +120,7 @@ export async function runParticipantSelfTest(onStep = () => {}, extraSteps = [])
         }
         const sent = requestTotal - before;
         expect(sent === 1, `The batch took ${sent} requests; it should take 1.`);
-        const rows = answers[0]?.results ?? answers[0]?.value;
+        const rows = rowsIn(answers[0]);
         expect(Array.isArray(rows) && rows.length > 0 && rows.every((row) => row[ID] === fields.trackId), 'The first read in the batch did not return the test item as JSON.');
         expect(typeof answers[1]?.Title === 'string', "The second read in the batch did not return the list's title.");
         return 'Both answered, as JSON, in one request. A QR scan reads the session, client, activities and visitor this way.';

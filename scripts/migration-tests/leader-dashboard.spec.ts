@@ -80,6 +80,32 @@ test('Leadership on one client: that client only, and another client\'s data is 
   await axe(page, 'a client\'s sessions open');
 });
 
+test('Prompt 26: every i bubble is whole in the window, over no other i or label, one at a time, and closes on a scroll and a tap elsewhere', async ({ page }) => {
+  await open(page, await site(me('bmilder', 'Milder, Brian'), 'Leadership', 'period', { PeriodFrom: '2026-09-01T00:00:00Z', PeriodTo: '2027-08-31T00:00:00Z' }));
+  for (const size of [{ width: 1024, height: 768 }, { width: 390, height: 852 }]) {
+    await page.setViewportSize(size);
+    const buttons = await page.getByRole('button', { name: /^About / }).all();
+    for (const button of buttons) {
+      if (!await button.isVisible()) continue;
+      await button.scrollIntoViewIfNeeded();
+      await button.click();
+      const tip = page.locator('.metric-info__tip[data-open="true"]');
+      await expect(tip).toHaveCount(1);
+      const box = (await tip.boundingBox())!;
+      const own = (await button.boundingBox())!;
+      expect(box.x >= 0 && box.y >= 0 && box.x + box.width <= size.width && box.y + box.height <= size.height, 'whole in the window').toBe(true);
+      expect(box.x < own.x + own.width && box.x + box.width > own.x && box.y < own.y + own.height && box.y + box.height > own.y, 'over its own button').toBe(false);
+      await page.keyboard.press('Escape');
+      await button.blur();
+    }
+  }
+  const first = page.getByRole('button', { name: /^About / }).first();
+  await first.click();
+  await expect(page.locator('.metric-info__tip[data-open="true"]')).toHaveCount(1);
+  await page.mouse.click(2, 2);
+  await expect(page.locator('.metric-info__tip[data-open="true"]')).toHaveCount(0);
+});
+
 test('the i button: focus shows the formula, Escape hides it, and every figure has one', async ({ page }) => {
   await open(page, await site(me('bmilder', 'Milder, Brian'), 'Leadership', 'period', { PeriodFrom: '2026-09-01T00:00:00Z', PeriodTo: '2026-11-30T00:00:00Z' }));
   const info = page.getByRole('button', { name: 'About Confidence index', exact: true });
