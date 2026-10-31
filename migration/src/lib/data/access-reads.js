@@ -13,7 +13,7 @@ const accessList = (key) => {
   if (!ACCESS_LISTS.includes(key)) throw new Error(`Not an access list: ${key}.`);
   return key;
 };
-const rowsOf = (payload) => payload?.results ?? [];
+const rowsOf = (payload) => (Array.isArray(payload) ? payload : payload?.results ?? payload?.value ?? []); // (an expanded list is an array in the plain format)
 
 /**
  * Reads `resources` in one $batch where the site batches, and one by one where it does not (or for a part that did not come back). A read whose

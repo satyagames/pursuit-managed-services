@@ -57,7 +57,7 @@ async function olderItem(error) {
   if (sharePoint && error?.status === 400) {
     const column = LISTS.appsettings.fields.schemaVersion.column;
     const alone = await spHttp('GET', `${spListPath('appsettings')}/items?$filter=${ID} eq ${spLiteral('default')}&$top=1&${versionSelect()}`).catch(() => null);
-    const row = alone?.data?.results?.[0];
+    const row = (alone?.data?.results ?? alone?.data?.value)?.[0];
     if (row && Number.isInteger(row[column]) && row[column] < VERSION) versioned({ schemaVersion: row[column] });
   }
   throw error;

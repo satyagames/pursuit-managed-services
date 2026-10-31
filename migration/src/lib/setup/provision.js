@@ -506,10 +506,9 @@ export async function markReady(api, titles, { check }) {
   }
   try {
     if (item) {
-      await api.write('MERGE', `${address}/items(${item.Id})`, { __metadata: { type: item.__metadata?.type }, [VERSION_COLUMN]: VERSION }, { 'IF-MATCH': item.__metadata?.etag ?? '*' });
+      await api.write('MERGE', `${address}/items(${item.Id})`, { [VERSION_COLUMN]: VERSION }, { 'IF-MATCH': item['odata.etag'] ?? '*' });
     } else {
-      const { ListItemEntityTypeFullName: type } = await api.read(`${address}?$select=ListItemEntityTypeFullName`);
-      await api.write('POST', `${address}/items`, { __metadata: { type }, Title: SETTINGS_ITEM, [ID]: SETTINGS_ITEM, [VERSION_COLUMN]: VERSION });
+      await api.write('POST', `${address}/items`, { Title: SETTINGS_ITEM, [ID]: SETTINGS_ITEM, [VERSION_COLUMN]: VERSION });
     }
   } catch (cause) {
     const said = String(cause.message).replace(/^SharePoint \(\d+\):\s*/, '');

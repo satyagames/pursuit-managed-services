@@ -4,7 +4,7 @@
 
 import { ID } from '../schema/pms-schema.js';
 import { columnsOf, pause, spEncode, spLiteral } from './encoding.js';
-import { sharePoint, spDecode, spEntityType, spHttp, spItems, spListPath, spPages, spTitle } from './core.js';
+import { sharePoint, spDecode, spHttp, spItems, spListPath, spPages, spTitle } from './core.js';
 
 /** The one item in an AppId query's payload as { item, etag, ref }, or null: what spFind() makes of the same read. */
 function spOne(list, id, data) {
@@ -12,14 +12,14 @@ function spOne(list, id, data) {
   if (rows.length > 1) throw new Error(`Duplicate ${ID} ${id} in ${spTitle(list)}.`);
   if (rows.length === 0) return null;
   const found = spDecode(list, rows[0]);
-  return { item: found.item, etag: found.etag, ref: { id: found.numericId, type: found.type } };
+  return { item: found.item, etag: found.etag, ref: { id: found.numericId } };
 }
 
-/** A write to an item whose numeric id, type and (where it matters) version a read has already given. */
+/** A write to an item whose numeric id and (where it matters) version a read has already given. */
 const spWrite = async (list, found, method, etag, changes) => spHttp('POST', `${spListPath(list)}/items(${found.ref.id})`, {
   idempotent: true,
   headers: { 'X-HTTP-Method': method, 'If-Match': etag },
-  ...(changes ? { body: { __metadata: { type: found.ref.type ?? await spEntityType(list) }, ...spEncode(list, changes) } } : {}),
+  ...(changes ? { body: spEncode(list, changes) } : {}),
 });
 
 /** The address of a list read with equality filters, as spSend() builds it for a plain list GET (`top` items to a page). */

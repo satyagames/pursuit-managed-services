@@ -562,6 +562,11 @@
     "arity": 0
   },
   {
+    "name": "skipColumnChecks",
+    "kind": "function",
+    "arity": 0
+  },
+  {
     "name": "slugify",
     "kind": "function",
     "arity": 1

@@ -4,7 +4,7 @@
 
 import { ID } from '../schema/pms-schema.js';
 import { RESPONSE, pause, spLiteral } from './encoding.js';
-import { currentAccessGuard, getItem, itemPath, listTypes, request, send, sharePoint, spDecode, spEntityType, spHttp, spListPath, spPages, updateItem } from './core.js';
+import { currentAccessGuard, getItem, itemPath, request, send, sharePoint, spDecode, spHttp, spListPath, spPages, updateItem } from './core.js';
 import { failure, versioned } from './records.js';
 import { parseCheckId } from '../participant/confidence-check.js';
 import { MAX_MATRIX_ANSWER } from '../participant/aop-answer.js';
@@ -113,25 +113,24 @@ const spParticipants = {
         throw failure('responses-unreadable', 'Your saved answers could not be read, so this page cannot go on. Please tell your facilitator: the item that holds your answers needs to be corrected or deleted.');
       }
       const found = spDecode('responses', row);
-      return { item: { ...found.item, trackId }, etag: found.etag, ref: { id: found.numericId, type: found.type ?? listTypes.get('responses') } };
+      return { item: { ...found.item, trackId }, etag: found.etag, ref: { id: found.numericId } };
     });
   },
   async create(fields) {
-    const type = await spEntityType('responses');
     const { data } = await spHttp('POST', `${spListPath('responses')}/items`, {
       idempotent: true,
       body: {
-        __metadata: { type }, Title: fields.trackId, [ID]: fields.trackId, [RESPONSE.trackId]: fields.trackId,
+        Title: fields.trackId, [ID]: fields.trackId, [RESPONSE.trackId]: fields.trackId,
         [RESPONSE.sessionId]: fields.sessionId, [RESPONSE.clientId]: fields.clientId, [RESPONSE.responses]: JSON.stringify(fields.responses),
       },
     });
-    return { id: data.Id, type: data.__metadata?.type ?? type };
+    return { id: data.Id };
   },
   async overwrite(ref, responses, etag = '*') {
     await spHttp('POST', `${spListPath('responses')}/items(${ref.id})`, {
       idempotent: true,
       headers: { 'X-HTTP-Method': 'MERGE', 'If-Match': etag },
-      body: { __metadata: { type: ref.type ?? await spEntityType('responses') }, [RESPONSE.responses]: JSON.stringify(responses) },
+      body: { [RESPONSE.responses]: JSON.stringify(responses) },
     });
   },
   async remove(ref) {
@@ -261,6 +260,7 @@ async function removeParticipantAnswers(trackId, questionIds = null, { after = f
     if (kept.length === held.length) return { removed: 0 };
     try {
       // Unlike the participant's own saves this one checks the version: the device may be writing too.
+      if (sharePoint && !found.etag) throw new Error('SharePoint did not return an ETag for the answers item.'); // (never a blind overwrite: Prompt 26)
       await store.overwrite(found.ref, kept, found.etag ?? undefined);
       return { removed: held.length - kept.length };
     } catch (error) {

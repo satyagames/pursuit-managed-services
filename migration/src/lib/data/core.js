@@ -1,6 +1,6 @@
 // The backend adapter (dataService.js section 1; Phase 17 cut it out of that file unchanged): ALL of the data layer's state, and the only
 // code of the app that sends a request to the backend. It holds which backend this page uses (configure(), requireConfiguration()), the
-// SharePoint write token, the lists' item types and columns once read, whether $batch works here, the request count, a QR scan not yet
+// SharePoint write token, the lists' columns once read, whether $batch works here, the request count, a QR scan not yet
 // known to have landed and the sign-in ladder's state (Prompt 19); it makes every request (one SharePoint REST call with its retries and
 // the ladder of lib/data/session.js for a refused sign-in, a $batch of reads, the local server's fetch) and offers the generic item calls
 // both backends implement. No other part keeps state or calls fetch(); this part imports only the parts with none, encoding.js and
@@ -21,12 +21,11 @@ let baseUrl = globalThis.CEC_API_BASE || '/api';
 let sharePoint = globalThis.CEC_SHAREPOINT ?? null;
 let digestPromise; let requestTotal = 0;
 const listMetadata = new Map();
-const listTypes = new Map(); // list -> its item entity type, learnt from any item read or asked for once
-const typeReads = new Map(); // list -> the request for its item type that prepareWrites() made, while it is on its way
 const listColumns = new Map(); // list -> the internal column names it has, once its fields were read
 let batchOff = false; // this page load found $batch unusable, so reads that would share a request go one by one
 let unfinishedScan = null; // a QR scan whose track is written but whose claim is not known to have landed (openQrScan); never stored
 let mustConfigure = false; // requireConfiguration() was called and configure() has not been since: nothing may be sent (Phase 10b)
+let columnChecks = true; // false: this page writes without reading a list's columns first (the participant page, skipColumnChecks())
 let onStop = null; // what the page does when the site's lists are not this build's (lib/settings/start.ts: its stop screen); none for Setup or a test
 let accessGuard = null; // Prompt 21: the page's write guard (lib/access/guard.js), asked before every write; none on the participant page or Setup
 // The ladder's state (Prompt 19, lib/data/session.js): refusals seen, the recovery under way, the cooldown, lists refused, the page's renewer and listeners.
@@ -44,8 +43,6 @@ export function configure({ baseUrl: url, sharePoint: settings, onStop: stop } =
   if (settings !== undefined) sharePoint = settings;
   digestPromise = undefined;
   listMetadata.clear();
-  listTypes.clear();
-  typeReads.clear();
   listColumns.clear();
   batchOff = false;
   unfinishedScan = null;
@@ -64,10 +61,20 @@ export function configure({ baseUrl: url, sharePoint: settings, onStop: stop } =
 export function requireConfiguration() {
   mustConfigure = true;
 }
+/** The participant page's, as it starts (Prompt 26): it never reads a list's columns before a write. configure() leaves this as it is. */
+export const skipColumnChecks = () => { columnChecks = false; };
 function assertConfigured() {
   // (The code is the whole message: its words, like every problem's, are in migration/src/lib/settings/deploy-problems.js.)
   if (mustConfigure) throw Object.assign(new Error('PMS-CFG-003'), { code: 'PMS-CFG-003' });
 }
+// The format of every answer (Prompt 26): plain rows, without the id, uri, type and version SharePoint otherwise puts on each. The few reads whose version a
+// write checks ask for it: one item by its AppId, a participant's answers item by its TrackId. ASSUMED until the real site's check (QA-TESTING.md): each such row
+// carries `odata.etag`, the version the verbose format carried. A body that creates a list, a column or a people search still names its type, and goes as verbose.
+const JSON_PLAIN = 'application/json;odata=nometadata';
+const JSON_VERSIONED = 'application/json;odata=minimalmetadata';
+const JSON_TYPED = 'application/json;odata=verbose';
+const acceptOf = (resource) => (/\$filter=(AppId|TrackId) eq /.test(resource) ? JSON_VERSIONED : JSON_PLAIN);
+const contentTypeOf = (text) => (/"__metadata":/.test(text) ? JSON_TYPED : JSON_PLAIN);
 const spTitle = (list) => spTitleIn(sharePoint, list);
 const spListPath = (list) => `/web/lists/getbytitle(${spLiteral(spTitle(list))})`;
 // Every item read names its columns (Phase 10h): the real site left ClientId out of a read that did not, and returned it to one that did.
@@ -99,8 +106,8 @@ async function spHttp(method, resource, { body, headers = {}, digest = true, ide
     requestTotal += 1;
     const response = await fetch(url, {
       method, credentials: 'same-origin', cache: 'no-store',
-      headers: { Accept: 'application/json;odata=verbose', ...writeHeaders,
-        ...(body === undefined ? {} : { 'Content-Type': body instanceof Blob ? body.type : 'application/json;odata=verbose' }), ...headers },
+      headers: { Accept: acceptOf(resource), ...writeHeaders,
+        ...(body === undefined ? {} : { 'Content-Type': body instanceof Blob ? body.type : contentTypeOf(JSON.stringify(body)) }), ...headers },
       body: body === undefined || body instanceof Blob ? body : JSON.stringify(body),
       signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(20_000)]) : AbortSignal.timeout(20_000), // (a caller's own abort: the people picker's stale search)
     });
@@ -207,23 +214,23 @@ function spDecode(list, raw) {
     else if (key === 'value' && value !== null && value !== '' && value !== undefined && String(Number(value)) === value) value = Number(value);
     if (value !== undefined) item[key] = value;
   }
-  const type = raw.__metadata?.type;
-  if (type) listTypes.set(list, type);
-  return { item, numericId: raw.Id, etag: raw.__metadata?.etag ?? raw['@odata.etag'] ?? raw['odata.etag'], type };
+  return { item, numericId: raw.Id, etag: raw['odata.etag'] ?? raw['@odata.etag'] };
 }
 
 // The properties of a column the check below reads, and only those (Phase 10j): a real list answers a read of its columns that names none
 // with every field it has, hidden ones too, each with all its properties and its whole definition.
 const FIELD_CHECK = '$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField';
 
+/**
+ * The check of a list's columns, once a page load before its first write to the list. The participant page does not make it (Prompt 26,
+ * skipColumnChecks(): its boot and its writes never read a list's columns; the admin page's Today, Setup and the self-test check every list).
+ */
+
 async function spMetadata(list) {
   if (!listMetadata.has(list)) {
     const pending = (async () => {
       const path = spListPath(list);
-      const [{ data }, fields] = await Promise.all([
-        spHttp('GET', `${path}?$select=ListItemEntityTypeFullName`),
-        spPages(`${path}/fields?${FIELD_CHECK}`),
-      ]);
+      const fields = await spPages(`${path}/fields?${FIELD_CHECK}`);
       const columns = new Map(fields.map((field) => [field.InternalName, field]));
       const required = Object.values(fieldsOf(list));
       for (const column of new Set([ID, ...required.map((field) => field.column)])) {
@@ -243,41 +250,11 @@ async function spMetadata(list) {
       const extra = fields.find((field) => field.Required && !field.ReadOnlyField && !mapped.has(field.InternalName));
       if (extra) throw new Error(`${spTitle(list)} has an unsupported required column: ${extra.InternalName}.`);
       listColumns.set(list, new Set(columns.keys()));
-      listTypes.set(list, data.ListItemEntityTypeFullName);
-      return data.ListItemEntityTypeFullName;
     })();
     listMetadata.set(list, pending);
     pending.catch(() => listMetadata.delete(list));
   }
   return listMetadata.get(list);
-}
-
-/**
- * A list's item entity type (needed in every write body), with one small request the first time and none afterwards. A write that asks while
- * prepareWrites() is fetching it waits for that request (Phase 10j), and asks itself if it failed.
- */
-async function spEntityType(list) {
-  if (!listTypes.has(list)) {
-    const ahead = typeReads.get(list);
-    if (ahead) { try { return await ahead; } catch { /* forgotten: asked for as always, below */ } }
-    const { data } = await spHttp('GET', `${spListPath(list)}?$select=ListItemEntityTypeFullName`);
-    listTypes.set(list, data.ListItemEntityTypeFullName);
-  }
-  return listTypes.get(list);
-}
-
-/** spEntityType() for prepareWrites(): the same request, held while it is on its way so that a write meanwhile waits for it. */
-function spEntityTypeAhead(list) {
-  if (listTypes.has(list)) return Promise.resolve(listTypes.get(list));
-  if (!typeReads.has(list)) {
-    const pending = spHttp('GET', `${spListPath(list)}?$select=ListItemEntityTypeFullName`).then(({ data }) => {
-      listTypes.set(list, data.ListItemEntityTypeFullName);
-      return data.ListItemEntityTypeFullName;
-    });
-    typeReads.set(list, pending);
-    pending.then(() => typeReads.delete(list), () => typeReads.delete(list));
-  }
-  return typeReads.get(list);
 }
 
 async function spFind(list, id) {
@@ -294,20 +271,20 @@ function spMade(list, data, record) {
 }
 
 async function spCreate(list, id, record) {
-  const type = await spMetadata(list);
+  if (columnChecks) await spMetadata(list);
   const fields = spEncode(list, record);
   const { data } = await spHttp('POST', `${spListPath(list)}/items`, {
-    body: { __metadata: { type }, Title: record.title ?? record.name ?? id, ...fields, [ID]: id },
+    body: { Title: record.title ?? record.name ?? id, ...fields, [ID]: id },
   });
   return spMade(list, data, record);
 }
 
 async function spMerge(list, found, changes, etag = found.etag) {
   if (!etag) throw new Error(`SharePoint did not return an ETag for ${spTitle(list)}.`);
-  const type = await spMetadata(list);
+  if (columnChecks) await spMetadata(list);
   await spHttp('POST', `${spListPath(list)}/items(${found.numericId})`, {
     headers: { 'X-HTTP-Method': 'MERGE', 'If-Match': etag },
-    body: { __metadata: { type }, ...spEncode(list, changes) },
+    body: spEncode(list, changes),
   });
   return { ...found.item, ...changes };
 }
@@ -356,7 +333,7 @@ async function spSend(method, path, { body, headers = {} }) {
   const found = await spFind(list, id);
   if (!found) throw Object.assign(spError(404, `No ${list} item with ${ID} ${id}.`), { code: 'item-missing' });
   if (method === 'GET') {
-    spRefs.set(found.item, { id: found.numericId, type: found.type });
+    spRefs.set(found.item, { id: found.numericId });
     return { data: found.item, etag: found.etag };
   }
   if (method === 'DELETE') {
@@ -496,7 +473,7 @@ async function spBatch(resources) {
       `--${boundary}`, 'Content-Type: application/http', 'Content-Transfer-Encoding: binary', '',
       // An absolute, fully encoded address: a request line is split on its spaces. Without the
       // Accept line SharePoint answers a part in Atom XML.
-      `GET ${new URL(`${root}${resource}`).href} HTTP/1.1`, 'Accept: application/json;odata=verbose', '',
+      `GET ${new URL(`${root}${resource}`).href} HTTP/1.1`, `Accept: ${acceptOf(resource)}`, '',
     ]),
     `--${boundary}--`, '',
   ].join('\r\n');
@@ -506,7 +483,7 @@ async function spBatch(resources) {
     requestTotal += 1;
     response = await fetch(`${root}/$batch`, {
       method: 'POST', credentials: 'same-origin', cache: 'no-store',
-      headers: { Accept: 'application/json;odata=verbose', 'Content-Type': `multipart/mixed; boundary=${boundary}`, 'X-RequestDigest': digest },
+      headers: { Accept: JSON_PLAIN, 'Content-Type': `multipart/mixed; boundary=${boundary}`, 'X-RequestDigest': digest },
       body, signal: AbortSignal.timeout(20_000),
     });
     text = await response.text();
@@ -592,8 +569,8 @@ const holdScan = (scan) => { unfinishedScan = scan; };
 
 // Shared with the other parts of lib/data (dataService.js does not pass these on).
 export {
-  baseUrl, createItem, deleteItem, fits, getItem, getItemWithVersion, getItems, holdScan, itemPath, listColumns, listItems, listMetadata, listTypes,
+  baseUrl, createItem, deleteItem, fits, getItem, getItemWithVersion, getItems, holdScan, itemPath, listColumns, listItems, listMetadata,
   logoFolders, onStop, queryItems, readLanUrls, request, requestTotal, send, session, sharePoint, spBatch, spByAppId, spCreate, spDecode, spDigest,
-  spEntityType, spEntityTypeAhead, spFind, spHttp, spItems, spListPath, spMade, spMerge, spMetadata, spPages, spReadOrBatch, spReadTogether, spRefs,
+  spFind, spHttp, spItems, spListPath, spMade, spMerge, spMetadata, spPages, spReadOrBatch, spReadTogether, spRefs,
   spSite, spTitle, unfinishedScan, updateItem, updateItemIfUnchanged,
 };

@@ -113,7 +113,7 @@ export async function runParticipantSelfTest(onStep = () => {}, extraSteps = [])
         try {
           answers = await spBatch([
             `${spListPath('responses')}/items?$filter=${RESPONSE.trackId} eq ${spLiteral(fields.trackId)}&${PARTICIPANT_SELECT}&$top=5`,
-            `${spListPath('responses')}?$select=ListItemEntityTypeFullName`,
+            `${spListPath('responses')}?$select=Title`,
           ]);
         } catch (error) {
           throw new Error(`${error.message} The participant page then reads one by one: a QR scan costs 13 requests instead of 8 (set "batch": false in pms-config.txt), and still works.`);
@@ -122,7 +122,7 @@ export async function runParticipantSelfTest(onStep = () => {}, extraSteps = [])
         expect(sent === 1, `The batch took ${sent} requests; it should take 1.`);
         const rows = answers[0]?.results ?? answers[0]?.value;
         expect(Array.isArray(rows) && rows.length > 0 && rows.every((row) => row[ID] === fields.trackId), 'The first read in the batch did not return the test item as JSON.');
-        expect(typeof answers[1]?.ListItemEntityTypeFullName === 'string', "The second read in the batch did not return the list's item type.");
+        expect(typeof answers[1]?.Title === 'string', "The second read in the batch did not return the list's title.");
         return 'Both answered, as JSON, in one request. A QR scan reads the session, client, activities and visitor this way.';
       });
       // Steps the caller adds, on SharePoint only: the Setup page's two read-only probes of this tenant (lib/setup/setup-checks.js, Phase 9b). They report what

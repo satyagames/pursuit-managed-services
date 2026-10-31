@@ -54,7 +54,7 @@
  */
 
 export {
-  configure, requireConfiguration, isUnreachable, isSharePointMode, setAccessGuard,
+  configure, requireConfiguration, skipColumnChecks, isUnreachable, isSharePointMode, setAccessGuard,
 } from './core.js';
 export {
   runPaced,
