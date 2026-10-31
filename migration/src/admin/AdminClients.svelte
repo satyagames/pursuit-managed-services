@@ -2,6 +2,9 @@
   import { errorText } from '../lib/admin/session-notice.js';
   import { onMount, tick } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
+  import { PER_PAGE, hashWithPage, pageOfHash, pageRows, pagerState } from '../lib/common/paging.js';
+  import { focusHeading } from '../lib/common/focus.js';
+  import Pager from './Pager.svelte';
   import { embeddedAssetUrl } from '../lib/brand/assets.js';
   import { viewById } from '../lib/admin/admin-content-views.js';
   import SampleNotice from './SampleNotice.svelte';
@@ -39,6 +42,8 @@
   const localHosts = ['localhost', '127.0.0.1', '[::1]'];
 
   let clients = $state<Client[]>([]);
+  let clientsHeading = $state<HTMLElement>();
+  let page = $state(pageOfHash(window.location.hash));
   let sessions = $state<Session[]>([]);
   let sections = $state<Section[]>([]);
   let liveClientId = $state<string | null>(null);
@@ -70,6 +75,14 @@
   let workspace = $state<Client | null>(null);
 
   const rows = $derived(clientRows({ clients, sessions, sections, liveClientId }));
+  const where = $derived(pagerState({ total: rows.length, pageSize: PER_PAGE.clients, page }));
+  const shownRows = $derived(pageRows(rows, where));
+  /** A change of page: kept in the address, so a reload comes back to it. */
+  function goToPage(next: number) {
+    page = next;
+    try { window.history.replaceState(window.history.state, '', hashWithPage(window.location.hash, next)); } catch { /* the page still changes */ }
+    void tick().then(() => { if (clientsHeading) focusHeading(clientsHeading); });
+  }
   const editingRow = $derived(editing ? rows.find((row) => row.client.id === editing!.id) ?? null : null);
   const slugLocked = $derived(Boolean(editingRow?.slugLocked));
   const slugText = $derived(slugProblem(slug, { api: dataService, clients, editingId: editing?.id ?? null }));
@@ -84,9 +97,10 @@
 
   /** One batch on SharePoint: the clients, who is live, and what the derived columns are made from. */
   async function refresh() {
+    // (Each client's counts come from these two grouped reads, never one read a client. The sessions are an index since Prompt 26.)
     const [settingRows, clientRowsRead, sessionRows, sectionRows] = await dataService.readLists([
-      { list: 'appsettings' }, { list: 'clients' }, { list: 'sessions' }, { list: 'sections' },
-    ]) as [{ id: string; activeSessionId?: string; activeClientId?: string }[], Client[], Session[], Section[]];
+      { list: 'appsettings' }, { list: 'clients' }, { list: 'sessions', columns: ['clientId', 'date', 'status', 'endedAt'] }, { list: 'sections' },
+    ] as never) as [{ id: string; activeSessionId?: string; activeClientId?: string }[], Client[], Session[], Section[]];
     clients = clientRowsRead;
     settingsRows = settingRows;
     sessions = sessionRows;
@@ -283,7 +297,7 @@
 <section class="panel clients-panel" aria-busy={loading || busy}>
   <header class="panel__head">
     <div>
-      <h2>Clients</h2>
+      <h2 bind:this={clientsHeading} tabindex="-1">Clients</h2>
       <p class="muted">Add, edit and archive clients, with each one's event title, subtitle, welcome line. <strong>{brand.label}</strong> opens the client's {brand.label} view in Content, beside its activities: the colours, logo, hero art and background, with a preview on a phone, an iPad and a desktop. A new client starts with the standard blue. Check-in codes for iPads (staff sign-in) are made here; personal codes for guests are under Guests and QR.</p>
     </div>
     <button class="btn btn--primary" type="button" onclick={() => openEditor(null)} disabled={busy}>Add client</button>
@@ -293,7 +307,7 @@
   {:else if clients.length === 0}<p class="muted">No clients yet.</p>
   {:else}
     <ul class="rows">
-      {#each rows as row (row.client.id)}
+      {#each shownRows as row (row.client.id)}
         {@const client = row.client}
         <li class="row client-row" class:client-row--archived={row.archived}>
           {#if withoutRetiredLogo(client.logoUrl)}<img class="logo" src={embeddedAssetUrl(withoutRetiredLogo(client.logoUrl) ?? '') ?? ''} alt="" onerror={(event) => { (event.currentTarget as HTMLImageElement).hidden = true; }} />{/if}
@@ -321,6 +335,7 @@
         </li>
       {/each}
     </ul>
+    <Pager state={where} label="Pages of clients" onPage={goToPage} />
   {/if}
 
   {#if editorOpen}

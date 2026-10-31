@@ -111,11 +111,11 @@ describe('the users list: columns, chips, filters, pages', () => {
     assert.deepEqual(sessionsOfClient(SESSIONS, '').map((entry) => entry.id), [], 'no client, no sessions to choose');
   });
 
-  it('pages 50 at a time, and a page past the end is the last', () => {
-    assert.equal(PAGE_SIZE, 50);
+  it('pages 5 at a time (50 until Prompt 26), and a page past the end is the last', () => {
+    assert.equal(PAGE_SIZE, 5);
     const many = Array.from({ length: 120 }, (_, index) => index);
-    assert.deepEqual([pageOf(many, 1).items.length, pageOf(many, 3).items.length, pageOf(many, 1).pages], [50, 20, 3]);
-    assert.deepEqual(pageOf(many, 9).page, 3);
+    assert.deepEqual([pageOf(many, 1).items.length, pageOf(many, 24).items.length, pageOf(many, 1).pages], [5, 5, 24]);
+    assert.deepEqual(pageOf(many, 99).page, 24);
     assert.deepEqual(pageOf([], 1), { items: [], page: 1, pages: 1, total: 0 });
   });
 });

@@ -5,8 +5,10 @@
 import { ROLES } from './access-matrix.js';
 import { grantsOf } from './can.js';
 
+import { PER_PAGE } from '../common/paging.js';
+
 /** How many people a page of the list shows. */
-export const PAGE_SIZE = 50;
+export const PAGE_SIZE = PER_PAGE.people; // (5 since Prompt 26: lib/common/paging.js)
 
 /** The chips above the list, in board 3's order; `id` is a role of PMSRoleAssignments, or 'all'. */
 export const ROLE_CHIPS = Object.freeze([

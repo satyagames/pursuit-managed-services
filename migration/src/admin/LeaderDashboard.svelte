@@ -8,6 +8,8 @@
   import * as dataService from '../lib/data/dataService.js';
   import { errorText } from '../lib/admin/session-notice.js';
   import { focusHeading } from '../lib/common/focus.js';
+  import { PER_PAGE, pageRows, pagerState } from '../lib/common/paging.js';
+  import Pager from './Pager.svelte';
   import { can, canView } from '../lib/access/can.js';
   import { readDashboard, rebuildSummaries } from '../lib/admin/session-summaries.js';
   import { BASELINES } from '../lib/results/index-math.js';
@@ -61,6 +63,9 @@
   const empty = $derived(emptyStateOf({ reach, summaries, waiting: mayRebuild ? missing.length : 0 }));
   const shownClients = $derived([...clients].filter((client) => summaries.some((each) => each.clientId === client.id)).sort((a, b) => String(a.name).localeCompare(String(b.name))));
   const years = $derived([...new Set([...options.years, filters.year])].sort());
+  let clientPage = $state(1);
+  let clientsHeading = $state<HTMLElement>();
+  const clientPager = $derived(pagerState({ total: board.byClient.length, pageSize: PER_PAGE.dashboardClients, page: clientPage }));
   const scaleTop = $derived(Math.max(150, ...board.byClient.map((row) => Math.ceil((row.index ?? 0) / 10) * 10)));
   const tile = (id: string) => board.tiles.find((each) => each.id === id);
   const whole = (value: number | null | undefined) => (value === null || value === undefined ? '' : String(Math.round(value)));
@@ -329,9 +334,9 @@
       </div>
 
       <section class="card dash__card" aria-labelledby="dash-clients">
-        <h3 id="dash-clients">By client</h3>
+        <h3 id="dash-clients" bind:this={clientsHeading} tabindex="-1">By client</h3>
         <div class="dash__rows" role="list">
-          {#each board.byClient as row (row.clientId)}
+          {#each pageRows(board.byClient, clientPager) as row (row.clientId)}
             {@const expanded = open.includes(row.clientId)}
             {@const said = shiftWords(row, row.guests)}
             <div class="dash__client" role="listitem">
@@ -370,6 +375,7 @@
             </div>
           {/each}
         </div>
+        <Pager state={clientPager} label="Pages of clients" heading={clientsHeading} onPage={(next) => { clientPage = next; }} />
       </section>
 
       <div class="dash__grid">

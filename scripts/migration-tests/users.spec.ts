@@ -53,8 +53,24 @@ test.describe('the People screens', () => {
     await page.getByRole('tab', { name: 'People' }).click();
     await expect(page.getByRole('heading', { name: 'People' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'People' })).toBeFocused(); // (a new screen: its heading takes focus, through focusHeading)
-    await expect(page.getByTestId('user-row')).toHaveCount(6);
+    // (5 to a page since Prompt 26: six people, so two pages. Next says the new range, moves focus to the heading, and a reload comes back to the page.)
+    await expect(page.getByTestId('user-row')).toHaveCount(5);
+    await expect(page.getByTestId('users-count')).toContainText('Showing 1 to 5 of 6');
     await axe(page, 'People, the list');
+    await page.getByRole('button', { name: 'Previous' }).press('Enter'); // (at the first page: stays in the tab order and does nothing)
+    await expect(page.getByTestId('pager-range')).toHaveText('Showing 1 to 5 of 6');
+    await page.getByRole('button', { name: 'Next' }).press('Enter');
+    await expect(page.getByTestId('user-row')).toHaveCount(1);
+    await expect(page.getByTestId('pager-range')).toHaveText('Showing 6 to 6 of 6');
+    await expect(page.getByRole('heading', { name: 'People' })).toBeFocused();
+    await expect(page).toHaveURL(/#users\?page=2$/);
+    await expect(page.getByRole('button', { name: 'Next' })).toHaveAttribute('aria-disabled', 'true');
+    await axe(page, 'People, the second page');
+    await page.getByLabel('Search people').fill('mathur');
+    await expect(page.getByTestId('user-row')).toHaveCount(1);
+    await page.getByLabel('Search people').fill('');
+    await expect(page.getByTestId('user-row')).toHaveCount(5); // (a search goes back to the first page)
+    await expect(page).toHaveURL(/#users$/);
     await page.getByRole('button', { name: 'Producers' }).click();
     await expect(page.getByTestId('user-row')).toHaveCount(1);
     await expect(page.getByRole('button', { name: 'Producers' })).toHaveAttribute('aria-pressed', 'true');
@@ -131,6 +147,7 @@ test.describe('the People screens', () => {
     await expect(page.getByTestId('no-access-rows')).toBeVisible();
     expect(fake.item('roleassignments', `${mail('raedla')}|Producer|client|c-kroger`)).toBeUndefined();
     await page.getByRole('button', { name: 'Back to people' }).click();
+    await page.getByLabel('Search people').fill('Satyadev'); // (on the second page: Prompt 26)
     await page.getByRole('button', { name: 'Open Satyadev, Vedala Venkata' }).click();
     await expect(page.getByTestId('own-note')).toBeVisible();
     await expect(page.getByRole('button', { name: /Remove Super admin/ })).toHaveCount(0);
@@ -161,6 +178,7 @@ test.describe('the People screens', () => {
     await expect(page.getByRole('button', { name: 'Give access' })).toBeVisible();
     await expect(page.getByText('Only a Super admin can give or remove these.')).toBeVisible();
     await page.getByRole('button', { name: 'Back to people' }).click();
+    await page.getByLabel('Search people').fill('Satyadev'); // (on the second page: Prompt 26)
     await page.getByRole('button', { name: 'Open Satyadev, Vedala Venkata' }).click();
     await expect(page.getByRole('button', { name: /Remove Super admin/ })).toHaveCount(0);
     await page.goto('about:blank');

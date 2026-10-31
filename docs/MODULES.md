@@ -82,7 +82,7 @@ flowchart LR
 | `migration/src/routes/` | The participant page's screens: Welcome, the Activities hub, the quiz route, the finale, "not live", the preview, and the old addresses that redirect. | 10 |
 | `migration/src/setup/` | Setup's pieces (Svelte): the copy panel, where the lists are, the plan view, and the sample pictures as data. | 5 |
 | `migration/src/unsupported/` | The "needs a recent browser" notice: a page and an ES5 check, put into each HTML shell at build time. | 1 |
-| `scripts/` | Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager. | 156 |
+| `scripts/` | Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager. | 157 |
 | `scripts/local-site/` | The local PCOE stand-in (`npm run local:site`), its scenarios and VJR's dummy dataset, the screenshot harness and the measurements. | 11 |
 | `scripts/migration-tests/` | The Playwright specs of `npm run test:migration`, and their harnesses (`admin-local.ts`, `polling-support.ts`, `fixtures.ts`). | 82 |
 | `scripts/rehearsal-tests/` | The rehearsal of RUNBOOK.md on the mock with a package's own pages (`npm run test:rehearsal`). | 1 |
@@ -209,7 +209,7 @@ The data layer: dataService.js, the door every page imports, over its parts (cor
 
 - **Imports from:** `lib/brand`, `lib/participant`, `lib/schema`
 - **Imported by:** `lib/admin`, `lib/brand`, `lib/common`, `lib/exports`, `lib/participant`, `lib/results`, `lib/settings`, `lib/setup`, `src`, `src/admin`, `src/pager`, `src/routes`, `src/setup`
-- **Node suites that import it:** `test-admin-content.js`, `test-admin-today.js`, `test-brand-storage.js`, `test-column-names.js`, `test-confidence-check.js`, `test-data-surface.js`, `test-deploy-settings.js`, `test-duplicates.js`, `test-leader-dashboard.js`, `test-leader-report-pdf.js`, `test-live-display.js`, `test-local-site.js`, `test-motion-switch.js`, `test-named-reads.js`, `test-participant-names.js`, `test-participant-storage.js`, `test-participant-waits.js`, `test-reply-format.js`, `test-review-9a.js`, `test-schema-upgrade.js`, `test-seeds.js`, `test-session-delete.js`, `test-session.js`, `test-sessions.js`, `test-setup-admins.js`, `test-sharepoint.js`
+- **Node suites that import it:** `test-admin-content.js`, `test-admin-today.js`, `test-brand-storage.js`, `test-column-names.js`, `test-confidence-check.js`, `test-data-surface.js`, `test-deploy-settings.js`, `test-duplicates.js`, `test-fewer-calls.js`, `test-leader-dashboard.js`, `test-leader-report-pdf.js`, `test-live-display.js`, `test-local-site.js`, `test-motion-switch.js`, `test-named-reads.js`, `test-participant-names.js`, `test-participant-storage.js`, `test-participant-waits.js`, `test-reply-format.js`, `test-review-9a.js`, `test-schema-upgrade.js`, `test-seeds.js`, `test-session-delete.js`, `test-session.js`, `test-sessions.js`, `test-setup-admins.js`, `test-sharepoint.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
@@ -293,7 +293,7 @@ The participant page: the boot sequence, the visit, the activities held for the 
 
 - **Imports from:** `lib/brand`, `lib/common`, `lib/data`, `lib/motion`
 - **Imported by:** `lib/admin`, `lib/brand`, `lib/data`, `lib/exports`, `lib/results`, `lib/setup`, `src`, `src/admin`, `src/pager`, `src/routes`
-- **Node suites that import it:** `test-aop-math.js`, `test-aop-results.js`, `test-confidence-check.js`, `test-duplicates.js`, `test-effects.js`, `test-hub-moment.js`, `test-list-namespace.js`, `test-local-site.js`, `test-pager.js`, `test-participant-storage.js`, `test-participant-waits.js`, `test-review-9a.js`, `test-review-9b.js`, `test-session.js`
+- **Node suites that import it:** `test-aop-math.js`, `test-aop-results.js`, `test-confidence-check.js`, `test-duplicates.js`, `test-effects.js`, `test-fewer-calls.js`, `test-hub-moment.js`, `test-list-namespace.js`, `test-local-site.js`, `test-pager.js`, `test-participant-storage.js`, `test-participant-waits.js`, `test-review-9a.js`, `test-review-9b.js`, `test-session.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
@@ -381,7 +381,7 @@ The Setup page's own modules: the plan and Create, Mark the site as ready, the a
 
 - **Imports from:** `lib/admin`, `lib/brand`, `lib/data`, `lib/participant`, `lib/schema`, `lib/settings`, `src/setup`
 - **Imported by:** `src`, `src/dev`
-- **Node suites that import it:** `test-admin-content.js`, `test-admin-today.js`, `test-brand-storage.js`, `test-brand.js`, `test-bundle-budget.js`, `test-column-names.js`, `test-confidence-check.js`, `test-duplicates.js`, `test-hardening.js`, `test-list-namespace.js`, `test-live-display.js`, `test-named-reads.js`, `test-participant-storage.js`, `test-participant-waits.js`, `test-provision-prefix.js`, `test-provision.js`, `test-review-9b.js`, `test-sample-pictures.js`, `test-schema-upgrade.js`, `test-schema.js`, `test-seeds.js`, `test-session-delete.js`, `test-sessions-plan.js`, `test-setup-admins.js`, `test-setup-deployment.js`, `test-sharepoint.js`, `test-site-ready.js`, `test-text-limits.js`
+- **Node suites that import it:** `test-admin-content.js`, `test-admin-today.js`, `test-brand-storage.js`, `test-brand.js`, `test-bundle-budget.js`, `test-column-names.js`, `test-confidence-check.js`, `test-duplicates.js`, `test-fewer-calls.js`, `test-hardening.js`, `test-list-namespace.js`, `test-live-display.js`, `test-named-reads.js`, `test-participant-storage.js`, `test-participant-waits.js`, `test-provision-prefix.js`, `test-provision.js`, `test-review-9b.js`, `test-sample-pictures.js`, `test-schema-upgrade.js`, `test-schema.js`, `test-seeds.js`, `test-session-delete.js`, `test-sessions-plan.js`, `test-setup-admins.js`, `test-setup-deployment.js`, `test-sharepoint.js`, `test-site-ready.js`, `test-text-limits.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|

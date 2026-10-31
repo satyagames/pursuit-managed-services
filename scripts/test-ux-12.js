@@ -57,7 +57,9 @@ describe('F-08: a Results card shows its Live results before the list of people'
   it('the tally comes before the rows in each session card', async () => {
     const { readFileSync } = await import('node:fs');
     const source = readFileSync(new URL('../migration/src/admin/AdminResults.svelte', import.meta.url), 'utf8');
-    const card = source.slice(source.indexOf('<article class="card"'), source.indexOf('</article>'));
+    // (Prompt 26: a shut card, its head alone, comes first in the file: this is the opened one.)
+    const opened = source.indexOf('<article class="card" data-session={session.id}');
+    const card = source.slice(opened, source.indexOf('</article>', opened));
     assert.ok(card.indexOf('<details class="tally"') > 0, 'the card has its Live results');
     assert.ok(card.indexOf('<details class="tally"') < card.indexOf('<ul class="rows'), 'Live results come before the people');
   });

@@ -25,6 +25,7 @@ import { resolveAccess } from '../migration/src/lib/access/resolve.js';
 import { loadToday } from '../migration/src/lib/admin/admin-today.js';
 import { readSessionResults } from '../migration/src/lib/results/session-results.js';
 import { readDashboard } from '../migration/src/lib/admin/session-summaries.js';
+import { PEOPLE_INDEX, RESULTS_INDEX } from '../migration/src/lib/admin/list-index.js';
 import { createSharePointFake } from './sharepoint-fake.js';
 
 const DAY = '2026-10-15';
@@ -155,8 +156,7 @@ const journeys = (site) => {
       usable();
     }],
     ['Clients', async (usable) => {
-      const read = ds.readClientsScreen ?? (() => ds.readLists([{ list: 'appsettings' }, { list: 'clients' }, { list: 'sessions' }, { list: 'sections' }]));
-      await read();
+      await ds.readLists([{ list: 'appsettings' }, { list: 'clients' }, { list: 'sessions', columns: ['clientId', 'date', 'status', 'endedAt'] }, { list: 'sections' }]);
       usable();
     }],
     ['Content, one client', async (usable) => {
@@ -174,10 +174,8 @@ const journeys = (site) => {
       usable();
     }],
     [`Results, Sessions, ${SIZES.sessions} sessions`, async (usable) => {
-      const basics = ds.readResultsIndex ?? (async () => { const [rows] = await Promise.all([ds.listSessions(), ds.listClients(), ds.listQrTokens(), ds.getAppSettings()]); return rows; });
-      const rows = await basics();
-      const opening = ds.readResultsIndex ? rows.slice(0, 1).map((row) => row.id) : rows.map((row) => row.id);
-      await Promise.all(opening.map((id) => readSessionResults(id)));
+      const [[rows]] = await Promise.all([ds.readLists(RESULTS_INDEX), ds.getAppSettings()]);
+      await Promise.all([readSessionResults(rows[0].id), ds.readLists([{ list: 'qrtokens', where: { sessionId: rows[0].id } }])]); // the first card of the page
       usable();
     }],
     [`Results, Dashboard, ${SIZES.summaries} summaries`, async (usable) => {
@@ -186,8 +184,7 @@ const journeys = (site) => {
       usable();
     }],
     [`People, ${SIZES.users} users`, async (usable) => {
-      if (ds.readPeopleIndex) await ds.readPeopleIndex();
-      else await Promise.all([ds.listAccessRecords('users'), ds.listAccessRecords('roleassignments'), ds.listClients(), ds.listSessions()]);
+      await ds.readLists(PEOPLE_INDEX);
       usable();
     }],
     ['Live display, one refresh', async (usable) => {

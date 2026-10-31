@@ -199,16 +199,16 @@ describe('the audit review: the Super admin\'s read-only look at every line', ()
     assert.deepEqual(auditView(lines, { names, from: '2026-10-02', to: '2026-10-03' }).rows.map((row) => row.id), ['audit-3', 'audit-2']);
   });
 
-  it('pages of 50, and a page past the end is the last', () => {
+  it('pages of 10 (50 until Prompt 26), and a page past the end is the last', () => {
     const lines = Array.from({ length: 120 }, (_, at) => line(1, { id: `audit-${at}`, occurredAt: new Date(Date.UTC(2026, 9, 1, 0, at)).toISOString() }));
-    assert.equal(AUDIT_PAGE, 50);
+    assert.equal(AUDIT_PAGE, 10);
     const first = auditView(lines, { names });
-    assert.equal(first.pages, 3);
-    assert.equal(first.rows.length, 50);
+    assert.equal(first.pages, 12);
+    assert.equal(first.rows.length, 10);
     assert.equal(first.rows[0].id, 'audit-119');
-    const last = auditView(lines, { names, page: 9 });
-    assert.equal(last.page, 3);
-    assert.equal(last.rows.length, 20);
+    const last = auditView(lines, { names, page: 99 });
+    assert.equal(last.page, 12);
+    assert.equal(last.rows.length, 10);
   });
 
   it('never shows an answer: a detail that looks like one is left out', () => {

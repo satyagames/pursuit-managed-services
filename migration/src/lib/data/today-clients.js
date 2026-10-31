@@ -27,9 +27,9 @@ import { failure, getAppSettings, notMade, unscanned, updateAppSettings, version
  * a participant's answers have readers of their own.
  */
 export async function readLists(queries) {
-  const wanted = queries.map(({ list, where = {} }) => {
+  const wanted = queries.map(({ list, where = {}, columns = null, top = 200 }) => {
     if (!LISTS[list] || list === 'responses') throw new Error(`Unsupported list: ${list}`);
-    return { list, where, none: Object.values(where).some((values) => [values].flat().length === 0) };
+    return { list, where, columns, top, none: Object.values(where).some((values) => [values].flat().length === 0) };
   });
   const sent = wanted.filter((query) => !query.none);
   const guard = currentAccessGuard(); // (Phase 4: a scoped role may name only the places it holds, and the guard learns whose they are)
@@ -38,7 +38,8 @@ export async function readLists(queries) {
   if (!sharePoint) {
     answers = await Promise.all(sent.map(({ list, where }) => request('GET', `/${list}${localFilter(where)}`)));
   } else {
-    const addresses = sent.map(({ list, where }) => spItemsAddress(list, where));
+    // (`columns` and `top`, Prompt 26: an index read, lib/admin/list-index.js. Named or not, it is one read of one page; the rest of the list follows by its link.)
+    const addresses = sent.map(({ list, where, columns, top }) => spItemsAddress(list, where, top, columns));
     const together = await spReadTogether(addresses);
     answers = await Promise.all(sent.map(async ({ list }, position) => {
       const first = together[position];

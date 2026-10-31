@@ -2,7 +2,7 @@
 // AppId read, a write to an item a read has already found, a list address with equality filters, every page of a list read, and
 // paced bulk work (runPaced). Built on core.js; keeps no state of its own.
 
-import { ID } from '../schema/pms-schema.js';
+import { ID, selectOf } from '../schema/pms-schema.js';
 import { columnsOf, pause, spEncode, spLiteral } from './encoding.js';
 import { sharePoint, spDecode, spHttp, spItems, spListPath, spPages, spTitle } from './core.js';
 
@@ -22,14 +22,15 @@ const spWrite = async (list, found, method, etag, changes) => spHttp('POST', `${
   ...(changes ? { body: spEncode(list, changes) } : {}),
 });
 
-/** The address of a list read with equality filters, as spSend() builds it for a plain list GET (`top` items to a page). */
-function spItemsAddress(list, where = {}, top = 200) {
+/** The address of a list read with equality filters, as spSend() builds it for a plain list GET (`top` items to a page; `only`, an index read's field keys: Prompt 26). */
+function spItemsAddress(list, where = {}, top = 200, only = null) {
   const columns = columnsOf(list);
   const clauses = Object.entries(where).map(([key, values]) => {
     if (!columns[key]) throw new Error(`Unsupported filter: ${key}`);
     return `(${[values].flat().map((value) => `${columns[key]} eq ${spLiteral(value)}`).join(' or ')})`;
   });
-  return spItems(list, `$top=${top}${clauses.length ? `&$filter=${clauses.join(' and ')}` : ''}`);
+  const query = `$top=${top}${clauses.length ? `&$filter=${clauses.join(' and ')}` : ''}`;
+  return only ? `${spListPath(list)}/items?${query}&${selectOf(list, only)}` : spItems(list, query);
 }
 
 const localFilter = (where = {}) => {

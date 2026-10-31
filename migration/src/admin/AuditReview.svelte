@@ -5,7 +5,7 @@
   import { onMount } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
   import { focusHeading } from '../lib/common/focus.js';
-  import { AUDIT_FILTERS, auditView } from '../lib/access/audit-review.js';
+  import { AUDIT_FILTERS, AUDIT_PAGE, auditView } from '../lib/access/audit-review.js';
   import { errorText } from '../lib/admin/session-notice.js';
 
   let { users, onBack }: { users: any[]; onBack: () => void } = $props();
@@ -59,7 +59,7 @@
     </div>
 
     <p class="muted" role="status" data-testid="audit-count">
-      {#if view.total === 0}{lines.length === 0 ? 'Nothing recorded yet.' : 'No change matches.'}{:else}Showing {(view.page - 1) * 50 + 1} to {(view.page - 1) * 50 + view.rows.length} of {view.total} {view.total === 1 ? 'change' : 'changes'}.{/if}
+      {#if view.total === 0}{lines.length === 0 ? 'Nothing recorded yet.' : 'No change matches.'}{:else}Showing {(view.page - 1) * AUDIT_PAGE + 1} to {(view.page - 1) * AUDIT_PAGE + view.rows.length} of {view.total} {view.total === 1 ? 'change' : 'changes'}.{/if}
       {#if filtering}<button class="btn" type="button" onclick={clear}>Clear filters</button>{/if}
     </p>
 

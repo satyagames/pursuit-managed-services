@@ -415,8 +415,9 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
   it("Prompt 24 (the Activities hub: four states, the moment, sound and particles) grew the participant page within its allowance and its ceiling, and carried nothing of the admin's", (t) => {
     assert.equal(PHASE_24.participantBefore, PHASE_23.participantAfter, 'Prompt 24 is measured from where Prompt 23 ended');
     assert.equal(PHASE_24.adminBefore, PHASE_23.adminAfter);
-    const participant = built.participant.htmlGzip - PHASE_24.participantBefore;
-    const admin = built.admin.htmlGzip - PHASE_24.adminBefore;
+    // (Measured when the prompt ended: a later phase's growth is held to that phase's allowance, Prompt 26's below.)
+    const participant = PHASE_24.participantAfter - PHASE_24.participantBefore;
+    const admin = PHASE_24.adminAfter - PHASE_24.adminBefore;
     t.diagnostic(`participant ${participant >= 0 ? '+' : ''}${participant} B, admin ${admin >= 0 ? '+' : ''}${admin} B against where Prompt 23 ended`);
     console.log(`  Prompt 24: the participant page is ${participant >= 0 ? '+' : ''}${participant} B gzip against where Prompt 23 ended (allowance ${PHASE_24.participantAllowance} B), now ${bytes(built.participant.htmlGzip)}; the admin page ${admin >= 0 ? '+' : ''}${admin} B (allowance ${PHASE_24.adminAllowance} B), now ${bytes(built.admin.htmlGzip)} of its ${bytes(BUDGET.admin)} budget`);
     assert.equal(PHASE_24.participantAllowance, 6_000, 'the allowance the brief gave');

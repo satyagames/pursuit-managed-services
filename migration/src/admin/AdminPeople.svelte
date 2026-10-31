@@ -1,7 +1,7 @@
 <script lang="ts">
   // Users (Prompt 21, Phase 2; boards 3 and 4): the people who may use the admin page, and what each may do. Shown to a Super admin, to an Admin
-  // (who may look, and give team roles) and to nobody else (the menu comes from the role matrix: AdminApp.svelte). It reads the four lists once (people, their
-  // assignments, clients, sessions), filters them here (lib/access/people.js: role chips, search, Client and Session, Status, pages of 50) and
+  // (who may look, and give team roles) and to nobody else (the menu comes from the role matrix: AdminApp.svelte). It reads the four lists once, as an index (people, their
+  // assignments, the names of clients and sessions: lib/admin/list-index.js), filters them here (lib/access/people.js: role chips, search, Client and Session, Status, pages of 5) and
   // opens one person (UserDetail.svelte) or Add user (UserAdd.svelte). A change reads the lists again. A Super admin also opens History of changes
   // (AuditReview.svelte, Prompt 21, Phase 7: the audit list, read only).
   import { onMount } from 'svelte';
@@ -10,6 +10,9 @@
   import { can } from '../lib/access/can.js';
   import { PAGE_SIZE, ROLE_CHIPS, filterPeople, pageOf, peopleRows, sessionsOfClient } from '../lib/access/people.js';
   import { errorText } from '../lib/admin/session-notice.js';
+  import { PEOPLE_INDEX } from '../lib/admin/list-index.js';
+  import { hashWithPage, pageOfHash, pagerState } from '../lib/common/paging.js';
+  import Pager from './Pager.svelte';
   import UserAdd from './UserAdd.svelte';
   import UserDetail from './UserDetail.svelte';
   import AuditReview from './AuditReview.svelte';
@@ -31,7 +34,7 @@
   let clientId = $state('');
   let sessionId = $state('');
   let status = $state('all');
-  let page = $state(1);
+  let page = $state(pageOfHash(window.location.hash));
   let openKey = $state<string | null>(null);
   let adding = $state(false);
   let reviewing = $state(false);
@@ -41,15 +44,20 @@
   const everyone = $derived(peopleRows(users, assignments, { clients, sessions }));
   const shown = $derived(filterPeople(everyone, { chip, search, status, clientId, sessionId, sessions }));
   const paged = $derived(pageOf(shown, page));
+  const where = $derived(pagerState({ total: shown.length, pageSize: PAGE_SIZE, page }));
+  const goTo = (next: number) => { page = next; };
+  // The page is kept in the address, so a reload comes back to it (a filter that goes back to the first page too).
+  $effect(() => {
+    const hash = hashWithPage(window.location.hash, where.page);
+    if (hash !== window.location.hash) try { window.history.replaceState(window.history.state, '', hash); } catch { /* the page still changes */ }
+  });
   const clientChoices = $derived([...clients].sort((a, b) => String(a.name ?? a.id).localeCompare(String(b.name ?? b.id))));
   const sessionChoices = $derived(sessionsOfClient(sessions, clientId));
   const open = $derived(openKey ? everyone.find((row) => row.key === openKey) ?? null : null);
   const filtering = $derived(chip !== 'all' || Boolean(search.trim()) || Boolean(clientId) || status !== 'all');
 
   async function load() {
-    const [people, rows, clientRows, sessionRows] = await Promise.all([
-      dataService.listAccessRecords('users'), dataService.listAccessRecords('roleassignments'), dataService.listClients(), dataService.listSessions(),
-    ]);
+    const [people, rows, clientRows, sessionRows] = await dataService.readLists(PEOPLE_INDEX as never) as unknown as any[][];
     users = [...people].sort((a, b) => String(a.fullName || a.email || a.id).localeCompare(String(b.fullName || b.email || b.id)));
     assignments = rows;
     clients = clientRows;
@@ -133,13 +141,7 @@
             </li>
           {/each}
         </ul>
-        {#if paged.pages > 1}
-          <nav class="users__pages" aria-label="Pages of people">
-            <button class="btn" type="button" onclick={() => { page = paged.page - 1; }} disabled={paged.page <= 1}>Previous</button>
-            <span>Page {paged.page} of {paged.pages}</span>
-            <button class="btn" type="button" onclick={() => { page = paged.page + 1; }} disabled={paged.page >= paged.pages}>Next</button>
-          </nav>
-        {/if}
+        <Pager state={where} label="Pages of people" {heading} onPage={goTo} />
       {/if}
     {/if}
   </section>
@@ -171,11 +173,4 @@
     color: #fff;
   }
 
-  .users__pages {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    margin-top: 1rem;
-  }
 </style>
