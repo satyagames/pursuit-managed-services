@@ -4,13 +4,16 @@
 // Plain JS with JSDoc on purpose, like theme.js: node runs it directly and TypeScript still
 // reads the types from the comments.
 
+import { MATRIX_TYPE, cellsLeft, decodeAnswer, encodeAnswer } from './aop-answer.js';
+
 /** @typedef {{ id: string, label: string, value?: unknown, correct?: boolean | null, imageUrl?: string | null }} Option */
-/** @typedef {{ id: string, prompt: string, type: string, order?: number, layout?: string | null, options: Option[] }} Question */
+/** @typedef {{ id: string, label: string, hint?: string, direction: string }} Criterion */
+/** @typedef {{ id: string, prompt: string, type: string, order?: number, layout?: string | null, options: Option[], criteria?: Criterion[] }} Question */
 /** @typedef {string | string[]} Answer */
 /** @typedef {'choosing' | 'wrong' | 'correct' | 'revealed'} GradedPhase */
 /** @typedef {{ phase: GradedPhase, attempts: number, firstAnswer: string | null, choice: string | null }} GradedState */
 /** @typedef {'default' | 'selected' | 'correct' | 'incorrect' | 'disabled'} AnswerState */
-/** @typedef {'default' | 'done' | 'locked'} ActivityState */
+/** @typedef {'done' | 'progress' | 'ready' | 'locked'} ActivityState */
 
 /** Wrong picks allowed on a graded question before the right answer is shown. */
 export const MAX_WRONG_TRIES = 2;
@@ -188,6 +191,15 @@ export function ungradedRecord(question, answer, earlier = null) {
 
 // ---- Ungraded questions: validation and the saved shape --------------------------------------
 
+/** An Art of the Possible question's rows and criteria as they are now. @param {Question} question */
+const matrixShape = (question) => ({ rows: question.options, criteria: question.criteria ?? [] });
+
+/** The boxes left in a draft or a stored answer of an Art of the Possible question (a row added since counts; a removed one does not). @param {Question} question @param {Answer | undefined} draft */
+export const matrixLeft = (question, draft) => cellsLeft(decodeAnswer(draft, matrixShape(question)).grid, matrixShape(question));
+
+/** The Send button's words: how many boxes are left, until none is. @param {number} left */
+export const sendLabel = (left) => (left === 0 ? 'Send' : `Send (${left} ${left === 1 ? 'box' : 'boxes'} left)`);
+
 /**
  * Whether the draft may be submitted. Kept from the old Quiz: every option ranked exactly once,
  * at least one box ticked, an option chosen, some text typed.
@@ -197,6 +209,8 @@ export function ungradedRecord(question, answer, earlier = null) {
 export function isAnswerComplete(question, draft) {
   const ids = new Set(question.options.map((option) => option.id));
   switch (question.type) {
+    case MATRIX_TYPE:
+      return matrixLeft(question, draft) === 0 && question.options.length > 0;
     case 'ranked-voting':
       return Array.isArray(draft) && draft.length === question.options.length
         && new Set(draft).size === draft.length && draft.every((id) => ids.has(id));
@@ -212,6 +226,7 @@ export function isAnswerComplete(question, draft) {
 /** What gets saved for a draft: open text is trimmed and capped, lists are copied. @param {Question} question @param {Answer} draft @returns {Answer} */
 export function normalizeAnswer(question, draft) {
   if (question.type === 'open-text-feedback') return String(draft).trim().slice(0, MAX_TEXT_LENGTH);
+  if (question.type === MATRIX_TYPE) return encodeAnswer(decodeAnswer(draft, matrixShape(question)).grid);
   return Array.isArray(draft) ? [...draft] : draft;
 }
 
@@ -257,22 +272,31 @@ export function firstTryScore(questions, answers) {
  * The hub's pills. Sequential (the default, and anything that is not 'open'): an unfinished
  * activity is locked while an earlier one is unfinished. An activity with no questions can never
  * be finished, so it neither blocks nor is blocked. 'open': nothing is locked.
- * @template {{ complete: boolean, questionIds?: string[] }} S
+ *
+ * What is not locked (Prompt 24) is only told apart for the eye: 'done', 'progress' (some answers, not all) or 'ready' (none yet; an empty
+ * activity too). `next` is the first unfinished activity that has questions. ASSUMED: "need to complete" means started and not finished,
+ * "open" means not started (the manager's question 1).
+ * @template {{ complete: boolean, questionIds?: string[], answered?: number }} S
  * @param {S[]} sections
  * @param {string | null | undefined} flow session.activityFlow
- * @returns {(S & { state: ActivityState })[]}
+ * @returns {(S & { state: ActivityState, answered: number, total: number, next: boolean })[]}
  */
 export function activityStates(sections, flow) {
   const sequential = flow !== 'open';
   let blocked = false;
+  let nextTaken = false;
   return sections.map((section) => {
-    const empty = (section.questionIds ?? []).length === 0;
+    const total = (section.questionIds ?? []).length;
+    const empty = total === 0;
+    const answered = section.answered ?? 0;
     /** @type {ActivityState} */
-    let state = 'default';
+    let state = answered > 0 ? 'progress' : 'ready';
     if (section.complete) state = 'done';
     else if (sequential && blocked && !empty) state = 'locked';
     if (sequential && !section.complete && !empty) blocked = true;
-    return { ...section, state };
+    const next = !nextTaken && !section.complete && !empty;
+    if (next) nextTaken = true;
+    return { ...section, state, answered, total, next };
   });
 }
 

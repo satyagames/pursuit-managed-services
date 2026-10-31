@@ -159,7 +159,7 @@
     }
   ],
   "sharePoint": {
-    "schemaVersion": 8,
+    "schemaVersion": 9,
     "lists": [
       {
         "key": "clients",
@@ -273,6 +273,10 @@
     {
       "type": "open-text-feedback",
       "chart": "text"
+    },
+    {
+      "type": "art-of-the-possible",
+      "chart": "matrix"
     }
   ],
   "commands": {
@@ -344,6 +348,7 @@
     "docs/MODULES.md": "module map",
     "docs/DATA-FLOW.md": "data flow",
     "docs/SHAREPOINT.md": "SharePoint and deployment",
+    "docs/ONBOARDING.md": "adding a person to the site",
     "docs/DECISIONS.md": "binding decisions",
     "docs/RULES.md": "rule book",
     "docs/TESTING.md": "gates",

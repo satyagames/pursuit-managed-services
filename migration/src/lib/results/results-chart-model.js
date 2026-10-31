@@ -19,6 +19,7 @@
 
 import { isGraded } from '../participant/pager-logic.js';
 import { nameParticipants, ownerOf, withNamesHidden } from './participant-names.js';
+import { aopResults, byGroup, countedGrid, whereToStart } from './aop-math.js';
 
 /** @typedef {{ id: string, label?: string, value?: unknown, correct?: boolean | null, count?: number, score?: number, [key: string]: any }} TallyOption */
 /** @typedef {{ questionId?: string, clientTrackId?: string | null, clientId?: string | null, answer: unknown, timestamp?: string | null, [key: string]: any }} TallyAnswer */
@@ -75,6 +76,16 @@ export function namesFor({ tracks = [], answers = [], visits = [], roster = [] }
   const named = nameParticipants({ tracks, visits, roster, answers: answers.map((answer) => ({ clientTrackId: answer.clientTrackId ?? null, clientId: answer.clientId ?? null })) });
   const people = hide ? withNamesHidden(named) : named;
   return new Map(people.map((person) => [person.key, person.name]));
+}
+
+/**
+ * Whose picture is whose, by visit (Prompt 23): the same people as namesFor, and none at all when names are hidden, so a chart that is given this shows the silhouette for everyone
+ * else. Only the admin view of Results calls this: the wall, the exports and the dashboard never do.
+ * @param {{ tracks?: any[], visits?: any[], roster?: any[] }} records @param {{ hide?: boolean }} [shown] @returns {Map<string, string>}
+ */
+export function picturesFor({ tracks = [], visits = [], roster = [] }, { hide = false } = {}) {
+  if (hide) return new Map();
+  return new Map(nameParticipants({ tracks, visits, roster }).filter((person) => person.pictureUrl).map((person) => [person.key, person.pictureUrl]));
 }
 
 /** Every answer of a results tree ({ sections: [{ questions: [{ responses }] }] }), for namesFor(). @param {{ sections?: { questions?: TallyQuestion[] }[] }} results */
@@ -167,6 +178,7 @@ export function chartKind(type) {
     case 'confidence-continuum': return 'scale';
     case 'ranked-voting': return 'ranking';
     case 'open-text-feedback': return 'text';
+    case 'art-of-the-possible': return 'matrix';
     default: return 'choice'; // single-select, and any type added later
   }
 }
@@ -175,9 +187,27 @@ export function chartKind(type) {
  * Everything one question's chart needs. `names` is who is who (namesFor); null on the wall display, where nobody's name is shown: then
  * every `who` is empty and no comment carries its author.
  * @param {TallyQuestion} question
- * @param {{ names?: Map<string, string> | null }} [options]
+ * @param {{ names?: Map<string, string> | null, pictures?: Map<string, string> | null, guests?: number | null, groups?: Map<string, string> | null }} [options] `pictures`: the admin view's faces (Prompt 23); `guests`, how many joined; `groups`, each visit's guest group.
  */
-export function chartOf(question, { names = null } = {}) {
+export function chartOf(question, { names = null, pictures = null, guests = null, groups = null } = {}) {
+  const chart = questionChart(question, { names, guests, groups });
+  return pictures ? withPictures(chart, pictures) : chart;
+}
+
+/** Each name in a chart with its picture, or null for the silhouette (Prompt 23). */
+function withPictures(chart, pictures) {
+  const faced = (who = []) => who.map((person) => ({ ...person, picture: pictures.get(person.key) ?? null }));
+  const rows = (list) => list.map((row) => ({ ...row, criteria: row.criteria.map((cell) => ({ ...cell, who: faced(cell.who) })) }));
+  return {
+    ...chart,
+    ...(chart.options ? { options: chart.options.map((option) => (option.who ? { ...option, who: faced(option.who) } : option)) } : {}),
+    ...(chart.sides ? { sides: chart.sides.map((side) => ({ ...side, who: faced(side.who) })) } : {}),
+    ...(chart.rows ? { rows: rows(chart.rows) } : {}),
+    ...(chart.views ? { views: chart.views.map((view) => ({ ...view, rows: rows(view.rows) })) } : {}),
+  };
+}
+
+function questionChart(question, { names, guests, groups }) {
   const type = String(question.type ?? '');
   let kind = chartKind(type);
   const options = question.options ?? [];
@@ -197,6 +227,7 @@ export function chartOf(question, { names = null } = {}) {
     caption: '',
     removedLine: '',
   };
+  if (kind === 'matrix') return { ...base, ...matrixChart(question, options, responses, { names, guests, groups, answered }) };
   if (kind === 'text') return { ...base, ...textChart(responses, names, answered) };
   if (kind === 'ranking') return { ...base, ...rankingChart(options, responses, names, answered) };
   return { ...base, ...choiceChart(kind, question, options, responses, names, answered) };
@@ -397,6 +428,58 @@ function rankingChart(options, responses, names, answered) {
   return { options: ranked, caption: RANKING_CAPTION, headline };
 }
 
+// ---- Art of the Possible (Prompt 23) --------------------------------------------------------------------------------------------------
+
+const MARKS = Object.freeze({ High: '▲', Medium: '●', Low: '▼' });
+/** A mean's shade, of the four steps of the blue ramp: a rating of 1 is the lightest and 3 the darkest. @param {number} mean */
+const heatTone = (mean) => Math.min(3, Math.floor(((mean - 1) / 2) * 4));
+
+/** A question's rows as they are shown, over some answers: every number is lib/results/aop-math.js's, and here it is rounded and given its words. */
+function matrixRows(question, options, responses, names) {
+  const criteria = question.criteria ?? [];
+  const result = aopResults({ rows: options, criteria, answers: responses });
+  const shape = { rows: options, criteria };
+  const grids = names ? responses.map((response) => ({ response, grid: countedGrid(response, shape).grid })) : [];
+  const rows = result.rows.map((row) => ({
+    ...row,
+    label: labelOf(row),
+    opportunityText: row.opportunity === null ? '' : String(Math.round(row.opportunity)),
+    agreementText: row.agreement === null ? '' : `${Math.round(row.agreement * 100)}%`,
+    mark: row.band ? MARKS[row.band] : '',
+    bandText: row.band ?? 'No ratings',
+    criteria: row.criteria.map((cell) => ({
+      ...cell,
+      meanText: cell.mean === null ? '' : cell.mean.toFixed(1),
+      tone: cell.mean === null ? null : heatTone(cell.mean),
+      who: /** @type {Who[]} */ (grids.filter(({ grid }) => grid[row.id]?.[cell.id] === 3).map(({ response }) => whoOf(response, names)).filter(Boolean).sort(byTime)),
+    })),
+  }));
+  return { result, rows };
+}
+
+/**
+ * An Art of the Possible question's chart: its rows (each criterion's mean and shade, opportunity, band, agreement, people), where to start, and each guest group's own rows.
+ * @param {TallyQuestion} question @param {TallyOption[]} options @param {TallyAnswer[]} responses
+ * @param {{ names: Map<string, string> | null, guests: number | null, groups: Map<string, string> | null, answered: number }} shown
+ */
+function matrixChart(question, options, responses, { names, guests, groups, answered }) {
+  const { result, rows } = matrixRows(question, options, responses, names);
+  const where = whereToStart(result);
+  const scope = `${rows.length} ${rows.length === 1 ? 'sub-process' : 'sub-processes'} · ${result.fteInScope} ${result.fteInScope === 1 ? 'person' : 'people'} in scope`;
+  return {
+    aop: result,
+    criteria: result.criteria,
+    rows,
+    where: { line: where.line, start: where.start.map((row) => rows.find((each) => each.id === row.id)), discuss: where.discuss.map((row) => rows.find((each) => each.id === row.id)) },
+    views: groups ? byGroup(responses, (key) => groups.get(key)).map(({ group, answers }) => ({ group, respondents: answers.length, rows: matrixRows(question, options, answers, names).rows })) : [],
+    metaLine: `${guests === null ? answered : `${answered} of ${guests}`} ${guests === 1 || (guests === null && answered === 1) ? 'guest' : 'guests'} answered · ${scope}`,
+    wallLine: `${guests === null ? answered : `${answered} of ${guests}`} ${answered === 1 && guests === null ? 'has' : 'have'} rated`,
+    caption: '',
+    headline: answered === 0 ? NO_ANSWERS : sentence(where.line),
+    options: [],
+  };
+}
+
 // ---- Written answers ------------------------------------------------------------------------------------------------------------------
 
 // A word: letters, marks and digits in any script, with an apostrophe inside it ("don't", "l'été").
@@ -496,9 +579,10 @@ function textChart(responses, names, answered) {
 
 /**
  * Every question's chart, section by section, for a results tree (lib/results/results-tally.js buildResults). `names` as for chartOf.
- * @param {{ sections?: { id: string, title?: string, questions?: TallyQuestion[] }[] }} results
- * @param {{ names?: Map<string, string> | null }} [options]
+ * @param {{ sections?: { id: string, title?: string, questions?: TallyQuestion[] }[], tracks?: any[] }} results
+ * @param {{ names?: Map<string, string> | null, pictures?: Map<string, string> | null, groups?: Map<string, string> | null }} [options]
  */
-export function chartsOf(results, { names = null } = {}) {
-  return (results.sections ?? []).map((section) => ({ id: String(section.id), title: section.title ?? '', charts: (section.questions ?? []).map((question) => chartOf(question, { names })) }));
+export function chartsOf(results, { names = null, pictures = null, groups = null } = {}) {
+  const guests = /** @type {any} */ (results).tracks?.length ?? null;
+  return (results.sections ?? []).map((section) => ({ id: String(section.id), title: section.title ?? '', charts: (section.questions ?? []).map((question) => chartOf(question, { names, pictures, guests, groups })) }));
 }

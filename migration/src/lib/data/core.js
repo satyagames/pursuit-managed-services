@@ -200,8 +200,8 @@ function spDecode(list, raw) {
     let value = raw[column];
     const kind = kindOf(list, key);
     if (kind === 'array') {
-      try { value = value ? JSON.parse(value) : []; } catch { throw new Error(`${spTitle(list)}.${column} contains invalid JSON (${raw[ID]}).`); }
-      if (!Array.isArray(value)) throw new Error(`${column} must contain a JSON array (${raw[ID]}).`);
+      try { value = value ? JSON.parse(value) : LISTS[list].fields[key].optional ? undefined : []; } catch { throw new Error(`${spTitle(list)}.${column} contains invalid JSON (${raw[ID]}).`); }
+      if (value !== undefined && !Array.isArray(value)) throw new Error(`${column} must contain a JSON array (${raw[ID]}).`);
     } else if (kind === 'object') { if (value !== undefined) value = spParseObject(value); }
     else if (key === 'date' && value) value = value.slice(0, 10);
     else if (key === 'value' && value !== null && value !== '' && value !== undefined && String(Number(value)) === value) value = Number(value);

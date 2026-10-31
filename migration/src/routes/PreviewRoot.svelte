@@ -17,7 +17,7 @@
   let screen = $state('welcome');
   /** A move between the preview's screens comes in as a participant's would. */
   const show = (next: string) => { setMotionDirection('jump'); screen = next; };
-  const pills = $derived(knownActivities().map((activity) => ({ id: activity.id, title: activity.title, state: 'default' as const })));
+  const pills = $derived(knownActivities().map((activity) => ({ id: activity.id, title: activity.title, state: 'ready' as const, total: activity.questionIds?.length ?? 0 })));
   const go = (path: string) => { show(path.startsWith('/quiz/') ? path.slice(6) : path === '/welcome' ? 'welcome' : path === '/thank-you' && hasCheck ? 'check-out' : screen); };
   // The client's confidence check (Phase 20), read-only: Before after Welcome, After from the hub's Finish.
   const hasCheck = sessionCheck({ preview: true }) !== null;

@@ -5,8 +5,8 @@ import * as dataService from '../data/dataService.js';
 // which every page carries, so they are two small generic calls and the rules are here, below the screen, where only the admin page carries them).
 //
 // The delete is permanent (the owner's decision, 19 Oct 2026): no soft delete, archive or undo. It removes every item keyed by the session's id in
-// the lists of SESSION_OWNED and nothing else: the client, its activities, questions, options and pictures, Brand settings, the admins and the
-// settings item are never touched, and a report somebody downloaded is theirs. A session id is `<client>-<date>`, so Today can make the same id
+// the lists of SESSION_OWNED and nothing else: the client, its activities, questions, options and their pictures, Brand settings, the admins and the
+// settings item are never touched, and a report somebody downloaded is theirs. The picture files of the session's guests go too (Prompt 23: a face is personal data). A session id is `<client>-<date>`, so Today can make the same id
 // again the same day: everything keyed by it goes, and a session made again under it starts empty.
 
 /**
@@ -70,7 +70,7 @@ export function deleteSessionWarning(session, counts) {
     lead: `You are about to delete all data of ${name} from the SharePoint lists: ${countsText(counts)}. This is permanent and cannot be undone.`,
     points: [
       DELETE_SESSION.kept,
-      'Its visit log, guest list and guest codes go too. A printed guest code of this session stops working.',
+      'Its visit log, guest list, guests\' pictures and guest codes go too. A printed guest code of this session stops working.',
       ...(session.status === 'in-progress' ? [DELETE_SESSION.inProgress] : []),
     ],
   };
@@ -121,7 +121,7 @@ const same = (/** @type {Record<string, number>} */ a, /** @type {Record<string,
  * first and refuses, in words: the live session ('session-live'; the settings item is read last, just before the first delete), and numbers that
  * are not the ones the person saw (`expected`; 'session-changed', with the new `counts`). It stops at the first list where something could not
  * be deleted, and the session item is deleted only when everything else is gone, so a stopped delete can be run again and removes only what is
- * left. An item already gone is deleted. Resolves to { deleted: { list: count }, total, leftovers: [{ list, id }], left, refused }, where `left`
+ * left. An item already gone is deleted. Resolves to { deleted: { list: count }, total, leftovers: [{ list, id }], left, refused, pictures: { removed, missing, failed } }, where `left`
  * is what is still there and `refused` the title of a list the account may not delete in (403), or null.
  * @param {string} sessionId
  * @param {{ expected?: { ipads: number, answers: number, codes: number } | null, onProgress?: (step: { done: number, total: number }) => void, concurrency?: number, gapMs?: number | null, data?: any }} [options]
@@ -134,6 +134,18 @@ export async function deleteSessionData(sessionId, { expected = null, onProgress
   if (expected && !same(expected, plan.counts)) throw failure('session-changed', changedText(plan.counts), { counts: plan.counts });
   /** @type {Record<string, number>} */
   const deleted = {};
+  // (Prompt 23) The guests' picture files, while their rows still say whose they are, paced like the rest. A file already gone is fine; one that could not be removed stops the delete
+  // here, with nothing else touched, so that a row is never left gone with its face still stored.
+  const pictures = { removed: 0, missing: 0, failed: 0 };
+  const faces = plan.items.visitorroster.filter((/** @type {{ pictureUrl?: string }} */ guest) => guest.pictureUrl);
+  if (faces.length > 0) {
+    console.info('Results: delete session, guest pictures', faces.length);
+    await data.runPaced(faces, async (/** @type {{ id: string, pictureUrl: string }} */ guest) => {
+      const gone = await data.removeGuestPicture(guest.pictureUrl, guest);
+      if (gone.removed) pictures.removed += 1; else if (gone.missing) pictures.missing += 1; else pictures.failed += 1;
+    }, { ...(concurrency ? { concurrency } : {}), gapMs });
+    if (pictures.failed > 0) return { deleted, total: plan.total, leftovers: [], left: plan.total, refused: null, pictures };
+  }
   /** @type {{ list: string, id: string }[]} */
   const leftovers = [];
   let done = 0;
@@ -161,5 +173,5 @@ export async function deleteSessionData(sessionId, { expected = null, onProgress
   }
   const left = plan.total - done;
   console.info('Results: delete session, done', { sessionId, deleted, left });
-  return { deleted, total: plan.total, leftovers, left, refused };
+  return { deleted, total: plan.total, leftovers, left, refused, pictures };
 }

@@ -1727,6 +1727,27 @@ Results is a leader's view as well (boards 9 and 12): `admin/LeaderDashboard.sve
    **Move stored quarters** (`moveStoredPeriods`: each session's Period, each summary written again whole), only on the person's second yes.
 9. **The participant page does not change**, to the byte (`PHASE_22`: +0 B, the same Tailwind rules); the admin page within its allowance.
 
+## Rules from Prompt 23 (Art of the Possible and a guest's picture; keep them holding)
+
+1. **Every formula is in `lib/results/aop-math.js`.** Results, the Live display, the exports, the summary and the dashboard call it; none has a copy. Low 1, Medium 2, High 3. `aligned` is the mean for a criterion that `favours`, 4 less the mean for one `against`, and none for `none`. `opportunity` = ((the mean of aligned) - 1) / 2 x 100. The band is High at 200/3 or more and Low under 100/3, on the unrounded number. `agreement` is the mean of the largest count / n; under 60% is a split (ASSUMED).
+2. **First answers only, box by box.** A box counts its first rating; one the first answer left empty takes the guest's later answer. A sub-process nobody rated is not in scope.
+3. **The pooling rule.** People are a client's, so each client's most recent session with the question gives its people, and clients add. A criterion's average pools by guests, by its name.
+4. **Rows are options; criteria are `Criteria`.** A row's name is `Label` and its people `OptionValue`. A criterion's id is made once and never reused. Limits are `lib/schema/aop-rules.js`, asked by the screen and the data layer. An edit never deletes a rating.
+5. **A picture is personal data.** It shows on Guests and QR, in the guest's own greeting, and in Results' people lists and who said High, and nowhere else: never on the wall, never in a file. `withNamesHidden` removes it. Its file name holds no name of a person. It goes with Remove picture and with Delete session, and each change writes an audit line with the guest's id, never the image.
+6. **Colour.** Ratings are one blue ramp with the letter; red, amber and green are only the band, with its shape and word.
+
+## Rules from Prompt 24 (the Activities hub's states and moment; keep them holding)
+
+1. **States are visual only.** `activityStates` decides who is locked, as it always did; `done`, `progress` (some answers), `ready` (none yet; an empty activity too) and `locked` only say how an activity looks. `next` is the first unfinished activity with questions. A state is never colour alone: each has a word, an icon, and its place in the accessible name.
+2. **The looks use existing tokens.** Done is `--success` mixed into `--bg-top`, in progress `--progress`, ready the glass `--surface`, locked `--action`. The ring sits on its own `--bg-top` disc. `scripts/test-hub-look.js` holds 4.5:1 for text and 3:1 for icons across every hue.
+3. **The moment is a pure plan.** `lib/participant/hub-moment-plan.js` compares the last hub with this one by activity id. Only a change to done (from in progress or ready) and from locked to ready make beats, and every activity done once one has just been stamped. The first drawing, a reload and a new, removed or renamed activity make none. The last hub is in memory, by track, and never stored.
+4. **Nothing waits for it.** A pill's paint may hold its old look until its beat; what it does when tapped and what a screen reader hears is its real state from the first frame. Leaving the hub clears every timer.
+5. **The times.** Stamp 400 ms, journey line 580, unlock 360 ms after its stamp, ready pulse 1,150; every beat but the pulse's rings ends within 1,400 ms. Lengths are `TOKENS.hub` in `lib/motion/motion-plan.js` and `--motion-hub-*` in `motion-tokens.css`. Movement is transform and opacity only, but for the check, which draws. Nothing loops.
+6. **The levels.** `full` has everything. `reduced` is a 150 ms fade, `none` an instant change, with no particles, sweep, shake or pulse in either. The device's reduced-motion setting is `none` (Phase 8's rule). Sound is the Sound switch's alone: reduced motion does not silence it.
+7. **The cues are data.** `stamp`, `unlock`, `locked` and `allDone`, all in C major, are in `lib/effects/sound-cues.js`. The hub asks `effects.ts` for a moment (`hubStamp`, `hubJourney`, `hubUnlock`, `hubLocked`, `hubAllDone`) and never names a cue. No sound file.
+8. **The sparks.** `sparkPlan` in `lib/effects/confetti-plan.js`: 6 from the check, 12 from the shackle, at most 24 live, on the one overlay; none below `full`. All-done's one medium burst is confetti and is outside that cap.
+9. **A locked tap is a "not yet".** A shake, a knock and a polite line, no red; a second tap within 400 ms does not stack.
+
 ## Before finishing a change
 
 - Always: `npm run check:svelte` and `npm test` (the documents, the module map and the project map among it). If you added, moved or renamed a

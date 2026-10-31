@@ -50,7 +50,7 @@ test('the styleguide shows every component in every state', async ({ page }) => 
     await expect(page.locator(`button.pill[data-state="${state}"]`).first(), `OptionPill ${state}`).toBeVisible();
     await expect(page.locator(`button.tile[data-state="${state}"]`).first(), `LogoTile ${state}`).toBeVisible();
   }
-  for (const state of ['default', 'done', 'locked']) {
+  for (const state of ['ready', 'progress', 'done', 'locked']) {
     await expect(page.locator(`button.activity[data-state="${state}"]`), `ActivityPill ${state}`).toHaveCount(1);
   }
   // Locked says why, in words; correct and incorrect print a word as well as colour.

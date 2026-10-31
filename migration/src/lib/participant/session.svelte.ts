@@ -26,6 +26,8 @@ type ParticipantState = {
   sharePointDisplayName: string;
   activeSession: { id: string; clientId: string; date?: string; participationMode: 'staff' | 'client-visit' } | null;
   participantName: string;
+  /** The guest's own picture (Prompt 23): from the guest record a QR scan reads, kept for this tab, never on the track. */
+  pictureUrl: string | null;
   visitLogError: string;
 };
 
@@ -42,6 +44,7 @@ export const participant = $state<ParticipantState>({
   sharePointDisplayName: '',
   activeSession: null,
   participantName: '',
+  pictureUrl: null,
   visitLogError: '',
 });
 
@@ -53,6 +56,16 @@ export function setTrack(track: ParticipantTrack) {
   participant.restartedAt = track.restartedAt ?? null;
   participant.participantName = track.participantName ?? '';
   participant.sharePointUserId = track.sharePointUserId ?? participant.sharePointUserId;
+  participant.pictureUrl = track.visitorId ? heldPicture(track.id) : null;
+}
+
+const pictureKey = (trackId: string) => `cec-guest-picture:${trackId}`;
+const heldPicture = (trackId: string) => { try { return sessionStorage.getItem(pictureKey(trackId)); } catch { return null; } };
+
+/** The picture of the guest whose code was just scanned: no request of its own, since it comes with the guest record (lib/data/qr-scan.js). A reload of this tab keeps it. */
+export function setGuestPicture(trackId: string, url: string | null | undefined) {
+  participant.pictureUrl = url || null;
+  try { if (url) sessionStorage.setItem(pictureKey(trackId), url); else sessionStorage.removeItem(pictureKey(trackId)); } catch { /* the page's memory still has it */ }
 }
 
 export function clearTrack() {
@@ -62,6 +75,7 @@ export function clearTrack() {
   participant.visitorId = null;
   participant.restartedAt = null;
   participant.participantName = '';
+  participant.pictureUrl = null;
 }
 
 // What the boot sequence found when it looked for a staff member's earlier visit to today's

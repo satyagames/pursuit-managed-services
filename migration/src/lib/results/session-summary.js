@@ -10,6 +10,7 @@
 // the facilitator is the person who wrote the summary (who ended the session, or rebuilt it).
 
 import { periodOf } from '../admin/session-plan.js';
+import { criterionProfile } from './aop-math.js';
 
 /** The fewest comments kept for the dashboard's Survey feedback panel, and the longest each may be. */
 export const FEEDBACK_QUOTES = 5;
@@ -37,6 +38,22 @@ export function themesOf(comments) {
 const text = (value) => (typeof value === 'string' ? value.trim() : '');
 const groupKey = (value) => text(value).replace(/\s+/g, ' ').toLowerCase();
 
+/**
+ * The session's Art of the Possible figures for the dashboard (Prompt 23), from the question most guests rated (ASSUMED: one a session is the expected use). No name is in it. Absent when no
+ * such question was answered, so an older session's summary and one without the type are as they were.
+ */
+function aopBlock(questions) {
+  const [question] = questions.filter((each) => each.kind === 'matrix' && each.respondents > 0).sort((left, right) => right.respondents - left.respondents);
+  if (!question) return null;
+  const { aop } = question.chart;
+  const top = aop.rows.filter((row) => row.opportunity !== null).sort((left, right) => right.opportunity - left.opportunity || right.people - left.people).slice(0, 5);
+  return {
+    questionId: question.id, fteInScope: aop.fteInScope, fteHigh: aop.fteHigh, shareHigh: aop.shareHigh, respondents: aop.respondents, rowsRated: aop.rowsRated, opportunityIndex: aop.opportunityIndex,
+    criteria: criterionProfile(aop).map(({ id, label, direction, mean, agreement }) => ({ id, label, direction, mean, agreement })),
+    top: top.map((row) => ({ name: row.label, people: row.people, opportunity: row.opportunity, band: row.band })),
+  };
+}
+
 /** The mean of a step count list [{ value, before, after }] on one side, and how many it rests on. */
 function meanOn(distribution, side) {
   let total = 0; let n = 0;
@@ -62,6 +79,7 @@ export function summaryOf(records, report, { writtenBy = '', at = new Date(), st
       : question.kind === 'ranking' ? (question.ranking ?? []).map((row) => ({ label: row.label, count: row.firsts })) : null;
     if (options) firstChoices.push({ questionId: question.id, prompt: question.prompt, options: options.filter((row) => row.count > 0).sort((left, right) => right.count - left.count) });
   }
+  const aop = aopBlock(questions);
   const comments = questions.filter((question) => question.kind === 'text').flatMap((question) => question.comments).filter((comment) => text(comment.text));
   // The guest groups of those who joined (a track's visitorId is its roster row), each spelt as it was first seen.
   const rosterOf = new Map((records.roster ?? []).map((row) => [String(row.id), row]));
@@ -84,7 +102,7 @@ export function summaryOf(records, report, { writtenBy = '', at = new Date(), st
       scaleMax: measured ? check.scaleMax : null, pairedBefore: check?.shift?.beforeMean ?? null, pairedAfter: check?.shift?.afterMean ?? null,
       moved: measured ? { started: check.moved.started, moved: check.moved.moved } : null,
       distribution: measured ? { before: check.distribution.map((step) => step.before), after: check.distribution.map((step) => step.after) } : null,
-      firstChoices, kinds, groups,
+      firstChoices, kinds, groups, ...(aop ? { aop } : {}),
       feedback: { count: comments.length, themes: themesOf(comments.map((comment) => comment.text)), quotes: comments.slice(0, FEEDBACK_QUOTES).map((comment) => ({ name: comment.name, text: text(comment.text).slice(0, QUOTE_LENGTH) })) },
     },
   };

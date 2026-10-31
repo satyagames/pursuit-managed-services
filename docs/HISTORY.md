@@ -41,6 +41,10 @@ built the deployed `pms-283ad18` byte for byte. Phases up to 11a-2 are in VJR's 
 
 ## What has met the real site
 
+Prompt 23 (`pms-23`, [RELEASE-23.md](history/RELEASE-23.md)): Art of the Possible and a guest's picture; schema version 9; not pushed.
+
+Prompt 24 (`pms-24`, [RELEASE-24.md](history/RELEASE-24.md)): the Activities hub: four states, the unlock moment, four synthesised cues and small sparks; the lock rule unchanged; not pushed.
+
 PCOE (`https://internal.global.deloitteonline.com/sites/PCOE`): steps 1 to 9 of the runbook (`pms-969bf16`, 14 Oct 2026); the self-test, Content, Go
 live and a participant's visit (`pms-e250a36`, 15 Oct); the lists of version 3 and a visit (`pms-da9fc8d`); a named guest's visit by QR code and Results
 (`pms-0a1c701`); the Results charts on a Windows laptop in Chrome (`pms-3fb312a`, 16 Oct); the charts' fit and tooltips on that laptop and an iPad

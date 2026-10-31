@@ -4,6 +4,7 @@
   import { onMount } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
   import { addPerson } from '../lib/access/people-ops.js';
+  import { SITE_ACCESS_ADD_USER } from '../lib/access/access-words.js';
   import { errorText } from '../lib/admin/session-notice.js';
   import UserPicker from './UserPicker.svelte';
 
@@ -61,6 +62,7 @@
         disabled={busy}
       />
     {/if}
+    <p class="muted small" data-testid="site-access-add">{SITE_ACCESS_ADD_USER}</p>
     {#if error}<p class="error" role="alert">{error}</p>{/if}
     <div class="dialog__actions">
       <button class="btn" type="button" onclick={onCancel} disabled={busy}>Cancel</button>

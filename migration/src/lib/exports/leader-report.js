@@ -14,6 +14,7 @@
 //   confidence-continuum        answer = one option id; the option's `value` is its place on the scale (1, 2, 3 ...).
 //   ranked-voting               answer = every option id, best first.
 //   open-text-feedback          answer = the text, trimmed, 1000 characters at most.
+//   art-of-the-possible         answer = a list of strings, one for each rated sub-process: <optionId>:<criterionId>=<1|2|3>,... (lib/participant/aop-answer.js); never graded.
 // An answer record with no history (attempts and correct null, as an older page stored them) is counted as given: first and final are the one answer.
 
 import { resolveClientTheme } from '../brand/client-theme.js';
@@ -26,10 +27,12 @@ import { SAMPLE_REPORT_LINE, needsConfirmation } from '../admin/sample-notice.js
 import { unreadableNotice } from '../results/unreadable.js';
 import { isCheckActivity, isCheckRecord } from '../participant/confidence-check.js';
 import { checkScoresByGuest, confidenceCheckResults, confidenceLine } from '../results/confidence-shift.js';
+import { countedGrid } from '../results/aop-math.js';
+import { decodeAnswer, MATRIX_TYPE } from '../participant/aop-answer.js';
 import { compositeOver, contrastRatio, MIN_GRAPHIC_CONTRAST, MIN_TEXT_CONTRAST } from '../brand/theme.js';
 
 /** @typedef {{ id: string, [key: string]: any }} Row */
-/** @typedef {'graded' | 'choice' | 'multi' | 'scale' | 'ranking' | 'text'} Kind */
+/** @typedef {'graded' | 'choice' | 'multi' | 'scale' | 'ranking' | 'text' | 'matrix'} Kind */
 /**
  * @typedef {object} ReportRecords What lib/exports/leader-report-data.js reads for one session.
  * @property {Row} session
@@ -60,6 +63,9 @@ export const COUNTING_RULES = Object.freeze([
   'The wording of questions and answers, and which answer is correct, are read when the report is made, not as they stood when people answered.',
 ]);
 
+/** The rule a report with an Art of the Possible question adds to those above (Prompt 23); any other report says what it always said. */
+export const MATRIX_RULE = 'Art of the Possible counts each person’s first rating of each box, so changing a rating later does not move a number. A sub-process nobody rated is not in scope, and its people are not counted.';
+
 /**
  * One plain sentence for the last page (Phase 11b), beside the rules and not one of them: the Live display's one-page PDF and PowerPoint, and its
  * screen, count "N answers from M iPads" over the iPads that ANSWERED, while this report counts everyone who opened the session, so a reader who
@@ -75,7 +81,7 @@ const REMOVED_OPTION = 'an answer option that was later removed';
 const UNREADABLE = 'An answer that can no longer be read (its question was deleted)';
 
 const KIND_LABEL = Object.freeze({
-  graded: 'One correct answer', choice: 'Poll, one answer', multi: 'Poll, any number of answers', scale: 'Confidence scale', ranking: 'Ranking', text: 'Survey feedback',
+  graded: 'One correct answer', choice: 'Poll, one answer', multi: 'Poll, any number of answers', scale: 'Confidence scale', ranking: 'Ranking', text: 'Survey feedback', matrix: 'Art of the Possible',
 });
 
 // ---- Small helpers ------------------------------------------------------------------------------------------------------------------
@@ -134,11 +140,12 @@ export { nameParticipants as reportParticipants } from '../results/participant-n
 
 // ---- Questions and answers ---------------------------------------------------------------------------------------------------------
 
-const KNOWN_TYPES = new Set(['single-select', 'true-false', 'multi-select', 'confidence-continuum', 'ranked-voting', 'open-text-feedback']);
+const KNOWN_TYPES = new Set(['single-select', 'true-false', 'multi-select', 'confidence-continuum', 'ranked-voting', 'open-text-feedback', MATRIX_TYPE]);
 
 /** @param {{ type: string, options: Row[] }} question @returns {Kind} */
 export function kindOf(question) {
   if (question.type === 'open-text-feedback' || (!KNOWN_TYPES.has(question.type) && question.options.length === 0)) return 'text';
+  if (question.type === MATRIX_TYPE) return 'matrix';
   if (question.type === 'ranked-voting') return 'ranking';
   if (question.type === 'multi-select') return 'multi';
   if (question.type === 'confidence-continuum') return 'scale';
@@ -165,6 +172,7 @@ function scaleValues(question) {
 
 /** An answer in words, with nothing that is an id. @param {any} question @param {Kind} kind @param {unknown} value */
 function answerText(question, kind, value) {
+  if (kind === 'matrix') { const rated = Object.keys(decodeAnswer(value, { rows: question.options, criteria: question.criteria ?? [] }).grid).length; return `Rated ${plural(rated, 'sub-process', 'sub-processes')}`; }
   if (kind === 'text') return String(value ?? '');
   if (kind === 'ranking') return list(value).map((id, index) => `${index + 1}. ${labelOf(question, id)}`).join('  ');
   if (kind === 'multi') return list(value).map((id) => labelOf(question, id)).join('; ');
@@ -182,8 +190,8 @@ function questionResults(question, kind, given) {
   const rowOf = new Map(rows.map((row) => [row.id, row]));
   const notes = [];
   let removed = 0;
-  // What is counted: the first pick of a graded question, the answer of every other kind (each option of a list once).
-  for (const { record } of given) {
+  // What is counted: the first pick of a graded question, the answer of every other kind (each option of a list once). (Art of the Possible's answer is no list of options: lib/results/aop-math.js counts it.)
+  for (const { record } of kind === 'matrix' ? [] : given) {
     for (const id of kind === 'graded' ? [record.first] : [...new Set(list(record.counted))]) {
       if (rowOf.has(id)) rowOf.get(id).count += 1;
       else if (kind !== 'text') removed += 1;
@@ -235,7 +243,7 @@ function questionResults(question, kind, given) {
  * report's bars, headline and "N of M got it right first time" are the screen's words over this report's own numbers. A graded question's answer
  * is the first pick (what the bars count); nobody is named. Nothing here is counted again.
  */
-function chartOfQuestion(question, counted, given) {
+function chartOfQuestion(question, counted, given, joined) {
   const graded = question.kind === 'graded';
   const points = new Map((counted.ranking ?? []).map((row) => [row.order, row.score]));
   // An option's value as the chart needs it, and the same from either storage (a list holds it as text, the local server as it was written):
@@ -244,11 +252,13 @@ function chartOfQuestion(question, counted, given) {
   const valueOf = (option) => {
     if (places) return places.get(option.id);
     if (question.type === 'true-false') return option.value === true || String(option.value).toLowerCase() === 'true';
+    if (question.kind === 'matrix') return option.value;
     return undefined;
   };
   return chartOf({
     id: String(question.id),
     type: question.kind === 'text' ? 'open-text-feedback' : question.type,
+    ...(question.kind === 'matrix' ? { criteria: question.criteria ?? [] } : {}),
     prompt: words(question.prompt) || 'Untitled question',
     respondents: counted.respondents,
     options: question.options.map((option, index) => ({
@@ -256,8 +266,8 @@ function chartOfQuestion(question, counted, given) {
       ...(question.kind === 'ranking' ? { score: points.get(index) ?? 0 } : {}),
     })),
     // (No times: the report prints none of the chart's comments, which keep the order of the people, and a report reads the same whenever it is made.)
-    responses: given.map(({ person, record }) => ({ questionId: String(question.id), clientTrackId: person.key, answer: graded ? record.first : record.counted })),
-  }, { names: null });
+    responses: given.map(({ person, record }) => ({ questionId: String(question.id), clientTrackId: person.key, answer: graded ? record.first : record.counted, ...(question.kind === 'matrix' ? { firstAnswer: record.first } : {}) })),
+  }, { names: null, guests: joined });
 }
 
 /** One person's answer to one question, as their page and the CSV show it. */
@@ -281,6 +291,19 @@ function answerRow(question, kind, record) {
 // An id, as this app makes them (a UUID, or words joined by hyphens, underscores or tildes): what a stored answer is when its
 // question was a choice. Anything else that was typed is a written answer and is shown as it is.
 const LOOKS_LIKE_ID = /^[A-Za-z0-9]+(?:[-_~.:][A-Za-z0-9]+)+$/;
+
+/** One line for each guest, sub-process and criterion they rated: what the long CSV prints (Prompt 23). */
+function matrixCells(question, given, at) {
+  const criteria = question.criteria ?? [];
+  const shape = { rows: question.options, criteria };
+  return given.flatMap(({ person, record }) => {
+    const { grid } = countedGrid({ firstAnswer: record.first, answer: record.final }, shape);
+    return question.options.flatMap((option) => criteria.flatMap((criterion) => {
+      const level = grid[option.id]?.[criterion.id];
+      return level ? [{ name: person.name, row: words(option.label), people: Number(option.value) || 0, criterion: words(criterion.label), rating: ['Low', 'Medium', 'High'][level - 1], at: at.sortable(record.at) }] : [];
+    }));
+  });
+}
 
 /** The note a report with names hidden carries (Prompt 21, decision B). */
 export const NAMES_HIDDEN_NOTE = 'Names are hidden: each person is shown as Guest 1, Guest 2 … in the order they joined.';
@@ -396,7 +419,8 @@ export function buildLeaderReport(records, { generatedAt = new Date(), timeZone,
           number: question.number, id: String(question.id), prompt: words(question.prompt) || 'Untitled question', kind: question.kind, kindLabel: question.type === 'true-false' ? `True or false${question.kind === 'graded' ? '' : ' (poll)'}` : KIND_LABEL[question.kind],
           ...counted,
           comments: question.kind === 'text' ? given.map(({ person, record }) => ({ name: person.name, text: String(record.counted ?? '') })) : [],
-          chart: chartOfQuestion(question, counted, given),
+          chart: chartOfQuestion(question, counted, given, participants.length),
+          ...(question.kind === 'matrix' ? { matrixCells: matrixCells(question, given, at) } : {}),
         };
       }),
     };
@@ -462,7 +486,7 @@ export function buildLeaderReport(records, { generatedAt = new Date(), timeZone,
       generated: at.stamp(generatedAt), generatedIso: new Date(/** @type {any} */ (generatedAt)).toISOString(),
     },
     brand: { ...printColours(masterColours(client).primaryColor), logoUrl: theme.assets.logo, plate: theme.plate },
-    rules: COUNTING_RULES, notes,
+    rules: allQuestions.some((question) => question.kind === 'matrix') ? [...COUNTING_RULES, MATRIX_RULE] : COUNTING_RULES, notes,
     summary: {
       // (Somebody whose saved answers could not be read has not "answered nothing": nobody knows what they answered.)
       joined: participants.length, answeredSomething: participants.filter((person) => person.answered > 0 || person.strays > 0).length,
@@ -549,6 +573,18 @@ export function participantAnswersRows(report) {
 
 /** The file's text: a byte-order mark (so a spreadsheet reads accented names as UTF-8), a header row, CRLF line ends. @param {LeaderReport} report */
 export const participantAnswersCsv = (report) => `${BOM}${[csvColumns(report), ...participantAnswersRows(report)].map((row) => row.map(csvCell).join(',')).join('\r\n')}\r\n`;
+
+/** The long file of an Art of the Possible question (Prompt 23): one line for each guest, sub-process and criterion. */
+export const MATRIX_CSV_COLUMNS = Object.freeze(['Client', 'Date', 'Participant', 'Activity', 'Sub-process', 'People', 'Criterion', 'Rating', 'Answered at']);
+
+/** Does the report have one? It offers the file only then. @param {LeaderReport} report */
+export const hasMatrix = (report) => report.activities.some((activity) => activity.questions.some((question) => question.kind === 'matrix'));
+
+/** The file's text, as the other CSVs write it: the same names (Hide names applies), csvCell, a byte-order mark, CRLF line ends. @param {LeaderReport} report */
+export function matrixLongCsv(report) {
+  const rows = report.activities.flatMap((activity) => activity.questions.flatMap((question) => (question.matrixCells ?? []).map((cell) => [report.meta.clientName, report.meta.date, cell.name, activity.title, cell.row, cell.people, cell.criterion, cell.rating, cell.at])));
+  return `${BOM}${[MATRIX_CSV_COLUMNS, ...rows].map((row) => row.map(csvCell).join(',')).join('\r\n')}\r\n`;
+}
 
 /** "leader-report-kroger-2026-10-11-2026-10-12.pdf": like exportFileName() in resultsExport.js, safe on every OS. */
 export function reportFileName(prefix, sessionId, extension, now = new Date()) {

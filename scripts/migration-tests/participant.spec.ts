@@ -15,8 +15,8 @@ test('finishing an activity keeps earlier completion on the first hub paint, wit
   await page.getByRole('button', { name: 'Submit', exact: true }).click();
   await expect(page.getByRole('heading', { name: /Nice work/ })).toBeVisible();
   await page.getByRole('button', { name: 'Back to activities' }).click();
-  await expect(page.getByRole('button', { name: 'Module A Completed' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Module B Completed' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Module A, done' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Module B, done' })).toBeVisible();
   expect(fixture.writes, 'one answer, one write: an overwrite of the item the page had read').toBe(1);
   expect(fixture.responseReads, 'the page read its own answers once, as it loaded; no screen read them again').toBe(1);
   expect(fixture.saved().map((record) => record.questionId)).toEqual(['question-a', 'question-b']);

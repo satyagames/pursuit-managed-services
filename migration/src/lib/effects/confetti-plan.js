@@ -121,8 +121,8 @@ export function confettiPlan(size, { width, reducedMotion = false, origin = null
   }
   if (size === 'medium') {
     return [
-      { at: 0, count: count(60), angle: 60, spread: 55, startVelocity: 52, gravity: 1, ticks: 90, scalar: pieceSize * 1.25, origin: { x: 0, y: 1 } },
-      { at: 0, count: count(60), angle: 120, spread: 55, startVelocity: 52, gravity: 1, ticks: 90, scalar: pieceSize * 1.25, origin: { x: 1, y: 1 } },
+      { at: 0, count: count(60), angle: 60, spread: 55, startVelocity: 52, gravity: 1, ticks: 90, scalar: pieceSize * 1.25, origin: origin ?? { x: 0, y: 1 } },
+      { at: 0, count: count(60), angle: 120, spread: 55, startVelocity: 52, gravity: 1, ticks: 90, scalar: pieceSize * 1.25, origin: origin ?? { x: 1, y: 1 } },
     ];
   }
   return [
@@ -136,3 +136,39 @@ export function confettiPlan(size, { width, reducedMotion = false, origin = null
 export const planDuration = (plan) => Math.max(...plan.map((burst) => burst.at + (burst.ticks * 1000) / 60));
 
 export const CONFETTI_SIZES = /** @type {ConfettiSize[]} */ (['small', 'medium', 'large']);
+
+// ---- The hub's sprays (Prompt 24) ------------------------------------------------------------------
+
+/** The most small sparks alive at once in a hub moment. (All-done's one medium burst is confetti, as the brief asks, and is not counted here.) */
+export const MAX_LIVE_SPARKS = 24;
+
+/** How many of `wanted` sparks may be thrown with `live` still in the air. @param {number} live @param {number} wanted */
+export const sparkAllowance = (live, wanted) => Math.max(0, Math.min(wanted, MAX_LIVE_SPARKS - live));
+
+/**
+ * A small spray from one element, or null below the full motion level. `stamp`: 6 round sparks all round the check badge, in the success green and
+ * its tint. `unlock`: 12 fanning upward from the shackle, white and a tint of the client's colour (from buildPalette, so never red).
+ * @param {'stamp' | 'unlock'} kind
+ * @param {{ rect: { left: number, top: number, width: number, height: number } | null | undefined, viewport: { width: number, height: number },
+ *   tokens: { success?: string, action?: string, primary?: string }, level: 'full' | 'reduced' | 'none' }} context
+ * @returns {{ bursts: Burst[], colors: string[], shapes: ['circle'] } | null}
+ */
+export function sparkPlan(kind, { rect, viewport, tokens, level }) {
+  if (level !== 'full') return null;
+  const origin = originFromRect(rect, viewport);
+  if (kind === 'stamp') {
+    const green = parseColor(tokens.success ?? '') ?? /** @type {[number, number, number]} */ (parseColor(DELOITTE_GREEN));
+    return {
+      bursts: [{ at: 0, count: 6, angle: 90, spread: 360, startVelocity: 9, gravity: 0.5, ticks: 30, scalar: 0.7, origin }],
+      colors: [toHex(green).toUpperCase(), toHex(tint(green, 0.55)).toUpperCase()],
+      shapes: ['circle'],
+    };
+  }
+  // buildPalette gives green, white and the success colour first; what follows it is the client's own tints.
+  const tints = buildPalette(tokens).filter((colour) => ![DELOITTE_GREEN, WHITE, (tokens.success ?? '').toUpperCase()].includes(colour));
+  return {
+    bursts: [{ at: 0, count: 12, angle: 90, spread: 70, startVelocity: 14, gravity: 0.4, ticks: 36, scalar: 0.7, origin }],
+    colors: [WHITE, ...(tints.length ? tints : [DELOITTE_GREEN])],
+    shapes: ['circle'],
+  };
+}

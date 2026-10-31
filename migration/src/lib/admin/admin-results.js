@@ -97,7 +97,7 @@ export function resultRows(result, sources = EMPTY, { hide = false } = {}) {
   const damaged = new Set((result.unreadable ?? []).map((entry) => String(entry.id)));
   const responses = result.sections.flatMap((section) => section.questions.flatMap((question) => question.responses));
   const expected = new Set(result.sections.filter((section) => result.session.sectionIds?.includes(section.id) && section.enabled).flatMap((section) => section.questions.map((question) => question.id)));
-  return people.map(({ track, name, unnamed }) => {
+  return people.map(({ track, name, unnamed, pictureUrl }) => {
     const mine = /** @type {NonNullable<typeof track>} */ (track);
     const own = responses.filter((response) => responseOwner(response) === mine.id && expected.has(response.questionId));
     const answered = new Set(own.map((response) => response.questionId));
@@ -105,7 +105,7 @@ export function resultRows(result, sources = EMPTY, { hide = false } = {}) {
     // Retry was never used is answered, and not final (isRecordSettled; an answer with no history, from the older shared item, is final).
     const final = new Set(own.filter((response) => isRecordSettled({ correct: response.correct ?? null, attempts: response.attempts ?? MAX_WRONG_TRIES })).map((response) => response.questionId));
     const status = damaged.has(String(mine.id)) ? 'unreadable' : answered.size === 0 ? 'not-started' : final.size === expected.size ? 'completed' : 'in-progress';
-    return { track: /** @type {import('./adminData.js').SessionTrack} */ (mine), name, unnamed, status, answered: answered.size, total: expected.size };
+    return { track: /** @type {import('./adminData.js').SessionTrack} */ (mine), name, unnamed, status, answered: answered.size, total: expected.size, ...(pictureUrl ? { pictureUrl } : {}) };
   });
 }
 

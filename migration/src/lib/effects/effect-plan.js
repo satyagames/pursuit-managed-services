@@ -14,6 +14,11 @@ export const EFFECTS = /** @type {const} */ ({
   pick: { cue: 'pick', confetti: null },
   activityComplete: { cue: 'activityComplete', confetti: 'medium' },
   finale: { cue: 'finale', confetti: 'large' },
+  // The hub (Prompt 24). Its small sprays are not confetti: they are the plan's sparkPlan, asked for by effects.ts.
+  stamp: { cue: 'stamp', confetti: null },
+  unlock: { cue: 'unlock', confetti: null },
+  locked: { cue: 'locked', confetti: null },
+  allDone: { cue: 'allDone', confetti: 'medium' },
 });
 
 /**

@@ -92,6 +92,26 @@ export function recordAnswer(sectionId: string, input: AnswerInput): void {
  * The server answered a moment ago (the page's own look reached it): send whatever is still waiting. Without this, answers whose
  * save had failed every try stayed on the device until somebody tapped Retry, and a participant who had walked away was left out.
  */
+// ---- Ratings not sent yet (Prompt 23) -------------------------------------------------------------------------------------------------
+// An Art of the Possible question is sent once, when every box is rated: until then its ratings are only a draft, kept here (in the page's own tab, per visit and question) so
+// that a reload or a lock screen does not lose them. They are not answers: nothing is written until Send. With storage blocked the page's memory still holds them.
+const matrixDraftKey = (questionId: string) => `cec-matrix:${participant.clientTrackId ?? ''}:${questionId}`;
+
+export function keepMatrixDraft(questionId: string, answer: string[]): void {
+  try { sessionStore()?.setItem(matrixDraftKey(questionId), JSON.stringify(answer)); } catch { /* quota or private mode: the page's memory still has it */ }
+}
+
+export function matrixDraft(questionId: string): string[] | null {
+  try {
+    const held = JSON.parse(sessionStore()?.getItem(matrixDraftKey(questionId)) ?? 'null');
+    return Array.isArray(held) ? held.filter((entry): entry is string => typeof entry === 'string') : null;
+  } catch { return null; }
+}
+
+export function dropMatrixDraft(questionId: string): void {
+  try { sessionStore()?.removeItem(matrixDraftKey(questionId)); } catch { /* nothing to clean */ }
+}
+
 export function resumePendingSaves(): void {
   const visit = currentVisit();
   if (visit) store.resume(visit);
@@ -167,7 +187,7 @@ export async function hasAnyAnswer(visit: { sessionId: string; trackId: string; 
  * the session beside them, for a hub that stays open (see experience.currentActivities).
  */
 export async function getProgress(sessionId: string, clientTrackId: string, answeredQuestionIds: string[] | null = null, { withSession = false } = {}): Promise<{
-  sections: { id: string; title: string; description?: string; complete: boolean; questionIds?: string[] }[];
+  sections: { id: string; title: string; description?: string; complete: boolean; questionIds?: string[]; answered?: number; total?: number }[];
   allComplete: boolean;
 }> {
   const visit = currentVisit();
@@ -203,6 +223,8 @@ function progressOf(sections: Activity[], answeredQuestionIds: string[]) {
       return {
         id: section.id, title: section.title, description: section.description ?? undefined, questionIds,
         complete: questionIds.length > 0 && questionIds.every((id) => answered.has(id)),
+        answered: questionIds.filter((id) => answered.has(id)).length,
+        total: questionIds.length,
       };
     });
   return { sections: enabled, allComplete: enabled.length > 0 && enabled.every((section) => section.complete) };

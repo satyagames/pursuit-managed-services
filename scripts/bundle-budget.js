@@ -467,3 +467,26 @@ export const PHASE_22 = Object.freeze({
   participantAfter: 167_109, adminAfter: 646_950,
   participantUtilities: PHASE_11A.participantUtilities,
 });
+
+/**
+ * Prompt 23 (Art of the Possible, and a guest's picture). The participant page gains the rating grid (pager/MatrixRating.svelte), the answer module
+ * (lib/participant/aop-answer.js), the rules the data layer asks (lib/schema/aop-rules.js) and the avatar (components/GuestAvatar.svelte): at most 12,000 B gzip on where
+ * Prompt 22 left it. The numbers (lib/results/aop-math.js), the editor and the picture dialog are the admin page's: at most 35,000 B there. The ceilings are not raised.
+ * Measured when the prompt ended: the after figures, where the next one starts.
+ */
+export const PHASE_23 = Object.freeze({
+  participantBefore: PHASE_22.participantAfter, adminBefore: PHASE_22.adminAfter, participantAllowance: 12_000, adminAllowance: 35_000,
+  participantAfter: 176_809, adminAfter: 670_430,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
+
+/**
+ * Prompt 24 (the Activities hub: four states, the moment, sound and particles). The participant page gains the moment's plan, the pill's looks and four cues,
+ * no sound file and no library: at most 6,000 B gzip on where Prompt 23 left it. The admin page carries the same hub for Brand Studio's preview: at most 6,000 B
+ * (ASSUMED: the brief names only the participant's). The ceilings are not raised. Measured when the prompt ended: the after figures, where the next one starts.
+ */
+export const PHASE_24 = Object.freeze({
+  participantBefore: PHASE_23.participantAfter, adminBefore: PHASE_23.adminAfter, participantAllowance: 6_000, adminAllowance: 6_000,
+  participantAfter: 181_511, adminAfter: 674_795,
+  participantUtilities: PHASE_11A.participantUtilities,
+});

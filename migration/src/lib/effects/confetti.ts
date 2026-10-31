@@ -8,7 +8,8 @@
  * pure functions in confetti-plan.js; under `prefers-reduced-motion: reduce` there is no overlay at all.
  */
 import type { Fire, Options } from 'canvas-confetti';
-import { buildPalette, confettiPlan, originFromRect, planDuration, type Burst, type ConfettiSize } from './confetti-plan.js';
+import { buildPalette, confettiPlan, originFromRect, planDuration, sparkAllowance, sparkPlan, type Burst, type ConfettiSize } from './confetti-plan.js';
+import type { Level } from '../motion/motion-plan.js';
 
 const Z_INDEX = 9999;
 const FAILSAFE_MS = 3000; // after a plan should have ended, remove the overlay even if animation frames stopped (a hidden tab)
@@ -51,11 +52,13 @@ const prefersReducedMotion = (): boolean =>
   typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /** The page's own colours, read when the burst starts so a client theme is picked up. */
-function paletteFromPage(): string[] {
+function pageTokens(): { success: string; action: string; primary: string } {
   const style = getComputedStyle(document.documentElement);
   const read = (name: string) => style.getPropertyValue(name).trim();
-  return buildPalette({ success: read('--success'), action: read('--action'), primary: read('--brand-primary') || read('--bg-mid') });
+  return { success: read('--success'), action: read('--action'), primary: read('--brand-primary') || read('--bg-mid') };
 }
+
+const paletteFromPage = (): string[] => buildPalette(pageTokens());
 
 /** Takes every burst off the screen at once, and drops the ones not fired yet (Phase 12, F-20: a new activity opens on a clear page). */
 export function clearConfetti(): void {
@@ -73,44 +76,71 @@ export async function celebrate(size: ConfettiSize, anchor?: Element | null): Pr
     const plan = confettiPlan(size, { width: window.innerWidth, reducedMotion: prefersReducedMotion(), origin });
     if (!plan) return;
 
-    const born = generation;
-    const lib = await loadLibrary();
-    if (born !== generation) return;
-    const colors = paletteFromPage();
-    const active = openOverlay(lib);
-    active.pending += plan.length;
-    active.deadline = Math.max(active.deadline, Date.now() + planDuration(plan) + FAILSAFE_MS);
-    if (active.failsafe !== undefined) clearTimeout(active.failsafe);
-    active.failsafe = setTimeout(() => closeOverlay(active), active.deadline - Date.now());
-
-    const fireBurst = (burst: Burst) => {
-      if (born !== generation) return;
-      const options: Options = {
-        particleCount: burst.count,
-        angle: burst.angle,
-        spread: burst.spread,
-        startVelocity: burst.startVelocity,
-        gravity: burst.gravity,
-        ticks: burst.ticks,
-        scalar: burst.scalar,
-        origin: burst.origin,
-        colors,
-        shapes: ['square', 'circle'],
-        zIndex: Z_INDEX,
-        disableForReducedMotion: false, // already decided above
-      };
-      Promise.resolve(active.fire(options))
-        .catch(() => {})
-        .finally(() => {
-          active.pending -= 1;
-          if (active.pending <= 0) closeOverlay(active);
-        });
-    };
-    for (const burst of plan) {
-      if (burst.at <= 0) fireBurst(burst);
-      else setTimeout(() => fireBurst(burst), burst.at);
-    }
+    await throwBursts(plan, paletteFromPage, ['square', 'circle']);
   } catch (cause) {
     console.warn('Confetti could not run', cause);
+  }
+}
+
+/** Fires a plan on the one overlay, which goes when its last piece has fallen. */
+async function throwBursts(plan: Burst[], colorsNow: () => string[], shapes: string[], onDone?: () => void): Promise<void> {
+  const born = generation;
+  const lib = await loadLibrary();
+  if (born !== generation) { onDone?.(); return; }
+  const colors = colorsNow();
+  const active = openOverlay(lib);
+  active.pending += plan.length;
+  active.deadline = Math.max(active.deadline, Date.now() + planDuration(plan) + FAILSAFE_MS);
+  if (active.failsafe !== undefined) clearTimeout(active.failsafe);
+  active.failsafe = setTimeout(() => closeOverlay(active), active.deadline - Date.now());
+
+  const fireBurst = (burst: Burst) => {
+    if (born !== generation) { onDone?.(); return; }
+    const options: Options = {
+      particleCount: burst.count,
+      angle: burst.angle,
+      spread: burst.spread,
+      startVelocity: burst.startVelocity,
+      gravity: burst.gravity,
+      ticks: burst.ticks,
+      scalar: burst.scalar,
+      origin: burst.origin,
+      colors,
+      shapes,
+      zIndex: Z_INDEX,
+      disableForReducedMotion: false, // already decided above
+    };
+    Promise.resolve(active.fire(options))
+      .catch(() => {})
+      .finally(() => {
+        onDone?.();
+        active.pending -= 1;
+        if (active.pending <= 0) closeOverlay(active);
+      });
+  };
+  for (const burst of plan) {
+    if (burst.at <= 0) fireBurst(burst);
+    else setTimeout(() => fireBurst(burst), burst.at);
+  }
+}
+
+/** The hub's small sprays still in the air. */
+let liveSparks = 0;
+
+/**
+ * A small spray from `anchor` on the same overlay (Prompt 24): the plan decides how many and which colours, and gives nothing below the full motion
+ * level, when no overlay is opened at all. Never throws.
+ */
+export async function sparks(kind: 'stamp' | 'unlock', anchor: Element | null | undefined, level: Level): Promise<void> {
+  try {
+    const tokens = pageTokens();
+    const plan = sparkPlan(kind, { rect: anchor?.getBoundingClientRect(), viewport: { width: window.innerWidth, height: window.innerHeight }, tokens, level });
+    if (!plan) return;
+    const allowed = sparkAllowance(liveSparks, plan.bursts[0].count);
+    if (allowed === 0) return;
+    liveSparks += allowed;
+    await throwBursts([{ ...plan.bursts[0], count: allowed }], () => plan.colors, plan.shapes, () => { liveSparks = Math.max(0, liveSparks - allowed); });
+  } catch (cause) {
+    console.warn('Sparks could not run', cause);
   }
 }

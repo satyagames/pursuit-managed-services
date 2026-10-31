@@ -49,7 +49,7 @@ const webp = (flags = 0) => concat(ascii('RIFF'), le32(22), ascii('WEBP'), ascii
 
 describe('picture slots (the brief, exactly)', () => {
   it('has the sizes, shapes, formats and caps that were asked for', () => {
-    assert.deepEqual(Object.keys(SLOTS), ['hero', 'logo', 'background', 'tile']);
+    assert.deepEqual(Object.keys(SLOTS), ['hero', 'logo', 'background', 'tile', 'guest']); // (guest since Prompt 23)
     assert.deepEqual([...BRAND_SLOTS], ['hero', 'logo', 'background']);
     const table = Object.values(SLOTS).map((spec) => [spec.id, spec.width, spec.height, spec.ratio, spec.formats.join(','), spec.transparent, spec.maxBytes / KB]);
     assert.deepEqual(table, [
@@ -57,6 +57,7 @@ describe('picture slots (the brief, exactly)', () => {
       ['logo', 800, 400, '2:1', 'image/webp,image/png', true, 150],
       ['background', 1536, 2048, '3:4', 'image/webp,image/jpeg', false, 350],
       ['tile', 480, 320, '3:2', 'image/webp,image/png', true, 60],
+      ['guest', 256, 256, '1:1', 'image/webp,image/jpeg', false, 60], // (Prompt 23)
     ]);
     for (const spec of Object.values(SLOTS)) {
       const [across, down] = spec.ratio.split(':').map(Number);

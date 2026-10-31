@@ -1761,6 +1761,8 @@ describe('the boundaries this phase relies on', () => {
   // The list is pinned whole, so an export cannot appear or disappear without this test being edited on purpose: all of this file is in the
   // participant page.
   const EXPORTS = [
+    // (Prompt 23: an Art of the Possible row's fields, and a guest's picture.)
+    'matrixRowFields', 'removeGuestPicture', 'uploadGuestPicture',
     'COPY_SEPARATOR', 'MAX_ANSWER_TEXT', 'MAX_RESPONSES_JSON', 'activateClient', 'activateSession', 'addAdminUser', 'addGuests', 'addSectionsToLiveSession',
     'beginVisit', 'checkSession', 'checkSharePointLists', 'checkSharePointSchema', 'configure', 'copyActivities',
     'copyIdFor', 'copyTitle', 'createClient', 'createOption', 'createQuestion', 'createSection', 'createSession', 'createVisitor', 'deleteActivity', 'deleteByKey',
@@ -1803,12 +1805,12 @@ describe('the boundaries this phase relies on', () => {
   ];
 
   it('dataService exports exactly what is listed here; what only the legacy pages, only tests, or nothing called is gone', () => {
-    assert.deepEqual(Object.keys(ds).sort(), EXPORTS);
+    assert.deepEqual(Object.keys(ds).sort(), [...EXPORTS].sort());
     // (Phase 10c-3: sendToSharePoint, the Setup page's one way to write to the site itself, for lib/setup/provision.js, and addAdminUser came; the seed-file
     // import, Setup's alone, went to migration/src/lib/setup/setup-import.js. Still 103. Phase 10j: prepareWrites, 104. Phase 15: updateClientWith, 105. Phase 16: listItemKeys and deleteByKey, for
     // lib/admin/session-delete.js, 107. Prompt 19: the page's SharePoint sign-in (lib/data/session-calls.js), setSessionRenewer, onSessionChange,
     // sessionEvidence, lastAnswerAt and checkSession, 112. Prompt 21: setAccessGuard and lib/data/access-reads.js's four, 117; Phase 2: three of lib/data/access-people.js, 120; Phase 3: planSession and startSession, lib/data/planning.js, 122; Phase 5: readSessionSummaries and saveSessionSummary, lib/data/summaries.js, 124.)
-    assert.equal(EXPORTS.length, 124);
+    assert.equal(EXPORTS.length, 127); // (124 until Prompt 23)
     assert.equal(GONE.length, 30);
     for (const name of GONE) assert.ok(!(name in ds), `${name} is back`);
   });
@@ -1869,10 +1871,11 @@ describe('the boundaries this phase relies on', () => {
     }
     // Phase 15: lib/motion/motion.ts keeps, for this tab's session only, how much this device may move (`pms.motion`, the governor's step and
     // `?motion=off`): a fact about the device, like the sound choice, never a client, a session, an activity or a theme.
-    assert.deepEqual(users.sort(), ['migration/src/App.svelte', 'migration/src/lib/effects/effects.ts', 'migration/src/lib/motion/motion.ts', 'migration/src/lib/participant/answer-store.js', 'migration/src/lib/participant/participantData.ts']);
+    assert.deepEqual(users.sort(), ['migration/src/App.svelte', 'migration/src/lib/effects/effects.ts', 'migration/src/lib/motion/motion.ts', 'migration/src/lib/participant/answer-store.js', 'migration/src/lib/participant/participantData.ts', 'migration/src/lib/participant/session.svelte.ts']);
     // Phase 20: lib/participant/participantData.ts keeps, for this tab only, the card picked on a confidence check screen and not yet confirmed
     // (`cec-check-pick:`), so a reload shows it picked: an answer not given yet, like the answers not saved yet, never a client or a session.
-    assert.deepEqual([...keys].sort(), ['cec-answers:', 'cec-check-pick:', 'cec-visit-id:', 'cec-visit-logged:', 'pms.motion', 'pms.sound']);
+    // Prompt 23: the same two, for this tab only: the ratings of an Art of the Possible question not sent yet (`cec-matrix:`), and the address of a guest's own picture (`cec-guest-picture:`), so a reload keeps them.
+    assert.deepEqual([...keys].sort(), ['cec-answers:', 'cec-check-pick:', 'cec-guest-picture:', 'cec-matrix:', 'cec-visit-id:', 'cec-visit-logged:', 'pms.motion', 'pms.sound']);
     for (const file of ['participant/boot.js', 'participant/experience.svelte.ts', 'brand/client-theme.js']) {
       assert.doesNotMatch(await source('migration/src/lib', file), /Storage\b|indexedDB|caches\./, `${file} keeps nothing`);
     }

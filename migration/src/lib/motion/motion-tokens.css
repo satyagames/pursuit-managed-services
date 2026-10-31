@@ -9,6 +9,7 @@
 
 :root {
   --motion-duration-instant: 90ms;
+  --motion-duration-cell: 120ms;
   --motion-duration-quick: 160ms;
   --motion-duration-base: 320ms;
   --motion-duration-slow: 400ms;
@@ -21,6 +22,15 @@
   --motion-distance-near: clamp(0.5rem, 3vw, 1.25rem);
   --motion-distance-far: clamp(1rem, 6vw, 2.5rem);
   --motion-nudge: 0.375rem;
+  --motion-hub-fade: 150ms;
+  --motion-hub-wave: 60ms;
+  --motion-hub-journey: 180ms;
+  --motion-hub-shackle: 220ms;
+  --motion-hub-crossfade: 260ms;
+  --motion-hub-shake: 280ms;
+  --motion-hub-stamp: 400ms;
+  --motion-hub-sweep: 500ms;
+  --motion-hub-pulse: 1200ms;
 }
 
 /* motion.ts sets data-motion (the shape) and --m-duration, --m-ease, --m-delay and --m-stretch (in steps of the stagger) and --m-distance, from

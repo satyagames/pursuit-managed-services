@@ -5,7 +5,7 @@
   import { onMount } from 'svelte';
   import { focusHeading } from '../lib/common/focus.js';
   import { APP_NAME } from '../lib/common/app-name.js';
-  import { myDetails, noAccessWords } from '../lib/access/access-words.js';
+  import { NO_ACCESS_SITE_LINE, myDetails, noAccessWords } from '../lib/access/access-words.js';
   import DeloitteWordmark from '../components/DeloitteWordmark.svelte';
 
   let { person, reason, support = '' }: { person: { name?: string; email?: string } | null; reason: string | null; support?: string } = $props();
@@ -31,6 +31,7 @@
     <h1 bind:this={heading} tabindex="-1">{words.title}</h1>
     {#if person?.email}<p class="muted">Signed in as {person.email}</p>{/if}
     <p>{words.line}{support ? ` You can also ask ${support}.` : ''}</p>
+    <p class="muted">{NO_ACCESS_SITE_LINE}</p>
     <button class="btn btn--primary btn--block" type="button" onclick={() => void copy()}>Copy my details</button>
     {#if copied}<p class="muted" role="status">{copied}</p>{/if}
   </div>

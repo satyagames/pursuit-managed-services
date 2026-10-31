@@ -13,7 +13,7 @@
   import { modeOf, sessionHasEnded, showsEndedNotice } from './lib/common/poll-schedule.js';
   import { applyRestart, restartedQuestionIds, restoreAnswers, resumePendingSaves } from './lib/participant/participantData.js';
   import { visitGoneNotice } from './lib/participant/visit-notice.js';
-  import { clearTrack, offerEarlierVisit, participant, setTrack, type ParticipantTrack } from './lib/participant/session.svelte.js';
+  import { clearTrack, offerEarlierVisit, participant, setGuestPicture, setTrack, type ParticipantTrack } from './lib/participant/session.svelte.js';
   import { isSignedOut } from './lib/participant/sign-in.js';
   import { navigateTo } from './lib/participant/navigation.js';
   import Agenda from './routes/Agenda.svelte';
@@ -236,6 +236,7 @@
       if (qrToken) cleanQrQuery();
       if (boot.track) {
         setTrack(boot.track as ParticipantTrack);
+        if (boot.pictureUrl) setGuestPicture((boot.track as ParticipantTrack).id, boot.pictureUrl);
         await restoreAnswers(boot.own as never);
       } else {
         clearTrack();
@@ -407,7 +408,7 @@
 <AppShell stage={wideStage ? 'wide' : 'narrow'} background={movedRoute ? null : experience.backgroundUrl} focus={experience.backgroundFocus}>
   {#snippet right()}
     {#if !movedRoute}
-      {#if !onWelcome && initialized && !startupError}<HeaderGreeting text={greeting} />{/if}
+      {#if !onWelcome && initialized && !startupError}<HeaderGreeting text={greeting} guest={Boolean(participant.visitorId)} picture={participant.pictureUrl} />{/if}
       <SoundToggle />
     {/if}
   {/snippet}

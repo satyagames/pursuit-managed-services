@@ -9,7 +9,8 @@
   import { createPageWatcher, type PageWatcher } from '../lib/common/page-watch.js';
   import { adminDelay } from '../lib/common/poll-schedule.js';
   import { REMOVE_VISIT_CONFIRM, canRemoveVisit, forgetNameSources, holdNameSources, keepShownOrder, newestFirst, readNameSources, resultRows, rowsInOrder, rowsToLookForAgain, sessionsNeedingNames, type NameSources } from '../lib/admin/admin-results.js';
-  import { answerCounts, answersFrom, answersOf, chartsOf, namesFor } from '../lib/results/results-chart-model.js';
+  import { answerCounts, answersFrom, answersOf, chartsOf, namesFor, picturesFor } from '../lib/results/results-chart-model.js';
+  import GuestAvatar from '../components/GuestAvatar.svelte';
   import { DELETE_SESSION, cardCounts, deleteSessionData, deleteSessionWarning, deletedText, progressText, refusedText, stoppedText } from '../lib/admin/session-delete.js';
   import { focusHeading } from '../lib/common/focus.js';
   import ConfirmDialog from './ConfirmDialog.svelte';
@@ -22,7 +23,7 @@
   type Session = { id: string; clientId: string; date?: string; sectionIds?: string[]; status?: string };
   type Client = { id: string; name: string };
   type Token = { id: string; sessionId: string; used?: boolean; expiredAt?: string | null };
-  type TrackRow = { track: SessionTrack; name: string; unnamed: boolean; status: string; answered: number; total: number };
+  type TrackRow = { track: SessionTrack; name: string; unnamed: boolean; status: string; answered: number; total: number; pictureUrl?: string };
   type SessionCard = { results: SessionResults; owner: string; clientName: string; codes: string[]; tracks: TrackRow[]; unreadable: string; charts: ReturnType<typeof chartsOf> };
 
   let { access = null, onToast, onLiveDisplay, hideNames = false, mayName = true, onHideNames = () => {} }: {
@@ -73,7 +74,7 @@
   // the session (only for a session with a track that has no name of its own) and again, for the live session, when somebody who joined in
   // the last two minutes is still unnamed (rowsToLookForAgain: twice for each person at most, because a page records a sign-in a moment
   // after its first screen).
-  let sourcesHeld = new Map<string, NameSources>();
+  let sourcesHeld = $state.raw(new Map<string, NameSources>());
   const lookedFor = new Map<string, number>();
   let watcher: PageWatcher | undefined;
   let refreshAll = () => {};
@@ -278,13 +279,34 @@
     });
   });
 
+  /** Each visit's guest group, for the Group filter of an Art of the Possible question (Prompt 23); none until the session's roster has been read. */
+  function groupsOf(result: SessionResults, sources: NameSources | undefined) {
+    const groupOf = new Map((sources?.roster ?? []).map((visitor: { id: string; guestGroup?: string | null }) => [String(visitor.id), visitor.guestGroup ?? '']));
+    const hasGroups = [...groupOf.values()].some(Boolean);
+    return hasGroups ? new Map(result.tracks.map((track: { id: string; visitorId?: string | null }) => [String(track.id), groupOf.get(String(track.visitorId ?? '')) ?? ''])) : null;
+  }
+
+  /**
+   * The Live results of a session opened (Prompt 23): a guest's picture and group are on the session's roster, which Results otherwise reads only for a track with no name of its own. It is read
+   * here, once, only for someone who may see names with Hide names off, and only when a guest has joined. One request more, and only for this; a session of staff is not asked.
+   */
+  async function readRosterForFaces(id: string) {
+    if (!mayName || hideNames || sourcesHeld.has(id)) return;
+    const card = cards.find((each) => each.results.session.id === id);
+    if (!card?.results.tracks.some((track: { visitorId?: string | null }) => track.visitorId)) return;
+    const found = await readNameSources([id]).catch(() => null);
+    if (!active || !found) return;
+    sourcesHeld = new Map(sourcesHeld).set(id, found.get(id) ?? { visits: [], roster: [] });
+    cards = cards.map((each) => (each.results.session.id === id ? cardOf(each.results) : each));
+  }
+
   /** One session's card, from its results: each iPad's row, its status, and the codes. */
   function cardOf(result: SessionResults): SessionCard {
     const sources = sourcesHeld.get(result.session.id);
     // (Phase 16: the newest joiner first, lib/admin/admin-results.js ROW_ORDER; the names are the report's, worked out in the order they joined.)
     const tracks = rowsInOrder(resultRows(result, sources, { hide: hideNames }));
     // The charts of the session's live activities (Phase 11a), with each answer's names: the same rule as the rows, over what was read for them.
-    const charts = chartsOf({ sections: result.sections.filter((section) => section.enabled) }, { names: namesFor({ tracks: result.tracks, answers: answersOf(result), ...(sources ?? {}) }, { hide: hideNames }) });
+    const charts = chartsOf({ tracks: result.tracks, sections: result.sections.filter((section) => section.enabled) }, { pictures: picturesFor({ tracks: result.tracks, ...(sources ?? {}) }, { hide: hideNames }), groups: groupsOf(result, sources), names: namesFor({ tracks: result.tracks, answers: answersOf(result), ...(sources ?? {}) }, { hide: hideNames }) });
     // What could not be read (Phase 9b, DI-6), said beside the export buttons, with each person's name the way their row has it.
     return { results: result, owner: namesHeld.get(result.session.clientId) ?? result.session.clientId, clientName: namesHeld.get(result.session.clientId) ?? '', codes: tokensHeld.filter((token) => token.sessionId === result.session.id).map((token) => token.expiredAt ? 'expired' : token.used ? 'used' : 'unused'), tracks, unreadable: unreadableNotice(result.unreadable, namesByVisit(tracks)), charts };
   }
@@ -387,7 +409,7 @@
         {#if card.unreadable}<p class="notice card__unreadable" role="status" data-testid="unreadable-notice"><strong>{card.unreadable}</strong></p>{/if}
         {#if card.results.confidenceCheck}<ConfidenceShift check={card.results.confidenceCheck} />{/if}
         <!-- (Phase 12, F-08: the charts first; with sixty people the list ran 5,000 px above them.) -->
-        <details class="tally" open={openResults.includes(session.id)} ontoggle={(event) => { const isOpen = (event.currentTarget as HTMLDetailsElement).open; openResults = isOpen ? [...new Set([...openResults, session.id])] : openResults.filter((id) => id !== session.id); }}>
+        <details class="tally" open={openResults.includes(session.id)} ontoggle={(event) => { const isOpen = (event.currentTarget as HTMLDetailsElement).open; if (isOpen) void readRosterForFaces(session.id); openResults = isOpen ? [...new Set([...openResults, session.id])] : openResults.filter((id) => id !== session.id); }}>
           <summary>Live results · {answersFrom(answerCounts(card.results.sections.flatMap((section) => section.questions)))}</summary>
           {#if openResults.includes(session.id)}
             <div class="tally__charts">
@@ -409,7 +431,7 @@
               {@const notes = `${row.answered} of ${row.total} questions answered · joined ${row.track.createdAt ? new Date(row.track.createdAt).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}) : ''} via ${row.track.joinedVia === 'qr' ? 'QR code' : 'manual select'}${row.track.resumeCount ? ` · resumed ${row.track.resumeCount}×` : ''}${row.track.restartedAt ? ` · restarted ${new Date(row.track.restartedAt).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}` : ''}`}
               {@const restarting = restartTrack?.track.id === row.track.id && restartIn === session.id}
               <li class="row" class:row--open={restarting}>
-                <div class="row__main"><span class="row__title">{row.name}</span><span class="muted">{notes}</span></div>
+                {#if sourcesHeld.has(session.id)}<GuestAvatar src={row.pictureUrl ?? null} size={40} />{/if}<div class="row__main"><span class="row__title">{row.name}</span><span class="muted">{notes}</span></div>
                 <span class={statusClass(row.status)}>{statusText(row.status)}</span>
                 {#if canRemoveVisit(row, session)}{#if may('events.run', session)}<button class="btn btn--small" type="button" onclick={() => void removeVisit(row)} disabled={busy}>Remove...</button>{/if}{/if}
                 {#if may('events.run', session)}<button class="btn btn--small" type="button" data-restart={row.track.id} aria-expanded={restarting} aria-controls={restarting ? RESTART_FORM : undefined} onclick={() => openRestart(row, session.id)} disabled={busy || row.status === 'unreadable'} title={row.status === 'unreadable' ? `Its saved answers cannot be read, so they cannot be restarted. Correct or delete the damaged item in the ${dataService.sharePointListTitles().responses} list.` : undefined}>Restart...</button>{/if}

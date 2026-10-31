@@ -433,7 +433,7 @@ test('keyboard: the guest controls come in reading order and show the green ring
   await page.keyboard.press('Tab');
   const order: string[] = [];
   const rings: string[] = [];
-  for (let step = 0; step < 11; step += 1) {
+  for (let step = 0; step < 14; step += 1) { // (11 until Prompt 23: the form's Picture, and each row's Add picture)
     const focused = await page.evaluate(() => {
       const element = document.activeElement as HTMLElement;
       const style = getComputedStyle(element);
@@ -446,7 +446,7 @@ test('keyboard: the guest controls come in reading order and show the green ring
   expect(rings).toEqual([]);
   // Print is off while no code is waiting, so the order skips it.
   // (Prompt 21, Phase 4: a guest's group adds a field after the pasted names, one for lines with none, and one after the visitor's name.)
-  expect(order).toEqual(['Generate all codes (2)', 'Export CSV', 'Refresh', 'paste-names', 'group-for-lines', 'visitor-name-field', 'visitor-group-field', 'Disable', 'Generate QR', 'Disable', 'Generate QR'].map((name) => (name.endsWith('-field') || name === 'group-for-lines' ? expect.stringMatching(/./) : name)));
+  expect(order).toEqual(['Generate all codes (2)', 'Export CSV', 'Refresh', 'paste-names', 'group-for-lines', 'visitor-name-field', 'visitor-group-field', 'Picture, optional', 'Add picture', 'Disable', 'Generate QR', 'Add picture', 'Disable', 'Generate QR'].map((name) => (name.endsWith('-field') || name === 'group-for-lines' ? expect.stringMatching(/./) : name)));
 });
 
 // ---- The participant, for completeness ----------------------------------------------------------------------------------

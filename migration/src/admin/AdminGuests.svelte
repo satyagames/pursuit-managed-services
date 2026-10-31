@@ -1,6 +1,10 @@
 <script lang="ts">
   import { errorText } from '../lib/admin/session-notice.js';
   import { onMount } from 'svelte';
+  import GuestAvatar from '../components/GuestAvatar.svelte';
+  import GuestPicture from './GuestPicture.svelte';
+  import { clearGuestPicture, picturesLine, setGuestPicture } from '../lib/admin/guest-picture.js';
+  import type { Prepared } from '../lib/brand/asset-image.js';
   import * as dataService from '../lib/data/dataService.js';
   import { loadGuestState, refreshGuestState, type GuestState, type GuestToken, type GuestVisitor } from '../lib/admin/adminData.js';
   import { copyText, participantPageUrl, qrImage } from '../lib/admin/admin-links.js';
@@ -40,6 +44,10 @@
   /** The live session is not one this role holds (Phase 4): nothing of it is read, and the screen says so. */
   let elsewhere = $state(false);
   let controller: AbortController | null = null;
+  /** A guest's picture (Prompt 23): whose dialog is open, or the form's, and the one the form holds until its guest exists. */
+  let picturing = $state<GuestVisitor | 'new' | null>(null);
+  let newPicture = $state<Prepared | null>(null);
+  let pictureBusy = $state(false);
 
   const session = $derived(guestState?.session ?? null);
   const client = $derived(guestState?.client ?? null);
@@ -113,6 +121,11 @@
       visitorName = '';
       visitorGroup = '';
       onToast('Visitor added', 'success');
+      if (newPicture) {
+        const held = newPicture;
+        newPicture = null;
+        await storePicture(visitor, held);
+      }
     } catch (cause) {
       error = explain(cause, 'Could not add this visitor.');
     } finally {
@@ -145,6 +158,47 @@
       progress = null;
       controller = null;
     }
+  }
+
+  // ---- A guest's picture (Prompt 23) -----------------------------------------------------------------
+
+  const withVisitor = (updated: GuestVisitor) => {
+    guestState = guestState ? { ...guestState, visitors: guestState.visitors.map((visitor) => (visitor.id === updated.id ? updated : visitor)) } : guestState;
+  };
+
+  async function storePicture(visitor: GuestVisitor, prepared: Prepared) {
+    pictureBusy = true;
+    error = '';
+    try {
+      withVisitor(await setGuestPicture({ data: dataService, access, visitor, blob: prepared.blob }) as GuestVisitor);
+      picturing = null;
+      onToast('Picture saved', 'success');
+    } catch (cause) {
+      error = explain(cause, 'Could not save this picture.');
+      picturing = null;
+    } finally {
+      pictureBusy = false;
+      URL.revokeObjectURL(prepared.url);
+    }
+  }
+
+  async function removePicture(visitor: GuestVisitor) {
+    pictureBusy = true;
+    error = '';
+    try {
+      withVisitor(await clearGuestPicture({ data: dataService, access, visitor }) as GuestVisitor);
+      picturing = null;
+      onToast('Picture removed', 'success');
+    } catch (cause) {
+      error = explain(cause, 'Could not remove this picture.');
+    } finally {
+      pictureBusy = false;
+    }
+  }
+
+  function picturePicked(prepared: Prepared) {
+    if (picturing === 'new') { newPicture = prepared; picturing = null; return; }
+    if (picturing) void storePicture(picturing, prepared);
   }
 
   // ---- Codes -------------------------------------------------------------------------------------------
@@ -262,6 +316,7 @@
             <p class="muted" data-testid="guest-summary">
               {#if rows.length === 0}No guests yet.{:else}{plural(rows.length, 'guest', 'guests')}: {counts.none} no code, {counts.waiting} not scanned, {counts.joined} joined, {counts.completed} completed{counts.disabled ? `, ${counts.disabled} disabled` : ''}.{/if}
             </p>
+            {#if rows.length > 0}<p class="muted small" data-testid="guest-pictures-line">{picturesLine(guestState?.visitors ?? [])}</p>{/if}
           </div>
           <div class="panel__actions guests-actions">
             <button class="btn btn--primary" type="button" onclick={() => void generateAll()} disabled={busy || ended || missing === 0} title={missing === 0 ? 'Everyone who can scan already has a code' : undefined}>Generate all codes{missing ? ` (${missing})` : ''}</button>
@@ -291,6 +346,7 @@
         <form class="field-row" onsubmit={addVisitor}>
           <label class="field"><span class="field__label">Visitor name</span><input class="input" bind:value={visitorName} maxlength={MAX_GUEST_NAME} autocomplete="off" disabled={busy || ended} /></label>
           <label class="field"><span class="field__label">Group (optional)</span><input class="input" bind:value={visitorGroup} maxlength={MAX_GUEST_GROUP} autocomplete="off" disabled={busy || ended} /></label>
+          <button class="btn guest-picture-pick" type="button" aria-label={newPicture ? 'Picture chosen. Change it' : 'Picture, optional'} onclick={() => { picturing = 'new'; }} disabled={busy || ended}><GuestAvatar src={newPicture?.url ?? null} size={32} /> Picture</button>
           <button class="btn" type="submit" disabled={busy || ended || !visitorName.trim()}>Add visitor</button>
         </form>
 
@@ -309,8 +365,9 @@
             {#each shownRows as row (row.visitor.id)}
               {@const visitor = row.visitor}
               <li class="row" data-guest={guestKey(visitor.displayName)} data-status={row.key}>
-                <div class="row__main"><span class="row__title">{visitor.displayName}</span><span class="muted"><span class="pill {pillClass[row.key]}">{row.label}</span>{#if visitor.guestGroup} <span class="tag" data-testid="guest-group">{visitor.guestGroup}</span>{/if}</span></div>
+                <GuestAvatar src={visitor.pictureUrl} size={40} /><div class="row__main"><span class="row__title">{visitor.displayName}</span><span class="muted"><span class="pill {pillClass[row.key]}">{row.label}</span>{#if visitor.guestGroup} <span class="tag" data-testid="guest-group">{visitor.guestGroup}</span>{/if}</span></div>
                 <div class="row__actions">
+                  <button class="btn btn--small" type="button" onclick={() => { picturing = visitor; }} disabled={busy || ended}>{visitor.pictureUrl ? 'Replace picture' : 'Add picture'}</button>
                   <button class="btn btn--small" type="button" onclick={() => void setVisitorEnabled(visitor)} disabled={busy || ended}>{visitor.enabled === false ? 'Enable' : 'Disable'}</button>
                   {#if row.key === 'disabled'}
                     <!-- nothing else for a guest who is switched off -->
@@ -350,3 +407,14 @@
     </section>
   {/if}
 </section>
+
+{#if picturing}
+  <GuestPicture
+    name={picturing === 'new' ? visitorName : picturing.displayName}
+    current={picturing === 'new' ? newPicture?.url ?? null : picturing.pictureUrl ?? null}
+    busy={pictureBusy}
+    onpick={picturePicked}
+    onremove={picturing === 'new' ? undefined : () => { if (picturing && picturing !== 'new') void removePicture(picturing); }}
+    onclose={() => { picturing = null; }}
+  />
+{/if}

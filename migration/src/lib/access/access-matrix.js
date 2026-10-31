@@ -111,7 +111,8 @@ export const LIST_WRITES = Object.freeze({
   users: ops(['users.manage'], ['users.manage'], []),
   roleassignments: ops(['roles.global', 'team.assign']),
   auditlog: Object.freeze({ create: 'anyone', update: Object.freeze([]), delete: Object.freeze([]) }),
-  library: ops(['brand.edit', 'content.edit']),
+  // (Prompt 23: a guest's picture is a file of the library too: added by whoever may manage guests, removed with them or with the session's data. No new action.)
+  library: ops(['brand.edit', 'content.edit', 'guests.manage'], ['brand.edit', 'content.edit', 'guests.manage'], ['brand.edit', 'content.edit', 'guests.manage', 'results.delete']),
   // (Prompt 21, Phase 5: a session's summary is written by whoever ends the session or rebuilds it, a Producer's or a Super admin's run of it, and deleted
   // with the session's data.)
   sessionsummary: ops(['events.run'], ['events.run'], ['results.delete']),

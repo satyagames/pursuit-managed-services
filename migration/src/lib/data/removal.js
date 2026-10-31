@@ -56,8 +56,8 @@ export async function removeEmptyVisit(trackId) {
  * read: nothing of an item is decoded.
  */
 export async function listItemKeys(list, where) {
-  if (!sharePoint) return (await request('GET', `/${localName(list)}${localFilter(where)}`)).map((item) => ({ id: String(item.id), key: item.id }));
-  return (await spPages(spItemsAddress(list, where))).map((row) => ({ id: String(row[ID]), key: row.Id }));
+  if (!sharePoint) return (await request('GET', `/${localName(list)}${localFilter(where)}`)).map((item) => ({ id: String(item.id), key: item.id, ...(item.pictureUrl ? { pictureUrl: item.pictureUrl } : {}) }));
+  return (await spPages(spItemsAddress(list, where))).map((row) => ({ id: String(row[ID]), key: row.Id, ...(row.PictureUrl ? { pictureUrl: row.PictureUrl } : {}) }));
 }
 
 /** Admin (Phase 16): deletes an item listItemKeys() found, in one request. An item that is already gone counts as deleted. */

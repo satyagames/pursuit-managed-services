@@ -8,10 +8,11 @@
 # Amended in Prompt 21, Phase 3: schema version 6 adds a session's Title (SharePoint's own column), StartTime, Sequence, Period and PlannedDate, so each read of PMSClientSessions names five columns more at the end of its `$select` (encoded too, in a mock's `__next` link), and Setup, where it makes columns, makes and reads back the four that are not SharePoint's own; by scripts/schema-baseline/sessions-baselines.js, after the suites were run on 43a98d4's tree and on today's, request by request (in the two Setup suites, whose lanes interleave, as many of each request, not in order), and a fresh recording equalled the translation exactly. Nothing else was changed.
 # Amended in Prompt 21, Phase 4: schema version 7 adds a guest's GuestGroup to PMSGuestList, so each read of the guest list names one column more at the end of its `$select` (encoded too, in a mock's `__next` link), and Setup, where it makes columns, makes and reads back that column; by scripts/schema-baseline/guestgroup-baselines.js, after the suites were run on dda6eb2's tree and on today's, request by request (in the two Setup suites, whose lanes interleave, as many of each request, not in order), and a fresh recording equalled the translation exactly. Nothing else was changed.
 # Amended in Prompt 21, Phase 5: schema version 8 adds PMSClients.Industry and Region, so each read of the clients names two columns more at the end of its `$select` (encoded too, in a mock's `__next` link); a read of every list's columns carries the new list (PMSSessionSummary) after the fifteen; and requests that name the new list, or make or read back the clients' two columns, are new; by scripts/schema-baseline/summary-baselines.js, after the suites were run on ca3a16b's tree and on today's, request by request (in the two Setup suites, whose lanes interleave, as many of each request, not in order), and a fresh recording equalled the translation exactly. Nothing else was changed.
+# Amended in Prompt 23: schema version 9 adds PMSActivityQuestions.Criteria and PMSGuestList.PictureUrl, so each read of those two lists names one column more at the end of its `$select` (encoded too, in a mock's `__next` link), and requests that make or read back the two columns are new; by scripts/schema-baseline/aop-baselines.js, after the suites were run on 8f8937f's tree and on today's, request by request (in the two Setup suites, whose lanes interleave, as many of each request, not in order), and a fresh recording equalled the translation exactly. Nothing else was changed.
 14 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/fields
 48 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivities')/fields/getbyid('<uuid>')
 14 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/fields
-42 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/fields/getbyid('<uuid>')
+48 x GET /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/fields/getbyid('<uuid>')
 14 x GET /sites/cec/_api/web/lists/getbytitle('PMSAdminUsers')/fields
 18 x GET /sites/cec/_api/web/lists/getbytitle('PMSAdminUsers')/fields/getbyid('<uuid>')
 1 x GET /sites/cec/_api/web/lists/getbytitle('PMSAdminUsers')/items?$top=200&$select=Id,AppId,PinHash,Name
@@ -27,7 +28,7 @@
 14 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/fields
 72 x GET /sites/cec/_api/web/lists/getbytitle('PMSClients')/fields/getbyid('<uuid>')
 14 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/fields
-30 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/fields/getbyid('<uuid>')
+36 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/fields/getbyid('<uuid>')
 14 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/fields
 54 x GET /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/fields/getbyid('<uuid>')
 14 x GET /sites/cec/_api/web/lists/getbytitle('PMSParticipantAnswers')/fields
@@ -93,14 +94,14 @@
 7 x POST /sites/cec/_api/contextinfo
 102 x POST /sites/cec/_api/web/lists
 48 x POST /sites/cec/_api/web/lists/getbytitle('PMSActivities')/fields/createfieldasxml
-42 x POST /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/fields/createfieldasxml
+48 x POST /sites/cec/_api/web/lists/getbytitle('PMSActivityQuestions')/fields/createfieldasxml
 18 x POST /sites/cec/_api/web/lists/getbytitle('PMSAdminUsers')/fields/createfieldasxml
 36 x POST /sites/cec/_api/web/lists/getbytitle('PMSAnswerOptions')/fields/createfieldasxml
 42 x POST /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/fields/createfieldasxml
 3 x POST /sites/cec/_api/web/lists/getbytitle('PMSAppSettings')/items
 84 x POST /sites/cec/_api/web/lists/getbytitle('PMSClientSessions')/fields/createfieldasxml
 72 x POST /sites/cec/_api/web/lists/getbytitle('PMSClients')/fields/createfieldasxml
-30 x POST /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/fields/createfieldasxml
+36 x POST /sites/cec/_api/web/lists/getbytitle('PMSGuestList')/fields/createfieldasxml
 54 x POST /sites/cec/_api/web/lists/getbytitle('PMSGuestQRCodes')/fields/createfieldasxml
 30 x POST /sites/cec/_api/web/lists/getbytitle('PMSParticipantAnswers')/fields/createfieldasxml
 78 x POST /sites/cec/_api/web/lists/getbytitle('PMSParticipants')/fields/createfieldasxml

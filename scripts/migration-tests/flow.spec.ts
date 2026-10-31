@@ -423,7 +423,7 @@ test('hub: one pill per activity in order, the next locked until the one before 
   const brand = page.getByRole('button', { name: /Guess the Brand/ });
   const pulse = page.getByRole('button', { name: /Quick pulse/ });
   await expect(page.locator('button.activity')).toHaveCount(3);
-  await expect(history).toHaveAttribute('data-state', 'default');
+  await expect(history).toHaveAttribute('data-state', 'ready');
   await expect(brand).toHaveAttribute('data-state', 'locked');
   await expect(brand).toHaveAttribute('aria-disabled', 'true');
   await expect(brand).toContainText('Finish the previous activity');
@@ -437,8 +437,8 @@ test('hub: one pill per activity in order, the next locked until the one before 
   // second is unlocked and the first has its dot.
   fixture.give(['q-h1', 'q-h2', 'q-h3'].map((id) => ({ questionId: id, answer: right(id) })));
   await page.reload();
-  await expect(page.getByRole('button', { name: "Alpha's History Completed" })).toHaveAttribute('data-state', 'done', { timeout: 10_000 });
-  await expect(brand).toHaveAttribute('data-state', 'default');
+  await expect(page.getByRole('button', { name: "Alpha's History, done" })).toHaveAttribute('data-state', 'done', { timeout: 10_000 });
+  await expect(brand).toHaveAttribute('data-state', 'ready');
   await expect(pulse).toHaveAttribute('data-state', 'locked');
   await brand.click();
   await expect(page).toHaveURL(/#\/quiz\/section-brand\?t=track-a$/);
@@ -620,7 +620,7 @@ test('completion shows the first-try score, then the finale once everything is d
   await expect(page.getByText('3 of 3 right on the first try')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Finish', exact: true }), 'two activities are still open').toHaveCount(0);
   await page.getByRole('button', { name: 'Back to activities' }).click();
-  await expect(page.getByRole('button', { name: "Alpha's History Completed" })).toHaveAttribute('data-state', 'done');
+  await expect(page.getByRole('button', { name: "Alpha's History, done" })).toHaveAttribute('data-state', 'done');
 
   await page.getByRole('button', { name: /Guess the Brand/ }).click();
   await choice(page, 1).click();

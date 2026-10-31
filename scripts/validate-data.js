@@ -16,6 +16,7 @@ const QUESTION_TYPES = [
   'confidence-continuum',
   'ranked-voting',
   'open-text-feedback',
+  'art-of-the-possible',
 ];
 
 async function loadJson(name) {

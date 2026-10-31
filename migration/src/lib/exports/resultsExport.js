@@ -33,7 +33,7 @@ export const liveSections = (results) => results.sections.filter((section) => se
 /** A question's type in words, as a spreadsheet's reader would name it. */
 const TYPE_WORDS = Object.freeze({
   'single-select': 'Single choice', 'multi-select': 'Multiple choice', 'true-false': 'True or false',
-  'confidence-continuum': 'Confidence scale', 'ranked-voting': 'Ranking', 'open-text-feedback': 'Survey feedback',
+  'confidence-continuum': 'Confidence scale', 'ranked-voting': 'Ranking', 'open-text-feedback': 'Survey feedback', 'art-of-the-possible': 'Art of the Possible',
 });
 
 /**
@@ -55,7 +55,10 @@ export function summaryRows(results, brand = {}) {
     const base = [...head, question.section, question.number, chart.prompt, type];
     const own = [];
     const yes = (value) => (value ? 'Yes' : '');
-    if (chart.kind === 'text') {
+    if (chart.kind === 'matrix') {
+      // (Prompt 23: a line for each sub-process: the guests who rated it, its opportunity as the score, and High-band rows marked. Nobody is named.)
+      for (const row of chart.rows) own.push([row.label, row.n, '', row.opportunity === null ? '' : Math.round(row.opportunity), '', yes(row.band === 'High')]);
+    } else if (chart.kind === 'text') {
       for (const word of chart.words) own.push([word.word, word.count, '', '', '', '']);
       for (const comment of chart.comments) comments.push([...head, question.section, question.number, chart.prompt, 'Comment', comment.text, '', '', '', '', '', chart.answered, '']);
     } else if (chart.kind === 'ranking') {
@@ -135,7 +138,7 @@ export function buildReport(results, brand = {}) {
   const sections = liveSections(results);
   const activities = sections.map((section) => ({
     id: String(section.id), title: section.title || 'Untitled activity', description: section.description ?? '',
-    charts: section.questions.map((question) => chartOf(question, { names: null })),
+    charts: section.questions.map((question) => chartOf(question, { names: null, guests: results.tracks?.length ?? null })),
   }));
   let number = 0;
   const questions = activities.flatMap((activity) => activity.charts.map((chart) => ({ number: number += 1, section: activity.title, activityId: activity.id, respondents: chart.answered, chart })));
@@ -244,6 +247,7 @@ const label = (x, y, w, h, text, size, color, style = {}) => ({ kind: 'text', x,
 /** What a speaker says about how a question was counted, in a sentence. */
 function countingRule(chart) {
   const shares = 'Each share is of the people who answered this question, rounded so the shares add up to 100%.';
+  if (chart.kind === 'matrix') return 'Opportunity is worked out from each person\'s first ratings, with each criterion\'s direction; nobody is named.';
   if (chart.kind === 'text') return 'A word is counted once for each comment it is in; nobody is named.';
   if (chart.kind === 'multi') return MULTI_CAPTION;
   if (chart.kind === 'ranking') return `Support scores come from where each person ranked each answer: ${RANKING_CAPTION}`;
@@ -285,7 +289,7 @@ function layoutCard(question, palette, text, x, y, w, { compact = false } = {}) 
   lines(fewAnswersLine(chart.answered) || `${chart.answered.toLocaleString('en-US')} answered.`, SIZE.small, soft, { max: 1, after: chart.gradedLine ? 0 : 1.6 });
   if (chart.gradedLine) lines(chart.gradedLine, SIZE.small, soft, { bold: true, max: 2, after: 1.6 });
 
-  const figure = chartFigure(chart, { x: x + pad, width: inner, palette, measure: text.figure, size: SIZE.chart, maxLabelLines: labelLines, comments, plot: 16, points: false });
+  const figure = chartFigure(chart, { x: x + pad, width: inner, palette, measure: text.figure, size: SIZE.chart, maxLabelLines: labelLines, comments, matrixRows: 10, plot: 16, points: false });
   for (const item of figure.items) items.push(fromFigure({ ...item, y: item.y + cursor, ...(item.y2 === undefined ? {} : { y2: item.y2 + cursor }) }));
   cursor += figure.h;
   if (chart.caption) { cursor += 0.8; lines(chart.caption, SIZE.small, soft, { max: 3 }); }

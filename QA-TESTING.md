@@ -32,9 +32,11 @@
 14. Items **262 to 273** (Prompt 21, Phase 7, the real-site pass for all of Prompt 21: the access lists' permissions set by hand and what they
    refuse, the people screens under the lock, directory search, the site owner, the old admins copied, two sessions in a day, Leadership's scope, a person
    turned off, sign-in renewal with the new reads, History of changes). Below item 261. Item 263 first: it decides whether the lock holds on PCOE.
-15. Items **274 to 278** (Prompt 22: the shift by client and by session, Industry and Region with the Region filter, the minimum sample and who may
+15. Items **279 to 286** (Prompt 23: Art of the Possible and a guest's picture; run 279 before replacing the pages).
+   Items **274 to 278** (Prompt 22: the shift by client and by session, Industry and Region with the Region filter, the minimum sample and who may
    set it, the fiscal start month on a test copy, and the manager's questions). Below item 273. No upgrade.
-16. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
+16. Item **293** (Prompt 25: the line about SharePoint access in Give access, Add user and No access; the document ONBOARDING.md). Below item 292.
+17. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
    160, 161, 164, 165, 166, 167, 168, 169, 170.
 
 **Decided, no change:** 162 (names stay "Last, First") and 163 (the wall page keeps the admin header), VJR, 16 Oct 2026.
@@ -1703,6 +1705,25 @@ WebKit, and on the local site (docs/history/RELEASE-22.md), not on the real site
 278. **For the manager.** *(Answered 30 Oct 2026.)* The shift divides by the full scale (5 points: 1 to 5 is +80%), not the largest possible move;
     a Low sample shift shows its number with the tag; the headline's "(X to Y)" is shown when sessions in view use scales of different lengths, one
     for each scale. **Expect**, with a 5-point and a 7-point check in view, "(2.0 to 3.0 on the 5-point scale and 4.0 to 5.0 on the 7-point scale)".
+
+279. **The upgrade.** *(Still to see.)* On a copy of the site, first open a page of this build: **expect** the version message (PMS-LST-011). Run Setup's upgrade: **expect** the two columns, and `SchemaVersion` 9. Only then replace the pages.
+280. **The editor.** *(Still to see.)* As a Designer, add the activity for Kroger with the sample's 13 rows by Paste from a spreadsheet, then for another client with 6 rows. Copy one to the other client and read the notice. **Compare the screens with boards 15 to 17**, which were not opened when this was built.
+281. **On an iPad.** *(Still to see.)* Go live, scan a guest QR, rate all 65 boxes in the grid; lock the screen half way and come back; switch to One at a time and finish. **Expect** Send on only at 0 left.
+282. **Pictures.** *(Still to see.)* Add a picture to two guests with Take photo on the iPad, which also proves the crop and Safari's JPEG in WebKit. **Expect** the greeting to show it, a guest without one the silhouette, and the picture to load on a guest's own iPad (the library's read permission). Hide names: no picture, and "Guest N" in Results.
+283. **Results and files.** *(Still to see.)* End the session and read Results: the heat map, Opportunity, Band, Split, an opened row. **Expect** the same numbers in the leader report PDF and the long CSV, no picture in any file or on the Live display. Look at the PDF's page.
+284. **Delete session.** *(Still to see.)* Delete it: **expect** the guests' files gone from the picture library, and in the site's recycle bin. Tell the manager they stay there until it is emptied.
+285. **The dashboard.** *(Still to see.)* Rebuild summaries and open it as Leadership: **expect** the new section, and a client with two sessions to count its people once.
+286. **For the manager.** *(Still to ask.)* The six open questions in docs/history/RELEASE-23.md, and whether a guest who changes a sent rating should move the numbers (today it does not).
+
+### Prompt 24 (the Activities hub): not checked on a real iPad, projector or the real site
+
+287. **The moment.** *(Still to see.)* On an iPad, finish an activity and return to the hub: the check, the open padlock, the colour change and the sparks play once, and feel smooth. Reload the page: nothing replays. The frames were only measured in Chromium at 4x slower CPU.
+288. **The locked tap, sound and motion.** *(Still to see.)* Tap a locked pill: a shake, a soft knock, no red. Turn Sound off: silence, motion stays. Turn on Reduce motion in the iPad's settings: **expect** the new state at once, with no fade and no sparks, and the sound still there. (The brief's check said a plain fade; the existing rule makes the device's setting no motion at all. The fade is what a device the governor has stepped down shows.)
+289. **Colours.** *(Still to see.)* Open Brand Studio for Kroger and one other client: all four states are readable on both. Look at Ready beside Locked: on a blue client the locked pill is the brighter of the two (question 4 of docs/history/RELEASE-24.md).
+290. **All done.** *(Still to see.)* Finish every activity: the green wave, Finish rises, one burst. The finale on the next screen is as before. The last activity's result screen offers Finish and Back to activities: the wave plays on Back to activities; Finish goes straight to the finale, as it did.
+291. **The sounds, by ear.** *(Still to see.)* Play the four new sounds beside the existing ones at the volume of a meeting room: none louder than the finale, none harsh, the thud still a thud. The numbers only say how loud they are.
+292. **For the manager.** *(Still to ask.)* The four questions in docs/history/RELEASE-24.md.
+293. **Site access is a separate step.** *(Still to see.)* Give a test colleague a role in People, open Give access and read the line under the fields (Producer, Designer: Edit access; Leadership: Read is enough). Add them to the PCOE site as Members (steps in [docs/ONBOARDING.md](docs/ONBOARDING.md)); they open `admin.html` and the participant link. Before that step they should see SharePoint's "hasn't been shared with you". Read the line in Add user and on No access. Give yourself a role as Super admin: no line.
 
 ### Prompt 20 (the confidence check, Before and After): not verified on SharePoint Online or an iPad
 

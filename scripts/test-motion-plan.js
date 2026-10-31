@@ -23,7 +23,7 @@ const DIRECTED = DIRECTIONS.filter((direction) => direction !== 'none');
 describe('the plan is whole', () => {
   it('names every kind of question the schema allows, no more and no fewer', () => {
     assert.deepEqual([...QUESTION_TYPES].sort(), [...META.questions.columns.QuestionType.values].sort());
-    assert.equal(QUESTION_TYPES.length, 6);
+    assert.equal(QUESTION_TYPES.length, 7); // (6 until Prompt 23)
   });
 
   it('every moment x kind x part x direction at the full level resolves to a real shape and real tokens, or to nothing', () => {
@@ -265,6 +265,11 @@ describe('the tokens', () => {
     assert.equal(ms(declared['--motion-stagger-cap']), TOKENS.staggerCap);
     for (const [name, value] of Object.entries(TOKENS.distance)) assert.equal(declared[`--motion-distance-${name}`], value, `distance ${name}`);
     assert.equal(declared['--motion-nudge'], TOKENS.nudge);
+    for (const [name, value] of Object.entries(TOKENS.hub)) assert.equal(ms(declared[`--motion-hub-${name}`]), value, `hub ${name}`);
+  });
+
+  it('the hub moment\'s lengths (Prompt 24) are the brief\'s', () => {
+    assert.deepEqual({ ...TOKENS.hub }, { fade: 150, wave: 60, journey: 180, shackle: 220, crossfade: 260, shake: 280, stamp: 400, sweep: 500, pulse: 1200 });
   });
 
   it('every shape the plan names has its keyframes and its rule in the CSS, and the CSS has no shape the plan does not know', async () => {

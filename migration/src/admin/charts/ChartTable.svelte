@@ -11,7 +11,14 @@
 <div class="numbers">
   <table class="numbers__grid">
     <caption class="sr-only">{chart.prompt}</caption>
-    {#if chart.kind === 'ranking'}
+    {#if chart.kind === 'matrix'}
+      <thead><tr><th scope="col">Sub-process</th>{#each chart.criteria as criterion (criterion.id)}<th scope="col" class="numbers__n">{criterion.label}</th>{/each}<th scope="col" class="numbers__n">Opportunity</th><th scope="col">Band</th><th scope="col" class="numbers__n">Agreement</th><th scope="col" class="numbers__n">People</th><th scope="col" class="numbers__n">Guests</th></tr></thead>
+      <tbody>
+        {#each chart.rows as row (row.id)}
+          <tr><th scope="row">{row.label}</th>{#each row.criteria as cell (cell.id)}<td class="numbers__n">{cell.meanText}</td>{/each}<td class="numbers__n">{row.opportunityText}</td><td>{row.mark} {row.bandText}</td><td class="numbers__n">{row.agreementText}{row.split ? ' Split' : ''}</td><td class="numbers__n">{row.people}</td><td class="numbers__n">{row.n}</td></tr>
+        {/each}
+      </tbody>
+    {:else if chart.kind === 'ranking'}
       <thead><tr><th scope="col">Rank and answer</th><th scope="col" class="numbers__n">Support score</th><th scope="col" class="numbers__n">Points</th><th scope="col" class="numbers__n">First places</th><th scope="col" class="numbers__n">People who ranked it</th></tr></thead>
       <tbody>
         {#each chart.options as item (item.id)}

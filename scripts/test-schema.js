@@ -179,6 +179,20 @@ export const CHANGES = [
     if (action) action.values = [...action.values, 'settings', 'client'];
     return shape;
   }],
+  // (Prompt 23: the audit list's Action, a text column, says one thing more; no version of its own.)
+  ['(Prompt 23) PMSAuditLog.Action\'s words gain picture (a guest\'s picture added or removed)', (shape) => {
+    const action = shape.lists.auditlog?.columns.find((column) => column.column === 'Action');
+    if (action) action.values = [...action.values, 'picture'];
+    return shape;
+  }],
+  // (Prompt 23, schema version 9: Art of the Possible and a guest's picture. Exactly two columns, both optional.)
+  ['(Prompt 23, v9) PMSActivityQuestions.Criteria (an Art of the Possible question\'s criteria, a JSON list) and the type\'s word in QuestionType; PMSGuestList.PictureUrl (optional, one line)', (shape) => {
+    const plain = { indexed: false, unique: false, mustExist: true, required: false, format: null };
+    shape.lists.questions.columns.push({ column: 'Criteria', field: 'criteria', kind: 'array', type: 'Note', ...plain, values: null });
+    shape.lists.questions.columns.find((column) => column.column === 'QuestionType').values.push('art-of-the-possible');
+    shape.lists.visitorroster.columns.push({ column: 'PictureUrl', field: 'pictureUrl', kind: 'plain', type: 'Text', ...plain, values: null });
+    return shape;
+  }],
 ];
 
 describe('the snapshot of the old schema, with this phase\'s changes, is the schema file', () => {

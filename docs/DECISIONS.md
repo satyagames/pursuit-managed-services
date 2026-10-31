@@ -34,7 +34,7 @@ One line each: the decision, why, and what enforces it (a test fails if it is br
 
 | Decision | Why | Enforced by |
 |---|---|---|
-| `lib/data/dataService.js` is the data layer's one door. Its public surface, 124 names (each with its kind and its arity), is listed in `scripts/data-surface.json`; a name added, taken away or renamed is a decision, recorded here with the new count in the same commit. Prompt 21 added five: `setAccessGuard` (the page's write guard, in `core.js`), `readSignedInPerson`, `readAccessRows`, `listAccessRecords` and `addAccessRecord` (`access-reads.js`); Prompt 21's Phase 2 added three for the people screens in `access-people.js`: `searchDirectory`, `updateAccessRecord` and `removeAccessRecord`; its Phase 3 added two in `planning.js`: `planSession` (a planned session under its id, -2 and -3 on a duplicate) and `startSession` (the Producer's Start); its Phase 5 added two in `summaries.js`: `saveSessionSummary` (a session's summary, made or written over) and `readSessionSummaries` (the Leadership dashboard's read, by client, session or fiscal period). | 39 files of the app and 70 scripts import it: work behind it must not reach them (Phase 17). | `scripts/test-data-surface.js` |
+| `lib/data/dataService.js` is the data layer's one door. Its public surface, 127 names (each with its kind and its arity), is listed in `scripts/data-surface.json`; a name added, taken away or renamed is a decision, recorded here with the new count in the same commit. Prompt 21 added five: `setAccessGuard` (the page's write guard, in `core.js`), `readSignedInPerson`, `readAccessRows`, `listAccessRecords` and `addAccessRecord` (`access-reads.js`); Prompt 21's Phase 2 added three for the people screens in `access-people.js`: `searchDirectory`, `updateAccessRecord` and `removeAccessRecord`; its Phase 3 added two in `planning.js`: `planSession` (a planned session under its id, -2 and -3 on a duplicate) and `startSession` (the Producer's Start); its Phase 5 added two in `summaries.js`: `saveSessionSummary` (a session's summary, made or written over) and `readSessionSummaries` (the Leadership dashboard's read, by client, session or fiscal period). | 39 files of the app and 70 scripts import it: work behind it must not reach them (Phase 17). | `scripts/test-data-surface.js` |
 | `dataService.js` holds no code: it passes on the public names of the parts of `lib/data` (`encoding.js`, `core.js`, `common.js`, `schema-check.js`, `records.js`, `today.js`, `responses.js`, `self-test.js`, `qr-scan.js`, `today-clients.js`, `content-copy.js`, `guests.js`, `pictures.js`, `watch.js`, `removal.js`, `list-titles.js`, `session-calls.js`, `access-reads.js`, `access-people.js`, `planning.js`), and no file of the app imports a part directly (`read-groups.js` and `session.js`, helpers with no state, are not parts). | One file of 2,845 lines held every record type, the requests and the self-test; a reader had to load all of it to change any of it (Phase 17). | `scripts/test-data-modules.js` |
 | All of the data layer's state (the backend, the write token, the lists' types and columns, whether `$batch` works, the request count, a QR scan not yet known to have landed, the sign-in ladder's state, the page's write guard) lives in `lib/data/core.js`, the only part that calls `fetch()`; no other part declares a variable or a cache at its top, and `openQrScan` writes its held scan through `holdScan()`. | One `configure()` resets everything, and a page is one instance of the data layer. | `scripts/test-data-modules.js`, `scripts/test-settings-file.js` |
 | A part imports only parts before it (`core.js` only `encoding.js` and `session.js`, which have no state), nothing under `migration/src` imports in a cycle, and no part is over 600 lines. A part's functions were moved, not rewritten. | One-way layers stay readable; 600 lines is one sitting. | `scripts/test-data-modules.js` |
@@ -73,6 +73,30 @@ One line each: the decision, why, and what enforces it (a test fails if it is br
 | The reporting settings (the fiscal-year start month and the minimum sample) are a Super admin's alone (`settings.manage`); a client's Industry and Region are `clients.manage`'s. Both are columns a list's rule does not decide alone (`FIELD_WRITES`): the write guard asks for the action and for a value in range before anything is sent, and each change is an audit line (`settings`, `client`: Action is a text column, so no new version). | Prompt 22: the dashboard read them, nothing wrote them; the settings item also takes a Producer's live session, a client a Designer's brand. | `scripts/test-reporting-settings.js`, `scripts/test-access.js`, `scripts/migration-tests/reporting-settings.spec.ts` |
 | A new fiscal start month moves the dashboard's windows at once but not the quarters stored on sessions and summaries; they move only when a Super admin confirms **Move stored quarters**. | Rebuild keeps a session's stored Period; nothing stored changes behind the owner's back. | `scripts/test-reporting-settings.js` |
 | Every reader of a session's answers asks the read check (Phase 7: `askRead` in `lib/data/responses.js`). | Phase 4 left the specialised readers out; a refused read sends nothing. | `scripts/test-hardening.js` |
+
+## Art of the Possible and guest pictures (Prompt 23)
+
+| Decision | Enforced by |
+|---|---|
+| Rows are a question's options, criteria its `Criteria` column; no new list. Schema version 9. | `scripts/test-schema.js` |
+| Direction: Strategic value and Compliance / risk count against, the other three favour (ASSUMED, open question 1). | `DEFAULT_CRITERIA`, `scripts/test-aop-editor.js` |
+| Every box must be rated to send (open question 2). | `isAnswerComplete`, `scripts/test-pager.js` |
+| A box counts its first rating; a later answer fills only what the first left empty. | `countedGrid`, `scripts/test-aop-math.js` |
+| People are pooled per client, most recent session. | `poolAop`, `scripts/test-aop-results.js` |
+| A picture is personal data: kept until the session is deleted (open question 3), shown only with a name, in no file. | `scripts/test-aop-results.js`, `scripts/test-guest-picture.js` |
+| A copy's rows are flagged in its `Layout` until saved, since no column was allowed. | `scripts/test-aop-editor.js` |
+| The word on screen is "people in scope" (open question 4); the share comes before the index (5); ratings are blue and the band alone is red, amber and green (6). | `scripts/test-aop-results.js` |
+
+## The Activities hub (Prompt 24)
+
+| Decision | Enforced by |
+|---|---|
+| The four states are visual only: the lock rule is as it was. | The property check in `scripts/test-pager.js`, over 2,000 random sessions |
+| Sound is synthesised, in `lib/effects/sound-cues.js`; no audio file. | `scripts/test-effects.js`, `scripts/migration-tests/effects-audio.spec.ts` |
+| No new colour token: the states use `--action`, `--success`, `--progress` and the surface tokens. | `scripts/test-hub-look.js` |
+| The moment is a pure plan, and nothing waits for it; no timer outlives the hub. | `scripts/test-hub-moment.js`, `scripts/migration-tests/hub-states.spec.ts` |
+| The sparks are few: 24 live at most, none below the full motion level. | `scripts/test-confetti-plan.js` |
+| The participant page grows at most 6,000 B gzip. | `PHASE_24` in `scripts/bundle-budget.js` |
 
 ## The participant page
 

@@ -6,6 +6,7 @@
 //   logo         800x400   2:1  PNG or WebP with transparency  150 KB  sits on the plate when there is no hero
 //   background  1536x2048  3:4  JPEG or WebP, with a focal point 350 KB
 //   tile         480x320   3:2  PNG or WebP                     60 KB  a picture on an answer tile in Content
+//   guest        256x256   1:1  WebP or JPEG, cropped round      60 KB  a guest's optional picture (Prompt 23; Guests and QR)
 //
 // Sizes are "KB" as the admin reads them: 1 KB = 1024 bytes.
 
@@ -18,7 +19,7 @@ export const MAX_UPSCALE = 2;
 export const MIN_SCALE_SHARE = 0.75;
 
 /**
- * @typedef {'hero' | 'logo' | 'background' | 'tile'} SlotId
+ * @typedef {'hero' | 'logo' | 'background' | 'tile' | 'guest'} SlotId
  * @typedef {object} SlotSpec
  * @property {SlotId} id
  * @property {string} title       What the slot is called on its card.
@@ -56,9 +57,14 @@ export const SLOTS = Object.freeze({
     width: 480, height: 320, ratio: '3:2', formats: Object.freeze(['image/webp', 'image/png']), transparent: true,
     maxBytes: 60 * KB, fit: 'contain', focal: false, safe: Object.freeze({ shape: 'rect', inset: 0.06 }),
   }),
+  guest: Object.freeze({
+    id: 'guest', title: 'Guest picture', where: 'Beside the guest\'s name, where a name may be shown.',
+    width: 256, height: 256, ratio: '1:1', formats: Object.freeze(['image/webp', 'image/jpeg']), transparent: false,
+    maxBytes: 60 * KB, fit: 'cover', focal: false, safe: Object.freeze({ shape: 'circle', inset: 0 }),
+  }),
 });
 
-/** The slot ids Brand Studio fills, in the order its cards appear. (`tile` is Content's.) */
+/** The slot ids Brand Studio fills, in the order its cards appear. (`tile` is Content's, `guest` Guests and QR's.) */
 export const BRAND_SLOTS = Object.freeze(/** @type {const} */ (['hero', 'logo', 'background']));
 
 /** @param {string} id @returns {SlotSpec} */

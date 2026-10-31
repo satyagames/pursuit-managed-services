@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import { describe, it, test } from 'node:test';
 import {
   MAX_TEXT_LENGTH, MAX_WRONG_TRIES, activityStates, chooseGraded, correctOptionIds, firstTryScore, firstUnansweredIndex, gradedAnnouncement,
   gradedOptionState, gradedRecord, gradedStateFromRecord, greetingName, hiLine, isAnswerComplete, isGraded, isGradedResolved,
-  isRecordSettled, letterFor, normalizeAnswer, questionLayout, retryGraded, showsLetters, startGraded, toggleChoice, toggleRank, ungradedRecord, usesTiles,
+  isRecordSettled, letterFor, matrixLeft, normalizeAnswer, sendLabel, questionLayout, retryGraded, showsLetters, startGraded, toggleChoice, toggleRank, ungradedRecord, usesTiles,
 } from '../migration/src/lib/participant/pager-logic.js';
 
 // The rules the participant pager follows, with no browser: graded feedback and Retry, validation
@@ -206,12 +206,73 @@ test('sequential unlock: only the first unfinished activity is open; "open" lock
     { id: 'c', complete: false, questionIds: ['q3'] },
     { id: 'd', complete: true, questionIds: ['q4'] },
   ];
-  assert.deepEqual(activityStates(sections, undefined).map((section) => section.state), ['done', 'default', 'locked', 'done'], 'sequential is the default');
-  assert.deepEqual(activityStates(sections, 'sequential').map((section) => section.state), ['done', 'default', 'locked', 'done']);
-  assert.deepEqual(activityStates(sections, 'open').map((section) => section.state), ['done', 'default', 'default', 'done']);
-  assert.deepEqual(activityStates(sections.map((section) => ({ ...section, complete: false })), null).map((section) => section.state), ['default', 'locked', 'locked', 'locked']);
+  assert.deepEqual(activityStates(sections, undefined).map((section) => section.state), ['done', 'ready', 'locked', 'done'], 'sequential is the default');
+  assert.deepEqual(activityStates(sections, 'sequential').map((section) => section.state), ['done', 'ready', 'locked', 'done']);
+  assert.deepEqual(activityStates(sections, 'open').map((section) => section.state), ['done', 'ready', 'ready', 'done']);
+  assert.deepEqual(activityStates(sections.map((section) => ({ ...section, complete: false })), null).map((section) => section.state), ['ready', 'locked', 'locked', 'locked']);
   assert.deepEqual(activityStates(sections.map((section) => ({ ...section, complete: true })), null).map((section) => section.state), ['done', 'done', 'done', 'done']);
   assert.deepEqual(activityStates([], null), []);
+});
+
+test('the four states (Prompt 24): started is in progress, not started is ready, and the counts and the next one come with them', () => {
+  const sections = [
+    { id: 'a', complete: true, questionIds: ['q1'], answered: 1, total: 1 },
+    { id: 'b', complete: false, questionIds: ['q2', 'q3', 'q4', 'q5'], answered: 2, total: 4 },
+    { id: 'c', complete: false, questionIds: ['q6'], answered: 0, total: 1 },
+  ];
+  const sequential = activityStates(sections, 'sequential');
+  assert.deepEqual(sequential.map((section) => section.state), ['done', 'progress', 'locked']);
+  assert.deepEqual(sequential.map((section) => section.next), [false, true, false]);
+  assert.deepEqual(sequential.map((section) => [section.answered, section.total]), [[1, 1], [2, 4], [0, 1]]);
+  const open = activityStates(sections, 'open');
+  assert.deepEqual(open.map((section) => section.state), ['done', 'progress', 'ready'], 'any order: every unfinished activity with no answer is ready');
+  assert.deepEqual(open.map((section) => section.next), [false, true, false]);
+  // A locked activity stays locked even if it holds an answer (a restored visit): the lock rule alone decides.
+  assert.equal(activityStates([{ id: 'x', complete: false, questionIds: ['q'], answered: 0, total: 1 }, { id: 'y', complete: false, questionIds: ['r', 's'], answered: 1, total: 2 }], null)[1].state, 'locked');
+  // Counts missing are read as none.
+  const bare = activityStates([{ id: 'x', complete: false, questionIds: ['q'] }], null)[0];
+  assert.deepEqual([bare.state, bare.answered, bare.total, bare.next], ['ready', 0, 1, true]);
+});
+
+test('an empty activity is ready, with no count and never "next"', () => {
+  const [empty, real] = activityStates([{ id: 'e', complete: false, questionIds: [] }, { id: 'r', complete: false, questionIds: ['q'], answered: 0, total: 1 }], 'sequential');
+  assert.deepEqual([empty.state, empty.total, empty.next], ['ready', 0, false]);
+  assert.deepEqual([real.state, real.next], ['ready', true]);
+});
+
+test('no activity changes between locked and not locked: the four states against the old rule, over random sessions', () => {
+  // The rule as it stood before Prompt 24, kept here on purpose as the reference.
+  const oldLocked = (sections, flow) => {
+    const sequential = flow !== 'open';
+    let blocked = false;
+    return sections.map((section) => {
+      const empty = (section.questionIds ?? []).length === 0;
+      const locked = !section.complete && sequential && blocked && !empty;
+      if (sequential && !section.complete && !empty) blocked = true;
+      return locked;
+    });
+  };
+  // A small fixed generator, so a failure repeats.
+  let seed = 24;
+  const random = (limit) => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed % limit; };
+  for (let round = 0; round < 2000; round += 1) {
+    const sections = Array.from({ length: random(7) }, (_, index) => {
+      const total = random(5);
+      const answered = random(total + 1);
+      return { id: `s${index}`, questionIds: Array.from({ length: total }, (__, at) => `q${index}-${at}`), answered, total, complete: total > 0 && answered === total };
+    });
+    for (const flow of ['sequential', 'open', undefined, null]) {
+      const states = activityStates(sections, flow);
+      assert.deepEqual(states.map((section) => section.state === 'locked'), oldLocked(sections, flow), `round ${round}, ${flow}`);
+      states.forEach((section, at) => {
+        assert.ok(['done', 'progress', 'ready', 'locked'].includes(section.state), section.state);
+        assert.equal(section.state === 'done', sections[at].complete);
+        if (section.state !== 'locked' && section.state !== 'done') assert.equal(section.state, sections[at].answered > 0 ? 'progress' : 'ready');
+      });
+      const firstOpen = sections.findIndex((section) => !section.complete && section.questionIds.length > 0);
+      assert.deepEqual(states.flatMap((section, at) => (section.next ? [at] : [])), firstOpen < 0 ? [] : [firstOpen], 'one next at most: the first unfinished');
+    }
+  }
 });
 
 test('an activity with no questions neither blocks the next one nor is locked itself', () => {
@@ -221,7 +282,7 @@ test('an activity with no questions neither blocks the next one nor is locked it
     { id: 'c', complete: false, questionIds: [] },
     { id: 'd', complete: false, questionIds: ['q2'] },
   ];
-  assert.deepEqual(activityStates(sections, 'sequential').map((section) => section.state), ['default', 'default', 'default', 'locked']);
+  assert.deepEqual(activityStates(sections, 'sequential').map((section) => section.state), ['ready', 'ready', 'ready', 'locked']);
 });
 
 test('the greeting uses the visitor name, else the staff SharePoint name, else "there"', () => {
@@ -267,4 +328,34 @@ test('a wrong first try on a question that then lost its key is settled by the n
   assert.equal(held.answer, 'o3');
   assert.equal(held.attempts, MAX_WRONG_TRIES);
   await store.flush(visit, 'sec');
+});
+
+describe('Art of the Possible in the pager (Prompt 23)', () => {
+  const criteria = [{ id: 'c-aaaaaa', label: 'Volume', direction: 'favours' }, { id: 'c-bbbbbb', label: 'Risk', direction: 'against' }];
+  const question = { id: 'q', prompt: 'Rate', type: 'art-of-the-possible', criteria, options: [{ id: 'a', label: 'A', value: 3 }, { id: 'b', label: 'B', value: 1 }] };
+  const full = ['a:c-aaaaaa=1,c-bbbbbb=2', 'b:c-aaaaaa=3,c-bbbbbb=3'];
+  it('is complete only when every box is rated, and the type never falls into the default case', () => {
+    assert.equal(isAnswerComplete(question, undefined), false);
+    assert.equal(isAnswerComplete(question, 'a'), false);
+    assert.equal(isAnswerComplete(question, ['a:c-aaaaaa=1']), false);
+    assert.equal(isAnswerComplete(question, full), true);
+    assert.equal(isAnswerComplete({ ...question, options: [] }, []), false);
+  });
+  it('a removed row is not asked for, an added row is, and a damaged entry is a box left, not a crash', () => {
+    assert.equal(matrixLeft({ ...question, options: [question.options[0]] }, full), 0);
+    assert.equal(matrixLeft({ ...question, options: [...question.options, { id: 'c', label: 'C' }] }, full), 2);
+    assert.equal(matrixLeft(question, ['a:c-aaaaaa=9,c-bbbbbb=2', 'nonsense', 'b:c-aaaaaa=3,c-bbbbbb=3']), 1);
+    assert.equal(isAnswerComplete(question, ['a:c-aaaaaa=9,c-bbbbbb=2', 'b:c-aaaaaa=3,c-bbbbbb=3']), false);
+  });
+  it('what is saved holds only the rows and criteria the question has now', () => {
+    assert.deepEqual(normalizeAnswer(question, [...full, 'gone:c-aaaaaa=1']), full);
+  });
+  it('Send says how many boxes are left', () => {
+    assert.deepEqual([sendLabel(0), sendLabel(1), sendLabel(24)], ['Send', 'Send (1 box left)', 'Send (24 boxes left)']);
+  });
+  it('is never graded, and its record is one attempt with no verdict', () => {
+    assert.equal(isGraded(question), false);
+    assert.deepEqual(ungradedRecord(question, full), { questionId: 'q', answer: full, firstAnswer: full, attempts: 1, correct: null });
+    assert.equal(isRecordSettled(ungradedRecord(question, full)), true);
+  });
 });

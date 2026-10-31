@@ -5,7 +5,7 @@
   import { hiLine } from '../lib/participant/pager-logic.js';
   import { motion } from '../lib/motion/motion.js';
 
-  let { name, title, right, total, allDone, onback, onfinish, onhome }: {
+  let { name, title, right, total, allDone, onback, onfinish, onhome, onchange }: {
     name: string;
     /** The activity just finished. */
     title: string;
@@ -17,6 +17,8 @@
     onback: () => void;
     onfinish: () => void;
     onhome: () => void;
+    /** An activity with an Art of the Possible question: back to the ratings, to change them (Prompt 23). */
+    onchange?: () => void;
   } = $props();
 
   let heading = $state<HTMLElement>();
@@ -38,6 +40,7 @@
     {:else}
       <PillButton onclick={onback}>Back to activities</PillButton>
     {/if}
+    {#if onchange}<PillButton variant="secondary" onclick={onchange}>Change my ratings</PillButton>{/if}
     <HomeButton onclick={onhome} />
   </div>
 </div>

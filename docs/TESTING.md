@@ -22,7 +22,7 @@ What each gate proves, how long it takes on the development machine (a Windows l
 | `npm run test:baseline` | Every SharePoint request ten mocked suites send is the one recorded in `scripts/request-baseline/` (part of `npm test`). A difference is a finding, never a reason to re-record. | in `npm test` |
 | `npm run test:bundle` | The three pages' sizes against their budgets, the participant page free of the admin's libraries, and each phase's recorded sizes (part of `npm test`). | 5 s |
 | `npm run test:report` | The leader report, its PDF, the CSVs and the Live display's summary pack, held to sessions worked out by hand and read back with pdf.js. | 4 s |
-| `npm run test:report:mutations` | The report's tests catch each of 64 deliberate breakages of the counting, drawing and wording. | 22 s |
+| `npm run test:report:mutations` | The report's tests catch each of 71 deliberate breakages of the counting, drawing and wording. | 22 s |
 | `npm run oracle -- --seeds 500` | 500 random sessions counted again by rules of the oracle's own, in four time zones, on both adapters: 0 differences. | 6 s |
 | `npm run test:charts` | Every number a Results chart shows, the palette's contrast, the wall's address, where a tooltip goes. | 1 s |
 | `npm run test:local-site` | The local PCOE stand-in answers as PCOE does, and Setup's self-test passes 11 of 11 on it (needs a release package). | 3 s |
@@ -33,7 +33,7 @@ What each gate proves, how long it takes on the development machine (a Windows l
 **Known flakes:** two tests read a record back the moment the screen says it is saved, before the write has landed, and fail now and then on this
 machine: `admin-today.spec.ts` "slugs" (3 of 3 on the untouched commit of Phase 13) and `brand-studio.spec.ts` "an answer tile's picture can be uploaded
 in Content" (7 of 9 runs on the untouched `1ab63bd`, 6 of 9 on Phase 14's branch). Neither is a regression of a change unless it fails differently. Also on
-this machine, before and after every change, in WebKit on Windows: 17 tests of `effects-audio.spec.ts`, `brand-smoke.spec.ts`, `flow.spec.ts` (a tile whose picture fails) and one `keyboard.spec.ts` test fail.
+this machine, before and after every change, in WebKit on Windows: 25 tests of `effects-audio.spec.ts`, `brand-smoke.spec.ts`, `flow.spec.ts` (a tile whose picture fails) and one `keyboard.spec.ts` test fail.
 
 **One browser, one file:** `npx playwright test --config migration/playwright.config.ts --project=chromium scripts/migration-tests/flow.spec.ts`
 (build the pages first: `npm run build:svelte:release`). What does not run in an engine, and why, is listed at the top of
@@ -67,6 +67,8 @@ seven sizes.
   real server against a scratch copy of `server/data/`, and drives it through
   `dataService` to exercise track merge/resume, admin restart, and QR token
   lifecycle. Run this after touching `server/`, `lib/data/`, or session/track logic.
+- **Prompt 24's suites** (all part of `npm test`): [scripts/test-hub-moment.js](../scripts/test-hub-moment.js) (every transition, the cap, the levels), [scripts/test-hub-look.js](../scripts/test-hub-look.js) (the contrast sweep and the markup), [scripts/test-confetti-plan.js](../scripts/test-confetti-plan.js) (the sprays). In a browser, in Chromium and WebKit: [hub-states.spec.ts](../scripts/migration-tests/hub-states.spec.ts) (a complete-then-return, a reload, a navigation, the locked tap, sound off, reduced motion, 200% text, the frames at 4x CPU) and [hub-situations.spec.ts](../scripts/migration-tests/hub-situations.spec.ts) (the pictures for the release note; `PMS_SHOT_NAME=before` over an older build's pages).
+- **Prompt 23's suites** (all part of `npm test`): [scripts/test-aop-math.js](../scripts/test-aop-math.js) (the answer and the formulas, from the brief's session worked by hand), [scripts/test-aop-editor.js](../scripts/test-aop-editor.js) (every limit, paste, a copy's notice, the write guard), [scripts/test-aop-results.js](../scripts/test-aop-results.js) (the chart, the report, the long CSV, the pooling, and no picture in any export), [scripts/test-guest-picture.js](../scripts/test-guest-picture.js) (the name, what may be removed and Delete session, on both adapters). `scripts/oracle-results.js` recounts opportunity, band and people in the High band in whole numbers from the raw strings (`generateAop`, `aopOracle`). The browser side is `art-of-the-possible.spec.ts`, Chromium and WebKit, with pictures in `test-results/art-of-the-possible/`; a chosen picture runs in Chromium only, since Playwright's WebKit on Windows cannot open one. The request baselines followed version 9 by [scripts/schema-baseline/aop-baselines.js](../scripts/schema-baseline/aop-baselines.js).
 - **Phase 17's suites** (all part of `npm test`): [scripts/test-data-surface.js](../scripts/test-data-surface.js) holds the data service's 107 public names, each
   with its kind and arity, to `scripts/data-surface.json` and its count in DECISIONS.md; [scripts/test-data-modules.js](../scripts/test-data-modules.js) holds the shape
   of `lib/data/` (one state instance per page, only `core.js` keeps state and fetches, the facade passes on exactly the surface, no app file imports a part,

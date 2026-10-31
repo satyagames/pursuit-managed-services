@@ -8,6 +8,7 @@ import {
 import {
   DELOITTE_GREEN, NARROW_SCALE, NARROW_WIDTH, buildPalette, confettiPlan, defaultOrigin, isRedish, originFromRect, parseColor, planDuration, tint, toHex, toHsl,
 } from '../migration/src/lib/effects/confetti-plan.js';
+import { MOMENT } from '../migration/src/lib/participant/hub-moment-plan.js';
 import { EFFECTS, SOUND_KEY, UNAVAILABLE_TITLE, answerEffect, readChoice, soundIsOn, writeChoice } from '../migration/src/lib/effects/effect-plan.js';
 import { CUES, CUE_NAMES, MAX_VOICES, RETRIGGER_MS, createVoiceGate, cueEnd, toneSignature } from '../migration/src/lib/effects/sound-cues.js';
 
@@ -21,7 +22,7 @@ const root = path.join(import.meta.dirname, '..');
 // ---- The cue table -------------------------------------------------------------------------------------
 
 // The brief's table: the longest each cue may run, in seconds.
-const BRIEF_MAX = { soundOn: 0.3, pick: 0.06, correctFirst: 0.5, correctRetry: 0.3, incorrect: 0.4, revealed: 0.3, activityComplete: 1.0, finale: 2.2 };
+const BRIEF_MAX = { soundOn: 0.3, pick: 0.06, correctFirst: 0.5, correctRetry: 0.3, incorrect: 0.4, revealed: 0.3, activityComplete: 1.0, finale: 2.2, stamp: 0.25, unlock: 0.6, locked: 0.25, allDone: 0.8 };
 
 test('there is a cue for every moment in the brief, each within the brief\'s length', () => {
   assert.deepEqual([...CUE_NAMES].sort(), Object.keys(BRIEF_MAX).sort());
@@ -49,8 +50,10 @@ test('every note is soft and safe: sine or triangle, a real attack and release, 
       assert.ok(note.level > 0 && note.level <= 0.6, `${name}: level ${note.level}`);
       if (note.kind === 'tone') {
         assert.ok(['sine', 'triangle'].includes(note.wave), `${name}: ${note.wave} would be harsh`);
-        assert.ok(note.freq >= 200 && note.freq <= 3000, `${name}: ${note.freq} Hz is outside the soft range`);
-        if (note.lowpass) assert.ok(note.lowpass >= 800 && note.lowpass <= 6000, `${name} lowpass`);
+        // (Only the brief's two low hub cues, G3 and F3 under 700 to 900 Hz, go below the old floor; every other cue keeps it.)
+        const low = ['stamp', 'locked'].includes(name);
+        assert.ok(note.freq >= (low ? 170 : 200) && note.freq <= 3000, `${name}: ${note.freq} Hz is outside the soft range`);
+        if (note.lowpass) assert.ok(note.lowpass >= (low ? 700 : 800) && note.lowpass <= 6000, `${name} lowpass`);
       } else {
         assert.equal(note.kind, 'noise');
         assert.ok(note.filter.freq <= 4000, `${name}: the noise must be filtered low`);
@@ -86,6 +89,52 @@ test('the directions are right: wins rise, a miss falls', () => {
   assert.equal(melody('soundOn').length, 2, 'two notes');
   assert.equal(melody('correctFirst').length, 2, 'two notes');
   assert.ok(CUES.incorrect.notes.every((note) => note.freq < 450), 'incorrect stays low');
+});
+
+// ---- The hub's cues (Prompt 24) -----------------------------------------------------------------------------
+
+const C_MAJOR = new Set(['C', 'D', 'E', 'F', 'G', 'A', 'B']);
+/** The nearest note's letter to a frequency. */
+const letter = (freq) => ['A', 'A#', 'B', 'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#'][((Math.round(12 * Math.log2(freq / 440)) % 12) + 12) % 12];
+
+test('the hub cues are built as the brief says, and all stay in C major so the phrase joins up', () => {
+  const tones = (name) => CUES[name].notes.filter((note) => note.kind === 'tone');
+  const noises = (name) => CUES[name].notes.filter((note) => note.kind === 'noise');
+  for (const name of ['stamp', 'unlock', 'locked', 'allDone']) for (const note of tones(name)) assert.ok(C_MAJOR.has(letter(note.freq)), `${name}: ${note.freq}`);
+  assert.deepEqual(tones('stamp').map((note) => letter(note.freq)), ['G', 'G'], 'G3 and its quiet octave');
+  assert.ok(tones('stamp')[0].lowpass === 900 && tones('stamp')[0].wave === 'sine');
+  assert.equal(noises('stamp')[0].filter.type, 'lowpass');
+  assert.deepEqual(tones('unlock').map((note) => letter(note.freq)), ['G', 'C', 'E']);
+  assert.equal(tones('unlock')[0].wave, 'triangle');
+  assert.ok(Math.abs(tones('unlock')[2].level - tones('unlock')[1].level / 4) < 1e-9, 'the E6 shimmer is a quarter of the C6');
+  assert.deepEqual([noises('unlock')[0].filter.type, noises('unlock')[0].filter.freq], ['bandpass', 3000]);
+  assert.deepEqual(tones('locked').map((note) => letter(note.freq)), ['G', 'G', 'F', 'F'], 'G3 then F3, each with a quiet octave');
+  assert.ok(tones('locked').every((note) => note.lowpass === 700 && note.wave === 'sine'));
+  assert.equal(noises('locked')[0].filter.freq, 700);
+  assert.deepEqual(tones('allDone').map((note) => letter(note.freq)), ['C', 'E', 'G']);
+  assert.deepEqual(tones('allDone').map((note) => note.at), [0, 0.07, 0.14]);
+  assert.ok(tones('allDone').every((note) => note.level === 0.2));
+  assert.ok(tones('locked').filter((note) => note.level > 0.2).every((note) => note.freq < Math.min(...toneSignature(CUES.incorrect)) / 1.5), 'locked sounds well below incorrect, never like it');
+});
+
+test('the stamp has ended before the unlock starts, in the plan\'s own timing', () => {
+  assert.ok(cueEnd(CUES.stamp) * 1000 <= MOMENT.afterStamp, `${cueEnd(CUES.stamp)} s`);
+});
+
+test('the hub\'s effects: the sounds, and all-done\'s one medium burst', () => {
+  assert.deepEqual(EFFECTS.stamp, { cue: 'stamp', confetti: null });
+  assert.deepEqual(EFFECTS.unlock, { cue: 'unlock', confetti: null });
+  assert.deepEqual(EFFECTS.locked, { cue: 'locked', confetti: null });
+  assert.deepEqual(EFFECTS.allDone, { cue: 'allDone', confetti: 'medium' });
+});
+
+test('every hub sound goes through the one door behind the switch, and sparks only at the full level', async () => {
+  const effects = await readFile(path.join(root, 'migration/src/lib/effects/effects.ts'), 'utf8');
+  assert.match(effects, /function run\(effect: Effect, anchor\?: Element \| null\): void \{\s*if \(effect\.cue && soundState\(\)\.on\) engine\.playCue/, 'one door, behind the switch');
+  for (const name of ['hubStamp', 'hubUnlock', 'hubLocked', 'hubAllDone']) assert.match(effects, new RegExp(`export function ${name}\\(`), name);
+  assert.doesNotMatch(effects, /engine\.playCue\('/, 'no cue is named at a call');
+  const plan = await readFile(path.join(root, 'migration/src/lib/effects/confetti.ts'), 'utf8');
+  assert.match(plan, /sparkPlan\(/, 'the level is the plan\'s to apply');
 });
 
 // ---- The voice gate -------------------------------------------------------------------------------------
@@ -155,7 +204,7 @@ test('the other moments: a tick on a pick, the activity and finale cues with the
 });
 
 test('Next, Back, Home and the Welcome tap have no effect to run', () => {
-  assert.deepEqual(Object.keys(EFFECTS).sort(), ['activityComplete', 'finale', 'pick', 'soundOn']);
+  assert.deepEqual(Object.keys(EFFECTS).sort(), ['activityComplete', 'allDone', 'finale', 'locked', 'pick', 'soundOn', 'stamp', 'unlock']);
 });
 
 // ---- The saved choice ---------------------------------------------------------------------------------------

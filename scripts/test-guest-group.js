@@ -10,11 +10,11 @@ import { MAX_GUEST_GROUP, guestGroups, inGroup, parseGuestList } from '../migrat
 import { createSharePointFake } from './sharepoint-fake.js';
 
 describe('schema version 7: PMSGuestList.GuestGroup', () => {
-  it('the version is 7 and the roster\'s last column is the optional GuestGroup, not indexed, since 7', () => {
-    assert.equal(VERSION, 8); // (7 until Prompt 21, Phase 5)
+  it('the version is 7 and the roster\'s optional GuestGroup is not indexed, since 7', () => {
+    assert.equal(VERSION, 9); // (7 until Prompt 21, Phase 5, 8 until Prompt 23)
     const fields = Object.values(LISTS.visitorroster.fields);
-    assert.deepEqual(fields.map((field) => field.column), ['AppId', 'SessionId', 'GuestName', 'Enabled', 'GuestGroup']);
-    assert.ok(!fields.at(-1).indexed, 'the app filters on it in Phase 5, which indexes it then');
+    assert.deepEqual(fields.map((field) => field.column), ['AppId', 'SessionId', 'GuestName', 'Enabled', 'GuestGroup', 'PictureUrl']); // (Prompt 23 added PictureUrl)
+    assert.ok(!LISTS.visitorroster.fields.guestGroup.indexed, 'the app filters on it in Phase 5, which indexes it then');
     assert.equal(META.visitorroster.columns.GuestGroup.since, 7);
   });
 });

@@ -1,19 +1,21 @@
 <script module lang="ts">
+  import type { Criterion } from './MatrixEditor.svelte';
   // One question's editor in Content (Phase 16: moved out of ContentQuestions.svelte, which opens it in place, under the row it edits). What it
   // saves, and how, is what the editor below the list saved before: the draft rules, the option fields, the layout, the pictures it tidies.
-  export type QuestionType = 'single-select' | 'multi-select' | 'true-false' | 'confidence-continuum' | 'ranked-voting' | 'open-text-feedback';
-  export type Question = { id: string; sectionId: string; type: string; prompt: string; optionIds?: string[]; order?: number; layout?: string | null };
+  export type QuestionType = 'single-select' | 'multi-select' | 'true-false' | 'confidence-continuum' | 'ranked-voting' | 'open-text-feedback' | 'art-of-the-possible';
+  export type Question = { id: string; sectionId: string; type: string; prompt: string; optionIds?: string[]; order?: number; layout?: string | null; criteria?: Criterion[] };
   export type Option = { id: string; questionId: string; label: string; value: string | number | boolean; correct?: boolean | null; imageUrl?: string | null };
   /** What the person has typed, as the screen keeps it when the question is deleted elsewhere (it is offered back as a new question). */
-  export type Draft = { prompt: string; type: QuestionType; layout: 'text-list' | 'image-grid'; options: { label: string; correct: boolean; imageUrl: string }[] };
+  export type Draft = { prompt: string; type: QuestionType; layout: 'text-list' | 'image-grid'; options: { label: string; correct: boolean; imageUrl: string; people?: string }[]; criteria?: Criterion[] };
 
-  export const QUESTION_SPECS: Record<QuestionType, { label: string; options: 'free' | 'fixed' | 'none'; correct: boolean; min: number; hint: string }> = {
+  export const QUESTION_SPECS: Record<QuestionType, { label: string; options: 'free' | 'fixed' | 'none' | 'matrix'; correct: boolean; min: number; hint: string }> = {
     'single-select': { label: 'Single choice (poll or MCQ)', options: 'free', correct: true, min: 2, hint: 'Leave Correct off for a poll; mark one option for a multiple-choice question.' },
     'multi-select': { label: 'Multiple choice (select all)', options: 'free', correct: false, min: 2, hint: 'Participants can choose more than one option.' },
     'true-false': { label: 'True / False', options: 'fixed', correct: true, min: 2, hint: 'Optionally mark the correct answer.' },
     'confidence-continuum': { label: 'Confidence continuum (scale)', options: 'free', correct: false, min: 2, hint: 'Scale points from lowest to highest.' },
     'ranked-voting': { label: 'Ranked voting', options: 'free', correct: false, min: 2, hint: 'Participants rank options from most to least important.' },
     'open-text-feedback': { label: 'Survey feedback', options: 'none', correct: false, min: 0, hint: '' },
+    'art-of-the-possible': { label: 'Art of the Possible', options: 'matrix', correct: false, min: 2, hint: '' },
   };
 </script>
 
@@ -27,17 +29,24 @@
   import { SLOTS } from '../lib/brand/asset-specs.js';
   import { questionLayout } from '../lib/participant/pager-logic.js';
   import AssetUploader from './AssetUploader.svelte';
+  import MatrixEditor, { type RowDraft } from './MatrixEditor.svelte';
+  import { answersToQuestions } from '../lib/admin/adminData.js';
+  import { copiedFrom, defaultCriteria, instructionFor } from '../lib/admin/aop-editor.js';
+  import { criteriaProblem, rowsProblem } from '../lib/schema/aop-rules.js';
 
   type Section = { id: string; title: string; clientId?: string | null; questionIds?: string[] };
-  type OptionDraft = { key: string; id?: string; label: string; correct: boolean; imageUrl: string; storedImage: string | null };
+  type OptionDraft = { key: string; id?: string; label: string; correct: boolean; imageUrl: string; storedImage: string | null; people: string };
   type Layout = 'text-list' | 'image-grid';
 
-  let { question, held = [], sectionId, clientSlug, id, labelledBy, seed = null, busy = $bindable(false), onToast, onChanged, onSaved, onCancel, onDirty, onGone }: {
+  let { question, held = [], sectionId, clientId = null, siblings = 0, clientSlug, id, labelledBy, seed = null, busy = $bindable(false), onToast, onChanged, onSaved, onCancel, onDirty, onGone }: {
     /** The question edited, or null for a new one. */
     question: Question | null;
     /** Its options as the list read them. */
     held?: Option[];
     sectionId: string;
+    /** The activity's client, and how many questions it holds beside this one: what an Art of the Possible editor says about them (Prompt 23). */
+    clientId?: string | null;
+    siblings?: number;
     clientSlug: string;
     /** The editor's id (its Edit button's aria-controls), and the ids of what names it. */
     id: string;
@@ -72,16 +81,22 @@
   let storedAtOpen = $state<string[]>([]);
   let uploadNotice = $state<Record<string, string>>({});
   let opened = '';
+  /** Prompt 23: an Art of the Possible question's criteria, every criterion id this editor has met, and how many guests have rated. */
+  let criteria = $state<Criterion[]>([]);
+  const usedCriterionIds = new Set<string>();
+  let answered = $state(0);
+  /** The words were the default for the number of criteria: they follow that number until the person types their own. */
+  let promptIsDefault = false;
 
   const currentSpec = $derived(specs[type]);
   const showsLayout = $derived(layoutApplies(type));
   const tiles = $derived(showsLayout && layout === 'image-grid');
   const pictured = $derived(optionDrafts.filter((option) => option.imageUrl.trim()).length);
-  const typed = $derived<Draft>({ prompt, type, layout, options: optionDrafts.map((option) => ({ label: option.label, correct: option.correct, imageUrl: option.imageUrl })) });
+  const typed = $derived<Draft>({ prompt, type, layout, options: optionDrafts.map((option) => ({ label: option.label, correct: option.correct, imageUrl: option.imageUrl, people: option.people })), criteria });
   const dirty = $derived(opened !== '' && JSON.stringify(typed) !== opened);
 
-  const newOption = (label = ''): OptionDraft => ({ key: crypto.randomUUID(), label, correct: false, imageUrl: '', storedImage: null });
-  const draftOf = (option: Option): OptionDraft => ({ key: option.id, id: option.id, label: option.label, correct: option.correct === true, imageUrl: option.imageUrl ?? '', storedImage: option.imageUrl ?? null });
+  const newOption = (label = '', people = ''): OptionDraft => ({ key: crypto.randomUUID(), label, correct: false, imageUrl: '', storedImage: null, people });
+  const draftOf = (option: Option): OptionDraft => ({ key: option.id, id: option.id, label: option.label, correct: option.correct === true, imageUrl: option.imageUrl ?? '', storedImage: option.imageUrl ?? null, people: option.value === null || option.value === undefined ? '' : String(option.value) });
 
   // What the editor below the list did when it opened (openEditor), once, when this one is made.
   untrack(() => {
@@ -90,11 +105,13 @@
     type = (editing?.type as QuestionType) ?? seed?.type ?? 'single-select';
     layout = editing ? questionLayout({ ...editing, options } as never) : seed?.layout ?? 'text-list';
     optionDrafts = options.map(draftOf);
+    criteria = (editing?.criteria ?? seed?.criteria ?? []).map((criterion) => ({ ...criterion }));
+    for (const criterion of criteria) usedCriterionIds.add(criterion.id);
     storedAtOpen = options.map((option) => option.imageUrl ?? '').filter(Boolean);
-    if (!editing && seed) optionDrafts = seed.options.map((option) => ({ ...newOption(option.label), correct: option.correct, imageUrl: option.imageUrl }));
+    if (!editing && seed) optionDrafts = seed.options.map((option) => ({ ...newOption(option.label, option.people ?? ''), correct: option.correct, imageUrl: option.imageUrl }));
     else if (!editing) applyTypeDefaults(true);
     else normalizeOptions();
-    opened = JSON.stringify({ prompt, type, layout, options: optionDrafts.map((option) => ({ label: option.label, correct: option.correct, imageUrl: option.imageUrl })) });
+    opened = JSON.stringify({ prompt, type, layout, options: optionDrafts.map((option) => ({ label: option.label, correct: option.correct, imageUrl: option.imageUrl, people: option.people })), criteria });
   });
 
   $effect(() => { onDirty(dirty, $state.snapshot(typed) as Draft); });
@@ -107,13 +124,23 @@
     const tall = (editor?.getBoundingClientRect().height ?? 0) > window.innerHeight * 0.8;
     editor?.scrollIntoView({ block: tall ? 'start' : 'nearest', behavior: smooth ? 'smooth' : 'auto' });
     field?.focus({ preventScroll: true });
+    // (Prompt 23: only an Art of the Possible question pays for this read, and only when its editor opens. Not knowing leaves the line out.)
+    if (editing?.type === 'art-of-the-possible') void answersToQuestions({ id: sectionId, clientId }, [editing.id]).then((found) => { answered = found.answers; }).catch(() => {});
   });
 
+  // The default words follow the number of criteria, until the person types their own.
+  $effect(() => { const count = criteria.length; if (type === 'art-of-the-possible' && untrack(() => promptIsDefault)) prompt = instructionFor(count); });
+
   function applyTypeDefaults(seeded = false) {
-    if (specs[type].options === 'none') {
+    if (specs[type].options === 'matrix') {
+      if (criteria.length === 0) criteria = defaultCriteria(usedCriterionIds);
+      if (!optionDrafts.length || seeded) optionDrafts = [optionDrafts[0] ?? newOption(), optionDrafts[1] ?? newOption()];
+      else optionDrafts = optionDrafts.map((option) => ({ ...option, correct: false }));
+      if (!prompt.trim()) { prompt = instructionFor(criteria.length); promptIsDefault = true; }
+    } else if (specs[type].options === 'none') {
       optionDrafts = [];
     } else if (specs[type].options === 'fixed') {
-      optionDrafts = ['True', 'False'].map((label, index) => ({ key: optionDrafts[index]?.key ?? crypto.randomUUID(), id: optionDrafts[index]?.id, label, correct: optionDrafts[index]?.correct ?? false, imageUrl: optionDrafts[index]?.imageUrl ?? '', storedImage: optionDrafts[index]?.storedImage ?? null }));
+      optionDrafts = ['True', 'False'].map((label, index) => ({ key: optionDrafts[index]?.key ?? crypto.randomUUID(), id: optionDrafts[index]?.id, label, correct: optionDrafts[index]?.correct ?? false, imageUrl: optionDrafts[index]?.imageUrl ?? '', storedImage: optionDrafts[index]?.storedImage ?? null, people: '' }));
     } else if (!specs[type].correct) {
       optionDrafts = optionDrafts.map((option) => ({ ...option, correct: false }));
     }
@@ -126,7 +153,7 @@
   function normalizeOptions() {
     if (specs[type].options === 'none') optionDrafts = [];
     else if (specs[type].options === 'fixed') {
-      optionDrafts = ['True', 'False'].map((label, index) => ({ key: optionDrafts[index]?.key ?? crypto.randomUUID(), id: optionDrafts[index]?.id, label, correct: optionDrafts[index]?.correct ?? false, imageUrl: optionDrafts[index]?.imageUrl ?? '', storedImage: optionDrafts[index]?.storedImage ?? null }));
+      optionDrafts = ['True', 'False'].map((label, index) => ({ key: optionDrafts[index]?.key ?? crypto.randomUUID(), id: optionDrafts[index]?.id, label, correct: optionDrafts[index]?.correct ?? false, imageUrl: optionDrafts[index]?.imageUrl ?? '', storedImage: optionDrafts[index]?.storedImage ?? null, people: '' }));
     } else if (!specs[type].correct) optionDrafts = optionDrafts.map((option) => ({ ...option, correct: false }));
   }
 
@@ -207,6 +234,11 @@
     const questionPrompt = prompt.trim();
     if (!questionPrompt) throw new Error('Enter the question text.');
     const draftOptions = optionDrafts.map((option) => ({ ...option, label: option.label.trim() })).filter((option) => option.label);
+    if (type === 'art-of-the-possible') {
+      const problem = criteriaProblem(criteria) || rowsProblem(draftOptions.map((option) => ({ label: option.label, value: option.people })));
+      if (problem) throw new Error(problem);
+      return { prompt: questionPrompt, type, layout, options: draftOptions };
+    }
     if (draftOptions.length < specs[type].min) throw new Error(`Add at least ${specs[type].min} options.`);
     if (new Set(draftOptions.map((option) => option.label.toLowerCase())).size !== draftOptions.length) throw new Error('Option texts must be different from each other.');
     for (const [index, option] of draftOptions.entries()) {
@@ -224,6 +256,7 @@
 
   function makeOptionFields(draft: ReturnType<typeof readDraft>) {
     const taken = new Set<string>();
+    if (draft.type === 'art-of-the-possible') return draft.options.map((option) => dataService.matrixRowFields(option));
     const hasCorrect = specs[draft.type].correct && draft.options.some((option) => option.correct);
     return draft.options.map((option, index) => {
       let value: string | number | boolean;
@@ -245,8 +278,16 @@
 
   /** Layout is written when it is a choice that is set to tiles, or already had a stored layout. */
   function layoutFields(draft: ReturnType<typeof readDraft>, question: Question | null) {
+    // (Prompt 23: saving a copied Art of the Possible question's rows makes them this client's: the copy's flag goes.)
+    if (draft.type === 'art-of-the-possible') return copiedFrom(question) ? { layout: null } : {};
     if (!layoutApplies(draft.type)) return {};
     return draft.layout !== 'text-list' || question?.layout ? { layout: draft.layout } : {};
+  }
+
+  /** An Art of the Possible question's criteria; a question that had some and is another type now has none (Prompt 23). Any other question's write is as it was. */
+  function matrixFields(draft: ReturnType<typeof readDraft>, was: Question | null = null) {
+    if (draft.type === 'art-of-the-possible') return { criteria: $state.snapshot(criteria).map((criterion) => ({ ...criterion, label: criterion.label.trim(), hint: criterion.hint.trim() })) };
+    return was?.criteria?.length ? { criteria: null } : {};
   }
 
   async function saveQuestion(event: SubmitEvent) {
@@ -275,7 +316,7 @@
     try {
       const existing = await dataService.listQuestions(sectionId) as Question[];
       const question = await dataService.createQuestion({
-        sectionId, type: draft.type, prompt: draft.prompt, optionIds: [], order: Math.max(0, ...existing.map((item) => item.order ?? 0)) + 1, ...layoutFields(draft, null),
+        sectionId, type: draft.type, prompt: draft.prompt, optionIds: [], order: Math.max(0, ...existing.map((item) => item.order ?? 0)) + 1, ...layoutFields(draft, null), ...matrixFields(draft),
       }) as Question;
       created.push({ kind: 'question', id: question.id });
       const savedOptions: Option[] = [];
@@ -284,7 +325,7 @@
         created.push({ kind: 'option', id: option.id });
         savedOptions.push(option);
       }
-      await dataService.updateQuestion(question.id, { optionIds: savedOptions.map((option) => option.id) });
+      await dataService.updateQuestion(question.id, { optionIds: savedOptions.map((option) => option.id), ...(draft.type === 'art-of-the-possible' ? { type: draft.type } : {}) });
       const current = await dataService.getSection(sectionId) as Section | null;
       const questionIds = [...(current?.questionIds ?? []), question.id];
       await dataService.updateSection(sectionId, { questionIds });
@@ -311,7 +352,7 @@
         optionIds.push(created.id);
       }
     }
-    await dataService.updateQuestion(question.id, { type: draft.type, prompt: draft.prompt, optionIds, ...layoutFields(draft, question) });
+    await dataService.updateQuestion(question.id, { type: draft.type, prompt: draft.prompt, optionIds, ...layoutFields(draft, question), ...matrixFields(draft, question) });
     for (const id of question.optionIds ?? []) if (!keptIds.has(id)) await dataService.deleteOption(id);
   }
 
@@ -329,7 +370,7 @@
   <h4 id={`${id}-heading`} class="content-editor__title">{editing ? 'Edit question' : 'Add question'}{#if dirty}<span class="pill pill--in-progress" data-testid="question-status">Unsaved changes</span>{/if}</h4>
   <form class="editor-form" onsubmit={saveQuestion}>
     <label class="field"><span class="field__label">Type</span><select class="select" value={type} onchange={changeType} disabled={busy}>{#each types as questionType}<option value={questionType}>{specs[questionType].label}</option>{/each}</select></label>
-    <label class="field"><span class="field__label">Question</span><textarea bind:this={field} class="input" rows="2" bind:value={prompt} disabled={busy}></textarea></label>
+    <label class="field"><span class="field__label">Question</span><textarea bind:this={field} class="input" rows="2" bind:value={prompt} oninput={() => { promptIsDefault = false; }} disabled={busy}></textarea></label>
     {#if showsLayout}
       <label class="field">
         <span class="field__label">Layout</span>
@@ -339,7 +380,9 @@
         <span id={`${id}-layout-help`} class="muted small">{tiles ? 'Each option is a tile with its picture. An option with no picture is shown as a text tile.' : 'Each option is a row of text.'}</span>
       </label>
     {/if}
-    {#if currentSpec.options !== 'none'}
+    {#if currentSpec.options === 'matrix'}
+      <MatrixEditor bind:criteria bind:rows={optionDrafts as unknown as RowDraft[]} usedIds={usedCriterionIds} {busy} {answered} copiedFrom={copiedFrom(editing)} mixed={siblings > 0} newRow={(label = '', people = '') => newOption(label, people)} {id} />
+    {:else if currentSpec.options !== 'none'}
       <fieldset class="field">
         <legend class="field__label">Options</legend>
         <p class="muted small">{currentSpec.hint}</p>
