@@ -106,7 +106,7 @@ Bearer tokens through MSAL.js; an SPFx build; the Azure Function relay; Housekee
 | Gate | Before | After |
 |---|---|---|
 | `check:svelte` | 0 errors, 0 warnings | 0 errors, 0 warnings |
-| `npm test` (holds `test:baseline`, `test:bundle`) | 2,073 pass | 2,127 tests; 2,127 pass. One later run: 2 failures of `test-store.js` (a read meeting a write on Windows), which passed 3 of 3 alone. Not changed by this prompt: **watch it** |
+| `npm test` (holds `test:baseline`, `test:bundle`) | 2,073 pass | 2,127 tests; 2,127 pass on the last two runs. **Two earlier runs each had a failure on the local server that did not repeat:** `test-store.js` (a read meeting a write) and `test-sample-pictures.js` ("server exited early"). Each then passed every time alone. `server/` is untouched by this prompt, and I do not know the cause: watch them |
 | `test:report` | 158 pass | 158 pass |
 | `test:report:mutations` | 71 of 71 | 71 of 71 |
 | `oracle -- --seeds 500` | 0 differences | 0 differences |
