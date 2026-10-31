@@ -16,7 +16,7 @@ describe('the line under Give access', () => {
   for (const role of ['Producer', 'Designer', 'Admin']) {
     it(`${role}: needs Edit access to the site, and says roles do not give it`, () => {
       const note = siteAccessNote(role, { person, me: { key: 'boss@deloitte.com' } });
-      assert.match(note, /Edit access to the PCOE SharePoint site/);
+      assert.match(note, /Edit access to this SharePoint site/);
       assert.match(note, /Roles here do not give that\./);
       assert.match(note, /How to add them/);
       assert.match(note, new RegExp(ONBOARDING_DOC.replace('.', '\.')));
@@ -44,7 +44,7 @@ describe('the three screens use the words', () => {
     assert.match(read('migration/src/admin/UserAdd.svelte'), /SITE_ACCESS_ADD_USER/);
   });
   it('No access keeps "ask an Admin" first, then names the site owner', () => {
-    assert.equal(NO_ACCESS_SITE_LINE, 'If SharePoint itself said the item has not been shared with you, ask the site owner to add you to the PCOE site.');
+    assert.equal(NO_ACCESS_SITE_LINE, 'If SharePoint itself said the item has not been shared with you, ask the site owner to add you to this site.');
     const source = read('migration/src/admin/NoAccess.svelte');
     assert.ok(source.indexOf('{words.line}') < source.indexOf('{NO_ACCESS_SITE_LINE}'));
   });
