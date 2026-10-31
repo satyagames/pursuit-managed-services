@@ -1748,6 +1748,15 @@ Results is a leader's view as well (boards 9 and 12): `admin/LeaderDashboard.sve
 8. **The sparks.** `sparkPlan` in `lib/effects/confetti-plan.js`: 6 from the check, 12 from the shackle, at most 24 live, on the one overlay; none below `full`. All-done's one medium burst is confetti and is outside that cap.
 9. **A locked tap is a "not yet".** A shake, a knock and a polite line, no red; a second tap within 400 ms does not stack.
 
+## Rules from Prompt 26 (speed, paging and scale; keep them holding)
+
+- **A screen reads one page and a small index, never a list's every row in full.** People, Clients, Results sessions and the dashboard's clients show 5 to a page, Guests 20, History 10: one constant each (`PER_PAGE`, `lib/common/paging.js`). A Results card reads its session when opened. `$skip` is never used for list items.
+- **Plain rows.** Only a read by `AppId` (or a removal's read of an answers item) asks for the version. Never a blind overwrite where a version was asked for.
+- **A change of screen reads nothing on the participant page** while what is held is fresh (`hubRead`). A look at the server is one request.
+- **Memory only.** What a page holds of a read is in its memory (`lib/admin/list-cache.js`), and any write of its own clears it. No answer or name in `localStorage`.
+- **A style's comment does not ship** (`migration/svelte.config.js`): comment a component's CSS as much as it needs.
+- `npm run perf` and `npm run console:errors` before a change that reads or writes.
+
 ## Before finishing a change
 
 - Always: `npm run check:svelte` and `npm test` (the documents, the module map and the project map among it). If you added, moved or renamed a

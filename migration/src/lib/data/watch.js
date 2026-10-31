@@ -36,8 +36,9 @@ const spStampAddress = (clientId) => `${spListPath('sections')}/items?$top=200&$
  * no track, and `sections` is null unless a `clientId` is given. A record that does not exist reads as null.
  * `sections` are the client's activities as getSessionActivities() gives them (enabled or not, in order).
  *
- * The small thing first (Prompt 26). With `activitiesStamp` (what the last look gave; '' for none) the look asks only each activity's id and Modified, and reads
- * the activities themselves, one request more, only when those moved: `sections` is then null where nothing moved. Without one it reads them as it always did.
+ * The small thing first (Prompt 26). With `activitiesStamp` (what the last look gave) the look asks only each activity's id and Modified: `sections` is null, and when
+ * those moved the stamp it gives back is '', so the next look carries the activities themselves, in its one request. With '' it carries them, and says their stamp. Without
+ * one it reads them as it always did. Every look is one request.
  * @param {{ sessionId?: string | null, trackId?: string | null, clientId?: string | null, activitiesStamp?: string }} [options]
  */
 export async function readParticipantWatch({ sessionId = null, trackId = null, clientId = null, activitiesStamp = undefined } = {}) {
@@ -55,27 +56,21 @@ export async function readParticipantWatch({ sessionId = null, trackId = null, c
     settings: spByAppId('appsettings', 'default'),
     ...(sessionId ? { session: spByAppId('sessions', sessionId) } : {}),
     ...(trackId ? { track: spByAppId('tracks', trackId) } : {}),
-    ...(clientId ? { owned: light ? spStampAddress(clientId) : spItemsAddress('sections', { clientId }) } : {}),
+    ...(clientId ? { owned: activitiesStamp ? spStampAddress(clientId) : `${spItemsAddress('sections', { clientId })}${light ? ',Modified' : ''}` } : {}),
   }).catch(notMade).catch(versionFirst);
   const session = sessionId ? spOne('sessions', sessionId, data.session)?.item ?? null : null;
-  let owned = null;
-  let stamp;
-  let more = 0;
-  if (clientId && light) {
-    const rows = await spAllRows(data.owned);
-    stamp = rows.map((row) => `${row.Id}:${row.Modified}`).join();
-    if (stamp !== activitiesStamp) {
-      more = 1;
-      owned = await queryItems('sections', { clientId });
-    }
-  } else if (clientId) owned = (await spAllRows(data.owned)).map((row) => spDecode('sections', row).item);
+  const rows = clientId ? await spAllRows(data.owned) : null;
+  const stampOf = () => rows.map((row) => `${row.Id}:${row.Modified}`).join();
+  // (A stamp held: only ids and dates came back. Nothing held: the activities did, with their dates.)
+  const stamp = clientId && light ? (activitiesStamp ? (stampOf() === activitiesStamp ? activitiesStamp : '') : stampOf()) : undefined;
+  const owned = rows && !activitiesStamp ? rows.map((row) => spDecode('sections', row).item) : null;
   return {
     settings: versioned(spOne('appsettings', 'default', data.settings)?.item ?? null),
     session,
     track: trackId ? spOne('tracks', trackId, data.track)?.item ?? null : null,
     sections: owned ? inOrder(owned) : null,
     ...(stamp === undefined ? {} : { activitiesStamp: stamp }),
-    requests: requests + more,
+    requests,
   };
 }
 

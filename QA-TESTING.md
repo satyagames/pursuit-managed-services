@@ -35,6 +35,7 @@
 15. Items **279 to 286** (Prompt 23: Art of the Possible and a guest's picture; run 279 before replacing the pages).
    Items **274 to 278** (Prompt 22: the shift by client and by session, Industry and Region with the Region filter, the minimum sample and who may
    set it, the fiscal start month on a test copy, and the manager's questions). Below item 273. No upgrade.
+17. Items **294 to 301** (Prompt 26: reply format, the red lines, paging, the i bubble, Sign in again, the conflict, the size watch). At the end of this file.
 16. Item **293** (Prompt 25: the line about SharePoint access in Give access, Add user and No access; the document ONBOARDING.md). Below item 292.
 17. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
    160, 161, 164, 165, 166, 167, 168, 169, 170.
@@ -1723,6 +1724,14 @@ WebKit, and on the local site (docs/history/RELEASE-22.md), not on the real site
 290. **All done.** *(Still to see.)* Finish every activity: the green wave, Finish rises, one burst. The finale on the next screen is as before. The last activity's result screen offers Finish and Back to activities: the wave plays on Back to activities; Finish goes straight to the finale, as it did.
 291. **The sounds, by ear.** *(Still to see.)* Play the four new sounds beside the existing ones at the volume of a meeting room: none louder than the finale, none harsh, the thud still a thud. The numbers only say how loud they are.
 292. **For the manager.** *(Still to ask.)* The four questions in docs/history/RELEASE-24.md.
+294. **Plain replies.** *(Still to see.)* DevTools Network ([docs/DEVTOOLS-NETWORK.md](docs/DEVTOOLS-NETWORK.md)), Fetch/XHR, `_api`: the Response tab shows plain rows, no `__metadata`. Compare "kB transferred" with [docs/perf/BEFORE.md](docs/perf/BEFORE.md) for the same screen.
+295. **The three red lines.** *(Still to see; the local site shows none.)* Console on `index.html`, `admin.html`, `setup.html` at boot: send any that remain, as text (Console, right-click, Save as).
+296. **People, Clients, Results.** *(Still to see.)* 5 on a page; Next and Previous; a reload keeps the page; search and chips find a person on page 3; the numbers match what they were.
+297. **Every i on the Dashboard.** *(Still to see.)* Hover and press each, the narrow cards too: the bubble is whole, over nothing else, and closes with Escape.
+298. **Sign in again.** *(Still to see: ASSUMED.)* Let a session lapse (leave the participant page 40 minutes, or ask IT to shorten it on a test site), answer a question: the page says "Saved on this iPad", Sign in again opens the small window, one tap and it carries on with the screen kept and the answer sent once. Try it with pop-ups blocked: Reload still works.
+299. **The conflict.** *(Still to see: proves the ETag, ASSUMED.)* Two admins edit the same client name: the second sees the "changed since you opened it" message.
+300. **The size watch.** *(Still to see.)* Setup's self-test shows each list's item count.
+301. **For the manager.** *(Still to ask.)* The three questions in [docs/history/RELEASE-26.md](docs/history/RELEASE-26.md).
 293. **Site access is a separate step.** *(Still to see.)* Give a test colleague a role in People, open Give access and read the line under the fields (Producer, Designer: Edit access; Leadership: Read is enough). Add them to the PCOE site as Members (steps in [docs/ONBOARDING.md](docs/ONBOARDING.md)); they open `admin.html` and the participant link. Before that step they should see SharePoint's "hasn't been shared with you". Read the line in Add user and on No access. Give yourself a role as Super admin: no line.
 
 ### Prompt 20 (the confidence check, Before and After): not verified on SharePoint Online or an iPad

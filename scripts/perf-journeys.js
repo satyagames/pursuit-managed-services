@@ -175,8 +175,8 @@ const journeys = (site) => {
     }],
     [`Results, Sessions, ${SIZES.sessions} sessions`, async (usable) => {
       const [[rows]] = await Promise.all([ds.readLists(RESULTS_INDEX), ds.getAppSettings()]);
-      await Promise.all([readSessionResults(rows[0].id), ds.readLists([{ list: 'qrtokens', where: { sessionId: rows[0].id } }])]); // the first card of the page
-      usable();
+      usable(); // (the list is drawn, its cards shut; the first card's own read is behind it)
+      await Promise.all([readSessionResults(rows[0].id), ds.readLists([{ list: 'qrtokens', where: { sessionId: rows[0].id } }])]);
     }],
     [`Results, Dashboard, ${SIZES.summaries} summaries`, async (usable) => {
       await ds.getAppSettings();

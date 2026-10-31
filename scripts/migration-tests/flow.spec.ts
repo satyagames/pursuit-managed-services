@@ -363,7 +363,7 @@ test('a failed save shows "Couldn\'t save, Retry", keeps every answer, and retry
   await expect(page.getByRole('button', { name: 'Saving...' })).toBeDisabled();
   const retry = page.getByRole('button', { name: "Couldn't save, Retry" });
   await expect(retry).toBeVisible({ timeout: 10_000 });
-  await expect(page.getByRole('alert')).toContainText('Saved on this iPad');
+  await expect(page.getByRole('alert')).toContainText('kept on this device');
   expect(fixture.writes, 'two answers saved, then three tries, with backoff, for the third').toBe(2 + 3);
   await expect(choice(page, 0)).toHaveAttribute('data-state', 'correct');
   const held = await page.evaluate(() => JSON.parse(sessionStorage.getItem('cec-answers:track-a') ?? 'null'));
@@ -821,7 +821,8 @@ for (const viewport of viewports) {
     await expect(page.getByRole('button', { name: /Harvest/ })).toHaveAttribute('data-state', 'correct');
     await shoot('tiles-correct');
 
-    // An ungraded question and the finale: everything answered through the data, then the hub's Finish.
+    // An ungraded question and the finale: everything answered through the data, then the hub's Finish. (The retry above may still be on its way: it waits 300 ms since Prompt 26.)
+    await allSaved(page);
     fixture.give(['q-b1', 'q-b2', 'q-p1'].map((id) => ({ questionId: id, answer: id === 'q-p1' ? 'q-p1-a' : right(id) })));
     await page.goto(appPath('#/quiz/section-pulse?t=track-a'));
     await page.reload();

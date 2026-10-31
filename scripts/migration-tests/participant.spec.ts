@@ -489,6 +489,8 @@ test('Admin Results restarts only the selected track answers from the chosen act
   const card = page.locator('article[data-session="session-a"]');
   // (Phase 7c: a visit with no name anywhere is "Unnamed participant N", as the leader report says, not the client's name.)
   const trackRow = card.locator('li.row').filter({ hasText: 'Unnamed participant 1' });
+  // (A card is read when opened: Prompt 26.)
+  await card.getByRole('button', { name: 'Open', exact: true }).click();
   await trackRow.getByRole('button', { name: 'Restart...' }).click();
   await page.getByRole('radio', { name: /Module A/ }).locator('..').click();
   await page.getByRole('button', { name: 'Restart', exact: true }).click();

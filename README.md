@@ -224,7 +224,7 @@ QA-TESTING.md         what only a real site, iPad, projector or printer can show
 | `npm run test:migration` | every screen in real browsers, accessibility (axe), devices, request counts | about 45 min |
 | `npm run test:local-site` | the local site answers as the real one, Setup's self-test 11 of 11 | 3 s |
 
-What each proves, and how to run one: [docs/TESTING.md](docs/TESTING.md). **What is proven on the real site:** the lists, Setup, Go live, guest and
+What each proves, and how to run one: [docs/TESTING.md](docs/TESTING.md). How to watch the calls in a browser: [docs/DEVTOOLS-NETWORK.md](docs/DEVTOOLS-NETWORK.md). **What is proven on the real site:** the lists, Setup, Go live, guest and
 staff visits, the Results charts on a Windows laptop and an iPad, and the self-test (PCOE, 14 to 16 Oct 2026). Not yet: the newest exports opened in
 PowerPoint and Excel, printing, the projector and the open items at the top of [QA-TESTING.md](QA-TESTING.md).
 

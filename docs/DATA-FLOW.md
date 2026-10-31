@@ -265,6 +265,10 @@ The dashboard reads totals, never answers ([RULES.md](RULES.md) has the rules):
 A look that cost more than one request (a site that cannot batch) makes the next wait that many times longer. A failure doubles the wait up to 5
 minutes; a 429 or 503's `Retry-After` is a floor (15 minutes at most). One timer per page (`lib/common/page-watch.ts`), never an interval.
 
+## What a long list reads (Prompt 26)
+
+People reads `PEOPLE_INDEX`, one batch (`lib/admin/list-index.js`); its chips, search and filters run over that in memory, and it draws five. Results reads `RESULTS_INDEX`, draws five shut cards, and reads a session (its answers, its codes, the names it needs) when its card opens; the first of a page opens by itself, and the live one too. An opened card stays in memory when the person pages away. Clients and Content draw at once from what the page last read, and read behind it. The participant page holds the activities' content for five minutes, or until its watch reports a change.
+
 ## When things go wrong
 
 | What happens | What the person sees | What is kept |

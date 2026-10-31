@@ -95,29 +95,38 @@ describe('on a site with content', () => {
       assert.equal(writes(), 0);
     });
 
-    it('two changes within the quiet moment are one write, with the last value', async () => {
+    it('changes right after a write wait a moment, and share one write, with the last value', async () => {
       const waits = [];
       let wake;
-      const store = createAnswerStore({ api: ds, storage: memory(), sleep: async () => {}, quiet: (ms) => { waits.push(ms); return new Promise((resolve) => { wake = resolve; }); } });
+      let clock = 1000;
+      const store = createAnswerStore({ api: ds, storage: memory(), now: () => clock, sleep: async () => {}, quiet: (ms) => { waits.push(ms); return new Promise((resolve) => { wake = resolve; }); } });
       const mine = visit();
       await store.restore(mine, null);
       fake.reset();
       store.record(mine, 's', pick('a'));
+      await store.flush(mine, 's');
+      assert.equal(writes(), 1, 'the first goes at once');
+      clock += 100;
       store.record(mine, 's', { ...pick('b'), firstAnswer: 'a' });
-      assert.deepEqual(waits, [300, 300]);
-      assert.equal(writes(), 0, 'nothing yet');
+      store.record(mine, 's', { ...pick('c'), firstAnswer: 'a' });
+      assert.deepEqual(waits, [200, 200]);
+      assert.equal(writes(), 1, 'nothing yet');
       wake();
       await store.flush(mine, 's');
-      assert.equal(writes(), 1);
-      assert.equal(store.recordFor(mine, 'q-1').answer, 'b');
+      assert.equal(writes(), 2);
+      assert.equal(store.recordFor(mine, 'q-1').answer, 'c');
     });
 
-    it('Submit does not wait for the quiet moment', async () => {
-      const store = createAnswerStore({ api: ds, storage: memory(), sleep: async () => {}, quiet: () => new Promise(() => {}) });
+    it('Submit does not wait for the moment', async () => {
+      let clock = 1000;
+      const store = createAnswerStore({ api: ds, storage: memory(), now: () => clock, sleep: async () => {}, quiet: () => new Promise(() => {}) });
       const mine = visit();
       await store.restore(mine, null);
-      fake.reset();
       store.record(mine, 's', pick('a'));
+      await store.flush(mine, 's');
+      fake.reset();
+      clock += 10;
+      store.record(mine, 's', pick('b'));
       await store.flush(mine, 's');
       assert.equal(writes(), 1);
     });
@@ -138,14 +147,17 @@ describe('on a site with content', () => {
       assert.match(part.query, /\$select=Id,AppId,Modified$/);
     });
 
-    it('a change to an activity is seen, by this person and by another\'s write', async () => {
+    it('a change to an activity is seen by the next look, whoever wrote it, and the look after carries it, each in one request', async () => {
       const held = await ds.readParticipantWatch({ sessionId: session.id, clientId: KROGER, activitiesStamp: '' });
       await ds.updateSection(sections[0].id, { title: 'A new title' });
       fake.reset();
-      const next = await ds.readParticipantWatch({ sessionId: session.id, clientId: KROGER, activitiesStamp: held.activitiesStamp });
+      const moved = await ds.readParticipantWatch({ sessionId: session.id, clientId: KROGER, activitiesStamp: held.activitiesStamp });
+      assert.equal(moved.sections, null);
+      assert.equal(moved.activitiesStamp, '');
+      const next = await ds.readParticipantWatch({ sessionId: session.id, clientId: KROGER, activitiesStamp: moved.activitiesStamp });
       assert.ok(next.sections.some((section) => section.title === 'A new title'));
-      assert.notEqual(next.activitiesStamp, held.activitiesStamp);
-      assert.equal(next.requests, 2, 'and it says what that cost, for the timer');
+      assert.ok(next.activitiesStamp && next.activitiesStamp !== held.activitiesStamp);
+      assert.equal(fake.count(), 2, 'one request each');
     });
 
     it('with no stamp it reads as it always did', async () => {
