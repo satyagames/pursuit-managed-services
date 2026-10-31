@@ -184,7 +184,7 @@ test('the self-test creates, updates, reads back, is refused a duplicate, lists,
   // Prompt 22: the two probes that read every list grow with the lists (14 and 16 with twelve; LIST_COUNT + 2 and + 4), and the first create costs 2, not 3:
   // the write token was asked for as Setup opened, by People and access. This line expected 56 and was never reached until then.)
   const LIST_COUNT = Object.keys(LISTS).length;
-  const steps = [2, 1, 1, 1, 1, 1, 3, 6, 6, LIST_COUNT + 2, LIST_COUNT + 4, 3];
+  const steps = [1, 1, 1, 1, 1, 1, 3, 6, 6, LIST_COUNT + 1, LIST_COUNT + 2, LIST_COUNT + 4, 3]; // (Prompt 26: the size watch, one small read of each list)
   await expect(section.getByRole('status')).toContainText(`Passed: 13 of 13 steps, ${steps.reduce((a, b) => a + b, 0)} requests.`);
   const rows = (await section.getByRole('table', { name: 'Self-test steps' }).getByRole('row').allInnerTexts()).slice(1).map((row) => row.split('\t').slice(0, 3).map((cell) => cell.trim()).join(' | '));
   expect(rows).toEqual([
@@ -197,6 +197,7 @@ test('the self-test creates, updates, reads back, is refused a duplicate, lists,
     'Probe (read-only): a Yes/No filter on the guest QR codes\' Used column, written three ways | Pass | 3',
     'Probe (read-only): how long a $filter this site accepts | Pass | 6',
     'Probe (read-only): who may change the access lists | Pass | 6',
+    `Probe (read-only): how many items each list holds | Pass | ${steps[9]}`,
     `Probe (read-only): columns this site leaves out of a read that names no columns | Pass | ${steps[9]}`,
     `Probe (read-only): columns this site will not return by name | Pass | ${steps[10]}`,
     'Delete everything it made | Pass | 3',

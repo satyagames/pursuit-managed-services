@@ -24,11 +24,9 @@ const choices = (page: Page) => page.locator('.pms-options button');
  * page is closed.
  */
 async function fetchedAhead(fake: Fake, { canBegin }: { canBegin: boolean }) {
-  const type = (list: string) => fake.count((entry) => entry.list === list && entry.method === 'GET' && /ListItemEntityTypeFullName/.test(entry.url) && !entry.batched);
-  const columns = (list: string) => fake.count((entry) => entry.list === list && entry.method === 'GET' && /\/fields\?/.test(entry.url));
   await expect.poll(() => [fake.count({ method: 'GET', list: 'questions' }), fake.count({ method: 'GET', list: 'options' })]).toEqual([1, 1]);
-  await expect.poll(() => type('responses')).toBe(1);
-  if (canBegin) for (const list of ['tracks', 'sessions']) await expect.poll(() => [type(list), columns(list)]).toEqual([1, 1]);
+  void canBegin; // (Prompt 26: no list's item type or columns are fetched ahead, only the write token)
+  await expect.poll(() => fake.count((entry) => entry.path.endsWith('/contextinfo'))).toBeGreaterThan(0);
 }
 
 const visitorCode = (fake: Fake, sessionId: string, name: string) => onSite(fake, async (ds) => {

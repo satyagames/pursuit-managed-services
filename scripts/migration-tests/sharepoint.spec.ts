@@ -49,7 +49,6 @@ test('a first visit reaches Welcome in 6 requests, all reads, and reads the acti
   await expect(page.getByText('Welcome to the Kroger experience.', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Click here to begin' })).toBeVisible();
   await expect.poll(() => fake.count({ method: 'POST', list: 'uservisitlogs' })).toBe(1);
-  await expect.poll(() => fake.count((entry) => entry.list === 'responses' && /ListItemEntityTypeFullName/.test(entry.url))).toBe(1);
   await expect.poll(() => fake.count({ method: 'GET', list: 'options' })).toBe(1);
 
   const { before, after } = split(fake, (await firstScreen())!);
@@ -111,7 +110,6 @@ test('a first QR scan reaches Welcome in 8 requests (9 for the device that start
   await expect(next.getByText('Welcome to the Kroger experience.', { exact: true })).toBeVisible();
   await expect(next.getByRole('button', { name: 'Click here to begin' })).toBeVisible();
   await expect.poll(() => fake.count({ method: 'POST', list: 'uservisitlogs' })).toBe(1);
-  await expect.poll(() => fake.count((entry) => entry.list === 'responses' && /ListItemEntityTypeFullName/.test(entry.url))).toBe(1);
 
   const { before, after } = split(fake, (await firstScreen())!);
   expect([...before].sort()).toEqual([
