@@ -125,7 +125,7 @@ One line each: the decision, why, and what enforces it (a test fails if it is br
 | `odata=nometadata` everywhere; `minimalmetadata` only where a write checks the version; no item type in a write body. | `scripts/test-reply-format.js`; the fake answers by `Accept` and refuses `__metadata` in a plain body |
 | The index pattern for every long list. Keyset paging by `$skiptoken` was not built: every list here has search or filters over the whole set, which it cannot serve. | `scripts/test-paging.js` |
 | Memory-only reads, cleared by the page's own writes. | `scripts/test-fewer-calls.js` |
-| Sign in again opens this same page marked `?signed-in=1`, not a new `signed-in.html`: no new file to upload, and a file the site is known to serve as a page. | `scripts/test-sign-in-again.js` |
+| Sign in again opens this same page marked `?signed-in=1`, not a new page of its own: no new file to upload, and a file the site is known to serve as a page. | `scripts/test-sign-in-again.js` |
 | `requests` a look reports stays 1: a change in the activities comes in the next look's one request. | `scripts/test-fewer-calls.js`, `polling.spec.ts` |
 
 ## Results and exports
