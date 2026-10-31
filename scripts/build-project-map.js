@@ -86,7 +86,7 @@ export function projectMap() {
     gates: ['npm run check:svelte', 'npm test', 'npm run test:baseline', 'npm run test:bundle', 'npm run test:report', 'npm run test:report:mutations', 'npm run oracle -- --seeds 500', 'npm run test:charts', 'npm run test:local-site', 'npm run test:migration'],
     folders: Object.fromEntries(Object.entries(PURPOSE).sort()),
     documents: {
-      'CLAUDE.md': 'start here', 'docs/MODULES.md': 'module map', 'docs/DATA-FLOW.md': 'data flow', 'docs/SHAREPOINT.md': 'SharePoint and deployment',
+      'CLAUDE.md': 'start here', 'docs/MODULES.md': 'module map', 'docs/DATA-FLOW.md': 'data flow', 'docs/SHAREPOINT.md': 'SharePoint and deployment', 'docs/ONBOARDING.md': 'adding a person to the site',
       'docs/DECISIONS.md': 'binding decisions', 'docs/RULES.md': 'rule book', 'docs/TESTING.md': 'gates', 'docs/HISTORY.md': 'phases', 'QA-TESTING.md': 'manual checks',
     },
   };

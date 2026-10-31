@@ -97,7 +97,7 @@ Each folder, file and dependency: [docs/MODULES.md](docs/MODULES.md) (generated 
 ## SharePoint at a glance
 
 Sixteen lists and one picture library, schema version 8 (Prompt 21 added who may do what: `PMSUsers`, `PMSRoleAssignments`, `PMSAuditLog`; the admin page's People tab, for a Super admin, manages them, and its History of changes shows every change, read only; its Phase 3 gave a session a start time, a title, its order in the day, a period and when it was planned, so that a client may have several sessions a day, planned on the client's page and started by a Producer on Today). Every column is described in [SHAREPOINT-LISTS.md](SHAREPOINT-LISTS.md); setting up, the
-settings file and what SharePoint does are in [docs/SHAREPOINT.md](docs/SHAREPOINT.md).
+settings file and what SharePoint does are in [docs/SHAREPOINT.md](docs/SHAREPOINT.md). A role in the app does not give access to the site: how to add a person to both is [docs/ONBOARDING.md](docs/ONBOARDING.md).
 
 | List | Holds |
 |---|---|

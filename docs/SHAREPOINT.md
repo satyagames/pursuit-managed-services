@@ -60,6 +60,8 @@ picture library. The titles below have no prefix (`"listPrefix": ""`); a copy of
 
 ## Who may do what
 
+The app's roles do not give access to the site itself; to add a person to the site as well, see [ONBOARDING.md](ONBOARDING.md).
+
 The table, list by list, is in [SHAREPOINT-LISTS.md](../SHAREPOINT-LISTS.md#permissions) and in the package's RUNBOOK.md (both made from
 `scripts/permissions.js`, which reads who reads and writes each list from the schema). In short:
 
