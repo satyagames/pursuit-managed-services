@@ -7,6 +7,7 @@
   import { can } from '../lib/access/can.js';
   import { grantProblem, grantRole } from '../lib/access/grants.js';
   import { sessionsOfClient } from '../lib/access/people.js';
+  import { siteAccessNote } from '../lib/access/access-words.js';
   import { errorText } from '../lib/admin/session-notice.js';
 
   type Client = { id: string; name?: string };
@@ -44,6 +45,7 @@
     validUntil: validUntil || undefined, extras: role === 'Designer' && editsActivities ? 'content.edit' : '',
   });
   const problem = $derived(grantProblem(access, wanted));
+  const siteNote = $derived(siteAccessNote(role, { person, me: access?.person }));
 
   onMount(() => {
     const opener = document.activeElement as HTMLElement | null;
@@ -66,7 +68,7 @@
     try {
       const done = await grantRole(dataService, access, wanted);
       if (done.already) { error = `${person.name} already has this access.`; busy = false; return; }
-      onDone(`${person.name} now has ${role} access.`);
+      onDone(`${person.name} now has ${role} access.${siteNote ? ` ${siteNote}` : ''}`);
     } catch (cause) {
       error = errorText(cause, 'Could not give this access.');
       busy = false;
@@ -118,6 +120,7 @@
     </label>
     {#if submitted && problem}<p class="error" role="alert">{problem}</p>{/if}
     {#if error}<p class="error" role="alert">{error}</p>{/if}
+    {#if siteNote}<p class="muted small" data-testid="site-access-note">{siteNote}</p>{/if}
     <div class="dialog__actions">
       <button class="btn" type="button" onclick={onCancel} disabled={busy}>Cancel</button>
       <button class="btn btn--primary" type="submit" disabled={busy}>{busy ? 'Giving...' : 'Give access'}</button>
