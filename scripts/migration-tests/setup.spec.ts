@@ -198,8 +198,8 @@ test('the self-test creates, updates, reads back, is refused a duplicate, lists,
     'Probe (read-only): how long a $filter this site accepts | Pass | 6',
     'Probe (read-only): who may change the access lists | Pass | 6',
     `Probe (read-only): how many items each list holds | Pass | ${steps[9]}`,
-    `Probe (read-only): columns this site leaves out of a read that names no columns | Pass | ${steps[9]}`,
-    `Probe (read-only): columns this site will not return by name | Pass | ${steps[10]}`,
+    `Probe (read-only): columns this site leaves out of a read that names no columns | Pass | ${steps[10]}`,
+    `Probe (read-only): columns this site will not return by name | Pass | ${steps[11]}`,
     'Delete everything it made | Pass | 3',
   ]);
   await expect(section.getByRole('row', { name: /columns this site leaves out/ })).toContainText(`Left out of a read that names no columns: ${TITLE.responses}: ClientId.`);
