@@ -4,7 +4,7 @@
 
 import { ID } from '../schema/pms-schema.js';
 import { RESPONSE, pause, spLiteral } from './encoding.js';
-import { currentAccessGuard, getItem, itemPath, request, send, sharePoint, spDecode, spHttp, spListPath, spPages, updateItem } from './core.js';
+import { JSON_VERSIONED, currentAccessGuard, getItem, itemPath, request, send, sharePoint, spDecode, spHttp, spListPath, spPages, updateItem } from './core.js';
 import { failure, versioned } from './records.js';
 import { parseCheckId } from '../participant/confidence-check.js';
 import { MAX_MATRIX_ANSWER } from '../participant/aop-answer.js';
@@ -105,8 +105,10 @@ function decodeResponsesRow(row, damaged) {
 }
 
 const spParticipants = {
-  async findAll(trackId) {
-    const rows = await spPages(`${spListPath('responses')}/items?$filter=${RESPONSE.trackId} eq ${spLiteral(trackId)}&${PARTICIPANT_SELECT}&$top=5`);
+  async findAll(trackId, versioned = false) {
+    const address = `${spListPath('responses')}/items?$filter=${RESPONSE.trackId} eq ${spLiteral(trackId)}&${PARTICIPANT_SELECT}&$top=5`;
+    // (Only a removal checks the version: Prompt 26. A participant's own saves are blind overwrites, so their read is plain rows.)
+    const rows = versioned ? ((await spHttp('GET', address, { headers: { Accept: JSON_VERSIONED } })).data.value ?? []) : await spPages(address);
     return rows.map((row) => {
       // The participant's OWN damaged item still stops this page (it cannot save into what it cannot read), but it says so in words.
       if (whyUnreadable(row[RESPONSE.responses])) {

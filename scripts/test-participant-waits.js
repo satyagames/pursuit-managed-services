@@ -195,7 +195,7 @@ async function arriveAtHub(content, sections, store = null, visit = null) {
   // (Every enabled activity done: there is none left to open, and the read is of the activities alone.)
   const answered = new Set(drawn.map((record) => record.questionId));
   const allDone = sections.filter((section) => section.enabled === true && (section.questionIds ?? []).length).every((section) => section.questionIds.every((id) => answered.has(id)));
-  void content.refreshWith(KROGER, allDone ? [] : sections);
+  void content.hubRead(KROGER, allDone ? [] : sections);
   return drawn;
 }
 
@@ -478,7 +478,7 @@ describe('the hub and the activities (part E)', () => {
     assert.deepEqual([refreshed.rounds, refreshed.requests], [1, 1]);
     assert.deepEqual(fake.requests.map((entry) => entry.list), ['sections']);
     const agenda = await readFile(path.join(ROOT, 'migration', 'src', 'routes', 'Agenda.svelte'), 'utf8');
-    assert.match(agenda, /refreshActivities\(\{ withContent: !\(fetchedAllDone && !fetching\) \}\)/);
+    assert.match(agenda, /refreshActivities\(\{ withContent: !\(fetchedAllDone && !fetching\), force \}\)/);
   });
 
   it('a read that fails leaves what is held as it was, for the hub to keep showing', async () => {
@@ -500,7 +500,7 @@ describe('the hub and the activities (part E)', () => {
     assert.match(pager, /\{#if phase === 'loading'\}\s*\{#if slow\}/);
     for (const source of [agenda, pager]) assert.match(source, /setTimeout\(\(\) => \{ slow = true; \}, LOADING_DELAY_MS\)/);
     const experienceSource = await readFile(path.join(ROOT, 'migration', 'src', 'lib', 'participant', 'experience.svelte.ts'), 'utf8');
-    assert.match(experienceSource, /activityContent\.refreshWith\(experience\.clientId, withContent \? activities : \[\]\)/);
+    assert.match(experienceSource, /activityContent\.hubRead\(experience\.clientId, withContent \? activities : \[\]\)/); // (Prompt 26: read only when what is held has aged or changed)
     const { LOADING_DELAY_MS } = (await contentModule) ?? {};
     assert.equal(LOADING_DELAY_MS, 300);
   });

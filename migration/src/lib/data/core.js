@@ -68,12 +68,12 @@ function assertConfigured() {
   if (mustConfigure) throw Object.assign(new Error('PMS-CFG-003'), { code: 'PMS-CFG-003' });
 }
 // The format of every answer (Prompt 26): plain rows, without the id, uri, type and version SharePoint otherwise puts on each. The few reads whose version a
-// write checks ask for it: one item by its AppId, a participant's answers item by its TrackId. ASSUMED until the real site's check (QA-TESTING.md): each such row
+// write checks ask for it: one item by its AppId, and (responses.js, for a removal) a participant's answers item. ASSUMED until the real site's check (QA-TESTING.md): each such row
 // carries `odata.etag`, the version the verbose format carried. A body that creates a list, a column or a people search still names its type, and goes as verbose.
 const JSON_PLAIN = 'application/json;odata=nometadata';
 const JSON_VERSIONED = 'application/json;odata=minimalmetadata';
 const JSON_TYPED = 'application/json;odata=verbose';
-const acceptOf = (resource) => (/\$filter=(AppId|TrackId) eq /.test(resource) ? JSON_VERSIONED : JSON_PLAIN);
+const acceptOf = (resource) => (/\$filter=AppId eq /.test(resource) ? JSON_VERSIONED : JSON_PLAIN);
 const contentTypeOf = (text) => (/"__metadata":/.test(text) ? JSON_TYPED : JSON_PLAIN);
 const spTitle = (list) => spTitleIn(sharePoint, list);
 const spListPath = (list) => `/web/lists/getbytitle(${spLiteral(spTitle(list))})`;
@@ -220,6 +220,8 @@ function spDecode(list, raw) {
 // The properties of a column the check below reads, and only those (Phase 10j): a real list answers a read of its columns that names none
 // with every field it has, hidden ones too, each with all its properties and its whole definition.
 const FIELD_CHECK = '$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField';
+/** What the schema check reads of a column (Prompt 26: it read every property of every field, hidden ones too, on every Today): the above, and how a date shows. */
+const SCHEMA_CHECK = `${FIELD_CHECK},DisplayFormat`;
 
 /**
  * The check of a list's columns, once a page load before its first write to the list. The participant page does not make it (Prompt 26,
@@ -569,7 +571,7 @@ const holdScan = (scan) => { unfinishedScan = scan; };
 
 // Shared with the other parts of lib/data (dataService.js does not pass these on).
 export {
-  baseUrl, createItem, deleteItem, fits, getItem, getItemWithVersion, getItems, holdScan, itemPath, listColumns, listItems, listMetadata,
+  JSON_VERSIONED, SCHEMA_CHECK, baseUrl, createItem, deleteItem, fits, getItem, getItemWithVersion, getItems, holdScan, itemPath, listColumns, listItems, listMetadata,
   logoFolders, onStop, queryItems, readLanUrls, request, requestTotal, send, session, sharePoint, spBatch, spByAppId, spCreate, spDecode, spDigest,
   spFind, spHttp, spItems, spListPath, spMade, spMerge, spMetadata, spPages, spReadOrBatch, spReadTogether, spRefs,
   spSite, spTitle, unfinishedScan, updateItem, updateItemIfUnchanged,

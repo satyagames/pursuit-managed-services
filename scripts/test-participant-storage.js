@@ -1006,7 +1006,7 @@ describe('resume', () => {
     assert.equal(restarted.restartSectionId, 'sec-trivia');
 
     // The device had not noticed yet and saved once more: the old answer is back on the server...
-    store.record(visit, 'sec-guess-the-brand', answer('q-brand-1', 'o-brand-1-b', { correct: true }));
+    store.record(visit, 'sec-guess-the-brand', answer('q-brand-1', 'o-brand-1-c', { correct: true }));
     await store.flush(visit, 'sec-guess-the-brand');
     assert.equal(JSON.parse(fake.item('responses', track.id).ResponsesJson).length, 2);
     // ...until it notices the restart, drops the activity's answers and rewrites its item without them.

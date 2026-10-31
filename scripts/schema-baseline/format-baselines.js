@@ -16,6 +16,10 @@ export const RULES = [
     note: "# Amended in Prompt 26, Part 2: a write body names no item type (odata=nometadata), so no request asks for a list's ListItemEntityTypeFullName, alone or carried in a batch (scripts/schema-baseline/format-baselines.js).",
     drop: (line) => /\?\$select=ListItemEntityTypeFullName$/.test(line),
   },
+  {
+    note: "# Amended in Prompt 26, Part 3: the schema check names the properties it reads of every list's columns (it read every property of every field), so each such read ends `/fields?$select=InternalName,...,DisplayFormat`.",
+    map: (line) => line.replace(/\/fields$/, '/fields?$select=InternalName,TypeAsString,Indexed,EnforceUniqueValues,RichText,AppendOnly,Required,ReadOnlyField,DisplayFormat'),
+  },
 ];
 
 /** A parsed baseline, translated: an entry whose request is dropped goes, a carried read that is dropped goes from its batch, and entries that become the same add up. */

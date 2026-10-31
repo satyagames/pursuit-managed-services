@@ -205,7 +205,7 @@ export function adoptWatch({ session, sections }: { session: Session | null; sec
     experience.ended = sessionHasEnded(session);
     liveSession = session;
   }
-  if (sections && JSON.stringify(sections) !== JSON.stringify(activities)) { activities = sections; changed = true; }
+  if (sections && JSON.stringify(sections) !== JSON.stringify(activities)) { activities = sections; changed = true; activityContent.stale(); }
   if (changed) experience.activitiesVersion += 1;
 }
 
@@ -231,11 +231,14 @@ export const knownActivities = (): Activity[] => activities;
  * HANDOFF_MS) takes what boot has just read and sends nothing. Resolves to whether the activities differ from what the page held; rejects as
  * the read does, and then what the page holds is as it was.
  */
-export async function refreshActivities({ withContent = true } = {}): Promise<boolean> {
+export async function refreshActivities({ withContent = true, force = false } = {}): Promise<boolean> {
   if (handoff && Date.now() - handoff.at <= HANDOFF_MS) { handoff = null; return false; }
   handoff = null;
   if (!experience.sessionId || !experience.clientId || !liveSession) return false;
-  const fresh = await activityContent.refreshWith(experience.clientId, withContent ? activities : []) as Activity[];
+  // (Prompt 26: a screen change reads nothing while what is held is fresh. With every activity done, withContent false, the activities alone, and never again until a change.)
+  const read = force ? activityContent.refreshWith(experience.clientId, withContent ? activities : []) : activityContent.hubRead(experience.clientId, withContent ? activities : []);
+  const fresh = await read as Activity[] | null;
+  if (!fresh) return false;
   const changed = JSON.stringify(fresh) !== JSON.stringify(activities);
   activities = fresh;
   return changed;

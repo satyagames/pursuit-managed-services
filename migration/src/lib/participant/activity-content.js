@@ -26,11 +26,17 @@ const openable = (sections) => sections.filter((section) => section?.enabled ===
 /** `list` in groups of `size`. */
 const groupsOf = (list, size) => Array.from({ length: Math.ceil(list.length / size) }, (_, at) => list.slice(at * size, (at + 1) * size));
 
+/** How long what is held counts as fresh, with no change reported (Prompt 26: the structure's five minutes, as lib/results/results-tally.js has them). */
+export const CONTENT_MAX_AGE_MS = 5 * 60_000;
+
 /**
- * @param {{ api: { getSectionQuestions(section: { questionIds?: string[] }): Promise<any[]>, readLists?(queries: { list: string, where?: object }[]): Promise<any[][]> } }} options
+ * @param {{ api: { getSectionQuestions(section: { questionIds?: string[] }): Promise<any[]>, readLists?(queries: { list: string, where?: object }[]): Promise<any[][]> }, now?: () => number }} options
  *   The data layer (migration/src/lib/data/dataService.js).
  */
-export function createActivityContent({ api }) {
+export function createActivityContent({ api, now = () => Date.now() }) {
+  /** When the content was last read, and whether the page's watch has since reported a change. Nothing is ever kept but in this page's memory. */
+  let readAt = null;
+  let changed = false;
   /** @type {Map<string, any>} question id -> the question, with its options, as last read */
   const held = new Map();
   /** Question ids that were asked for and did not come back. */
@@ -53,6 +59,7 @@ export function createActivityContent({ api }) {
     entry.promise = (async () => {
       try {
         adopt(await api.getSectionQuestions({ questionIds: ids }), ids);
+        readAt = now();
       } finally {
         reading.splice(reading.indexOf(entry), 1);
       }
@@ -106,6 +113,22 @@ export function createActivityContent({ api }) {
       return ids.filter((id) => held.has(id)).map((id) => held.get(id));
     },
 
+    /** The page's watch found the activities changed: the next arrival at the hub reads them again. */
+    stale() { changed = true; },
+
+    /**
+     * The hub arriving (Prompt 26): a change of screen does not read the content again. What is held stands until the page's watch reports a change or
+     * CONTENT_MAX_AGE_MS passes; then, or with nothing held, it is refreshWith(). Resolves to the activities when it read them, null when it did not.
+     * @param {string} clientId
+     * @param {any[]} sections
+     */
+    async hubRead(clientId, sections) {
+      const fresh = !changed && readAt !== null && now() - readAt < CONTENT_MAX_AGE_MS;
+      const holdsAll = sections.length > 0 && questionIdsOf(openable(sections)).every(known);
+      if (fresh && holdsAll) return null;
+      return this.refreshWith(clientId, sections);
+    },
+
     /**
      * The hub's read (Phase 10j, part E): the client's activities, and the questions and options of the enabled ones of `sections` (what the
      * page holds), read afresh together: ONE request where the site can batch (the data layer's readLists), side by side where it cannot. What
@@ -128,6 +151,8 @@ export function createActivityContent({ api }) {
       }));
       // (A read the page started meanwhile, for an activity opened before this one came back, is held over by this one.)
       adopt(questions, ids);
+      readAt = now();
+      changed = false;
       return [...owned].sort((left, right) => (left.order ?? 0) - (right.order ?? 0));
     },
   };

@@ -353,8 +353,9 @@ export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Ca
   // real one has. Off by default, so every suite's items are what they always were.)
   const stamp = (title, item) => {
     const etag = `"${version += 1}"`;
-    if (!realShape) return { ...item, __metadata: { etag, type: typeOf(title) } };
-    const now = realShape.now();
+    // (Modified moves with every write, whatever the clock: a frozen local site's too. Prompt 26: the watch reads it.)
+    if (!realShape) return { ...item, __metadata: { etag, type: typeOf(title), modified: new Date(Date.UTC(2026, 0, 1) + version * 1000).toISOString() } };
+    const now = new Date(Date.parse(realShape.now()) + version).toISOString();
     const uri = `${siteUrl}/_api/Web/Lists(guid'${idOf(title)}')/Items(${item.Id})`;
     return { ...item, Created: item.Created ?? now, Modified: now, __metadata: { id: uri, uri, etag, type: typeOf(title) } };
   };
@@ -362,7 +363,7 @@ export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Ca
   const leftOut = (row) => Object.fromEntries(Object.entries(row).filter(([column]) => !leavesOut.includes(column)));
   /** Puts an item straight into one of the test's own lists (by key), as if it had always been there. Only that list's columns. */
   const add = (key, item) => {
-    const known = new Set(['Id', 'Title', '__metadata', ...(fields.get(key) ?? []).map((column) => column.InternalName)]);
+    const known = new Set(['Id', 'Title', 'Modified', '__metadata', ...(fields.get(key) ?? []).map((column) => column.InternalName)]);
     const stray = Object.keys(item).find((column) => !known.has(column));
     if (stray) throw new Error(`The mock's ${key} list has no column ${stray}: a row is put in with the list's own columns only.`);
     const row = stamp(titleOf(key), { Id: nextId++, ...item });
@@ -621,9 +622,9 @@ export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Ca
         }
         shown = (row) => ({ ...leftOut(row), ID: row.Id });
       } else {
-        const missing = asked.find((name) => !['Id', 'ID', 'Title'].includes(name) && !columnsHere.some((field) => field.InternalName === name));
+        const missing = asked.find((name) => !['Id', 'ID', 'Title', 'Modified'].includes(name) && !columnsHere.some((field) => field.InternalName === name));
         if (missing) return error(400, `The field or property '${missing}' does not exist.`);
-        shown = (row) => ({ __metadata: row.__metadata, Id: row.Id, ID: row.Id, ...Object.fromEntries(asked.filter((name) => name !== 'ID' && name in row).map((name) => [name, row[name]])) });
+        shown = (row) => ({ __metadata: row.__metadata, Id: row.Id, ID: row.Id, ...Object.fromEntries(asked.filter((name) => name !== 'ID' && name in row).map((name) => [name, row[name]])), ...(asked.includes('Modified') ? { Modified: row.Modified ?? row.__metadata?.modified } : {}) });
       }
       const matches = rows.filter(matcher(filter));
       const top = Number(url.searchParams.get('$top')) || 100;

@@ -82,11 +82,11 @@ flowchart LR
 | `migration/src/routes/` | The participant page's screens: Welcome, the Activities hub, the quiz route, the finale, "not live", the preview, and the old addresses that redirect. | 10 |
 | `migration/src/setup/` | Setup's pieces (Svelte): the copy panel, where the lists are, the plan view, and the sample pictures as data. | 5 |
 | `migration/src/unsupported/` | The "needs a recent browser" notice: a page and an ES5 check, put into each HTML shell at build time. | 1 |
-| `scripts/` | Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager. | 155 |
+| `scripts/` | Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager. | 156 |
 | `scripts/local-site/` | The local PCOE stand-in (`npm run local:site`), its scenarios and VJR's dummy dataset, the screenshot harness and the measurements. | 11 |
 | `scripts/migration-tests/` | The Playwright specs of `npm run test:migration`, and their harnesses (`admin-local.ts`, `polling-support.ts`, `fixtures.ts`). | 82 |
 | `scripts/rehearsal-tests/` | The rehearsal of RUNBOOK.md on the mock with a package's own pages (`npm run test:rehearsal`). | 1 |
-| `scripts/schema-baseline/` | The schema as it was before Phase 10c-2b, and the scripts that translated the request baselines (each baseline names the one that touched it). | 11 |
+| `scripts/schema-baseline/` | The schema as it was before Phase 10c-2b, and the scripts that translated the request baselines (each baseline names the one that touched it). | 12 |
 | `scripts/styleguide-tests/` | The styleguide's audit (`npm run test:styleguide`). | 1 |
 | `server/` | The local stand-in for SharePoint: an Express API over JSON files (`server/data/`, committed seed data), with ETag concurrency and picture uploads. Development and tests only. | 3 |
 
@@ -134,7 +134,7 @@ The admin page's rules and data: Today, Clients, Content, Guests and QR, Results
 | `admin-links.ts` | Links the facilitator hands out, and the QR image of one. | `participantPageUrl`, `qrImage`, `copyText` |
 | `admin-pin.js` | The admin page's PIN check (AdminApp.svelte). | `hashPin`, `login` |
 | `admin-results.js` | What Admin → Results works out for each iPad of a session: the name it shows, and where it has got to. | 17 exports |
-| `admin-today.js` | What the admin's Today screen reads, decides and says. | 18 exports |
+| `admin-today.js` | What the admin's Today screen reads, decides and says. | 20 exports |
 | `admin-unlock.js` | What the admin page's PIN screen says when it could not check a PIN (Phase 12, F-02). | `unlockFailureText` |
 | `adminData.ts` | One participant's answer to one question, as dataService.readSessionResponses() returns it from either storage shape. | `getSessionResults`, `readSessionResponses`, `restartClientTrack`, `confirmedBy`, `confirmSampleClient`, `saveClientMotion`, `removeEmptyVisit`, `endSession`, `reopenSession`, `answersToQuestions`, `orphanNote`, `loadGuestState`, `refreshGuestState` |
 | `aop-editor.js` | The rules of Content's editor for an Art of the Possible question (Prompt 23, board 16), with no DOM: its defaults, a criterion's id, the instruction, the running line, what it says when guests have already rated, and Paste from a spreadsheet. | `DEFAULT_CRITERIA`, `newCriterion`, `defaultCriteria`, `instructionFor`, `rowsLine`, `editingNotice`, `copiedFrom`, `copiedNotice`, `parsePastedRows`, `COPIED_FROM` |
@@ -209,7 +209,7 @@ The data layer: dataService.js, the door every page imports, over its parts (cor
 
 - **Imports from:** `lib/brand`, `lib/participant`, `lib/schema`
 - **Imported by:** `lib/admin`, `lib/brand`, `lib/common`, `lib/exports`, `lib/participant`, `lib/results`, `lib/settings`, `lib/setup`, `src`, `src/admin`, `src/pager`, `src/routes`, `src/setup`
-- **Node suites that import it:** `test-admin-content.js`, `test-admin-today.js`, `test-brand-storage.js`, `test-column-names.js`, `test-confidence-check.js`, `test-data-surface.js`, `test-deploy-settings.js`, `test-duplicates.js`, `test-leader-dashboard.js`, `test-leader-report-pdf.js`, `test-live-display.js`, `test-local-site.js`, `test-motion-switch.js`, `test-named-reads.js`, `test-participant-names.js`, `test-participant-storage.js`, `test-participant-waits.js`, `test-review-9a.js`, `test-schema-upgrade.js`, `test-seeds.js`, `test-session-delete.js`, `test-session.js`, `test-sessions.js`, `test-setup-admins.js`, `test-sharepoint.js`
+- **Node suites that import it:** `test-admin-content.js`, `test-admin-today.js`, `test-brand-storage.js`, `test-column-names.js`, `test-confidence-check.js`, `test-data-surface.js`, `test-deploy-settings.js`, `test-duplicates.js`, `test-leader-dashboard.js`, `test-leader-report-pdf.js`, `test-live-display.js`, `test-local-site.js`, `test-motion-switch.js`, `test-named-reads.js`, `test-participant-names.js`, `test-participant-storage.js`, `test-participant-waits.js`, `test-reply-format.js`, `test-review-9a.js`, `test-schema-upgrade.js`, `test-seeds.js`, `test-session-delete.js`, `test-session.js`, `test-sessions.js`, `test-setup-admins.js`, `test-sharepoint.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
@@ -217,7 +217,7 @@ The data layer: dataService.js, the door every page imports, over its parts (cor
 | `access-reads.js` | Section 12 (Prompt 21, Phase 1): roles and access, as the data layer reads and writes them. | `readSignedInPerson`, `readAccessRows`, `listAccessRecords`, `addAccessRecord` |
 | `common.js` | What several parts of the data layer share (Phase 17: cut out of dataService.js sections 4, 5, 6 and 8 unchanged): an item from an AppId read, a write to an item a read has already found, a list address with equality filters, every page of a list read, and paced bulk work (runPaced). | `runPaced`, `PACE`, `localFilter`, `spAllRows`, `spItemsAddress`, `spOne`, `spWrite` |
 | `content-copy.js` | Content per client and copying activities (dataService.js section 6; Phase 17 cut it out unchanged): an activity's questions and options in the fewest reads, the plan of a copy, copying, duplicating and deleting activities, and adding activities to the live session. | `readActivityContent`, `COPY_SEPARATOR`, `copyIdFor`, `copyTitle`, `planCopy`, `addSectionsToLiveSession`, `copyActivities`, `duplicateActivity`, `deleteActivity` |
-| `core.js` | The backend adapter (dataService.js section 1; Phase 17 cut it out of that file unchanged): | 49 exports |
+| `core.js` | The backend adapter (dataService.js section 1; Phase 17 cut it out of that file unchanged): | 51 exports |
 | `dataService.js` | dataService.js: the data layer's one door. | 128 exports |
 | `encoding.js` | The schema's lists and columns as the data layer reads and writes them, and the small helpers that hold no state (Phase 17: cut out of dataService.js section 1 and 6 unchanged). | 17 exports |
 | `guests.js` | Guests in bulk (dataService.js section 6; Phase 17 cut it out unchanged): adding guests to a session's list and making their QR codes, paced (common.js runPaced), with the name a guest list compares. | `guestNameKey`, `addGuests`, `provisionGuestCodes` |
@@ -297,7 +297,7 @@ The participant page: the boot sequence, the visit, the activities held for the 
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
-| `activity-content.js` | The questions and options of today's activities, held for as long as the participant page is open (Phase 10j). | `LOADING_DELAY_MS`, `createActivityContent` |
+| `activity-content.js` | The questions and options of today's activities, held for as long as the participant page is open (Phase 10j). | `LOADING_DELAY_MS`, `CONTENT_MAX_AGE_MS`, `createActivityContent` |
 | `answer-store.js` | One participant's answers on this device, and the saving of them. | `STORAGE_PREFIX`, `SAVE_ATTEMPTS`, `BACKOFF_MS`, `COOL_DOWN_MS`, `MAX_RETRY_AFTER_MS`, `SaveFailedError`, `createAnswerStore` |
 | `aop-answer.js` | An Art of the Possible answer (Prompt 23): what a guest's ratings are in the page, and how they are stored in `ResponsesJson`. | `MATRIX_TYPE`, `MAX_MATRIX_ANSWER`, `LEVELS`, `encodeAnswer`, `decodeAnswer`, `cycle`, `cellsLeft`, `isComplete`, `nextEmpty` |
 | `boot.js` | What the participant page reads before its first screen, and in what order. | `bootParticipant`, `writesAhead` |

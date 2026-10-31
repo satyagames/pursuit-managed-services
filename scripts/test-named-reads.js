@@ -239,7 +239,7 @@ describe('every item read the data layer and Setup can send names its columns', 
     }
     // (A probe's query that names its own columns is sent as it is; one that names none is given the list's: probeSharePointRead. Prompt 21: the
     // settings item's version alone, read on a site of an older version that refuses the full read, names its three columns through versionSelect.)
-    const named = (line) => /selectOf\(|versionSelect\(|PARTICIPANT_SELECT|\/\\\$select=\/\.test\(query\) \? .*: spItems\(list, query\)/.test(line);
+    const named = (line) => /selectOf\(|versionSelect\(|PARTICIPANT_SELECT|\$select=Id,\$\{ID\}|\/\\\$select=\/\.test\(query\) \? .*: spItems\(list, query\)/.test(line);
     assert.deepEqual(found.filter((entry) => !named(entry.line)).map((entry) => `${entry.where}: ${entry.line}`), []);
     assert.ok(found.some((entry) => entry.where.startsWith('migration/src/lib/data/') && /selectOf\(/.test(entry.line)), 'the data layer builds its item reads with selectOf');
     assert.equal(found.filter((entry) => entry.where.startsWith('migration/src/lib/setup/provision.js')).length, 2, 'Setup\'s two reads of the settings item');

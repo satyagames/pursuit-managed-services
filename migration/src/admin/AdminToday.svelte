@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
   import {
-    POLL_MS, blockedReason, evaluateReadiness, goLive, isCalendarDate, liveStatus, loadReadinessInputs, loadToday, localDate, makeSessionLive,
+    POLL_MS, blockedReason, evaluateReadiness, goLive, isCalendarDate, liveStatus, loadReadinessInputs, heldSchemaOf, holdSchema, loadToday, localDate, makeSessionLive,
     needsSwitchConfirmation, pollToday, startPlannedSession, switchDialog,
   } from '../lib/admin/admin-today.js';
   import { daySessionPick, daySessionsOf, oneLiveWords, sessionChoiceWords } from '../lib/admin/session-plan.js';
@@ -145,7 +145,8 @@
 
   async function reload({ keepPicker = false } = {}) {
     try {
-      const data = await loadToday(dataService, { clientId: keepPicker ? clientId : null, date: dateValid ? date : today, keepClient: keepPicker, sessionId: keepPicker ? pickedSessionId : null, access });
+      const data = await loadToday(dataService, { heldSchema: heldSchemaOf(dataService), clientId: keepPicker ? clientId : null, date: dateValid ? date : today, keepClient: keepPicker, sessionId: keepPicker ? pickedSessionId : null, access });
+      holdSchema(dataService, data.schema);
       if (!alive) return;
       clients = data.clients as Client[];
       sessions = data.sessions as Session[];

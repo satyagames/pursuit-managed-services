@@ -290,6 +290,7 @@
    * What it can find: something else is live now, the track was removed or restarted, the session ended (or was reopened),
    * and the hub's activities or flow changed. It throws when it cannot reach the server, and the timer backs off.
    */
+  let activitiesStamp = '';
   async function checkServer(): Promise<{ requests: number }> {
     const trackId = participant.clientTrackId;
     const onHub = router.location.split('?')[0] === '/agenda';
@@ -300,6 +301,7 @@
         sessionId: participant.sessionId ?? experience.sessionId ?? experience.watchSessionId,
         trackId,
         clientId: onHub ? participant.clientId ?? experience.clientId : null,
+        ...(onHub ? { activitiesStamp } : {}), // (Prompt 26: the small thing first, the activities only if it moved)
       });
     } catch (cause) {
       if (participant.clientTrackId === trackId) {
@@ -309,6 +311,7 @@
       }
       throw cause;
     }
+    if (onHub) activitiesStamp = (watch as { activitiesStamp?: string }).activitiesStamp ?? '';
     const { settings, track, session, sections, requests } = watch as {
       settings: Settings; track: (ParticipantTrack & { restartSectionId?: string | null }) | null; session: Parameters<typeof adoptWatch>[0]['session']; sections: Parameters<typeof adoptWatch>[0]['sections']; requests: number;
     };

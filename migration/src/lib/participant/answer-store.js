@@ -54,14 +54,19 @@ export class SaveFailedError extends Error {
 const strip = ({ questionId, answer, firstAnswer, attempts, correct, answeredAt }) => ({ questionId, answer, firstAnswer, attempts, correct, answeredAt });
 const capText = (value) => (typeof value === 'string' && value.length > MAX_TEXT_LENGTH ? value.slice(0, MAX_TEXT_LENGTH) : value);
 
+/** How long a change waits for another before it is sent: two changes of one answer within this are one write. */
+const SAVE_QUIET_MS = 300;
+
 /**
  * @param {object} options
  * @param {AnswerApi} options.api
  * @param {{ getItem(key: string): string | null, setItem(key: string, value: string): void, removeItem(key: string): void } | null} [options.storage]
  * @param {() => number} [options.now]
  * @param {(ms: number) => Promise<void>} [options.sleep]
+ * @param {(ms: number) => Promise<void>} [options.quiet] the wait that lets quick changes share a write (a stand-in sleep means no wait, unless a test gives this)
  */
-export function createAnswerStore({ api, storage = null, now = () => Date.now(), sleep = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); }) }) {
+export function createAnswerStore({ api, storage = null, now = () => Date.now(), sleep = null, quiet = sleep ? async () => {} : (ms) => new Promise((resolve) => { setTimeout(resolve, ms); }) }) {
+  sleep ??= (ms) => new Promise((resolve) => { setTimeout(resolve, ms); });
   /**
    * @typedef {object} State
    * @property {Visit} visit
@@ -292,6 +297,12 @@ export function createAnswerStore({ api, storage = null, now = () => Date.now(),
     record(visit, sectionId, input) {
       const state = use(visit);
       const held = state.records.get(input.questionId);
+      // (Prompt 26: the same value again is no change, and writes nothing.)
+      const same = held && held.attempts === input.attempts && JSON.stringify(held.answer) === JSON.stringify(capText(input.answer));
+      if (same) {
+        if (state.dirty.size > 0) void quiet(SAVE_QUIET_MS).then(() => kick(state));
+        return;
+      }
       state.records.set(input.questionId, {
         questionId: input.questionId,
         answer: capText(input.answer),
@@ -303,7 +314,8 @@ export function createAnswerStore({ api, storage = null, now = () => Date.now(),
       });
       state.dirty.add(input.questionId);
       persist(state);
-      kick(state);
+      // (Prompt 26: quick changes share one write, the last value; Submit, a flush, does not wait for this.)
+      void quiet(SAVE_QUIET_MS).then(() => kick(state));
     },
 
     /**

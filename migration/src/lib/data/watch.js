@@ -2,7 +2,8 @@
 // look (readParticipantWatch) and the Live display's feed (readLiveFeed), each one request where the site can batch, saying what it
 // cost. Read-only; a busy answer is thrown for the caller's timer to back off.
 
-import { READ_CHUNK, RESPONSE, chunked, indexById, pick, spLiteral } from './encoding.js';
+import { ID } from '../schema/pms-schema.js';
+import { READ_CHUNK, RESPONSE, chunked, columnsOf, indexById, pick, spLiteral } from './encoding.js';
 import { getItem, getItems, queryItems, sharePoint, spByAppId, spDecode, spListPath, spReadOrBatch } from './core.js';
 import { spAllRows, spItemsAddress, spOne } from './common.js';
 import { getAppSettings, notMade, versionFirst, versioned } from './records.js';
@@ -20,20 +21,26 @@ import { PARTICIPANT_SELECT, askRead, combineAnswers, decodeResponsesRow, readAn
 // A busy answer (429, 503, 504) is not retried here and is not turned into plain reads: it throws, with
 // `retryAfter` when SharePoint gave one, so the caller's timer can back off for as long as it was asked.
 
+/** The light read of a client's activities: each one's id and when it last changed. Names the columns it reads, like every item read. */
+const spStampAddress = (clientId) => `${spListPath('sections')}/items?$top=200&$filter=(${columnsOf('sections').clientId} eq ${spLiteral(clientId)})&$select=Id,${ID},Modified`;
+
 /**
  * What an open participant page checks on its timer: AppSettings (did the facilitator change what is
  * live?), the session (has it ended? did its flow change?), the page's own track (was it restarted?) and,
  * for the hub, the client's activities. One request on SharePoint, however many of them are asked for.
  *
- *   readParticipantWatch({ sessionId, trackId, clientId })
- *   -> { settings, session, track, sections, requests }
+ *   readParticipantWatch({ sessionId, trackId, clientId, activitiesStamp })
+ *   -> { settings, session, track, sections, activitiesStamp, requests }
  *
  * Leave out what the page has no use for: with no `sessionId` there is no session read, with no `trackId`
  * no track, and `sections` is null unless a `clientId` is given. A record that does not exist reads as null.
  * `sections` are the client's activities as getSessionActivities() gives them (enabled or not, in order).
- * @param {{ sessionId?: string | null, trackId?: string | null, clientId?: string | null }} [options]
+ *
+ * The small thing first (Prompt 26). With `activitiesStamp` (what the last look gave; '' for none) the look asks only each activity's id and Modified, and reads
+ * the activities themselves, one request more, only when those moved: `sections` is then null where nothing moved. Without one it reads them as it always did.
+ * @param {{ sessionId?: string | null, trackId?: string | null, clientId?: string | null, activitiesStamp?: string }} [options]
  */
-export async function readParticipantWatch({ sessionId = null, trackId = null, clientId = null } = {}) {
+export async function readParticipantWatch({ sessionId = null, trackId = null, clientId = null, activitiesStamp = undefined } = {}) {
   if (!sharePoint) {
     const [settings, session, track, owned] = await Promise.all([
       getAppSettings(),
@@ -43,20 +50,32 @@ export async function readParticipantWatch({ sessionId = null, trackId = null, c
     ]);
     return { settings, session, track, sections: owned ? inOrder(owned) : null, requests: 1 + [sessionId, trackId, clientId].filter(Boolean).length };
   }
+  const light = activitiesStamp !== undefined;
   const { data, requests } = await spReadOrBatch({
     settings: spByAppId('appsettings', 'default'),
     ...(sessionId ? { session: spByAppId('sessions', sessionId) } : {}),
     ...(trackId ? { track: spByAppId('tracks', trackId) } : {}),
-    ...(clientId ? { owned: spItemsAddress('sections', { clientId }) } : {}),
+    ...(clientId ? { owned: light ? spStampAddress(clientId) : spItemsAddress('sections', { clientId }) } : {}),
   }).catch(notMade).catch(versionFirst);
   const session = sessionId ? spOne('sessions', sessionId, data.session)?.item ?? null : null;
-  const owned = clientId ? (await spAllRows(data.owned)).map((row) => spDecode('sections', row).item) : null;
+  let owned = null;
+  let stamp;
+  let more = 0;
+  if (clientId && light) {
+    const rows = await spAllRows(data.owned);
+    stamp = rows.map((row) => `${row.Id}:${row.Modified}`).join();
+    if (stamp !== activitiesStamp) {
+      more = 1;
+      owned = await queryItems('sections', { clientId });
+    }
+  } else if (clientId) owned = (await spAllRows(data.owned)).map((row) => spDecode('sections', row).item);
   return {
     settings: versioned(spOne('appsettings', 'default', data.settings)?.item ?? null),
     session,
     track: trackId ? spOne('tracks', trackId, data.track)?.item ?? null : null,
     sections: owned ? inOrder(owned) : null,
-    requests,
+    ...(stamp === undefined ? {} : { activitiesStamp: stamp }),
+    requests: requests + more,
   };
 }
 
