@@ -3,7 +3,7 @@
 // $batch the participant page relies on, and deletes everything it made. Run on the test site only.
 
 import { ID } from '../schema/pms-schema.js';
-import { RESPONSE, spLiteral } from './encoding.js';
+import { RESPONSE, rowsIn, spLiteral } from './encoding.js';
 import { requestTotal, sharePoint, spBatch, spHttp, spItems, spListPath, spSite, spTitle } from './core.js';
 import { PARTICIPANT_SELECT, answerRecord, participantFields, participantItem, participants } from './responses.js';
 
@@ -19,7 +19,7 @@ export async function probeSharePointRead(list, query) {
   const address = !list ? query : /\$select=/.test(query) ? `${spListPath(list)}/items?${query}` : spItems(list, query);
   try {
     const { data } = await spHttp('GET', address);
-    return { ok: true, rows: (data.results ?? data.value ?? []).length, length: `${spSite()}/_api${address}`.length, data };
+    return { ok: true, rows: rowsIn(data).length, length: `${spSite()}/_api${address}`.length, data };
   } catch (error) {
     return { ok: false, status: error?.status, message: String(error?.message ?? error).replace(/^SharePoint \(\d+\):\s*/, '').replace(/\s+/g, ' ').slice(0, 140) };
   }
@@ -113,16 +113,16 @@ export async function runParticipantSelfTest(onStep = () => {}, extraSteps = [])
         try {
           answers = await spBatch([
             `${spListPath('responses')}/items?$filter=${RESPONSE.trackId} eq ${spLiteral(fields.trackId)}&${PARTICIPANT_SELECT}&$top=5`,
-            `${spListPath('responses')}?$select=ListItemEntityTypeFullName`,
+            `${spListPath('responses')}?$select=Title`,
           ]);
         } catch (error) {
           throw new Error(`${error.message} The participant page then reads one by one: a QR scan costs 13 requests instead of 8 (set "batch": false in pms-config.txt), and still works.`);
         }
         const sent = requestTotal - before;
         expect(sent === 1, `The batch took ${sent} requests; it should take 1.`);
-        const rows = answers[0]?.results ?? answers[0]?.value;
+        const rows = rowsIn(answers[0]);
         expect(Array.isArray(rows) && rows.length > 0 && rows.every((row) => row[ID] === fields.trackId), 'The first read in the batch did not return the test item as JSON.');
-        expect(typeof answers[1]?.ListItemEntityTypeFullName === 'string', "The second read in the batch did not return the list's item type.");
+        expect(typeof answers[1]?.Title === 'string', "The second read in the batch did not return the list's title.");
         return 'Both answered, as JSON, in one request. A QR scan reads the session, client, activities and visitor this way.';
       });
       // Steps the caller adds, on SharePoint only: the Setup page's two read-only probes of this tenant (lib/setup/setup-checks.js, Phase 9b). They report what

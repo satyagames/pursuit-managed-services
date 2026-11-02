@@ -10,8 +10,10 @@ import './styles/admin-tokens.css';
 import './styles/results-tokens.css';
 import './lib/motion/motion-tokens.css';
 import AdminApp from './AdminApp.svelte';
+import { closeSignInPopup, isSignInPopup } from './lib/common/sign-in-popup.js';
 import './admin.css';
 
+if (isSignInPopup()) closeSignInPopup();
 const target = document.getElementById('admin-app');
 if (!target) throw new Error('Missing admin application mount point.');
 

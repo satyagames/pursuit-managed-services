@@ -32,6 +32,18 @@ export const sessionEvidence = () => [...session.evidence];
 /** When the page last had an answer from SharePoint (ms, as Date.now()); the page's start when it has had none. */
 export const lastAnswerAt = () => session.answeredAt;
 
+/**
+ * After a person signed in again in the pop-up (Prompt 26): one light read past the ladder and its cooldown. Resolves to whether the sign-in works now; an
+ * answer also tells the page's listeners the sign-in is back. Nothing on the local server.
+ * @returns {Promise<boolean>}
+ */
+export async function checkSignedIn() {
+  if (!sharePoint) return true;
+  session.failed = null;
+  session.coolUntil = 0;
+  return spHttp('GET', '/web?$select=Id', { ladder: false }).then(() => true, () => false);
+}
+
 /** The keep-alive's light read, `GET /_api/web?$select=Id`, through the ladder like any other. Resolves to what it cost. Nothing on the local server. */
 export async function checkSession() {
   if (!sharePoint) return { requests: 0 };

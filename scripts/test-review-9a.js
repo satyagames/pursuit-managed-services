@@ -202,7 +202,7 @@ describe('an expired sign-in is told from a lost connection, and the page says w
     assert.match(state, /signedOut: boolean;/);
     assert.equal(app.match(/if \(isSignedOut\(cause\)\) participant\.signedOut = true;/g)?.length, 2, 'both places a look can fail');
     assert.match(app, /participant\.connectionLost = false;\s*participant\.signedOut = false;/);
-    assert.match(app, /\{#if participant\.signedOut\}[\s\S]*Your sign-in has expired\. Reload this page to sign in again\. Your answers are kept on this device\.[\s\S]*\{:else if participant\.connectionLost\}/);
+    assert.match(app, /\{#if participant\.signedOut\}[\s\S]*Your sign-in has expired\. Saved on this iPad\. It will send when you are signed in again\.[\s\S]*Sign in again[\s\S]*Reload[\s\S]*\{:else if participant\.connectionLost\}/);
     assert.match(pager, /if \(isSignedOut\(\(cause as \{ cause\?: unknown \}\)\?\.cause\)\) participant\.signedOut = true;/);
   });
 });

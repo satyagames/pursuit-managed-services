@@ -6,7 +6,7 @@
 import { ID } from '../schema/pms-schema.js';
 import { READ_CHUNK, chunked, indexById, pick, spEncode } from './encoding.js';
 import {
-  createItem, getItem, getItems, queryItems, request, sharePoint, spEntityType, spFind, spHttp, spListPath, spRefs, updateItem,
+  createItem, getItem, getItems, queryItems, request, sharePoint, spFind, spHttp, spListPath, spRefs, updateItem,
 } from './core.js';
 import { failure, getAppSettings, recordUserVisit, unscanned, updateAppSettings } from './records.js';
 import { isCheckActivity } from '../participant/confidence-check.js';
@@ -143,9 +143,8 @@ export async function recordParticipantVisit(fields) {
   const id = fields.id ?? visitKey;
   if (!id) throw new Error('A stable visit id is required.');
   try {
-    const type = await spEntityType('uservisitlogs');
     await spHttp('POST', `${spListPath('uservisitlogs')}/items`, {
-      body: { __metadata: { type }, Title: id, ...spEncode('uservisitlogs', { ...record, id }), [ID]: id },
+      body: { Title: id, ...spEncode('uservisitlogs', { ...record, id }), [ID]: id },
     });
   } catch (error) {
     if (error.status !== 409) throw error; // this tab's row is there already
@@ -183,15 +182,15 @@ export async function noteTrackResumed(track) {
   const changes = { lastResumedAt: new Date().toISOString(), resumeCount: (track.resumeCount ?? 0) + 1 };
   if (!sharePoint) return updateItem('tracks', track.id, changes);
   let ref = spRefs.get(track);
-  if (!ref?.type) {
+  if (!ref) {
     const found = await spFind('tracks', track.id);
     if (!found) return null;
-    ref = { id: found.numericId, type: found.type ?? await spEntityType('tracks') };
+    ref = { id: found.numericId };
   }
   await spHttp('POST', `${spListPath('tracks')}/items(${ref.id})`, {
     idempotent: true,
     headers: { 'X-HTTP-Method': 'MERGE', 'If-Match': '*' },
-    body: { __metadata: { type: ref.type }, ...spEncode('tracks', changes) },
+    body: spEncode('tracks', changes),
   });
   return { ...track, ...changes };
 }

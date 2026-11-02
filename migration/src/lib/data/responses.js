@@ -3,8 +3,8 @@
 // visits. Reads and writes the answers list on both backends; the participant page saves only through lib/participant/participantData.ts.
 
 import { ID } from '../schema/pms-schema.js';
-import { RESPONSE, pause, spLiteral } from './encoding.js';
-import { currentAccessGuard, getItem, itemPath, listTypes, request, send, sharePoint, spDecode, spEntityType, spHttp, spListPath, spPages, updateItem } from './core.js';
+import { RESPONSE, pause, spLiteral, nextOf, rowsIn } from './encoding.js';
+import { JSON_VERSIONED, currentAccessGuard, getItem, itemPath, request, send, sharePoint, spDecode, spHttp, spListPath, spPages, updateItem } from './core.js';
 import { failure, versioned } from './records.js';
 import { parseCheckId } from '../participant/confidence-check.js';
 import { MAX_MATRIX_ANSWER } from '../participant/aop-answer.js';
@@ -105,33 +105,34 @@ function decodeResponsesRow(row, damaged) {
 }
 
 const spParticipants = {
-  async findAll(trackId) {
-    const rows = await spPages(`${spListPath('responses')}/items?$filter=${RESPONSE.trackId} eq ${spLiteral(trackId)}&${PARTICIPANT_SELECT}&$top=5`);
+  async findAll(trackId, versioned = false) {
+    const address = `${spListPath('responses')}/items?$filter=${RESPONSE.trackId} eq ${spLiteral(trackId)}&${PARTICIPANT_SELECT}&$top=5`;
+    // (Only a removal checks the version: Prompt 26. A participant's own saves are blind overwrites, so their read is plain rows.)
+    const rows = versioned ? ((await spHttp('GET', address, { headers: { Accept: JSON_VERSIONED } })).data.value ?? []) : await spPages(address);
     return rows.map((row) => {
       // The participant's OWN damaged item still stops this page (it cannot save into what it cannot read), but it says so in words.
       if (whyUnreadable(row[RESPONSE.responses])) {
         throw failure('responses-unreadable', 'Your saved answers could not be read, so this page cannot go on. Please tell your facilitator: the item that holds your answers needs to be corrected or deleted.');
       }
       const found = spDecode('responses', row);
-      return { item: { ...found.item, trackId }, etag: found.etag, ref: { id: found.numericId, type: found.type ?? listTypes.get('responses') } };
+      return { item: { ...found.item, trackId }, etag: found.etag, ref: { id: found.numericId } };
     });
   },
   async create(fields) {
-    const type = await spEntityType('responses');
     const { data } = await spHttp('POST', `${spListPath('responses')}/items`, {
       idempotent: true,
       body: {
-        __metadata: { type }, Title: fields.trackId, [ID]: fields.trackId, [RESPONSE.trackId]: fields.trackId,
+        Title: fields.trackId, [ID]: fields.trackId, [RESPONSE.trackId]: fields.trackId,
         [RESPONSE.sessionId]: fields.sessionId, [RESPONSE.clientId]: fields.clientId, [RESPONSE.responses]: JSON.stringify(fields.responses),
       },
     });
-    return { id: data.Id, type: data.__metadata?.type ?? type };
+    return { id: data.Id };
   },
   async overwrite(ref, responses, etag = '*') {
     await spHttp('POST', `${spListPath('responses')}/items(${ref.id})`, {
       idempotent: true,
       headers: { 'X-HTTP-Method': 'MERGE', 'If-Match': etag },
-      body: { __metadata: { type: ref.type ?? await spEntityType('responses') }, [RESPONSE.responses]: JSON.stringify(responses) },
+      body: { [RESPONSE.responses]: JSON.stringify(responses) },
     });
   },
   async remove(ref) {
@@ -140,13 +141,13 @@ const spParticipants = {
   /** One page of a session's participant items, straight from the indexed SessionId. */
   async page(sessionId, top, cursor, damaged = null) {
     const { data } = await spHttp('GET', cursor ?? `${spListPath('responses')}/items?$filter=${RESPONSE.sessionId} eq ${spLiteral(sessionId)}&${PARTICIPANT_SELECT}&$top=${top}`);
-    const rows = data.results ?? data.value ?? [];
+    const rows = rowsIn(data);
     return {
       items: rows.filter((row) => row[RESPONSE.trackId]).flatMap((row) => {
         const found = decodeResponsesRow(row, damaged);
         return found ? [{ ...found.item, trackId: row[RESPONSE.trackId] }] : [];
       }),
-      next: data.__next ?? data['@odata.nextLink'] ?? data['odata.nextLink'] ?? null,
+      next: nextOf(data),
     };
   },
 };
@@ -261,6 +262,7 @@ async function removeParticipantAnswers(trackId, questionIds = null, { after = f
     if (kept.length === held.length) return { removed: 0 };
     try {
       // Unlike the participant's own saves this one checks the version: the device may be writing too.
+      if (sharePoint && !found.etag) throw new Error('SharePoint did not return an ETag for the answers item.'); // (never a blind overwrite: Prompt 26)
       await store.overwrite(found.ref, kept, found.etag ?? undefined);
       return { removed: held.length - kept.length };
     } catch (error) {

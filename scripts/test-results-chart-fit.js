@@ -147,3 +147,22 @@ describe("a tooltip and the other bars' figures", () => {
     assert.deepEqual(at, { left: 941, top: 560, below: false });
   });
 });
+
+describe('the i bubble beside a figure (Prompt 26)', () => {
+  const BUBBLE = { width: 352, height: 190 };
+  const windows = [{ width: 1024, height: 768 }, { width: 390, height: 852 }];
+  for (const view of windows) {
+    const size = { width: Math.min(BUBBLE.width, view.width - 16), height: BUBBLE.height };
+    const corners = [[0, 0], [view.width - 44, 0], [0, view.height - 44], [view.width - 44, view.height - 44], [view.width / 2, view.height / 2]];
+    for (const [left, top] of corners) {
+      it(`at ${left}, ${top} of a ${view.width} by ${view.height} window it is whole, and over nothing of its button`, () => {
+        const button = { left, top, right: left + 44, bottom: top + 44 };
+        const at = placeTip(size, button, left + 22, view);
+        assert.ok(at.left >= 8 && at.left + size.width <= view.width - 8, 'across');
+        assert.ok(at.top >= 8 && at.top + size.height <= view.height - 8, 'down');
+        const over = at.left < button.right && at.left + size.width > button.left && at.top < button.bottom && at.top + size.height > button.top;
+        assert.equal(over, false);
+      });
+    }
+  }
+});

@@ -91,6 +91,21 @@ const itemsOf = (title) => `/web/lists/getbytitle('${encodeURIComponent(String(t
 const firstRow = (read) => (read.data?.results ?? read.data?.value ?? [])[0];
 const unreadable = (title, read) => `${title} (${read.status ?? 'no answer'}: ${read.message})`;
 
+/** The name of the size watch's step (Prompt 26), and the counts it warns at: SharePoint refuses some reads above 5,000. */
+export const PROBE_SIZES = 'Probe (read-only): how many items each list holds';
+export const SIZE_WARNINGS = Object.freeze([3_000, 4_500]);
+/** The plain sentence for a list of `count` items, or null below the first warning. @param {string} title @param {number} count */
+export const sizeWarning = (title, count) => (count >= SIZE_WARNINGS[0] ? `${title} has ${count.toLocaleString('en-US')} items. SharePoint refuses some reads above 5,000. Ask Satyadev to run Housekeeping.` : null);
+
+/** Each list's ItemCount (one small read each; Setup's alone), with the sentence for any that has grown. @param {Probe} probe @param {Record<string, string>} titles */
+async function listSizes(probe, titles) {
+  const read = await Promise.all(Object.entries(titles).filter(([key]) => key !== 'logoLibrary').map(async ([, title]) => ({ title, answer: await probe(null, `/web/lists/getbytitle('${title.replace(/'/g, "''")}')?$select=ItemCount`) })));
+  const counts = read.filter(({ answer }) => answer.ok).map(({ title, answer }) => ({ title, count: Number(answer.data?.ItemCount ?? 0) }));
+  const warnings = counts.map(({ title, count }) => sizeWarning(title, count)).filter(Boolean);
+  const list = counts.map(({ title, count }) => `${title} ${count.toLocaleString('en-US')}`).join(', ');
+  return `${warnings.length ? `${warnings.join(' ')} ` : ''}Items in each list: ${list}.`;
+}
+
 /** @param {Probe} probe @param {Record<string, string>} titles the title of each list on this site, by key (dataService.sharePointListTitles()) */
 async function columnsLeftOut(probe, titles) {
   const leaves = [];
@@ -177,5 +192,6 @@ export const selfTestProbes = (probe, titles = null) => [
   { name: PROBE_YESNO, run: () => yesNoFilter(probe) },
   { name: PROBE_LENGTH, run: () => filterLength(probe) },
   ...(titles ? [{ name: PROBE_PERMISSIONS, run: () => permissionProbe(probe, titles) }] : []),
+  ...(titles ? [{ name: PROBE_SIZES, run: () => listSizes(probe, titles) }] : []),
   ...(titles ? [{ name: PROBE_LEFT_OUT, run: () => columnsLeftOut(probe, titles) }, { name: PROBE_REFUSED, run: () => columnsRefused(probe, titles) }] : []),
 ];

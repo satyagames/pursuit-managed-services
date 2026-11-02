@@ -194,11 +194,11 @@
     /** Draws what the page holds: no request. */
     const draw = async () => { const progress = await getKnownProgress(sessionId!, trackId!, answeredSnapshot); if (active) show(progress); };
 
-    async function load() {
+    async function load(force = false) {
       error = '';
       try {
         // (Every activity done: none is left to open, so its content is not read again.)
-        const changed = await refreshActivities({ withContent: !(fetchedAllDone && !fetching) });
+        const changed = await refreshActivities({ withContent: !(fetchedAllDone && !fetching), force });
         if (active && (changed || fetching)) await draw();
       } catch (cause) {
         // With activities on the screen the hub keeps them (they are what the page holds); with nothing to show it says why, with Try again.
@@ -210,7 +210,7 @@
       }
     }
     // "Try again" reads the activities again, here. (It used to reload the whole page, which with no connection puts the browser's own error in its place.)
-    tryAgain = () => { fetching = true; void load(); };
+    tryAgain = () => { fetching = true; void load(true); };
 
     if (!sessionId || !trackId) {
       void navigateTo('/welcome', true);

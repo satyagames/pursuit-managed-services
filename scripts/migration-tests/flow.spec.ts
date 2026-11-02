@@ -821,7 +821,8 @@ for (const viewport of viewports) {
     await expect(page.getByRole('button', { name: /Harvest/ })).toHaveAttribute('data-state', 'correct');
     await shoot('tiles-correct');
 
-    // An ungraded question and the finale: everything answered through the data, then the hub's Finish.
+    // An ungraded question and the finale: everything answered through the data, then the hub's Finish. (The retry above may still be on its way: it waits 300 ms since Prompt 26.)
+    await allSaved(page);
     fixture.give(['q-b1', 'q-b2', 'q-p1'].map((id) => ({ questionId: id, answer: id === 'q-p1' ? 'q-p1-a' : right(id) })));
     await page.goto(appPath('#/quiz/section-pulse?t=track-a'));
     await page.reload();

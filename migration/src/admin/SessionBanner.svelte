@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { openSignInPopup } from '../lib/common/sign-in-popup.js';
   // The one notice of a SharePoint sign-in the data layer could not renew (Prompt 19): calm and persistent, under the admin page's tabs (and at
   // the top of Setup), role="alert" without taking focus. The words are lib/admin/session-notice.js's; it says Reload, warns when a screen holds
   // unsaved work (lib/admin/unsaved.ts) and offers to stay, and never reloads by itself; Details holds SharePoint's status, code, SPRequestGuid
@@ -40,7 +41,8 @@
   <div class="session-banner" role="alert" data-testid="session-banner">
     <p class="session-banner__text">{banner.text}{#if banner.warning}{' '}<strong>{banner.warning}</strong>{/if}</p>
     <div class="session-banner__actions">
-      <button class="btn btn--primary" type="button" onclick={() => window.location.reload()}>Reload</button>
+      <button class="btn btn--primary" type="button" onclick={() => void openSignInPopup(window.location.href, () => dataService.checkSignedIn())}>Sign in again</button>
+      <button class="btn" type="button" onclick={() => window.location.reload()}>Reload</button>
       {#if banner.warning}<button class="btn" type="button" onclick={() => { staying = true; }}>Stay on this page</button>{/if}
     </div>
     {#if banner.details}

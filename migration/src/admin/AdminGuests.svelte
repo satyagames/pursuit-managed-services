@@ -1,11 +1,14 @@
 <script lang="ts">
   import { errorText } from '../lib/admin/session-notice.js';
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import GuestAvatar from '../components/GuestAvatar.svelte';
   import GuestPicture from './GuestPicture.svelte';
   import { clearGuestPicture, picturesLine, setGuestPicture } from '../lib/admin/guest-picture.js';
   import type { Prepared } from '../lib/brand/asset-image.js';
   import * as dataService from '../lib/data/dataService.js';
+  import { PER_PAGE, pageRows, pagerState } from '../lib/common/paging.js';
+  import { focusHeading } from '../lib/common/focus.js';
+  import Pager from './Pager.svelte';
   import { loadGuestState, refreshGuestState, type GuestState, type GuestToken, type GuestVisitor } from '../lib/admin/adminData.js';
   import { copyText, participantPageUrl, qrImage } from '../lib/admin/admin-links.js';
   import { isAccessDenied } from '../lib/access/access-denied.js';
@@ -59,7 +62,13 @@
   const parsedList = $derived(parseGuestList(pasted, { existing: (guestState?.visitors ?? []).map((visitor) => visitor.displayName), group: pasteGroup }));
   const parsed = $derived({ ...parsedList, names: parsedList.guests.map((guest) => guest.name) });
   const groups = $derived(guestGroups(guestState?.visitors ?? []));
-  const shownRows = $derived(inGroup(rows.map((row) => ({ ...row, guestGroup: row.visitor.guestGroup })), groupFilter));
+  let guestSearch = $state('');
+  let guestPage = $state(1);
+  let rosterHeading = $state<HTMLElement>();
+  const matching = $derived(inGroup(rows.map((row) => ({ ...row, guestGroup: row.visitor.guestGroup })), groupFilter)
+    .filter((row) => String(row.visitor.displayName ?? '').toLowerCase().includes(guestSearch.trim().toLowerCase())));
+  const guestPager = $derived(pagerState({ total: matching.length, pageSize: PER_PAGE.guests, page: guestPage }));
+  const shownRows = $derived(pageRows(matching, guestPager));
   const cardCount = $derived(printCards(rows, (id) => id).cards.length);
   const missing = $derived(counts.none);
 
@@ -312,7 +321,7 @@
       <section class="user-setup__roster" aria-labelledby="roster-heading">
         <div class="panel__head">
           <div>
-            <h3 id="roster-heading">Visitor roster</h3>
+            <h3 id="roster-heading" bind:this={rosterHeading} tabindex="-1">Visitor roster</h3>
             <p class="muted" data-testid="guest-summary">
               {#if rows.length === 0}No guests yet.{:else}{plural(rows.length, 'guest', 'guests')}: {counts.none} no code, {counts.waiting} not scanned, {counts.joined} joined, {counts.completed} completed{counts.disabled ? `, ${counts.disabled} disabled` : ''}.{/if}
             </p>
@@ -361,6 +370,10 @@
         {/if}
         {#if rows.length === 0}<p class="muted">No visitors added for this session.</p>
         {:else}
+          {#if rows.length > PER_PAGE.guests}
+            <div class="field"><label class="field__label" for="guest-search">Search guests</label>
+              <input id="guest-search" class="input" type="search" autocomplete="off" bind:value={guestSearch} oninput={() => { guestPage = 1; }} /></div>
+          {/if}
           <ul class="rows rows--flat">
             {#each shownRows as row (row.visitor.id)}
               {@const visitor = row.visitor}
@@ -383,6 +396,7 @@
               </li>
             {/each}
           </ul>
+          <Pager state={guestPager} label="Pages of guests" onPage={(next) => { guestPage = next; void tick().then(() => { if (rosterHeading) focusHeading(rosterHeading); }); }} />
         {/if}
         {#if qrDisplay}
           <section class="content-editor user-setup__qr" aria-labelledby="visitor-qr-heading">

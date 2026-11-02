@@ -490,3 +490,14 @@ export const PHASE_24 = Object.freeze({
   participantAfter: 181_511, adminAfter: 674_795,
   participantUtilities: PHASE_11A.participantUtilities,
 });
+
+/**
+ * Prompt 26 (speed, paging and scale). The participant page may not grow: the reply format and its reads leave it smaller, and a component style's comment no longer travels
+ * in any page (migration/svelte.config.js). The admin page gains the Pager, lib/common/paging.js and the bubble's placement: at most 8,000 B gzip. The ceilings are not raised.
+ * Measured when the prompt ended: the after figures, where the next one starts.
+ */
+export const PHASE_26 = Object.freeze({
+  participantBefore: 181_605, adminBefore: 675_595, participantAllowance: 0, adminAllowance: 8_000,
+  participantAfter: 180_279, adminAfter: 673_935,
+  participantUtilities: PHASE_11A.participantUtilities,
+});

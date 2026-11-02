@@ -5,7 +5,7 @@
 import { auditWords } from './people-ops.js';
 
 /** Lines to a page. */
-export const AUDIT_PAGE = 50;
+export const AUDIT_PAGE = 10; // (Prompt 26: 50 until then; one constant)
 /** The choices of the "What was done" filter, in the audit list's words (lib/access/audit.js AUDIT_ACTIONS). */
 export const AUDIT_FILTERS = Object.freeze([
   Object.freeze({ id: '', label: 'Everything' }), Object.freeze({ id: 'grant', label: 'Access given' }), Object.freeze({ id: 'revoke', label: 'Access removed' }),

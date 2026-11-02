@@ -4,7 +4,7 @@
 
 import { ID, LISTS, VERSION, versionSelect } from '../schema/pms-schema.js';
 import { AOP_LIMITS, criteriaProblem, fteProblem, guestPictureProblem } from '../schema/aop-rules.js';
-import { indexById, pick, spLiteral } from './encoding.js';
+import { indexById, pick, spLiteral, rowsIn } from './encoding.js';
 import {
   baseUrl, createItem, deleteItem, fits, getItem, getItemWithVersion, getItems, listItems, onStop, queryItems, readLanUrls, sharePoint, spSite, spCreate,
   spFind, spHttp, spListPath, spMerge, updateItem, updateItemIfUnchanged,
@@ -57,7 +57,7 @@ async function olderItem(error) {
   if (sharePoint && error?.status === 400) {
     const column = LISTS.appsettings.fields.schemaVersion.column;
     const alone = await spHttp('GET', `${spListPath('appsettings')}/items?$filter=${ID} eq ${spLiteral('default')}&$top=1&${versionSelect()}`).catch(() => null);
-    const row = alone?.data?.results?.[0];
+    const row = rowsIn(alone?.data)[0];
     if (row && Number.isInteger(row[column]) && row[column] < VERSION) versioned({ schemaVersion: row[column] });
   }
   throw error;

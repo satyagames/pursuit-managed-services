@@ -243,6 +243,41 @@ expected after that time, and Reload is the answer. For a site owner or IT, the 
 - **One Microsoft account per Chrome profile**: two accounts in one profile can give a request the other account's sign-in.
 - **One admin tab**: several PMS tabs on the same site renew and replace each other's cookies.
 
+## Speed: formats, calls and limits (Prompt 26)
+
+**How to watch it:** [DEVTOOLS-NETWORK.md](DEVTOOLS-NETWORK.md). **The measures:** [perf/BEFORE.md](perf/BEFORE.md), [perf/AFTER.md](perf/AFTER.md), [perf/TARGETS.md](perf/TARGETS.md).
+
+**Formats.** Every read asks for `application/json;odata=nometadata`: plain rows under `value`, the next page in `odata.nextLink`, a refusal in `odata.error`. A read by `AppId`, and a removal's read of a participant's answers item, ask for `odata=minimalmetadata`, whose `odata.etag` on the row is the version a write checks (`If-Match`): a second writer still gets 412. ASSUMED until QA-TESTING.md's check: that the real site puts `odata.etag` on such a row as its documents say. Why not the others: the `ETag` header comes only with a read of one item by its number, and `owshiddenversion` adds a column and an assumption about how `If-Match` compares it. A write body names no `__metadata` and needs no `ListItemEntityTypeFullName` (`Content-Type: application/json;odata=nometadata`); only a body that makes a list or a column, or asks the people picker, still names its type, and goes as `odata=verbose`.
+
+**`Id` and `ID`.** SharePoint returns both whatever is asked: not ours to trim. Every other column of a row is one its decoder reads (`selectOf`). An index read names fewer (`readLists` with `columns`).
+
+**Who reads a list's columns.** The participant page never (`skipColumnChecks`). Other pages once before a list's first write. Today's check names what it reads (`SCHEMA_CHECK`; it used to read every property of every field, hidden ones too), and a good report stands ten minutes on the page.
+
+**How often each page looks.**
+
+| Page | Interval | Jitter | Back-off | Hidden tab |
+|---|---|---|---|---|
+| Participant, waiting (Welcome, the hub, the finale) | 20 s, one `$batch` | ±20% | doubles to 5 min; `Retry-After` obeyed up to 15 min | none |
+| Participant, a question on screen | 60 s | ±20% | as above | none |
+| Results (the live session only), Today, Guests | 15 s | ±20% | as above | none |
+| Admin keep-alive | one light read after 10 idle minutes | none | one idle time | none |
+
+A look on the hub asks each activity's id and `Modified`, not the activities: when those moved, the next look carries the activities, in its one request. A look with nothing new draws nothing.
+
+**Batching.** At most 20 reads to a `$batch` (longer lists go as several, side by side; a property test holds it). Only reads go in a batch. One write token per page, renewed only after its timeout (about 30 minutes, less 30 seconds). Bulk writes: 3 at a time, 120 ms apart (`PACE`). A 429 or 503 is retried up to 3 times with `Retry-After`, or 300 ms doubling.
+
+**Indexes.** A read filters or orders only by an indexed column: `scripts/test-sign-in-again.js` parses every recorded address, and the fake refuses any other. A query that must scan past 5,000 rows without an index is refused by SharePoint even for one page. An index read asks `$top=5000`, the most one request returns, so 6,000 rows cost one page more.
+
+**What grows without a limit:** the visit log (one item for each page visit), answers (one for each visit), session summaries and the audit log. What does not: clients, activities, users. Setup's self-test reads each list's item count and warns at 3,000 and 4,500. Housekeeping (deleting old visit-log items) is not built: Proposed in [history/RELEASE-26.md](history/RELEASE-26.md).
+
+**Payload.** `ResponsesJson` stays under the answer store's caps. `SummaryJson` is read by the dashboard because its tiles use fields inside it (`kinds`, `groups`, `distribution`, `feedback`, `aop`, `facilitator`), and the schema has no columns for them.
+
+**A sign-in lost.** Unsent answers stay in the page and in this tab's `sessionStorage` (answers only). **Sign in again**, only ever from a tap, opens this same page with `?signed-in=1` in a small window; single sign-on renews the cookie on the way; the page tells its opener and closes before it asks for anything; one light read proves it and the waiting answers go, once. A blocked window falls back to Reload. ASSUMED until QA-TESTING.md's check. A refused look on any open page already runs the ladder at once. What to ask IT, which the page cannot fix: whether Conditional Access sign-in frequency or idle session sign-out applies to this site, and an exemption for the managed iPads and the kiosk accounts; whether the iPads' browsers stay signed in ("Stay signed in"); the site's write-token timeout; whether pop-ups are allowed on the iPads for this site.
+
+**Scale.** Today's shape suits one live session of up to about 100 guests: each guest's page makes one small look on a jittered timer; the facilitator's Live display and Results make one more. SharePoint throttles by user and by tenant; a burst of 429s is handled by `Retry-After`. If sessions of 300 or more guests, or several rooms live at once, arrive: lengthen the look with the load, and move to a relay (below). What should trigger that decision: a sustained 429 rate above 1% in a session.
+
+**Not built, with their cost.** Bearer tokens through MSAL.js (silent renewal; needs an app registration and admin consent). An SPFx solution (SharePoint's shell holds the session; needs the app catalog). A small relay (an Azure Function writing with a service identity: a guest needs no SharePoint session at all, real scale and rate control, and a new component to run and secure).
+
 ## Deploying a package
 
 1. **Make it**: `npm run package:release` on a clean, committed tree. It builds in a fresh checkout of the commit, into

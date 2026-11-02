@@ -27,6 +27,7 @@ On the Windows checkout the system Node is 20: run Node 22 from `.local/node22/n
 | Fast checks, after every change | `npm run check:svelte`, then `npm test` (about 20 s) |
 | Results and exports | `npm run test:report`, `npm run test:report:mutations`, `npm run oracle -- --seeds 500`, `npm run test:charts` |
 | Browsers | `npm run test:migration` (Chromium, WebKit, Firefox; about 45 min) |
+| What each journey costs; the pages' red lines | `npm run perf` (`-- --write AFTER`, `-- --check`); `npm run console:errors` (build first) |
 | The local PCOE site | `npm run local:site -- --open`, `npm run test:local-site`, `npm run ux:shoot` |
 | Release package | `npm run package:release` (clean committed tree only) |
 | Documents | `npm run docs:check`, `npm run docs:modules`, `npm run build:lists-reference` |

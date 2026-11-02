@@ -2,7 +2,8 @@
 // look (readParticipantWatch) and the Live display's feed (readLiveFeed), each one request where the site can batch, saying what it
 // cost. Read-only; a busy answer is thrown for the caller's timer to back off.
 
-import { READ_CHUNK, RESPONSE, chunked, indexById, pick, spLiteral } from './encoding.js';
+import { ID } from '../schema/pms-schema.js';
+import { READ_CHUNK, RESPONSE, chunked, columnsOf, indexById, nextOf, pick, rowsIn, spLiteral } from './encoding.js';
 import { getItem, getItems, queryItems, sharePoint, spByAppId, spDecode, spListPath, spReadOrBatch } from './core.js';
 import { spAllRows, spItemsAddress, spOne } from './common.js';
 import { getAppSettings, notMade, versionFirst, versioned } from './records.js';
@@ -20,20 +21,27 @@ import { PARTICIPANT_SELECT, askRead, combineAnswers, decodeResponsesRow, readAn
 // A busy answer (429, 503, 504) is not retried here and is not turned into plain reads: it throws, with
 // `retryAfter` when SharePoint gave one, so the caller's timer can back off for as long as it was asked.
 
+/** The light read of a client's activities: each one's id and when it last changed. Names the columns it reads, like every item read. */
+const spStampAddress = (clientId) => `${spListPath('sections')}/items?$top=200&$filter=(${columnsOf('sections').clientId} eq ${spLiteral(clientId)})&$select=Id,${ID},Modified`;
+
 /**
  * What an open participant page checks on its timer: AppSettings (did the facilitator change what is
  * live?), the session (has it ended? did its flow change?), the page's own track (was it restarted?) and,
  * for the hub, the client's activities. One request on SharePoint, however many of them are asked for.
  *
- *   readParticipantWatch({ sessionId, trackId, clientId })
- *   -> { settings, session, track, sections, requests }
+ *   readParticipantWatch({ sessionId, trackId, clientId, activitiesStamp })
+ *   -> { settings, session, track, sections, activitiesStamp, requests }
  *
  * Leave out what the page has no use for: with no `sessionId` there is no session read, with no `trackId`
  * no track, and `sections` is null unless a `clientId` is given. A record that does not exist reads as null.
  * `sections` are the client's activities as getSessionActivities() gives them (enabled or not, in order).
- * @param {{ sessionId?: string | null, trackId?: string | null, clientId?: string | null }} [options]
+ *
+ * The small thing first (Prompt 26). With `activitiesStamp` (what the last look gave) the look asks only each activity's id and Modified: `sections` is null, and when
+ * those moved the stamp it gives back is '', so the next look carries the activities themselves, in its one request. With '' it carries them, and says their stamp. Without
+ * one it reads them as it always did. Every look is one request.
+ * @param {{ sessionId?: string | null, trackId?: string | null, clientId?: string | null, activitiesStamp?: string }} [options]
  */
-export async function readParticipantWatch({ sessionId = null, trackId = null, clientId = null } = {}) {
+export async function readParticipantWatch({ sessionId = null, trackId = null, clientId = null, activitiesStamp = undefined } = {}) {
   if (!sharePoint) {
     const [settings, session, track, owned] = await Promise.all([
       getAppSettings(),
@@ -43,19 +51,25 @@ export async function readParticipantWatch({ sessionId = null, trackId = null, c
     ]);
     return { settings, session, track, sections: owned ? inOrder(owned) : null, requests: 1 + [sessionId, trackId, clientId].filter(Boolean).length };
   }
+  const light = activitiesStamp !== undefined;
   const { data, requests } = await spReadOrBatch({
     settings: spByAppId('appsettings', 'default'),
     ...(sessionId ? { session: spByAppId('sessions', sessionId) } : {}),
     ...(trackId ? { track: spByAppId('tracks', trackId) } : {}),
-    ...(clientId ? { owned: spItemsAddress('sections', { clientId }) } : {}),
+    ...(clientId ? { owned: activitiesStamp ? spStampAddress(clientId) : `${spItemsAddress('sections', { clientId })}${light ? ',Modified' : ''}` } : {}),
   }).catch(notMade).catch(versionFirst);
   const session = sessionId ? spOne('sessions', sessionId, data.session)?.item ?? null : null;
-  const owned = clientId ? (await spAllRows(data.owned)).map((row) => spDecode('sections', row).item) : null;
+  const rows = clientId ? await spAllRows(data.owned) : null;
+  const stampOf = () => rows.map((row) => `${row.Id}:${row.Modified}`).join();
+  // (A stamp held: only ids and dates came back. Nothing held: the activities did, with their dates.)
+  const stamp = clientId && light ? (activitiesStamp ? (stampOf() === activitiesStamp ? activitiesStamp : '') : stampOf()) : undefined;
+  const owned = rows && !activitiesStamp ? rows.map((row) => spDecode('sections', row).item) : null;
   return {
     settings: versioned(spOne('appsettings', 'default', data.settings)?.item ?? null),
     session,
     track: trackId ? spOne('tracks', trackId, data.track)?.item ?? null : null,
     sections: owned ? inOrder(owned) : null,
+    ...(stamp === undefined ? {} : { activitiesStamp: stamp }),
     requests,
   };
 }
@@ -89,13 +103,13 @@ export async function readLiveFeed(sessionId, { sectionIds = [], tolerant = fals
     // The activities, in groups of 20 ids to an address (Phase 9b): the feed is one batch whatever the session holds.
     ...Object.fromEntries(chunked(sectionIds, READ_CHUNK).map((group, at) => [`sections${at}`, spItemsAddress('sections', { id: group })])),
   });
-  const rows = data.responses.results ?? data.responses.value ?? [];
+  const rows = rowsIn(data.responses);
   const items = rows.filter((row) => row[RESPONSE.trackId]).flatMap((row) => {
     const found = decodeResponsesRow(row, damaged);
     return found ? [{ ...found.item, trackId: row[RESPONSE.trackId] }] : [];
   });
   // A session with more than one page of participants reads the rest one page at a time, as readSessionResponses() does.
-  let cursor = data.responses.__next ?? data.responses['@odata.nextLink'] ?? data.responses['odata.nextLink'] ?? null;
+  let cursor = nextOf(data.responses);
   let more = 0;
   while (cursor) {
     const page = await spParticipants.page(sessionId, 200, cursor, damaged);

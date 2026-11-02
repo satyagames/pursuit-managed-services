@@ -3,8 +3,8 @@
 // one $batch where the site allows, and writes nothing. SharePoint only.
 
 import { ID, LISTS } from '../schema/pms-schema.js';
-import { columnsOf, fieldsOf } from './encoding.js';
-import { listColumns, listMetadata, sharePoint, spListPath, spMetadata, spPages, spReadTogether, spTitle } from './core.js';
+import { columnsOf, fieldsOf, nextOf, rowsIn } from './encoding.js';
+import { SCHEMA_CHECK, listColumns, listMetadata, sharePoint, spListPath, spMetadata, spPages, spReadTogether, spTitle } from './core.js';
 
 /** A column's type in the words SharePoint's own "Add column" dialog uses. */
 const spTypeNames = { Text: 'Single line of text', Note: 'Multiple lines of text, plain text', Number: 'Number', DateTime: 'Date and Time', Boolean: 'Yes/No' };
@@ -59,7 +59,7 @@ export async function checkSharePointSchema({ batch = false, specs = spSpecs } =
   listColumns.clear();
   const report = [];
   const names = Object.keys(LISTS);
-  const together = batch ? await spReadTogether(names.map((list) => `${spListPath(list)}/fields`)) : [];
+  const together = batch ? await spReadTogether(names.map((list) => `${spListPath(list)}/fields?${SCHEMA_CHECK}`)) : [];
   for (const [position, list] of names.entries()) {
     const title = spTitle(list);
     const problems = [];
@@ -67,10 +67,10 @@ export async function checkSharePointSchema({ batch = false, specs = spSpecs } =
     try {
       const read = together[position];
       if (read) {
-        const next = read.__next ?? read['@odata.nextLink'] ?? read['odata.nextLink'];
-        fields = [...(read.results ?? read.value ?? []), ...(next ? await spPages(next) : [])];
+        const next = nextOf(read);
+        fields = [...rowsIn(read), ...(next ? await spPages(next) : [])];
       } else {
-        fields = await spPages(`${spListPath(list)}/fields`);
+        fields = await spPages(`${spListPath(list)}/fields?${SCHEMA_CHECK}`);
       }
     } catch (error) {
       report.push({ list: title, ready: false, problems: [{ column: null, type: null,

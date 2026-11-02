@@ -123,6 +123,7 @@ let pagesOpened = 0;
 /** A page of its own: the data layer as a separate module, so it shares no write token, list type or column check with any other. */
 async function freshPage(fake, settings = {}) {
   const page = await import(`../migration/src/lib/data/dataService.js?waits=${pagesOpened += 1}`);
+  page.skipColumnChecks(); // (as migration/src/main.ts does)
   page.configure({ sharePoint: { ...fake.settings, ...settings } });
   return page;
 }
@@ -194,7 +195,7 @@ async function arriveAtHub(content, sections, store = null, visit = null) {
   // (Every enabled activity done: there is none left to open, and the read is of the activities alone.)
   const answered = new Set(drawn.map((record) => record.questionId));
   const allDone = sections.filter((section) => section.enabled === true && (section.questionIds ?? []).length).every((section) => section.questionIds.every((id) => answered.has(id)));
-  void content.refreshWith(KROGER, allDone ? [] : sections);
+  void content.hubRead(KROGER, allDone ? [] : sections);
   return drawn;
 }
 
@@ -477,7 +478,7 @@ describe('the hub and the activities (part E)', () => {
     assert.deepEqual([refreshed.rounds, refreshed.requests], [1, 1]);
     assert.deepEqual(fake.requests.map((entry) => entry.list), ['sections']);
     const agenda = await readFile(path.join(ROOT, 'migration', 'src', 'routes', 'Agenda.svelte'), 'utf8');
-    assert.match(agenda, /refreshActivities\(\{ withContent: !\(fetchedAllDone && !fetching\) \}\)/);
+    assert.match(agenda, /refreshActivities\(\{ withContent: !\(fetchedAllDone && !fetching\), force \}\)/);
   });
 
   it('a read that fails leaves what is held as it was, for the hub to keep showing', async () => {
@@ -499,7 +500,7 @@ describe('the hub and the activities (part E)', () => {
     assert.match(pager, /\{#if phase === 'loading'\}\s*\{#if slow\}/);
     for (const source of [agenda, pager]) assert.match(source, /setTimeout\(\(\) => \{ slow = true; \}, LOADING_DELAY_MS\)/);
     const experienceSource = await readFile(path.join(ROOT, 'migration', 'src', 'lib', 'participant', 'experience.svelte.ts'), 'utf8');
-    assert.match(experienceSource, /activityContent\.refreshWith\(experience\.clientId, withContent \? activities : \[\]\)/);
+    assert.match(experienceSource, /activityContent\.hubRead\(experience\.clientId, withContent \? activities : \[\]\)/); // (Prompt 26: read only when what is held has aged or changed)
     const { LOADING_DELAY_MS } = (await contentModule) ?? {};
     assert.equal(LOADING_DELAY_MS, 300);
   });
@@ -775,10 +776,9 @@ describe('beginning a visit (part C)', () => {
     await until(() => fake.item('sessions', session.id).Status === 'in-progress', 'the session is in progress');
     assert.equal(track.sessionId, session.id);
     const asked = sent(fake, (entry) => entry.method === 'GET' || entry.path.endsWith('/contextinfo')).sort();
-    assert.deepEqual(asked, ['GET appsettings', 'GET responses', 'GET sessions', 'GET sessions', 'GET sessions', 'GET tracks', 'GET tracks', 'POST /contextinfo']);
-    assert.equal(fake.count((entry) => /\/fields\?/.test(entry.url) && entry.list === 'tracks'), 1, "the participants list's columns, once");
-    assert.equal(fake.count((entry) => /\/fields\?/.test(entry.url) && entry.list === 'sessions'), 1, "the sessions list's columns, once");
-    assert.equal(fake.count((entry) => /ListItemEntityTypeFullName/.test(entry.url) && entry.list === 'tracks'), 1);
+    assert.equal(fake.count((entry) => entry.path.endsWith('/contextinfo')), 1, 'the write token, once');
+    assert.ok(asked.length <= 4, asked.join());
+    assert.equal(fake.count((entry) => /\/fields\?/.test(entry.url) || /ListItemEntityTypeFullName/.test(entry.url)), 0, "no list's columns or item type (Prompt 26)");
   });
 
   it('a fetch-ahead that failed is forgotten: the click asks for what it needs itself, and the visit begins', async () => {
@@ -786,15 +786,12 @@ describe('beginning a visit (part C)', () => {
     const page = await freshPage(fake);
     const boot = await bootParticipant(page, { path: '/' });
     fake.failNext({ status: 500, times: 1, when: (entry) => entry.path.endsWith('/contextinfo') });
-    fake.failNext({ status: 500, times: 1, when: (entry) => entry.list === 'tracks' && entry.path.endsWith('/fields') });
-    fake.failNext({ status: 500, times: 1, when: (entry) => entry.list === 'responses' && /ListItemEntityTypeFullName/.test(entry.url) });
     await page.prepareWrites(bootModule.writesAhead(boot)); // never throws
-    assert.equal(fake.count((entry) => Boolean(entry.faulted)), 3, 'all three failed');
+    assert.equal(fake.count((entry) => Boolean(entry.faulted)), 1, 'it failed');
     fake.reset();
     const track = await begin(page, session);
     assert.equal(track.sessionId, session.id);
     assert.equal(fake.count((entry) => entry.path.endsWith('/contextinfo')), 1, 'the write token, asked for again');
-    assert.equal(fake.count((entry) => entry.list === 'tracks' && entry.path.endsWith('/fields')), 1, 'the columns, asked for again');
   });
 
   it('the checks keep their order: what AppSettings says wins over anything the session read says, with the code and words of c7848e5', async () => {
@@ -839,13 +836,13 @@ describe('beginning a visit (part C)', () => {
   it('what the page fetches ahead, by what it can write (lib/participant/boot.js writesAhead)', () => {
     const live = (session) => ({ status: 'live', session: { id: 's', clientId: 'c', status: 'not-started', participationMode: 'staff', ...session } });
     const ahead = bootModule.writesAhead;
-    assert.deepEqual(ahead({ experience: live(), track: null, own: undefined, code: null }), { checked: ['tracks', 'sessions'], types: ['responses'] }, 'can begin, and the first visit moves the session on');
-    assert.deepEqual(ahead({ experience: live({ status: 'in-progress' }), track: null, own: undefined, code: null }), { checked: ['tracks'], types: ['responses'] }, 'can begin; the session is under way');
-    assert.deepEqual(ahead({ experience: live({ participationMode: 'client-visit' }), track: null, own: undefined, code: null }), null, 'a guest without a code writes nothing');
-    assert.deepEqual(ahead({ experience: live(), track: { id: 't' }, own: null, code: null }), { checked: [], types: ['responses'] }, 'a visit with no answers saved yet: its first save makes the item');
-    assert.deepEqual(ahead({ experience: live(), track: { id: 't' }, own: { responses: [], ref: { id: 1, type: 'x' } }, code: null }), { checked: [], types: [] }, 'a visit whose item is known: the write token alone');
-    assert.deepEqual(ahead({ experience: { status: 'not-live', session: null }, track: null, own: undefined, code: null }), null, 'nothing live');
-    assert.deepEqual(ahead({ experience: live(), track: null, own: undefined, code: 'token-used' }), null, 'a code that could not be used');
+    assert.equal(ahead({ experience: live(), track: null, own: undefined, code: null }), true, 'can begin');
+    assert.equal(ahead({ experience: live({ status: 'in-progress' }), track: null, own: undefined, code: null }), true, 'can begin; the session is under way');
+    assert.equal(ahead({ experience: live({ participationMode: 'client-visit' }), track: null, own: undefined, code: null }), false, 'a guest without a code writes nothing');
+    assert.equal(ahead({ experience: live(), track: { id: 't' }, own: null, code: null }), true, 'a visit with no answers saved yet: its first save makes the item');
+    assert.equal(ahead({ experience: live(), track: { id: 't' }, own: { responses: [], ref: { id: 1 } }, code: null }), true, 'a visit whose item is known: the write token alone');
+    assert.equal(ahead({ experience: { status: 'not-live', session: null }, track: null, own: undefined, code: null }), false, 'nothing live');
+    assert.equal(ahead({ experience: live(), track: null, own: undefined, code: 'token-used' }), false, 'a code that could not be used');
   });
 
   it('prepareWrites never throws, and sends nothing on the local server', async () => {

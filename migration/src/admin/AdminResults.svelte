@@ -13,6 +13,9 @@
   import GuestAvatar from '../components/GuestAvatar.svelte';
   import { DELETE_SESSION, cardCounts, deleteSessionData, deleteSessionWarning, deletedText, progressText, refusedText, stoppedText } from '../lib/admin/session-delete.js';
   import { focusHeading } from '../lib/common/focus.js';
+  import { PER_PAGE, hashWithPage, pageOfHash, pageRows, pagerState } from '../lib/common/paging.js';
+  import { RESULTS_INDEX } from '../lib/admin/list-index.js';
+  import Pager from './Pager.svelte';
   import ConfirmDialog from './ConfirmDialog.svelte';
   import ReportExports from './ReportExports.svelte';
   import ConfidenceShift from './ConfidenceShift.svelte';
@@ -38,7 +41,14 @@
     mayName?: boolean;
     onHideNames?: (on: boolean) => void;
   } = $props();
+  /** The cards opened so far, in memory: a card keeps its numbers when the person pages away and back. */
   let cards = $state<SessionCard[]>([]);
+  /** Every session the person may read, newest first (the index, Prompt 26): five to a page, and a session's answers are read when its card is opened. */
+  let sessionRows = $state.raw<Session[]>([]);
+  let opening = $state<string[]>([]);
+  let page = $state(pageOfHash(window.location.hash));
+  const where = $derived(pagerState({ total: sessionRows.length, pageSize: PER_PAGE.sessions, page }));
+  const visible = $derived(pageRows(sessionRows, where));
   let loading = $state(true);
   let error = $state('');
   let updated = $state('');
@@ -60,15 +70,16 @@
   let refreshing = false;
   let requestVersion = 0;
 
-  // How this screen keeps up (Phase 7). Every session is read in full when it opens, on Refresh and after a restart (5 requests a session on
+  // How this screen keeps up (Phase 7; Prompt 26: only the sessions opened). A session is read in full when its card opens, on Refresh and after a restart (5 requests a session on
   // SharePoint since Phase 9b: the session, its visits and its answers, then its activities, then their questions and options in groups of 20). What changes while it is open is the session that is LIVE, so on SharePoint only that one is refreshed on the timer, with
   // the same one-request feed the Live display uses (lib/admin/live-session.js), every 15 seconds and never while the tab is hidden. The local
   // server has no throttle, so it still refreshes everything every 2.5 seconds.
   const local = !dataService.isSharePointMode();
   const LIVE_REFRESH_MS = 15_000;
   let liveHeld: LiveStructure | null = null;
-  let namesHeld = new Map<string, string>();
+  let namesHeld = $state.raw(new Map<string, string>());
   let tokensHeld: Token[] = [];
+  let settingsHeld: { activeSessionId?: string | null } | null = null;
   // A person is named by lib/results/participant-names.js, the rule the leader report uses, so the screen and the PDF agree. A track carries a
   // guest's QR name itself; a staff sign-in name is in the session's visit log and a roster name in its roster, which are read with
   // the session (only for a session with a track that has no name of its own) and again, for the live session, when somebody who joined in
@@ -108,6 +119,14 @@
     void refresh().catch(() => {}).finally(() => watcher?.start());
     return () => { active = false; requestVersion += 1; watcher?.stop(); watcher = undefined; };
   });
+
+  /** A change of page: kept in the address; the first card of a page opens by itself. Nothing already opened is read again. */
+  function goToPage(next: number) {
+    page = next;
+    try { window.history.replaceState(window.history.state, '', hashWithPage(window.location.hash, next)); } catch { /* the page still changes */ }
+    const first = pageRows(sessionRows, pagerState({ total: sessionRows.length, pageSize: PER_PAGE.sessions, page: next }))[0];
+    if (first) void openCard(first.id);
+  }
 
   function statusText(status: string) {
     return status === 'in-progress' ? 'In progress' : status === 'completed' ? 'Completed' : status === 'used' ? 'Scanned' : status === 'expired' ? 'Expired' : status === 'unused' ? 'Unused' : status === 'unreadable' ? 'Answers unreadable' : 'Not started';
@@ -194,6 +213,7 @@
   /** What the screen holds of a session that has gone: its card, its open panel, its chosen answers and its names. */
   function forgetSession(id: string) {
     cards = cards.filter((card) => card.results.session.id !== id);
+    sessionRows = sessionRows.filter((session) => session.id !== id);
     openResults = openResults.filter((open) => open !== id);
     chosen = Object.fromEntries(Object.entries(chosen).filter(([key]) => !key.startsWith(`${id}/`)));
     sourcesHeld = new Map([...sourcesHeld].filter(([sessionId]) => sessionId !== id));
@@ -210,7 +230,7 @@
     if (!held || held.working || busy) return;
     const session = held.card.results.session;
     const label = { clientName: held.card.clientName || held.card.owner, date: session.date };
-    const at = cards.findIndex((card) => card.results.session.id === session.id);
+    const at = visible.findIndex((row) => row.id === session.id);
     deleting = { ...held, working: true, error: '', status: '' };
     busy = true;
     requestVersion += 1;
@@ -239,7 +259,7 @@
       deleting = null;
       onToast(deletedText(label), 'success');
       await tick();
-      const next = document.querySelectorAll<HTMLElement>('article[data-session] [data-card-title]')[Math.min(at, cards.length - 1)];
+      const next = document.querySelectorAll<HTMLElement>('article[data-session] [data-card-title]')[Math.min(at, visible.length - 1)];
       focusHeading(cards.length ? next : pageHeading);
     }
     // What is there now, after a delete that stopped: the card stays, with what is left.
@@ -311,35 +331,72 @@
     return { results: result, owner: namesHeld.get(result.session.clientId) ?? result.session.clientId, clientName: namesHeld.get(result.session.clientId) ?? '', codes: tokensHeld.filter((token) => token.sessionId === result.session.id).map((token) => token.expiredAt ? 'expired' : token.used ? 'used' : 'unused'), tracks, unreadable: unreadableNotice(result.unreadable, namesByVisit(tracks)), charts };
   }
 
-  /** The sessions, clients and QR codes the person may read, and the settings: the plain lists for a global role, the places held for a scoped one (lib/access/scope.js), and the codes of the sessions listed only. */
-  async function readBasics(): Promise<[Session[], Client[], Token[], { activeSessionId?: string | null } | null]> {
+  /** The sessions and clients the person may read, and the settings: the index for a global role, the places held for a scoped one (lib/access/scope.js). */
+  async function readBasics(): Promise<[Session[], Client[], { activeSessionId?: string | null } | null]> {
     const reach = access ? reachOf(access) : null;
     const settingsRead = local ? Promise.resolve(null) : dataService.getAppSettings() as Promise<{ activeSessionId?: string | null } | null>;
     if (!reach || reach.all) {
-      return Promise.all([dataService.listSessions() as Promise<Session[]>, dataService.listClients() as Promise<Client[]>, dataService.listQrTokens() as Promise<Token[]>, settingsRead]);
+      const [sessions, clients] = await dataService.readLists(RESULTS_INDEX as never) as unknown as [Session[], Client[]];
+      return [sessions, clients, await settingsRead];
     }
     const wantedSessions = readQueries(reach, 'sessions');
     const wantedClients = readQueries(reach, 'clients');
     const answers = await dataService.readLists([...wantedSessions, ...wantedClients]) as unknown as unknown[][];
     const sessions = sessionsFor(access, answers.slice(0, wantedSessions.length).flat() as Session[]);
     const clients = answers.slice(wantedSessions.length).flat() as Client[];
-    const ids = sessions.map((session) => session.id);
-    const tokens: Token[] = [];
-    for (let at = 0; at < ids.length; at += 15) tokens.push(...((await dataService.readLists([{ list: 'qrtokens', where: { sessionId: ids.slice(at, at + 15) } }]))[0] as unknown as Token[]));
-    return [sessions, clients, tokens, await settingsRead];
+    return [sessions, clients, await settingsRead];
   }
 
   /** Whether this role may do an action to a session (a role with no access, before there were roles, may do all). */
   const may = (action: string, session: Session) => !access || can(access, action, { clientId: session.clientId, sessionId: session.id, date: session.date });
 
-  /** Everything, from the start: every session in full. The live one is read the lean way, so the timer can carry on from it. */
+  /** A card is opened: its session is read in full, with its codes and any names not on a track. */
+  async function openCard(id: string) {
+    if (opening.includes(id) || cards.some((card) => card.results.session.id === id)) return;
+    opening = [...opening, id];
+    try {
+      const version = requestVersion;
+      await readCards(sessionRows.filter((session) => session.id === id), settingsHeld, version);
+    } catch (cause) {
+      if (active) error = errorText(cause, 'Could not load results.');
+    } finally {
+      opening = opening.filter((each) => each !== id);
+    }
+  }
+
+  /** Delete session... on a card not yet opened: the warning's numbers need its session, so it is read first. */
+  async function deleteShut(id: string) {
+    await openCard(id);
+    const card = cards.find((each) => each.results.session.id === id);
+    if (card) openDelete(card);
+  }
+
+  /** Everything, from the start: the list of sessions, and in full the cards already open and the first card of the page (and the live session, when it is on the page). */
   async function refreshNow() {
     const version = ++requestVersion;
-    const [sessions, clients, tokens, settings] = await readBasics();
+    const [sessions, clients, settings] = await readBasics();
     if (!active || version !== requestVersion) return;
     namesHeld = new Map(clients.map((client) => [client.id, client.name]));
-    tokensHeld = tokens;
+    settingsHeld = settings;
+    // Newest first (Phase 16), and a session already on the screen keeps its place: a refresh never moves one under the person's hands.
+    const wrapped = sessions.map((session) => ({ results: { session } }));
+    sessionRows = keepShownOrder(sessionRows.map((session) => session.id), newestFirst(wrapped, (each) => each.results), (each) => each.results).map((each) => each.results.session) as Session[];
+    const shown = pageRows(sessionRows, pagerState({ total: sessionRows.length, pageSize: PER_PAGE.sessions, page }));
+    const wanted = new Set([...cards.map((card) => card.results.session.id), ...shown.slice(0, 1).map((session) => session.id), ...shown.filter((session) => session.id === settings?.activeSessionId).map((session) => session.id)]);
+    cards = cards.filter((card) => sessions.some((session) => session.id === card.results.session.id));
+    await readCards(sessionRows.filter((session) => wanted.has(session.id)), settings, version);
+    updated = `Updated ${new Date().toLocaleTimeString()}`;
+    error = '';
+  }
+
+  /** `sessions` in full, as cards, over what is held. The live one is read the lean way, so the timer can carry on from it. */
+  async function readCards(sessions: Session[], settings: { activeSessionId?: string | null } | null, version: number) {
+    if (!sessions.length) return;
     let held: LiveStructure | null = null;
+    const ids = sessions.map((session) => session.id);
+    const tokenReads: Promise<unknown>[] = [];
+    for (let at = 0; at < ids.length; at += 15) tokenReads.push(dataService.readLists([{ list: 'qrtokens', where: { sessionId: ids.slice(at, at + 15) } }]));
+    const tokens = (await Promise.all(tokenReads) as Token[][][]).flatMap(([rows]) => rows);
     const results = (await Promise.all(sessions.map(async (session) => {
       if (!local && settings?.activeSessionId === session.id) {
         const opened = await loadLiveStructure(session.id);
@@ -355,14 +412,13 @@
     const needing = sessionsNeedingNames(results);
     const sources = await readNameSources(needing);
     if (!active || version !== requestVersion) return;
-    sourcesHeld = sources;
+    tokensHeld = [...tokensHeld.filter((token) => !ids.includes(token.sessionId)), ...tokens];
+    sourcesHeld = new Map([...sourcesHeld, ...sources]);
     holdNameSources(sources);
     for (const result of results) if (needing.includes(result.session.id)) for (const track of result.tracks) if (!track.participantName?.trim()) lookedFor.set(track.id, Math.max(lookedFor.get(track.id) ?? 0, 1));
-    liveHeld = held;
-    // Newest first (Phase 16), and a card already on the screen keeps its place: a refresh never moves one under the person's hands.
-    cards = keepShownOrder(cards.map((card) => card.results.session.id), newestFirst(results.map(cardOf), (card) => card.results), (card) => card.results);
-    updated = `Updated ${new Date().toLocaleTimeString()}`;
-    error = '';
+    if (held || ids.includes(settings?.activeSessionId ?? '')) liveHeld = held;
+    const made = results.map(cardOf);
+    cards = [...cards.filter((card) => !made.some((each) => each.results.session.id === card.results.session.id)), ...made];
   }
 
   /** The timer's refresh on SharePoint: the live session alone, one request. Everything is read again when it has gone. */
@@ -394,9 +450,21 @@
   <header class="panel__head"><div><h2 bind:this={pageHeading} tabindex="-1">Results</h2><p class="muted">Each iPad is its own client track. Answers merge into live results as submitted. The live session refreshes by itself every {local ? 'few seconds' : '15 seconds'}; Refresh reads every session again. To end or reopen a session, use Today.</p></div><span class="muted small">{updated}</span><div class="results-actions">{#if mayName}<label class="choice"><input type="checkbox" checked={hideNames} onchange={(event) => onHideNames((event.currentTarget as HTMLInputElement).checked)} /><span>Hide names</span></label>{/if}<button class="btn btn--small" type="button" onclick={() => refreshAll()} disabled={busy}>Refresh</button></div></header>
   {#if loading}<p role="status">Loading results...</p>
   {:else if error}<p class="error" role="alert">{error}</p>
-  {:else if cards.length === 0}<p class="muted">No sessions yet.</p>
+  {:else if sessionRows.length === 0}<p class="muted">No sessions yet.</p>
   {:else}
-    {#each cards as card (card.results.session.id)}
+    {#each visible as row (row.id)}
+      {@const card = cards.find((each) => each.results.session.id === row.id)}
+      {#if !card}
+      <article class="card" data-session={row.id} data-shut>
+        <header class="card__head">
+          <strong data-card-title tabindex="-1">{namesHeld.get(row.clientId) ?? row.clientId}</strong><span class="muted">{row.date ?? ''}</span><span class="tag">Session: {row.status ?? 'unknown'}</span><span class="card__spacer"></span>
+          {#if may('results.live', row)}<button class="btn btn--small" type="button" onclick={() => onLiveDisplay(row.id)}>Live display</button>{/if}
+          {#if may('results.delete', row)}<button class="btn btn--small btn--danger" type="button" data-delete-session onclick={() => void deleteShut(row.id)} disabled={busy || opening.includes(row.id)}>{DELETE_SESSION.button}</button>{/if}
+          <button class="btn btn--small" type="button" data-open-session onclick={() => void openCard(row.id)} disabled={opening.includes(row.id)}>Open</button>
+        </header>
+        {#if opening.includes(row.id)}<p class="muted" role="status">Loading this session...</p>{/if}
+      </article>
+      {:else}
       {@const session = card.results.session}
       <article class="card" data-session={session.id} aria-busy={deleting?.working && deleting.card.results.session.id === session.id}>
         <header class="card__head">
@@ -442,7 +510,9 @@
         {/if}
         {#if card.codes.length}<p class="card__note muted small">QR codes: {counts(card.codes)}</p>{/if}
       </article>
+      {/if}
     {/each}
+    <Pager state={where} label="Pages of sessions" heading={pageHeading} onPage={goToPage} />
   {/if}
 
   {#if deleting}

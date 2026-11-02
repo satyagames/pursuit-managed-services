@@ -3,10 +3,10 @@
 // session, the client and its activities; writes the visit, the claim on the code (If-Match) and the session's status.
 
 import { ID } from '../schema/pms-schema.js';
-import { pause, spEncode } from './encoding.js';
+import { pause, spEncode, nextOf, rowsIn } from './encoding.js';
 import {
-  createItem, deleteItem, getItem, getItemWithVersion, holdScan, isUnreachable, listTypes, queryItems, sharePoint, spByAppId, spDecode, spDigest,
-  spEntityType, spEntityTypeAhead, spFind, spHttp, spListPath, spMade, spMerge, spMetadata, spPages, spReadTogether, spTitle, unfinishedScan,
+  createItem, deleteItem, getItem, getItemWithVersion, holdScan, isUnreachable, queryItems, sharePoint, spByAppId, spDecode, spDigest,
+  spFind, spHttp, spListPath, spMade, spMerge, spPages, spReadTogether, spTitle, unfinishedScan,
   updateItemIfUnchanged,
 } from './core.js';
 import { spItemsAddress, spOne, spWrite } from './common.js';
@@ -47,28 +47,24 @@ const spScan = {
       ...(tokenId ? { earlier: spItemsAddress('tracks', { sessionId, qrTokenId: tokenId }, 20) } : {}),
       ...(visitorId ? { visitor: spByAppId('visitorroster', visitorId) } : {}),
       ...(wantUser ? { user: '/web/currentuser?$select=Id,Title' } : {}),
-      // The type a new Tracks item must name. No Tracks item is read on this path, so it is asked for here, once.
-      ...(listTypes.has('tracks') ? {} : { trackType: `${spListPath('tracks')}?$select=ListItemEntityTypeFullName` }),
     };
     const names = Object.keys(asked);
     const together = await spReadTogether(Object.values(asked));
     const read = async (name) => (name in asked ? together[names.indexOf(name)] ?? (await spHttp('GET', asked[name])).data : null);
-    const [session, client, owned, visitor, user, trackType, earlier] = await Promise.all([
+    const [session, client, owned, visitor, user, earlier] = await Promise.all([
       read('session'), read('client'), read('owned'), read('visitor'),
       read('user').catch((cause) => { console.warn('Could not read the signed-in SharePoint display name.', cause); return null; }),
-      read('trackType'),
       read('earlier').catch(() => null), // a scan must never fail for this
     ]);
-    if (trackType) listTypes.set('tracks', trackType.ListItemEntityTypeFullName);
-    const next = owned.__next ?? owned['@odata.nextLink'] ?? owned['odata.nextLink'];
-    const rows = [...(owned.results ?? owned.value ?? []), ...(next ? await spPages(next) : [])];
+    const next = nextOf(owned);
+    const rows = [...rowsIn(owned), ...(next ? await spPages(next) : [])];
     return {
       session: spOne('sessions', sessionId, session),
       client: spOne('clients', clientId, client)?.item ?? null,
       owned: rows.map((row) => spDecode('sections', row).item),
       visitor: spOne('visitorroster', visitorId, visitor)?.item ?? null,
       user: user ? { id: user.Id == null ? null : String(user.Id), displayName: typeof user.Title === 'string' ? user.Title.trim() : '' } : null,
-      earlier: (earlier?.results ?? earlier?.value ?? []).map((row) => { const found = spDecode('tracks', row); return { item: found.item, ref: { id: found.numericId, type: found.type } }; }),
+      earlier: rowsIn(earlier).map((row) => { const found = spDecode('tracks', row); return { item: found.item, ref: { id: found.numericId } }; }),
     };
   },
   /** The same item spCreate() would write, without first reading every column of the list. AppId is unique, so a repeat can't make a second. */
@@ -76,7 +72,7 @@ const spScan = {
     try {
       const { data } = await spHttp('POST', `${spListPath('tracks')}/items`, {
         idempotent: true,
-        body: { __metadata: { type: await spEntityType('tracks') }, Title: id, ...spEncode('tracks', { ...fields, id }), [ID]: id },
+        body: { Title: id, ...spEncode('tracks', { ...fields, id }), [ID]: id },
       });
       return { item: spMade('tracks', data, { ...fields, id }), ref: { id: data.Id } };
     } catch (error) {
@@ -300,14 +296,11 @@ export async function beginVisit(trackId, sessionId, clientId, { sharePointUserI
 }
 
 /**
- * Fetches ahead, in the background, what the participant page's writes will ask for (Phase 10j): the write token, the item type of each list
- * in `types`, and the item type and column check of each list in `checked` (one written through the general create or update, which checks the
- * list's columns first). They are the very requests those writes make, shared: a write meanwhile waits for them and never sends a second copy,
- * and one that failed is forgotten, so the write asks for it as it always did. Never throws; nothing to do on the local server.
- * @param {{ checked?: string[], types?: string[] } | null} [wanted]
+ * Fetches the write token ahead, in the background (Phase 10j; since Prompt 26 a write needs nothing else): a write meanwhile waits for that very request and
+ * never sends a second, and one that failed is forgotten, so the write asks for it as it always did. Never throws; nothing to do on the local server.
+ * @param {boolean | null} [wanted] whether this page can write next
  */
 export async function prepareWrites(wanted) {
   if (!sharePoint || !wanted) return;
-  const { checked = [], types = [] } = wanted;
-  await Promise.all([spDigest(), ...checked.map((list) => spMetadata(list)), ...types.map(spEntityTypeAhead)].map((pending) => pending.catch(() => {})));
+  await spDigest().catch(() => {});
 }

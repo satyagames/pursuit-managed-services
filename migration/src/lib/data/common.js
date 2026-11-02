@@ -2,34 +2,35 @@
 // AppId read, a write to an item a read has already found, a list address with equality filters, every page of a list read, and
 // paced bulk work (runPaced). Built on core.js; keeps no state of its own.
 
-import { ID } from '../schema/pms-schema.js';
-import { columnsOf, pause, spEncode, spLiteral } from './encoding.js';
-import { sharePoint, spDecode, spEntityType, spHttp, spItems, spListPath, spPages, spTitle } from './core.js';
+import { ID, selectOf } from '../schema/pms-schema.js';
+import { columnsOf, nextOf, pause, rowsIn, spEncode, spLiteral } from './encoding.js';
+import { sharePoint, spDecode, spHttp, spItems, spListPath, spPages, spTitle } from './core.js';
 
 /** The one item in an AppId query's payload as { item, etag, ref }, or null: what spFind() makes of the same read. */
 function spOne(list, id, data) {
-  const rows = data?.results ?? data?.value ?? [];
+  const rows = rowsIn(data);
   if (rows.length > 1) throw new Error(`Duplicate ${ID} ${id} in ${spTitle(list)}.`);
   if (rows.length === 0) return null;
   const found = spDecode(list, rows[0]);
-  return { item: found.item, etag: found.etag, ref: { id: found.numericId, type: found.type } };
+  return { item: found.item, etag: found.etag, ref: { id: found.numericId } };
 }
 
-/** A write to an item whose numeric id, type and (where it matters) version a read has already given. */
+/** A write to an item whose numeric id and (where it matters) version a read has already given. */
 const spWrite = async (list, found, method, etag, changes) => spHttp('POST', `${spListPath(list)}/items(${found.ref.id})`, {
   idempotent: true,
   headers: { 'X-HTTP-Method': method, 'If-Match': etag },
-  ...(changes ? { body: { __metadata: { type: found.ref.type ?? await spEntityType(list) }, ...spEncode(list, changes) } } : {}),
+  ...(changes ? { body: spEncode(list, changes) } : {}),
 });
 
-/** The address of a list read with equality filters, as spSend() builds it for a plain list GET (`top` items to a page). */
-function spItemsAddress(list, where = {}, top = 200) {
+/** The address of a list read with equality filters, as spSend() builds it for a plain list GET (`top` items to a page; `only`, an index read's field keys: Prompt 26). */
+function spItemsAddress(list, where = {}, top = 200, only = null) {
   const columns = columnsOf(list);
   const clauses = Object.entries(where).map(([key, values]) => {
     if (!columns[key]) throw new Error(`Unsupported filter: ${key}`);
     return `(${[values].flat().map((value) => `${columns[key]} eq ${spLiteral(value)}`).join(' or ')})`;
   });
-  return spItems(list, `$top=${top}${clauses.length ? `&$filter=${clauses.join(' and ')}` : ''}`);
+  const query = `$top=${top}${clauses.length ? `&$filter=${clauses.join(' and ')}` : ''}`;
+  return only ? `${spListPath(list)}/items?${query}&${selectOf(list, only)}` : spItems(list, query);
 }
 
 const localFilter = (where = {}) => {
@@ -81,8 +82,8 @@ export async function runPaced(items, worker, { concurrency = PACE.concurrency, 
 
 /** The rows of a list read (its first page's payload), with any further pages read after it. */
 async function spAllRows(payload) {
-  const next = payload.__next ?? payload['@odata.nextLink'] ?? payload['odata.nextLink'];
-  return [...(payload.results ?? payload.value ?? []), ...(next ? await spPages(next) : [])];
+  const next = nextOf(payload);
+  return [...rowsIn(payload), ...(next ? await spPages(next) : [])];
 }
 
 // Shared with the other parts of lib/data (dataService.js does not pass these on).

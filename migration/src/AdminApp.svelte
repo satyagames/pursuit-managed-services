@@ -159,7 +159,7 @@
   }
 
   // Content's addresses (#content, #content/brand, the old #sections of the Activities tab) are its views' (lib/admin/admin-content-views.js).
-  const tabFromHash = (): Tab | null => (viewOfHash(window.location.hash) !== null ? 'content' : shownTabs.find((tab) => `#${tab.id}` === window.location.hash)?.id ?? null);
+  const tabFromHash = (): Tab | null => (viewOfHash(window.location.hash) !== null ? 'content' : shownTabs.find((tab) => `#${tab.id}` === window.location.hash.split('?')[0])?.id ?? null);
   /** The address of a tab: Content's carries its view. */
   const hashOf = (tab: Tab) => (tab === 'content' ? hashOfView(contentView) : `#${tab}`);
 

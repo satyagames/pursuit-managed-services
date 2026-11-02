@@ -54,17 +54,23 @@ export class SaveFailedError extends Error {
 const strip = ({ questionId, answer, firstAnswer, attempts, correct, answeredAt }) => ({ questionId, answer, firstAnswer, attempts, correct, answeredAt });
 const capText = (value) => (typeof value === 'string' && value.length > MAX_TEXT_LENGTH ? value.slice(0, MAX_TEXT_LENGTH) : value);
 
+/** How long a change waits for another before it is sent: two changes of one answer within this are one write. */
+const SAVE_QUIET_MS = 300;
+
 /**
  * @param {object} options
  * @param {AnswerApi} options.api
  * @param {{ getItem(key: string): string | null, setItem(key: string, value: string): void, removeItem(key: string): void } | null} [options.storage]
  * @param {() => number} [options.now]
  * @param {(ms: number) => Promise<void>} [options.sleep]
+ * @param {(ms: number) => Promise<void>} [options.quiet] the wait that lets quick changes share a write (a stand-in sleep means no wait, unless a test gives this)
  */
-export function createAnswerStore({ api, storage = null, now = () => Date.now(), sleep = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); }) }) {
+export function createAnswerStore({ api, storage = null, now = () => Date.now(), sleep = null, quiet = sleep ? async () => {} : (ms) => new Promise((resolve) => { setTimeout(resolve, ms); }) }) {
+  sleep ??= (ms) => new Promise((resolve) => { setTimeout(resolve, ms); });
   /**
    * @typedef {object} State
    * @property {Visit} visit
+   * @property {number} sentAt    When the last write was sent.
    * @property {string | null} restartedAt
    * @property {Map<string, AnswerRecord & { sectionId: string | null }>} records
    * @property {Set<string>} dirty
@@ -125,7 +131,7 @@ export function createAnswerStore({ api, storage = null, now = () => Date.now(),
       return state;
     }
     const restarted = Boolean(state);
-    state = { visit: { ...visit }, restartedAt, records: new Map(), dirty: new Set(), ref: state?.ref ?? null, loaded: false, loading: null, draining: null, rewrite: false, retryAt: 0, quietUntil: 0 };
+    state = { sentAt: -Infinity, visit: { ...visit }, restartedAt, records: new Map(), dirty: new Set(), ref: state?.ref ?? null, loaded: false, loading: null, draining: null, rewrite: false, retryAt: 0, quietUntil: 0 };
     const stored = restarted ? null : readStored(visit.trackId);
     if (stored && (stored.restartedAt ?? null) === restartedAt) {
       for (const [sectionId, records] of Object.entries(stored.sections)) {
@@ -207,6 +213,7 @@ export function createAnswerStore({ api, storage = null, now = () => Date.now(),
       if (attempt > 0) await sleep(Math.max(BACKOFF_MS[attempt - 1] ?? BACKOFF_MS[BACKOFF_MS.length - 1], askedWait(failure)));
       try {
         const { trackId, sessionId, clientId } = state.visit;
+        state.sentAt = now();
         const saved = await api.saveParticipantResponses({ trackId, sessionId, clientId, responses }, state.ref);
         state.ref = saved.ref;
         // A create that met an existing item merged with it: take what the item held that this device did not.
@@ -292,6 +299,9 @@ export function createAnswerStore({ api, storage = null, now = () => Date.now(),
     record(visit, sectionId, input) {
       const state = use(visit);
       const held = state.records.get(input.questionId);
+      // (Prompt 26: the same value again is no change, and writes nothing.)
+      const same = held && held.attempts === input.attempts && JSON.stringify(held.answer) === JSON.stringify(capText(input.answer));
+      if (same) return;
       state.records.set(input.questionId, {
         questionId: input.questionId,
         answer: capText(input.answer),
@@ -303,7 +313,9 @@ export function createAnswerStore({ api, storage = null, now = () => Date.now(),
       });
       state.dirty.add(input.questionId);
       persist(state);
-      kick(state);
+      // (Prompt 26: the same answer changed again right after a write waits a moment, so quick changes share one write, the last value. Submit, a flush, does not wait for this.)
+      const wait = held ? state.sentAt + SAVE_QUIET_MS - now() : 0;
+      if (wait > 0) void quiet(wait).then(() => kick(state)); else kick(state);
     },
 
     /**

@@ -132,7 +132,7 @@ export const LISTS = {
  * The `$select` of an item read of the list `key`: SharePoint's Id, AppId and every column above (Phase 10h). Every item read names its
  * columns: the real site left ClientId out of a read that did not (PCOE, 14 Oct 2026), and returned it to one that did.
  */
-export const selectOf = (key) => `$select=${[...new Set(['Id', ID, ...Object.values(LISTS[key].fields).map((field) => field.column)])]}`;
+export const selectOf = (key, only = null) => `$select=${[...new Set(['Id', ID, ...(only ?? Object.keys(LISTS[key].fields)).map((field) => LISTS[key].fields[field].column)])]}`; // (`only`: the field keys an index read names, Prompt 26)
 /**
  * The `$select` of the settings item's version alone (Prompt 21): the one read that names fewer than its list's columns, on purpose. A site of an
  * older version refuses a read of the item that names a column it lacks (400), and every version has these three, so this read tells the page

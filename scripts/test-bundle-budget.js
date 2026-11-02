@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
 import { PAGES, ROOT, analyzePage } from './analyze-bundle.js';
-import { BUDGET, FORBIDDEN, PHASE_8, PHASE_9A, PHASE_9B, PHASE_10B, PHASE_10C1, PHASE_10C2A, PHASE_10C2B, PHASE_10C3, PHASE_10F, PHASE_10G, PHASE_10H, PHASE_10I, PHASE_10J, PHASE_11A, PHASE_11A3, PHASE_11B, PHASE_12, PHASE_13, PHASE_14, PHASE_15, PHASE_16, PHASE_17, PHASE_18, PHASE_19, PHASE_20, PHASE_21A, PHASE_21B, PHASE_21C, PHASE_21D, PHASE_21E, PHASE_21F, PHASE_21G, PHASE_22, PHASE_23, PHASE_24, checkBudgets, utilityClasses } from './bundle-budget.js';
+import { BUDGET, FORBIDDEN, PHASE_8, PHASE_9A, PHASE_9B, PHASE_10B, PHASE_10C1, PHASE_10C2A, PHASE_10C2B, PHASE_10C3, PHASE_10F, PHASE_10G, PHASE_10H, PHASE_10I, PHASE_10J, PHASE_11A, PHASE_11A3, PHASE_11B, PHASE_12, PHASE_13, PHASE_14, PHASE_15, PHASE_16, PHASE_17, PHASE_18, PHASE_19, PHASE_20, PHASE_21A, PHASE_21B, PHASE_21C, PHASE_21D, PHASE_21E, PHASE_21F, PHASE_21G, PHASE_22, PHASE_23, PHASE_24, PHASE_26, checkBudgets, utilityClasses } from './bundle-budget.js';
 import { SAMPLE_PICTURE_NAMES } from '../migration/src/lib/setup/sample-pictures.js';
 import { pageProblems } from './release-proofs.js';
 
@@ -415,8 +415,9 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
   it("Prompt 24 (the Activities hub: four states, the moment, sound and particles) grew the participant page within its allowance and its ceiling, and carried nothing of the admin's", (t) => {
     assert.equal(PHASE_24.participantBefore, PHASE_23.participantAfter, 'Prompt 24 is measured from where Prompt 23 ended');
     assert.equal(PHASE_24.adminBefore, PHASE_23.adminAfter);
-    const participant = built.participant.htmlGzip - PHASE_24.participantBefore;
-    const admin = built.admin.htmlGzip - PHASE_24.adminBefore;
+    // (Measured when the prompt ended: a later phase's growth is held to that phase's allowance, Prompt 26's below.)
+    const participant = PHASE_24.participantAfter - PHASE_24.participantBefore;
+    const admin = PHASE_24.adminAfter - PHASE_24.adminBefore;
     t.diagnostic(`participant ${participant >= 0 ? '+' : ''}${participant} B, admin ${admin >= 0 ? '+' : ''}${admin} B against where Prompt 23 ended`);
     console.log(`  Prompt 24: the participant page is ${participant >= 0 ? '+' : ''}${participant} B gzip against where Prompt 23 ended (allowance ${PHASE_24.participantAllowance} B), now ${bytes(built.participant.htmlGzip)}; the admin page ${admin >= 0 ? '+' : ''}${admin} B (allowance ${PHASE_24.adminAllowance} B), now ${bytes(built.admin.htmlGzip)} of its ${bytes(BUDGET.admin)} budget`);
     assert.equal(PHASE_24.participantAllowance, 6_000, 'the allowance the brief gave');
@@ -430,6 +431,16 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
     assert.ok(built.admin.htmlGzip < BUDGET.admin, `the admin page is under its ${bytes(BUDGET.admin)} budget`);
     assert.ok(PHASE_24.participantAfter - PHASE_24.participantBefore <= PHASE_24.participantAllowance, 'the participant page, as measured when Prompt 24 ended');
     assert.ok(PHASE_24.adminAfter - PHASE_24.adminBefore <= PHASE_24.adminAllowance, 'the admin page, as measured when Prompt 24 ended');
+  });
+
+  it('Prompt 26 (speed, paging and scale) did not grow the participant page, kept the admin page within its allowance, and its ceilings are not raised', () => {
+    assert.ok(built.participant.htmlGzip - PHASE_26.participantBefore <= PHASE_26.participantAllowance, `the participant page is ${built.participant.htmlGzip - PHASE_26.participantBefore} B larger than where Prompt 25 left it`);
+    assert.ok(built.admin.htmlGzip - PHASE_26.adminBefore <= PHASE_26.adminAllowance, `the admin page is ${built.admin.htmlGzip - PHASE_26.adminBefore} B larger than where Prompt 25 left it`);
+    assert.equal(BUDGET.participantCeiling, 450_000);
+    assert.equal(BUDGET.admin, 700_000);
+    assert.deepEqual(utilityClasses(built.participant.html), [...PHASE_26.participantUtilities], "the participant page's Tailwind rules are the ones it had");
+    assert.ok(!/Pager|pager__button/.test(built.participant.html), 'the Pager is the admin page\'s');
+    assert.ok(PHASE_26.participantAfter <= PHASE_26.participantBefore);
   });
 
   it('the Tailwind rules check can fail: a rule added to the participant page, or one taken away, is found', () => {

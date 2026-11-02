@@ -52,6 +52,8 @@ test('Delete session... is on every card; opening the warning writes nothing; Ca
   await openResults(page, fake);
   for (const id of await cardIds(page)) await expect(card(page, id!).getByRole('button', { name: DELETE_SESSION.button })).toBeVisible();
   // It is in the card's head, after Live display, and not among the export buttons.
+  await expect(card(page, OLD).locator('.card__head button')).toHaveText(['Live display', DELETE_SESSION.button, 'Open']); // (shut: Prompt 26)
+  await card(page, OLD).getByRole('button', { name: 'Open', exact: true }).click();
   await expect(card(page, OLD).locator('.card__head button')).toHaveText(['Live display', DELETE_SESSION.button]);
   await expect(card(page, OLD).locator('.report-exports').getByRole('button', { name: DELETE_SESSION.button })).toHaveCount(0);
 

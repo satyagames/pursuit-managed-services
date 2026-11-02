@@ -70,6 +70,12 @@
 // what SharePoint is documented to say). `duplicateCode: true` adds SharePoint's error code for it, DUPLICATE_CODE, which is ASSUMED: the
 // tenant's own `error.code` was not captured (QA-TESTING.md item 142).
 //
+// Which format an answer comes in (Prompt 26). As SharePoint does, the fake answers in the format the request's Accept asks for: `odata=verbose` (or no
+// Accept) `{ d: ... }`, `results`, `__next` and `__metadata` on every row, and errors as `error`; `odata=nometadata` plain rows, `value` and `odata.nextLink`, no
+// version on a row; `odata=minimalmetadata` the same with `odata.type`, `odata.id`, `odata.etag` and `odata.editLink` on each row. A non-verbose answer's error is
+// `odata.error`. A write whose Content-Type is not verbose may not carry `__metadata` (400), and needs no type. The shapes are SharePoint's documented JSON Light;
+// the real site's are QA-TESTING.md's to see.
+//
 // A sign-in SharePoint no longer accepts (Prompt 19). `fake.expireSession()` refuses every /_api request from then on, reads and the write token
 // too, with 403, ACCESS_DENIED and SESSION_REFUSED_CODE, until `fake.renewSession()`: what the PCOE site answered an admin tab left open a while
 // (the words were seen; the code is ASSUMED until QA-TESTING.md's capture). `GET /_api/web?$select=Id` is the site itself, the data layer's light
@@ -347,8 +353,9 @@ export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Ca
   // real one has. Off by default, so every suite's items are what they always were.)
   const stamp = (title, item) => {
     const etag = `"${version += 1}"`;
-    if (!realShape) return { ...item, __metadata: { etag, type: typeOf(title) } };
-    const now = realShape.now();
+    // (Modified moves with every write, whatever the clock: a frozen local site's too. Prompt 26: the watch reads it.)
+    if (!realShape) return { ...item, __metadata: { etag, type: typeOf(title), modified: new Date(Date.UTC(2026, 0, 1) + version * 1000).toISOString() } };
+    const now = new Date(Date.parse(realShape.now()) + version).toISOString();
     const uri = `${siteUrl}/_api/Web/Lists(guid'${idOf(title)}')/Items(${item.Id})`;
     return { ...item, Created: item.Created ?? now, Modified: now, __metadata: { id: uri, uri, etag, type: typeOf(title) } };
   };
@@ -356,7 +363,7 @@ export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Ca
   const leftOut = (row) => Object.fromEntries(Object.entries(row).filter(([column]) => !leavesOut.includes(column)));
   /** Puts an item straight into one of the test's own lists (by key), as if it had always been there. Only that list's columns. */
   const add = (key, item) => {
-    const known = new Set(['Id', 'Title', '__metadata', ...(fields.get(key) ?? []).map((column) => column.InternalName)]);
+    const known = new Set(['Id', 'Title', 'Modified', '__metadata', ...(fields.get(key) ?? []).map((column) => column.InternalName)]);
     const stray = Object.keys(item).find((column) => !known.has(column));
     if (stray) throw new Error(`The mock's ${key} list has no column ${stray}: a row is put in with the list's own columns only.`);
     const row = stamp(titleOf(key), { Id: nextId++, ...item });
@@ -380,6 +387,27 @@ export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Ca
     for (const comparison of comparisons(loose)) groups.push([comparison]);
     return (row) => groups.every((group) => group.some(([column, value]) => String(row[column]) === value));
   }
+
+  /** A verbose answer in the format `accept` asks for. Anything else (a batch's envelope, a 204, an Atom part) goes as it is. */
+  const formatted = (result, accept = '') => {
+    const mode = /odata=nometadata/.test(accept) ? 'none' : /odata=minimalmetadata/.test(accept) ? 'minimal' : null;
+    if (!mode || !result.body || !/application\/json/.test(result.headers['Content-Type'] ?? '')) return result;
+    const shape = (value) => {
+      if (Array.isArray(value)) return value.map(shape);
+      if (!value || typeof value !== 'object') return value;
+      if (Array.isArray(value.results)) return value.results.map(shape); // an expanded collection
+      const { __metadata, ...rest } = value;
+      const marks = mode === 'minimal' && __metadata ? { 'odata.type': __metadata.type, 'odata.id': __metadata.id ?? __metadata.uri, ...(__metadata.etag ? { 'odata.etag': __metadata.etag } : {}), 'odata.editLink': __metadata.uri } : {};
+      return { ...marks, ...Object.fromEntries(Object.entries(rest).map(([key, entry]) => [key, shape(entry)])) };
+    };
+    const payload = JSON.parse(result.body);
+    if (payload.error) return { ...result, body: JSON.stringify({ 'odata.error': { code: payload.error.code ?? '', message: { lang: 'en-US', value: payload.error.message?.value ?? '' } } }) };
+    const inner = payload.d ?? payload;
+    const body = Array.isArray(inner.results)
+      ? { value: inner.results.map(shape), ...(inner.__next ? { 'odata.nextLink': inner.__next } : {}) }
+      : shape(inner);
+    return { ...result, body: JSON.stringify(mode === 'minimal' ? { 'odata.metadata': 'https://tenant.example/_api/$metadata#SP.ListData', ...body } : body) };
+  };
 
   const lower = (headers) => Object.fromEntries(Object.entries(headers ?? {}).map(([name, value]) => [name.toLowerCase(), value]));
 
@@ -420,9 +448,9 @@ export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Ca
     if (sessionExpired) {
       entry.faulted = 403;
       entry.refusedSession = true;
-      return error(403, ACCESS_DENIED, { SPRequestGuid: guid }, SESSION_REFUSED_CODE);
+      return formatted(error(403, ACCESS_DENIED, { SPRequestGuid: guid }, SESSION_REFUSED_CODE), headers.accept);
     }
-    const result = await answer(request, headers, entry);
+    const result = formatted(await answer(request, headers, entry), headers.accept);
     return { ...result, headers: { ...result.headers, SPRequestGuid: guid } };
   }
 
@@ -459,7 +487,7 @@ export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Ca
         const innerHeaders = lower(Object.fromEntries(innerLines.filter(Boolean).map((line) => line.split(/:\s*/, 2))));
         const inner = describe({ method: 'GET', url: words[1], body: rest.join('\r\n\r\n') || null }, innerHeaders, { batched: true });
         entry.parts.push(inner);
-        part = await answer({ method: 'GET', url: words[1], body: null }, innerHeaders, inner);
+        part = formatted(await answer({ method: 'GET', url: words[1], body: null }, innerHeaders, inner), innerHeaders.accept);
         // Without an Accept line asking for JSON, a part comes back as an Atom feed.
         if (part.status === 200 && !/application\/json/.test(innerHeaders.accept ?? '')) {
           part = { ...part, headers: { 'Content-Type': 'application/atom+xml;type=feed;charset=utf-8' }, body: '<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom"></feed>' };
@@ -594,9 +622,9 @@ export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Ca
         }
         shown = (row) => ({ ...leftOut(row), ID: row.Id });
       } else {
-        const missing = asked.find((name) => !['Id', 'ID', 'Title'].includes(name) && !columnsHere.some((field) => field.InternalName === name));
+        const missing = asked.find((name) => !['Id', 'ID', 'Title', 'Modified'].includes(name) && !columnsHere.some((field) => field.InternalName === name));
         if (missing) return error(400, `The field or property '${missing}' does not exist.`);
-        shown = (row) => ({ __metadata: row.__metadata, Id: row.Id, ID: row.Id, ...Object.fromEntries(asked.filter((name) => name !== 'ID' && name in row).map((name) => [name, row[name]])) });
+        shown = (row) => ({ __metadata: row.__metadata, Id: row.Id, ID: row.Id, ...Object.fromEntries(asked.filter((name) => name !== 'ID' && name in row).map((name) => [name, row[name]])), ...(asked.includes('Modified') ? { Modified: row.Modified ?? row.__metadata?.modified } : {}) });
       }
       const matches = rows.filter(matcher(filter));
       const top = Number(url.searchParams.get('$top')) || 100;
@@ -617,6 +645,9 @@ export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Ca
     if (headers['x-requestdigest'] !== 'digest-token') return error(403, 'The security validation for this page is invalid.');
     const itemId = Number(path.match(/items\((\d+)\)/)?.[1]);
     const { __metadata, ...changes } = request.body ? JSON.parse(request.body) : {};
+    // (A body that is not verbose names no type; one that does is refused, as SharePoint refuses a property the item does not have.)
+    const typed = !/odata=(nometadata|minimalmetadata)/.test(headers['content-type'] ?? '');
+    if (!typed && __metadata) return error(400, `The property '__metadata' does not exist on type '${typeOf(title)}'.`);
     const known = new Set(['Title', ...columnsHere.map((field) => field.InternalName)]);
     const stray = Object.keys(changes).find((column) => !known.has(column));
     if (stray) return error(400, `The property '${stray}' does not exist on type '${typeOf(title)}'.`);
@@ -647,7 +678,7 @@ export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Ca
       hooks.beforeCreate = null;
       hook(list, changes);
     }
-    if (__metadata?.type !== typeOf(title)) return error(400, 'A type named in __metadata could not be resolved.');
+    if (typed && __metadata?.type !== typeOf(title)) return error(400, 'A type named in __metadata could not be resolved.');
     const appId = columnsHere.find((field) => field.InternalName === 'AppId');
     if (appId?.EnforceUniqueValues && rows.some((row) => row.AppId === changes.AppId)) {
       return error(duplicateStatus, DUPLICATE_WORDS, undefined, duplicateCode ? DUPLICATE_CODE : undefined);

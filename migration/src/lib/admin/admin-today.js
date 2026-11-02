@@ -145,17 +145,28 @@ export async function loadReadinessInputs(api, { client, date, sections, session
   };
 }
 
+/** A schema check that found nothing wrong stands this long on this page (memory only): a list does not lose a column between two visits to a tab. */
+const SCHEMA_HELD_MS = 10 * 60_000;
+const heldReports = new WeakMap();
+/** The good report the page holds for `api`, or null. */
+export const heldSchemaOf = (api, now = Date.now()) => { const held = heldReports.get(api); return held && now - held.at < SCHEMA_HELD_MS ? held.schema : null; };
+/** Holds `schema` when every list was ready; a problem is checked again every time. */
+export function holdSchema(api, schema, now = Date.now()) {
+  if (schema?.report?.every((entry) => entry.ready)) { if (!heldReports.has(api)) heldReports.set(api, { schema, at: now }); } else heldReports.delete(api);
+}
+
 /**
  * Everything Today shows on first paint.
  * @param {any} api
- * @param {{ clientId?: string | null, date?: string, keepClient?: boolean, sessionId?: string | null, access?: any }} [options]
+ * @param {{ clientId?: string | null, date?: string, keepClient?: boolean, sessionId?: string | null, access?: any, heldSchema?: any }} [options]
+ *   `heldSchema`: a good report the page holds (Prompt 26): the check of every list's columns is not made again on every reload of the screen.
  */
-export async function loadToday(api, { clientId = null, date = localDate(), keepClient = false, sessionId = null, access = null } = {}) {
+export async function loadToday(api, { clientId = null, date = localDate(), keepClient = false, sessionId = null, access = null, heldSchema = null } = {}) {
   const read = readerOf(api, access);
   const scoped = Boolean(access && !reachOf(access).all);
   // The schema check is only meaningful on SharePoint, and only a read: a failure to run it is
   // reported as a warning, never a reason to hide the screen.
-  const schema = api.isSharePointMode()
+  const schema = heldSchema ? Promise.resolve(heldSchema) : api.isSharePointMode()
     ? api.checkSharePointSchema({ batch: true }).then((report) => ({ report }), (error) => ({ error: error instanceof Error ? error.message : String(error) }))
     : Promise.resolve(null);
   const [[settingRows, clients, sessions, sections], schemaResult] = await Promise.all([

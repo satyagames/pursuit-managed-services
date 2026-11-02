@@ -54,7 +54,7 @@
  */
 
 export {
-  configure, requireConfiguration, isUnreachable, isSharePointMode, setAccessGuard,
+  configure, requireConfiguration, skipColumnChecks, writesSent, isUnreachable, isSharePointMode, setAccessGuard,
 } from './core.js';
 export {
   runPaced,
@@ -106,7 +106,7 @@ export {
   sharePointListTitles,
 } from './list-titles.js';
 export {
-  setSessionRenewer, onSessionChange, sessionEvidence, lastAnswerAt, checkSession,
+  setSessionRenewer, onSessionChange, sessionEvidence, lastAnswerAt, checkSession, checkSignedIn,
 } from './session-calls.js';
 export {
   readSignedInPerson, readAccessRows, listAccessRecords, addAccessRecord,

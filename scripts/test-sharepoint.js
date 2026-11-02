@@ -166,7 +166,7 @@ function mockSharePoint() {
   const calls = [];
   let nextId = 1;
   let version = 0;
-  const stamp = (item) => ({ ...item, __metadata: { etag: `"${++version}"` } });
+  const stamp = (item) => ({ ...item, 'odata.etag': `"${++version}"` }); // (the version on a row read with odata=minimalmetadata: Prompt 26)
   const add = (key, fields) => {
     const item = stamp({ Id: nextId++, ...fields });
     lists.get(key).push(item);
@@ -215,13 +215,13 @@ function mockSharePoint() {
         callback(rows);
       }
       const index = rows.findIndex((row) => row.Id === itemId);
-      if (rows[index].__metadata.etag !== options.headers['If-Match']) return fail(412, 'Version changed');
+      if (rows[index]['odata.etag'] !== options.headers['If-Match']) return fail(412, 'Version changed');
       rows[index] = stamp({ ...rows[index], ...changes });
       return new Response(null, { status: 204 });
     }
     if (options.headers['X-HTTP-Method'] === 'DELETE') {
       const index = rows.findIndex((row) => row.Id === itemId);
-      if (rows[index].__metadata.etag !== options.headers['If-Match']) return fail(412, 'Version changed');
+      if (rows[index]['odata.etag'] !== options.headers['If-Match']) return fail(412, 'Version changed');
       rows.splice(index, 1);
       return new Response(null, { status: 204 });
     }
@@ -231,7 +231,7 @@ function mockSharePoint() {
       callback(keyOf[name], changes);
     }
     if (rows.some((row) => row.AppId === changes.AppId)) return fail(400, 'A duplicate unique value exists');
-    assert.equal(__metadata.type, `SP.Data.${name}ListItem`);
+    assert.equal(__metadata, undefined, 'a write body names no type (Prompt 26)');
     return json(add(keyOf[name], changes), 201);
   };
   service.configure({ sharePoint: { siteUrl } });
@@ -310,7 +310,7 @@ test('ordinary updates read once and still retry concurrent changes', async () =
   assert.equal(mock.calls.length, 2);
   mock.beforeMerge = (rows) => {
     rows[0].PrimaryColor = '#112233';
-    rows[0].__metadata.etag = '"concurrent"';
+    rows[0]['odata.etag'] = '"concurrent"';
   };
   await service.updateClient('client', { name: 'Final' });
   const client = await service.getClient('client');

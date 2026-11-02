@@ -307,9 +307,8 @@ describe('a first QR scan: 8 requests to the first screen, and 9 for the device 
     assert.deepEqual(rounds[0], ['GET appsettings', 'GET qrtokens', 'POST /contextinfo'], 'round 1: the code, AppSettings and the write token, side by side');
     assert.deepEqual(rounds[1], ['POST /$batch'], 'round 2: one request');
     // (The first 'GET Tracks' is Phase 9a's look for a track an earlier, cut-off try of this code left: one more read in the same request.)
-    assert.deepEqual(batched(fake), ['GET sessions', 'GET clients', 'GET sections', 'GET tracks', 'GET visitorroster', 'GET tracks']);
+    assert.deepEqual(batched(fake), ['GET sessions', 'GET clients', 'GET sections', 'GET tracks', 'GET visitorroster']);
     assert.match(fake.requests[3].parts[3].query, /QrTokenId eq/, 'the look for earlier tries of this code');
-    assert.match(fake.requests[3].parts[5].url, /ListItemEntityTypeFullName/, 'the type a new Tracks item must name, asked once');
     assert.deepEqual(rounds[2], ['GET options', 'GET questions', 'POST tracks'], 'round 3: the track, beside the first activity');
     assert.deepEqual(rounds[3], ['MERGE qrtokens'], 'round 4: the claim');
     assert.equal(sent.length, 8);
@@ -338,8 +337,8 @@ describe('a first QR scan: 8 requests to the first screen, and 9 for the device 
     const claim = fake.select({ method: 'MERGE', list: 'qrtokens' })[0];
     assert.match(claim.ifMatch, /^"\d+"$/, 'the claim carries the version the code was read at: that is what keeps it single use');
     const reads = fake.requests.flatMap((entry) => entry.parts ?? [entry]).filter((entry) => entry.method === 'GET').map((entry) => entry.url);
-    assert.equal(reads.length, 10, 'nine, and the look for earlier tries of the code (Phase 9a), which rides in the batch');
-    assert.equal(new Set(reads).size, 10, 'nothing is read twice');
+    assert.equal(reads.length, 9, 'eight, and the look for earlier tries of the code (Phase 9a), which rides in the batch');
+    assert.equal(new Set(reads).size, 9, 'nothing is read twice');
     assert.equal(fake.count((entry) => Boolean(entry.faulted)), 0);
   });
 
@@ -357,7 +356,7 @@ describe('a first QR scan: 8 requests to the first screen, and 9 for the device 
     assert.equal((await scan(fake, tokens[0])).sent.length, 9);
     const { boot, sent } = await scan(fake, tokens[1]);
     assert.equal(sent.length, 8);
-    assert.deepEqual(batched(fake), ['GET sessions', 'GET clients', 'GET sections', 'GET tracks', 'GET /web/currentuser', 'GET tracks']);
+    assert.deepEqual(batched(fake), ['GET sessions', 'GET clients', 'GET sections', 'GET tracks', 'GET /web/currentuser']);
     assert.deepEqual(boot.user, { id: '42', displayName: 'Casey Example' });
     assert.deepEqual([boot.track.sharePointUserId, boot.track.visitorId, boot.track.participantName], ['42', null, null]);
     measured.push(['boot, first QR scan (a staff code)', sent.length, 8]);
@@ -385,8 +384,8 @@ describe('a first QR scan: 8 requests to the first screen, and 9 for the device 
     const { boot, sent } = await scan(fake, second);
     assert.equal(boot.claimed, true);
     assert.equal(boot.track.participantName, 'Guest 2');
-    assert.deepEqual(sorted(sent.slice(4, 10)), ['GET clients', 'GET sections', 'GET sessions', 'GET tracks', 'GET tracks', 'GET visitorroster'], 'the same six reads, one by one');
-    assert.equal(sent.length, 14, '13, and the one batch that was refused (12 and 13 before Phase 9a added the look for earlier tries)');
+    assert.deepEqual(sorted(sent.slice(4, 9)), ['GET clients', 'GET sections', 'GET sessions', 'GET tracks', 'GET visitorroster'], 'the same five reads, one by one');
+    assert.equal(sent.length, 13, '12, and the one batch that was refused (no read of the type a new item names, since Prompt 26)');
     measured.push(['boot, first QR scan on a site that refuses $batch (each page load finds out once)', sent.length, null]);
 
     // The same page (nothing reset) scanning again: it remembers for as long as it is open.
@@ -395,10 +394,10 @@ describe('a first QR scan: 8 requests to the first screen, and 9 for the device 
     assert.equal(again.claimed, true);
     assert.equal(fake.count((entry) => entry.path.endsWith('/$batch')), 0);
 
-    // Told in its settings, a page never asks: 13, which is the floor without a batch.
+    // Told in its settings, a page never asks: 12, which is the floor without a batch.
     const told = await scan(fake, fourth, { batch: false });
     assert.equal(told.boot.claimed, true);
-    assert.equal(told.sent.length, 13);
+    assert.equal(told.sent.length, 12);
     assert.equal(told.sent.includes('POST /$batch'), false);
     measured.push(['boot, first QR scan with batch: false in the page settings', told.sent.length, null]);
   });
@@ -465,9 +464,8 @@ describe('saving: one cheap request per answer', () => {
     store.record(visit, 'sec-trivia', answer('q-trivia-1', 'o-trivia-1-b', { correct: true }));
     await store.flush(visit, 'sec-trivia');
     const first = fake.requests.map(shape);
-    assert.deepEqual(first, ['GET responses', 'POST responses'], 'the list is asked its item type once, then the item is created');
-    assert.match(fake.requests[0].url, /ListItemEntityTypeFullName/);
-    measured.push(['first answer of a visit (item type + create)', fake.count(), null]);
+    assert.deepEqual(first, ['POST responses'], 'the item is created: a write names no item type since Prompt 26');
+    measured.push(['first answer of a visit (the create)', fake.count(), null]);
 
     const per = [];
     for (let index = 2; index <= 15; index += 1) {
@@ -1008,7 +1006,7 @@ describe('resume', () => {
     assert.equal(restarted.restartSectionId, 'sec-trivia');
 
     // The device had not noticed yet and saved once more: the old answer is back on the server...
-    store.record(visit, 'sec-guess-the-brand', answer('q-brand-1', 'o-brand-1-b', { correct: true }));
+    store.record(visit, 'sec-guess-the-brand', answer('q-brand-1', 'o-brand-1-c', { correct: true }));
     await store.flush(visit, 'sec-guess-the-brand');
     assert.equal(JSON.parse(fake.item('responses', track.id).ResponsesJson).length, 2);
     // ...until it notices the restart, drops the activity's answers and rewrites its item without them.
@@ -1513,7 +1511,7 @@ describe('the SharePoint self-test', () => {
     const seen = [];
     const steps = await ds.runParticipantSelfTest((step) => seen.push(step.name));
     assert.deepEqual(steps.map((step) => [step.name, step.pass, step.requests]), [
-      ['Create a participant item', true, 3], // the list's item type, the write token, the create
+      ['Create a participant item', true, 2], // the write token, the create (no item type since Prompt 26)
       ['Update it with one write, no read', true, 1],
       ['Read it back by TrackId', true, 1],
       ['A second create with the same AppId is refused', true, 1],
@@ -1541,14 +1539,14 @@ describe('the SharePoint self-test', () => {
       return { fake, steps, yesNo: steps.find((step) => step.name === PROBE_YESNO), length: steps.find((step) => step.name === PROBE_LENGTH) };
     };
 
-    it('they come after the batch step and before the clean-up, as steps of the same run: 9 steps, 20 requests', async () => {
+    it('they come after the batch step and before the clean-up, as steps of the same run: 9 steps, 19 requests', async () => {
       const { steps } = await run();
       assert.deepEqual(steps.map((step) => [step.name, step.pass, step.requests]), [
-        ['Create a participant item', true, 3], ['Update it with one write, no read', true, 1], ['Read it back by TrackId', true, 1],
+        ['Create a participant item', true, 2], ['Update it with one write, no read', true, 1], ['Read it back by TrackId', true, 1],
         ['A second create with the same AppId is refused', true, 1], ['List the session with one query', true, 1], ['Two reads in one request ($batch)', true, 1],
         [PROBE_YESNO, true, 3], [PROBE_LENGTH, true, 6], ['Delete everything it made', true, 3],
       ]);
-      assert.equal(steps.reduce((sum, step) => sum + step.requests, 0), 20);
+      assert.equal(steps.reduce((sum, step) => sum + step.requests, 0), 19);
     });
 
     it('a site that accepts everything says so: all three spellings, and the longest filter it was asked, with the length of the address', async () => {
@@ -1764,7 +1762,7 @@ describe('the boundaries this phase relies on', () => {
     // (Prompt 23: an Art of the Possible row's fields, and a guest's picture.)
     'matrixRowFields', 'removeGuestPicture', 'uploadGuestPicture',
     'COPY_SEPARATOR', 'MAX_ANSWER_TEXT', 'MAX_RESPONSES_JSON', 'activateClient', 'activateSession', 'addAdminUser', 'addGuests', 'addSectionsToLiveSession',
-    'beginVisit', 'checkSession', 'checkSharePointLists', 'checkSharePointSchema', 'configure', 'copyActivities',
+    'beginVisit', 'checkSession', 'checkSignedIn', 'checkSharePointLists', 'checkSharePointSchema', 'configure', 'copyActivities',
     'copyIdFor', 'copyTitle', 'createClient', 'createOption', 'createQuestion', 'createSection', 'createSession', 'createVisitor', 'deleteActivity', 'deleteByKey',
     'deleteClient', 'deleteOption', 'deleteParticipantResponses', 'deleteQuestion', 'deleteSession', 'duplicateActivity',
     'endSession', 'findOpenSession', 'getAppSettings', 'getClient', 'getClientActivities', 'getClientTrack', 'getCurrentUser', 'getLanUrls',
@@ -1777,8 +1775,8 @@ describe('the boundaries this phase relies on', () => {
     'readParticipantWatch', 'readSessionResponses', 'readSessionResponsesChecked', 'recordParticipantVisit', 'recordUserVisit', 'removeClientAsset',
     'removeEmptyVisit', 'reopenSession', 'requireConfiguration', 'responseOwner', 'restartParticipantTrack',
     'resumeClientTrack', 'runPaced', 'runParticipantSelfTest', 'saveParticipantResponses', 'sendToSharePoint', 'sessionEvidence', 'sessionIdFor',
-    'setSessionParticipationMode', 'setSessionRenewer', 'setVisitorEnabled', 'sharePointListTitles', 'slugify', 'updateAppSettings', 'updateClient', 'updateClientWith', 'updateOption',
-    'updateQrToken', 'updateQuestion', 'updateSection', 'updateSession', 'updateVisitor', 'uploadClientAsset',
+    'setSessionParticipationMode', 'setSessionRenewer', 'setVisitorEnabled', 'sharePointListTitles', 'skipColumnChecks', 'slugify', 'updateAppSettings', 'updateClient', 'updateClientWith', 'updateOption',
+    'updateQrToken', 'updateQuestion', 'updateSection', 'updateSession', 'updateVisitor', 'uploadClientAsset', 'writesSent',
     // (Prompt 21: roles and access.)
     'addAccessRecord', 'listAccessRecords', 'readAccessRows', 'readSignedInPerson', 'setAccessGuard',
     // (Prompt 21, Phase 2: the people screens' three, lib/data/access-people.js.)
@@ -1810,7 +1808,7 @@ describe('the boundaries this phase relies on', () => {
     // import, Setup's alone, went to migration/src/lib/setup/setup-import.js. Still 103. Phase 10j: prepareWrites, 104. Phase 15: updateClientWith, 105. Phase 16: listItemKeys and deleteByKey, for
     // lib/admin/session-delete.js, 107. Prompt 19: the page's SharePoint sign-in (lib/data/session-calls.js), setSessionRenewer, onSessionChange,
     // sessionEvidence, lastAnswerAt and checkSession, 112. Prompt 21: setAccessGuard and lib/data/access-reads.js's four, 117; Phase 2: three of lib/data/access-people.js, 120; Phase 3: planSession and startSession, lib/data/planning.js, 122; Phase 5: readSessionSummaries and saveSessionSummary, lib/data/summaries.js, 124.)
-    assert.equal(EXPORTS.length, 127); // (124 until Prompt 23)
+    assert.equal(EXPORTS.length, 130); // (124 until Prompt 23; 127 until Prompt 26)
     assert.equal(GONE.length, 30);
     for (const name of GONE) assert.ok(!(name in ds), `${name} is back`);
   });
@@ -2311,7 +2309,7 @@ for (const [name, open] of [
 describe('Phase 10c-2a: nothing looks for a session\'s own answer item', () => {
   const forTheSession = (session) => (entry) => entry.list === 'responses' && entry.query.includes(`AppId eq '${session.id}'`);
 
-  it('SharePoint: a restart reads the activity once, clears the participant\'s own item and stamps the visit: 9 requests on a fresh page, and no item is made for the session', async () => {
+  it('SharePoint: a restart reads the activity once, clears the participant\'s own item and stamps the visit: 8 requests on a fresh page, and no item is made for the session', async () => {
     const { fake, session } = await liveSharePoint();
     const track = await newVisit(session.id);
     await ds.saveParticipantResponses({ trackId: track.id, sessionId: session.id, clientId: 'c-kroger', responses: [answer('q-trivia-1', 'o-trivia-1-b', { correct: true }), answer('q-brand-1', 'o-brand-1-b', { correct: true })] });
@@ -2319,9 +2317,9 @@ describe('Phase 10c-2a: nothing looks for a session\'s own answer item', () => {
     fake.reset();
     assert.deepEqual(await page.restartParticipantTrack(track.id, { sectionId: 'sec-trivia' }), { removed: 1 });
     // The activity; the participant's item and its overwrite (with the write token); the visit, then its update (which reads it at its
-    // version, and the list's type and columns the first time a page writes to Tracks).
-    assert.deepEqual(sorted(fake.requests.map(shape)), ['GET responses', 'GET sections', 'GET tracks', 'GET tracks', 'GET tracks', 'GET tracks', 'MERGE responses', 'MERGE tracks', 'POST /contextinfo']);
-    measured.push(['restarting one activity of a visit (fresh page; 14 before Phase 10c-2a)', fake.count(), 9]);
+    // version, and the list's columns the first time a page writes to Tracks).
+    assert.deepEqual(sorted(fake.requests.map(shape)), ['GET responses', 'GET sections', 'GET tracks', 'GET tracks', 'GET tracks', 'MERGE responses', 'MERGE tracks', 'POST /contextinfo']);
+    measured.push(['restarting one activity of a visit (fresh page; 14 before Phase 10c-2a, 9 before Prompt 26)', fake.count(), 8]);
     assert.equal(fake.count(forTheSession(session)), 0, 'nothing asks for an item with the session\'s id');
     assert.equal(fake.count((entry) => entry.list === 'responses' && entry.method === 'POST'), 0, 'and none is made');
     assert.deepEqual(fake.lists.get('responses').map((row) => row.AppId), [track.id], 'the list holds the participant\'s item and nothing else');

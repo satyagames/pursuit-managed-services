@@ -169,20 +169,14 @@ export async function bootParticipant(api, { trackId = null, qrToken = null, pat
 }
 
 /**
- * What the page fetches ahead once its first screen is up and its visit is logged (Phase 10j; dataService.prepareWrites), for the writes it can
- * make next: `checked` are the lists written through the general create or update (their type and their column check: the participants list
- * where a visit can begin, and the sessions list where that visit would be the session's first), `types` the lists of which only the item type
- * is asked (the answers list, for a visit whose answers have no item yet). The write token always. Null where the page can write nothing.
- * @param {Pick<BootResult, 'experience' | 'track' | 'own' | 'code'>} boot
- * @returns {{ checked: string[], types: string[] } | null}
+ * Whether the page fetches the write token ahead once its first screen is up and its visit is logged (Phase 10j; dataService.prepareWrites): where a
+ * visit can begin, or goes on. False where the page can write nothing.
+ * @param {Pick<BootResult, 'experience' | 'track' | 'code'>} boot
+ * @returns {boolean}
  */
-export function writesAhead({ experience, track, own, code }) {
+export function writesAhead({ experience, track, code }) {
   const session = experience?.status === 'live' ? experience.session : null;
   const canBegin = Boolean(session) && !track && !code && session.participationMode !== 'client-visit';
-  if (!canBegin && !track) return null;
-  return {
-    checked: canBegin ? ['tracks', ...(session.status === 'not-started' ? ['sessions'] : [])] : [],
-    types: own ? [] : ['responses'],
-  };
+  return canBegin || Boolean(track);
 }
 

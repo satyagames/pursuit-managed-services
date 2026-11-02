@@ -51,7 +51,8 @@ export const REFUSALS = Object.freeze([
 /** SharePoint's error code and words in a refusal (its parsed JSON, or its text); none when it is not JSON. */
 export function refusalWords(answer) {
   try {
-    const error = (typeof answer === 'string' ? JSON.parse(answer) : answer)?.error;
+    const parsed = typeof answer === 'string' ? JSON.parse(answer) : answer;
+    const error = parsed?.error ?? parsed?.['odata.error']; // (`odata.error`: the plain format's, Prompt 26)
     return { code: error?.code, message: typeof error?.message === 'string' ? error.message : error?.message?.value };
   } catch { return {}; }
 }

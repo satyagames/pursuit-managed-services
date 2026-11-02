@@ -56,7 +56,7 @@ test('an expired sign-in shows its own banner with Reload, and a look that gets 
   // (The network "coming back" makes the page look at once; a real page would look within its usual wait.)
   await expect.poll(async () => {
     await page.evaluate(() => window.dispatchEvent(new Event('online')));
-    return page.getByRole('alert').filter({ hasText: 'Your sign-in has expired. Reload this page to sign in again. Your answers are kept on this device.' }).count();
+    return page.getByRole('alert').filter({ hasText: 'Your sign-in has expired. Saved on this iPad. It will send when you are signed in again.' }).count();
   }, { timeout: 20_000 }).toBe(1);
   await expect(page.getByRole('button', { name: 'Reload' })).toBeVisible();
   await expect(page.getByText(/reach the server/), 'it is not shown as a lost connection').toHaveCount(0);
