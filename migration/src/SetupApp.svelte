@@ -401,9 +401,8 @@
     {#if adminStatus}<p class="setup-status setup-status--{adminStatus.startsWith('Added') ? 'success' : adminStatus === 'Adding...' ? 'info' : 'error'}" role="status" data-testid="admin-status">{adminStatus}</p>{/if}
     <!-- (Prompt 21) Who may do what: on SharePoint, once the lists are this version. -->
     <AccessPanel active={!local && !blocked && version.state === 'ok'} />
+    {#if !local}<PermissionsPanel {blocked} folder={decodeURI(new URL('.', window.location.href).pathname).replace(/\/+$/, '')} />{/if}
   </section>
-
-  {#if !local}<PermissionsPanel {blocked} folder={decodeURI(new URL('.', window.location.href).pathname).replace(/\/+$/, '')} />{/if}
 
   <section aria-labelledby="clients-heading">
     <h2 id="clients-heading">4. Sample clients (optional)</h2>

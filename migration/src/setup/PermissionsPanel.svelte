@@ -54,7 +54,7 @@
 </script>
 
 <section aria-labelledby="permissions-heading">
-  <h2 id="permissions-heading">Site groups and permissions</h2>
+  <h3 id="permissions-heading">Site groups and permissions</h3>
   <p class="muted">
     The app's own groups, with rights on its lists and the folder its pages are in. The site's other content and the site's own groups are not changed. A
     site owner does this once. Apply only adds: people keep what they have until Remove the site's groups is pressed. Not yet tried on a real site.
