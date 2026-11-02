@@ -15,7 +15,7 @@
   import CopyPanel from './setup/CopyPanel.svelte';
   import ListAddresses from './setup/ListAddresses.svelte';
   import PlanView from './setup/PlanView.svelte';
-  import { permissionSteps } from './lib/setup/list-permissions.js';
+  import PermissionsPanel from './setup/PermissionsPanel.svelte';
   import AccessPanel from './setup/AccessPanel.svelte';
   import SessionBanner from './admin/SessionBanner.svelte';
 
@@ -322,7 +322,7 @@
     <p class="muted">Reads the site and says which lists, columns and settings are still needed, and what it found that it will not touch. It changes nothing.</p>
     <button class="btn" type="button" onclick={() => void showThePlan()} disabled={busy || blocked || local}>Show the plan</button>
     {#if planStatus}<p class="setup-status setup-status--{kindOf(planStatus)}" role="status" data-testid="plan-status">{planStatus}</p>{/if}
-    {#if plan}<PlanView {plan} permissions={permissionSteps(named)} />{/if}
+    {#if plan}<PlanView {plan} />{/if}
 
     <h3>Create</h3>
     <p class="muted">
@@ -402,6 +402,8 @@
     <!-- (Prompt 21) Who may do what: on SharePoint, once the lists are this version. -->
     <AccessPanel active={!local && !blocked && version.state === 'ok'} />
   </section>
+
+  {#if !local}<PermissionsPanel {blocked} folder={decodeURI(new URL('.', window.location.href).pathname).replace(/\/+$/, '')} />{/if}
 
   <section aria-labelledby="clients-heading">
     <h2 id="clients-heading">4. Sample clients (optional)</h2>

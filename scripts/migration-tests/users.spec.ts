@@ -128,6 +128,9 @@ test.describe('the People screens', () => {
     await expect(page.getByTestId('access-row')).toHaveCount(1);
     await expect(page.getByTestId('access-row')).toContainText('Leadership');
     await expect(page.getByTestId('history')).toContainText('Added from the directory');
+    // (Prompt 27: a Super admin is handed on to the group's page; the page reads nothing for it until the button is pressed.)
+    await expect(page.getByTestId('site-handoff')).toContainText('PMS leadership');
+    await expect(page.getByRole('button', { name: 'Open site groups: PMS leadership' })).toBeVisible();
   });
 
   test('Remove says what they lose, and a Super admin cannot remove their own roles or the last Super admin', async ({ page }) => {

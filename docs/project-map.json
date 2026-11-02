@@ -199,7 +199,7 @@
       {
         "key": "appsettings",
         "title": "PMSAppSettings",
-        "purpose": "One item, `default`: which session and client are live, and the version of the lists. Every page reads it first. Setup writes it when it makes the lists; nobody makes it by hand."
+        "purpose": "One item, `default`: which session and client are live, and the version of the lists. Every page reads it first. Setup writes it when it makes the lists; nobody makes it by hand. A second item, `site-groups`, holds the ids of the PMS groups as JSON in its Title, written by Setup's Apply (Prompt 27); the participant page never reads it."
       },
       {
         "key": "visitorroster",

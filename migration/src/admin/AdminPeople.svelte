@@ -16,6 +16,7 @@
   import UserAdd from './UserAdd.svelte';
   import UserDetail from './UserDetail.svelte';
   import AuditReview from './AuditReview.svelte';
+  import SiteAccessDrift from './SiteAccessDrift.svelte';
 
   let { access, onToast }: {
     access: any;
@@ -95,6 +96,7 @@
     {#if loading}<p class="muted" role="status">Loading people...</p>
     {:else if error}<p class="error" role="alert">{error}</p>
     {:else}
+      {#if can(access, 'roles.global', {})}<SiteAccessDrift {users} {assignments} />{/if}
       <div class="users__bar">
         <div class="field"><label class="field__label" for="users-search">Search people</label>
           <input id="users-search" class="input" type="search" autocomplete="off" bind:value={search} oninput={() => { page = 1; }} placeholder="Name or email" /></div>

@@ -271,7 +271,132 @@ const fieldAsRead = (select) => (field) => {
  *   finds, as { name, email, jobTitle }; `pickerStatus` makes the picker answer with that status instead (a site that refuses the call).
  *   `keepColumns` may also name a whole list (by key) that a later version added, for a site of an earlier version that has it all the same.
  */
-export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Casey Example' }, ownerGroupId = 3, siteUrl = SITE_URL, prefix = SUITE_PREFIX, lists: named = {}, logoLibrary, addresses = {}, listsVersion = VERSION, schemaVersion = listsVersion, keepColumns = [], traps = {}, strict = true, leavesOut = TENANT_LEAVES_OUT, refusesByName = TENANT_REFUSES_BY_NAME, duplicateStatus = 500, duplicateCode = false, realShape = null, directory = [], pickerStatus = null } = {}) {
+/**
+ * Prompt 27: the site's groups, permission levels and the permissions of lists and folders, as the brief describes the calls. AN APPROXIMATION, written from
+ * that description alone: no real site has answered any of these (QA-TESTING.md). A body with `__metadata` that is not sent as verbose is refused, as the
+ * data layer's own rule says. Options: `handmade` list titles that start with unique permissions of their own (matched as a part of the title), `rootFolders`
+ * folders that are a library's root, `levels` more permission levels, `levelLow` the bits a made level really gets, `ownerNotSet` an owner that does not land,
+ * `runningIsOwner` false when the signed-in account is not in the owners' group, `memberPage` the page size of a group's members.
+ */
+function sitePermissionsFake({ handmade = [], rootFolders = [], levels: moreLevels = [], levelLow = null, ownerNotSet = false, runningIsOwner = true, memberPage = 0 }, { ownerGroupId, currentUser }) {
+  const VERBOSE = /odata=verbose/;
+  let nextId = 100;
+  const groups = new Map([[ownerGroupId, 'Site Owners'], [4, 'Site Members'], [5, 'Site Visitors']].map(([Id, Title]) => [Id, { Id, Title, OwnerTitle: 'Site Owners', AllowMembersEditMembership: false, users: [] }]));
+  const levels = [
+    { Id: 1073741829, Name: 'Full Control', RoleTypeKind: 5, BasePermissions: { High: '2147483647', Low: '4294967295' } },
+    { Id: 1073741826, Name: 'Read', RoleTypeKind: 2, BasePermissions: { High: '176', Low: '138612833' } },
+    { Id: 1073741827, Name: 'Contribute', RoleTypeKind: 3, BasePermissions: { High: '432', Low: '1011030767' } },
+    ...moreLevels,
+  ];
+  const site = () => new Map([[ownerGroupId, new Set([1073741829])], [4, new Set([1073741827])], [5, new Set([1073741826])]]);
+  const scopes = new Map();
+  const made = new Set();
+  const folders = new Set();
+  const norm = (name) => name.toLowerCase();
+  const scopeOf = (name) => {
+    if (!scopes.has(norm(name))) scopes.set(norm(name), { unique: handmade.some((part) => name.includes(part)), bindings: site() });
+    return scopes.get(norm(name));
+  };
+  const isScratch = (name) => name === 'PMSPermissionProbe' || name.endsWith('/_pms-probe');
+  const bindingRow = ([id, held]) => ({
+    PrincipalId: id, Member: { Id: id, Title: groups.get(id)?.Title, LoginName: groups.get(id)?.Title },
+    RoleDefinitionBindings: { results: [...held].map((levelId) => levels.find((level) => level.Id === levelId)) },
+  });
+  const look = {
+    scope(name) {
+      if (isScratch(name) && !made.has(norm(name))) return undefined;
+      const scope = scopeOf(name);
+      const named = [...scope.bindings].map(([id, held]) => [groups.get(id)?.Title, [...held].map((levelId) => levels.find((level) => level.Id === levelId).Name)]);
+      return { unique: scope.unique, holders: named.map(([title]) => title), levels: Object.fromEntries(named) };
+    },
+    group: (title) => [...groups.values()].find((group) => group.Title === title),
+    level: (name) => levels.find((level) => level.Name === name),
+    folders: () => [...folders],
+    addMembers(title, emails) { look.group(title).users.push(...emails.map((email) => ({ Id: nextId++, Title: email, Email: email, LoginName: `i:0e.t|adfs|${email}` }))); },
+    dropOwners(name) { scopeOf(name).bindings.delete(ownerGroupId); },
+  };
+  const route = (request, headers, entry, { ok, error }) => {
+    const { method, path } = entry;
+    const url = new URL(request.url);
+    let body = null;
+    try { body = JSON.parse(request.body ?? ''); } catch { /* no body */ }
+    if (body?.__metadata && !VERBOSE.test(headers['content-type'] ?? '')) return error(400, 'A type named in __metadata could not be resolved.');
+
+    if (/\/web\/AssociatedOwnerGroup\/users$/.test(path)) {
+      const me = typeof currentUser === 'function' ? currentUser() : currentUser;
+      return ok({ results: runningIsOwner ? [{ Id: me.Id }] : [] });
+    }
+    if (/\/web\/AssociatedOwnerGroup$/.test(path)) return ok({ Id: ownerGroupId, Title: 'Site Owners' });
+    if (/\/web\/roledefinitions$/.test(path)) {
+      if (method === 'GET') return ok({ results: levels });
+      const level = { Id: nextId++, Name: body.Name, RoleTypeKind: 0, BasePermissions: { High: body.BasePermissions.High, Low: levelLow ?? body.BasePermissions.Low } };
+      levels.push(level);
+      return ok(level, 201);
+    }
+    if (/\/web\/sitegroups$/.test(path)) {
+      if (method === 'GET') return ok({ results: [...groups.values()].map(({ users, ...group }) => group) });
+      const group = { Id: nextId++, Title: body.Title, OwnerTitle: 'Casey Example', AllowMembersEditMembership: Boolean(body.AllowMembersEditMembership), users: [] };
+      groups.set(group.Id, group);
+      return ok(group, 201);
+    }
+    const inGroup = /\/web\/sitegroups\/getbyid\((\d+)\)(.*)$/.exec(path);
+    if (inGroup) {
+      const group = groups.get(Number(inGroup[1]));
+      if (!group) return error(404, 'Group cannot be found.');
+      const owner = /^\/SetUserAsOwner\((\d+)\)$/.exec(inGroup[2]);
+      if (owner) { if (!ownerNotSet) group.OwnerTitle = groups.get(Number(owner[1])).Title; return ok(null); }
+      if (inGroup[2] === '/users') {
+        const from = Number(url.searchParams.get('p') ?? 0);
+        const size = memberPage || group.users.length || 1;
+        const there = new URL(request.url);
+        there.searchParams.set('p', String(from + size));
+        return ok({ results: group.users.slice(from, from + size), ...(from + size < group.users.length ? { __next: there.href } : {}) });
+      }
+      if (method === 'MERGE') { group.AllowMembersEditMembership = Boolean(body.AllowMembersEditMembership); return ok(null, 204); }
+      return ok({ OwnerTitle: group.OwnerTitle });
+    }
+    if (/\/web\/folders$/.test(path) && method === 'POST') { folders.add(body.ServerRelativeUrl); made.add(norm(body.ServerRelativeUrl)); return ok({ ServerRelativeUrl: body.ServerRelativeUrl }, 201); }
+    if (/\/web\/lists$/.test(path) && method === 'POST' && body?.Title === 'PMSPermissionProbe') { made.add(norm(body.Title)); return ok({ Id: 'scratch', Title: body.Title }, 201); }
+
+    const folder = /\/web\/GetFolderByServerRelativeUrl\('(.+?)'\)(\/ListItemAllFields)?(.*)$/i.exec(path);
+    const list = /\/web\/lists\/getbytitle\('(.+?)'\)(.*)$/.exec(path);
+    if (folder && !folder[2]) {
+      if (folder[3] !== '' || method !== 'DELETE') return null;
+      folders.delete(folder[1]);
+      made.delete(norm(folder[1]));
+      scopes.delete(norm(folder[1]));
+      return ok(null);
+    }
+    const name = folder?.[1] ?? list?.[1];
+    const rest = folder?.[3] ?? list?.[2];
+    if (!name) return null;
+    if (list && rest === '' && method === 'DELETE' && isScratch(name)) { made.delete(norm(name)); scopes.delete(norm(name)); return ok(null); }
+    if (rest === '' && method === 'GET' && /HasUniqueRoleAssignments/.test(url.search)) {
+      if (rootFolders.includes(name)) return ok({});
+      return ok({ Id: 1, HasUniqueRoleAssignments: scopeOf(name).unique });
+    }
+    if (rest === '/roleassignments' && method === 'GET') return ok({ results: [...scopeOf(name).bindings].map(bindingRow) });
+    if (/^\/breakroleinheritance\(/.test(rest)) { scopeOf(name).unique = true; return ok(null); }
+    if (rest === '/resetroleinheritance') { Object.assign(scopeOf(name), { unique: false, bindings: site() }); return ok(null); }
+    const change = /^\/roleassignments\/(add|remove)roleassignment\(principalid=(\d+),roledefid=(\d+)\)$/.exec(rest);
+    if (change) {
+      const here = scopeOf(name);
+      if (!here.unique) return error(400, 'This list inherits its permissions.');
+      const id = Number(change[2]);
+      const held = here.bindings.get(id) ?? new Set();
+      if (change[1] === 'add') { held.add(Number(change[3])); here.bindings.set(id, held); } else { held.delete(Number(change[3])); if (!held.size) here.bindings.delete(id); }
+      return ok(null);
+    }
+    const whole = /^\/roleassignments\/getbyprincipalid\((\d+)\)$/.exec(rest);
+    if (whole && method === 'DELETE') { scopeOf(name).bindings.delete(Number(whole[1])); return ok(null); }
+    return null;
+  };
+  return { route, look };
+}
+
+export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Casey Example' }, ownerGroupId = 3, siteUrl = SITE_URL, prefix = SUITE_PREFIX, lists: named = {}, logoLibrary, addresses = {}, listsVersion = VERSION, schemaVersion = listsVersion, keepColumns = [], traps = {}, strict = true, leavesOut = TENANT_LEAVES_OUT, refusesByName = TENANT_REFUSES_BY_NAME, duplicateStatus = 500, duplicateCode = false, realShape = null, directory = [], pickerStatus = null, sitePermissions = null } = {}) {
+  /** (Prompt 27: `sitePermissions` turns on the site's groups and permissions; see sitePermissionsFake.) */
+  const groupsAndRoles = sitePermissions ? sitePermissionsFake(sitePermissions, { ownerGroupId, currentUser: user }) : null;
   const fields = new Map();
   const lists = new Map();
   /** The other set's rows, by the title a request names: empty unless something went to the wrong lists. */
@@ -522,6 +647,10 @@ export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Ca
       return error(fault.status, fault.message ?? `Injected ${fault.status}`, fault.retryAfter === undefined ? {} : { 'Retry-After': String(fault.retryAfter) });
     }
 
+    if (groupsAndRoles) {
+      const said = groupsAndRoles.route(request, headers, entry, { ok, error });
+      if (said) return said;
+    }
     if (path.endsWith('/_api/$batch') && !entry.batched) return method === 'POST' ? batch(request, headers, entry) : error(405, 'The batch endpoint only accepts POST.');
     if (path.endsWith('/contextinfo')) return ok({ GetContextWebInformation: { FormDigestValue: 'digest-token', FormDigestTimeoutSeconds: 1800 } });
     // (`user` may be a function, asked on every request: the local site's personas, Phase 12.)
@@ -871,6 +1000,8 @@ export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Ca
     field: (key, name) => fields.get(knownKey(key))?.find((column) => column.InternalName === name),
     /** Whether the test's own picture library exists. */
     get libraryPresent() { return libraryPresent; },
+    /** The site's groups and permissions, to look at (Prompt 27), with `sitePermissions` on. */
+    permissions: groupsAndRoles?.look,
     /** Node only: routes globalThis.fetch to the fake. Returns the function that puts the real one back. */
     install() {
       const original = globalThis.fetch;

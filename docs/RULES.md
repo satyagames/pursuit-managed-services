@@ -1757,6 +1757,13 @@ Results is a leader's view as well (boards 9 and 12): `admin/LeaderDashboard.sve
 - **A style's comment does not ship** (`migration/svelte.config.js`): comment a component's CSS as much as it needs.
 - `npm run perf` and `npm run console:errors` before a change that reads or writes.
 
+## Rules from Prompt 27 (the PMS groups and Apply; keep them holding)
+
+- **The matrix is `GROUP_MATRIX`** in `lib/setup/list-permissions.js`, settled with the owner. Participants hold nothing on the five secret lists.
+- **Apply only adds:** rehearsal first, grants on a copy of what was inherited, a list that differs left alone, never a whole library. Only **Remove the site's groups** takes anyone away, and never the site's owners or a PMS group.
+- **The admin page changes no permission and no group's members.** It reads the groups' row and members only when asked (`lib/access/site-access.js`), so sign-in and a person's page cost no more requests.
+- **`desiredGroups` is the one rule** of who belongs where. The groups' ids are in the settings list's `site-groups` item, never in a page.
+
 ## Before finishing a change
 
 - Always: `npm run check:svelte` and `npm test` (the documents, the module map and the project map among it). If you added, moved or renamed a

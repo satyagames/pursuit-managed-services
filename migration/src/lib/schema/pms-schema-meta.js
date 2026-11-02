@@ -153,11 +153,11 @@ export const META = {
     },
   },
   appsettings: {
-    purpose: 'One item, `default`: which session and client are live, and the version of the lists. Every page reads it first. Setup writes it when it makes the lists; nobody makes it by hand.',
+    purpose: 'One item, `default`: which session and client are live, and the version of the lists. Every page reads it first. Setup writes it when it makes the lists; nobody makes it by hand. A second item, `site-groups`, holds the ids of the PMS groups as JSON in its Title, written by Setup\'s Apply (Prompt 27); the participant page never reads it.',
     reads: [PARTICIPANT, ADMIN, SETUP], writes: [ADMIN, SETUP],
-    growth: { perEvent: '0', perYear: '1 in total' },
+    growth: { perEvent: '0', perYear: '2 in total' },
     columns: {
-      AppId: id('always default'),
+      AppId: id('default, or site-groups'),
       ActiveSessionId: text('The live session (a Sessions.AppId).'),
       ActiveClientId: text('The live client (a Clients.AppId). With none named, nothing is live.'),
       ActivatedAt: when('When Go live was last pressed: open pages notice a change by it.'),

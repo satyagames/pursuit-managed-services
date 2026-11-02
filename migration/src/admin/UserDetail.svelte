@@ -14,6 +14,7 @@
   import { errorText } from '../lib/admin/session-notice.js';
   import ConfirmDialog from './ConfirmDialog.svelte';
   import GiveAccess from './GiveAccess.svelte';
+  import SiteAccessHandoff from './SiteAccessHandoff.svelte';
 
   type Row = { key: string; name: string; email: string; status: string; assignments: any[] };
   let { access, person, users, assignments, clients, sessions, onBack, onChanged }: {
@@ -120,6 +121,7 @@
   </header>
   {#if own}<p class="muted" data-testid="own-note">This is you: you cannot change your own roles or turn off your own access.</p>{/if}
   {#if error}<p class="error" role="alert">{error}</p>{/if}
+  <SiteAccessHandoff {access} person={{ id: person.key, email: person.email, status: person.status }} {assignments} />
 
   <section class="detail__block" aria-labelledby="global-heading">
     <h3 id="global-heading">Roles for all clients</h3>

@@ -114,7 +114,7 @@ settings file and what SharePoint does are in [docs/SHAREPOINT.md](docs/SHAREPOI
 | PMSClientImages (library) | the clients' pictures |
 
 **Permissions:** participant accounts write the session, visit, code, visit-log and answer lists and only read the rest; they must have **no access to
-PMSAdminUsers**. Facilitators edit the content lists. A site owner runs Setup.
+PMSAdminUsers**. Facilitators edit the content lists. A site owner runs Setup, whose **Apply** makes the app's own groups and gives its lists and folder their permissions.
 
 ## Quick start
 

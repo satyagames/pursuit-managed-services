@@ -12,6 +12,7 @@
   import { loseWords, removeRole } from '../lib/access/people-ops.js';
   import { TEAM_ROLES, addToTeam, teamCandidates, teamProblems, teamRows } from '../lib/access/team.js';
   import { errorText } from '../lib/admin/session-notice.js';
+  import SiteAccessHandoff from './SiteAccessHandoff.svelte';
   import ConfirmDialog from './ConfirmDialog.svelte';
 
   let { client, access = null, sessions, users, assignments, preset = null, onChanged, onToast }: {
@@ -43,6 +44,9 @@
   let formError = $state('');
   let confirm = $state<any>(null);
   let lastPreset: string | null = null;
+  /** The person just added, for the hand-off to the site's groups (Prompt 27). */
+  let lastAdded = $state('');
+  const added = $derived(users.find((user) => user.id === lastAdded) ?? null);
   let heading = $state<HTMLElement>();
 
   const candidates = $derived(teamCandidates(users, search));
@@ -78,6 +82,7 @@
     try {
       const done = await addToTeam(dataService, access, { clientId: client.id, userKey, role, scope, sessionIds, editActivities });
       open = false;
+      lastAdded = userKey;
       const name = users.find((user) => user.id === userKey)?.fullName || userKey;
       onChanged(done.added ? `${name} is on the team as ${role}` : `${name} already had that role`);
     } catch (cause) {
@@ -109,6 +114,7 @@
     {#if mayAssign}<button class="btn btn--primary" type="button" onclick={() => openForm()} disabled={busy || open}>Add to team</button>{/if}
   </div>
   <p class="muted small">A Producer runs the sessions, a Designer edits the brand, Leadership sees the results. Give a role for the whole client, or only for some sessions.{mayAssign ? '' : ' An Admin chooses the team.'}</p>
+  {#if added && access}<SiteAccessHandoff {access} person={added} {assignments} />{/if}
 
   {#if open}
     <form class="editor-form team-form" onsubmit={add} novalidate aria-labelledby="team-form-heading">
