@@ -11,7 +11,8 @@
 // The apply half (Prompt 27), pressed by a site owner: readPermissionState, permissionPlan, applyPermissions and, later and apart, removeSiteGroups. Apply
 // rehearses on a scratch list and folder, makes the PMS groups and the level, then for each list and the pages' folder breaks inheritance WITH a copy and
 // grants; it removes nothing, so the people who reach the app through the site's own groups keep working. Remove the site's groups is the second button,
-// for when they have been moved. A list that already has other unique permissions Differs and is left alone. Every REST call here other than the reads
+// for when they have been moved. A list that already has unique permissions is added to (the owner's option 1, 3 Nov 2026), unless a PMS group holds
+// another level there: then it Differs and is left alone. Every REST call here other than the reads
 // above is ASSUMED: no site has answered one yet (QA-TESTING.md).
 import { MANAGED_GROUPS, SITE_GROUPS_ITEM, groupsOfRow, groupsRowTitle, siteGroupsAddress } from '../access/site-access.js';
 
@@ -198,10 +199,21 @@ const bitsMatch = (level) => String(level?.BasePermissions?.Low) === ADD_ONLY_BI
 const ownerOf = (key, state) => (MANAGED_GROUPS[key] ? PMS_GROUPS.superadmins : state.owners.Title);
 const holdsFull = (target, ownersId) => target.bindings.some((binding) => binding.principalId === ownersId && binding.levels.some((level) => level.RoleTypeKind === KIND.full));
 
+/** Whether a level is the one a cell of the matrix names. */
+const isCell = (level, cell) => (cell === 'add-only' ? level.Name === ADD_ONLY_LEVEL : level.RoleTypeKind === KIND[cell]);
+const heldBy = (target, group) => target.bindings.find((binding) => binding.title === PMS_GROUPS[group])?.levels ?? [];
 /** Whether the groups the matrix names hold exactly their level on this list. */
 const holdsMatrix = (target, key) => Object.entries(GROUP_MATRIX[key]).every(([group, cell]) => {
-  const levels = target.bindings.find((binding) => binding.title === PMS_GROUPS[group])?.levels ?? [];
-  return levels.length === 1 && (cell === 'add-only' ? levels[0].Name === ADD_ONLY_LEVEL : levels[0].RoleTypeKind === KIND[cell]);
+  const levels = heldBy(target, group);
+  return levels.length === 1 && isCell(levels[0], cell);
+});
+/**
+ * (The owner, 3 Nov 2026: option 1.) A list with permissions of its own that Apply may add to: every PMS group the matrix names holds either nothing on
+ * it or exactly its level. A group holding another level makes it Differs.
+ */
+const mayAddTo = (target, key) => Object.entries(GROUP_MATRIX[key]).every(([group, cell]) => {
+  const levels = heldBy(target, group);
+  return levels.length === 0 || (levels.length === 1 && isCell(levels[0], cell));
 });
 
 /**
@@ -229,7 +241,8 @@ export function permissionPlan(state, titles) {
     else if (target.root) steps.push({ id: `list:${key}`, words: `${title} is the root of a library. Setup changes no whole library: put the pages in a folder of their own.`, state: 'Differs' });
     else if (!target.unique) steps.push({ id: `list:${key}`, words: `${title}: ${grants}`, state: 'To do' });
     else if (holdsMatrix(target, key)) steps.push({ id: `list:${key}`, words: `${title}: ${grants}`, state: 'Done' });
-    else steps.push({ id: `list:${key}`, words: `${title} already has permissions of its own that differ. Setup leaves them alone. For Apply to set it, a site owner first resets it to the site's permissions.`, state: 'Differs' });
+    else if (mayAddTo(target, key)) steps.push({ id: `list:${key}`, words: `${title} adds to its own permissions, removing nothing: ${grants}`, state: 'To do', adds: true });
+    else steps.push({ id: `list:${key}`, words: `${title} already has permissions of its own in which a PMS group holds another level. Setup leaves them alone: a site owner corrects that group's level by hand.`, state: 'Differs' });
   }
   const saved = groupsOfRow(state.row);
   const same = saved && Object.entries(MANAGED_GROUPS).every(([key, title]) => saved[key].id === groupNamed(state, title)?.Id);
@@ -340,11 +353,24 @@ export async function applyPermissions(api, plan, { titles, folder, onProgress =
       if (!due(`list:${key}`)) continue;
       const where = targetAddress(key, titles, folder);
       const title = titleOfKey(titles, key);
-      say(`${title}: stop inheriting (with a copy) and grant`);
-      await api.write('POST', `${where}/breakroleinheritance(copyRoleAssignments=true,clearSubscopes=false)`);
-      undo.push(`${title}: POST ${where}/resetroleinheritance`);
-      for (const [group, cell] of Object.entries(GROUP_MATRIX[key])) {
-        await api.write('POST', `${where}/roleassignments/addroleassignment(principalid=${groupNamed(state, PMS_GROUPS[group]).Id},roledefid=${levelId(cell)})`);
+      const adds = plan.steps.find((step) => step.id === `list:${key}`)?.adds === true;
+      if (adds) {
+        // (Its own permissions stay as they are: only the grants the PMS groups lack are added, and the undo takes back those alone.)
+        say(`${title}: add to its own permissions`);
+        const held = await readTarget(api.read, key, titles, folder);
+        for (const [group, cell] of Object.entries(GROUP_MATRIX[key])) {
+          if (heldBy(held, group).length) continue;
+          const grant = `principalid=${groupNamed(state, PMS_GROUPS[group]).Id},roledefid=${levelId(cell)}`;
+          await api.write('POST', `${where}/roleassignments/addroleassignment(${grant})`);
+          undo.push(`${title}: POST ${where}/roleassignments/removeroleassignment(${grant})`);
+        }
+      } else {
+        say(`${title}: stop inheriting (with a copy) and grant`);
+        await api.write('POST', `${where}/breakroleinheritance(copyRoleAssignments=true,clearSubscopes=false)`);
+        undo.push(`${title}: POST ${where}/resetroleinheritance`);
+        for (const [group, cell] of Object.entries(GROUP_MATRIX[key])) {
+          await api.write('POST', `${where}/roleassignments/addroleassignment(principalid=${groupNamed(state, PMS_GROUPS[group]).Id},roledefid=${levelId(cell)})`);
+        }
       }
       // (A PMS group that the copy brought with another level gives that level up, after its own grant.)
       let target = await readTarget(api.read, key, titles, folder);

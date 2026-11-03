@@ -96,8 +96,33 @@ describe('the plan: Done, To do, Differs', () => {
     assert.ok(plan.steps.every((step) => step.state === 'To do'), JSON.stringify(plan.steps.filter((step) => step.state !== 'To do')));
     assert.deepEqual(s.fake.writes(), []);
   });
-  it('a list with different unique permissions Differs and is left alone by Apply', async () => {
+  // (The owner, 3 Nov 2026, option 1: PCOE's four access lists were set by hand. Apply adds the matrix's grants to such a list, removes nothing,
+  // and changes no grant already there; it still leaves alone a list where a PMS group already holds another level.)
+  it('a list with its own permissions that hold nothing for the PMS groups: Apply adds to them, with no break and nothing removed', async () => {
     const s = await site({ handmade: ['PMSUsers'] });
+    const plan = permissionPlan(await stateOf(s), s.titles);
+    const step = plan.steps.find((each) => each.id === 'list:users');
+    assert.equal(step.state, 'To do');
+    assert.match(step.words, /adds to its own permissions/);
+    const before = targetOf(s, s.titles.users).holders;
+    const result = await applyPermissions(s.api, plan, { titles: s.titles, folder: FOLDER });
+    assert.equal(result.ok, true, result.words);
+    const mine = paths(s.fake).filter((path) => path.includes(`'${s.titles.users}'`));
+    assert.ok(!mine.some((path) => /breakroleinheritance|removeroleassignment|resetroleinheritance/.test(path)), mine.join(' '));
+    const after = targetOf(s, s.titles.users);
+    for (const holder of before) assert.ok(after.holders.includes(holder), holder);
+    assert.deepEqual(after.levels['PMS staff'], ['Read']);
+    assert.deepEqual(after.levels['PMS access managers'], ['Contribute']);
+    assert.ok(result.undo.some((line) => /PMSUsers.*removeroleassignment/.test(line)), 'its undo takes the grants back, not the hand-set permissions');
+    assert.ok(!result.undo.some((line) => /PMSUsers.*resetroleinheritance/.test(line)));
+    assert.equal(permissionPlan(await stateOf(s), s.titles).steps.find((each) => each.id === 'list:users').state, 'Done');
+  });
+  it('a list where a PMS group already holds another level Differs and is left alone', async () => {
+    const s = await site();
+    await applyPermissions(s.api, permissionPlan(await stateOf(s), s.titles), { titles: s.titles, folder: FOLDER });
+    const where = `/web/lists/getbytitle('${s.titles.users}')/roleassignments`;
+    await s.api.write('POST', `${where}/addroleassignment(principalid=${s.read.group('PMS staff').Id},roledefid=1073741827)`);
+    await s.api.write('POST', `${where}/removeroleassignment(principalid=${s.read.group('PMS staff').Id},roledefid=1073741826)`);
     const plan = permissionPlan(await stateOf(s), s.titles);
     assert.equal(plan.steps.find((step) => step.id === 'list:users').state, 'Differs');
     const before = JSON.stringify(targetOf(s, s.titles.users));
@@ -255,7 +280,9 @@ describe('Remove the site\'s groups: a separate step', () => {
     assert.ok(found.every((each) => each.ok), JSON.stringify(found));
   });
   it('touches no list that is not Done, and refuses a list whose owners do not hold Full Control', async () => {
-    const s = await applied({ handmade: ['PMSUsers'] });
+    const s = await applied();
+    const where = `/web/lists/getbytitle('${s.titles.users}')/roleassignments`;
+    await s.api.write('POST', `${where}/addroleassignment(principalid=${s.read.group('PMS staff').Id},roledefid=1073741827)`);
     assert.ok(!removalPlan(await stateOf(s), s.titles).some((each) => each.key === 'users'));
     const t = await applied();
     t.read.dropOwners(t.titles.clients);

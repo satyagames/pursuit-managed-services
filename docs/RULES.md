@@ -1760,7 +1760,7 @@ Results is a leader's view as well (boards 9 and 12): `admin/LeaderDashboard.sve
 ## Rules from Prompt 27 (the PMS groups and Apply; keep them holding)
 
 - **The matrix is `GROUP_MATRIX`** in `lib/setup/list-permissions.js`, settled with the owner. Participants hold nothing on the five secret lists.
-- **Apply only adds:** rehearsal first, grants on a copy of what was inherited, a list that differs left alone, never a whole library. Only **Remove the site's groups** takes anyone away, and never the site's owners or a PMS group.
+- **Apply only adds:** rehearsal first, grants on a copy of what was inherited, grants added to a list with its own permissions (nothing removed there), a list where a PMS group holds another level left alone, never a whole library. Only **Remove the site's groups** takes anyone away, and never the site's owners or a PMS group.
 - **The admin page changes no permission.** It changes who is in PMS access managers, PMS staff and PMS leadership only for a Super admin, only with Setup's switch on, only the difference (`syncSiteAccess` in `lib/access/site-access.js`), and the write guard refuses any other group (`LIST_WRITES.sitegroup`, the ids it learned). It reads the groups' row and members only when asked, so sign-in and a person's page cost no more requests.
 - **`desiredGroups` is the one rule** of who belongs where. The groups' ids are in the settings list's `site-groups` item, never in a page.
 

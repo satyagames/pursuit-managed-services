@@ -107,7 +107,7 @@ The table, list by list, is in [SHAREPOINT-LISTS.md](../SHAREPOINT-LISTS.md#perm
   | The pages' folder | Read | Read | None | Read |
 
   Apply removes nothing, so the site's Members and Visitors keep what they had: **until a site owner presses Remove the site's groups**, a separate button,
-  the secret lists stay readable by anyone in them. A list with other unique permissions is reported as Differs and left alone; a folder that is a
+  the secret lists stay readable by anyone in them. A list that already has its own permissions (on PCOE the four access lists, set by hand) is added to: only the grants the PMS groups lack, with nothing removed and no grant already there changed, and its undo takes back just those (the owner, 3 Nov 2026). It is reported as Differs and left alone only when a PMS group already holds another level there; a folder that is a
   library's root likewise. Apply prints each changed list's undo (`resetroleinheritance`). The ids of the three managed groups are kept in a second
   `PMSAppSettings` item (`AppId` `site-groups`, JSON in its `Title`), which needs no new column or version. PMS add only includes View, so all staff can
   read `PMSAuditLog` by calling REST; the review screen is a Super admin's by the page's check alone. **Part 4:** with Setup's switch on (kept in that item), a Super admin's changes on the admin page call `/web/siteusers/getbyemail`, `/web/ensureuser` and `/web/sitegroups/getbyid(<id>)/users` (an add, verbose `SP.User` body) or `.../users/removebyid(<id>)`, for the three managed groups only, after `CanCurrentUserEditMembership`; each change is an audit line (`site-add`, `site-remove`). PCOE answered these on 3 Nov 2026 (QA item 302). Setup's self-test reads what is set ("Probe
