@@ -278,7 +278,7 @@ const fieldAsRead = (select) => (field) => {
  * folders that are a library's root, `levels` more permission levels, `levelLow` the bits a made level really gets, `ownerNotSet` an owner that does not land,
  * `runningIsOwner` false when the signed-in account is not in the owners' group, `memberPage` the page size of a group's members.
  */
-function sitePermissionsFake({ handmade = [], rootFolders = [], levels: moreLevels = [], levelLow = null, ownerNotSet = false, runningIsOwner = true, memberPage = 0, cannotEdit = [] }, { ownerGroupId, currentUser }) {
+function sitePermissionsFake({ handmade = [], rootFolders = [], levels: moreLevels = [], levelLow = null, ownerNotSet = false, noOwnerCall = false, runningIsOwner = true, memberPage = 0, cannotEdit = [] }, { ownerGroupId, currentUser }) {
   const VERBOSE = /odata=verbose/;
   let nextId = 100;
   // (Part 4. As Part 0 showed on PCOE: ensureuser 200, an add 201 with the verbose SP.User body, removebyid 200, the owners' group 403, and a group's maker
@@ -367,6 +367,7 @@ function sitePermissionsFake({ handmade = [], rootFolders = [], levels: moreLeve
       const group = groups.get(Number(inGroup[1]));
       if (!group) return error(404, 'Group cannot be found.');
       const owner = /^\/SetUserAsOwner\((\d+)\)$/.exec(inGroup[2]);
+      if (owner && noOwnerCall) return error(404, 'Cannot find resource for the request SetUserAsOwner.');
       if (owner) { if (!ownerNotSet) group.OwnerTitle = groups.get(Number(owner[1])).Title; return ok(null); }
       const gone = /^\/users\/removebyid\((\d+)\)$/.exec(inGroup[2]);
       if (gone || (inGroup[2] === '/users' && method === 'POST')) {

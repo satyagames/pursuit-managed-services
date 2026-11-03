@@ -94,7 +94,7 @@ The table, list by list, is in [SHAREPOINT-LISTS.md](../SHAREPOINT-LISTS.md#perm
   other content, so the app never touches the site's built-in groups' rights on anything but its own lists and folder. A site owner presses **Apply** on the
   Setup page, once: a rehearsal on a scratch list and folder, then the groups PMS super admins, PMS access managers, PMS staff, PMS leadership and PMS
   participants, the level "PMS add only" (View Items, Add Items, Open; not Edit or Delete Items), the owners (PMS super admins owns the three managed
-  groups; the site's owners own the other two), and for each list and the pages' folder (never its library) stop inheriting with a copy, then grant:
+  groups; the site's owners own the other two; PCOE has no `SetUserAsOwner`, so there Apply names them and a site owner sets them on each group's settings page), and for each list and the pages' folder (never its library) stop inheriting with a copy, then grant:
 
   | List | PMS participants | PMS staff | PMS access managers | PMS leadership |
   |---|---|---|---|---|

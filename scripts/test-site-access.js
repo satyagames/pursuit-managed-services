@@ -203,6 +203,21 @@ describe('Apply', () => {
     assert.equal(result.ok, false);
     assert.match(result.words, /group's settings page/);
   });
+  // (PCOE, 3 Nov 2026: SharePoint Server 16.0.19725 answers "Cannot find resource for the request SetUserAsOwner." The brief's fallback: the group's settings page.)
+  it('no SetUserAsOwner on this farm: Apply carries on with the lists and names each owner to set by hand', async () => {
+    const s = await site({ noOwnerCall: true });
+    const result = await run(s);
+    assert.equal(result.ok, true, result.words);
+    assert.match(result.words, /on each group's settings page/);
+    for (const [title, owner] of [['PMS staff', 'PMS super admins'], ['PMS access managers', 'PMS super admins'], ['PMS leadership', 'PMS super admins'], ['PMS super admins', 'Site Owners'], ['PMS participants', 'Site Owners']]) {
+      assert.ok(result.words.includes(`"${title}": owner "${owner}"`), title);
+    }
+    assert.equal(paths(s.fake).filter((path) => /SetUserAsOwner/.test(path)).length, 1, 'asked once: a call that is not there is not asked again');
+    assert.equal(targetOf(s, s.titles.users).unique, true, 'the lists were still done');
+    const plan = permissionPlan(await stateOf(s), s.titles);
+    assert.ok(plan.steps.filter((step) => step.id.startsWith('owner:')).every((step) => step.state === 'To do'));
+    assert.ok(plan.steps.filter((step) => step.id.startsWith('list:')).every((step) => step.state === 'Done'));
+  });
   it('a level whose bits read back differently stops Apply: the read-back is trusted, not the sum', async () => {
     const s = await site({ levelLow: '7' });
     const result = await run(s);

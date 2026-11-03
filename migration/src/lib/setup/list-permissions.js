@@ -319,6 +319,7 @@ export async function applyPermissions(api, plan, { titles, folder, onProgress =
   const differs = plan.steps.filter((step) => step.state === 'Differs');
   const left = differs.length ? ` Left alone: ${differs.length} (${differs.map((step) => step.words.split(':')[0]).join('; ')}).` : '';
   if (!plan.steps.some((step) => step.state === 'To do')) return { ok: true, undo, words: `Nothing to do.${left}` };
+  const byHand = [];
   let doing = 'the rehearsal';
   const say = (line) => { doing = line; onProgress(line); };
   const state = { ...plan.state, groups: [...plan.state.groups], levels: [...plan.state.levels] };
@@ -342,14 +343,25 @@ export async function applyPermissions(api, plan, { titles, folder, onProgress =
     state.levels = results(await api.read('/web/roledefinitions?$select=Id,Name,RoleTypeKind,BasePermissions'));
     if (due('level') && !bitsMatch(levelNamed(state, ADD_ONLY_LEVEL))) throw new Mismatch(`Stopped: SharePoint made "${ADD_ONLY_LEVEL}" with other rights than were asked. A site owner corrects the level, then presses Apply again.`);
 
+    // (PCOE, 3 Nov 2026: SharePoint Server 16.0.19725 has no SetUserAsOwner, "Cannot find resource for the request". Then, as the brief says, each owner is
+    // set on the group's settings page by hand: Apply names them and carries on with the lists, which do not need them, and asks the call no more.)
+    let noOwnerCall = false;
     for (const [key, title] of Object.entries(PMS_GROUPS)) {
       if (!due(`owner:${key}`)) continue;
+      if (noOwnerCall) { byHand.push({ title, wanted: ownerOf(key, state) }); continue; }
       const group = groupNamed(state, title);
       const wanted = ownerOf(key, state);
       const ownerId = wanted === state.owners.Title ? state.owners.Id : groupNamed(state, wanted)?.Id;
       say(`Set "${wanted}" as the owner of "${title}"`);
       if (group.AllowMembersEditMembership) await api.write('MERGE', `/web/sitegroups/getbyid(${group.Id})`, { __metadata: { type: 'SP.Group' }, AllowMembersEditMembership: false });
-      await api.write('POST', `/web/sitegroups/getbyid(${group.Id})/SetUserAsOwner(${ownerId})`);
+      try {
+        await api.write('POST', `/web/sitegroups/getbyid(${group.Id})/SetUserAsOwner(${ownerId})`);
+      } catch (cause) {
+        if (cause.status !== 404 && !/Cannot find resource/i.test(String(cause.message))) throw cause;
+        noOwnerCall = true;
+        byHand.push({ title, wanted });
+        continue;
+      }
       const landed = await api.read(`/web/sitegroups/getbyid(${group.Id})?$select=OwnerTitle`);
       if (landed?.OwnerTitle !== wanted) throw new Mismatch(`Stopped: "${title}" still has another owner. Set "${wanted}" as its owner on the group's settings page, then press Apply again.`);
     }
@@ -401,7 +413,8 @@ export async function applyPermissions(api, plan, { titles, folder, onProgress =
   } catch (cause) {
     return { ok: false, undo, words: stopWords(doing, cause) };
   }
-  return { ok: true, undo, words: `Done. Nobody lost anything: the site's own groups keep what they had on these lists until a site owner presses Remove the site's groups.${left}` };
+  const owners = byHand.length ? ` Still to do by hand: SharePoint here has no call that sets a group's owner, so a site owner sets them on each group's settings page (People and Groups, the group, Settings, Group Settings), with "Who can edit the membership of the group" Group Owner: ${byHand.map(({ title, wanted }) => `"${title}": owner "${wanted}"`).join('; ')}. Then press Read what is set.` : '';
+  return { ok: true, undo, words: `Done. Nobody lost anything: the site's own groups keep what they had on these lists until a site owner presses Remove the site's groups.${owners}${left}` };
 }
 
 /**
