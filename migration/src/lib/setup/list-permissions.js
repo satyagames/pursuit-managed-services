@@ -188,7 +188,7 @@ export async function readPermissionState(read, titles, folder) {
   try { row = results(await read(siteGroupsAddress(titles)))[0] ?? null; } catch (cause) { if (cause.status !== 404) throw cause; }
   return {
     groups: results(groups), levels: results(levels), owners, targets, row, folder,
-    keepsFullControl: Boolean(me?.IsSiteAdmin) || results(ownerUsers).some((user) => user.Id === me?.Id),
+    me: me?.Id, keepsFullControl: Boolean(me?.IsSiteAdmin) || results(ownerUsers).some((user) => user.Id === me?.Id),
   };
 }
 
@@ -311,6 +311,9 @@ export async function applyPermissions(api, plan, { titles, folder, onProgress =
       say(`Make the group "${title}"`);
       const made = await api.write('POST', '/web/sitegroups', { __metadata: { type: 'SP.Group' }, Title: title, AllowMembersEditMembership: false });
       state.groups.push({ Id: made?.Id, Title: title, OwnerTitle: made?.OwnerTitle, AllowMembersEditMembership: false });
+      // (SharePoint makes the group's maker a member of it, as seen on PCOE: the site owner who pressed Apply is taken out again.)
+      const members = results(await api.read(`/web/sitegroups/getbyid(${made?.Id})/users?$select=Id&$top=5000`));
+      if (members.some((user) => user.Id === state.me)) await api.write('POST', `/web/sitegroups/getbyid(${made?.Id})/users/removebyid(${state.me})`);
     }
     if (due('level')) {
       say(`Make the permission level "${ADD_ONLY_LEVEL}"`);
@@ -360,7 +363,7 @@ export async function applyPermissions(api, plan, { titles, folder, onProgress =
       say("Keep the groups' ids in the settings list");
       const ids = Object.fromEntries(Object.entries(MANAGED_GROUPS).map(([key, title]) => [key, groupNamed(state, title).Id]));
       const list = address(titles.appsettings);
-      if (plan.state.row) await api.write('MERGE', `${list}/items(${plan.state.row.Id})`, { Title: groupsRowTitle(ids) });
+      if (plan.state.row) await api.write('MERGE', `${list}/items(${plan.state.row.Id})`, { Title: groupsRowTitle(ids, groupsOfRow(plan.state.row)?.sync ?? false) });
       else await api.write('POST', `${list}/items`, { Title: groupsRowTitle(ids), AppId: SITE_GROUPS_ITEM });
     }
   } catch (cause) {
@@ -410,4 +413,22 @@ export async function removeSiteGroups(api, state, titles, { onProgress = () => 
     return { ok: false, words: stopWords(doing, cause).replace('press Apply', 'press this') };
   }
   return { ok: true, words: plan.length ? `Done: removed from ${plan.length} ${plan.length === 1 ? 'list' : 'lists'}.` : 'Nothing to remove.' };
+}
+
+/**
+ * Setup's switch (Prompt 27, Part 4): whether a Super admin's actions on the admin page change who is in the three managed groups. Off until a site
+ * owner turns it on; kept in the groups' row. Never throws: { ok, words }.
+ * @param {{ read: Function, write: Function }} api @param {Record<string, string>} titles @param {boolean} on
+ */
+export async function setSiteGroupsSync(api, titles, on) {
+  try {
+    const row = results(await api.read(siteGroupsAddress(titles)))[0];
+    const groups = groupsOfRow(row);
+    if (!groups) return { ok: false, words: 'Press Apply first: the groups are not made yet.' };
+    const ids = Object.fromEntries(Object.keys(MANAGED_GROUPS).map((key) => [key, groups[key].id]));
+    await api.write('MERGE', `${address(titles.appsettings)}/items(${row.Id})`, { Title: groupsRowTitle(ids, on) });
+    return { ok: true, words: on ? 'Super admins now change who is in the PMS groups from the admin page.' : 'The admin page no longer changes who is in the PMS groups.' };
+  } catch (cause) {
+    return { ok: false, words: `Could not change the switch: ${saidOf(cause)}` };
+  }
 }

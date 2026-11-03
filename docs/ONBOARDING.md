@@ -21,7 +21,7 @@ A person who sees the app's No access screen already has site access.
 ## Add a person to the site
 
 1. Give them their role in the app: **People**, the person, **Give access**. An Admin stops here: the person now shows under **Waiting for site access** until a Super admin finishes.
-2. A Super admin opens the person in **People** and presses **Open site groups**. It copies the person's email and opens the group's SharePoint page.
+2. A Super admin opens the person in **People**. With Setup's switch on, **Check and fix** (or any change a Super admin makes there) adds them to the right groups, and you are done. Otherwise, press **Open site groups**. It copies the person's email and opens the group's SharePoint page.
 3. Choose **New**, paste the email, and choose **Share**. Ask them to reload the page they were trying to open.
 
 **Check site access** on the People page (a Super admin's) lists who is waiting, who has more access than the role says, and who is in a group but not in People. It only reads.
@@ -52,5 +52,4 @@ Apply removes nobody: people who reach the app through the site's Members or Vis
 
 ## The honest limit
 
-The app changes no group's members: Give access and Add user **remind** you, and a Super admin finishes in SharePoint. Proposed, not built: the app adding and
-removing members itself, for a Super admin, once the owner's console test on the real site has passed (Part 4 of Prompt 27).
+With Setup's switch on, a Super admin's changes put the person in or take them out of the PMS groups by themselves, and their page says **Site access** and which groups. With it off, or when SharePoint does not let that Super admin change a group, the person's page offers **Open site groups** instead. An Admin's changes never touch the site: the person waits for a Super admin.

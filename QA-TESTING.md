@@ -36,7 +36,7 @@
    Items **274 to 278** (Prompt 22: the shift by client and by session, Industry and Region with the Region filter, the minimum sample and who may
    set it, the fiscal start month on a test copy, and the manager's questions). Below item 273. No upgrade.
 17. Items **294 to 301** (Prompt 26: reply format, the red lines, paging, the i bubble, Sign in again, the conflict, the size watch). At the end of this file.
-18. Items **302 to 310** (Prompt 27: the console test, then Apply on a scratch list and on the real lists; they replace the hand steps of item 263). At the end of this file.
+18. Items **302 to 316** (Prompt 27: the console test, then Apply on a scratch list and on the real lists, then the admin page changing the groups; they replace the hand steps of item 263). At the end of this file.
 16. Item **293** (Prompt 25: the line about SharePoint access in Give access, Add user and No access; the document ONBOARDING.md). Below item 292.
 17. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
    160, 161, 164, 165, 166, 167, 168, 169, 170.
@@ -1738,7 +1738,7 @@ WebKit, and on the local site (docs/history/RELEASE-22.md), not on the real site
 
 Every group, permission and folder call was written from the brief and tested against a fake made from the same brief. A site owner runs these on a test copy first.
 
-302. **The console test.** *(Still to see.)* The snippet in Prompt 27, Part 0, as a test Super admin who is not a site owner. **Expect** the owners' group refused and PMS test add and remove answered 200. The app's own changing of members is not built until this passes.
+302. **The console test.** *(Seen 3 Nov 2026: a Member who owns a scratch group, not a site owner: CanCurrentUserEditMembership false on the owners and true on the scratch group, ensureuser 200, add 201, removebyid 200, the owners refused 403 -2147024891; SharePoint Server 16.0.19725. Also seen: a group's maker is made a member of it, and the people.aspx address opens the group.)* The snippet in Prompt 27, Part 0, as a test Super admin who is not a site owner. **Expect** the owners' group refused and PMS test add and remove answered 200. The app's own changing of members is not built until this passes.
 303. **List-level rights alone.** *(Still to see.)* An account only in a test group that holds Read on one test list and folder, and in no other group: does `index.html` open, and do `/_api/web`, `/_api/contextinfo` and that list answer? The whole plan rests on the Limited Access SharePoint adds by itself.
 304. **Apply: the rehearsal.** *(Still to see.)* On a test copy, Read what is set, then Apply. **Expect** the scratch list and folder made and gone again, and the owners shown correctly on the groups (`SetUserAsOwner` and the level's body are the likeliest to differ; the words say what to do by hand).
 305. **Apply: the lists and the folder.** *(Still to see.)* Compare each list's and the folder's permissions on SharePoint with the matrix on the page, and the library around the folder unchanged. Everyone who worked before still works.
@@ -1747,6 +1747,12 @@ Every group, permission and folder call was written from the brief and tested ag
 308. **Check site access.** *(Still to see.)* As a Super admin, not a site owner: are all three groups' members readable, an Admin's grant under Waiting, and a claim matched to its person? Then Setup's self-test step.
 309. **Remove the site's groups.** *(Still to see.)* On the test copy only, after people have moved: the site's Members can no longer open the lists; **an iPad account cannot read the five secret lists**; a Leadership person opens the dashboard; the self-test's "who may change the access lists" says as planned for all three.
 310. **Hand-set lists on the real site.** *(Still to see.)* If item 263's steps were followed by hand there, those lists show Differs; a site owner resets them to the site's permissions before Apply, and for that moment everyone in Members may change them again.
+311. **The switch.** *(Still to see.)* On a test copy, after Apply, a site owner turns on Setup's switch. **Expect** the groups' item of the settings list to say `"sync":true`.
+312. **A Super admin adds a person.** *(Still to see.)* Give a Producer a role: **expect** "Site access: PMS staff (added to PMS staff)", the person in PMS staff on SharePoint, and "Added to the site's staff group" in their history. A second Check and fix says the same and changes nothing.
+313. **An Admin's add waits.** *(Still to see.)* As an Admin, give a role: nothing changes on SharePoint, and the person shows under Waiting for site access.
+314. **Producer to Leadership, then Turn off.** *(Still to see.)* Move a person from Producer to Leadership (in leadership, then out of staff), then Turn off (the confirmation names the groups; they leave the three groups, and Members or any other group is untouched).
+315. **A Typed person.** *(Still to see.)* A person added by hand with no claim: found once in the directory, or "could not be found" and the Open site groups buttons.
+316. **A Super admin who may not edit a group.** *(Still to see.)* A Super admin who is not in PMS super admins: **expect** "SharePoint does not let you change PMS staff" and the buttons, and nothing sent.
 293. **Site access is a separate step.** *(Still to see.)* Give a test colleague a role in People, open Give access and read the line under the fields (Producer, Designer: Edit access; Leadership: Read is enough). Add them to the PCOE site as Members (steps in [docs/ONBOARDING.md](docs/ONBOARDING.md)); they open `admin.html` and the participant link. Before that step they should see SharePoint's "hasn't been shared with you". Read the line in Add user and on No access. Give yourself a role as Super admin: no line.
 
 ### Prompt 20 (the confidence check, Before and After): not verified on SharePoint Online or an iPad

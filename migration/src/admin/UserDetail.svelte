@@ -15,6 +15,7 @@
   import ConfirmDialog from './ConfirmDialog.svelte';
   import GiveAccess from './GiveAccess.svelte';
   import SiteAccessHandoff from './SiteAccessHandoff.svelte';
+  import { MANAGED_GROUPS, desiredGroups, groupIds } from '../lib/access/site-access.js';
 
   type Row = { key: string; name: string; email: string; status: string; assignments: any[] };
   let { access, person, users, assignments, clients, sessions, onBack, onChanged }: {
@@ -46,6 +47,14 @@
   const own = $derived(person.key === access?.person?.key);
   const mayManage = $derived(can(access, 'users.manage', {}));
   const mayGlobal = $derived(can(access, 'roles.global', {}));
+  /** (Prompt 27) Counts the changes made here, so the site access line checks again after each; and what Turn off also does to the site's groups. */
+  let synced = $state(0);
+  let offGroups = $state('');
+  $effect(() => {
+    if (confirm?.kind !== 'disable' || !mayGlobal) { offGroups = ''; return; }
+    const groups = desiredGroups({ id: person.key, status: 'Active' }, assignments).map((key) => MANAGED_GROUPS[key]);
+    void groupIds(dataService).then((ids) => { offGroups = ids?.sync && groups.length ? ` This also removes them from ${groups.join(' and ')}.` : ''; });
+  });
   const mayGive = $derived(can(access, 'team.assign', {}));
   const today = new Date().toISOString().slice(0, 10);
   const ended = (row: any) => Boolean(row.validUntil) && String(row.validUntil).slice(0, 10) < today;
@@ -68,7 +77,7 @@
       const words = await change();
       confirm = null;
       giving = false;
-      if (words) onChanged(words);
+      if (words) { synced += 1; onChanged(words); }
     } catch (cause) {
       error = errorText(cause, 'Could not make this change.');
       confirm = null;
@@ -121,7 +130,7 @@
   </header>
   {#if own}<p class="muted" data-testid="own-note">This is you: you cannot change your own roles or turn off your own access.</p>{/if}
   {#if error}<p class="error" role="alert">{error}</p>{/if}
-  <SiteAccessHandoff {access} person={{ id: person.key, email: person.email, status: person.status }} {assignments} />
+  <SiteAccessHandoff {access} person={{ id: person.key, email: person.email, status: person.status }} {assignments} changed={synced} />
 
   <section class="detail__block" aria-labelledby="global-heading">
     <h3 id="global-heading">Roles for all clients</h3>
@@ -205,7 +214,7 @@
 </section>
 
 {#if confirm?.kind === 'disable'}
-  <ConfirmDialog title="Turn off {person.name}'s access?" lead="They will not be able to use the admin page." confirmLabel="Turn access off" tone="danger" {busy}
+  <ConfirmDialog title="Turn off {person.name}'s access?" lead={`They will not be able to use the admin page.${offGroups}`} confirmLabel="Turn access off" tone="danger" {busy}
     points={['Their roles stay as they are, so turning access on again gives everything back.', 'They are not deleted, and what they did stays in the history.']}
     onConfirm={() => void turn('Disabled')} onCancel={() => { confirm = null; }} />
 {:else if confirm?.kind === 'remove'}
@@ -214,7 +223,7 @@
     onConfirm={() => { if (confirm?.kind === 'remove') void remove(confirm.assignment); }} onCancel={() => { confirm = null; }} />
 {/if}
 {#if giving}
-  <GiveAccess {access} person={{ key: person.key, name: person.name }} {clients} {sessions} onCancel={() => { giving = false; }} onDone={(words) => { giving = false; onChanged(words); }} />
+  <GiveAccess {access} person={{ key: person.key, name: person.name }} {clients} {sessions} onCancel={() => { giving = false; }} onDone={(words) => { giving = false; synced += 1; onChanged(words); }} />
 {/if}
 
 <style>

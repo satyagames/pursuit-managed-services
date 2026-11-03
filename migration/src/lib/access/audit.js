@@ -6,7 +6,7 @@
 /** The longest Detail a line keeps (a single line of text). */
 export const AUDIT_DETAIL_MAX = 255;
 /** What a line may say was done: PMSAuditLog.Action's words (pms-schema-meta.js; scripts/test-access.js holds the two to the same words). */
-export const AUDIT_ACTIONS = Object.freeze(['grant', 'revoke', 'add-user', 'disable', 'enable', 'migrate', 'settings', 'client', 'picture']);
+export const AUDIT_ACTIONS = Object.freeze(['grant', 'revoke', 'add-user', 'disable', 'enable', 'migrate', 'settings', 'client', 'picture', 'site-add', 'site-remove']);
 /** Text that looks like a participant's answers: never written to the audit list. */
 const ANSWERS = /questionId|"answer"|ResponsesJson|firstAnswer/i;
 

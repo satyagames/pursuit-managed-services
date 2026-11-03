@@ -149,6 +149,7 @@ seven sizes.
   parts 4 and 5 hold the dashboard's empty states and its words. In the browser: `leader-report.spec.ts` (Hide names on Sessions, the PDF and the CSV),
   `role-scoping.spec.ts` (turned off while open, with the clock moved on five minutes), `leader-dashboard.spec.ts` (no summary yet; the switch shared with
   Sessions). Three failures of `npm run test:a11y` are older than this phase and fail the same on its starting commit (RELEASE-21F.md).
+- `node --test scripts/test-site-sync.js` (part of `npm test`, Prompt 27, Part 4): the guard (a Super admin's only; the three learned groups only), the lazy cached ids, and syncSiteAccess: add, remove, twice, Admin, switch off, may not edit, Typed, refused, and Apply leaving its maker out of the groups.
 - `node --test scripts/test-site-access.js` (part of `npm test`, Prompt 27): who belongs in which PMS group, the matrix, the plan's states, Apply's order and stops, Remove the site's groups, and the drift report, against `sitePermissions` of `scripts/sharepoint-fake.js`, an approximation written from the brief: the real site is the proof (QA-TESTING.md).
 - `node --test scripts/test-hardening.js` (part of `npm test`, Prompt 21, Phase 7): the access lists' permissions (the plan's four steps, the findings for
   a list that still inherits, a member who may change a people list, an audit list a member may edit or no one may add to, the self-test probe's six

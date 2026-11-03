@@ -2,7 +2,8 @@
   // The PMS groups and the lists' permissions (Prompt 27, Part 1): prints the matrix, reads what is set as a checklist, and has the two buttons a site owner
   // presses: Apply, which only adds, and later Remove the site's groups. The rules are lib/setup/list-permissions.js. The self-test never presses either.
   import { matrixTable } from '../lib/setup/list-permissions.js';
-  import { applySitePermissions, listTitles, readSitePermissions, removeSiteGroupsNow, siteGroupsRemoval, type PermissionPlan } from '../lib/setup/setupData.js';
+  import { groupsOfRow } from '../lib/access/site-access.js';
+  import { applySitePermissions, listTitles, readSitePermissions, removeSiteGroupsNow, setSiteGroupsSyncNow, siteGroupsRemoval, type PermissionPlan } from '../lib/setup/setupData.js';
 
   let { blocked, folder }: { blocked: boolean; folder: string } = $props();
 
@@ -16,6 +17,8 @@
   const removal = $derived(plan ? siteGroupsRemoval(plan) : []);
   const toDo = $derived(plan ? plan.steps.filter((step) => step.state === 'To do') : []);
   const message = (cause: unknown) => (cause instanceof Error ? cause.message : 'Unknown error.');
+  /** The switch (Prompt 27, Part 4): read from the groups' row; there is none to turn on until Apply has kept the ids. */
+  const saved = $derived(plan ? groupsOfRow(plan.state.row) : null);
 
   async function reread(after = 'Nothing on the site was changed.') {
     plan = await readSitePermissions(folder);
@@ -51,6 +54,17 @@
       await reread(result.words);
     } catch (cause) { failed = true; status = message(cause); } finally { busy = false; }
   }
+  async function switchSync(event: Event) {
+    const box = event.currentTarget as HTMLInputElement;
+    const on = box.checked;
+    if (on && !window.confirm('Let Super admins add people to and take them out of PMS access managers, PMS staff and PMS leadership from the admin page? Only those three groups; an Admin never does, and the site\'s owners keep PMS super admins and PMS participants.')) { box.checked = false; return; }
+    busy = true;
+    try {
+      const result = await setSiteGroupsSyncNow(on);
+      failed = !result.ok;
+      await reread(result.words);
+    } catch (cause) { failed = true; status = message(cause); } finally { busy = false; }
+  }
 </script>
 
 <section aria-labelledby="permissions-heading">
@@ -70,6 +84,12 @@
   <button class="btn btn--primary" type="button" onclick={() => void apply()} disabled={busy || blocked || toDo.length === 0}>Apply</button>
   <button class="btn" type="button" onclick={() => void remove()} disabled={busy || blocked || removal.length === 0}>Remove the site's groups</button>
   {#if status}<p class="setup-status setup-status--{failed ? 'error' : 'info'}" role="status" aria-live="polite" data-testid="permissions-status">{status}</p>{/if}
+  {#if saved}
+    <label class="setup-check">
+      <input type="checkbox" checked={saved.sync} onchange={(event) => void switchSync(event)} disabled={busy || blocked} />
+      Super admins change who is in PMS access managers, PMS staff and PMS leadership from the admin page (off: they finish on SharePoint's own page)
+    </label>
+  {/if}
   {#if plan}
     <ul class="permissions-plan" data-testid="permissions-plan">
       {#each plan.steps as step (step.id)}<li><strong>{step.state}</strong>: {step.words}</li>{/each}

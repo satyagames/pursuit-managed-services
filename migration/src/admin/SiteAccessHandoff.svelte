@@ -1,35 +1,49 @@
 <script lang="ts">
-  // The hand-off after a role is given (Prompt 27, Part 3): for a Super admin, a button that copies the person's email and opens the SharePoint page of a
-  // group they should be in, so they finish there in two clicks. The app changes no group's members. It reads nothing until it is pressed, so a person's
-  // page costs no more requests. An Admin sees none of this: the person waits in the People page's drift report. The address is ASSUMED (QA-TESTING.md).
+  // A person's site access (Prompt 27), for a Super admin only: "Site access: Not checked" until it is checked, then which PMS groups they are in. With
+  // Setup's switch on, checking also fixes (lib/access/site-access.js syncSiteAccess: only the difference), and it runs by itself after each change the
+  // screen around it makes (`changed`). With the switch off, or when SharePoint does not let this account change a group, it hands on: a button copies the
+  // person's email and opens the group's SharePoint page (the address is the one PCOE answered, 3 Nov 2026). Nothing is read until it is needed, so a
+  // person's page costs no more requests. An Admin sees none of this: the person waits in the People page's drift report.
   import * as dataService from '../lib/data/dataService.js';
   import { can } from '../lib/access/can.js';
-  import { MANAGED_GROUPS, desiredGroups, groupsOfRow, siteGroupsAddress } from '../lib/access/site-access.js';
+  import { MANAGED_GROUPS, desiredGroups, groupIds, syncSiteAccess } from '../lib/access/site-access.js';
 
-  let { access, person, assignments }: { access: any; person: { id: string; email?: string; status?: string }; assignments: any[] } = $props();
+  let { access, person, assignments, changed = 0 }: { access: any; person: { id: string; email?: string; status?: string }; assignments: any[]; changed?: number } = $props();
 
+  type Key = keyof typeof MANAGED_GROUPS;
   const may = $derived(can(access, 'roles.global', {}));
-  const wanted = $derived(desiredGroups(person, assignments) as (keyof typeof MANAGED_GROUPS)[]);
+  const wanted = $derived(desiredGroups(person, assignments) as Key[]);
+  let phase = $state<'idle' | 'busy' | 'done' | 'same' | 'manual' | 'failed'>('idle');
+  let words = $state('');
   let said = $state('');
+  let seen = 0;
 
-  const read = async (resource: string) => {
-    const answer = await (dataService.probeSharePointRead as any)(null, resource);
-    if (answer.ok) return answer.data;
-    throw new Error(answer.message);
-  };
+  async function check() {
+    if (phase === 'busy') return;
+    phase = 'busy';
+    said = '';
+    const result = await syncSiteAccess(dataService, access, person.id) as { status: typeof phase; words: string };
+    phase = result.status;
+    words = result.words;
+  }
 
-  async function open(key: keyof typeof MANAGED_GROUPS) {
+  // (After a change the screen made: a role given or removed, a person turned off or on.)
+  $effect(() => {
+    if (may && changed > seen) { seen = changed; void check(); }
+  });
+
+  async function open(key: Key) {
     // (Opened before the reads: a browser allows a new tab only on the click itself.)
     const tab = window.open('', '_blank');
     said = '';
     try {
-      const data = await read(siteGroupsAddress(dataService.sharePointListTitles()));
-      const groups = groupsOfRow((data?.results ?? data?.value ?? [])[0]);
+      const groups = await groupIds(dataService);
       if (!groups) throw new Error('Setup has not made the site groups yet.');
-      const site = (await read('/web?$select=Url'))?.Url;
+      const answer = await (dataService.probeSharePointRead as any)(null, '/web?$select=Url');
+      if (!answer.ok) throw new Error(answer.message);
       const email = person.email || person.id;
       try { await navigator.clipboard.writeText(email); said = `${email} is copied. Paste it into ${MANAGED_GROUPS[key]}'s New menu.`; } catch { said = `Add ${email} to ${MANAGED_GROUPS[key]}.`; }
-      if (tab) tab.location.href = `${site}/_layouts/15/people.aspx?MembershipGroupId=${groups[key].id}`;
+      if (tab) tab.location.href = `${answer.data.Url}/_layouts/15/people.aspx?MembershipGroupId=${groups[key].id}`;
     } catch (cause) {
       tab?.close();
       said = cause instanceof Error ? cause.message : 'Could not open the site groups.';
@@ -37,12 +51,19 @@
   }
 </script>
 
-{#if may && wanted.length}
+{#if may}
   <div class="handoff" data-testid="site-handoff">
-    <p class="muted small">Site access: this person belongs in {wanted.map((key) => MANAGED_GROUPS[key]).join(' and ')}.</p>
-    {#each wanted as key (key)}
-      <button class="btn" type="button" onclick={() => void open(key)}>Open site groups: {MANAGED_GROUPS[key]}</button>
-    {/each}
+    <p class="small" role="status">
+      {#if phase === 'idle'}Site access: Not checked. This person belongs in {wanted.length ? wanted.map((key) => MANAGED_GROUPS[key]).join(' and ') : 'no PMS group'}.
+      {:else if phase === 'busy'}Checking site access...
+      {:else}{words}{/if}
+    </p>
+    <button class="btn" type="button" onclick={() => void check()} disabled={phase === 'busy'}>{phase === 'manual' || phase === 'failed' ? 'Try again' : 'Check and fix'}</button>
+    {#if phase === 'manual' || phase === 'failed'}
+      {#each wanted as key (key)}
+        <button class="btn" type="button" onclick={() => void open(key)}>Open site groups: {MANAGED_GROUPS[key]}</button>
+      {/each}
+    {/if}
     {#if said}<p class="muted small" role="status">{said}</p>{/if}
   </div>
 {/if}

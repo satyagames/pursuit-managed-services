@@ -278,9 +278,18 @@ const fieldAsRead = (select) => (field) => {
  * folders that are a library's root, `levels` more permission levels, `levelLow` the bits a made level really gets, `ownerNotSet` an owner that does not land,
  * `runningIsOwner` false when the signed-in account is not in the owners' group, `memberPage` the page size of a group's members.
  */
-function sitePermissionsFake({ handmade = [], rootFolders = [], levels: moreLevels = [], levelLow = null, ownerNotSet = false, runningIsOwner = true, memberPage = 0 }, { ownerGroupId, currentUser }) {
+function sitePermissionsFake({ handmade = [], rootFolders = [], levels: moreLevels = [], levelLow = null, ownerNotSet = false, runningIsOwner = true, memberPage = 0, cannotEdit = [] }, { ownerGroupId, currentUser }) {
   const VERBOSE = /odata=verbose/;
   let nextId = 100;
+  // (Part 4. As Part 0 showed on PCOE: ensureuser 200, an add 201 with the verbose SP.User body, removebyid 200, the owners' group 403, and a group's maker
+  // made a member of it. `cannotEdit` names groups whose CanCurrentUserEditMembership is false, and which refuse an add or removal with 403.)
+  const siteUsers = new Map();
+  const userOf = (login, email = login.split('|').at(-1)) => {
+    // (A claim ends in the alias, as on PCOE; the directory's email is taken to be the alias at x.com.)
+    if (!siteUsers.has(login.toLowerCase())) siteUsers.set(login.toLowerCase(), { Id: nextId++, Title: email, Email: email.includes('@') ? email : `${email}@x.com`, LoginName: login });
+    return siteUsers.get(login.toLowerCase());
+  };
+  const maySet = (group) => group.Id !== ownerGroupId && !cannotEdit.includes(group.Title);
   const groups = new Map([[ownerGroupId, 'Site Owners'], [4, 'Site Members'], [5, 'Site Visitors']].map(([Id, Title]) => [Id, { Id, Title, OwnerTitle: 'Site Owners', AllowMembersEditMembership: false, users: [] }]));
   const levels = [
     { Id: 1073741829, Name: 'Full Control', RoleTypeKind: 5, BasePermissions: { High: '2147483647', Low: '4294967295' } },
@@ -312,8 +321,10 @@ function sitePermissionsFake({ handmade = [], rootFolders = [], levels: moreLeve
     group: (title) => [...groups.values()].find((group) => group.Title === title),
     level: (name) => levels.find((level) => level.Name === name),
     folders: () => [...folders],
-    addMembers(title, emails) { look.group(title).users.push(...emails.map((email) => ({ Id: nextId++, Title: email, Email: email, LoginName: `i:0e.t|adfs|${email}` }))); },
+    addMembers(title, emails) { look.group(title).users.push(...emails.map((email) => userOf(`i:0e.t|adfs|${email.split('@')[0]}`, email))); },
     dropOwners(name) { scopeOf(name).bindings.delete(ownerGroupId); },
+    /** From now on SharePoint says this account may not change the group's members (CanCurrentUserEditMembership false, and 403). */
+    refuseEdits(title) { cannotEdit.push(title); },
   };
   const route = (request, headers, entry, { ok, error }) => {
     const { method, path } = entry;
@@ -334,10 +345,20 @@ function sitePermissionsFake({ handmade = [], rootFolders = [], levels: moreLeve
       return ok(level, 201);
     }
     if (/\/web\/sitegroups$/.test(path)) {
-      if (method === 'GET') return ok({ results: [...groups.values()].map(({ users, ...group }) => group) });
-      const group = { Id: nextId++, Title: body.Title, OwnerTitle: 'Casey Example', AllowMembersEditMembership: Boolean(body.AllowMembersEditMembership), users: [] };
+      if (method === 'GET') return ok({ results: [...groups.values()].map(({ users, ...group }) => ({ ...group, CanCurrentUserEditMembership: maySet(group) })) });
+      const me = typeof currentUser === 'function' ? currentUser() : currentUser;
+      const maker = userOf(me.LoginName ?? `i:0e.t|adfs|${me.Title}`, me.Email ?? me.Title);
+      if (maker.Id !== me.Id) { siteUsers.delete(maker.LoginName.toLowerCase()); maker.Id = me.Id; siteUsers.set(maker.LoginName.toLowerCase(), maker); }
+      const group = { Id: nextId++, Title: body.Title, OwnerTitle: me.Title, AllowMembersEditMembership: Boolean(body.AllowMembersEditMembership), users: [maker] };
       groups.set(group.Id, group);
-      return ok(group, 201);
+      return ok((({ users, ...rest }) => rest)(group), 201);
+    }
+    if (/\/web\/ensureuser$/.test(path) && method === 'POST') return ok((({ Id, LoginName, Email }) => ({ Id, LoginName, Email }))(userOf(body.logonName)));
+    const byEmail = /\/web\/siteusers\/getbyemail\('(.+?)'\)$/.exec(path);
+    if (byEmail) {
+      const found = [...siteUsers.values()].find((each) => each.Email.toLowerCase() === byEmail[1].replace(/''/g, "'").toLowerCase());
+      if (!found) return error(404, 'User cannot be found.');
+      return ok({ Id: found.Id, LoginName: found.LoginName, Groups: { results: [...groups.values()].filter((group) => group.users.includes(found)).map((group) => ({ Id: group.Id })) } });
     }
     const inGroup = /\/web\/sitegroups\/getbyid\((\d+)\)(.*)$/.exec(path);
     if (inGroup) {
@@ -345,6 +366,14 @@ function sitePermissionsFake({ handmade = [], rootFolders = [], levels: moreLeve
       if (!group) return error(404, 'Group cannot be found.');
       const owner = /^\/SetUserAsOwner\((\d+)\)$/.exec(inGroup[2]);
       if (owner) { if (!ownerNotSet) group.OwnerTitle = groups.get(Number(owner[1])).Title; return ok(null); }
+      const gone = /^\/users\/removebyid\((\d+)\)$/.exec(inGroup[2]);
+      if (gone || (inGroup[2] === '/users' && method === 'POST')) {
+        if (!maySet(group)) return error(403, 'Access denied. You do not have permission to perform this action or access this resource.', undefined, '-2147024891, System.UnauthorizedAccessException');
+        if (gone) { group.users = group.users.filter((user) => user.Id !== Number(gone[1])); return ok({ RemoveById: null }); }
+        const user = userOf(body.LoginName);
+        if (!group.users.includes(user)) group.users.push(user);
+        return ok(user, 201);
+      }
       if (inGroup[2] === '/users') {
         const from = Number(url.searchParams.get('p') ?? 0);
         const size = memberPage || group.users.length || 1;
@@ -353,7 +382,7 @@ function sitePermissionsFake({ handmade = [], rootFolders = [], levels: moreLeve
         return ok({ results: group.users.slice(from, from + size), ...(from + size < group.users.length ? { __next: there.href } : {}) });
       }
       if (method === 'MERGE') { group.AllowMembersEditMembership = Boolean(body.AllowMembersEditMembership); return ok(null, 204); }
-      return ok({ OwnerTitle: group.OwnerTitle });
+      return ok({ OwnerTitle: group.OwnerTitle, CanCurrentUserEditMembership: maySet(group) });
     }
     if (/\/web\/folders$/.test(path) && method === 'POST') { folders.add(body.ServerRelativeUrl); made.add(norm(body.ServerRelativeUrl)); return ok({ ServerRelativeUrl: body.ServerRelativeUrl }, 201); }
     if (/\/web\/lists$/.test(path) && method === 'POST' && body?.Title === 'PMSPermissionProbe') { made.add(norm(body.Title)); return ok({ Id: 'scratch', Title: body.Title }, 201); }
@@ -552,7 +581,7 @@ export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Ca
       ?? (typeof body?.parameters?.SchemaXml === 'string' ? /\bName="([^"]*)"/.exec(body.parameters.SchemaXml)?.[1] : undefined);
     // `list` is the key of the list a request is for, whichever set it reached; `title` is what the request named.
     const known = title === null ? null : titles.get(title) ?? (title === libraryTitle ? { key: LIBRARY_KEY, own: true } : otherLibraries.includes(title) ? { key: LIBRARY_KEY, own: false } : null);
-    const entry = { method, list: known?.key ?? title, title, url: request.url, path, query: decodeURIComponent(url.search), ifMatch: headers['if-match'] ?? null, at: Date.now(), ...(field === undefined ? {} : { field }), ...extra };
+    const entry = { method, list: known?.key ?? title, title, url: request.url, path, query: decodeURIComponent(url.search), ifMatch: headers['if-match'] ?? null, contentType: headers['content-type'] ?? null, at: Date.now(), ...(field === undefined ? {} : { field }), ...extra };
     if (known && !known.own) {
       entry.stray = true;
       strays.push(entry);

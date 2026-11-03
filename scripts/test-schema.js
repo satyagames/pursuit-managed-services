@@ -193,6 +193,12 @@ export const CHANGES = [
     shape.lists.visitorroster.columns.push({ column: 'PictureUrl', field: 'pictureUrl', kind: 'plain', type: 'Text', ...plain, values: null });
     return shape;
   }],
+  // (Prompt 27, Part 4: the audit list's Action, a text column, says two things more; no version of its own.)
+  ['(Prompt 27, still v9) PMSAuditLog.Action\'s words gain site-add and site-remove (a person put in or taken out of a PMS group of the site)', (shape) => {
+    const action = shape.lists.auditlog?.columns.find((column) => column.column === 'Action');
+    if (action) action.values = [...action.values, 'site-add', 'site-remove'];
+    return shape;
+  }],
 ];
 
 describe('the snapshot of the old schema, with this phase\'s changes, is the schema file', () => {

@@ -212,7 +212,8 @@ describe('Apply', () => {
     const rows = [s.fake.item('appsettings', 'site-groups')].filter(Boolean);
     assert.equal(rows.length, 1);
     const groups = groupsOfRow(rows[0]);
-    assert.deepEqual(Object.keys(groups).sort(), ['leadership', 'managers', 'staff']);
+    assert.deepEqual(Object.keys(groups).sort(), ['leadership', 'managers', 'staff', 'sync']);
+    assert.equal(groups.sync, false, 'the switch starts off');
     assert.equal(groups.staff.title, 'PMS staff');
     assert.ok(Number.isInteger(groups.staff.id));
     assert.ok(rows[0].Title.length <= 255);

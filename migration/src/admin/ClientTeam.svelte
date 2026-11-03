@@ -44,8 +44,9 @@
   let formError = $state('');
   let confirm = $state<any>(null);
   let lastPreset: string | null = null;
-  /** The person just added, for the hand-off to the site's groups (Prompt 27). */
+  /** The person just added or taken off the team, for their site access (Prompt 27): checked again after each change. */
   let lastAdded = $state('');
+  let teamChanges = $state(0);
   const added = $derived(users.find((user) => user.id === lastAdded) ?? null);
   let heading = $state<HTMLElement>();
 
@@ -83,6 +84,7 @@
       const done = await addToTeam(dataService, access, { clientId: client.id, userKey, role, scope, sessionIds, editActivities });
       open = false;
       lastAdded = userKey;
+      teamChanges += 1;
       const name = users.find((user) => user.id === userKey)?.fullName || userKey;
       onChanged(done.added ? `${name} is on the team as ${role}` : `${name} already had that role`);
     } catch (cause) {
@@ -97,6 +99,8 @@
     busy = true;
     try {
       const done = await removeRole(dataService, access, confirm.assignment, assignments);
+      lastAdded = confirm.assignment.userKey;
+      teamChanges += 1;
       const words = done.removed ? `${confirm.name} removed from the team` : `${confirm.name} was already off the team`;
       confirm = null;
       onChanged(words);
@@ -114,7 +118,7 @@
     {#if mayAssign}<button class="btn btn--primary" type="button" onclick={() => openForm()} disabled={busy || open}>Add to team</button>{/if}
   </div>
   <p class="muted small">A Producer runs the sessions, a Designer edits the brand, Leadership sees the results. Give a role for the whole client, or only for some sessions.{mayAssign ? '' : ' An Admin chooses the team.'}</p>
-  {#if added && access}<SiteAccessHandoff {access} person={added} {assignments} />{/if}
+  {#if added && access}<SiteAccessHandoff {access} person={added} {assignments} changed={teamChanges} />{/if}
 
   {#if open}
     <form class="editor-form team-form" onsubmit={add} novalidate aria-labelledby="team-form-heading">

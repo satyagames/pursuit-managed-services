@@ -119,6 +119,8 @@ const DID = {
   migrate: () => 'Copied from the old admins list',
   settings: (line) => line.detail || 'Reporting settings changed',
   client: (line) => line.detail || 'Client details changed',
+  'site-add': (line) => `Added to the site's ${line.detail} group`,
+  'site-remove': (line) => `Taken out of the site's ${line.detail} group`,
 };
 
 /**

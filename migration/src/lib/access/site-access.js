@@ -1,12 +1,13 @@
 // Who should be in which PMS group of the site (Prompt 27), worked out from the app's own people and roles, and the read-only comparison with who is. The
 // group model: Super admin and Admin belong in PMS staff and PMS access managers, Producer and Designer in PMS staff, Leadership in PMS leadership. The
 // groups' ids live in one row of the settings list (AppId `site-groups`, as JSON in its built-in Title), which Setup writes; no page names a group's id.
-// This module changes nothing on the site: changing membership is Part 4 of the brief, not built until the owner's console test has passed. Plain JS with
+// Its Part 4 half (below) changes who is in the three managed groups, for a Super admin, with Setup's switch on: only the difference. Plain JS with
 // no DOM; the admin page and Setup import it, the participant page never does (`npm run test:bundle`).
 import { selectOf } from '../schema/pms-schema.js';
-import { grantsOf } from './can.js';
+import { can, grantsOf } from './can.js';
+import { writeAudit } from './audit.js';
 
-/** The three groups the app may one day change the members of, by the key the row and desiredGroups use. PMS super admins and PMS participants are never here. */
+/** The three groups the app changes the members of (Part 4, behind Setup's switch), by the key the row and desiredGroups use. PMS super admins and PMS participants are never here. */
 export const MANAGED_GROUPS = Object.freeze({ staff: 'PMS staff', managers: 'PMS access managers', leadership: 'PMS leadership' });
 /** The AppId of the settings list's row that holds the groups' ids. */
 export const SITE_GROUPS_ITEM = 'site-groups';
@@ -22,6 +23,7 @@ const results = (data) => data?.results ?? data?.value ?? [];
  * @param {{ userKey: string, role: string }[]} assignments any rows; only the person's own count
  * @param {Date} [now]
  */
+/** @returns {('staff' | 'managers' | 'leadership')[]} */
 export function desiredGroups(user, assignments = [], now = new Date()) {
   const mine = assignments.filter((assignment) => assignment.userKey === user.id);
   const grants = grantsOf({ person: null, owner: false, legacy: false, user, assignments: mine }, { now });
@@ -36,12 +38,13 @@ export const siteGroupsAddress = (titles) => `/web/lists/getbytitle('${encodeURI
 export function groupsOfRow(row) {
   try {
     const groups = JSON.parse(row?.Title ?? '');
-    return Object.keys(MANAGED_GROUPS).every((key) => Number.isInteger(groups?.[key]?.id)) ? groups : null;
+    return Object.keys(MANAGED_GROUPS).every((key) => Number.isInteger(groups?.[key]?.id)) ? { ...groups, sync: groups.sync === true } : null;
   } catch { return null; }
 }
 
 /** The text the row's Title holds: under the column's 255 characters for any three ids. */
-export const groupsRowTitle = (ids) => JSON.stringify(Object.fromEntries(Object.entries(MANAGED_GROUPS).map(([key, title]) => [key, { id: ids[key], title }])));
+/** `sync` is Setup's switch: whether a Super admin's actions on the admin page change the groups' members (off unless a site owner turns it on). */
+export const groupsRowTitle = (ids, sync = false) => JSON.stringify({ ...Object.fromEntries(Object.entries(MANAGED_GROUPS).map(([key, title]) => [key, { id: ids[key], title }])), sync });
 
 /**
  * The comparison, with nothing asked of the site.
@@ -106,3 +109,99 @@ export async function readDrift(read, titles, people) {
 
 /** The drift in one sentence, for Setup's self-test. */
 export const driftWords = ({ waiting, more, strangers }) => `${waiting.length} waiting for site access, ${more.length} with more access than the role says, ${strangers.length} in a group but not in People.`;
+
+// ---- Part 4: the app changes who is in the three managed groups (a Super admin's, behind Setup's switch) --------------------------------------------
+
+let reading = null;
+const learned = new Set();
+/** The ids of the three managed groups once groupIds has read them: the write guard refuses any other group (lib/access/guard.js). */
+export const knownGroupIds = () => learned;
+/** Forgets what was read (a test; or a page that must read the row again). */
+export function forgetGroupIds() { reading = null; learned.clear(); }
+
+/**
+ * The groups' row, read on the first people action of the page and kept: { staff, managers, leadership, sync }, or null when Setup has not made the
+ * groups (or on the local server). Never at sign-in: the sign-in's requests are pinned.
+ * @param {any} dataService
+ */
+/** @returns {Promise<any>} */
+export function groupIds(dataService) {
+  reading ??= (async () => {
+    const answer = await dataService.probeSharePointRead(null, siteGroupsAddress(dataService.sharePointListTitles())).catch(() => ({ ok: false }));
+    const groups = answer.ok ? groupsOfRow(results(answer.data)[0]) : null;
+    if (!answer.ok) reading = null; // (read again next time: a refusal is not an answer)
+    for (const key of Object.keys(MANAGED_GROUPS)) if (groups) learned.add(groups[key].id);
+    return groups;
+  })();
+  return reading;
+}
+
+const quotedEmail = (email) => encodeURIComponent(String(email).replace(/'/g, "''"));
+const listOf = (data) => (Array.isArray(data) ? data : results(data));
+
+/**
+ * A person's place on the site: { id, loginName, groups: Set of group ids }, or null when they are not on it yet (404). Throws on any other refusal.
+ * @param {any} dataService @param {{ id: string, email?: string }} user
+ */
+export async function membership(dataService, user) {
+  const answer = await dataService.probeSharePointRead(null, `/web/siteusers/getbyemail('${quotedEmail(user.email || user.id)}')?$select=Id,LoginName,Groups/Id&$expand=Groups`);
+  if (!answer.ok && answer.status === 404) return null;
+  if (!answer.ok) throw Object.assign(new Error(answer.message), { status: answer.status });
+  return { id: answer.data.Id, loginName: answer.data.LoginName, groups: new Set(listOf(answer.data.Groups).map((group) => group.Id)) };
+}
+
+const named = (keys) => (keys.length ? keys.map((key) => MANAGED_GROUPS[key]).join(' and ') : 'None');
+/** What a person waiting for a Super admin is told, by the groups they need. */
+export const waitingWords = (wanted) => (wanted.length ? `A Super admin adds them to ${named(wanted)}, so that the pages open for them.` : 'They need no site group.');
+
+/**
+ * Makes the person's membership of the three managed groups what their roles ask: reads, compares and changes only the difference, so a second run
+ * changes nothing. Never throws: { status: 'done' | 'same' | 'manual' | 'failed', words, groups }. Only a Super admin's call does anything (the guard
+ * holds it too), and only with Setup's switch on; the groups the app does not manage are never read for a change, let alone written.
+ * @param {any} dataService @param {any} access @param {string} userKey @param {{ now?: Date }} [options]
+ */
+export async function syncSiteAccess(dataService, access, userKey, { now = new Date() } = {}) {
+  let wanted = [];
+  try {
+    const { user, assignments } = await dataService.readAccessRows(userKey);
+    if (!user) return { status: 'manual', words: 'This person is not in People.', groups: [] };
+    wanted = desiredGroups(user, assignments, now);
+    if (!can(access, 'roles.global', {}, { now })) return { status: 'manual', words: waitingWords(wanted), groups: wanted };
+    const groups = await groupIds(dataService);
+    if (!groups) return { status: 'manual', words: `Setup has not made the site groups yet. ${waitingWords(wanted)}`, groups: wanted };
+    if (!groups.sync) return { status: 'manual', words: waitingWords(wanted), groups: wanted };
+    const found = await membership(dataService, user);
+    const actual = Object.keys(MANAGED_GROUPS).filter((key) => found?.groups.has(groups[key].id));
+    const add = wanted.filter((key) => !actual.includes(key));
+    const remove = actual.filter((key) => !wanted.includes(key));
+    if (!add.length && !remove.length) return { status: 'same', words: `Site access: ${named(wanted)}.`, groups: wanted };
+    for (const key of [...add, ...remove]) {
+      const group = await dataService.probeSharePointRead(null, `/web/sitegroups/getbyid(${groups[key].id})?$select=CanCurrentUserEditMembership`);
+      if (!group.ok || !group.data?.CanCurrentUserEditMembership) {
+        return { status: 'manual', words: `SharePoint does not let you change ${MANAGED_GROUPS[key]}. ${waitingWords(wanted)}`, groups: wanted };
+      }
+    }
+    let id = found?.id;
+    if (add.length) {
+      let login = found?.loginName || user.loginName;
+      if (!login) login = (await dataService.searchDirectory(user.email || user.id, { max: 1 }).catch(() => null))?.find((entry) => entry.email === (user.email || user.id))?.loginName;
+      if (!login) return { status: 'manual', words: `This person could not be found in the directory. ${waitingWords(wanted)}`, groups: wanted };
+      const made = await dataService.sendToSharePoint('POST', '/web/ensureuser', { logonName: login });
+      id = made?.Id ?? id;
+      for (const key of add) {
+        await dataService.sendToSharePoint('POST', `/web/sitegroups/getbyid(${groups[key].id})/users`, { __metadata: { type: 'SP.User' }, LoginName: made?.LoginName ?? login });
+        await writeAudit(dataService, access, { action: 'site-add', targetUser: user.id, detail: key }, { now });
+      }
+    }
+    for (const key of remove) {
+      await dataService.sendToSharePoint('POST', `/web/sitegroups/getbyid(${groups[key].id})/users/removebyid(${id})`);
+      await writeAudit(dataService, access, { action: 'site-remove', targetUser: user.id, detail: key }, { now });
+    }
+    const changes = [add.length ? `added to ${named(add)}` : '', remove.length ? `taken out of ${named(remove)}` : ''].filter(Boolean).join('; ');
+    return { status: 'done', words: `Site access: ${named(wanted)} (${changes}).`, groups: wanted };
+  } catch (cause) {
+    const guid = dataService.sessionEvidence?.().at(-1)?.requestGuid;
+    const said = String(cause?.message ?? cause).replace(/^SharePoint \(\d+\):\s*/, '');
+    return { status: 'failed', words: `Could not change site access: ${said}${guid ? ` (SPRequestGuid ${guid})` : ''}`, groups: wanted };
+  }
+}
