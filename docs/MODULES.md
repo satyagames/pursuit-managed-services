@@ -84,7 +84,7 @@ flowchart LR
 | `migration/src/routes/` | The participant page's screens: Welcome, the Activities hub, the quiz route, the finale, "not live", the preview, and the old addresses that redirect. | 10 |
 | `migration/src/setup/` | Setup's pieces (Svelte): the copy panel, where the lists are, the plan view, and the sample pictures as data. | 6 |
 | `migration/src/unsupported/` | The "needs a recent browser" notice: a page and an ES5 check, put into each HTML shell at build time. | 1 |
-| `scripts/` | Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager. | 160 |
+| `scripts/` | Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager. | 161 |
 | `scripts/local-site/` | The local PCOE stand-in (`npm run local:site`), its scenarios and VJR's dummy dataset, the screenshot harness and the measurements. | 11 |
 | `scripts/migration-tests/` | The Playwright specs of `npm run test:migration`, and their harnesses (`admin-local.ts`, `polling-support.ts`, `fixtures.ts`). | 82 |
 | `scripts/rehearsal-tests/` | The rehearsal of RUNBOOK.md on the mock with a package's own pages (`npm run test:rehearsal`). | 1 |
@@ -98,7 +98,7 @@ Roles and access (Prompt 21): the role matrix (board 10), the one check can(), A
 
 - **Imports from:** `lib/common`, `lib/schema`
 - **Imported by:** `lib/admin`, `lib/setup`, `src`, `src/admin`, `src/setup`
-- **Node suites that import it:** `test-access-recheck.js`, `test-access.js`, `test-aop-editor.js`, `test-hardening.js`, `test-leader-dashboard.js`, `test-paging.js`, `test-reporting-settings.js`, `test-scope.js`, `test-sessions-plan.js`, `test-site-access-words.js`, `test-site-access.js`, `test-users.js`
+- **Node suites that import it:** `test-access-recheck.js`, `test-access.js`, `test-aop-editor.js`, `test-hardening.js`, `test-leader-dashboard.js`, `test-paging.js`, `test-reporting-settings.js`, `test-scope.js`, `test-sessions-plan.js`, `test-site-access-words.js`, `test-site-access.js`, `test-site-sync.js`, `test-users.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
@@ -355,7 +355,7 @@ The lists and columns: `pms-schema.js`, the names every page carries, and `pms-s
 
 - **Imports from:** nothing of the app
 - **Imported by:** `lib/access`, `lib/admin`, `lib/data`, `lib/results`, `lib/setup`, `server`, `src/admin`
-- **Node suites that import it:** `test-access.js`, `test-aop-editor.js`, `test-bundle-budget.js`, `test-column-names.js`, `test-confidence-check.js`, `test-fake-site.js`, `test-guest-group.js`, `test-guest-picture.js`, `test-lists-reference.js`, `test-motion-plan.js`, `test-named-reads.js`, `test-paging.js`, `test-provision-prefix.js`, `test-provision.js`, `test-release-docs.js`, `test-request-baseline.js`, `test-schema-upgrade.js`, `test-schema-version.js`, `test-schema.js`, `test-session-delete.js`, `test-sessions-plan.js`, `test-setup-admins.js`, `test-sharepoint.js`, `test-shown-names.js`, `test-sign-in-again.js`, `test-site-ready.js`, `test-text-limits.js`
+- **Node suites that import it:** `test-access.js`, `test-aop-editor.js`, `test-bundle-budget.js`, `test-column-names.js`, `test-confidence-check.js`, `test-fake-site.js`, `test-guest-group.js`, `test-guest-picture.js`, `test-lists-reference.js`, `test-motion-plan.js`, `test-named-reads.js`, `test-paging.js`, `test-provision-prefix.js`, `test-provision.js`, `test-release-docs.js`, `test-request-baseline.js`, `test-schema-upgrade.js`, `test-schema-version.js`, `test-schema.js`, `test-session-delete.js`, `test-sessions-plan.js`, `test-setup-admins.js`, `test-sharepoint.js`, `test-shown-names.js`, `test-sign-in-again.js`, `test-site-ready.js`, `test-site-sync.js`, `test-text-limits.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
@@ -388,7 +388,7 @@ The Setup page's own modules: the plan and Create, Mark the site as ready, the a
 
 - **Imports from:** `lib/access`, `lib/admin`, `lib/brand`, `lib/data`, `lib/participant`, `lib/schema`, `lib/settings`, `src/setup`
 - **Imported by:** `src`, `src/dev`, `src/setup`
-- **Node suites that import it:** `test-admin-content.js`, `test-admin-today.js`, `test-brand-storage.js`, `test-brand.js`, `test-bundle-budget.js`, `test-column-names.js`, `test-confidence-check.js`, `test-duplicates.js`, `test-fewer-calls.js`, `test-hardening.js`, `test-list-namespace.js`, `test-live-display.js`, `test-named-reads.js`, `test-participant-storage.js`, `test-participant-waits.js`, `test-provision-prefix.js`, `test-provision.js`, `test-review-9b.js`, `test-sample-pictures.js`, `test-schema-upgrade.js`, `test-schema.js`, `test-seeds.js`, `test-session-delete.js`, `test-sessions-plan.js`, `test-setup-admins.js`, `test-setup-deployment.js`, `test-sharepoint.js`, `test-sign-in-again.js`, `test-site-access.js`, `test-site-ready.js`, `test-text-limits.js`
+- **Node suites that import it:** `test-admin-content.js`, `test-admin-today.js`, `test-brand-storage.js`, `test-brand.js`, `test-bundle-budget.js`, `test-column-names.js`, `test-confidence-check.js`, `test-duplicates.js`, `test-fewer-calls.js`, `test-hardening.js`, `test-list-namespace.js`, `test-live-display.js`, `test-named-reads.js`, `test-participant-storage.js`, `test-participant-waits.js`, `test-provision-prefix.js`, `test-provision.js`, `test-review-9b.js`, `test-sample-pictures.js`, `test-schema-upgrade.js`, `test-schema.js`, `test-seeds.js`, `test-session-delete.js`, `test-sessions-plan.js`, `test-setup-admins.js`, `test-setup-deployment.js`, `test-sharepoint.js`, `test-sign-in-again.js`, `test-site-access.js`, `test-site-ready.js`, `test-site-sync.js`, `test-text-limits.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
