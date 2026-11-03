@@ -149,12 +149,29 @@ describe('Apply', () => {
     const all = paths(s.fake);
     const firstReal = all.findIndex((path) => /sitegroups|roledefinitions/.test(path));
     const rehearsal = all.slice(0, firstReal);
-    assert.match(rehearsal[0], /\/web\/lists$/);
+    // (First what an earlier rehearsal may have left is deleted; then the scratch list is made.)
+    assert.ok(rehearsal.slice(0, 2).every((path) => /PMSPermissionProbe|_pms-probe/.test(path)), rehearsal.slice(0, 2).join(' '));
+    assert.match(rehearsal[2], /\/web\/lists$/);
     assert.ok(rehearsal.some((path) => /PMSPermissionProbe.*breakroleinheritance/.test(path)));
     assert.ok(rehearsal.some((path) => /PMSPermissionProbe.*addroleassignment/.test(path)));
     assert.ok(rehearsal.some((path) => /PMSPermissionProbe.*removeroleassignment/.test(path)));
     assert.ok(rehearsal.some((path) => /PMSPermissionProbe.*resetroleinheritance/.test(path)));
     assert.ok(rehearsal.some((path) => /\/web\/folders$/.test(path)));
+    assert.equal(s.read.scope('PMSPermissionProbe'), undefined);
+    assert.equal(s.read.folders().length, 0);
+  });
+  it('the rehearsal deletes its scratch list and folder with IF-MATCH, as PCOE asks (412 without it)', async () => {
+    const s = await site();
+    assert.equal((await run(s)).ok, true);
+    const deletes = s.fake.writes().filter((entry) => entry.method === 'DELETE' && /PMSPermissionProbe|_pms-probe/.test(entry.path));
+    assert.equal(deletes.length, 4, 'two before, to clear an earlier run, and two after');
+    assert.ok(deletes.every((entry) => entry.ifMatch === '*'));
+  });
+  it('a scratch list and folder left by a rehearsal that stopped are deleted first, then the rehearsal runs', async () => {
+    const s = await site();
+    s.read.leaveScratch(FOLDER);
+    const result = await run(s);
+    assert.equal(result.ok, true, result.words);
     assert.equal(s.read.scope('PMSPermissionProbe'), undefined);
     assert.equal(s.read.folders().length, 0);
   });

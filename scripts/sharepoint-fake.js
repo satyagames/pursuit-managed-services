@@ -322,6 +322,8 @@ function sitePermissionsFake({ handmade = [], rootFolders = [], levels: moreLeve
     level: (name) => levels.find((level) => level.Name === name),
     folders: () => [...folders],
     addMembers(title, emails) { look.group(title).users.push(...emails.map((email) => userOf(`i:0e.t|adfs|${email.split('@')[0]}`, email))); },
+    /** A rehearsal that stopped before it cleaned up: the scratch list and folder are left on the site. */
+    leaveScratch(folder) { made.add(norm('PMSPermissionProbe')); folders.add(`${folder}/_pms-probe`); made.add(norm(`${folder}/_pms-probe`)); },
     dropOwners(name) { scopeOf(name).bindings.delete(ownerGroupId); },
     /** From now on SharePoint says this account may not change the group's members (CanCurrentUserEditMembership false, and 403). */
     refuseEdits(title) { cannotEdit.push(title); },
@@ -389,8 +391,11 @@ function sitePermissionsFake({ handmade = [], rootFolders = [], levels: moreLeve
 
     const folder = /\/web\/GetFolderByServerRelativeUrl\('(.+?)'\)(\/ListItemAllFields)?(.*)$/i.exec(path);
     const list = /\/web\/lists\/getbytitle\('(.+?)'\)(.*)$/.exec(path);
+    // (PCOE, 3 Nov 2026: a list or folder DELETE with no IF-MATCH is refused, "The request ETag value '' does not match the object's ETag value '"1"'".)
+    const noMatch = () => error(412, "The request ETag value '' does not match the object's ETag value '\"1\"'.");
     if (folder && !folder[2]) {
       if (folder[3] !== '' || method !== 'DELETE') return null;
+      if (!headers['if-match']) return noMatch();
       folders.delete(folder[1]);
       made.delete(norm(folder[1]));
       scopes.delete(norm(folder[1]));
@@ -399,7 +404,12 @@ function sitePermissionsFake({ handmade = [], rootFolders = [], levels: moreLeve
     const name = folder?.[1] ?? list?.[1];
     const rest = folder?.[3] ?? list?.[2];
     if (!name) return null;
-    if (list && rest === '' && method === 'DELETE' && isScratch(name)) { made.delete(norm(name)); scopes.delete(norm(name)); return ok(null); }
+    if (list && rest === '' && method === 'DELETE' && isScratch(name)) {
+      if (!headers['if-match']) return noMatch();
+      made.delete(norm(name)); scopes.delete(norm(name)); return ok(null);
+    }
+    // (The scratch list, asked for by its title: there only while a rehearsal has it, or after one that stopped.)
+    if (list && rest === '' && method === 'GET' && isScratch(name) && !/HasUniqueRoleAssignments/.test(url.search)) return made.has(norm(name)) ? ok({ Id: 'scratch', Title: name }) : error(404, 'List does not exist.');
     if (rest === '' && method === 'GET' && /HasUniqueRoleAssignments/.test(url.search)) {
       if (rootFolders.includes(name)) return ok({});
       return ok({ Id: 1, HasUniqueRoleAssignments: scopeOf(name).unique });

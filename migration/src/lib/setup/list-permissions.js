@@ -252,7 +252,8 @@ export function permissionPlan(state, titles) {
 
 /** Stops Apply with the words given. */
 class Mismatch extends Error {}
-const asDelete = { 'X-HTTP-Method': 'DELETE' };
+// (PCOE, 3 Nov 2026: a list or folder DELETE without IF-MATCH is refused, "The request ETag value '' does not match".)
+const asDelete = { 'X-HTTP-Method': 'DELETE', 'IF-MATCH': '*' };
 const stopWords = (doing, cause) => (cause instanceof Mismatch ? cause.message
   : cause.status === 403 ? `Stopped: your account cannot do this: ${doing}. A site owner must press Apply. (${saidOf(cause)})` : `Stopped at: ${doing}. SharePoint said: ${saidOf(cause)}`);
 
@@ -266,6 +267,11 @@ async function rehearse(api, state, { folder, withFolder, step }) {
   let made = false;
   let madeFolder = false;
   let failure = null;
+  // (A rehearsal that stopped before it cleaned up left its scratch list and folder: they are only ever the rehearsal's, so they go first. A delete of one
+  // that is not there is refused, and that refusal is not a failure.)
+  step('clear what an earlier rehearsal left');
+  if (withFolder) await api.write('POST', folderAddress(`${folder}/${SCRATCH_FOLDER}`), undefined, asDelete).catch(() => {});
+  await api.write('POST', scratch, undefined, asDelete).catch(() => {});
   try {
     step('create the scratch list');
     await api.write('POST', '/web/lists', { __metadata: { type: 'SP.List' }, BaseTemplate: 100, Title: SCRATCH_LIST, Description: "Setup's rehearsal. It removes this list itself; safe to delete." });
