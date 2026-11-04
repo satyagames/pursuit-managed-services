@@ -201,6 +201,9 @@ test('Prompt 22: each client shows its shift and moved to confident beside its b
   await page.keyboard.press('Escape');
   const ids = await page.locator('[id^="metric-tip-"]').evaluateAll((nodes) => nodes.map((node) => node.id));
   expect(new Set(ids).size, 'no two i buttons share the id of their words').toBe(ids.length);
+  // (Prompt 32: the welcome strip moves the page down, so the keyboard walk above scrolls the header's buttons under the sticky bar, which axe's
+  // target-size rule counts as covered. The page is checked from its top, as a person sees it on arrival.)
+  await page.evaluate(() => window.scrollTo(0, 0));
   await axe(page, 'the shift by client at 1280');
   for (const width of [1280, 768, 375]) {
     await page.setViewportSize({ width, height: 900 });

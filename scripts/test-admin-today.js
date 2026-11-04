@@ -430,6 +430,31 @@ describe('colours', () => {
     assert.deepEqual(lookFailures(css), []);
   });
 
+  // Prompt 32: the role chip in the black bar, its initials badge, the "Ends" word, the popover and the welcome strip. Each pair is a token pair, and
+  // the two components write no colour of their own (no hex, rgb or named colour: only var(--adm-*) and currentColor).
+  const IDENTITY_TEXT = [
+    ['adm-on-deep', 'adm-bar-black'], // the chip's name and role line
+    ['adm-text', 'adm-lime'], // the initials
+    ['adm-text', 'adm-green-wash'], // the "Ends 12 Dec" word, and the strip's sentence
+    ['adm-ink', 'adm-card'], // the strip's buttons
+    ['adm-text', 'adm-card'], ['adm-text-muted', 'adm-card'], // the popover
+  ];
+  it('the chip, the "Ends" word and the strip\'s words and buttons are at least 4.5:1 on their surfaces', async () => {
+    const css = await readFile(path.join(ROOT, 'migration/src/styles/admin-tokens.css'), 'utf8');
+    const value = (name) => new RegExp(`--${name}:\\s*(#[0-9a-f]{6})`, 'i').exec(css)?.[1];
+    for (const [ink, ground] of IDENTITY_TEXT) {
+      assert.ok(value(ink) && value(ground), `${ink} and ${ground} are defined`);
+      assert.ok(contrastRatio(value(ink), value(ground)) >= 4.5, `${ink} on ${ground}: ${contrastRatio(value(ink), value(ground)).toFixed(2)}`);
+    }
+    for (const file of ['IdentityChip.svelte', 'WelcomeStrip.svelte']) {
+      const style = /<style>([\s\S]*)<\/style>/.exec(await readFile(path.join(ROOT, 'migration/src/admin', file), 'utf8'))?.[1] ?? '';
+      assert.ok(style, `${file} has its styles`);
+      assert.doesNotMatch(style, /#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(|:\s*(?:white|black)\b/i, `${file}: a colour of its own`);
+      const used = [...style.matchAll(/var\(--(adm-[a-z-]+)\)/g)].map((match) => match[1]);
+      for (const token of used) assert.ok(value(token), `${file}: --${token} is a colour of admin-tokens.css`);
+    }
+  });
+
   it('the Deloitte look fails when a text pair is set to 4.4:1', async () => {
     const css = await readFile(path.join(ROOT, 'migration/src/styles/admin-tokens.css'), 'utf8');
     // #787878 on white is 4.42:1.
