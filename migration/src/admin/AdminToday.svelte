@@ -453,8 +453,9 @@
       <button class="btn" type="button" onclick={() => { loaded = false; void reload({ keepPicker: true }); }}>Try again</button>
     </div>
   {:else}
+    <!-- Prompt 32: three zones, in reading order. A: the live card, Go live, the sessions. B: Readiness. C: Controls, with the participant link. -->
     <div class="today__grid">
-      <div class="today__main">
+      <div class="today__a">
         <!-- Status -->
         <section class="card-panel status" class:status--live={status.live} aria-labelledby="status-heading" data-live={status.live}>
           <TodayStatus {status} {participants} since={sinceText(status.since, today)} {pollError} />
@@ -470,6 +471,18 @@
           />
         </section>
 
+        {#if otherSessions.length > 0}
+          <details class="card-panel others">
+            <summary>All sessions ({otherSessions.length})</summary>
+            <TodaySessions
+              sessions={otherSessions} all={allSessions} {busy} {nameOf} canMakeLive={(session) => sessionWanted(session as Session) !== null}
+              onReopen={(session) => void reopenIt(session as Session)} onMakeLive={(session) => void attempt(sessionWanted(session as Session))} onShowAll={() => { allSessions = true; }}
+            />
+          </details>
+        {/if}
+      </div>
+
+      <div class="today__b">
         <!-- Readiness -->
         <section class="card-panel" aria-labelledby="ready-heading">
           <div class="ready__head">
@@ -480,36 +493,25 @@
         </section>
       </div>
 
-      <div class="today__side">
-        <!-- Controls -->
-        <section class="card-panel" aria-labelledby="controls-heading">
+      <div class="today__c">
+        <!-- Controls, and the participant link once live -->
+        <section class="card-panel controls" aria-labelledby="controls-heading">
           <h3 id="controls-heading">Controls</h3>
           <TodayControls
             {controlSession} {controlClient} owner={controlSession ? nameOf(controlSession.clientId) : ''} live={status.live} {controlsBusy}
             onSetMode={(mode) => void setMode(mode)} onSetFlow={(flow) => void setFlow(flow)} onSetCheck={(on) => void setCheck(on)} onEnd={(session) => void endIt(session)} onReopen={(session) => void reopenIt(session)}
             onMotionSaved={(written) => { clients = clients.map((entry) => (entry.id === written.id ? { ...entry, theme: written.theme as Client['theme'] } : entry)); }} {onToast}
-          />
+          >
+            {#if status.live && status.session}
+              <section class="share" aria-labelledby="share-heading">
+                <h3 id="share-heading">Participant link</h3>
+                <TodayShare {shareUrl} {shareQr} onLive={() => onLiveDisplay(status.session!.id)} {onToast} />
+              </section>
+            {/if}
+          </TodayControls>
         </section>
-
-        <!-- Share -->
-        {#if status.live && status.session}
-          <section class="card-panel" aria-labelledby="share-heading">
-            <h3 id="share-heading">Participant link</h3>
-            <TodayShare {shareUrl} {shareQr} onLive={() => onLiveDisplay(status.session!.id)} {onToast} />
-          </section>
-        {/if}
       </div>
     </div>
-
-    {#if otherSessions.length > 0}
-      <details class="card-panel others">
-        <summary>All sessions ({otherSessions.length})</summary>
-        <TodaySessions
-          sessions={otherSessions} all={allSessions} {busy} {nameOf} canMakeLive={(session) => sessionWanted(session as Session) !== null}
-          onReopen={(session) => void reopenIt(session as Session)} onMakeLive={(session) => void attempt(sessionWanted(session as Session))} onShowAll={() => { allSessions = true; }}
-        />
-      </details>
-    {/if}
   {/if}
 </section>
 
@@ -532,17 +534,80 @@
     align-items: start;
   }
 
-  .today__main,
-  .today__side {
+  .today__a,
+  .today__b,
+  .today__c {
     display: grid;
     gap: 1.25rem;
+    align-content: start;
     min-width: 0;
   }
 
+  /* From 1,000 px: A over B in the first column, C beside them, as before. */
   @media (min-width: 1000px) {
     .today__grid {
       grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
     }
+
+    .today__a,
+    .today__b {
+      grid-column: 1;
+    }
+
+    .today__c {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+    }
+  }
+
+  /* From 1,100 px (Prompt 32): three columns, a step tighter, and C sticks under the bar, no taller than the window below where it starts (the bar,
+     the title line), its body scrolling inside it so that End session is always in view. (Three, not two, below 1,600 px: A over B is taller than a
+     1366 x 650 window, and C under B would push End session out of it.) */
+  @media (min-width: 1100px) {
+    .today__grid {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 4fr) minmax(0, 3fr);
+    }
+
+    .today__grid,
+    .today__a,
+    .today__b,
+    .today__c {
+      gap: 1rem;
+    }
+
+    .today__b {
+      grid-column: 2;
+      grid-row: 1;
+    }
+
+    .today__c {
+      display: flex;
+      flex-direction: column;
+      grid-column: 3;
+      grid-row: 1;
+      position: sticky;
+      top: calc(52px + 1rem);
+      max-height: calc(100vh - 8.5rem);
+    }
+
+    .card-panel {
+      padding: 1rem;
+      gap: 0.75rem;
+    }
+
+    .controls {
+      display: flex;
+      flex: 0 1 auto;
+      flex-direction: column;
+      min-height: 0;
+    }
+  }
+
+  .share {
+    display: grid;
+    gap: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--adm-line);
   }
 
   .card-panel {
@@ -580,7 +645,6 @@
 
   .others {
     display: block;
-    margin-top: 1.25rem;
   }
 
   .others summary {

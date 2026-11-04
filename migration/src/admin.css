@@ -365,6 +365,11 @@ input[type='date']:focus-within {
     margin-left: 0;
   }
 
+  /* (Less room under the last card on a laptop: a 1366 x 650 window shows Today whole.) */
+  .shell__body {
+    padding-bottom: 1.5rem;
+  }
+
   .shell__nav {
     grid-row: 1;
     grid-column: 2;
@@ -401,10 +406,11 @@ input[type='date']:focus-within {
     font-weight: var(--fw-bold);
   }
 
-  /* The ring inside the tab: the row is no taller than the bar, so a ring outside it would be cut off. Green on black is well over 3:1. */
+  /* The ring inside the tab, with its navy band inside too (as on a Results tally's summary): the row is no taller than the bar, so a ring
+     outside it would be cut off. */
   .shell__nav .tab:focus-visible {
-    outline-offset: -3px;
-    box-shadow: none;
+    outline-offset: -6px;
+    box-shadow: inset 0 0 0 9px var(--adm-ink);
   }
 
   /* One title line: each tab's heading, its help and its buttons share a line; the help wraps under the heading when the line is short. */

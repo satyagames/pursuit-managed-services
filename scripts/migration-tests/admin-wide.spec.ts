@@ -101,3 +101,60 @@ test('at 683 px (a 1366 px laptop at 200 percent) the bar is two rows as before,
   await openTab(page, 'Today');
   await page.screenshot({ path: `${pictures}today-683x700.png` });
 });
+
+// Step 3, Today: column A (the live card, Go live, the sessions), B (Readiness, with only warnings and failures open), C (Controls, sticky under the
+// bar). Three columns from 1,100 px: A over B is taller than a 1366 x 650 window, and C under B would push End session out of it. On Domino's,
+// ready with one warning.
+const columnsOf = (page: Page) => page.evaluate(() => Object.fromEntries(['a', 'b', 'c'].map((zone) => {
+  const box = document.querySelector(`.today__${zone}`)?.getBoundingClientRect();
+  return [zone, box ? { left: Math.round(box.left), right: Math.round(box.right), top: Math.round(box.top), bottom: Math.round(box.bottom) } : null];
+})));
+const inView = (page: Page, name: string) => page.getByRole('button', { name, exact: true }).evaluate((element) => {
+  const box = element.getBoundingClientRect();
+  return box.top >= 52 && box.bottom <= window.innerHeight && box.left >= 0 && box.right <= document.documentElement.clientWidth;
+});
+
+test('Today on a laptop: three zones from 1,100 px; the ready checks fold; nothing to scroll; Go live and End session in view', async ({ page }) => {
+  await mkdir(pictures, { recursive: true });
+  for (const size of LAPTOPS) {
+    await page.setViewportSize(size);
+    await openAdmin(page, local!);
+    await page.getByLabel('Client', { exact: true }).selectOption({ label: "Domino's" });
+    await expect(page.getByTestId('readiness-summary')).toHaveText(/Ready to go live, with 1 warning/);
+    const at = `Today at ${size.width} x ${size.height}`;
+    const zones = await columnsOf(page);
+    expect(zones.a && zones.b && zones.c, `${at}: the three zones`).toBeTruthy();
+    expect(zones.b!.left, `${at}: B beside A`).toBeGreaterThanOrEqual(zones.a!.right);
+    expect(zones.c!.left, `${at}: C beside B`).toBeGreaterThanOrEqual(zones.b!.right);
+    // Only the warning is open; the ready checks are one line with a Show control that says how many.
+    const fold = page.getByRole('button', { name: /^Show \d+ ready checks?$/ });
+    await expect(fold, `${at}: the fold`).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.locator('[data-check][data-level="pass"]').first()).toBeHidden();
+    await expect(page.locator('[data-check][data-level="warning"]')).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight), `${at}: nothing to scroll`).toBeLessThanOrEqual(0);
+    expect(await inView(page, 'Go live'), `${at}: Go live in view`).toBe(true);
+    await page.screenshot({ path: `${pictures}today-ready-${size.width}x${size.height}.png` });
+    await fold.click();
+    await expect(page.getByRole('button', { name: /^Hide \d+ ready checks?$/ })).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator('[data-check][data-level="pass"]').first()).toBeVisible();
+  }
+});
+
+test('Today live at 1366 x 650: End session in view, Controls stay in view as the page scrolls, the segmented controls are radios that set the session', async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 650 });
+  await openAdmin(page, local!);
+  await page.getByLabel('Client', { exact: true }).selectOption({ label: "Domino's" });
+  await page.getByRole('button', { name: 'Go live', exact: true }).click();
+  await expect(page.locator('section[data-live]')).toContainText('LIVE');
+  expect(await inView(page, 'End session'), 'End session in view').toBe(true);
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  expect(await inView(page, 'End session'), 'End session in view at the foot of the page').toBe(true);
+  const controls = await page.locator('.today__c').boundingBox();
+  expect(controls!.y, 'Controls stay under the bar').toBeGreaterThanOrEqual(52);
+  for (const group of ['How people are identified', 'Activity flow', 'Confidence check']) {
+    await expect(page.getByRole('group', { name: group }).getByRole('radio'), `${group}: radios`).toHaveCount(2);
+  }
+  await page.getByRole('radio', { name: /^Open/ }).check();
+  await expect(page.getByTestId('flow-meaning')).toHaveText('Every activity is open from the start, in any order.');
+  await page.screenshot({ path: `${pictures}today-live-1366x650.png` });
+});
