@@ -175,6 +175,16 @@ describe('syncSiteAccess', () => {
     assert.equal(result.status, 'manual');
     assert.deepEqual(s.groupWrites(), []);
   });
+  // (PCOE, 4 Nov 2026: the admin page was open when the switch was turned on in Setup, and a Super admin's grant still waited. The ids are kept for the
+  // page; the switch is read again until it is on.)
+  it('the switch turned on while the admin page is open is seen at the next action, with no reload', async () => {
+    const s = await site({ sync: false, people: [producer], roles: [role(producer.id, 'Producer')] });
+    assert.equal((await syncSiteAccess(s.ds, s.access, producer.id)).status, 'manual');
+    assert.equal((await setSiteGroupsSync(s.api, s.titles, true)).ok, true);
+    const result = await syncSiteAccess(s.ds, s.access, producer.id);
+    assert.equal(result.status, 'done', result.words);
+    assert.deepEqual(membersOf(s, 'PMS staff'), ['p@x.com']);
+  });
   it('SharePoint says the group may not be edited by this account: manual, nothing sent', async () => {
     const s = await site({ people: [producer], roles: [role(producer.id, 'Producer')] });
     s.look.refuseEdits('PMS staff');

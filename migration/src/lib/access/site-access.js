@@ -129,7 +129,8 @@ export function groupIds(dataService) {
   reading ??= (async () => {
     const answer = await dataService.probeSharePointRead(null, siteGroupsAddress(dataService.sharePointListTitles())).catch(() => ({ ok: false }));
     const groups = answer.ok ? groupsOfRow(results(answer.data)[0]) : null;
-    if (!answer.ok) reading = null; // (read again next time: a refusal is not an answer)
+    // (Read again next time: a refusal is not an answer, and a switch that is off may be turned on in Setup while this page is open.)
+    if (!answer.ok || !groups?.sync) reading = null;
     for (const key of Object.keys(MANAGED_GROUPS)) if (groups) learned.add(groups[key].id);
     return groups;
   })();
