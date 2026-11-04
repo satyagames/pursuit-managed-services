@@ -107,11 +107,11 @@ The table, list by list, is in [SHAREPOINT-LISTS.md](../SHAREPOINT-LISTS.md#perm
   | The pages' folder | Read | Read | None | Read |
   | The site itself | PMS site entry | PMS site entry | PMS site entry | PMS site entry |
 
-  **PMS site entry** (Open, View Application Pages, Browse User Information, Use Remote Interfaces, Use Client Integration Features; no right to any list,
-  item or page) is the one grant Apply makes on the site itself. Seen on PCOE (4 Nov 2026, QA item 303): an account with rights on the lists and folder
+  **PMS site entry** (Open, View Pages, Browse User Information, Use Remote Interfaces, Use Client Integration Features; no List Permission at all: the
+  set a site owner made by hand on PCOE, with which every read answered 200) is the one grant Apply makes on the site itself. Seen on PCOE (4 Nov 2026, QA item 303): an account with rights on the lists and folder
   alone was refused every REST call, the site itself included, because a grant made through REST adds no Limited Access on the site; with this level
-  granted on the site every read answered 200 and the admin page opened. A level of that name made by hand is used when it holds those rights and none to
-  items. Remove the site's groups never touches the site.
+  granted on the site every read answered 200 and the admin page opened. A level of that name made by hand is used when it holds Open, Browse User Information
+  and Use Remote Interfaces and no List Permission. Remove the site's groups never touches the site.
 
   Apply removes nothing, so the site's Members and Visitors keep what they had: **until a site owner presses Remove the site's groups**, a separate button,
   the secret lists stay readable by anyone in them. A list that already has its own permissions (on PCOE the four access lists, set by hand) is added to: only the grants the PMS groups lack, with nothing removed and no grant already there changed, and its undo takes back just those (the owner, 3 Nov 2026). It is reported as Differs and left alone only when a PMS group already holds another level there; a folder that is a

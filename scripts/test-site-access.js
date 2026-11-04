@@ -420,11 +420,13 @@ describe('PMS site entry: the four groups may get into the site, and no further'
     assert.equal(plan.steps.find((step) => step.id === 'entry-level').state, 'To do');
     assert.equal(plan.steps.find((step) => step.id === 'site').state, 'To do');
   });
-  it('Apply makes the level with Open, View Application Pages, Browse User Information and the two remote rights, and no right to any item', async () => {
+  it('Apply makes the level with Open, View Pages, Browse User Information and the two remote rights, and no right to any item', async () => {
     const s = await site();
     assert.equal((await run(s)).ok, true);
     const level = s.read.level(SITE_ENTRY_LEVEL);
-    assert.deepEqual(level.BasePermissions, { High: '48', Low: '134287360' });
+    // (The set a site owner made by hand on PCOE, 4 Nov 2026, with which every read answered 200: Open, View Pages, Browse User Information, Use Remote
+    // Interfaces, Use Client Integration Features.)
+    assert.deepEqual(level.BasePermissions, { High: '48', Low: '134414336' });
   });
   it('Apply grants it on the site to participants, staff, access managers and leadership, never to PMS super admins, and removes nothing there', async () => {
     const s = await site();
@@ -446,6 +448,17 @@ describe('PMS site entry: the four groups may get into the site, and no further'
     assert.equal(plan.steps.find((step) => step.id === 'entry-level').state, 'Done');
     assert.equal((await run(s)).ok, true);
     assert.deepEqual(s.read.scope('/web').levels['PMS staff'], [SITE_ENTRY_LEVEL]);
+  });
+  it('the level PCOE has, made by hand without View Application Pages, is used as it is', async () => {
+    const s = await site({ levels: [{ Id: 88, Name: SITE_ENTRY_LEVEL, RoleTypeKind: 0, BasePermissions: { High: '48', Low: '134414336' } }] });
+    assert.equal(permissionPlan(await stateOf(s), s.titles).steps.find((step) => step.id === 'entry-level').state, 'Done');
+  });
+  it('a level of that name without Use Remote Interfaces Differs, and says a right is missing, not that it gives too much', async () => {
+    const s = await site({ levels: [{ Id: 88, Name: SITE_ENTRY_LEVEL, RoleTypeKind: 0, BasePermissions: { High: '16', Low: '134414336' } }] });
+    const step = permissionPlan(await stateOf(s), s.titles).steps.find((each) => each.id === 'entry-level');
+    assert.equal(step.state, 'Differs');
+    assert.match(step.words, /lacks/);
+    assert.doesNotMatch(step.words, /right to items/);
   });
   it('a level of that name that gives any right to items Differs, and the site grant is not made with it', async () => {
     const s = await site({ levels: [{ Id: 88, Name: SITE_ENTRY_LEVEL, RoleTypeKind: 0, BasePermissions: { High: '48', Low: String(134287360 + 1) } }] });

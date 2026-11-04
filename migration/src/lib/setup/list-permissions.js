@@ -111,21 +111,25 @@ const SCRATCH_FOLDER = '_pms-probe';
 /** View Items, Add Items, Open, View Pages; no Edit and no Delete. */
 const ADD_ONLY_BITS = Object.freeze({ High: '0', Low: '196611' });
 /**
- * (Seen on the real site, 4 Nov 2026.) The level that only lets a PMS group into the site: an account with rights on the app's lists and folder alone was refused every
- * REST call, because a grant made through REST adds no Limited Access on the site. These are Limited Access's own rights: View Application Pages, Open,
- * Browse User Information, Use Client Integration Features and Use Remote Interfaces; no right to any list, item or page.
+ * (Seen on the real site, 4 Nov 2026.) The level that only lets a PMS group into the site: an account with rights on the app's lists and folder alone was
+ * refused every REST call, because a grant made through REST adds no Limited Access on the site. A site owner made this level by hand, with Open, View
+ * Pages, Browse User Information, Use Remote Interfaces and Use Client Integration Features and no list permission, and every read then answered 200: it
+ * is made with exactly those. A level of the name is used when it holds the three that read needs and no right to a list or its items.
  */
 export const SITE_ENTRY_LEVEL = 'PMS site entry';
-const ENTRY_BITS = Object.freeze({ High: '48', Low: '134287360' });
+const ENTRY_BITS = Object.freeze({ High: '48', Low: '134414336' });
+/** Open and Browse User Information (Low), Use Remote Interfaces (High): what the pages' reads need. Bits 0 to 11 of Low are a list's rights. */
+const ENTRY_NEEDS = Object.freeze({ low: 65536 + 134217728, high: 32 });
 /** The groups that hold it on the site: everyone who uses a page. PMS super admins hold nothing anywhere (its members are in PMS staff too). */
 const ENTRY_GROUPS = Object.freeze(['participants', 'staff', 'managers', 'leadership']);
-/** A level that holds at least those rights, and none of a list's (SharePoint ticks some rights with others, so a level made by hand may hold more). */
-const entryFits = (level) => {
+/** 'ok', 'items' (it gives a right to a list or its items) or 'lacks' (a right the reads need is missing). */
+const entryCheck = (level) => {
   const low = Number(level?.BasePermissions?.Low ?? 0) >>> 0;
   const high = Number(level?.BasePermissions?.High ?? 0) >>> 0;
-  const need = Number(ENTRY_BITS.Low) >>> 0;
-  return (low & need) === need && (high & Number(ENTRY_BITS.High)) === Number(ENTRY_BITS.High) && (low & 0xfff) === 0;
+  if ((low & 0xfff) !== 0) return 'items';
+  return (low & ENTRY_NEEDS.low) === ENTRY_NEEDS.low && (high & ENTRY_NEEDS.high) === ENTRY_NEEDS.high ? 'ok' : 'lacks';
 };
+const entryFits = (level) => entryCheck(level) === 'ok';
 const KIND = Object.freeze({ limited: 1, read: 2, contribute: 3, full: 5 });
 
 const content = (participants) => ({ participants, staff: 'contribute', leadership: 'read' });
@@ -246,7 +250,7 @@ export function permissionPlan(state, titles) {
   const level = levelNamed(state, ADD_ONLY_LEVEL);
   const entry = levelNamed(state, SITE_ENTRY_LEVEL);
   const entryState = !entry ? 'To do' : entryFits(entry) ? 'Done' : 'Differs';
-  steps.push({ id: 'entry-level', words: `The permission level "${SITE_ENTRY_LEVEL}": ${entryState === 'Differs' ? 'it exists, with a right to items. Setup leaves it alone; a site owner corrects it.' : 'Open, View Application Pages, Browse User Information, Use Remote Interfaces and Use Client Integration Features: into the site, and no further'}`, state: entryState });
+  steps.push({ id: 'entry-level', words: `The permission level "${SITE_ENTRY_LEVEL}": ${entryState === 'Differs' ? (entryCheck(entry) === 'items' ? 'it exists and gives a right to lists or items, on the whole site. Setup leaves it alone; a site owner unticks every List Permission.' : 'it exists and lacks Open, Browse User Information or Use Remote Interfaces. Setup leaves it alone; a site owner ticks them.') : 'Open, View Pages, Browse User Information, Use Remote Interfaces and Use Client Integration Features, and no List Permission: into the site, and no further'}`, state: entryState });
   steps.push({ id: 'level', words: `The permission level "${ADD_ONLY_LEVEL}": ${level && !bitsMatch(level) ? 'it exists, with other rights. Setup leaves it alone; a site owner corrects it.' : 'View Items, Add Items and Open, and not Edit Items or Delete Items'}`, state: !level ? 'To do' : bitsMatch(level) ? 'Done' : 'Differs' });
   for (const [key, title] of Object.entries(PMS_GROUPS)) {
     const group = groupNamed(state, title);
