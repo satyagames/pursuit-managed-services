@@ -7,9 +7,13 @@ folder and keeps everything in SharePoint lists: there is no server, nothing to 
 | Who | Uses | To |
 |---|---|---|
 | **Participant** | an iPad (or any browser), `index.html` | join by a link or a personal QR code, answer each activity, see their progress |
-| **Facilitator** | a laptop, `admin.html` (PIN) | pick today's client and go live, manage guests and QR codes, watch results, project them, export them |
-| **Admin** | `admin.html` | set up clients, then in Content each client's activities and its look (Brand Studio), side by side |
-| **Site owner** | `setup.html` | create and check the SharePoint lists, add the first admin, run a self-test |
+| **Super admin** | `admin.html` | manages people, clients, sessions, content and results |
+| **Admin** | `admin.html` | creates clients and sessions and chooses each team |
+| **Producer** | a laptop, `admin.html` | runs the sessions of their clients: Today, guests and QR codes, activities, results |
+| **Designer** | `admin.html` | edits the brand of their clients (Brand Studio) |
+| **Leadership** | `admin.html` | sees the results and exports them |
+| **Facilitator** | a laptop, `admin.html` (PIN) | until Setup copies the old admins list: pick today's client and go live, manage guests, watch and export results |
+| **Site owner** | `setup.html` | create and check the SharePoint lists, make the app's groups (Apply), add the first Super admin, run a self-test |
 
 ```text
  iPads ──── index.html ──┐                           ┌── PMSClients, PMSActivities, PMSActivityQuestions, PMSAnswerOptions
@@ -24,12 +28,13 @@ folder and keeps everything in SharePoint lists: there is no server, nothing to 
 | Role | What it can do |
 |---|---|
 | Participant | A welcome in the client's look and words; an Activities hub (one activity at a time, or all open); one question per screen, with Next and Back; a graded question says right or wrong at once, offers one Retry, and reveals the answer after a second wrong pick; progress is saved as each answer is given and a reload picks up where it was; optional sound and confetti; screens that move by the kind of question (the answers come in from both sides; off with the device's reduced motion or the client's switch); works with the keyboard and a screen reader, in portrait and landscape, from a phone to a desktop. |
-| Facilitator | **Today**: pick a client and date, see what is not ready, Go live (verified), choose staff sign-in or guests with personal QR codes, sequential or open activities, End and Reopen, the participant link and its QR. **Guests and QR**: paste names, generate single-use codes, print a sheet of cards. **Results**: every session, newest first (and the newest iPad first), with each person's progress, Restart (under its row) or Remove a visit, **Delete session** (all of a session's data, permanently, after a warning; never the live one), the live charts, the **Live display** and its full-screen **wall** for the projector (no names on it). |
-| Admin | **Clients**: names, slugs, archive, a check-in QR for shared iPads; a row's **Brand** opens that client's look in Content. **Content** is one client's workspace: a client header (its logo, the client picker, Live now) and two views, **Activities** and **Brand**, each kept as it was left while the other shows. **Activities**: the client's activities and questions (a question is edited where it is, in its own row), copy from another client, duplicate, reorder, picture tiles, a preview. **Brand** (Brand Studio lives in Content, beside the client's activities): colours checked for contrast, a logo, a hero and a background, cropped and compressed in the browser, previewed on real participant screens at real device sizes; an **Animations** switch per client (also on Today); "Preview an activity in this look..." once it is saved. |
+| Producer (or a facilitator with the PIN) | **Today**: pick a client and date, see what is not ready, Go live (verified), choose staff sign-in or guests with personal QR codes, sequential or open activities, End and Reopen, the participant link and its QR. **Guests and QR**: paste names, generate single-use codes, print a sheet of cards. **Results**: every session, newest first (and the newest iPad first), with each person's progress, Restart (under its row) or Remove a visit, **Delete session** (all of a session's data, permanently, after a warning; never the live one), the live charts, the **Live display** and its full-screen **wall** for the projector (no names on it). |
+| Admin, Producer, Designer | **Clients** (an Admin's): names, slugs, archive, a check-in QR for shared iPads; a row's **Brand** opens that client's look in Content. **Content** is one client's workspace: a client header (its logo, the client picker, Live now) and two views, **Activities** and **Brand**, each kept as it was left while the other shows. **Activities**: the client's activities and questions (a question is edited where it is, in its own row), copy from another client, duplicate, reorder, picture tiles, a preview. **Brand** (Brand Studio lives in Content, beside the client's activities): colours checked for contrast, a logo, a hero and a background, cropped and compressed in the browser, previewed on real participant screens at real device sizes; an **Animations** switch per client (also on Today); "Preview an activity in this look..." once it is saved. |
+| Super admin | **People**: add a person, give and remove roles, turn access off and on, each person's history; **History of changes**; **Check site access** (who is waiting for the app's SharePoint groups); **Reporting settings**. An Admin gives team roles from a client's **Client team**. |
 | Site owner | **Setup**: shows exactly what the site lacks, creates only that (never deletes or renames), checks every list strictly, marks the site ready, adds admins, seeds two sample clients, and a self-test of the site in 12 steps. |
 | Art of the Possible | Guests rate a client's sub-processes against criteria, Low, Medium or High; Results shows a heat map, each sub-process's opportunity and band, and where to start. A guest may have a picture, shown only where a name may be. |
 | The Activities hub | Between activities each guest sees what is done, started, ready and locked, how far they have come, and a short moment of sound and motion when the next activity opens. |
-| Leaders | **Leader report (PDF)**: at a glance on page 1, then each activity on its own pages, every question as a chart, the counting rules on the last page. **Summary pack (PDF and PowerPoint, 16:9)** from the Live display, with speaker notes. **Summary by activity (CSV)** and **All answers (CSV)**. **Hide names** on Results (the dashboard and Sessions alike) numbers everyone Guest 1, Guest 2 in the order they joined, on the screen, in the leader report and in All answers (CSV) (Prompt 21, Phase 6). The **Leadership dashboard** shows each client's confidence index with its shift and how many moved to confident, by client and by session (Prompt 22); a Super admin sets the fiscal-year start month and the minimum sample on **Reporting settings**, and a client's Industry and Region are set on its page. |
+| Leadership | **Leader report (PDF)**: at a glance on page 1, then each activity on its own pages, every question as a chart, the counting rules on the last page. **Summary pack (PDF and PowerPoint, 16:9)** from the Live display, with speaker notes. **Summary by activity (CSV)** and **All answers (CSV)**. **Hide names** on Results (the dashboard and Sessions alike) numbers everyone Guest 1, Guest 2 in the order they joined, on the screen, in the leader report and in All answers (CSV) (Prompt 21, Phase 6). The **Leadership dashboard** shows each client's confidence index with its shift and how many moved to confident, by client and by session (Prompt 22); a Super admin sets the fiscal-year start month and the minimum sample on **Reporting settings**, and a client's Industry and Region are set on its page. |
 
 ### Question types
 
@@ -115,6 +120,48 @@ settings file and what SharePoint does are in [docs/SHAREPOINT.md](docs/SHAREPOI
 
 **Permissions:** participant accounts write the session, visit, code, visit-log and answer lists and only read the rest; they must have **no access to
 PMSAdminUsers**. Facilitators edit the content lists. A site owner runs Setup, whose **Apply** makes the app's own groups and gives its lists and folder their permissions.
+
+## Adding a person
+
+Two things make a person ready: a **role in the app** and a **place in the app's SharePoint groups**. Both are done on the admin page's **People**
+tab; nobody needs SharePoint's People and groups page unless the page says it could not change a group. The detail is in
+[docs/ONBOARDING.md](docs/ONBOARDING.md).
+
+| Role | What it lets them do | PMS group it puts them in |
+|---|---|---|
+| Super admin | manages people, clients, sessions, content and results | PMS staff and PMS access managers |
+| Admin | creates clients and sessions and chooses each team | PMS staff and PMS access managers |
+| Producer | runs the sessions of their clients, edits their activities, sees their results | PMS staff |
+| Designer | edits the brand of their clients | PMS staff |
+| Leadership | sees the results and exports them | PMS leadership |
+| Participant | answers on `index.html`; no role in People | PMS participants (a site owner adds them, or IT's directory group) |
+
+Each copy of the app names its groups with its own list prefix. Only a site owner chooses who is in **PMS super admins** and **PMS participants**; a
+Super admin changes the other three, from People.
+
+**A Super admin:** People, **Add user** (the work email), open the person, **Give access** (role, client or session, an optional end date). Read the
+line that says what was done about site access: with Setup's switch on the person is added to their groups; otherwise press **Open site groups**.
+Before saving, tick **Email them about this** to tell them.
+
+**An Admin:** give a team role from the client's **Client team**. The person shows as waiting for site access until a Super admin adds them. The same
+box is there.
+
+**Email them about this** is unticked every time a screen opens, and nothing remembers it. Nobody types an address: the person's comes from People and
+yours from your sign-in. After the change saves, the message appears for you to read and edit, with **Open email draft** (your own mail; you press
+Send) and **Copy message** (paste it anywhere). The app does not send it. A message never holds a PIN, a QR code or a participant link, and a removal
+or a turn-off carries no link.
+
+- **Changing a role:** remove the old one and give the new one; with Setup's switch on, their groups follow.
+- **Turning a person off:** their roles stay, so turning access on gives everything back; nobody is deleted.
+- **A person who leaves:** turn their access off; with Setup's switch on, they are taken out of the PMS groups.
+
+| What the person sees | What it means |
+|---|---|
+| "Sorry, this item hasn't been shared with you" | They are not on the site; the app never started. A role in People does not fix this: a Super admin adds them to their group. |
+| "You do not have access to *the app* yet" | They can open the site, but have no role in People. |
+| "Your access to *the app* is turned off" / "has changed" | Their row is turned off, or has no current role, or the end date passed. |
+
+Settings, lists and who may do what on each: [docs/SHAREPOINT.md](docs/SHAREPOINT.md).
 
 ## Quick start
 
