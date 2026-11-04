@@ -110,6 +110,22 @@ const SCRATCH_LIST = 'PMSPermissionProbe';
 const SCRATCH_FOLDER = '_pms-probe';
 /** View Items, Add Items, Open, View Pages; no Edit and no Delete. */
 const ADD_ONLY_BITS = Object.freeze({ High: '0', Low: '196611' });
+/**
+ * (Seen on the real site, 4 Nov 2026.) The level that only lets a PMS group into the site: an account with rights on the app's lists and folder alone was refused every
+ * REST call, because a grant made through REST adds no Limited Access on the site. These are Limited Access's own rights: View Application Pages, Open,
+ * Browse User Information, Use Client Integration Features and Use Remote Interfaces; no right to any list, item or page.
+ */
+export const SITE_ENTRY_LEVEL = 'PMS site entry';
+const ENTRY_BITS = Object.freeze({ High: '48', Low: '134287360' });
+/** The groups that hold it on the site: everyone who uses a page. PMS super admins hold nothing anywhere (its members are in PMS staff too). */
+const ENTRY_GROUPS = Object.freeze(['participants', 'staff', 'managers', 'leadership']);
+/** A level that holds at least those rights, and none of a list's (SharePoint ticks some rights with others, so a level made by hand may hold more). */
+const entryFits = (level) => {
+  const low = Number(level?.BasePermissions?.Low ?? 0) >>> 0;
+  const high = Number(level?.BasePermissions?.High ?? 0) >>> 0;
+  const need = Number(ENTRY_BITS.Low) >>> 0;
+  return (low & need) === need && (high & Number(ENTRY_BITS.High)) === Number(ENTRY_BITS.High) && (low & 0xfff) === 0;
+};
 const KIND = Object.freeze({ limited: 1, read: 2, contribute: 3, full: 5 });
 
 const content = (participants) => ({ participants, staff: 'contribute', leadership: 'read' });
@@ -183,12 +199,13 @@ export async function readPermissionState(read, titles, folder) {
     read('/web/AssociatedOwnerGroup/users?$select=Id&$top=5000'),
     read('/web/currentuser?$select=Id,IsSiteAdmin'),
   ]);
+  const site = results(await read(`/web${BINDINGS}`)).map(bindingOf);
   const targets = {};
   for (const key of Object.keys(GROUP_MATRIX)) targets[key] = await readTarget(read, key, titles, folder);
   let row = null;
   try { row = results(await read(siteGroupsAddress(titles)))[0] ?? null; } catch (cause) { if (cause.status !== 404) throw cause; }
   return {
-    groups: results(groups), levels: results(levels), owners, targets, row, folder,
+    groups: results(groups), levels: results(levels), owners, targets, row, folder, site,
     me: me?.Id, keepsFullControl: Boolean(me?.IsSiteAdmin) || results(ownerUsers).some((user) => user.Id === me?.Id),
   };
 }
@@ -227,12 +244,17 @@ export function permissionPlan(state, titles) {
     steps.push({ id: `group:${key}`, words: `The group "${title}"`, state: groupNamed(state, title) ? 'Done' : 'To do' });
   }
   const level = levelNamed(state, ADD_ONLY_LEVEL);
+  const entry = levelNamed(state, SITE_ENTRY_LEVEL);
+  const entryState = !entry ? 'To do' : entryFits(entry) ? 'Done' : 'Differs';
+  steps.push({ id: 'entry-level', words: `The permission level "${SITE_ENTRY_LEVEL}": ${entryState === 'Differs' ? 'it exists, with a right to items. Setup leaves it alone; a site owner corrects it.' : 'Open, View Application Pages, Browse User Information, Use Remote Interfaces and Use Client Integration Features: into the site, and no further'}`, state: entryState });
   steps.push({ id: 'level', words: `The permission level "${ADD_ONLY_LEVEL}": ${level && !bitsMatch(level) ? 'it exists, with other rights. Setup leaves it alone; a site owner corrects it.' : 'View Items, Add Items and Open, and not Edit Items or Delete Items'}`, state: !level ? 'To do' : bitsMatch(level) ? 'Done' : 'Differs' });
   for (const [key, title] of Object.entries(PMS_GROUPS)) {
     const group = groupNamed(state, title);
     const wanted = ownerOf(key, state);
     steps.push({ id: `owner:${key}`, words: `"${wanted}" owns "${title}", and only the owner may change its members`, state: group?.OwnerTitle === wanted && !group?.AllowMembersEditMembership ? 'Done' : 'To do' });
   }
+  const entered = ENTRY_GROUPS.every((key) => (state.site ?? []).some((binding) => binding.title === PMS_GROUPS[key] && binding.levels.some((level) => level.Name === SITE_ENTRY_LEVEL)));
+  steps.push({ id: 'site', words: `The site: ${ENTRY_GROUPS.map((key) => PMS_GROUPS[key]).join(', ')} hold "${SITE_ENTRY_LEVEL}", nothing else on the site, and nothing is removed there`, state: entryState === 'Differs' ? 'Differs' : entered ? 'Done' : 'To do' });
   for (const key of Object.keys(GROUP_MATRIX)) {
     const target = state.targets[key];
     const title = titleOfKey(titles, key);
@@ -339,8 +361,13 @@ export async function applyPermissions(api, plan, { titles, folder, onProgress =
       say(`Make the permission level "${ADD_ONLY_LEVEL}"`);
       await api.write('POST', '/web/roledefinitions', { __metadata: { type: 'SP.RoleDefinition' }, Name: ADD_ONLY_LEVEL, Description: 'View Items, Add Items and Open.', BasePermissions: { __metadata: { type: 'SP.BasePermissions' }, ...ADD_ONLY_BITS } });
     }
+    if (due('entry-level')) {
+      say(`Make the permission level "${SITE_ENTRY_LEVEL}"`);
+      await api.write('POST', '/web/roledefinitions', { __metadata: { type: 'SP.RoleDefinition' }, Name: SITE_ENTRY_LEVEL, Description: 'Into the site and no further: how the PMS groups get in.', BasePermissions: { __metadata: { type: 'SP.BasePermissions' }, ...ENTRY_BITS } });
+    }
     // (The read-back decides, not the sum of the bits.)
     state.levels = results(await api.read('/web/roledefinitions?$select=Id,Name,RoleTypeKind,BasePermissions'));
+    if (due('entry-level') && !entryFits(levelNamed(state, SITE_ENTRY_LEVEL))) throw new Mismatch(`Stopped: SharePoint made "${SITE_ENTRY_LEVEL}" with other rights than were asked. A site owner corrects the level, then presses Apply again.`);
     if (due('level') && !bitsMatch(levelNamed(state, ADD_ONLY_LEVEL))) throw new Mismatch(`Stopped: SharePoint made "${ADD_ONLY_LEVEL}" with other rights than were asked. A site owner corrects the level, then presses Apply again.`);
 
     // (PCOE, 3 Nov 2026: SharePoint Server 16.0.19725 has no SetUserAsOwner, "Cannot find resource for the request". Then, as the brief says, each owner is
@@ -364,6 +391,23 @@ export async function applyPermissions(api, plan, { titles, folder, onProgress =
       }
       const landed = await api.read(`/web/sitegroups/getbyid(${group.Id})?$select=OwnerTitle`);
       if (landed?.OwnerTitle !== wanted) throw new Mismatch(`Stopped: "${title}" still has another owner. Set "${wanted}" as its owner on the group's settings page, then press Apply again.`);
+    }
+
+    if (due('site')) {
+      // (Only adds, on the site itself: each of the four groups that lacks the level gets it. Nothing else there is changed.)
+      say(`The site: "${SITE_ENTRY_LEVEL}" for the PMS groups`);
+      const entryId = levelNamed(state, SITE_ENTRY_LEVEL).Id;
+      const holds = results(await api.read(`/web${BINDINGS}`)).map(bindingOf);
+      for (const key of ENTRY_GROUPS) {
+        const id = groupNamed(state, PMS_GROUPS[key]).Id;
+        if (holds.some((binding) => binding.principalId === id && binding.levels.some((level) => level.Id === entryId))) continue;
+        const grant = `principalid=${id},roledefid=${entryId}`;
+        await api.write('POST', `/web/roleassignments/addroleassignment(${grant})`);
+        undo.push(`The site: POST /web/roleassignments/removeroleassignment(${grant})`);
+      }
+      const landed = results(await api.read(`/web${BINDINGS}`)).map(bindingOf);
+      const missing = ENTRY_GROUPS.filter((key) => !landed.some((binding) => binding.title === PMS_GROUPS[key] && binding.levels.some((level) => level.Id === entryId)));
+      if (missing.length) throw new Mismatch(`Stopped: the site does not read back with "${SITE_ENTRY_LEVEL}" for ${missing.map((key) => PMS_GROUPS[key]).join(', ')}. Grant it on Site permissions by hand, then press Apply again.`);
     }
 
     const levelId = (cell) => (cell === 'add-only' ? levelNamed(state, ADD_ONLY_LEVEL) : state.levels.find((level) => level.RoleTypeKind === KIND[cell]))?.Id;

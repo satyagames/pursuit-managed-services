@@ -9,7 +9,7 @@ import { describe, it } from 'node:test';
 import { createSharePointFake } from './sharepoint-fake.js';
 import { siteApi } from '../migration/src/lib/setup/provision.js';
 import {
-  GROUP_MATRIX, PMS_GROUPS, SECRET_LISTS, applyPermissions, matrixTable, permissionFindings, permissionPlan, readPermissionState, removeSiteGroups, removalPlan,
+  GROUP_MATRIX, PMS_GROUPS, SECRET_LISTS, SITE_ENTRY_LEVEL, applyPermissions, matrixTable, permissionFindings, permissionPlan, readPermissionState, removeSiteGroups, removalPlan,
 } from '../migration/src/lib/setup/list-permissions.js';
 import { selfTestProbes, PROBE_SITE_ACCESS } from '../migration/src/lib/setup/setup-checks.js';
 import { MANAGED_GROUPS, desiredGroups, driftOf, groupsOfRow, readDrift, siteGroupsAddress } from '../migration/src/lib/access/site-access.js';
@@ -254,7 +254,7 @@ describe('Apply', () => {
     assert.equal(result.ok, false);
     assert.match(result.words, /A site owner must/);
     assert.ok(result.undo.length > 0);
-    assert.ok(result.undo.every((line) => /resetroleinheritance/.test(line)));
+    assert.ok(result.undo.filter((line) => !line.startsWith('The site:')).every((line) => /resetroleinheritance/.test(line)));
   });
   it('refuses to start when the running account is not a site owner: it would not keep Full Control', async () => {
     const s = await site({ runningIsOwner: false });
@@ -406,5 +406,60 @@ describe('Part 3: the hand-off', () => {
   });
   it('the words name no site', () => {
     for (const file of ['migration/src/lib/access/site-access.js', 'migration/src/lib/setup/list-permissions.js']) assert.doesNotMatch(read(file).replace(/^\s*\/\/.*$/gm, ''), /PCOE/);
+  });
+});
+
+// (PCOE, 4 Nov 2026: with rights on its lists and folder alone, an account in no site group was refused every REST call, the site itself included (403),
+// because a grant made through REST adds no Limited Access on the site. A site owner made "PMS site entry" by hand, granted it on the site to PMS staff,
+// and every read then answered 200. Apply now does the same for the four groups.)
+describe('PMS site entry: the four groups may get into the site, and no further', () => {
+  const run = async (s) => applyPermissions(s.api, permissionPlan(await stateOf(s), s.titles), { titles: s.titles, folder: FOLDER });
+  it('the plan has the level and the site grant, To do on a fresh site', async () => {
+    const s = await site();
+    const plan = permissionPlan(await stateOf(s), s.titles);
+    assert.equal(plan.steps.find((step) => step.id === 'entry-level').state, 'To do');
+    assert.equal(plan.steps.find((step) => step.id === 'site').state, 'To do');
+  });
+  it('Apply makes the level with Open, View Application Pages, Browse User Information and the two remote rights, and no right to any item', async () => {
+    const s = await site();
+    assert.equal((await run(s)).ok, true);
+    const level = s.read.level(SITE_ENTRY_LEVEL);
+    assert.deepEqual(level.BasePermissions, { High: '48', Low: '134287360' });
+  });
+  it('Apply grants it on the site to participants, staff, access managers and leadership, never to PMS super admins, and removes nothing there', async () => {
+    const s = await site();
+    const before = s.read.scope('/web').holders;
+    const result = await run(s);
+    assert.equal(result.ok, true, result.words);
+    const web = s.read.scope('/web');
+    for (const title of ['PMS participants', 'PMS staff', 'PMS access managers', 'PMS leadership']) assert.deepEqual(web.levels[title], [SITE_ENTRY_LEVEL], title);
+    assert.equal(web.levels['PMS super admins'], undefined);
+    for (const holder of before) assert.ok(web.holders.includes(holder), holder);
+    assert.ok(result.undo.some((line) => /\/web\/roleassignments\/removeroleassignment/.test(line)));
+    const plan = permissionPlan(await stateOf(s), s.titles);
+    assert.equal(plan.steps.find((step) => step.id === 'site').state, 'Done');
+    assert.equal(plan.steps.find((step) => step.id === 'entry-level').state, 'Done');
+  });
+  it('a level made by hand that holds those rights and others SharePoint ticked with them is used as it is', async () => {
+    const s = await site({ levels: [{ Id: 88, Name: SITE_ENTRY_LEVEL, RoleTypeKind: 0, BasePermissions: { High: '48', Low: String(134287360 + 131072) } }] });
+    const plan = permissionPlan(await stateOf(s), s.titles);
+    assert.equal(plan.steps.find((step) => step.id === 'entry-level').state, 'Done');
+    assert.equal((await run(s)).ok, true);
+    assert.deepEqual(s.read.scope('/web').levels['PMS staff'], [SITE_ENTRY_LEVEL]);
+  });
+  it('a level of that name that gives any right to items Differs, and the site grant is not made with it', async () => {
+    const s = await site({ levels: [{ Id: 88, Name: SITE_ENTRY_LEVEL, RoleTypeKind: 0, BasePermissions: { High: '48', Low: String(134287360 + 1) } }] });
+    const plan = permissionPlan(await stateOf(s), s.titles);
+    assert.equal(plan.steps.find((step) => step.id === 'entry-level').state, 'Differs');
+    assert.equal(plan.steps.find((step) => step.id === 'site').state, 'Differs');
+    await run(s);
+    assert.equal(s.read.scope('/web').levels['PMS staff'], undefined);
+  });
+  it('Remove the site\'s groups never touches the site itself', async () => {
+    const s = await site();
+    await run(s);
+    const before = JSON.stringify(s.read.scope('/web'));
+    await removeSiteGroups(s.api, await stateOf(s), s.titles);
+    assert.equal(JSON.stringify(s.read.scope('/web')), before);
   });
 });

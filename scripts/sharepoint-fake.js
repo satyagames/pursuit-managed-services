@@ -342,7 +342,7 @@ function sitePermissionsFake({ handmade = [], rootFolders = [], levels: moreLeve
     if (/\/web\/AssociatedOwnerGroup$/.test(path)) return ok({ Id: ownerGroupId, Title: 'Site Owners' });
     if (/\/web\/roledefinitions$/.test(path)) {
       if (method === 'GET') return ok({ results: levels });
-      const level = { Id: nextId++, Name: body.Name, RoleTypeKind: 0, BasePermissions: { High: body.BasePermissions.High, Low: levelLow ?? body.BasePermissions.Low } };
+      const level = { Id: nextId++, Name: body.Name, RoleTypeKind: 0, BasePermissions: { High: body.BasePermissions.High, Low: (body.Name === 'PMS add only' && levelLow) || body.BasePermissions.Low } };
       levels.push(level);
       return ok(level, 201);
     }
@@ -390,6 +390,15 @@ function sitePermissionsFake({ handmade = [], rootFolders = [], levels: moreLeve
     if (/\/web\/folders$/.test(path) && method === 'POST') { folders.add(body.ServerRelativeUrl); made.add(norm(body.ServerRelativeUrl)); return ok({ ServerRelativeUrl: body.ServerRelativeUrl }, 201); }
     if (/\/web\/lists$/.test(path) && method === 'POST' && body?.Title === 'PMSPermissionProbe') { made.add(norm(body.Title)); return ok({ Id: 'scratch', Title: body.Title }, 201); }
 
+    // (The site's own role assignments, which Apply only adds the PMS site entry level to.)
+    if (/\/_api\/web\/roleassignments$/.test(path) && method === 'GET') return ok({ results: [...scopeOf('/web').bindings].map(bindingRow) });
+    const onWeb = /\/_api\/web\/roleassignments\/(add|remove)roleassignment\(principalid=(\d+),roledefid=(\d+)\)$/.exec(path);
+    if (onWeb) {
+      const web = scopeOf('/web');
+      const held = web.bindings.get(Number(onWeb[2])) ?? new Set();
+      if (onWeb[1] === 'add') { held.add(Number(onWeb[3])); web.bindings.set(Number(onWeb[2]), held); } else { held.delete(Number(onWeb[3])); if (!held.size) web.bindings.delete(Number(onWeb[2])); }
+      return ok(null);
+    }
     const folder = /\/web\/GetFolderByServerRelativeUrl\('(.+?)'\)(\/ListItemAllFields)?(.*)$/i.exec(path);
     const list = /\/web\/lists\/getbytitle\('(.+?)'\)(.*)$/.exec(path);
     // (PCOE, 3 Nov 2026: a list or folder DELETE with no IF-MATCH is refused, "The request ETag value '' does not match the object's ETag value '"1"'".)
