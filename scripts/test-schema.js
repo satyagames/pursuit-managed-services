@@ -199,6 +199,12 @@ export const CHANGES = [
     if (action) action.values = [...action.values, 'site-add', 'site-remove'];
     return shape;
   }],
+  // (Prompt 28: the audit list's Action, a text column, says one thing more; no version of its own.)
+  ['(Prompt 28, still v9) PMSAuditLog.Action\'s words gain access-email (the sender prepared a message about an access change)', (shape) => {
+    const action = shape.lists.auditlog?.columns.find((column) => column.column === 'Action');
+    if (action) action.values = [...action.values, 'access-email'];
+    return shape;
+  }],
 ];
 
 describe('the snapshot of the old schema, with this phase\'s changes, is the schema file', () => {

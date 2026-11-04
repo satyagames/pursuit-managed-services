@@ -121,6 +121,8 @@ const DID = {
   client: (line) => line.detail || 'Client details changed',
   'site-add': (line) => `Added to the site's ${line.detail} group`,
   'site-remove': (line) => `Taken out of the site's ${line.detail} group`,
+  // (Prompt 28: the sender prepared the message; the line says nothing of delivery.)
+  'access-email': (line) => `Email ${String(line.detail || 'prepared').replace(/^./, (first) => first.toLowerCase())}`,
 };
 
 /**
