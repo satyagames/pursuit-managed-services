@@ -46,7 +46,8 @@ a Super admin or an Admin sees it. Nobody types an address: the line under the b
 
 Ticked, the message appears under the change once it has saved, never before, in a box you may edit. **Open email draft** opens it in your own mail
 program, to the person with a copy to you: you press Send, so it comes from your own address under your own name. **Copy message** puts it on the
-clipboard for Teams or anywhere else. The app does not send it. Each press writes one line in the person's history ("Email draft opened", "Email
+clipboard for Teams or anywhere else. The app does not send it, and SharePoint does not either: on PCOE only a site owner may send mail through
+SharePoint (tested 4 Nov 2026), so every message goes from the sender's own mail. Each press writes one line in the person's history ("Email draft opened", "Email
 message copied"), which says you prepared it, not that it arrived.
 
 | Change | What the message says |

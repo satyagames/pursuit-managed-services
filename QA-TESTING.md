@@ -37,7 +37,7 @@
    set it, the fiscal start month on a test copy, and the manager's questions). Below item 273. No upgrade.
 17. Items **294 to 301** (Prompt 26: reply format, the red lines, paging, the i bubble, Sign in again, the conflict, the size watch). At the end of this file.
 18. Items **302 to 317** (Prompt 27: the console test, then Apply on a scratch list and on the real lists, then the admin page changing the groups; they replace the hand steps of item 263). At the end of this file.
-19. Items **318 to 328** (Prompt 28: Email them about this, the draft in Outlook, the copy in Teams, each kind of change). At the end of this file.
+19. Items **318 to 328** (Prompt 28; item 329 records the SendEmail test, nothing to run: Email them about this, the draft in Outlook, the copy in Teams, each kind of change). At the end of this file.
 16. Item **293** (Prompt 25: the line about SharePoint access in Give access, Add user and No access; the document ONBOARDING.md). Below item 292.
 17. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
    160, 161, 164, 165, 166, 167, 168, 169, 170.
@@ -1825,3 +1825,4 @@ items 15, 26 to 28, 35, 40 to 44, 46 and 53 to 56 above, is `DEVICE-TEST-SHEET.m
 326. **A client named with < or &.** *(Still to see.)* Give a role on a client called, for example, "A & B <test>". **Expect** the text exactly as named in the draft and the copy.
 327. **The link, from the other side.** *(Still to see.)* The person follows the link: a Leadership person sees Results only; a person not yet in their group sees SharePoint's "Sorry, this item hasn't been shared with you", as the message warned.
 328. **Who sees it.** *(Still to see.)* A Producer, a Designer and Leadership never see the box. A client list too long for a draft (Leadership on 40 clients, say) becomes "For 40 clients." and the box says it was shortened.
+329. **SharePoint's mail (decided: not used).** *(Seen 4 Nov 2026 on PCOE, the console test of Prompt 28.)* `SP.Utilities.Utility.SendEmail` to one's own address: Satyadev (a site collection admin) 200, with and without `From`; Pal, Subhajyoti as an Admin 403 `System.UnauthorizedAccessException`, with and without `From`, and again as a Super admin in PMS super admins who is not in PCOE-EM Owners. The owner chose drafts only (4 Nov 2026): Part 3 is not built. Nothing to run.
