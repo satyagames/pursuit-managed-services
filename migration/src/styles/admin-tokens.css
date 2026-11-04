@@ -22,6 +22,24 @@
   --adm-idle-bg: #e7ebf2;
   --adm-idle-ink: #3a495e;
 
+  /* Prompt 31: Deloitte's own application style (the site owner's one exception to "no new colour token",
+   * for this file only). Lime is an accent: never text on white, never white text on it. Sky is for chart
+   * marks with a label, never text. The amber and red washes above, the focus ring and --action stay. */
+  --adm-bar-black: #000000;
+  --adm-wash: #f5f7f4;
+  --adm-card-line: #bfd6a8;
+  --adm-text: #1a1a1a;
+  --adm-text-muted: #4d5651;
+  --adm-on-deep: #ffffff;
+  --adm-deep: #046a38;
+  --adm-green: #237f0c;
+  --adm-lime: #86bc25;
+  --adm-green-wash: #e9f3df;
+  --adm-teal: #0b7684;
+  --adm-teal-wash: #e3f3f5;
+  --adm-link: #0076a8;
+  --adm-sky: #00a3e0;
+
   --ink: var(--adm-ink);
   --muted: var(--adm-muted);
   --line: var(--adm-line);

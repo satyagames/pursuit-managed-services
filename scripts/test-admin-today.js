@@ -397,6 +397,46 @@ describe('colours', () => {
     assert.ok(contrastRatio('#ffffff', action) >= 4.5, `white on ${action}`);
     assert.ok(contrastRatio('#ffffff', value('adm-bar')) >= 4.5);
   });
+
+  // Prompt 31: the Deloitte look's tokens. Text pairs are held to 4.5:1; an icon, check mark or underline that
+  // carries meaning to 3:1 against its surface. Lime and sky are never text, so they appear only as marks.
+  const DELOITTE_TEXT = [
+    ['adm-text', 'adm-wash'], ['adm-text', 'adm-card'], ['adm-text', 'adm-green-wash'], ['adm-text', 'adm-teal-wash'],
+    ['adm-text-muted', 'adm-wash'], ['adm-text-muted', 'adm-card'], ['adm-text-muted', 'adm-green-wash'],
+    ['adm-deep', 'adm-card'], ['adm-deep', 'adm-wash'], ['adm-deep', 'adm-green-wash'],
+    ['adm-teal', 'adm-card'], ['adm-teal', 'adm-teal-wash'], ['adm-link', 'adm-card'], ['adm-link', 'adm-wash'],
+    ['adm-on-deep', 'adm-green'], ['adm-on-deep', 'adm-teal'], ['adm-on-deep', 'adm-deep'], ['adm-on-deep', 'adm-bar-black'],
+    ['adm-text', 'adm-lime'],
+  ];
+  const DELOITTE_MARKS = [
+    ['adm-green', 'adm-card'], ['adm-green', 'adm-wash'], ['adm-green', 'adm-green-wash'], ['adm-teal', 'adm-teal-wash'],
+    ['adm-deep', 'adm-card'], ['adm-lime', 'adm-bar-black'],
+  ];
+  function lookFailures(css) {
+    const value = (name) => new RegExp(`--${name}:\\s*(#[0-9a-f]{6})`, 'i').exec(css)?.[1];
+    const failures = [];
+    for (const [pairs, least] of [[DELOITTE_TEXT, 4.5], [DELOITTE_MARKS, 3]]) {
+      for (const [ink, ground] of pairs) {
+        if (!value(ink) || !value(ground)) { failures.push(`${ink} or ${ground} is not defined`); continue; }
+        const ratio = contrastRatio(value(ink), value(ground));
+        if (ratio < least) failures.push(`${ink} on ${ground}: ${ratio.toFixed(2)} (needs ${least})`);
+      }
+    }
+    return failures;
+  }
+
+  it('the Deloitte look: every text pair is at least 4.5:1, every mark that carries meaning at least 3:1', async () => {
+    const css = await readFile(path.join(ROOT, 'migration/src/styles/admin-tokens.css'), 'utf8');
+    assert.deepEqual(lookFailures(css), []);
+  });
+
+  it('the Deloitte look fails when a text pair is set to 4.4:1', async () => {
+    const css = await readFile(path.join(ROOT, 'migration/src/styles/admin-tokens.css'), 'utf8');
+    // #787878 on white is 4.42:1.
+    const weakened = css.replace(/--adm-text-muted:\s*#[0-9a-f]{6}/i, '--adm-text-muted: #787878');
+    assert.notEqual(weakened, css);
+    assert.ok(lookFailures(weakened).some((failure) => failure.startsWith('adm-text-muted on adm-card: 4.4')));
+  });
 });
 
 // ---- Requests: SharePoint (mocked) ----------------------------------------------------------------
