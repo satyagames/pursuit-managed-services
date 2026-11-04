@@ -3,8 +3,9 @@
   // (who may look, and give team roles) and to nobody else (the menu comes from the role matrix: AdminApp.svelte). It reads the four lists once, as an index (people, their
   // assignments, the names of clients and sessions: lib/admin/list-index.js), filters them here (lib/access/people.js: role chips, search, Client and Session, Status, pages of 5) and
   // opens one person (UserDetail.svelte) or Add user (UserAdd.svelte). A change reads the lists again. A Super admin also opens History of changes
-  // (AuditReview.svelte, Prompt 21, Phase 7: the audit list, read only).
-  import { onMount } from 'svelte';
+  // (AuditReview.svelte, Prompt 21, Phase 7: the audit list, read only). Prompt 32: on a laptop the person opens beside the list, in place; below
+  // 1,100 px they replace it, as before. From 1,600 px a Super admin who has checked site access sees who is waiting in a third column.
+  import { onMount, tick } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
   import { focusHeading } from '../lib/common/focus.js';
   import { can } from '../lib/access/can.js';
@@ -57,6 +58,8 @@
   const clientChoices = $derived([...clients].sort((a, b) => String(a.name ?? a.id).localeCompare(String(b.name ?? b.id))));
   const sessionChoices = $derived(sessionsOfClient(sessions, clientId));
   const open = $derived(openKey ? everyone.find((row) => row.key === openKey) ?? null : null);
+  /** (Prompt 32) Who is waiting for site access, by name, once Check site access has found them: what the page already holds, nothing read for it. */
+  const waitingRows = $derived(waitingKeys ? everyone.filter((row) => waitingKeys!.includes(row.key)) : null);
   const filtering = $derived(chip !== 'all' || Boolean(search.trim()) || Boolean(clientId) || status !== 'all');
 
   async function load() {
@@ -80,10 +83,9 @@
 
 {#if reviewing}
   <AuditReview {users} onBack={() => { reviewing = false; }} />
-{:else if open}
-  <UserDetail {access} person={open} {users} {assignments} {clients} {sessions} waiting={waitingKeys ? waitingKeys.includes(open.key) : null} onBack={() => { openKey = null; }} onChanged={changed} />
 {:else}
-  <section class="panel" aria-labelledby="users-heading" aria-busy={loading}>
+<div class="people" class:people--open={open} class:people--waiting={waitingRows !== null && can(access, 'roles.global', {})}>
+  <section class="panel people__list" aria-labelledby="users-heading" aria-busy={loading}>
     <header class="panel__head">
       <div>
         <h2 id="users-heading" bind:this={heading} tabindex="-1">People</h2>
@@ -133,7 +135,7 @@
       {:else}
         <ul class="rows" aria-label="People">
           {#each paged.items as row (row.key)}
-            <li class="row" data-testid="user-row">
+            <li class="row" class:row--open={row.key === openKey} data-testid="user-row" aria-current={row.key === openKey ? 'true' : undefined}>
               <div class="row__main">
                 <span class="row__title">{row.name}
                   {#if row.status === 'Disabled'}<span class="pill pill--expired">Turned off</span>{/if}
@@ -149,6 +151,26 @@
       {/if}
     {/if}
   </section>
+  {#if open}
+    <div class="people__detail">
+      {#key open.key}
+        <UserDetail {access} person={open} {users} {assignments} {clients} {sessions} waiting={waitingKeys ? waitingKeys.includes(open.key) : null}
+          onBack={() => { openKey = null; void tick().then(() => heading?.focus()); }} onChanged={changed} />
+      {/key}
+    </div>
+  {/if}
+  {#if waitingRows !== null && can(access, 'roles.global', {})}
+    <aside class="people__waiting card" aria-labelledby="people-waiting-heading">
+      <h3 id="people-waiting-heading">Waiting for site access</h3>
+      {#if waitingRows.length === 0}<p class="muted">No one.</p>
+      {:else}
+        <ul>
+          {#each waitingRows as row (row.key)}<li><button class="btn btn--small" type="button" onclick={() => { openKey = row.key; }} aria-label="Open {row.name}">{row.name}</button></li>{/each}
+        </ul>
+      {/if}
+    </aside>
+  {/if}
+</div>
 {/if}
 
 {#if adding}
@@ -157,6 +179,85 @@
 {/if}
 
 <style>
+  .people {
+    display: grid;
+    gap: 1rem;
+    align-items: start;
+  }
+
+  /* Below 1,100 px the person replaces the list, as before; the third column is a laptop's only. */
+  @media (max-width: 1099px) {
+    .people--open .people__list,
+    .people__waiting {
+      display: none;
+    }
+  }
+
+  @media (min-width: 1100px) {
+    .people--open {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    }
+
+    .people__waiting {
+      display: none;
+    }
+
+    .people__detail {
+      min-width: 0;
+    }
+
+    /* A person's row, compact: name and email on one line, the roles under them. */
+    .people__list .row {
+      padding-block: 0.4rem;
+    }
+
+    .people__list .row__main {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      column-gap: 0.75rem;
+      row-gap: 0;
+    }
+
+    .people__list .row__main > :last-child {
+      flex-basis: 100%;
+    }
+
+    .row--open {
+      border-color: var(--adm-deep);
+      box-shadow: inset 4px 0 0 var(--adm-deep);
+    }
+  }
+
+  @media (min-width: 1600px) {
+    .people--waiting {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 3fr);
+    }
+
+    .people--open.people--waiting {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 6fr) minmax(0, 3fr);
+    }
+
+    .people--waiting .people__waiting {
+      display: grid;
+      gap: 0.5rem;
+      padding: 1rem;
+    }
+  }
+
+  .people__waiting h3 {
+    margin: 0;
+    font-size: 1.1rem;
+  }
+
+  .people__waiting ul {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
   .users__bar {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
