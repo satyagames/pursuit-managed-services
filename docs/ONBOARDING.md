@@ -37,6 +37,32 @@ A person who sees the app's No access screen already has site access.
 
 **PMS super admins** owns the three groups a Super admin changes; a site owner alone chooses who is in it, and in PMS participants. What each group holds on each list is printed on the Setup page and in [SHAREPOINT.md](SHAREPOINT.md#who-may-do-what).
 
+## Email the person
+
+Every screen that changes a person's access (Give access, Make Super admin or Admin, Remove, Turn access off and on, the switch of an extra, and a
+client's Add to team and Remove) offers one box: **Email them about this**. It is unticked every time the screen opens, and nothing remembers it; only
+a Super admin or an Admin sees it. Nobody types an address: the line under the box shows the person's (from People) and says a copy comes to you
+(your sign-in's).
+
+Ticked, the message appears under the change once it has saved, never before, in a box you may edit. **Open email draft** opens it in your own mail
+program, to the person with a copy to you: you press Send, so it comes from your own address under your own name. **Copy message** puts it on the
+clipboard for Teams or anywhere else. The app does not send it. Each press writes one line in the person's history ("Email draft opened", "Email
+message copied"), which says you prepared it, not that it arrived.
+
+| Change | What the message says |
+|---|---|
+| A role given (Give access, Make Super admin, Make Admin) | who gave which role, what the role lets them do, which clients, any end date, the admin page's link |
+| A role changed (an extra switched) | the role it is now, what it lets them do, the link |
+| A role removed | which role was removed and who to ask; no link |
+| Access turned off | that it was turned off and who to ask; no link |
+| Access turned on | that it is on again, their roles, the link |
+| Added to a client's team | the role on the team, the client or sessions, the link |
+
+A message with the link says to sign in with the work account it came to, that opening the link does not give access (SharePoint decides who may
+enter), and to ask a Super admin if SharePoint says "Sorry, this item hasn't been shared with you". When **Check site access** has just found the
+person waiting for their groups, it adds that they may not be able to open it until a Super admin adds them; nothing is read to know it. A message
+never holds a PIN, a QR code, a participant link or anyone else's details. A long client list becomes a count, so that the draft fits; the box says so.
+
 ## A site that already has people: the existing PCOE site
 
 Apply removes nobody: people who reach the app through the site's Members or Visitors keep working. When ready, the owner moves them into the PMS groups (**Check site access** lists them as waiting, whichever other group they are in), then presses **Remove the site's groups** on the Setup page. That takes the site's own groups off the app's lists and folder only; it changes nothing else on the site, and until it is pressed anyone in Members can still read the five secret lists.

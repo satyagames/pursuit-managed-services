@@ -1765,6 +1765,14 @@ Results is a leader's view as well (boards 9 and 12): `admin/LeaderDashboard.sve
 - **Each copy has its own groups**, named with its list prefix (`groupNames`, `prefixOf` in `lib/setup/list-permissions.js`); its row holds their ids and titles, and nothing on the admin page names a group by a fixed title.
 - **`desiredGroups` is the one rule** of who belongs where. The groups' ids are in the settings list's `site-groups` item, never in a page.
 
+## Rules from Prompt 28 (the email about an access change; keep them holding)
+
+- **Unticked every time.** "Email them about this" (`admin/EmailBox.svelte`) starts unticked whenever its screen, form or confirmation opens, and nothing stores it.
+- **No address is typed.** The draft goes to the person's stored email, with a copy to the signed-in account's; neither is asked for.
+- **The words are `lib/access/access-message.js`'s**, plain JS held by `scripts/test-access-message.js`: every name, client and role is escaped in the HTML, a draft is never longer than `MAILTO_MAX` and never cut, and a removal or a turn-off has no link. No PIN, QR code or participant link, ever.
+- **The change first.** The message appears only after the change has saved (`admin/EmailPanel.svelte`), and a box left unticked costs no request. The app sends nothing: one `access-email` audit line per press of Open email draft or Copy message, none for showing it.
+- **Only those who may give a role** (`team.assign`) see the box or the message.
+
 ## Before finishing a change
 
 - Always: `npm run check:svelte` and `npm test` (the documents, the module map and the project map among it). If you added, moved or renamed a

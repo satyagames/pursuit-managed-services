@@ -8,12 +8,14 @@
   import * as dataService from '../lib/data/dataService.js';
   import { focusHeading } from '../lib/common/focus.js';
   import { can } from '../lib/access/can.js';
-  import { sessionLabel } from '../lib/access/people.js';
+  import { reachWords, sessionLabel } from '../lib/access/people.js';
   import { loseWords, removeRole } from '../lib/access/people-ops.js';
   import { TEAM_ROLES, addToTeam, teamCandidates, teamProblems, teamRows } from '../lib/access/team.js';
   import { errorText } from '../lib/admin/session-notice.js';
   import SiteAccessHandoff from './SiteAccessHandoff.svelte';
   import ConfirmDialog from './ConfirmDialog.svelte';
+  import EmailBox from './EmailBox.svelte';
+  import EmailPanel from './EmailPanel.svelte';
 
   let { client, access = null, sessions, users, assignments, preset = null, onChanged, onToast }: {
     client: { id: string; name: string };
@@ -49,6 +51,14 @@
   let teamChanges = $state(0);
   const added = $derived(users.find((user) => user.id === lastAdded) ?? null);
   let heading = $state<HTMLElement>();
+  /** (Prompt 28) "Email them about this", unticked each time the form or a confirmation opens; the message once a ticked change has saved. */
+  let emailed = $state(false);
+  let mail = $state<any>(null);
+  const personOf = (key: string) => {
+    const user = users.find((each) => each.id === key);
+    return { key, name: user?.fullName ?? '', email: user?.email || (key.includes('@') ? key : '') };
+  };
+  const chosenEmail = $derived(personOf(userKey).email);
 
   const candidates = $derived(teamCandidates(users, search));
   const problems = $derived(teamProblems({ userKey, role, scope, sessionIds, editActivities }));
@@ -63,6 +73,7 @@
     editActivities = false;
     submitted = false;
     formError = '';
+    emailed = false;
   }
 
   // A session planned with a team of its own opens the form on it, once.
@@ -86,6 +97,8 @@
       lastAdded = userKey;
       teamChanges += 1;
       const name = users.find((user) => user.id === userKey)?.fullName || userKey;
+      const places = scope === 'client' ? [client.name] : choices.filter((session) => sessionIds.includes(session.id)).map((session) => `${client.name}, ${sessionLabel(session)}`);
+      mail = emailed && done.added && chosenEmail ? { kind: 'team-added', person: personOf(userKey), roles: [role], clients: places } : null;
       onChanged(done.added ? `${name} is on the team as ${role}` : `${name} already had that role`);
     } catch (cause) {
       formError = errorText(cause, 'Could not add this person.');
@@ -102,6 +115,8 @@
       lastAdded = confirm.assignment.userKey;
       teamChanges += 1;
       const words = done.removed ? `${confirm.name} removed from the team` : `${confirm.name} was already off the team`;
+      const gone = confirm.assignment;
+      mail = emailed && done.removed && personOf(gone.userKey).email ? { kind: 'removed', person: personOf(gone.userKey), roles: [gone.role], clients: [reachWords({ ...gone, validUntil: null }, { clients: [client], sessions })] } : null;
       confirm = null;
       onChanged(words);
     } catch (cause) {
@@ -119,6 +134,7 @@
   </div>
   <p class="muted small">A Producer runs the sessions, a Designer edits the brand, Leadership sees the results. Give a role for the whole client, or only for some sessions.{mayAssign ? '' : ' An Admin chooses the team.'}</p>
   {#if added && access}<SiteAccessHandoff {access} person={added} {assignments} changed={teamChanges} />{/if}
+  {#if mail && access}<EmailPanel {access} {mail} onClose={() => { mail = null; }} />{/if}
 
   {#if open}
     <form class="editor-form team-form" onsubmit={add} novalidate aria-labelledby="team-form-heading">
@@ -156,6 +172,7 @@
         <label class="check"><input type="checkbox" bind:checked={editActivities} disabled={busy} /> May also edit activities</label>
       {/if}
       {#if formError}<p class="error" role="alert">{formError}</p>{/if}
+      <EmailBox {access} email={chosenEmail} bind:checked={emailed} disabled={busy} />
       <div class="dialog__actions">
         <button class="btn" type="button" onclick={() => { open = false; }} disabled={busy}>Cancel</button>
         <button class="btn btn--primary" type="submit" disabled={busy}>{busy ? 'Adding...' : 'Add'}</button>
@@ -173,7 +190,7 @@
             <span class="row__title">{row.name} <span class="pill">{row.role}</span></span>
             <span class="muted small">{row.reach}{row.extras ? ` · ${row.extras}` : ''}</span>
           </div>
-          {#if mayAssign}<button class="btn btn--small btn--danger" type="button" onclick={() => { confirm = row; }} disabled={busy} aria-label="Remove {row.name}, {row.role}, {row.reach}">Remove</button>{/if}
+          {#if mayAssign}<button class="btn btn--small btn--danger" type="button" onclick={() => { emailed = false; confirm = row; }} disabled={busy} aria-label="Remove {row.name}, {row.role}, {row.reach}">Remove</button>{/if}
         </li>
       {/each}
     </ul>
@@ -182,7 +199,9 @@
 
 {#if confirm}
   <ConfirmDialog title="Remove {confirm.name} from the team?" lead={loseWords(confirm.assignment, confirm.name, { clients: [client], sessions })} confirmLabel="Remove" tone="danger" {busy}
-    onCancel={() => { confirm = null; }} onConfirm={() => void remove()} />
+    onCancel={() => { confirm = null; }} onConfirm={() => void remove()}>
+    <EmailBox {access} email={personOf(confirm.assignment.userKey).email} bind:checked={emailed} disabled={busy} />
+  </ConfirmDialog>
 {/if}
 
 <style>

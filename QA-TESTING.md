@@ -37,6 +37,7 @@
    set it, the fiscal start month on a test copy, and the manager's questions). Below item 273. No upgrade.
 17. Items **294 to 301** (Prompt 26: reply format, the red lines, paging, the i bubble, Sign in again, the conflict, the size watch). At the end of this file.
 18. Items **302 to 317** (Prompt 27: the console test, then Apply on a scratch list and on the real lists, then the admin page changing the groups; they replace the hand steps of item 263). At the end of this file.
+19. Items **318 to 328** (Prompt 28: Email them about this, the draft in Outlook, the copy in Teams, each kind of change). At the end of this file.
 16. Item **293** (Prompt 25: the line about SharePoint access in Give access, Add user and No access; the document ONBOARDING.md). Below item 292.
 17. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
    160, 161, 164, 165, 166, 167, 168, 169, 170.
@@ -1810,3 +1811,17 @@ items 15, 26 to 28, 35, 40 to 44, 46 and 53 to 56 above, is `DEVICE-TEST-SHEET.m
     and was retried), Completion waited for the saves, and there was one Responses item. The latency and the 429 are the mock's; the tenant's throttling is still unknown (item 6, item 38).
 68. **The two changes to what a screen reader hears** (focus now goes to the heading of Welcome, the hub, and the admin after Unlock and after Lock) have been seen in the tree and by
     keyboard in three engines; how VoiceOver on an iPad reads them, and whether moving focus on Welcome when the page first opens is welcome or noisy, needs a person with VoiceOver on.
+
+### Prompt 28: Email them about this (the box, the draft, the copy)
+
+318. **Unticked, nothing.** *(Still to see.)* Give a role with the box unticked. **Expect** no message, no email, and in the browser's Network tab the same requests as before this package.
+319. **The draft in Outlook.** *(Still to see.)* Tick the box, give a role, press Open email draft. **Expect** Outlook (or the default mail program) to open a new mail to the person with you in Cc, the subject and the text as shown, the line breaks kept, the link whole and clickable; you press Send. **Expect** "Email draft opened" in their history once the person is opened again.
+320. **The copy in Teams.** *(Still to see.)* Press Copy message and paste into a Teams chat. **Expect** the whole text with its line breaks. If the browser refuses the clipboard, the text is selected and the page says to press Ctrl+C.
+321. **A role changed.** *(Still to see.)* Switch a Designer's "May also edit activities" with the page's box ticked. **Expect** "Your role is now Designer."
+322. **A role removed.** *(Still to see.)* Remove a role with the confirmation's box ticked. **Expect** the role named, who to ask, and no link.
+323. **Off and on.** *(Still to see.)* Turn a person off with the box ticked (no link), then on with the page's box ticked (the link, their roles). The boxes are unticked again after each.
+324. **A team add.** *(Still to see.)* As an Admin, add a person to a client's team with the box ticked. **Expect** the message to the person chosen, with the client.
+325. **Waiting for the site.** *(Still to see.)* As a Super admin, press Check site access, open a person it lists as waiting, give a role with the box ticked. **Expect** "You may not be able to open it until a Super admin adds you to the site." With Setup's switch on and the person added by the change, the sentence goes once the site access line says they are in their group.
+326. **A client named with < or &.** *(Still to see.)* Give a role on a client called, for example, "A & B <test>". **Expect** the text exactly as named in the draft and the copy.
+327. **The link, from the other side.** *(Still to see.)* The person follows the link: a Leadership person sees Results only; a person not yet in their group sees SharePoint's "Sorry, this item hasn't been shared with you", as the message warned.
+328. **Who sees it.** *(Still to see.)* A Producer, a Designer and Leadership never see the box. A client list too long for a draft (Leadership on 40 clients, say) becomes "For 40 clients." and the box says it was shortened.

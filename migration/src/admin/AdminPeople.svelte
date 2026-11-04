@@ -39,6 +39,8 @@
   let openKey = $state<string | null>(null);
   let adding = $state(false);
   let reviewing = $state(false);
+  /** (Prompt 28) Who Check site access last found waiting for their groups; null until it was pressed on this page. */
+  let waitingKeys = $state<string[] | null>(null);
 
   const mayAdd = $derived(can(access, 'users.manage', {}));
   const mayReview = $derived(can(access, 'audit.view', {}));
@@ -79,7 +81,7 @@
 {#if reviewing}
   <AuditReview {users} onBack={() => { reviewing = false; }} />
 {:else if open}
-  <UserDetail {access} person={open} {users} {assignments} {clients} {sessions} onBack={() => { openKey = null; }} onChanged={changed} />
+  <UserDetail {access} person={open} {users} {assignments} {clients} {sessions} waiting={waitingKeys ? waitingKeys.includes(open.key) : null} onBack={() => { openKey = null; }} onChanged={changed} />
 {:else}
   <section class="panel" aria-labelledby="users-heading" aria-busy={loading}>
     <header class="panel__head">
@@ -96,7 +98,7 @@
     {#if loading}<p class="muted" role="status">Loading people...</p>
     {:else if error}<p class="error" role="alert">{error}</p>
     {:else}
-      {#if can(access, 'roles.global', {})}<SiteAccessDrift {users} {assignments} />{/if}
+      {#if can(access, 'roles.global', {})}<SiteAccessDrift {users} {assignments} onRead={(keys) => { waitingKeys = keys; }} />{/if}
       <div class="users__bar">
         <div class="field"><label class="field__label" for="users-search">Search people</label>
           <input id="users-search" class="input" type="search" autocomplete="off" bind:value={search} oninput={() => { page = 1; }} placeholder="Name or email" /></div>

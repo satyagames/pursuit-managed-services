@@ -15,16 +15,20 @@
   import ConfirmDialog from './ConfirmDialog.svelte';
   import GiveAccess from './GiveAccess.svelte';
   import SiteAccessHandoff from './SiteAccessHandoff.svelte';
+  import EmailBox from './EmailBox.svelte';
+  import EmailPanel from './EmailPanel.svelte';
   import { MANAGED_GROUPS, desiredGroups, groupIds } from '../lib/access/site-access.js';
 
   type Row = { key: string; name: string; email: string; status: string; assignments: any[] };
-  let { access, person, users, assignments, clients, sessions, onBack, onChanged }: {
+  let { access, person, users, assignments, clients, sessions, waiting = null, onBack, onChanged }: {
     access: any;
     person: Row;
     users: any[];
     assignments: any[];
     clients: any[];
     sessions: any[];
+    /** (Prompt 28) Whether the People page's site check found them waiting for their groups; null when it was not checked. */
+    waiting?: boolean | null;
     onBack: () => void;
     /** Something changed: the screen above reads the lists again and says `words`. */
     onChanged: (words: string) => void;
@@ -37,6 +41,19 @@
   let giving = $state(false);
   let history = $state<{ id: string; day: string; words: string }[] | null>(null);
   let historyError = $state('');
+  /** (Prompt 28) "Email them about this": the page's box, for the changes made with one press, and the confirmation's; both unticked every time. */
+  let pageEmail = $state(false);
+  let confirmEmail = $state(false);
+  let mail = $state<any>(null);
+  let settled = $state(false);
+  const waitingNow = $derived(settled ? false : waiting);
+  const who = $derived({ key: person.key, name: person.name, email: person.email });
+  const placeOf = (row: any) => (row.scopeType === 'global' ? 'all' : [reachWords({ ...row, validUntil: null }, at).replace(/^All clients/, 'all clients')]);
+  /** The message's input for a change, when its box was ticked. */
+  const mailFor = (ticked: boolean, kind: string, rows: any[] = []) => (ticked && person.email
+    ? { kind, person: who, roles: [...new Set(rows.map((row) => row.role))], clients: rows.some((row) => row.scopeType === 'global') ? 'all' : rows.flatMap((row) => placeOf(row)), endDate: rows.length === 1 ? rows[0].validUntil ?? '' : '' }
+    : null);
+  const ask = (next: typeof confirm) => { confirmEmail = false; confirm = next; };
 
   const at = $derived({ clients, sessions });
   const mine = $derived(assignments.filter((row) => row.userKey === person.key));
@@ -69,7 +86,7 @@
   });
 
   /** Runs one change: busy while it goes, its refusal in words, the screen above told when it worked. */
-  async function run(change: () => Promise<string | null>) {
+  async function run(change: () => Promise<string | null>, mailIf: any = null) {
     if (busy) return;
     busy = true;
     error = '';
@@ -77,7 +94,8 @@
       const words = await change();
       confirm = null;
       giving = false;
-      if (words) { synced += 1; onChanged(words); }
+      if (words) { synced += 1; mail = mailIf; onChanged(words); }
+      pageEmail = false;
     } catch (cause) {
       error = errorText(cause, 'Could not make this change.');
       confirm = null;
@@ -89,25 +107,25 @@
   const makeSuperAdmin = () => run(async () => {
     const done = await grantRole(dataService, access, { userKey: person.key, role: 'Super admin', scopeType: 'global' });
     return done.already ? `${person.name} is a Super admin already.` : `${person.name} is now a Super admin.`;
-  });
+  }, mailFor(pageEmail, 'given', [{ role: 'Super admin', scopeType: 'global' }]));
   const makeAdmin = () => run(async () => {
     const done = await grantRole(dataService, access, { userKey: person.key, role: 'Admin', scopeType: 'global' });
     return done.already ? `${person.name} is an Admin already.` : `${person.name} is now an Admin.`;
-  });
+  }, mailFor(pageEmail, 'given', [{ role: 'Admin', scopeType: 'global' }]));
   const remove = (assignment: any) => run(async () => {
     const done = await removeRole(dataService, access, assignment, assignments);
     return done.already ? `${person.name} did not have that access any more.` : `Removed ${assignment.role} from ${person.name}.`;
-  });
+  }, mailFor(confirmEmail, 'removed', [assignment]));
   const switchExtra = (assignment: any, extra: string, on: boolean) => run(async () => {
     const wanted = (String(assignment.extras ?? '').split(/[\s,]+/).filter(Boolean)).filter((entry) => entry !== extra);
     if (on) wanted.push(extra);
     await setExtras(dataService, access, assignment, wanted, assignments);
     return `Changed what ${person.name} may do.`;
-  });
+  }, mailFor(pageEmail, 'changed', [assignment]));
   const turn = (status: 'Disabled' | 'Active') => run(async () => {
     await setStatus(dataService, access, person.key, status, { rows: { users, assignments } });
     return status === 'Disabled' ? `${person.name}'s access is turned off.` : `${person.name}'s access is turned on.`;
-  });
+  }, status === 'Disabled' ? mailFor(confirmEmail, 'off') : mailFor(pageEmail, 'on', mine.filter((row) => !ended(row))));
 </script>
 
 <section class="panel" aria-labelledby="user-heading" aria-busy={busy}>
@@ -123,14 +141,16 @@
         {#if person.status === 'Disabled'}
           <button class="btn" type="button" onclick={() => void turn('Active')} disabled={busy}>Turn access on</button>
         {:else}
-          <button class="btn btn--danger" type="button" onclick={() => { confirm = { kind: 'disable' }; }} disabled={busy}>Turn access off</button>
+          <button class="btn btn--danger" type="button" onclick={() => ask({ kind: 'disable' })} disabled={busy}>Turn access off</button>
         {/if}
       {/if}
     </div>
   </header>
   {#if own}<p class="muted" data-testid="own-note">This is you: you cannot change your own roles or turn off your own access.</p>{/if}
   {#if error}<p class="error" role="alert">{error}</p>{/if}
-  <SiteAccessHandoff {access} person={{ id: person.key, email: person.email, status: person.status }} {assignments} changed={synced} />
+  <SiteAccessHandoff {access} person={{ id: person.key, email: person.email, status: person.status }} {assignments} changed={synced} bind:settled />
+  {#if mail}<EmailPanel {access} mail={{ ...mail, waiting: waitingNow }} onClose={() => { mail = null; }} />{/if}
+  {#if !own && (mayGlobal || mayManage)}<EmailBox {access} email={person.email} bind:checked={pageEmail} disabled={busy} />{/if}
 
   <section class="detail__block" aria-labelledby="global-heading">
     <h3 id="global-heading">Roles for all clients</h3>
@@ -139,7 +159,7 @@
         <div class="row__main"><span class="row__title">Super admin</span><span class="muted small">{superRow ? 'Manages people, clients, sessions, content and results.' : 'Not a Super admin.'}</span></div>
         {#if mayGlobal && !own}
           {#if superRow}
-            <button class="btn" type="button" onclick={() => { confirm = { kind: 'remove', assignment: superRow }; }} disabled={busy} aria-label="Remove Super admin from {person.name}">Remove</button>
+            <button class="btn" type="button" onclick={() => ask({ kind: 'remove', assignment: superRow })} disabled={busy} aria-label="Remove Super admin from {person.name}">Remove</button>
           {:else}
             <button class="btn" type="button" onclick={() => void makeSuperAdmin()} disabled={busy} aria-label="Make {person.name} a Super admin">Make Super admin</button>
           {/if}
@@ -159,7 +179,7 @@
         </div>
         {#if mayGlobal && !own}
           {#if adminRow}
-            <button class="btn" type="button" onclick={() => { confirm = { kind: 'remove', assignment: adminRow }; }} disabled={busy} aria-label="Remove Admin from {person.name}">Remove</button>
+            <button class="btn" type="button" onclick={() => ask({ kind: 'remove', assignment: adminRow })} disabled={busy} aria-label="Remove Admin from {person.name}">Remove</button>
           {:else}
             <button class="btn" type="button" onclick={() => void makeAdmin()} disabled={busy} aria-label="Make {person.name} an Admin">Make Admin</button>
           {/if}
@@ -192,7 +212,7 @@
               {/if}
             </div>
             {#if !own && mayRemove(row)}
-              <button class="btn btn--danger" type="button" onclick={() => { confirm = { kind: 'remove', assignment: row }; }} disabled={busy} aria-label="Remove {row.role}, {reachWords(row, at)}">Remove</button>
+              <button class="btn btn--danger" type="button" onclick={() => ask({ kind: 'remove', assignment: row })} disabled={busy} aria-label="Remove {row.role}, {reachWords(row, at)}">Remove</button>
             {/if}
           </li>
         {/each}
@@ -216,14 +236,18 @@
 {#if confirm?.kind === 'disable'}
   <ConfirmDialog title="Turn off {person.name}'s access?" lead={`They will not be able to use the admin page.${offGroups}`} confirmLabel="Turn access off" tone="danger" {busy}
     points={['Their roles stay as they are, so turning access on again gives everything back.', 'They are not deleted, and what they did stays in the history.']}
-    onConfirm={() => void turn('Disabled')} onCancel={() => { confirm = null; }} />
+    onConfirm={() => void turn('Disabled')} onCancel={() => { confirm = null; }}>
+    <EmailBox {access} email={person.email} bind:checked={confirmEmail} disabled={busy} />
+  </ConfirmDialog>
 {:else if confirm?.kind === 'remove'}
   <ConfirmDialog title="Remove {confirm.assignment.role}?" lead={loseWords(confirm.assignment, person.name, at)} confirmLabel="Remove" tone="danger" {busy}
     points={['You can give the access again later.']}
-    onConfirm={() => { if (confirm?.kind === 'remove') void remove(confirm.assignment); }} onCancel={() => { confirm = null; }} />
+    onConfirm={() => { if (confirm?.kind === 'remove') void remove(confirm.assignment); }} onCancel={() => { confirm = null; }}>
+    <EmailBox {access} email={person.email} bind:checked={confirmEmail} disabled={busy} />
+  </ConfirmDialog>
 {/if}
 {#if giving}
-  <GiveAccess {access} person={{ key: person.key, name: person.name }} {clients} {sessions} onCancel={() => { giving = false; }} onDone={(words) => { giving = false; synced += 1; onChanged(words); }} />
+  <GiveAccess {access} person={{ key: person.key, name: person.name, email: person.email }} {clients} {sessions} onCancel={() => { giving = false; }} onDone={(words, given) => { giving = false; synced += 1; mail = given; onChanged(words); }} />
 {/if}
 
 <style>

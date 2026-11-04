@@ -8,7 +8,8 @@
   import { can } from '../lib/access/can.js';
   import { MANAGED_GROUPS, desiredGroups, groupIds, syncSiteAccess } from '../lib/access/site-access.js';
 
-  let { access, person, assignments, changed = 0 }: { access: any; person: { id: string; email?: string; status?: string }; assignments: any[]; changed?: number } = $props();
+  /** `settled` (Prompt 28): the last check found the person in the groups their roles ask for, so an email need not say they are waiting. */
+  let { access, person, assignments, changed = 0, settled = $bindable(false) }: { access: any; person: { id: string; email?: string; status?: string }; assignments: any[]; changed?: number; settled?: boolean } = $props();
 
   type Key = keyof typeof MANAGED_GROUPS;
   const may = $derived(can(access, 'roles.global', {}));
@@ -26,6 +27,7 @@
     said = '';
     const result = await syncSiteAccess(dataService, access, person.id) as { status: typeof phase; words: string };
     phase = result.status;
+    settled = ['done', 'same'].includes(result.status);
     words = result.words;
     const groups = await groupIds(dataService).catch(() => null);
     if (groups) titles = Object.fromEntries(Object.entries(MANAGED_GROUPS).map(([key, title]) => [key, groups[key]?.title ?? title]));

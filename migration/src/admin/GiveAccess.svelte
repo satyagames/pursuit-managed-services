@@ -6,18 +6,20 @@
   import * as dataService from '../lib/data/dataService.js';
   import { can } from '../lib/access/can.js';
   import { grantProblem, grantRole } from '../lib/access/grants.js';
-  import { sessionsOfClient } from '../lib/access/people.js';
+  import { reachWords, sessionsOfClient } from '../lib/access/people.js';
   import { siteAccessNote } from '../lib/access/access-words.js';
   import { errorText } from '../lib/admin/session-notice.js';
+  import EmailBox from './EmailBox.svelte';
 
   type Client = { id: string; name?: string };
   type Session = { id: string; clientId?: string; date?: string; title?: string; startTime?: string };
   let { access, person, clients, sessions, onDone, onCancel }: {
     access: any;
-    person: { key: string; name: string };
+    person: { key: string; name: string; email?: string };
     clients: Client[];
     sessions: Session[];
-    onDone: (words: string) => void;
+    /** `mail` (Prompt 28): what the message says, when "Email them about this" was ticked; otherwise null. */
+    onDone: (words: string, mail: any) => void;
     onCancel: () => void;
   } = $props();
 
@@ -34,6 +36,8 @@
   let submitted = $state(false);
   let busy = $state(false);
   let error = $state('');
+  /** (Prompt 28) Unticked every time this opens; nothing remembers it. */
+  let emailed = $state(false);
 
   const mayPeriod = $derived(can(access, 'roles.global', {}));
   const periodOffered = $derived(role === 'Leadership' && mayPeriod);
@@ -68,7 +72,9 @@
     try {
       const done = await grantRole(dataService, access, wanted);
       if (done.already) { error = `${person.name} already has this access.`; busy = false; return; }
-      onDone(`${person.name} now has ${role} access.${siteNote ? ` ${siteNote}` : ''}`);
+      const place = reachWords({ ...wanted, validUntil: null }, { clients, sessions }).replace(/^All clients/, 'all clients');
+      const mail = emailed && person.email ? { kind: 'given', person, roles: [role], clients: [place], endDate: validUntil } : null;
+      onDone(`${person.name} now has ${role} access.${siteNote ? ` ${siteNote}` : ''}`, mail);
     } catch (cause) {
       error = errorText(cause, 'Could not give this access.');
       busy = false;
@@ -121,6 +127,7 @@
     {#if submitted && problem}<p class="error" role="alert">{problem}</p>{/if}
     {#if error}<p class="error" role="alert">{error}</p>{/if}
     {#if siteNote}<p class="muted small" data-testid="site-access-note">{siteNote}</p>{/if}
+    <EmailBox {access} email={person.email ?? ''} bind:checked={emailed} disabled={busy} />
     <div class="dialog__actions">
       <button class="btn" type="button" onclick={onCancel} disabled={busy}>Cancel</button>
       <button class="btn btn--primary" type="submit" disabled={busy}>{busy ? 'Giving...' : 'Give access'}</button>

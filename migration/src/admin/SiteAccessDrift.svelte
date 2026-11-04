@@ -4,7 +4,8 @@
   import * as dataService from '../lib/data/dataService.js';
   import { MANAGED_GROUPS, readDrift } from '../lib/access/site-access.js';
 
-  let { users, assignments }: { users: any[]; assignments: any[] } = $props();
+  /** `onRead` (Prompt 28): who the check found waiting, by key, so that an email to one of them can say so. Nothing more is read for it. */
+  let { users, assignments, onRead }: { users: any[]; assignments: any[]; onRead?: (waiting: string[]) => void } = $props();
 
   type Drift = { waiting: any[]; more: any[]; strangers: any[] };
   let drift = $state<Drift | null>(null);
@@ -28,6 +29,7 @@
       const found = await readDrift(read, dataService.sharePointListTitles(), { users, assignments }) as { ready: boolean; words?: string; drift?: Drift; groups?: Record<string, { title?: string }> };
       if (found.ready) {
         drift = found.drift ?? null;
+        onRead?.((drift?.waiting ?? []).map((each) => each.key));
         titles = Object.fromEntries(Object.entries(MANAGED_GROUPS).map(([key, title]) => [key, found.groups?.[key]?.title ?? title]));
       }
       else said = found.words ?? '';
