@@ -147,7 +147,8 @@ const listOf = (data) => (Array.isArray(data) ? data : results(data));
  */
 export async function membership(dataService, user) {
   const answer = await dataService.probeSharePointRead(null, `/web/siteusers/getbyemail('${quotedEmail(user.email || user.id)}')?$select=Id,LoginName,Groups/Id&$expand=Groups`);
-  if (!answer.ok && answer.status === 404) return null;
+  // (PCOE, 4 Nov 2026: a person not on the site yet is answered "User cannot be found.", not always with 404.)
+  if (!answer.ok && (answer.status === 404 || /User cannot be found/i.test(String(answer.message)))) return null;
   if (!answer.ok) throw Object.assign(new Error(answer.message), { status: answer.status });
   return { id: answer.data.Id, loginName: answer.data.LoginName, groups: new Set(listOf(answer.data.Groups).map((group) => group.Id)) };
 }
@@ -190,7 +191,12 @@ export async function syncSiteAccess(dataService, access, userKey, { now = new D
       let login = found?.loginName || user.loginName;
       if (!login) login = (await dataService.searchDirectory(user.email || user.id, { max: 1 }).catch(() => null))?.find((entry) => entry.email === (user.email || user.id))?.loginName;
       if (!login) return { status: 'manual', words: `This person could not be found in the directory. ${waitingWords(wanted, groups)}`, groups: wanted };
-      const made = await dataService.sendToSharePoint('POST', '/web/ensureuser', { logonName: login });
+      // (A stored claim SharePoint will not resolve is tried once more by the email, which PCOE resolved, 4 Nov 2026.)
+      const email = user.email || user.id;
+      const made = await dataService.sendToSharePoint('POST', '/web/ensureuser', { logonName: login }).catch((cause) => {
+        if (login === email || !/User cannot be found|could not be found/i.test(String(cause?.message))) throw cause;
+        return dataService.sendToSharePoint('POST', '/web/ensureuser', { logonName: email });
+      });
       id = made?.Id ?? id;
       for (const key of add) {
         await dataService.sendToSharePoint('POST', `/web/sitegroups/getbyid(${groups[key].id})/users`, { __metadata: { type: 'SP.User' }, LoginName: made?.LoginName ?? login });

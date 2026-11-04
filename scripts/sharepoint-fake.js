@@ -278,7 +278,7 @@ const fieldAsRead = (select) => (field) => {
  * folders that are a library's root, `levels` more permission levels, `levelLow` the bits a made level really gets, `ownerNotSet` an owner that does not land,
  * `runningIsOwner` false when the signed-in account is not in the owners' group, `memberPage` the page size of a group's members.
  */
-function sitePermissionsFake({ handmade = [], rootFolders = [], levels: moreLevels = [], levelLow = null, ownerNotSet = false, noOwnerCall = false, runningIsOwner = true, memberPage = 0, cannotEdit = [] }, { ownerGroupId, currentUser }) {
+function sitePermissionsFake({ handmade = [], rootFolders = [], levels: moreLevels = [], levelLow = null, ownerNotSet = false, noOwnerCall = false, runningIsOwner = true, memberPage = 0, cannotEdit = [], missingUserStatus = 404, claimsRefused = false }, { ownerGroupId, currentUser }) {
   const VERBOSE = /odata=verbose/;
   let nextId = 100;
   // (Part 4. As Part 0 showed on PCOE: ensureuser 200, an add 201 with the verbose SP.User body, removebyid 200, the owners' group 403, and a group's maker
@@ -355,11 +355,17 @@ function sitePermissionsFake({ handmade = [], rootFolders = [], levels: moreLeve
       groups.set(group.Id, group);
       return ok((({ users, ...rest }) => rest)(group), 201);
     }
+    // (`claimsRefused`: a farm that cannot resolve a stored claim for a person not yet on the site, and resolves the email.)
+    if (/\/web\/ensureuser$/.test(path) && method === 'POST' && claimsRefused && String(body.logonName).includes('|') && !siteUsers.has(String(body.logonName).toLowerCase())) return error(500, 'User cannot be found.');
+    if (/\/web\/ensureuser$/.test(path) && method === 'POST' && !String(body.logonName).includes('|')) {
+      return ok((({ Id, LoginName, Email }) => ({ Id, LoginName, Email }))(userOf(`i:0e.t|adfs|${String(body.logonName).split('@')[0]}`, body.logonName)));
+    }
     if (/\/web\/ensureuser$/.test(path) && method === 'POST') return ok((({ Id, LoginName, Email }) => ({ Id, LoginName, Email }))(userOf(body.logonName)));
     const byEmail = /\/web\/siteusers\/getbyemail\('(.+?)'\)$/.exec(path);
     if (byEmail) {
       const found = [...siteUsers.values()].find((each) => each.Email.toLowerCase() === byEmail[1].replace(/''/g, "'").toLowerCase());
-      if (!found) return error(404, 'User cannot be found.');
+      // (`missingUserStatus`: how a person not on the site is answered; PCOE said "User cannot be found.", 4 Nov 2026.)
+      if (!found) return error(missingUserStatus, 'User cannot be found.');
       return ok({ Id: found.Id, LoginName: found.LoginName, Groups: { results: [...groups.values()].filter((group) => group.users.includes(found)).map((group) => ({ Id: group.Id })) } });
     }
     const inGroup = /\/web\/sitegroups\/getbyid\((\d+)\)(.*)$/.exec(path);

@@ -210,6 +210,20 @@ describe('syncSiteAccess', () => {
     assert.match(result.words, /Access denied/);
     assert.match(result.words, /SPRequestGuid/);
   });
+  // (PCOE, 4 Nov 2026: a person not on the site yet stopped with "Could not change site access: User cannot be found.")
+  it('a person not on the site, answered "User cannot be found." with any status, is added', async () => {
+    const s = await site({ missingUserStatus: 500, people: [producer], roles: [role(producer.id, 'Producer')] });
+    const result = await syncSiteAccess(s.ds, s.access, producer.id);
+    assert.equal(result.status, 'done', result.words);
+    assert.deepEqual(membersOf(s, 'PMS staff'), ['p@x.com']);
+  });
+  it('a stored claim SharePoint will not resolve is tried again by the email, which it does', async () => {
+    const s = await site({ claimsRefused: true, people: [producer], roles: [role(producer.id, 'Producer')] });
+    const result = await syncSiteAccess(s.ds, s.access, producer.id);
+    assert.equal(result.status, 'done', result.words);
+    assert.deepEqual(membersOf(s, 'PMS staff'), ['p@x.com']);
+    assert.equal(s.fake.writes().filter((entry) => /ensureuser$/.test(entry.path)).length, 2);
+  });
   it('membership: 404 is not on the site yet', async () => {
     const s = await site();
     assert.equal(await membership(s.ds, { id: 'nobody@x.com', email: 'nobody@x.com' }), null);
