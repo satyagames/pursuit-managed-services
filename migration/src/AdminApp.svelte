@@ -366,8 +366,10 @@
         <strong class="shell__title">{APP_NAME} Admin</strong>
         {#if label}<span class="shell__label" data-testid="copy-label">{label}</span>{/if}
       </div>
-      <span class="shell__user">{admin.name ?? ''}</span>
-      {#if viaPin}<button class="btn btn--bar" type="button" onclick={() => void lock()}>Lock</button>{/if}
+      <div class="shell__end">
+        <span class="shell__user">{admin.name ?? ''}</span>
+        {#if viaPin}<button class="btn btn--bar" type="button" onclick={() => void lock()}>Lock</button>{/if}
+      </div>
     </header>
     <nav class="shell__nav" aria-label="Admin sections">
       <div class="tabs" role="tablist">

@@ -200,13 +200,19 @@ input[type='date']:focus-within {
   min-width: 0;
 }
 
-/* Shell */
+/* Shell. Prompt 32: no container is capped (this sheet's 1,120 px and the legacy sheet's 1,000 px are gone); the page runs edge to edge
+   with the gutter at the sides, and only running text keeps a measure (72ch). The bar is Prompt 31's black. */
+/* (16 px to 32 px, in rem so that it grows with the text size, as the 1rem it replaced did.) */
+.shell {
+  --shell-gutter: clamp(1rem, 2vw, 2rem);
+}
+
 .shell__bar {
   position: static;
   flex-wrap: wrap;
   gap: 0.75rem 1rem;
-  padding: 0.6rem max(1rem, calc((100% - 1120px) / 2 + 1rem));
-  background: var(--adm-bar);
+  padding: 0.6rem var(--shell-gutter);
+  background: var(--adm-bar-black);
 }
 
 .shell__brand {
@@ -238,9 +244,17 @@ input[type='date']:focus-within {
   color: #fff;
 }
 
-.shell__user {
+/* The person and, for a PIN sign-in, Lock: at the end of the bar. */
+.shell__end {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
   margin-left: auto;
-  color: rgb(255 255 255 / 0.85);
+}
+
+.shell__user {
+  color: var(--adm-on-deep);
   overflow-wrap: anywhere;
 }
 
@@ -255,11 +269,10 @@ input[type='date']:focus-within {
 .tabs {
   display: flex;
   gap: 0.25rem;
-  max-width: 1120px;
-  margin: 0 auto;
+  margin: 0;
   /* Room for the focus ring: this row scrolls sideways on a phone, so it clips whatever goes past its edge, and a tab's ring (3px, 3px off the tab, with a 9px
-     band round it) was cut off at the top and bottom (Phase 8). The padding is the ring's room, top and bottom, and a little more at the sides. */
-  padding: 9px 0.75rem;
+     band round it) was cut off at the top and bottom (Phase 8). The padding is the ring's room, top and bottom; at the sides it is the gutter. */
+  padding: 9px var(--shell-gutter);
   overflow-x: auto;
   scrollbar-width: thin;
   -webkit-overflow-scrolling: touch;
@@ -289,13 +302,135 @@ input[type='date']:focus-within {
   font-weight: var(--fw-bold);
 }
 
+/* (max-width and margin: the legacy sheet's 1,000 px cap, centred, is overridden here; that sheet is never edited.) */
 .shell__body {
-  max-width: 1120px;
-  padding: 1.5rem 1rem 4rem;
+  max-width: none;
+  margin: 0;
+  padding: 1.5rem var(--shell-gutter) 4rem;
 }
 
 .shell__body:focus-visible {
   outline-offset: -3px;
+}
+
+/* (Not the Live display's: its type is sized to the screen it is on.) */
+.shell__body p:not(.live p) {
+  max-width: 72ch;
+}
+
+/* The Live display in the page keeps the width it had (its full screen and the wall cover the window and are not this rule's). */
+.shell__body > .live:not(.live--present) {
+  max-width: calc(1120px - 2rem);
+  margin-inline: auto;
+}
+
+/* One bar on a laptop (Prompt 32): from 1,100 px the brand, the section tabs and the person share one sticky bar, 52 px high. The shell is a grid
+   of three columns and the bar a subgrid of it, so the brand and the person size the outer columns and the tab row, which stays its own <nav>,
+   sits sticky in the middle one. Below 1,100 px it is two rows as before: the brand row scrolls away and the white tab row sticks. */
+@media (min-width: 1100px) {
+  html {
+    --adm-sticky-room: 4.5rem; /* the 52 px bar and the 9 px ring, with a little air */
+  }
+
+  .shell {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    column-gap: 1.5rem;
+    align-items: start;
+  }
+
+  .shell > * {
+    grid-column: 1 / -1;
+  }
+
+  .shell__bar {
+    grid-row: 1;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: grid;
+    grid-template-columns: subgrid;
+    align-items: center;
+    box-sizing: border-box;
+    height: 52px;
+    padding-block: 0;
+  }
+
+  .shell__brand {
+    grid-column: 1;
+  }
+
+  .shell__end {
+    grid-column: 3;
+    margin-left: 0;
+  }
+
+  .shell__nav {
+    grid-row: 1;
+    grid-column: 2;
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    height: 52px;
+    background: transparent;
+    border-bottom: 0;
+  }
+
+  .shell__nav .tabs {
+    box-sizing: border-box;
+    height: 52px;
+    align-items: center;
+    padding: 0;
+  }
+
+  .shell__nav .tab {
+    padding: 0 0.75rem;
+    border-bottom-width: 3px;
+    color: var(--adm-on-deep);
+    font-weight: var(--fw-semibold);
+  }
+
+  .shell__nav .tab:hover {
+    color: var(--adm-on-deep);
+    text-decoration: underline;
+  }
+
+  .shell__nav .tab[aria-selected='true'] {
+    color: var(--adm-on-deep);
+    border-bottom-color: var(--adm-lime);
+    font-weight: var(--fw-bold);
+  }
+
+  /* The ring inside the tab: the row is no taller than the bar, so a ring outside it would be cut off. Green on black is well over 3:1. */
+  .shell__nav .tab:focus-visible {
+    outline-offset: -3px;
+    box-shadow: none;
+  }
+
+  /* One title line: each tab's heading, its help and its buttons share a line; the help wraps under the heading when the line is short. */
+  .panel__head {
+    align-items: center;
+    gap: 0.5rem 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .panel__head > div:first-child {
+    display: flex;
+    flex: 1 1 32rem;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 1rem;
+    min-width: 0;
+  }
+
+  .panel__head > div:first-child > :is(h2, h3) {
+    margin: 0;
+  }
+
+  .panel__head > div:first-child > p {
+    flex: 1 1 20rem;
+    min-width: 0;
+  }
 }
 
 .toast {

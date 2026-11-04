@@ -292,6 +292,14 @@
     --adm-sticky-room: calc(5.5rem + var(--adm-content-sticky));
   }
 
+  /* From 1,100 px the tab row is the one 52 px bar (admin.css, Prompt 32). */
+  @media (min-width: 1100px) {
+    :global(html:has(.content-spine)) {
+      --adm-nav-height: 52px;
+      --adm-sticky-room: calc(4.5rem + var(--adm-content-sticky));
+    }
+  }
+
   .content-spine {
     display: contents;
   }
