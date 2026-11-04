@@ -36,7 +36,7 @@
    Items **274 to 278** (Prompt 22: the shift by client and by session, Industry and Region with the Region filter, the minimum sample and who may
    set it, the fiscal start month on a test copy, and the manager's questions). Below item 273. No upgrade.
 17. Items **294 to 301** (Prompt 26: reply format, the red lines, paging, the i bubble, Sign in again, the conflict, the size watch). At the end of this file.
-18. Items **302 to 316** (Prompt 27: the console test, then Apply on a scratch list and on the real lists, then the admin page changing the groups; they replace the hand steps of item 263). At the end of this file.
+18. Items **302 to 317** (Prompt 27: the console test, then Apply on a scratch list and on the real lists, then the admin page changing the groups; they replace the hand steps of item 263). At the end of this file.
 16. Item **293** (Prompt 25: the line about SharePoint access in Give access, Add user and No access; the document ONBOARDING.md). Below item 292.
 17. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
    160, 161, 164, 165, 166, 167, 168, 169, 170.
@@ -1753,6 +1753,7 @@ Every group, permission and folder call was written from the brief and tested ag
 314. **Producer to Leadership, then Turn off.** *(Still to see.)* Move a person from Producer to Leadership (in leadership, then out of staff), then Turn off (the confirmation names the groups; they leave the three groups, and Members or any other group is untouched).
 315. **A Typed person.** *(Still to see.)* A person added by hand with no claim: found once in the directory, or "could not be found" and the Open site groups buttons.
 316. **A Super admin who may not edit a group.** *(Still to see.)* A Super admin who is not in PMS super admins: **expect** "SharePoint does not let you change PMS staff" and the buttons, and nothing sent.
+317. **Each copy its own groups.** *(Still to see.)* On the test copy (prefix `Test`), after the package with this change: Apply makes "Test PMS staff" and the rest, a Super admin's change there touches only those, and the plain "PMS …" groups (the live copy's) are left as they are. Seen first on 4 Nov 2026: before this change, the test copy took a person out of the live copy's PMS access managers.
 293. **Site access is a separate step.** *(Still to see.)* Give a test colleague a role in People, open Give access and read the line under the fields (Producer, Designer: Edit access; Leadership: Read is enough). Add them to the PCOE site as Members (steps in [docs/ONBOARDING.md](docs/ONBOARDING.md)); they open `admin.html` and the participant link. Before that step they should see SharePoint's "hasn't been shared with you". Read the line in Add user and on No access. Give yourself a role as Super admin: no line.
 
 ### Prompt 20 (the confidence check, Before and After): not verified on SharePoint Online or an iPad

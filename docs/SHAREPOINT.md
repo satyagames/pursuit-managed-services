@@ -113,7 +113,9 @@ The table, list by list, is in [SHAREPOINT-LISTS.md](../SHAREPOINT-LISTS.md#perm
   granted on the site every read answered 200 and the admin page opened. A level of that name made by hand is used when it holds Open, Browse User Information
   and Use Remote Interfaces and no List Permission. Remove the site's groups never touches the site.
 
-  Apply removes nothing, so the site's Members and Visitors keep what they had: **until a site owner presses Remove the site's groups**, a separate button,
+  **Each copy of the app has its own groups:** a copy with a list prefix names them with it ("Test PMS staff"; the copy with no prefix keeps "PMS
+  staff"), because a site's groups are shared by every copy on it: on PCOE (4 Nov 2026) a test copy's People took a person out of the live copy's PMS
+  access managers. The two permission levels are shared. Apply removes nothing, so the site's Members and Visitors keep what they had: **until a site owner presses Remove the site's groups**, a separate button,
   the secret lists stay readable by anyone in them. A list that already has its own permissions (on PCOE the four access lists, set by hand) is added to: only the grants the PMS groups lack, with nothing removed and no grant already there changed, and its undo takes back just those (the owner, 3 Nov 2026). It is reported as Differs and left alone only when a PMS group already holds another level there; a folder that is a
   library's root likewise. Apply prints each changed list's undo (`resetroleinheritance`). The ids of the three managed groups are kept in a second
   `PMSAppSettings` item (`AppId` `site-groups`, JSON in its `Title`), which needs no new column or version. PMS add only includes View, so all staff can

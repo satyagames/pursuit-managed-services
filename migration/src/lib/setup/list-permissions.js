@@ -14,6 +14,7 @@
 // for when they have been moved. A list that already has unique permissions is added to (the owner's option 1, 3 Nov 2026), unless a PMS group holds
 // another level there: then it Differs and is left alone. Every REST call here other than the reads
 // above is ASSUMED: no site has answered one yet (QA-TESTING.md).
+import { LISTS } from '../schema/pms-schema.js';
 import { MANAGED_GROUPS, SITE_GROUPS_ITEM, groupsOfRow, groupsRowTitle, siteGroupsAddress } from '../access/site-access.js';
 
 /** The lists and what each needs: 'managers' (only the access group and the owners write), 'add-only' (everyone adds, no one else changes). */
@@ -102,7 +103,18 @@ export async function permissionProbe(probe, titles) {
 // ---- The apply half (Prompt 27) ---------------------------------------------------------------------------------------------------------------------
 
 /** The five groups, by key. The code changes the members of none of them: Setup makes them and sets their owners. */
-export const PMS_GROUPS = Object.freeze({ superadmins: 'PMS super admins', ...MANAGED_GROUPS, participants: 'PMS participants' });
+/**
+ * The five groups of one copy of the app, by key: a copy with a list prefix has groups of its own, named with it ("Test PMS staff"), because a site's
+ * groups are shared by every copy on it (on the real site, 4 Nov 2026, a test copy's People took a person out of the live copy's group). The code changes the
+ * members of none of them: Setup makes them and sets their owners.
+ * @param {string} prefix
+ */
+export const groupNames = (prefix) => Object.freeze(Object.fromEntries(Object.entries({ superadmins: 'PMS super admins', ...MANAGED_GROUPS, participants: 'PMS participants' })
+  .map(([key, title]) => [key, prefix ? `${prefix} ${title}` : title])));
+/** The groups of the copy with no prefix. */
+export const PMS_GROUPS = groupNames('');
+/** A copy's list prefix, from its titles: what stands before PMSUsers ('' when the list was named otherwise). */
+export const prefixOf = (titles) => (String(titles?.users ?? '').endsWith(LISTS.users.title) ? String(titles.users).slice(0, -LISTS.users.title.length) : '');
 /** The lists a participant account must not be able to read. */
 export const SECRET_LISTS = Object.freeze(['adminusers', 'users', 'roleassignments', 'auditlog', 'sessionsummary']);
 /** The scratch list and folder of the rehearsal. */
@@ -160,8 +172,8 @@ const PAGES_WORDS = "The pages' folder";
 const titleOfKey = (titles, key) => (key === 'pages' ? PAGES_WORDS : titles[key] ?? key);
 
 /** The matrix as Setup prints it before Apply. */
-export const matrixTable = (titles) => ({
-  head: ['List', PMS_GROUPS.participants, PMS_GROUPS.staff, PMS_GROUPS.managers, PMS_GROUPS.leadership],
+export const matrixTable = (titles, names = groupNames(prefixOf(titles))) => ({
+  head: ['List', names.participants, names.staff, names.managers, names.leadership],
   rows: Object.entries(GROUP_MATRIX).map(([key, cells]) => [titleOfKey(titles, key), ...['participants', 'staff', 'managers', 'leadership'].map((group) => CELL_WORDS[cells[group]] ?? 'None')]),
 });
 
@@ -210,30 +222,30 @@ export async function readPermissionState(read, titles, folder) {
   try { row = results(await read(siteGroupsAddress(titles)))[0] ?? null; } catch (cause) { if (cause.status !== 404) throw cause; }
   return {
     groups: results(groups), levels: results(levels), owners, targets, row, folder, site,
-    me: me?.Id, keepsFullControl: Boolean(me?.IsSiteAdmin) || results(ownerUsers).some((user) => user.Id === me?.Id),
+    names: groupNames(prefixOf(titles)), me: me?.Id, keepsFullControl: Boolean(me?.IsSiteAdmin) || results(ownerUsers).some((user) => user.Id === me?.Id),
   };
 }
 
 const groupNamed = (state, title) => state.groups.find((group) => group.Title.toLowerCase() === title.toLowerCase());
 const levelNamed = (state, name) => state.levels.find((level) => level.Name === name);
 const bitsMatch = (level) => String(level?.BasePermissions?.Low) === ADD_ONLY_BITS.Low && String(level?.BasePermissions?.High) === ADD_ONLY_BITS.High;
-const ownerOf = (key, state) => (MANAGED_GROUPS[key] ? PMS_GROUPS.superadmins : state.owners.Title);
+const ownerOf = (key, state) => (MANAGED_GROUPS[key] ? state.names.superadmins : state.owners.Title);
 const holdsFull = (target, ownersId) => target.bindings.some((binding) => binding.principalId === ownersId && binding.levels.some((level) => level.RoleTypeKind === KIND.full));
 
 /** Whether a level is the one a cell of the matrix names. */
 const isCell = (level, cell) => (cell === 'add-only' ? level.Name === ADD_ONLY_LEVEL : level.RoleTypeKind === KIND[cell]);
-const heldBy = (target, group) => target.bindings.find((binding) => binding.title === PMS_GROUPS[group])?.levels ?? [];
+const heldBy = (target, group, names) => target.bindings.find((binding) => binding.title === names[group])?.levels ?? [];
 /** Whether the groups the matrix names hold exactly their level on this list. */
-const holdsMatrix = (target, key) => Object.entries(GROUP_MATRIX[key]).every(([group, cell]) => {
-  const levels = heldBy(target, group);
+const holdsMatrix = (target, key, names) => Object.entries(GROUP_MATRIX[key]).every(([group, cell]) => {
+  const levels = heldBy(target, group, names);
   return levels.length === 1 && isCell(levels[0], cell);
 });
 /**
  * (The owner, 3 Nov 2026: option 1.) A list with permissions of its own that Apply may add to: every PMS group the matrix names holds either nothing on
  * it or exactly its level. A group holding another level makes it Differs.
  */
-const mayAddTo = (target, key) => Object.entries(GROUP_MATRIX[key]).every(([group, cell]) => {
-  const levels = heldBy(target, group);
+const mayAddTo = (target, key, names) => Object.entries(GROUP_MATRIX[key]).every(([group, cell]) => {
+  const levels = heldBy(target, group, names);
   return levels.length === 0 || (levels.length === 1 && isCell(levels[0], cell));
 });
 
@@ -244,7 +256,7 @@ const mayAddTo = (target, key) => Object.entries(GROUP_MATRIX[key]).every(([grou
  */
 export function permissionPlan(state, titles) {
   const steps = [];
-  for (const [key, title] of Object.entries(PMS_GROUPS)) {
+  for (const [key, title] of Object.entries(state.names)) {
     steps.push({ id: `group:${key}`, words: `The group "${title}"`, state: groupNamed(state, title) ? 'Done' : 'To do' });
   }
   const level = levelNamed(state, ADD_ONLY_LEVEL);
@@ -252,26 +264,26 @@ export function permissionPlan(state, titles) {
   const entryState = !entry ? 'To do' : entryFits(entry) ? 'Done' : 'Differs';
   steps.push({ id: 'entry-level', words: `The permission level "${SITE_ENTRY_LEVEL}": ${entryState === 'Differs' ? (entryCheck(entry) === 'items' ? 'it exists and gives a right to lists or items, on the whole site. Setup leaves it alone; a site owner unticks every List Permission.' : 'it exists and lacks Open, Browse User Information or Use Remote Interfaces. Setup leaves it alone; a site owner ticks them.') : 'Open, View Pages, Browse User Information, Use Remote Interfaces and Use Client Integration Features, and no List Permission: into the site, and no further'}`, state: entryState });
   steps.push({ id: 'level', words: `The permission level "${ADD_ONLY_LEVEL}": ${level && !bitsMatch(level) ? 'it exists, with other rights. Setup leaves it alone; a site owner corrects it.' : 'View Items, Add Items and Open, and not Edit Items or Delete Items'}`, state: !level ? 'To do' : bitsMatch(level) ? 'Done' : 'Differs' });
-  for (const [key, title] of Object.entries(PMS_GROUPS)) {
+  for (const [key, title] of Object.entries(state.names)) {
     const group = groupNamed(state, title);
     const wanted = ownerOf(key, state);
     steps.push({ id: `owner:${key}`, words: `"${wanted}" owns "${title}", and only the owner may change its members`, state: group?.OwnerTitle === wanted && !group?.AllowMembersEditMembership ? 'Done' : 'To do' });
   }
-  const entered = ENTRY_GROUPS.every((key) => (state.site ?? []).some((binding) => binding.title === PMS_GROUPS[key] && binding.levels.some((level) => level.Name === SITE_ENTRY_LEVEL)));
-  steps.push({ id: 'site', words: `The site: ${ENTRY_GROUPS.map((key) => PMS_GROUPS[key]).join(', ')} hold "${SITE_ENTRY_LEVEL}", nothing else on the site, and nothing is removed there`, state: entryState === 'Differs' ? 'Differs' : entered ? 'Done' : 'To do' });
+  const entered = ENTRY_GROUPS.every((key) => (state.site ?? []).some((binding) => binding.title === state.names[key] && binding.levels.some((level) => level.Name === SITE_ENTRY_LEVEL)));
+  steps.push({ id: 'site', words: `The site: ${ENTRY_GROUPS.map((key) => state.names[key]).join(', ')} hold "${SITE_ENTRY_LEVEL}", nothing else on the site, and nothing is removed there`, state: entryState === 'Differs' ? 'Differs' : entered ? 'Done' : 'To do' });
   for (const key of Object.keys(GROUP_MATRIX)) {
     const target = state.targets[key];
     const title = titleOfKey(titles, key);
-    const grants = Object.entries(GROUP_MATRIX[key]).map(([group, cell]) => `${PMS_GROUPS[group]} ${CELL_WORDS[cell]}`).join(', ');
+    const grants = Object.entries(GROUP_MATRIX[key]).map(([group, cell]) => `${state.names[group]} ${CELL_WORDS[cell]}`).join(', ');
     if (target.missing) steps.push({ id: `list:${key}`, words: `${title} was not found: make the lists first.`, state: 'Differs' });
     else if (target.root) steps.push({ id: `list:${key}`, words: `${title} is the root of a library. Setup changes no whole library: put the pages in a folder of their own.`, state: 'Differs' });
     else if (!target.unique) steps.push({ id: `list:${key}`, words: `${title}: ${grants}`, state: 'To do' });
-    else if (holdsMatrix(target, key)) steps.push({ id: `list:${key}`, words: `${title}: ${grants}`, state: 'Done' });
-    else if (mayAddTo(target, key)) steps.push({ id: `list:${key}`, words: `${title} adds to its own permissions, removing nothing: ${grants}`, state: 'To do', adds: true });
+    else if (holdsMatrix(target, key, state.names)) steps.push({ id: `list:${key}`, words: `${title}: ${grants}`, state: 'Done' });
+    else if (mayAddTo(target, key, state.names)) steps.push({ id: `list:${key}`, words: `${title} adds to its own permissions, removing nothing: ${grants}`, state: 'To do', adds: true });
     else steps.push({ id: `list:${key}`, words: `${title} already has permissions of its own in which a PMS group holds another level. Setup leaves them alone: a site owner corrects that group's level by hand.`, state: 'Differs' });
   }
   const saved = groupsOfRow(state.row);
-  const same = saved && Object.entries(MANAGED_GROUPS).every(([key, title]) => saved[key].id === groupNamed(state, title)?.Id);
+  const same = saved && Object.keys(MANAGED_GROUPS).every((key) => saved[key].id === groupNamed(state, state.names[key])?.Id);
   steps.push({ id: 'row', words: "The groups' ids, kept in the settings list for the admin page", state: same ? 'Done' : 'To do' });
   return { steps, state, titles, keepsFullControl: state.keepsFullControl };
 }
@@ -352,7 +364,7 @@ export async function applyPermissions(api, plan, { titles, folder, onProgress =
   try {
     await rehearse(api, state, { folder, withFolder: due('list:pages'), step: (line) => say(`Rehearsal: ${line}`) });
 
-    for (const [key, title] of Object.entries(PMS_GROUPS)) {
+    for (const [key, title] of Object.entries(state.names)) {
       if (!due(`group:${key}`)) continue;
       say(`Make the group "${title}"`);
       const made = await api.write('POST', '/web/sitegroups', { __metadata: { type: 'SP.Group' }, Title: title, AllowMembersEditMembership: false });
@@ -377,7 +389,7 @@ export async function applyPermissions(api, plan, { titles, folder, onProgress =
     // (PCOE, 3 Nov 2026: SharePoint Server 16.0.19725 has no SetUserAsOwner, "Cannot find resource for the request". Then, as the brief says, each owner is
     // set on the group's settings page by hand: Apply names them and carries on with the lists, which do not need them, and asks the call no more.)
     let noOwnerCall = false;
-    for (const [key, title] of Object.entries(PMS_GROUPS)) {
+    for (const [key, title] of Object.entries(state.names)) {
       if (!due(`owner:${key}`)) continue;
       if (noOwnerCall) { byHand.push({ title, wanted: ownerOf(key, state) }); continue; }
       const group = groupNamed(state, title);
@@ -403,15 +415,15 @@ export async function applyPermissions(api, plan, { titles, folder, onProgress =
       const entryId = levelNamed(state, SITE_ENTRY_LEVEL).Id;
       const holds = results(await api.read(`/web${BINDINGS}`)).map(bindingOf);
       for (const key of ENTRY_GROUPS) {
-        const id = groupNamed(state, PMS_GROUPS[key]).Id;
+        const id = groupNamed(state, state.names[key]).Id;
         if (holds.some((binding) => binding.principalId === id && binding.levels.some((level) => level.Id === entryId))) continue;
         const grant = `principalid=${id},roledefid=${entryId}`;
         await api.write('POST', `/web/roleassignments/addroleassignment(${grant})`);
         undo.push(`The site: POST /web/roleassignments/removeroleassignment(${grant})`);
       }
       const landed = results(await api.read(`/web${BINDINGS}`)).map(bindingOf);
-      const missing = ENTRY_GROUPS.filter((key) => !landed.some((binding) => binding.title === PMS_GROUPS[key] && binding.levels.some((level) => level.Id === entryId)));
-      if (missing.length) throw new Mismatch(`Stopped: the site does not read back with "${SITE_ENTRY_LEVEL}" for ${missing.map((key) => PMS_GROUPS[key]).join(', ')}. Grant it on Site permissions by hand, then press Apply again.`);
+      const missing = ENTRY_GROUPS.filter((key) => !landed.some((binding) => binding.title === state.names[key] && binding.levels.some((level) => level.Id === entryId)));
+      if (missing.length) throw new Mismatch(`Stopped: the site does not read back with "${SITE_ENTRY_LEVEL}" for ${missing.map((key) => state.names[key]).join(', ')}. Grant it on Site permissions by hand, then press Apply again.`);
     }
 
     const levelId = (cell) => (cell === 'add-only' ? levelNamed(state, ADD_ONLY_LEVEL) : state.levels.find((level) => level.RoleTypeKind === KIND[cell]))?.Id;
@@ -425,8 +437,8 @@ export async function applyPermissions(api, plan, { titles, folder, onProgress =
         say(`${title}: add to its own permissions`);
         const held = await readTarget(api.read, key, titles, folder);
         for (const [group, cell] of Object.entries(GROUP_MATRIX[key])) {
-          if (heldBy(held, group).length) continue;
-          const grant = `principalid=${groupNamed(state, PMS_GROUPS[group]).Id},roledefid=${levelId(cell)}`;
+          if (heldBy(held, group, state.names).length) continue;
+          const grant = `principalid=${groupNamed(state, state.names[group]).Id},roledefid=${levelId(cell)}`;
           await api.write('POST', `${where}/roleassignments/addroleassignment(${grant})`);
           undo.push(`${title}: POST ${where}/roleassignments/removeroleassignment(${grant})`);
         }
@@ -435,28 +447,28 @@ export async function applyPermissions(api, plan, { titles, folder, onProgress =
         await api.write('POST', `${where}/breakroleinheritance(copyRoleAssignments=true,clearSubscopes=false)`);
         undo.push(`${title}: POST ${where}/resetroleinheritance`);
         for (const [group, cell] of Object.entries(GROUP_MATRIX[key])) {
-          await api.write('POST', `${where}/roleassignments/addroleassignment(principalid=${groupNamed(state, PMS_GROUPS[group]).Id},roledefid=${levelId(cell)})`);
+          await api.write('POST', `${where}/roleassignments/addroleassignment(principalid=${groupNamed(state, state.names[group]).Id},roledefid=${levelId(cell)})`);
         }
       }
       // (A PMS group that the copy brought with another level gives that level up, after its own grant.)
       let target = await readTarget(api.read, key, titles, folder);
       for (const [group, cell] of Object.entries(GROUP_MATRIX[key])) {
-        const held = target.bindings.find((binding) => binding.title === PMS_GROUPS[group]);
+        const held = target.bindings.find((binding) => binding.title === state.names[group]);
         for (const level of held?.levels ?? []) {
           if (level.Id !== levelId(cell)) await api.write('POST', `${where}/roleassignments/removeroleassignment(principalid=${held.principalId},roledefid=${level.Id})`);
         }
       }
       target = await readTarget(api.read, key, titles, folder);
-      if (!holdsMatrix(target, key)) throw new Mismatch(`Stopped: ${title} does not read back as planned. To take it back, ${undo.at(-1)}, then press Apply again.`);
+      if (!holdsMatrix(target, key, state.names)) throw new Mismatch(`Stopped: ${title} does not read back as planned. To take it back, ${undo.at(-1)}, then press Apply again.`);
       if (!holdsFull(target, state.owners.Id)) throw new Mismatch(`Stopped: the site's owners do not hold Full Control of ${title}. To take it back, ${undo.at(-1)}.`);
     }
 
     if (due('row')) {
       say("Keep the groups' ids in the settings list");
-      const ids = Object.fromEntries(Object.entries(MANAGED_GROUPS).map(([key, title]) => [key, groupNamed(state, title).Id]));
+      const ids = Object.fromEntries(Object.keys(MANAGED_GROUPS).map((key) => [key, groupNamed(state, state.names[key]).Id]));
       const list = address(titles.appsettings);
-      if (plan.state.row) await api.write('MERGE', `${list}/items(${plan.state.row.Id})`, { Title: groupsRowTitle(ids, groupsOfRow(plan.state.row)?.sync ?? false) });
-      else await api.write('POST', `${list}/items`, { Title: groupsRowTitle(ids), AppId: SITE_GROUPS_ITEM });
+      if (plan.state.row) await api.write('MERGE', `${list}/items(${plan.state.row.Id})`, { Title: groupsRowTitle(ids, groupsOfRow(plan.state.row)?.sync ?? false, state.names) });
+      else await api.write('POST', `${list}/items`, { Title: groupsRowTitle(ids, false, state.names), AppId: SITE_GROUPS_ITEM });
     }
   } catch (cause) {
     return { ok: false, undo, words: stopWords(doing, cause) };
@@ -470,11 +482,11 @@ export async function applyPermissions(api, plan, { titles, folder, onProgress =
  * owners. A principal holding only Limited Access is not a holder.
  */
 export function removalPlan(state, titles) {
-  const ours = new Set(Object.values(PMS_GROUPS));
+  const ours = new Set(Object.values(state.names));
   const plan = [];
   for (const key of Object.keys(GROUP_MATRIX)) {
     const target = state.targets[key];
-    if (!target?.unique || !holdsMatrix(target, key)) continue;
+    if (!target?.unique || !holdsMatrix(target, key, state.names)) continue;
     const others = target.bindings.filter((binding) => binding.principalId !== state.owners.Id && !ours.has(binding.title) && binding.levels.length > 0);
     if (others.length) plan.push({ key, title: titleOfKey(titles, key), who: others.map((binding) => binding.title), principals: others.map((binding) => binding.principalId) });
   }
@@ -519,7 +531,7 @@ export async function setSiteGroupsSync(api, titles, on) {
     const groups = groupsOfRow(row);
     if (!groups) return { ok: false, words: 'Press Apply first: the groups are not made yet.' };
     const ids = Object.fromEntries(Object.keys(MANAGED_GROUPS).map((key) => [key, groups[key].id]));
-    await api.write('MERGE', `${address(titles.appsettings)}/items(${row.Id})`, { Title: groupsRowTitle(ids, on) });
+    await api.write('MERGE', `${address(titles.appsettings)}/items(${row.Id})`, { Title: groupsRowTitle(ids, on, Object.fromEntries(Object.keys(MANAGED_GROUPS).map((key) => [key, groups[key].title]))) });
     return { ok: true, words: on ? 'Super admins now change who is in the PMS groups from the admin page.' : 'The admin page no longer changes who is in the PMS groups.' };
   } catch (cause) {
     return { ok: false, words: `Could not change the switch: ${saidOf(cause)}` };

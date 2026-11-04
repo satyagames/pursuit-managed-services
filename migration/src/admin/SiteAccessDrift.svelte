@@ -10,7 +10,9 @@
   let drift = $state<Drift | null>(null);
   let said = $state('');
   let busy = $state(false);
-  const names = (keys: (keyof typeof MANAGED_GROUPS)[]) => keys.map((key) => MANAGED_GROUPS[key]).join(', ');
+  /** This copy's titles of the groups (its row says: a copy with a list prefix has its own). */
+  let titles = $state<Record<string, string>>({ ...MANAGED_GROUPS });
+  const names = (keys: (keyof typeof MANAGED_GROUPS)[]) => keys.map((key) => titles[key]).join(', ');
 
   const read = async (resource: string) => {
     const answer = await (dataService.probeSharePointRead as any)(null, resource);
@@ -23,8 +25,11 @@
     said = '';
     drift = null;
     try {
-      const found = await readDrift(read, dataService.sharePointListTitles(), { users, assignments }) as { ready: boolean; words?: string; drift?: Drift };
-      if (found.ready) drift = found.drift ?? null;
+      const found = await readDrift(read, dataService.sharePointListTitles(), { users, assignments }) as { ready: boolean; words?: string; drift?: Drift; groups?: Record<string, { title?: string }> };
+      if (found.ready) {
+        drift = found.drift ?? null;
+        titles = Object.fromEntries(Object.entries(MANAGED_GROUPS).map(([key, title]) => [key, found.groups?.[key]?.title ?? title]));
+      }
       else said = found.words ?? '';
     } catch (cause) {
       said = cause instanceof Error ? cause.message : 'Could not check site access.';

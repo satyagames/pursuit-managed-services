@@ -238,7 +238,7 @@ describe('the screens', () => {
   const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
   it('Turn off asks first, naming the groups, when the switch is on', () => {
     const source = read('migration/src/admin/UserDetail.svelte');
-    assert.match(source, /This also removes them from \$\{groups\.join\(' and '\)\}/);
+    assert.match(source, /This also removes them from \$\{keys\.map\(\(key\) => ids\[key\]\?\.title/);
     assert.match(source, /lead=\{`They will not be able to use the admin page\.\$\{offGroups\}`\}/);
   });
   it('a person\'s page and the team check again after each change, and say Not checked until then', () => {

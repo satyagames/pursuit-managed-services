@@ -17,6 +17,8 @@
   let words = $state('');
   let said = $state('');
   let seen = 0;
+  /** This copy's titles of the groups, once its row is read (a copy with a list prefix has its own). */
+  let titles = $state<Record<string, string>>({ ...MANAGED_GROUPS });
 
   async function check() {
     if (phase === 'busy') return;
@@ -25,6 +27,8 @@
     const result = await syncSiteAccess(dataService, access, person.id) as { status: typeof phase; words: string };
     phase = result.status;
     words = result.words;
+    const groups = await groupIds(dataService).catch(() => null);
+    if (groups) titles = Object.fromEntries(Object.entries(MANAGED_GROUPS).map(([key, title]) => [key, groups[key]?.title ?? title]));
   }
 
   // (After a change the screen made: a role given or removed, a person turned off or on.)
@@ -42,7 +46,7 @@
       const answer = await (dataService.probeSharePointRead as any)(null, '/web?$select=Url');
       if (!answer.ok) throw new Error(answer.message);
       const email = person.email || person.id;
-      try { await navigator.clipboard.writeText(email); said = `${email} is copied. Paste it into ${MANAGED_GROUPS[key]}'s New menu.`; } catch { said = `Add ${email} to ${MANAGED_GROUPS[key]}.`; }
+      try { await navigator.clipboard.writeText(email); said = `${email} is copied. Paste it into ${titles[key]}'s New menu.`; } catch { said = `Add ${email} to ${titles[key]}.`; }
       if (tab) tab.location.href = `${answer.data.Url}/_layouts/15/people.aspx?MembershipGroupId=${groups[key].id}`;
     } catch (cause) {
       tab?.close();
@@ -54,14 +58,14 @@
 {#if may}
   <div class="handoff" data-testid="site-handoff">
     <p class="small" role="status">
-      {#if phase === 'idle'}Site access: Not checked. This person belongs in {wanted.length ? wanted.map((key) => MANAGED_GROUPS[key]).join(' and ') : 'no PMS group'}.
+      {#if phase === 'idle'}Site access: Not checked. This person belongs in {wanted.length ? wanted.map((key) => titles[key]).join(' and ') : 'no PMS group'}.
       {:else if phase === 'busy'}Checking site access...
       {:else}{words}{/if}
     </p>
     <button class="btn" type="button" onclick={() => void check()} disabled={phase === 'busy'}>{phase === 'manual' || phase === 'failed' ? 'Try again' : 'Check and fix'}</button>
     {#if phase === 'manual' || phase === 'failed'}
       {#each wanted as key (key)}
-        <button class="btn" type="button" onclick={() => void open(key)}>Open site groups: {MANAGED_GROUPS[key]}</button>
+        <button class="btn" type="button" onclick={() => void open(key)}>Open site groups: {titles[key]}</button>
       {/each}
     {/if}
     {#if said}<p class="muted small" role="status">{said}</p>{/if}

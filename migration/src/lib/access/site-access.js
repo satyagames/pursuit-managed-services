@@ -44,7 +44,7 @@ export function groupsOfRow(row) {
 
 /** The text the row's Title holds: under the column's 255 characters for any three ids. */
 /** `sync` is Setup's switch: whether a Super admin's actions on the admin page change the groups' members (off unless a site owner turns it on). */
-export const groupsRowTitle = (ids, sync = false) => JSON.stringify({ ...Object.fromEntries(Object.entries(MANAGED_GROUPS).map(([key, title]) => [key, { id: ids[key], title }])), sync });
+export const groupsRowTitle = (ids, sync = false, titles = MANAGED_GROUPS) => JSON.stringify({ ...Object.fromEntries(Object.keys(MANAGED_GROUPS).map((key) => [key, { id: ids[key], title: titles[key] }])), sync });
 
 /**
  * The comparison, with nothing asked of the site.
@@ -92,7 +92,8 @@ export async function readDrift(read, titles, people) {
   }
   if (!groups) return { ready: false, words: 'Setup has not made the site groups yet. A site owner does that once, with Apply on the Setup page.' };
   const members = {};
-  for (const [key, title] of Object.entries(MANAGED_GROUPS)) {
+  for (const key of Object.keys(MANAGED_GROUPS)) {
+    const title = groups[key].title ?? MANAGED_GROUPS[key];
     try {
       members[key] = [];
       for (let address = `/web/sitegroups/getbyid(${groups[key].id})/users?$select=Id,Title,Email,LoginName&$top=500`; address;) {
@@ -151,9 +152,11 @@ export async function membership(dataService, user) {
   return { id: answer.data.Id, loginName: answer.data.LoginName, groups: new Set(listOf(answer.data.Groups).map((group) => group.Id)) };
 }
 
-const named = (keys) => (keys.length ? keys.map((key) => MANAGED_GROUPS[key]).join(' and ') : 'None');
+/** The groups' titles as this copy names them (its row says; a copy with a list prefix has its own), else the plain names. */
+const titleOf = (key, groups) => groups?.[key]?.title ?? MANAGED_GROUPS[key];
+const named = (keys, groups) => (keys.length ? keys.map((key) => titleOf(key, groups)).join(' and ') : 'None');
 /** What a person waiting for a Super admin is told, by the groups they need. */
-export const waitingWords = (wanted) => (wanted.length ? `A Super admin adds them to ${named(wanted)}, so that the pages open for them.` : 'They need no site group.');
+export const waitingWords = (wanted, groups = null) => (wanted.length ? `A Super admin adds them to ${named(wanted, groups)}, so that the pages open for them.` : 'They need no site group.');
 
 /**
  * Makes the person's membership of the three managed groups what their roles ask: reads, compares and changes only the difference, so a second run
@@ -170,23 +173,23 @@ export async function syncSiteAccess(dataService, access, userKey, { now = new D
     if (!can(access, 'roles.global', {}, { now })) return { status: 'manual', words: waitingWords(wanted), groups: wanted };
     const groups = await groupIds(dataService);
     if (!groups) return { status: 'manual', words: `Setup has not made the site groups yet. ${waitingWords(wanted)}`, groups: wanted };
-    if (!groups.sync) return { status: 'manual', words: waitingWords(wanted), groups: wanted };
+    if (!groups.sync) return { status: 'manual', words: waitingWords(wanted, groups), groups: wanted };
     const found = await membership(dataService, user);
     const actual = Object.keys(MANAGED_GROUPS).filter((key) => found?.groups.has(groups[key].id));
     const add = wanted.filter((key) => !actual.includes(key));
     const remove = actual.filter((key) => !wanted.includes(key));
-    if (!add.length && !remove.length) return { status: 'same', words: `Site access: ${named(wanted)}.`, groups: wanted };
+    if (!add.length && !remove.length) return { status: 'same', words: `Site access: ${named(wanted, groups)}.`, groups: wanted };
     for (const key of [...add, ...remove]) {
       const group = await dataService.probeSharePointRead(null, `/web/sitegroups/getbyid(${groups[key].id})?$select=CanCurrentUserEditMembership`);
       if (!group.ok || !group.data?.CanCurrentUserEditMembership) {
-        return { status: 'manual', words: `SharePoint does not let you change ${MANAGED_GROUPS[key]}. ${waitingWords(wanted)}`, groups: wanted };
+        return { status: 'manual', words: `SharePoint does not let you change ${titleOf(key, groups)}. ${waitingWords(wanted, groups)}`, groups: wanted };
       }
     }
     let id = found?.id;
     if (add.length) {
       let login = found?.loginName || user.loginName;
       if (!login) login = (await dataService.searchDirectory(user.email || user.id, { max: 1 }).catch(() => null))?.find((entry) => entry.email === (user.email || user.id))?.loginName;
-      if (!login) return { status: 'manual', words: `This person could not be found in the directory. ${waitingWords(wanted)}`, groups: wanted };
+      if (!login) return { status: 'manual', words: `This person could not be found in the directory. ${waitingWords(wanted, groups)}`, groups: wanted };
       const made = await dataService.sendToSharePoint('POST', '/web/ensureuser', { logonName: login });
       id = made?.Id ?? id;
       for (const key of add) {
@@ -198,8 +201,8 @@ export async function syncSiteAccess(dataService, access, userKey, { now = new D
       await dataService.sendToSharePoint('POST', `/web/sitegroups/getbyid(${groups[key].id})/users/removebyid(${id})`);
       await writeAudit(dataService, access, { action: 'site-remove', targetUser: user.id, detail: key }, { now });
     }
-    const changes = [add.length ? `added to ${named(add)}` : '', remove.length ? `taken out of ${named(remove)}` : ''].filter(Boolean).join('; ');
-    return { status: 'done', words: `Site access: ${named(wanted)} (${changes}).`, groups: wanted };
+    const changes = [add.length ? `added to ${named(add, groups)}` : '', remove.length ? `taken out of ${named(remove, groups)}` : ''].filter(Boolean).join('; ');
+    return { status: 'done', words: `Site access: ${named(wanted, groups)} (${changes}).`, groups: wanted };
   } catch (cause) {
     const guid = dataService.sessionEvidence?.().at(-1)?.requestGuid;
     const said = String(cause?.message ?? cause).replace(/^SharePoint \(\d+\):\s*/, '');

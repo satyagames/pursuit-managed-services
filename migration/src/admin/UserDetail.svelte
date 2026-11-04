@@ -52,8 +52,8 @@
   let offGroups = $state('');
   $effect(() => {
     if (confirm?.kind !== 'disable' || !mayGlobal) { offGroups = ''; return; }
-    const groups = desiredGroups({ id: person.key, status: 'Active' }, assignments).map((key) => MANAGED_GROUPS[key]);
-    void groupIds(dataService).then((ids) => { offGroups = ids?.sync && groups.length ? ` This also removes them from ${groups.join(' and ')}.` : ''; });
+    const keys = desiredGroups({ id: person.key, status: 'Active' }, assignments);
+    void groupIds(dataService).then((ids: any) => { offGroups = ids?.sync && keys.length ? ` This also removes them from ${keys.map((key) => ids[key]?.title ?? MANAGED_GROUPS[key]).join(' and ')}.` : ''; });
   });
   const mayGive = $derived(can(access, 'team.assign', {}));
   const today = new Date().toISOString().slice(0, 10);

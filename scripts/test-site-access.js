@@ -9,7 +9,7 @@ import { describe, it } from 'node:test';
 import { createSharePointFake } from './sharepoint-fake.js';
 import { siteApi } from '../migration/src/lib/setup/provision.js';
 import {
-  GROUP_MATRIX, PMS_GROUPS, SECRET_LISTS, SITE_ENTRY_LEVEL, applyPermissions, matrixTable, permissionFindings, permissionPlan, readPermissionState, removeSiteGroups, removalPlan,
+  GROUP_MATRIX, PMS_GROUPS, SECRET_LISTS, SITE_ENTRY_LEVEL, applyPermissions, groupNames, prefixOf, matrixTable, permissionFindings, permissionPlan, readPermissionState, removeSiteGroups, removalPlan,
 } from '../migration/src/lib/setup/list-permissions.js';
 import { selfTestProbes, PROBE_SITE_ACCESS } from '../migration/src/lib/setup/setup-checks.js';
 import { MANAGED_GROUPS, desiredGroups, driftOf, groupsOfRow, readDrift, siteGroupsAddress } from '../migration/src/lib/access/site-access.js';
@@ -474,5 +474,37 @@ describe('PMS site entry: the four groups may get into the site, and no further'
     const before = JSON.stringify(s.read.scope('/web'));
     await removeSiteGroups(s.api, await stateOf(s), s.titles);
     assert.equal(JSON.stringify(s.read.scope('/web')), before);
+  });
+});
+
+// (PCOE, 4 Nov 2026: the test copy's People took a person out of the live copy's PMS access managers: a site's groups are shared by every copy on it.
+// A copy with a list prefix now has groups of its own, named with it.)
+describe('each copy of the app has its own groups', () => {
+  it('the names carry the prefix; the copy with none keeps the plain names', () => {
+    assert.deepEqual(groupNames('Test'), { superadmins: 'Test PMS super admins', staff: 'Test PMS staff', managers: 'Test PMS access managers', leadership: 'Test PMS leadership', participants: 'Test PMS participants' });
+    assert.equal(groupNames('').staff, 'PMS staff');
+    assert.equal(prefixOf({ users: 'TestPMSUsers' }), 'Test');
+    assert.equal(prefixOf({ users: 'PMSUsers' }), '');
+  });
+  it('Apply on a prefixed copy makes and uses only its own groups, keeps their titles in its row, and leaves another copy\'s groups alone', async () => {
+    const fake = createSharePointFake({ prefix: 'Test', sitePermissions: {}, user: { Id: 42, Title: 'Owner', IsSiteAdmin: false } });
+    fake.install();
+    const ds = await import(`../migration/src/lib/data/dataService.js?siteaccess=${pages += 1}`);
+    ds.configure({ sharePoint: fake.settings });
+    const s = { fake, ds, api: siteApi(ds), titles: ds.sharePointListTitles(), read: fake.permissions };
+    const titles = s.titles;
+    const prefix = prefixOf(titles);
+    assert.equal(prefix, 'Test');
+    const result = await applyPermissions(s.api, permissionPlan(await stateOf(s), titles), { titles, folder: FOLDER });
+    assert.equal(result.ok, true, result.words);
+    for (const title of Object.values(groupNames(prefix))) assert.ok(s.read.group(title), title);
+    assert.equal(s.read.group('PMS staff'), undefined, 'no plain group is made for a prefixed copy');
+    const groups = groupsOfRow([s.fake.item('appsettings', 'site-groups')][0]);
+    assert.equal(groups.staff.title, `${prefix} PMS staff`);
+    assert.equal(groups.staff.id, s.read.group(`${prefix} PMS staff`).Id);
+    assert.deepEqual(targetOf(s, titles.users).levels[`${prefix} PMS access managers`], ['Contribute']);
+  });
+  it('the matrix Setup prints names the copy\'s own groups', () => {
+    assert.deepEqual(matrixTable({ users: 'TestPMSUsers' }).head.slice(1), ['Test PMS participants', 'Test PMS staff', 'Test PMS access managers', 'Test PMS leadership']);
   });
 });
