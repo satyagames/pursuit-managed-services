@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { openAdmin, startLocal, stopLocal, type Local } from './admin-local.js';
+import { ds, openAdmin, startLocal, stopLocal, today, type Local } from './admin-local.js';
 
 // Prompt 32, step 1: the admin page uses the whole laptop screen. No container is capped (the 1,120 px of admin.css and the 1,000 px of the legacy
 // sheet are gone): the content runs edge to edge with clamp(16px, 2vw, 32px) at the sides. At 1,100 px and wider the brand, the section tabs and the
@@ -223,4 +223,45 @@ test('Content on a laptop: activities beside their questions, and Brand\'s contr
     expect(held!.y, `${at}: the preview under the bar and the client strip`).toBeGreaterThanOrEqual(strip!.y + strip!.height - 1);
     expect(held!.y, `${at}: the preview stays in view`).toBeLessThan(size.height);
   }
+});
+
+// Step 3, Guests and QR: on a laptop the names are added on the left (Paste names, one visitor) and the guests' codes on the right, under the roster's
+// Generate all codes and Print QR sheet; below 1,100 px the codes follow the names, as before. Kroger live, guests scanning a personal QR.
+async function guestsLive(count: number) {
+  const { session } = await ds.activateClient('c-kroger', today);
+  await ds.setSessionParticipationMode(session.id, 'client-visit');
+  for (let index = 1; index <= count; index += 1) await ds.createVisitor({ sessionId: session.id, displayName: `Guest ${String(index).padStart(2, '0')}`, enabled: true });
+}
+
+test('Guests and QR on a laptop: paste names on the left, the codes and the print sheet on the right', async ({ page }) => {
+  await mkdir(pictures, { recursive: true });
+  await guestsLive(8);
+  for (const size of LAPTOPS) {
+    await page.setViewportSize(size);
+    await openAdmin(page, local!, 'Guests and QR');
+    const at = `Guests and QR at ${size.width} x ${size.height}`;
+    await expect(page.locator('li.row[data-guest]').first()).toBeVisible();
+    const paste = await page.locator('.guests__names').boundingBox();
+    const codes = await page.locator('.guests__codes').boundingBox();
+    expect(paste, `${at}: the names`).not.toBeNull();
+    expect(codes!.x, `${at}: the codes beside the names`).toBeGreaterThanOrEqual(paste!.x + paste!.width);
+    expect(codes!.y, `${at}: side by side, not under`).toBeLessThan(paste!.y + paste!.height);
+    const rows = await page.locator('li.row[data-guest]').first().boundingBox();
+    expect(rows!.x, `${at}: the guests' codes are on the right`).toBeGreaterThanOrEqual(codes!.x);
+    const print = await page.getByRole('button', { name: /^Print QR sheet/ }).boundingBox();
+    expect(print!.x, `${at}: Print QR sheet on the right`).toBeGreaterThanOrEqual(codes!.x);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `${at}: no sideways scroll`).toBe(true);
+    if (size.width === 1366 || size.width === 1920) await page.screenshot({ path: `${pictures}guests-${size.width}x${size.height}.png` });
+  }
+});
+
+test('Guests and QR at 683 px: the codes follow the names, as before', async ({ page }) => {
+  await guestsLive(3);
+  await page.setViewportSize(ZOOMED);
+  await openAdmin(page, local!, 'Guests and QR');
+  await expect(page.locator('li.row[data-guest]').first()).toBeVisible();
+  const paste = await page.locator('.guests__names').boundingBox();
+  const codes = await page.locator('.guests__codes').boundingBox();
+  expect(codes!.y).toBeGreaterThanOrEqual(paste!.y + paste!.height);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });

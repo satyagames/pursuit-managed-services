@@ -343,6 +343,8 @@
         {/if}
         {#if report}<p class="guests-report guests-report--{report.level}" role="status" data-testid="guest-report">{report.text}</p>{/if}
 
+        <div class="guests__grid">
+        <div class="guests__names">
         <div class="guests-add">
           <div class="field">
             <label class="field__label" for="paste-names">Paste names</label>
@@ -358,6 +360,8 @@
           <button class="btn guest-picture-pick" type="button" aria-label={newPicture ? 'Picture chosen. Change it' : 'Picture, optional'} onclick={() => { picturing = 'new'; }} disabled={busy || ended}><GuestAvatar src={newPicture?.url ?? null} size={32} /> Picture</button>
           <button class="btn" type="submit" disabled={busy || ended || !visitorName.trim()}>Add visitor</button>
         </form>
+        </div>
+        <div class="guests__codes">
 
         {#if groups.length > 0}
           <div class="field">
@@ -407,6 +411,8 @@
             </div>
           </section>
         {/if}
+        </div>
+        </div>
       </section>
     {:else}
       <p class="hint">Staff sign in is on: participants are greeted by their signed-in SharePoint display name and need no code. To use personal QR codes for guests, choose "Guests scan a personal QR" on Today.</p>
@@ -432,3 +438,24 @@
     onclose={() => { picturing = null; }}
   />
 {/if}
+
+<style>
+  /* On a laptop the names are added on the left and the guests' codes are on the right (Prompt 32); below 1,100 px the codes follow the names. */
+  @media (min-width: 1100px) {
+    .guests__grid {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    .guests__names :global(.guests-add) {
+      max-width: none;
+      margin-top: 0;
+    }
+
+    .guests__codes > :global(:first-child) {
+      margin-top: 0;
+    }
+  }
+</style>
