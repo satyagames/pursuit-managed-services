@@ -291,7 +291,8 @@
         {/each}
       </ul>
 
-      <div class="dash__grid">
+      <div class="dash__pair">
+      <div class="dash__grid dash__charts">
         <section class="card dash__card" aria-labelledby="dash-by-client">
           <h3 id="dash-by-client">Confidence index and shift by client<MetricInfo id="client-index" /></h3>
           <p class="muted">Against {filters.compare === 'all' ? 'the all-client average' : BASELINES.find((each) => each.id === filters.compare)?.label.toLowerCase()}: the line is 100.</p>
@@ -377,6 +378,7 @@
         </div>
         <Pager state={clientPager} label="Pages of clients" heading={clientsHeading} onPage={(next) => { clientPage = next; }} />
       </section>
+      </div>
 
       <div class="dash__grid">
         <section class="card dash__card" aria-labelledby="dash-priority">
@@ -583,6 +585,22 @@
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
     gap: 1rem;
     margin-bottom: 1rem;
+  }
+
+  /* On a laptop (Prompt 32): the shift charts, one under the other, and the By client rows beside them. */
+  @media (min-width: 1100px) {
+    .dash__pair {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 1rem;
+      align-items: start;
+    }
+
+    .dash__pair > .dash__charts {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0;
+      margin-bottom: 0;
+    }
   }
 
   .dash__card {

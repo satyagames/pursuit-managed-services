@@ -212,3 +212,30 @@ test('Prompt 22: each client shows its shift and moved to confident beside its b
   }
   await axe(page, 'the shift by client at 375');
 });
+
+// Prompt 32, step 3: on a laptop the six tiles are one strip the whole width, and under them the shift charts (by client, by quarter) and the By
+// client table stand in two columns. Below 1,100 px, one under the other as before.
+test('Prompt 32: on a laptop the tiles are one full-width strip, then the shift charts and the By client table in two columns', async ({ page }) => {
+  const fake = await site(me('bmilder', 'Milder, Brian'), 'Leadership', 'period', { PeriodFrom: '2026-09-01T00:00:00Z', PeriodTo: '2026-11-30T00:00:00Z' });
+  for (const size of [{ width: 1366, height: 650 }, { width: 1440, height: 780 }, { width: 1536, height: 740 }, { width: 1920, height: 950 }]) {
+    await page.setViewportSize(size);
+    await open(page, fake);
+    const at = `the dashboard at ${size.width} x ${size.height}`;
+    const tops = await page.locator('.dash__tile').evaluateAll((tiles) => tiles.map((tile) => Math.round(tile.getBoundingClientRect().top)));
+    expect(new Set(tops).size, `${at}: the six tiles on one line`).toBe(1);
+    const strip = await page.getByRole('list', { name: 'Key figures' }).boundingBox();
+    const panel = await page.locator('.dash').boundingBox();
+    expect(strip!.width, `${at}: the strip the whole width`).toBeGreaterThanOrEqual(panel!.width - 64);
+    const charts = await page.getByRole('region', { name: /Confidence index and shift by client/ }).boundingBox();
+    const table = await page.getByRole('region', { name: 'By client', exact: true }).boundingBox();
+    expect(table!.x, `${at}: the table beside the charts`).toBeGreaterThanOrEqual(charts!.x + charts!.width);
+    expect(table!.y, `${at}: side by side, not under`).toBeLessThan(charts!.y + charts!.height);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `${at}: no sideways scroll`).toBe(true);
+    if (size.width === 1366 || size.width === 1920) await page.screenshot({ path: `test-results/admin/wide/dashboard-${size.width}x${size.height}.png` });
+  }
+  await page.setViewportSize({ width: 683, height: 700 });
+  await open(page, fake);
+  const charts = await page.getByRole('region', { name: /Confidence index and shift by client/ }).boundingBox();
+  const table = await page.getByRole('region', { name: 'By client', exact: true }).boundingBox();
+  expect(table!.y, 'at 683 px the table under the charts, as before').toBeGreaterThanOrEqual(charts!.y + charts!.height);
+});

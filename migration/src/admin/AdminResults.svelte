@@ -49,6 +49,19 @@
   let page = $state(pageOfHash(window.location.hash));
   const where = $derived(pagerState({ total: sessionRows.length, pageSize: PER_PAGE.sessions, page }));
   const visible = $derived(pageRows(sessionRows, where));
+  // Prompt 32: on a laptop the open sessions are on the left and the others a narrow list on the right, so the page still reads newest first (the
+  // newest opens by itself); below 1,100 px, one list as before.
+  const opened = $derived(visible.filter((row) => cards.some((card) => card.results.session.id === row.id)));
+  const shut = $derived(visible.filter((row) => !opened.includes(row)));
+  let wide = $state(false);
+  const split = $derived(wide && opened.length > 0 && shut.length > 0);
+  $effect(() => {
+    const laptop = window.matchMedia('(min-width: 1100px)');
+    const follow = () => { wide = laptop.matches; };
+    follow();
+    laptop.addEventListener('change', follow);
+    return () => laptop.removeEventListener('change', follow);
+  });
   let loading = $state(true);
   let error = $state('');
   let updated = $state('');
@@ -259,7 +272,9 @@
       deleting = null;
       onToast(deletedText(label), 'success');
       await tick();
-      const next = document.querySelectorAll<HTMLElement>('article[data-session] [data-card-title]')[Math.min(at, visible.length - 1)];
+      // (The next card by its session, not its place in the page: on a laptop the open cards and the others are in two columns.)
+      const nextRow = visible[Math.min(at, visible.length - 1)];
+      const next = nextRow ? document.querySelector<HTMLElement>(`article[data-session="${CSS.escape(nextRow.id)}"] [data-card-title]`) ?? undefined : undefined;
       focusHeading(cards.length ? next : pageHeading);
     }
     // What is there now, after a delete that stopped: the card stays, with what is left.
@@ -452,7 +467,32 @@
   {:else if error}<p class="error" role="alert">{error}</p>
   {:else if sessionRows.length === 0}<p class="muted">No sessions yet.</p>
   {:else}
-    {#each visible as row (row.id)}
+    {#if split}
+      <div class="results-split">
+        <div class="results-split__open">{#each opened as row (row.id)}{@render sessionCard(row)}{/each}</div>
+        <div class="results-split__list">{#each shut as row (row.id)}{@render sessionCard(row)}{/each}</div>
+      </div>
+    {:else}
+      {#each visible as row (row.id)}{@render sessionCard(row)}{/each}
+    {/if}
+    <Pager state={where} label="Pages of sessions" heading={pageHeading} onPage={goToPage} />
+  {/if}
+
+  {#if deleting}
+    {@const warning = deleteSessionWarning({ clientName: deleting.card.clientName || deleting.card.owner, date: deleting.card.results.session.date, status: deleting.card.results.session.status }, deleting.counts)}
+    <ConfirmDialog title={DELETE_SESSION.title} lead={warning.lead} points={warning.points} confirmLabel={deleting.failed ? DELETE_SESSION.retry : DELETE_SESSION.confirm} cancelLabel={DELETE_SESSION.cancel}
+      tone="danger" busy={deleting.working} status={deleting.status} error={deleting.error} onConfirm={() => void confirmDelete()} onCancel={closeDelete}>
+      <div class="delete-keep">
+        <p class="muted">{DELETE_SESSION.keepFirst}</p>
+        <ReportExports sessionId={deleting.card.results.session.id} clientName={deleting.card.clientName} {hideNames} {onToast} />
+      </div>
+    </ConfirmDialog>
+  {/if}
+
+</section>
+
+<!-- One session's card: shut (its name, date and Open) or open (its exports, charts and iPads). -->
+{#snippet sessionCard(row: Session)}
       {@const card = cards.find((each) => each.results.session.id === row.id)}
       {#if !card}
       <article class="card" data-session={row.id} data-shut>
@@ -511,22 +551,7 @@
         {#if card.codes.length}<p class="card__note muted small">QR codes: {counts(card.codes)}</p>{/if}
       </article>
       {/if}
-    {/each}
-    <Pager state={where} label="Pages of sessions" heading={pageHeading} onPage={goToPage} />
-  {/if}
-
-  {#if deleting}
-    {@const warning = deleteSessionWarning({ clientName: deleting.card.clientName || deleting.card.owner, date: deleting.card.results.session.date, status: deleting.card.results.session.status }, deleting.counts)}
-    <ConfirmDialog title={DELETE_SESSION.title} lead={warning.lead} points={warning.points} confirmLabel={deleting.failed ? DELETE_SESSION.retry : DELETE_SESSION.confirm} cancelLabel={DELETE_SESSION.cancel}
-      tone="danger" busy={deleting.working} status={deleting.status} error={deleting.error} onConfirm={() => void confirmDelete()} onCancel={closeDelete}>
-      <div class="delete-keep">
-        <p class="muted">{DELETE_SESSION.keepFirst}</p>
-        <ReportExports sessionId={deleting.card.results.session.id} clientName={deleting.card.clientName} {hideNames} {onToast} />
-      </div>
-    </ConfirmDialog>
-  {/if}
-
-</section>
+{/snippet}
 
 <!-- The Restart form, under the row of the iPad it restarts (Phase 16). Escape closes it, as Cancel does. -->
 {#snippet restartForm(target: TrackRow)}
@@ -593,5 +618,36 @@
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
     align-items: start;
     gap: 1rem;
+  }
+
+  /* On a laptop (Prompt 32): the open sessions on the left, the others a narrow list on the right; the charts in two columns, three from 1,600 px. */
+  .results-split {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(16rem, 1fr);
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .results-split__list,
+  .results-split__open {
+    display: grid;
+    gap: 1rem;
+    min-width: 0;
+  }
+
+  .results-split__list > :global(.card) {
+    margin: 0;
+  }
+
+  @media (min-width: 1100px) {
+    .tally__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1600px) {
+    .tally__grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
   }
 </style>

@@ -265,3 +265,43 @@ test('Guests and QR at 683 px: the codes follow the names, as before', async ({ 
   expect(codes!.y).toBeGreaterThanOrEqual(paste!.y + paste!.height);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
+
+// Step 3, Results: on a laptop the open sessions are on the left, their charts in two columns and in three from 1,600 px, and the sessions not
+// opened are a narrow list on the right (so the page still reads newest first: the newest opens by itself). The cards and their reads are as before: only where they stand changes. Below 1,100 px, one list as before.
+const chartColumns = (page: Page) => page.locator('.tally__grid').first().evaluate((grid) => getComputedStyle(grid).gridTemplateColumns.split(' ').length);
+
+test('Results on a laptop: the open session on the left, its charts in 2 columns and 3 from 1,600 px, the other sessions a narrow list on the right', async ({ page }) => {
+  await mkdir(pictures, { recursive: true });
+  await ds.activateClient('c-dominos', today);
+  for (const size of LAPTOPS) {
+    await page.setViewportSize(size);
+    await openAdmin(page, local!, 'Results');
+    const at = `Results at ${size.width} x ${size.height}`;
+    await expect(page.locator('article.card[data-session]')).toHaveCount(2);
+    await expect(page.locator('article.card[data-shut]')).toHaveCount(1);
+    const list = await page.locator('.results-split__list').boundingBox();
+    const open = await page.locator('.results-split__open').boundingBox();
+    expect(list, `${at}: the list`).not.toBeNull();
+    expect(list!.x, `${at}: the list beside the open session`).toBeGreaterThanOrEqual(open!.x + open!.width);
+    expect(list!.width, `${at}: the list is narrow`).toBeLessThanOrEqual(open!.width / 2);
+    await page.locator('.results-split__open summary').first().click();
+    await expect(page.locator('.tally__grid').first()).toBeVisible();
+    expect(await chartColumns(page), `${at}: the charts' columns`).toBe(size.width >= 1600 ? 3 : 2);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `${at}: no sideways scroll`).toBe(true);
+    if (size.width === 1366 || size.width === 1920) await page.screenshot({ path: `${pictures}results-${size.width}x${size.height}.png` });
+    // With every session open there is no list left: the open sessions take the whole width, one under the other.
+    await page.locator('article.card[data-shut]').getByRole('button', { name: 'Open' }).click();
+    await expect(page.locator('article.card[data-shut]')).toHaveCount(0);
+    await expect(page.locator('.results-split')).toHaveCount(0);
+    await expect(page.locator('article.card[data-session]')).toHaveCount(2);
+  }
+});
+
+test('Results at 683 px: one list of sessions, as before', async ({ page }) => {
+  await ds.activateClient('c-dominos', today);
+  await page.setViewportSize(ZOOMED);
+  await openAdmin(page, local!, 'Results');
+  await expect(page.locator('article.card[data-session]')).toHaveCount(2);
+  await expect(page.locator('.results-split__list')).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
