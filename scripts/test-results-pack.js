@@ -227,3 +227,91 @@ describe('the two files', () => {
     assert.ok(pdf.includes(squash('� (Tokyo)')), 'the PDF marks what its font cannot print');
   });
 });
+
+// Prompt 34: the pack in the app's look, Light (prints well) or Dark (as the wall). Every colour is one of lib/exports/report-look.js's (the admin
+// tokens), or for Light the Results palette's amber and red bands; the cover carries the session's figures; each card has an outlined frame and a
+// band naming it; each page a small label above its title and a source line at its foot. The speaker notes are the same in both looks.
+import { LOOK } from '../migration/src/lib/exports/report-look.js';
+
+describe('the look (Prompt 34)', () => {
+  let light;
+  let dark;
+  const lay = (results, brand, look) => {
+    const report = resultsExport.buildReport(results, { ...brand, look });
+    return { report, pages: resultsExport.layoutReport(report, null, nodePalette(), measure, { look }) };
+  };
+  before(() => {
+    light = lay(vineResults(), VINE_BRAND, 'light');
+    dark = lay(vineResults(), VINE_BRAND, 'dark');
+  });
+  const colours = (pages) => new Set(pages.flatMap((page) => [page.background, ...page.items.flatMap((item) => [item.fill, item.stroke, item.color])]).filter(Boolean).map((hex) => `#${hex}`));
+
+  it('every colour is the app\'s: report-look.js, and in Light the palette\'s amber and red bands only', () => {
+    const allowed = new Set(Object.values(LOOK));
+    const palette = nodePalette();
+    for (const [name, made, extra] of [['light', light, [palette.bandMedium, palette.bandLow]], ['dark', dark, []]]) {
+      const stray = [...colours(made.pages)].filter((hex) => !allowed.has(hex) && !extra.includes(hex));
+      assert.deepEqual(stray, [], name);
+    }
+  });
+
+  it('Light pages are white and Dark pages black, and the brief\'s accents are there: the lime bar by each title', () => {
+    for (const page of light.pages) assert.equal(page.background, LOOK.page.slice(1));
+    for (const page of dark.pages) assert.equal(page.background, LOOK.black.slice(1));
+    for (const made of [light, dark]) for (const page of made.pages) {
+      assert.ok(page.items.some((item) => item.role === 'title-bar' && item.fill === LOOK.lime.slice(1)), 'a lime bar beside the title');
+      const tag = page.items.find((item) => item.role === 'section-label');
+      assert.ok(tag && tag.text === tag.text.toUpperCase() && tag.size >= 12, 'a small upper-case label above the title');
+      assert.ok(page.items.some((item) => item.role === 'page-title'));
+    }
+  });
+
+  it('the cover carries the session\'s figures, large, each with its caption, in an outlined box', () => {
+    for (const made of [light, dark]) {
+      const figures = made.pages[0].items.filter((item) => item.role === 'figure');
+      assert.deepEqual(figures.map((item) => item.text), ['22', '4', '1']);
+      for (const item of figures) assert.ok(item.size >= 34 && item.bold);
+      assert.deepEqual(made.pages[0].items.filter((item) => item.role === 'caption').map((item) => item.text), ['Answers', 'iPads', 'Activity']);
+      assert.ok(made.pages[0].items.some((item) => item.role === 'figures-box' && item.stroke));
+    }
+  });
+
+  it('each card has an outlined frame and a band naming it; each page ends with its source', () => {
+    for (const [made, line] of [[light, LOOK.cardLine], [dark, LOOK.lime]]) {
+      for (const page of made.pages.filter((each) => each.kind === 'activity')) {
+        const frames = page.items.filter((item) => item.role === 'card');
+        for (const frame of frames) {
+          assert.equal(frame.stroke, line.slice(1));
+          assert.ok(page.items.some((item) => item.role === 'card-band' && item.card === frame.of), 'a band names the card');
+        }
+      }
+      for (const page of made.pages) assert.match(page.items.find((item) => item.role === 'footer')?.text ?? '', /^Source: Vine Street Partners · October 15, 2026 · 4 people/);
+    }
+  });
+
+  it('the speaker notes are the same in both looks', () => {
+    assert.deepEqual(dark.pages.map((page) => page.notes), light.pages.map((page) => page.notes));
+  });
+
+  it('the PDF fills a Dark sheet black, and the PowerPoint gives each Dark slide a black background', async () => {
+    // (The PDF's streams are compressed: the sheet's fill is read from the calls the writer makes.)
+    const fills = [];
+    // (jsPDF puts its drawing calls on each document, so they are wrapped on the document itself.)
+    function Recording(options) {
+      const doc = new jsPDF(options);
+      const [setFillColor, rect] = [doc.setFillColor.bind(doc), doc.rect.bind(doc)];
+      let fill = '';
+      doc.setFillColor = (...rgb) => { fill = rgb.join(','); return setFillColor(...rgb); };
+      doc.rect = (x, y, w, h, style) => { if (w > 290 && h > 200) fills.push(fill); return rect(x, y, w, h, style); };
+      return doc;
+    }
+    resultsExport.pdfBytes(dark.pages, dark.report, { jsPDF: Recording, fonts });
+    assert.deepEqual(fills, dark.pages.map(() => '0,0,0'), 'each sheet filled black');
+    fills.length = 0;
+    resultsExport.pdfBytes(light.pages, light.report, { jsPDF: Recording, fonts });
+    assert.deepEqual(fills, [], 'a Light sheet stays the paper');
+    const zip = await JSZip.loadAsync(await resultsExport.pptxFile(dark.pages, dark.report, { PptxGenJS, outputType: 'nodebuffer' }));
+    const first = await zip.file('ppt/slides/slide1.xml').async('string');
+    assert.match(first, /<p:bg>[\s\S]*000000[\s\S]*<\/p:bg>/);
+  });
+});

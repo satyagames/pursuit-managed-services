@@ -5,14 +5,13 @@
   // how many answered, and the way out. The steps and the downloads are LiveSteps.svelte's. Every press is LiveDisplay's. The rules for full
   // screen name the display (`.live--present`) as the ancestor it is.
   import Icon from './Icon.svelte';
+  import { focusHeading } from '../lib/common/focus.js';
   import LookChoice, { type Look } from './LookChoice.svelte';
 
   let {
-    heading = $bindable(), wallLook, onWallLook, brand, failedLogo, clientName, wallPage, meta, phase, presenting,
+    wallLook, onWallLook, brand, failedLogo, clientName, wallPage, meta, phase, presenting,
     onLogoFailed, onEnter, onLeave,
   }: {
-    /** The heading, which full screen focuses as it opens (Prompt 34: the next Tab is then the way out). */
-    heading?: HTMLElement;
     /** The wall's look, chosen on the wall page before it goes full screen. */
     wallLook: Look;
     onWallLook: (look: Look) => void;
@@ -31,6 +30,10 @@
     onEnter: () => void;
     onLeave: () => void;
   } = $props();
+
+  // Full screen focuses the heading as it opens (Prompt 34): the button that opened it has gone, and the next Tab is then the way out.
+  let heading = $state<HTMLElement>();
+  $effect(() => { if (presenting) focusHeading(heading); });
 </script>
 
 <div class="live__title">

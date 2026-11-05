@@ -618,7 +618,9 @@ test('Export PDF and Export PPT download real files from the admin page, branded
   const archive = await JSZip.loadAsync(await readFile((await file.path())!));
   const slide = await archive.file('ppt/slides/slide1.xml')!.async('string');
   expect(slide).toContain('Kroger');
-  expect(slide).toContain(Object.values(legacyColours({ primary: '#045BCC' }))[0].slice(1)); // the theme's page colour is in the slide
+  // (Prompt 34: the pack wears the app's look, its titles in the deep green, and no client colour; the client's name and logo stay.)
+  expect(slide).not.toContain(Object.values(legacyColours({ primary: '#045BCC' }))[0].slice(1));
+  expect(slide).toContain('046A38');
   expect(await archive.file('docProps/app.xml')!.async('string')).toContain('<Company>Pursuit Managed Services</Company>');
   // Neither export left the page in a bad state.
   await expect(page.getByRole('button', { name: 'Download PowerPoint pack' })).toBeEnabled();

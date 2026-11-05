@@ -22,6 +22,7 @@ import { chartFigure } from '../results/results-chart-figure.js';
 import { summarizeSession } from '../results/export-summary.js';
 import { binaryString, createMeasure, loadReportFonts } from './report-fonts.js';
 import { csvCell } from './leader-report.js';
+import { LOOK } from './report-look.js';
 import { wallUnreadableNotice } from '../results/unreadable.js';
 
 /** The summary CSV's columns, in reading order (Phase 13, EXPORT-DESIGN.md 3.3). */
@@ -127,7 +128,7 @@ const SHEET_OFFSET = (SHEET.height - PACK_PAGE.height) / 2;
 const FOOTER = 9;
 /** Where the body of a page ends: below it are the footer's rule and words, and nothing else. */
 export const PACK_BODY_BOTTOM = PACK_PAGE.height - PACK_PAGE.margin - FOOTER;
-const SIZE = Object.freeze({ title: 28, takeaway: 18, headline: 18, heading: 18, question: 14, details: 14, small: 12, chart: 13.7 });
+const SIZE = Object.freeze({ title: 28, figure: 36, takeaway: 18, headline: 18, heading: 18, question: 14, details: 14, small: 12, chart: 13.7 });
 const FONT = { pptx: 'Open Sans' };
 const PT_MM = 25.4 / 72;
 const lineHeight = (size) => size * PT_MM * 1.25;
@@ -147,6 +148,8 @@ export function buildReport(results, brand = {}) {
   const date = results.session.date ? new Date(`${results.session.date}T12:00:00`) : null;
   return {
     clientName: brand.name ?? '',
+    // (Prompt 34) Light or Dark, as the Live display's Download row chose; Light when nothing chose.
+    look: brand.look === 'dark' ? 'dark' : 'light',
     logoUrl: brand.logoUrl ?? null,
     primary: hex6(brand.primaryColor, '0F172A'),
     secondary: hex6(brand.secondaryColor, '64748B'),
@@ -167,8 +170,9 @@ export function buildReport(results, brand = {}) {
 }
 
 // ---- Colors
-// The header band and the activity pages' strip are the client's; everything else is the Results palette (lib/results/results-palette.js, read from
-// results-tokens.css), passed in.
+// Prompt 34: the pack wears the app's look, Light (white, prints well) or Dark (black, as the wall), and no client colour (the client's logo keeps
+// its place on the cover). Every colour is lib/exports/report-look.js's, the admin tokens written as hex once. The charts take the Results palette
+// (lib/results/results-palette.js) with the brief's colours put in: the top choice, the rest, the correct answer and a scale's ramp.
 
 /** "#0060A9" / "#06a" / "0060a9" as "0060A9"; `fallback` when it isn't a color. */
 function hex6(value, fallback) {
@@ -179,21 +183,25 @@ function hex6(value, fallback) {
 
 const channels = (hex) => [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
 
-/** Black or white, whichever reads better on `hex` (a pale brand color would lose white text). */
-function readableOn(hex) {
-  const luminance = (value) => {
-    const [r, g, b] = channels(value).map((c) => {
-      const v = c / 255;
-      return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
-    });
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  };
-  // Whichever has the more contrast (Phase 11b: a fixed threshold of 0.4 put white words on a colour of middle lightness, such as
-  // #3C8DBC, at 3.7:1; one of the two always has 4.5:1 or more).
-  const ground = luminance(hex);
-  const onWhite = 1.05 / (ground + 0.05);
-  const onDark = (ground + 0.05) / (luminance('111827') + 0.05);
-  return onDark > onWhite ? '111827' : 'FFFFFF';
+/**
+ * The charts' palette in a look: Light, the top choice deep green and the rest lime (each bar has its value written beside it), the correct answer
+ * link blue (with its tick and the word), a deep-green ramp; Dark, as the wall: the top choice lime, the rest deep green, the correct answer sky,
+ * white words on black. A heat cell's words stay 4.5:1 on its step (black or white as results-chart-figure.js picks by the step).
+ * @param {'light' | 'dark'} look @param {any} base The Results palette.
+ */
+export function packPalette(look, base) {
+  const L = LOOK;
+  return look === 'dark'
+    ? { ...base, primary: L.lime, tint: L.deep, correct: L.sky, marker: L.onDeep, brand: L.lime, text: L.onDeep, textSecondary: L.onDeep, textMuted: L.onDeep, grid: L.textMuted, surface: L.black, bandShade: L.text, bandHigh: L.lime, bandMedium: L.onDeep, bandLow: L.sky, ramps: { 3: [L.deep, L.sky, L.lime], 4: [L.text, L.deep, L.sky, L.lime], 5: [L.text, L.deep, L.teal, L.sky, L.lime] } }
+    : { ...base, primary: L.deep, tint: L.lime, correct: L.link, marker: L.deep, brand: L.lime, text: L.text, textSecondary: L.textMuted, textMuted: L.textMuted, grid: L.cardLine, surface: L.page, bandShade: L.wash, bandHigh: L.deep, ramps: { 3: [L.lime, L.green, L.deep], 4: [L.cardLine, L.lime, L.green, L.deep], 5: [L.cardLine, L.lime, L.green, L.teal, L.deep] } };
+}
+
+/** The page's own colours in a look, as the writers take them ("046A38"): its ground, words, titles, figures, frames and bands. */
+function pageLook(look) {
+  const h = (key) => LOOK[key].slice(1);
+  return look === 'dark'
+    ? { ground: h('black'), ink: h('onDeep'), soft: h('onDeep'), title: h('onDeep'), figure: h('lime'), frame: h('lime'), band: h('text'), rule: h('textMuted'), lime: h('lime'), plate: h('page') }
+    : { ground: h('page'), ink: h('text'), soft: h('textMuted'), title: h('deep'), figure: h('deep'), frame: h('cardLine'), band: h('greenWash'), rule: h('cardLine'), lime: h('lime'), plate: h('page') };
 }
 
 /** A palette colour ("#0076A8") as the writers take it ("0076A8"). */
@@ -283,7 +291,10 @@ function layoutCard(question, palette, text, x, y, w, { compact = false } = {}) 
     }
     cursor += after;
   };
-  lines(chart.headline, SIZE.headline, ink, { bold: true, max: headlineLines, after: 0.6, role: 'headline' });
+  lines(chart.headline, SIZE.headline, ink, { bold: true, max: headlineLines, role: 'headline' });
+  // (Prompt 34) The band that names the card runs from its top to just under the headline.
+  const band = cursor + 1.2 - y;
+  cursor += 2.4;
   lines(chart.prompt, SIZE.question, ink, { max: promptLines, after: 0.4, role: 'prompt' });
   // How many answered: "Only four answers." under five, so a share of a few people never reads like one of many.
   lines(fewAnswersLine(chart.answered) || `${chart.answered.toLocaleString('en-US')} answered.`, SIZE.small, soft, { max: 1, after: chart.gradedLine ? 0 : 1.6 });
@@ -294,49 +305,78 @@ function layoutCard(question, palette, text, x, y, w, { compact = false } = {}) 
   cursor += figure.h;
   if (chart.caption) { cursor += 0.8; lines(chart.caption, SIZE.small, soft, { max: 3 }); }
   if (chart.removedLine) { cursor += 0.8; lines(chart.removedLine, SIZE.small, soft, { max: 3 }); }
-  return { items, height: cursor + pad - y };
+  return { items, height: cursor + pad - y, band };
 }
 
 /**
- * Places the pack on pages: [{ kind: 'summary' | 'activity', items, notes }]. `palette` is the Results palette (lib/results/results-palette.js) and
- * `measure` the embedded fonts' (lib/exports/report-fonts.js createMeasure).
+ * Places the pack on pages: [{ kind: 'summary' | 'activity', background, items, notes }]. `palette` is the Results palette (lib/results/results-palette.js),
+ * `measure` the embedded fonts' (lib/exports/report-fonts.js createMeasure) and `look` Light or Dark (Prompt 34; the report's own, else Light).
  */
-export function layoutReport(report, logo = null, palette = null, measure = null) {
+export function layoutReport(report, logo = null, palette = null, measure = null, { look = report.look ?? 'light' } = {}) {
   if (!palette) throw new Error('layoutReport needs the Results palette (lib/results-palette.js).');
   if (!measure) throw new Error('layoutReport needs the measure of the embedded fonts (lib/report-fonts.js createMeasure).');
   const text = textMeasure(measure);
   const { width: W, height: H, margin: M } = PACK_PAGE;
   const bottom = PACK_BODY_BOTTOM;
-  const ink = bare(palette.text);
-  const soft = bare(palette.textSecondary);
-  const green = bare(palette.brand);
+  const ui = pageLook(look);
+  const charts = packPalette(look, palette);
+  const { ink, soft } = ui;
   const pages = [];
   const session = [report.clientName, report.sessionDate].filter(Boolean).join(' · ');
   const iPadsLine = answersFrom({ answers: report.answers, visits: report.iPads });
+  const activityCount = report.summary.activities.length;
 
-  // ---- Page 1: the summary.
-  const summaryPage = (first) => {
-    const page = { kind: 'summary', items: [], notes: '' };
+  /**
+   * Every page's head (Prompt 34): a small upper-case label, then the title in 28 pt with a lime bar at its left; `room` is the title's width.
+   * Returns where the page's body starts.
+   */
+  const head = (page, tag, title, room = W - M * 2) => {
+    page.items.push(label(M, 6, room, lineHeight(SIZE.small), tag.toUpperCase(), SIZE.small, soft, { bold: true, role: 'section-label' }));
+    const top = 6 + lineHeight(SIZE.small) + 1;
+    page.items.push(rect(M, top + 1.5, 1.8, lineHeight(SIZE.title) - 3, { fill: ui.lime, role: 'title-bar' }));
+    page.items.push(label(M + 5, top, room - 5, lineHeight(SIZE.title), text.wrap(title, room - 5, SIZE.title, { bold: true, maxLines: 1 })[0], SIZE.title, ui.title, { bold: true, role: 'page-title' }));
+    return top + lineHeight(SIZE.title) + 1;
+  };
+  const newPage = (kind, extra = {}) => {
+    const page = { kind, background: ui.ground, items: [], notes: '', ...extra };
     pages.push(page);
+    return page;
+  };
+
+  // ---- Page 1: the summary. The session's figures large, each with its caption, then one takeaway per activity.
+  const summaryPage = (first) => {
+    const page = newPage('summary');
+    let room = W - M * 2;
+    if (first && logo) {
+      // On a white plate at the right, so a logo drawn for a light page shows on the dark one too.
+      const plate = { w: 54, h: 24 };
+      const x = W - M - plate.w;
+      page.items.push(rect(x, 6, plate.w, plate.h, { fill: ui.plate, radius: 2 }));
+      const scale = Math.min((plate.w - 6) / logo.width, (plate.h - 6) / logo.height);
+      const [w, h] = [logo.width * scale, logo.height * scale];
+      page.items.push({ kind: 'image', x: x + (plate.w - w) / 2, y: 6 + (plate.h - h) / 2, w, h, data: logo.data });
+      room -= plate.w + 6;
+    }
+    page.top = head(page, 'Summary', 'Session results', room);
     if (first) {
-      const bandH = 40;
-      const onBand = readableOn(report.primary);
-      page.items.push(rect(0, 0, W, bandH, { fill: report.primary, role: 'band' }), rect(0, bandH, W, 1.4, { fill: green }));
-      let x = M;
-      if (logo) {
-        // On a white plate, so a logo drawn for a light page still shows on any brand color.
-        const plate = { w: 54, h: 26 };
-        const top = (bandH - plate.h) / 2;
-        page.items.push(rect(x, top, plate.w, plate.h, { fill: 'FFFFFF', radius: 2 }));
-        const scale = Math.min((plate.w - 6) / logo.width, (plate.h - 6) / logo.height);
-        const [w, h] = [logo.width * scale, logo.height * scale];
-        page.items.push({ kind: 'image', x: x + (plate.w - w) / 2, y: top + (plate.h - h) / 2, w, h, data: logo.data });
-        x += plate.w + 8;
-      }
-      const room = W - M - x;
-      page.items.push(label(x, 6, room, lineHeight(SIZE.title), text.wrap('Session results', room, SIZE.title, { bold: true, maxLines: 1 })[0], SIZE.title, onBand, { bold: true, role: 'page-title' }));
-      text.wrap([session, iPadsLine].filter(Boolean).join(' · '), room, SIZE.details, { maxLines: 2 }).forEach((line, at) => page.items.push(label(x, 20 + at * lineHeight(SIZE.details), room, lineHeight(SIZE.details), line, SIZE.details, onBand, { role: 'details' })));
-      page.top = bandH + 7;
+      text.wrap([session, iPadsLine].filter(Boolean).join(' · '), room, SIZE.details, { maxLines: 2 }).forEach((line) => {
+        page.items.push(label(M, page.top, room, lineHeight(SIZE.details), line, SIZE.details, soft, { role: 'details' }));
+        page.top += lineHeight(SIZE.details);
+      });
+      // Number, caption, number, caption: in an outlined box, thin rules between them.
+      const figures = [[report.answers, 'Answer', 'Answers'], [report.iPads, 'iPad', 'iPads'], [activityCount, 'Activity', 'Activities']];
+      const cell = 46;
+      const boxH = lineHeight(SIZE.figure) + lineHeight(SIZE.small) + 4;
+      const y = page.top + 3;
+      page.items.push(rect(M, y, cell * figures.length, boxH, { stroke: ui.frame, radius: 2, role: 'figures-box' }));
+      figures.forEach(([n, one, many], at) => {
+        const caption = n === 1 ? one : many;
+        const x = M + at * cell;
+        if (at > 0) page.items.push(rect(x, y + 3, 0.25, boxH - 6, { fill: ui.rule }));
+        page.items.push(label(x + 4, y + 1.5, cell - 8, lineHeight(SIZE.figure), n.toLocaleString('en-US'), SIZE.figure, ui.figure, { bold: true, role: 'figure' }));
+        page.items.push(label(x + 4, y + 1.5 + lineHeight(SIZE.figure), cell - 8, lineHeight(SIZE.small), caption, SIZE.small, soft, { role: 'caption' }));
+      });
+      page.top = y + boxH + 5;
       if (report.unreadable > 0) {
         for (const line of text.wrap(wallUnreadableNotice(report.unreadable), W - M * 2, SIZE.details, { bold: true })) {
           page.items.push(label(M, page.top, W - M * 2, lineHeight(SIZE.details), line, SIZE.details, ink, { bold: true, role: 'notice' }));
@@ -344,9 +384,6 @@ export function layoutReport(report, logo = null, palette = null, measure = null
         }
         page.top += 3;
       }
-    } else {
-      page.items.push(rect(0, 0, W, 4, { fill: report.primary, role: 'band' }));
-      page.top = 10;
     }
     const heading = first ? 'What each activity found' : 'What each activity found (continued)';
     page.items.push(label(M, page.top, W - M * 2, lineHeight(SIZE.heading), heading, SIZE.heading, ink, { bold: true, role: 'heading' }));
@@ -355,7 +392,7 @@ export function layoutReport(report, logo = null, palette = null, measure = null
   };
   let page = summaryPage(true);
   const notes = [`Session results${report.clientName ? ` for ${report.clientName}` : ''}${report.sessionDate ? `, ${report.sessionDate}` : ''}. ${iPadsLine}; a visit that answered nothing is not counted.${report.unreadable > 0 ? ` ${wallUnreadableNotice(report.unreadable)}` : ''}`];
-  if (report.summary.activities.length === 0) {
+  if (activityCount === 0) {
     page.items.push(label(M, page.top, W - M * 2, lineHeight(SIZE.takeaway), 'No live activities in this session yet.', SIZE.takeaway, soft));
   }
   const titleWidth = 74;
@@ -364,7 +401,7 @@ export function layoutReport(report, logo = null, palette = null, measure = null
     const said = text.wrap(activity.takeaway, W - M * 2 - titleWidth - 4, SIZE.takeaway);
     const h = Math.max(title.length, said.length) * lineHeight(SIZE.takeaway) + 4;
     if (page.top + h > bottom) { page.notes = notes.join(' '); notes.length = 0; page = summaryPage(false); }
-    page.items.push(rect(M, page.top + 0.6, 1.2, h - 5, { fill: green }));
+    page.items.push(rect(M, page.top + 0.6, 1.2, h - 5, { fill: ui.lime }));
     title.forEach((line, at) => page.items.push(label(M + 4, page.top + at * lineHeight(SIZE.takeaway), titleWidth - 4, lineHeight(SIZE.takeaway), line, SIZE.takeaway, ink, { bold: true, role: 'activity-title' })));
     said.forEach((line, at) => page.items.push(label(M + titleWidth + 4, page.top + at * lineHeight(SIZE.takeaway), W - M * 2 - titleWidth - 4, lineHeight(SIZE.takeaway), line, SIZE.takeaway, ink, { role: 'takeaway' })));
     notes.push(`${activity.title}: ${activity.takeaway}`);
@@ -386,14 +423,11 @@ export function layoutReport(report, logo = null, palette = null, measure = null
   report.summary.activities.forEach((activity, index) => {
     const own = report.questions.filter((question) => question.activityId === report.activities[index].id);
     const start = (first) => {
-      const sheet = { kind: 'activity', activity: activity.title, items: [rect(0, 0, W, 4, { fill: report.primary, role: 'band' })], notes: [] };
-      pages.push(sheet);
-      let top = 8;
+      const sheet = newPage('activity', { activity: activity.title, notes: [] });
       // A long title is cut before " (continued)", never the word itself.
       const more = first ? '' : ' (continued)';
-      const title = `${text.wrap(activity.title, W - M * 2 - text.width(more, SIZE.title, true), SIZE.title, { bold: true, maxLines: 1 })[0]}${more}`;
-      sheet.items.push(label(M, top, W - M * 2, lineHeight(SIZE.title), title, SIZE.title, ink, { bold: true, role: 'page-title' }));
-      top += lineHeight(SIZE.title) + 1;
+      const title = `${text.wrap(activity.title, W - M * 2 - 5 - text.width(more, SIZE.title, true), SIZE.title, { bold: true, maxLines: 1 })[0]}${more}`;
+      let top = head(sheet, `Activity ${index + 1} of ${activityCount}`, title);
       if (first) {
         for (const line of text.wrap(activity.takeaway, W - M * 2, SIZE.takeaway, { maxLines: 4 })) {
           sheet.items.push(label(M, top, W - M * 2, lineHeight(SIZE.takeaway), line, SIZE.takeaway, ink, { role: 'takeaway' }));
@@ -404,8 +438,7 @@ export function layoutReport(report, logo = null, palette = null, measure = null
         sheet.items.push(label(M, top + 0.6, W - M * 2, lineHeight(SIZE.details), `${count(own.length, 'question')} · ${count(activity.answers, 'answer')}`, SIZE.details, soft, { role: 'details' }));
         top += lineHeight(SIZE.details) + 0.6;
       }
-      sheet.items.push(rect(M, top + 1.5, 30, 1.2, { fill: green }));
-      sheet.top = top + 6;
+      sheet.top = top + 4;
       sheet.cards = 0;
       sheet.fresh = !first;
       return sheet;
@@ -416,24 +449,27 @@ export function layoutReport(report, logo = null, palette = null, measure = null
       sheet.items.push(label(M, sheet.top, W - M * 2, lineHeight(SIZE.takeaway), 'This activity has no questions.', SIZE.takeaway, soft));
       sheet.notes.push(`${activity.title} has no questions.`);
     }
+    // The room under a fresh page's head (its label and title, nothing else).
+    const empty = bottom - (6 + lineHeight(SIZE.small) + 1 + lineHeight(SIZE.title) + 1 + 4);
     for (let at = 0; at < own.length; at += 2) {
       const row = own.slice(at, at + 2);
       const cardX = (column) => M + column * (cardWidth + gap);
       // Laid out with two-line labels; a card too tall for an empty page is laid out again with one line a label and one comment.
-      const empty = bottom - (8 + lineHeight(SIZE.title) + 1 + 6);
       const measured = row.map((question, column) => {
-        const card = layoutCard(question, palette, text, cardX(column), 0, cardWidth);
-        return card.height <= empty ? card : layoutCard(question, palette, text, cardX(column), 0, cardWidth, { compact: true });
+        const card = layoutCard(question, charts, text, cardX(column), 0, cardWidth);
+        return card.height <= empty ? card : layoutCard(question, charts, text, cardX(column), 0, cardWidth, { compact: true });
       });
       const rowHeight = Math.max(...measured.map((card) => card.height));
       // A row that does not fit what is left goes to a fresh page; on a fresh page that holds nothing yet it is placed as it is.
       if (!(sheet.fresh && sheet.cards === 0) && (sheet.cards + row.length > CARDS_A_PAGE || rowHeight > room())) sheet = start(false);
+      const bandH = Math.max(...measured.map((card) => card.band));
       row.forEach((question, column) => {
         const top = sheet.top;
-        // A white card with Deloitte Green along its top edge, as on the screen: the accent, never a bar.
-        sheet.items.push(rect(cardX(column), top, cardWidth, rowHeight, { fill: bare(palette.surface), stroke: bare(palette.grid), radius: 2, card: question.chart.id, role: 'card', of: question.chart.id }));
-        sheet.items.push(rect(cardX(column), top, cardWidth, 1.2, { fill: green, card: question.chart.id }));
-        sheet.items.push(...measured[column].items.map((item) => ({ ...item, y: item.y + top, ...(item.y2 === undefined ? {} : { y2: item.y2 + top }), card: question.chart.id })));
+        const id = question.chart.id;
+        // (Prompt 34) An outlined card, and a band across its top in the pale green (Dark: the near-black) naming it with its headline.
+        sheet.items.push(rect(cardX(column), top, cardWidth, rowHeight, { fill: ui.ground, stroke: ui.frame, radius: 3, card: id, role: 'card', of: id }));
+        sheet.items.push(rect(cardX(column) + 0.8, top + 0.8, cardWidth - 1.6, measured[column].band - 0.8, { fill: ui.band, radius: 2, card: id, role: 'card-band' }));
+        sheet.items.push(...measured[column].items.map((item) => ({ ...item, y: item.y + top, ...(item.y2 === undefined ? {} : { y2: item.y2 + top }), card: id })));
         const { chart } = question;
         sheet.notes.push([`Question ${question.number}: ${chart.prompt}`, chart.headline, `${chart.answered} answered.`, chart.gradedLine, fewAnswersLine(chart.answered), countingRule(chart)].filter(Boolean).join(' '));
       });
@@ -442,13 +478,14 @@ export function layoutReport(report, logo = null, palette = null, measure = null
     }
   });
 
-  // ---- Footers: the session (and the activity), and "Page N of M".
+  // ---- Footers: where the figures come from (the session and how many people), the activity, and "Page N of M".
+  const people = `${report.iPads.toLocaleString('en-US')} ${report.iPads === 1 ? 'person' : 'people'}`;
   pages.forEach((sheet, index) => {
     if (Array.isArray(sheet.notes)) sheet.notes = sheet.notes.join('\n\n');
-    const where = [session, sheet.activity].filter(Boolean).join(' · ');
+    const where = [`Source: ${session || 'this session'}`, people, sheet.activity].filter(Boolean).join(' · ');
     const y = H - M - 1;
-    sheet.items.push(rect(M, y - 2.4, W - M * 2, 0.25, { fill: bare(palette.grid), role: 'footer-rule' }));
-    if (where) sheet.items.push(label(M, y, W - M * 2 - 48, lineHeight(SIZE.small), text.wrap(where, W - M * 2 - 48, SIZE.small, { maxLines: 1 })[0], SIZE.small, soft, { role: 'footer' }));
+    sheet.items.push(rect(M, y - 2.4, W - M * 2, 0.25, { fill: ui.rule, role: 'footer-rule' }));
+    sheet.items.push(label(M, y, W - M * 2 - 48, lineHeight(SIZE.small), text.wrap(where, W - M * 2 - 48, SIZE.small, { maxLines: 1 })[0], SIZE.small, soft, { role: 'footer' }));
     sheet.items.push(label(W - M - 44, y, 44, lineHeight(SIZE.small), `Page ${index + 1} of ${pages.length}`, SIZE.small, soft, { align: 'right', role: 'footer' }));
     delete sheet.top;
     delete sheet.cards;
@@ -539,6 +576,8 @@ export function pdfBytes(pages, report, { jsPDF, fonts, producer = 'Pursuits CEC
 
   pages.forEach((page, index) => {
     if (index > 0) doc.addPage([SHEET.width, SHEET.height], 'landscape');
+    // (Prompt 34) A Dark page fills its whole sheet black; a Light one leaves the paper white.
+    if (page.background && page.background !== 'FFFFFF') { doc.setFillColor(...rgb(page.background)); doc.rect(0, 0, SHEET.width, SHEET.height, 'F'); }
     for (const item of page.items) {
       if (item.kind === 'rect') {
         const style = item.fill && item.stroke ? 'FD' : item.fill ? 'F' : 'S';
@@ -605,7 +644,7 @@ export async function pptxFile(pages, report, { PptxGenJS, producer = 'Pursuits 
 
   for (const page of pages) {
     const slide = pptx.addSlide();
-    slide.background = { color: 'FFFFFF' };
+    slide.background = { color: page.background ?? 'FFFFFF' };
     for (const item of page.items) {
       const box = { x: inches(item.x), y: inches(item.y), w: inches(item.w), h: inches(item.h) };
       if (item.kind === 'rect') {

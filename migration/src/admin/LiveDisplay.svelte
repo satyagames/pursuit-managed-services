@@ -9,7 +9,6 @@
   import { withStoredColours } from '../lib/admin/master-brand.js';
   import { createPageWatcher, type PageWatcher } from '../lib/common/page-watch.js';
   import { adminDelay } from '../lib/common/poll-schedule.js';
-  import { focusHeading } from '../lib/common/focus.js';
   import { heldNameSources } from '../lib/admin/admin-results.js';
   import { wallAddress } from '../lib/admin/live-wall.js';
   import {
@@ -87,8 +86,6 @@
   let footHeight = $state(0);
   let stage = $state<HTMLElement>();
   let root = $state<HTMLElement>();
-  /** The display's heading: full screen focuses it as it opens, so the way out is the next Tab (the button that opened it has gone). */
-  let wallHeading = $state<HTMLElement>();
   let watcher: PageWatcher | undefined;
   let active = false;
   let nativeFullscreen = false;
@@ -259,7 +256,6 @@
     spill = false;
     wake();
     await tick();
-    focusHeading(wallHeading);
     const target = root as (HTMLElement & { webkitRequestFullscreen?: () => Promise<void> | void }) | undefined;
     try {
       if (target?.requestFullscreen) await target.requestFullscreen({ navigationUI: 'hide' });
@@ -491,7 +487,7 @@
   {#if !presenting}<Breadcrumb parts={[{ label: 'Results', onclick: onBack }, { label: crumbLabel }, { label: 'Live' }]} />{/if}
   <header class="live__head">
     <LiveHead
-      bind:heading={wallHeading} {wallLook} onWallLook={(look) => { wallLook = look; }} {brand} {failedLogo} clientName={structure ? brand.name : APP_NAME} {wallPage} meta={metaLine} {phase} {presenting}
+      {wallLook} onWallLook={(look) => { wallLook = look; }} {brand} {failedLogo} clientName={structure ? brand.name : APP_NAME} {wallPage} meta={metaLine} {phase} {presenting}
       onLogoFailed={() => { failedLogo = brand.logoUrl ?? ''; }} onEnter={() => void enter()} onLeave={() => leave()}
     />
   </header>

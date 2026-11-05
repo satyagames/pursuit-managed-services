@@ -284,7 +284,8 @@ test('PPT exports use each selected session client branding', async ({ page }) =
     const archive = await JSZip.loadAsync(await readFile((await download.path())!));
     const slide = await archive.file('ppt/slides/slide1.xml')!.async('string');
     expect(slide).toContain(name);
-    expect(slide).toContain(color);
+    // (Prompt 34: each session's client is named on its slides; the pack wears the app's look, not the client's colour.)
+    expect(slide).not.toContain(color);
     expect(await archive.file('docProps/app.xml')!.async('string')).toContain('<Company>Pursuit Managed Services</Company>');
   }
 });
