@@ -68,6 +68,13 @@ never holds a PIN, a QR code, a participant link or anyone else's details. A lon
 
 Apply removes nobody: people who reach the app through the site's Members or Visitors keep working. When ready, the owner moves them into the PMS groups (**Check site access** lists them as waiting, whichever other group they are in), then presses **Remove the site's groups** on the Setup page. That takes the site's own groups off the app's lists and folder only; it changes nothing else on the site, and until it is pressed anyone in Members can still read the five secret lists.
 
+## What the person sees once they are in
+
+Their role is beside their name in the admin page's bar: "Producer · Kroger", "Admin · All clients", and "Ends 12 Dec" when it ends within 14 days.
+Pressing it opens **Your access**: what they can do, what is not available to them and who does it, and "Need a different role? Ask a Super admin.",
+with **Copy my details** to paste into a message. A first visit, and the first visit after a change of role, starts with a one-line welcome saying the
+same. A role given in People shows when their page next reads their access (a reload, or a tab opened five minutes or more after the last read); nothing about it reaches the site's groups (the two steps above).
+
 ## If the error stays
 
 - Ask them to sign out of Microsoft 365 in that browser and sign in with the work account they were added with (a personal account, or a second

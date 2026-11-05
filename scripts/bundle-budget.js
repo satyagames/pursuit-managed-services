@@ -501,3 +501,14 @@ export const PHASE_26 = Object.freeze({
   participantAfter: 180_279, adminAfter: 673_935,
   participantUtilities: PHASE_11A.participantUtilities,
 });
+
+/**
+ * Prompt 32 (your role beside your name, the admin page on the whole laptop screen), measured from where Prompt 31 left the pages (b79bf85, built
+ * on 5 Nov 2026). The participant page may not change at all. The admin page gains lib/access/identity-words.js, the chip, the welcome strip and
+ * the tabs' columns: at most 8,000 B gzip (ASSUMED: the brief names only the 700,000 B budget). Measured when the prompt ended: the after figures.
+ */
+export const PHASE_32 = Object.freeze({
+  participantBefore: 180_179, adminBefore: 679_564, participantAllowance: 0, adminAllowance: 8_000,
+  participantAfter: 180_179, adminAfter: 685_989,
+  participantUtilities: PHASE_11A.participantUtilities,
+});

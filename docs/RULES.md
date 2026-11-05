@@ -1773,6 +1773,16 @@ Results is a leader's view as well (boards 9 and 12): `admin/LeaderDashboard.sve
 - **The change first.** The message appears only after the change has saved (`admin/EmailPanel.svelte`), and a box left unticked costs no request. The app sends nothing: one `access-email` audit line per press of Open email draft or Copy message, none for showing it.
 - **Only those who may give a role** (`team.assign`) see the box or the message.
 
+## Rules from Prompt 32 (your role beside your name, the admin page on the whole laptop screen; keep them holding)
+
+- **The words of who you are come from `identityOf`** (`lib/access/identity-words.js`, held by `scripts/test-identity-words.js`), made from the access the page already read: no request for the chip, the Your access popover or the welcome strip. A PIN sign-in has no chip. "Ends" shows within `ENDS_SOON_DAYS` (14); the popover names the person, never their email.
+- **The welcome strip's one memory** is `localStorage` under `pms.welcome.<hash>`, read and written in try/catch; when storage is blocked it shows once in each tab. Nothing else of a person is stored.
+- **No container is capped.** The admin page runs edge to edge with the gutter `clamp(1rem, 2vw, 2rem)`; running text is at most 72ch. From 1,100 px the brand, the tabs and the person are one sticky 52 px bar (`admin.css`); below it, the two rows of before, and only the tab row sticks. `scroll-padding-top` clears whichever sticks, with room for the 9 px ring.
+- **Each tab's columns start at 1,100 px**, by CSS grid, and below it the tab is as it was: Today's three zones (Controls sticky, End session always in view), People's person and Clients' client beside the list, Guests and QR's names and codes, Results' open sessions and the narrow list of the others, the dashboard's charts beside the By client rows. Content's two views were side by side already.
+- **A column moves nothing's order.** What a test or a screen reader reads first stays first: Results keeps the open (newest) session on the left, and the card after a delete is found by its session, not its place in the page.
+- **Colours only from `admin-tokens.css`**, each pair with its contrast test (`scripts/test-admin-today.js`). The participant page's bytes do not change (`npm run test:bundle`): a comment's word such as "table" in a new admin file can add a Tailwind rule to it.
+- `scripts/migration-tests/admin-wide.spec.ts`, `people-wide.spec.ts` and `identity-chip.spec.ts` hold the sizes 1366 by 650, 1440 by 780, 1536 by 740, 1920 by 950 and 683 by 700.
+
 ## Before finishing a change
 
 - Always: `npm run check:svelte` and `npm test` (the documents, the module map and the project map among it). If you added, moved or renamed a
