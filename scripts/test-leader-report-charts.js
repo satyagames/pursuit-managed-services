@@ -12,6 +12,7 @@ import assert from 'node:assert/strict';
 import { before, describe, it } from 'node:test';
 import * as leaderReport from '../migration/src/lib/exports/leader-report.js';
 import { RANKING_CAPTION } from '../migration/src/lib/results/results-chart-model.js';
+import { packPalette } from '../migration/src/lib/exports/resultsExport.js';
 import { bigRecords, harbourRecords } from './leader-report-fixtures.js';
 import { makeReport } from './leader-report-node.js';
 import { inspectPdf, squash } from './pdf-inspect.js';
@@ -91,8 +92,8 @@ describe('Phase 11b: Results by activity on the chart model', () => {
     assert.ok(!resultsText.includes('(correct answer)'), 'the word "Correct" and the tick say it now');
   });
 
-  it('draws the bars in the Results palette: Dark Green for the correct answer, the blue for the top choice, the tint for the rest, a scale in its ramp', () => {
-    const palette = nodePalette();
+  it('draws the bars in the pack\'s Light palette (Prompt 34): the correct answer, the top choice and the rest each its own, a scale in its ramp', () => {
+    const palette = packPalette('light', nodePalette());
     const bars = resultsItems.filter((item) => item.role === 'bar');
     assert.ok(bars.length >= 20);
     for (const bar of bars) {
@@ -102,15 +103,15 @@ describe('Phase 11b: Results by activity on the chart model', () => {
     }
   });
 
-  it('keeps the client\'s colour to the report\'s own structure: no mark or word of a chart wears it', () => {
-    const palette = nodePalette();
+  it('draws every chart in the pack\'s Light palette, and no mark or word of the report wears the client\'s colour (Prompt 34)', () => {
+    const palette = packPalette('light', nodePalette());
     const tokens = new Set([palette.primary, palette.tint, palette.correct, palette.marker, palette.brand, palette.text, palette.textSecondary, palette.textMuted, palette.grid, palette.surface, palette.bandShade, ...palette.ramps[3], ...palette.ramps[4], ...palette.ramps[5]].map(hex));
-    const charted = resultsItems.filter((item) => item.role);
+    const charted = resultsItems.filter((item) => item.role && item.role !== 'activity-band'); // (the band is the page's own colour, report-look.js)
     assert.ok(charted.length > 50);
     const strays = charted.flatMap((item) => [item.fill, item.stroke, item.color].filter(Boolean).map(hex)).filter((colour) => !tokens.has(colour));
     assert.deepEqual(strays, []);
-    // The client's accent (Harbour's #1F5FA8, which has 3:1 on white as it is) is still the title band's.
-    assert.ok(small.pages[0].items.some((item) => item.kind === 'rect' && hex(item.fill) === '1F5FA8'));
+    // (Prompt 34) The client's accent (Harbour's #1F5FA8) is worn nowhere: the title band is the app's deep green.
+    assert.ok(!small.pages.flatMap((page) => page.items).some((item) => [item.fill, item.stroke, item.color].some((colour) => colour && hex(colour) === '1F5FA8')));
   });
 
   it('says on the last page, in one plain sentence, that the Live display\'s files count the iPads that answered', () => {

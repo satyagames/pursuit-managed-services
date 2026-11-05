@@ -22,7 +22,10 @@ import { chartFigure } from '../results/results-chart-figure.js';
 import { summarizeSession } from '../results/export-summary.js';
 import { binaryString, createMeasure, loadReportFonts } from './report-fonts.js';
 import { csvCell } from './leader-report.js';
-import { LOOK } from './report-look.js';
+import { LOOK, packPalette } from './report-look.js';
+
+// (The charts' palette in each look is report-look.js's, shared with the leader report; passed on here as it always was.)
+export { packPalette };
 import { wallUnreadableNotice } from '../results/unreadable.js';
 
 /** The summary CSV's columns, in reading order (Phase 13, EXPORT-DESIGN.md 3.3). */
@@ -182,19 +185,6 @@ function hex6(value, fallback) {
 }
 
 const channels = (hex) => [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
-
-/**
- * The charts' palette in a look: Light, the top choice deep green and the rest lime (each bar has its value written beside it), the correct answer
- * link blue (with its tick and the word), a deep-green ramp; Dark, as the wall: the top choice lime, the rest deep green, the correct answer sky,
- * white words on black. A heat cell's words stay 4.5:1 on its step (black or white as results-chart-figure.js picks by the step).
- * @param {'light' | 'dark'} look @param {any} base The Results palette.
- */
-export function packPalette(look, base) {
-  const L = LOOK;
-  return look === 'dark'
-    ? { ...base, primary: L.lime, tint: L.deep, correct: L.sky, marker: L.onDeep, brand: L.lime, text: L.onDeep, textSecondary: L.onDeep, textMuted: L.onDeep, grid: L.textMuted, surface: L.black, bandShade: L.text, bandHigh: L.lime, bandMedium: L.onDeep, bandLow: L.sky, ramps: { 3: [L.deep, L.sky, L.lime], 4: [L.text, L.deep, L.sky, L.lime], 5: [L.text, L.deep, L.teal, L.sky, L.lime] } }
-    : { ...base, primary: L.deep, tint: L.lime, correct: L.link, marker: L.deep, brand: L.lime, text: L.text, textSecondary: L.textMuted, textMuted: L.textMuted, grid: L.cardLine, surface: L.page, bandShade: L.wash, bandHigh: L.deep, ramps: { 3: [L.lime, L.green, L.deep], 4: [L.cardLine, L.lime, L.green, L.deep], 5: [L.cardLine, L.lime, L.green, L.teal, L.deep] } };
-}
 
 /** The page's own colours in a look, as the writers take them ("046A38"): its ground, words, titles, figures, frames and bands. */
 function pageLook(look) {

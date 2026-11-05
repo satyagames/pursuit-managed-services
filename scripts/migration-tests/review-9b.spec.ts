@@ -114,7 +114,7 @@ test('Results, the Live display, the exports and the leader report show the rest
   await page.goto(`${pageUrl('admin.html')}#live-display/${session.id}`);
   await expect(page.getByTestId('unreadable-notice')).toHaveText(NOTICE);
   await expect(page.locator('.live__meta')).toContainText('answers from 2 iPads');
-  const live = await download(page, 'Export CSV');
+  const live = await download(page, 'Download CSV');
   expect(live.bytes.toString('utf8')).toContain('Great Western Tea co.');
   // The wall (a projector, in front of the client) says how many, and nothing for the admin to do (Phase 12, F-04).
   await page.goto(`${pageUrl('admin.html')}#live-display/${session.id}/wall`);

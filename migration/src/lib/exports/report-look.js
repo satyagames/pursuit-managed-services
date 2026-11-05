@@ -87,6 +87,19 @@ export function lookFailures(look) {
   return failures;
 }
 
+/**
+ * The charts' palette in a look: Light, the top choice deep green and the rest lime (each bar has its value written beside it), the correct answer
+ * link blue (with its tick and the word), a deep-green ramp; Dark, as the wall: the top choice lime, the rest deep green, the correct answer sky,
+ * white words on black. A heat cell's words stay 4.5:1 on its step (black or white as results-chart-figure.js picks by the step).
+ * @param {'light' | 'dark'} look @param {any} base The Results palette.
+ */
+export function packPalette(look, base) {
+  const L = LOOK;
+  return look === 'dark'
+    ? { ...base, primary: L.lime, tint: L.deep, correct: L.sky, marker: L.onDeep, brand: L.lime, text: L.onDeep, textSecondary: L.onDeep, textMuted: L.onDeep, grid: L.textMuted, surface: L.black, bandShade: L.text, bandHigh: L.lime, bandMedium: L.onDeep, bandLow: L.sky, ramps: { 3: [L.deep, L.sky, L.lime], 4: [L.text, L.deep, L.sky, L.lime], 5: [L.text, L.deep, L.teal, L.sky, L.lime] } }
+    : { ...base, primary: L.deep, tint: L.lime, correct: L.link, marker: L.deep, brand: L.lime, text: L.text, textSecondary: L.textMuted, textMuted: L.textMuted, grid: L.cardLine, surface: L.page, bandShade: L.wash, bandHigh: L.deep, ramps: { 3: [L.lime, L.green, L.deep], 4: [L.cardLine, L.lime, L.green, L.deep], 5: [L.cardLine, L.lime, L.green, L.teal, L.deep] } };
+}
+
 /** A colour as the writers take it: "#046A38" as "046A38" (PptxGenJS), or as [r, g, b] (jsPDF). */
 export const hexOf = (/** @type {string} */ colour) => colour.slice(1);
 export const rgbOf = (/** @type {string} */ colour) => [1, 3, 5].map((at) => parseInt(colour.slice(at, at + 2), 16));
