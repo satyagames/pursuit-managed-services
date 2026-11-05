@@ -534,5 +534,17 @@ export const PHASE_33 = Object.freeze({
  */
 export const PHASE_34 = Object.freeze({
   participantBefore: 180_179, adminBefore: 694_288, participantAllowance: 0, adminAllowance: 710_000 - 694_288,
+  participantAfter: 180_179, adminAfter: 700_114,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
+
+/**
+ * Prompt 35 (the Art of Possibility rebuilt: one calm screen, three level colours with a shape and a letter, press and hold, motion, sound and
+ * "Your ratings at a glance"), measured from where Prompt 34 left the pages (dc7a6f8, built on 5 Nov 2026). This one is the participant page's: it
+ * may grow by at most 12 KB gzip in all (the brief's allowance) and stays under its ceiling. The admin page carries the participant's pager for
+ * Brand Studio's preview, so it grows by what the pager grows; it stays under its budget.
+ */
+export const PHASE_35 = Object.freeze({
+  participantBefore: 180_179, adminBefore: 700_114, participantAllowance: 12_288,
   participantUtilities: PHASE_11A.participantUtilities,
 });

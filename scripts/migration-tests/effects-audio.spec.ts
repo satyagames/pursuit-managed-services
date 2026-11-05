@@ -113,7 +113,9 @@ for (const name of CUE_NAMES) {
 // shimmer or chord tones), the strongest of the cue's own frequencies must be that note. Cues whose point
 // is a direction (rising for a win, falling for a miss) must also move that way.
 
-const DIRECTION: Partial<Record<CueName, 'rising' | 'falling'>> = { soundOn: 'rising', correctFirst: 'rising', activityComplete: 'rising', incorrect: 'falling' };
+const DIRECTION: Partial<Record<CueName, 'rising' | 'falling'>> = { soundOn: 'rising', correctFirst: 'rising', activityComplete: 'rising', incorrect: 'falling',
+  // Prompt 35: the last box rises, Clear all falls.
+  allRated: 'rising', clearAll: 'falling' };
 
 type Tone = { kind: 'tone'; freq: number; at: number; attack: number; hold: number; release: number; level: number };
 

@@ -263,7 +263,7 @@ Sounds and confetti, behind one door (`effects.ts`): which moment makes which ef
 | `confetti.ts` | The confetti overlay. | `clearConfetti`, `celebrate`, `sparks` |
 | `effect-plan.js` | What each moment in the participant flow should do, and how the sound choice is remembered. | `EFFECTS`, `answerEffect`, `SOUND_KEY`, `readChoice`, `writeChoice`, `soundIsOn`, `UNAVAILABLE_TITLE` |
 | `effects.ts` | The one door to sound and confetti. | 21 exports |
-| `sound-cues.js` | The participant sounds, as DATA. | `CUES`, `CUE_NAMES`, `noteEnd`, `cueEnd`, `toneSignature`, `MAX_VOICES`, `RETRIGGER_MS`, `createVoiceGate` |
+| `sound-cues.js` | The participant sounds, as DATA. | `CUES`, `CUE_NAMES`, `noteEnd`, `cueEnd`, `toneSignature`, `MAX_VOICES`, `RETRIGGER_MS`, `RATE_GAP_MS`, `RATING_CUES`, `createVoiceGate` |
 | `sound-engine.ts` | Web Audio for the participant cues. | `audioSupported`, `scheduleCue`, `renderCueOffline`, `unlock`, `resumeIfNeeded`, `playCue`, `stopAll`, `setPlaybackSession` |
 
 ## `lib/exports/`

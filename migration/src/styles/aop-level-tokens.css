@@ -1,0 +1,26 @@
+/*
+ * The Art of Possibility's three rating colours (Prompt 35): the one set of colours on the participant page that does not come from the client's
+ * plate tokens, granted by the site owner for this question only. They mean the level and nothing else: a High is not "good" (some criteria count
+ * against handing the work over), so the page says "Colour shows the rating, not good or bad."
+ *
+ * The boxes stand on a white well, so they read the same on every client's colour. Medium and High are too light to stand on white by
+ * themselves (2.0:1 and 2.5:1), so every rated box has an edge of its own darker colour, at least 3:1 on the well; the letter on each fill is at
+ * least 4.5:1 (Low's white letter is 19 px bold, large text, at least 3:1). Every box also carries a shape and a letter
+ * (lib/participant/aop-levels.js). scripts/test-participant-contrast.js reads this file and fails when a pair falls under its floor.
+ */
+:root {
+  --aop-low: #E63A2E;
+  --aop-on-low: #FFFFFF;
+  --aop-low-edge: #B3261E;
+  --aop-medium: #F5A623;
+  --aop-on-medium: #1A1A2E;
+  --aop-medium-edge: #A85F00;
+  --aop-high: #3DBB5E;
+  --aop-on-high: #1A1A2E;
+  --aop-high-edge: #1F7A3A;
+  --aop-well: #FFFFFF;
+  --aop-well-ink: #1A1A2E;
+  --aop-empty-edge: #6B6B7B;
+  --aop-letter-size: 19px;
+  --aop-letter-weight: 700;
+}
