@@ -66,6 +66,9 @@ export const MARK_PAIRS = Object.freeze([['green', 'page'], ['deep', 'page'], ['
 /** The wall's words and figures on black, read from the back of a room: 7:1. */
 export const WALL_PAIRS = Object.freeze([['onDeep', 'black'], ['lime', 'black']]);
 
+/** The light wall (for a bright room): its words 7:1 on white; its hero figures and the correct answer's mark, deep green and link blue, 4.5:1 (the figures are 96 px and more). [ink, ground, least]. */
+export const LIGHT_WALL_PAIRS = Object.freeze([['text', 'page', 7], ['deep', 'page', 4.5], ['link', 'page', 4.5]]);
+
 /** The highlighter: black words on a lime block, 7.9:1 or better. */
 export const HIGHLIGHT_PAIR = Object.freeze(['black', 'lime']);
 

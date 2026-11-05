@@ -5,13 +5,17 @@
   // how many answered, and the way out. The steps and the downloads are LiveSteps.svelte's. Every press is LiveDisplay's. The rules for full
   // screen name the display (`.live--present`) as the ancestor it is.
   import Icon from './Icon.svelte';
+  import LookChoice, { type Look } from './LookChoice.svelte';
 
   let {
-    heading = $bindable(), brand, failedLogo, clientName, wallPage, meta, phase, presenting,
+    heading = $bindable(), wallLook, onWallLook, brand, failedLogo, clientName, wallPage, meta, phase, presenting,
     onLogoFailed, onEnter, onLeave,
   }: {
     /** The heading, which full screen focuses as it opens (Prompt 34: the next Tab is then the way out). */
     heading?: HTMLElement;
+    /** The wall's look, chosen on the wall page before it goes full screen. */
+    wallLook: Look;
+    onWallLook: (look: Look) => void;
     /** The client's look as the display takes it: its name and its logo's address. */
     brand: { name: string; logoUrl: string | null };
     /** A logo address that could not be loaded: no empty chip is left for it. */
@@ -41,7 +45,7 @@
 {#if presenting}
   <div class="live__actions"><button class="btn live__exit" type="button" onclick={onLeave}>Exit full screen</button></div>
 {:else if wallPage && phase === 'display'}
-  <div class="live__actions"><button class="btn btn--primary" type="button" onclick={onEnter}>Show the wall full screen</button></div>
+  <div class="live__actions"><LookChoice label="Wall" value={wallLook} onChange={onWallLook} /><button class="btn btn--primary live__go" type="button" onclick={onEnter}><Icon name="screen" />Show the wall full screen</button></div>
 {/if}
 
 <style>
@@ -99,8 +103,15 @@
     color: var(--adm-muted);
   }
 
+  .live__go {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
   .live__actions {
     display: flex;
+    align-items: center;
     flex-wrap: wrap;
     gap: 0.5rem;
   }
@@ -130,7 +141,7 @@
   }
 
   :global(.live--present) .live__meta {
-    color: var(--adm-on-deep);
+    color: var(--wall-ink);
     font-size: calc(1rem * var(--chart-scale, 1));
   }
 

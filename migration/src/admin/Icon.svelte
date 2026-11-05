@@ -26,6 +26,14 @@
     palette: 'M12 3a9 9 0 1 0 0 18a2 2 0 0 0 1.5-3.3a2 2 0 0 1 1.5-3.4h2.4A4.6 4.6 0 0 0 22 9.8C22 6 17.5 3 12 3zM7.5 11h.01M10 7.5h.01M14.5 7.5h.01',
     qr: 'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h3v3h-3zM20 14v.01M17 20h4M20 17v3M14 20h.01',
     chart: 'M4 20h16M7 16v-5M12 16V6M17 16V9',
+    // Prompt 34, the Live display: read again, open in a new tab, show on the big screen, the dark and the light look, a sheet (CSV), slides (PowerPoint).
+    refresh: 'M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7',
+    external: 'M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',
+    screen: 'M3 4h18v12H3zM8 20h8M12 16v4',
+    moon: 'M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z',
+    sun: 'M16 12a4 4 0 1 1-8 0a4 4 0 0 1 8 0zM12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',
+    sheet: 'M3 5h18v14H3zM3 10h18M3 15h18M9 5v14',
+    slides: 'M7 8h14v11H7zM3 4h14v2M3 4v11h2M10 15h8',
   } as const;
   export type IconName = keyof typeof PATHS;
   export const ICON_NAMES = Object.keys(PATHS) as IconName[];

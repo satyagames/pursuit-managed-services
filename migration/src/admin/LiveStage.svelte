@@ -83,7 +83,7 @@
   .live__eyebrow {
     flex: 0 0 auto;
     margin: 0;
-    color: var(--adm-on-deep);
+    color: var(--wall-ink);
     font-size: calc(1rem * var(--chart-scale, 1));
     font-weight: 600;
     letter-spacing: 0.08em;
@@ -109,7 +109,7 @@
     position: sticky;
     bottom: calc(-1 * var(--live-pad));
     padding: 0.5rem 0;
-    background: var(--adm-bar-black);
+    background: var(--wall-ground);
     border-radius: 0.6rem;
   }
 
@@ -118,12 +118,12 @@
     bottom: calc(100% + 0.5rem);
     margin: 0;
     padding: 0.25rem 0.9rem;
-    color: var(--adm-on-deep);
+    color: var(--wall-ink);
     font-size: calc(1rem * var(--chart-scale, 1));
     font-weight: 700;
     white-space: nowrap;
-    background: var(--adm-bar-black);
-    border: 1.5px solid var(--adm-lime);
+    background: var(--wall-ground);
+    border: 1.5px solid var(--wall-line);
     border-radius: 999px;
     box-shadow: 0 2px 10px rgb(0 0 0 / 0.3);
     pointer-events: none;

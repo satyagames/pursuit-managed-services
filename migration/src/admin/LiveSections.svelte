@@ -51,7 +51,7 @@
   /* Each card keeps its own height, at the top of its row (Phase 11a-2: a card stretched to the height of its neighbour whose names were open). */
   .live-section__grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 34rem), 1fr));
     align-items: start;
     gap: 1.25rem;
   }

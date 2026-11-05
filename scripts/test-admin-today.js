@@ -516,6 +516,12 @@ describe('colours', () => {
     assert.ok(contrastRatio(LOOK[HIGHLIGHT_PAIR[0]], LOOK[HIGHLIGHT_PAIR[1]]) >= 7.9);
   });
 
+  it('the light wall: its words 7:1 on white, its hero figures 4.5:1 (they are 96 px and more)', async () => {
+    const { LOOK, LIGHT_WALL_PAIRS } = await look();
+    for (const [ink, ground, least] of LIGHT_WALL_PAIRS) assert.ok(contrastRatio(LOOK[ink], LOOK[ground]) >= least, `${ink} on ${ground}`);
+    assert.deepEqual(LIGHT_WALL_PAIRS.map(([ink, ground]) => `${ink} on ${ground}`), ['text on page', 'deep on page', 'link on page']);
+  });
+
   it('the checks fail when a file pair is set to 4.4:1 and when a wall pair is set under 7:1', async () => {
     const { LOOK, lookFailures: fileFailures } = await look();
     // #787878 on white is 4.42:1; #3c8f0f on black is 5.13:1 (a pass on white paper's rule, not on the wall's).

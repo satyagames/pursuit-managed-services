@@ -299,7 +299,7 @@
      figure side by side; small labels upper case and tracked, never under 28 px at 1080p (0.95rem at the wall's 1.9). Its colours are the wall's
      (LiveDisplay.svelte points the --viz-* names at the admin tokens while it is full screen). */
   .result-card--fit {
-    border: 1.5px solid var(--adm-lime);
+    border: 1.5px solid var(--wall-line, var(--adm-lime));
     border-radius: 12px;
   }
 
@@ -343,7 +343,7 @@
   }
 
   .result-card__hero-figure {
-    color: var(--adm-lime);
+    color: var(--wall-figure, var(--adm-lime));
     font-size: calc(3.2rem * var(--chart-scale, 1));
     font-weight: 600;
     font-variant-numeric: proportional-nums;
@@ -363,7 +363,7 @@
   }
 
   .result-card--fit .result-card__tool {
-    border: 1.5px solid var(--adm-lime);
+    border: 1.5px solid var(--wall-line, var(--adm-lime));
     border-radius: 12px;
   }
 

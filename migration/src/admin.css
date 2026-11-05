@@ -319,11 +319,7 @@ input[type='date']:focus-within {
   max-width: 72ch;
 }
 
-/* The Live display in the page keeps the width it had (its full screen and the wall cover the window and are not this rule's). */
-.shell__body > .live:not(.live--present) {
-  max-width: calc(1120px - 2rem);
-  margin-inline: auto;
-}
+/* (Prompt 34: the Live display in the page runs edge to edge as every other tab does since Prompt 32; it is watched on a laptop.) */
 
 /* One bar on a laptop (Prompt 32): from 1,100 px the brand, the section tabs and the person share one sticky bar, 52 px high. The shell is a grid
    of three columns and the bar a subgrid of it, so the brand and the person size the outer columns and the tab row, which stays its own <nav>,
