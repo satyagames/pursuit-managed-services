@@ -74,7 +74,9 @@ test('the shared export code still defaults to the old product name, and the Liv
   assert.match(source, /export async function pptxFile\(pages, report, \{ PptxGenJS, producer = 'Pursuits CEC', outputType = 'blob' \}\)/);
   assert.match(source, /creator: producer/);
   assert.match(source, /pptx\.company = producer;/);
-  assert.match(await read('migration/src/admin/LiveDisplay.svelte'), /appName: APP_NAME/);
+  // (Prompt 34: the Live display and Results' Downloads make the pack through lib/exports/pack-download.js, which passes the name.)
+  assert.match(await read('migration/src/lib/exports/pack-download.js'), /appName: APP_NAME/);
+  assert.match(await read('migration/src/admin/LiveDisplay.svelte'), /downloadPack\(kind, current, fileLook\)/);
 });
 
 test('the HTML shells no longer block zoom', async () => {

@@ -571,10 +571,10 @@ test.describe('capabilities that moved', () => {
     await expect(page.locator('.live__meta')).toContainText('1 answer from 1 iPad');
     await page.getByRole('button', { name: 'Results', exact: true }).click();
     await expect(card).toContainText('1 of');
-    await card.locator('summary').click();
+    await expect(card.locator('details.tally')).toHaveAttribute('open', ''); // (Prompt 34: the charts are open unless folded.)
     await expect(card.getByText(/1 answer from 1 iPad\b/)).toBeVisible();
     await expect(card.getByRole('button', { name: 'End session' }), 'ending a session is on Today').toHaveCount(0);
-    await card.getByRole('button', { name: /^Participant details/ }).click(); // (Prompt 33: the participants are folded under the charts.)
+    await card.getByRole('button', { name: /^People/ }).click(); // (Prompt 33: the participants are folded under the charts.)
     await card.getByRole('button', { name: 'Restart...' }).click();
     await page.getByText('The very beginning').click();
     await page.getByRole('button', { name: 'Restart', exact: true }).click();

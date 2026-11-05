@@ -85,15 +85,15 @@ test('People: a person\'s History of changes is folded, with its count and lates
     () => page.getByRole('button', { name: 'Open Mathur, Pulkit' }).click());
 });
 
-test('Results: the session\'s Participant details are folded under its charts, with a count', async ({ page }) => {
+test('Results: the session\'s People are folded under its charts, with a count', async ({ page }) => {
   const built = await site();
   await open(page, built, 'results');
   const card = page.locator(`article[data-session="${built.sessionId}"]`);
-  const button = card.getByRole('button', { name: /^Participant details/ });
+  const button = card.getByRole('button', { name: /^People/ });
   const charts = await card.locator('details.tally').boundingBox();
   expect((await button.boundingBox())!.y, 'below the charts').toBeGreaterThan(charts!.y);
   await expect(button.locator('svg[data-icon="people"]')).toHaveCount(1);
-  await checkFold(page, button, /Person 1/, /^Participant details · 3 people Show$/);
+  await checkFold(page, button, /Person 1/, /^People · 3 people( · QR codes: .*)? Show$/);
 });
 
 // ---- People: switches and the round red minus ----------------------------------------------------------------
@@ -317,7 +317,7 @@ export { PEOPLE };
 
 // ---- Pictures for the report ---------------------------------------------------------------------------------
 
-test('pictures: People with History folded and open, Results with Participant details folded and open', async ({ page }) => {
+test('pictures: People with History folded and open, Results with People folded and open', async ({ page }) => {
   for (const size of SIZES) {
     await page.setViewportSize(size);
     const built = await site();
@@ -329,9 +329,9 @@ test('pictures: People with History folded and open, Results with Participant de
     await shoot(page, 'people-history-open');
     await open(page, built, 'results');
     const card = page.locator(`article[data-session="${built.sessionId}"]`);
-    await expect(card.getByRole('button', { name: /^Participant details/ })).toBeVisible();
+    await expect(card.getByRole('button', { name: /^People/ })).toBeVisible();
     await shoot(page, 'results-details-folded');
-    await card.getByRole('button', { name: /^Participant details/ }).click();
+    await card.getByRole('button', { name: /^People/ }).click();
     await shoot(page, 'results-details-open');
   }
 });

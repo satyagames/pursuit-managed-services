@@ -34,6 +34,7 @@ flowchart LR
   effects --> motion
   exports --> admin
   exports --> brand
+  exports --> common
   exports --> data
   exports --> participant
   exports --> results
@@ -73,7 +74,7 @@ flowchart LR
 | `migration/src/lib/common/` | Shared by the pages: the product name, the heading focus rule, kiosk lock-down, the polling schedule and its one timer, the admin page's address. | 10 |
 | `migration/src/lib/data/` | The data layer: dataService.js, the door every page imports, over its parts (core.js holds the state and alone talks to SharePoint REST or, on the local server, its JSON API), and grouping of long id lists into short reads. Every page carries it. | 25 |
 | `migration/src/lib/effects/` | Sounds and confetti, behind one door (`effects.ts`): which moment makes which effect, the cues as data, Web Audio, canvas-confetti. | 6 |
-| `migration/src/lib/exports/` | The files a leader gets: the leader report (data, counting, layout, PDF writer, fonts) and the Live display's summary pack (PDF, PowerPoint) and summary CSV. | 8 |
+| `migration/src/lib/exports/` | The files a leader gets: the leader report (data, counting, layout, PDF writer, fonts) and the Live display's summary pack (PDF, PowerPoint) and summary CSV. | 9 |
 | `migration/src/lib/motion/` | The participant screens' motion, behind one door (`motion.ts`): the plan by kind of question and part of a screen, the tokens and shapes (CSS), the level and the governor. | 2 |
 | `migration/src/lib/participant/` | The participant page: the boot sequence, the visit, the activities held for the page's life, the pager's rules, saving answers, screen moves. | 16 |
 | `migration/src/lib/results/` | Results counted and shown: the tally, the chart model (every number a chart shows), the palette, the figure on paper, names, the takeaways, where a tooltip goes. | 17 |
@@ -138,7 +139,7 @@ The admin page's rules and data: Today, Clients, Content, Guests and QR, Results
 | `admin-content.js` | What the admin's Content and Guests screens decide: which activities belong where, in what order, what a pasted list of names means, what each guest's status is, what the CSV and the print sheet hold. | 41 exports |
 | `admin-links.ts` | Links the facilitator hands out, and the QR image of one. | `participantPageUrl`, `qrImage`, `copyText` |
 | `admin-pin.js` | The admin page's PIN check (AdminApp.svelte). | `hashPin`, `login` |
-| `admin-results.js` | What Admin → Results works out for each iPad of a session: the name it shows, and where it has got to. | 17 exports |
+| `admin-results.js` | What Admin → Results works out for each iPad of a session: the name it shows, and where it has got to. | 18 exports |
 | `admin-today.js` | What the admin's Today screen reads, decides and says. | 20 exports |
 | `admin-unlock.js` | What the admin page's PIN screen says when it could not check a PIN (Phase 12, F-02). | `unlockFailureText` |
 | `adminData.ts` | One participant's answer to one question, as dataService.readSessionResponses() returns it from either storage shape. | `getSessionResults`, `readSessionResponses`, `restartClientTrack`, `confirmedBy`, `confirmSampleClient`, `saveClientMotion`, `removeEmptyVisit`, `endSession`, `reopenSession`, `answersToQuestions`, `orphanNote`, `loadGuestState`, `refreshGuestState` |
@@ -196,7 +197,7 @@ A client's look: deriving a readable theme from a colour, the stored theme, Bran
 Shared by the pages: the product name, the heading focus rule, kiosk lock-down, the polling schedule and its one timer, the admin page's address.
 
 - **Imports from:** `lib/data`, `lib/settings`
-- **Imported by:** `lib/access`, `lib/admin`, `lib/brand`, `lib/participant`, `lib/settings`, `src`, `src/admin`, `src/dev`, `src/pager`, `src/routes`
+- **Imported by:** `lib/access`, `lib/admin`, `lib/brand`, `lib/exports`, `lib/participant`, `lib/settings`, `src`, `src/admin`, `src/dev`, `src/pager`, `src/routes`
 - **Node suites that import it:** `test-paging.js`, `test-participant-storage.js`, `test-polling.js`, `test-results-wall.js`, `test-review-9a.js`, `test-sign-in-again.js`
 
 | Module | What it is (its header) | Exports |
@@ -269,7 +270,7 @@ Sounds and confetti, behind one door (`effects.ts`): which moment makes which ef
 
 The files a leader gets: the leader report (data, counting, layout, PDF writer, fonts) and the Live display's summary pack (PDF, PowerPoint) and summary CSV.
 
-- **Imports from:** `lib/admin`, `lib/brand`, `lib/data`, `lib/participant`, `lib/results`, `src/assets/report-fonts`
+- **Imports from:** `lib/admin`, `lib/brand`, `lib/common`, `lib/data`, `lib/participant`, `lib/results`, `src/assets/report-fonts`
 - **Imported by:** `lib/admin`, `lib/results`, `src/admin`
 - **Node suites that import it:** `test-admin-today.js`, `test-aop-results.js`, `test-column-names.js`, `test-confidence-check.js`, `test-export-summary.js`, `test-hide-names.js`, `test-leader-report-charts.js`, `test-leader-report-glance.js`, `test-leader-report-pdf.js`, `test-live-display.js`, `test-participant-names.js`, `test-results-csv.js`, `test-results-export.js`, `test-results-pack.js`, `test-review-9a.js`, `test-review-9b.js`, `test-session-summary.js`, `test-sessions.js`
 
@@ -280,6 +281,7 @@ The files a leader gets: the leader report (data, counting, layout, PDF writer, 
 | `leader-report-layout.js` | The leader report, placed on A4 pages. | `PAGE`, `CONFIDENTIAL`, `SESSION_ENDED`, `SESSION_NOT_ENDED`, `WORDMARK_RATIO`, `HOW_TO_READ`, `layoutLeaderReport` |
 | `leader-report-pdf.js` | Draws the leader report's pages (lib/exports/leader-report-layout.js) with jsPDF: rectangles, lines, single lines of text in the embedded Open Sans, the client's logo as a picture, and two shapes that are paths (the tick and cross beside an answer, and the Deloitte wordmark). | `svgPath`, `writeLeaderReportPdf` |
 | `leader-report.js` | The leader report and the participant CSV, as numbers and words: who took part, what each person answered first and last, and every count the PDF prints. | 24 exports |
+| `pack-download.js` | The session pack, PDF or PowerPoint, downloaded (Prompt 34): the one maker that the Live display's Download and Results' Downloads both use. | `downloadPack` |
 | `report-fonts.js` | Open Sans for the leader report's PDF: the two faces made by scripts/build-report-fonts.py, inflated when a report is made, and read just enough (which characters a face has, and how wide each one is) for the layout to measure text itself. | `MISSING`, `readFace`, `loadReportFonts`, `createMeasure`, `binaryString` |
 | `report-look.js` | The look of the exported files (Prompt 34): the colours the session pack (PDF and PowerPoint, lib/exports/resultsExport.js) and the leader report (lib/exports/leader-report*.js) draw with, and the pairs they are held to. | `LOOK_TOKENS`, `LOOK`, `CHART_ORDER`, `TEXT_PAIRS`, `MARK_PAIRS`, `WALL_PAIRS`, `LIGHT_WALL_PAIRS`, `HIGHLIGHT_PAIR`, `lookFailures`, `packPalette`, `hexOf`, `rgbOf` |
 | `resultsExport.js` | The Live display's files (the summary pack as PDF and PowerPoint, and Summary by activity as CSV). | 16 exports |

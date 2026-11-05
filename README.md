@@ -48,7 +48,7 @@ Every tab starts the same way: its icon and title, one sentence on what it is fo
 - **Content**: two large parts, **Activities** (what people answer) and **Brand** (how it looks), deep green when chosen; a breadcrumb says which.
 - **Guests and QR codes**: three numbered steps, **Add guests**, **Make codes** ("Make 24 QR codes"), **Print or share**, the current one marked "Do this
   now", a done one with a check; a step that cannot work yet says why. **Recent app entries** is folded.
-- **Results**: each session's **Participant details** are folded under its charts.
+- **Results**: each session's people are folded under its charts (Prompt 34 calls the fold **People**).
 - **People**: Super admin and Admin are on/off switches (turning one off asks first); removing a client role is the round red minus; a person's
   **History of changes** is folded; a breadcrumb (People › name).
 
@@ -68,6 +68,12 @@ Every tab starts the same way: its icon and title, one sentence on what it is fo
   <session> · <n> people". The speaker notes are as they were.
 - **The leader report** takes the Light look: its title band deep green, each activity's band pale green, its charts as the pack's.
 - No file or wall wears the client's colours any more; the client's name and logo stay.
+- **Results' session page** is one list and one session: the page's sessions on the left (client, date, status, and the number of answers once
+  read), the one chosen beside it (above it below 1,100 px). The session shows its head and **Live display**; four figures (joined, answered,
+  answers, finished every activity); one **Downloads** box in three groups, **For leaders** (Leader report (PDF)), **For the room · no names**
+  (Look: Dark | Light, **Download PDF pack**, **Download PowerPoint pack**: the Live display's files) and **Data** (Summary by activity (CSV), All
+  answers (CSV)); **Charts**, open, the confidence check first; **People**, folded, with the QR codes' count; and **Delete session...** at its foot.
+  There is no leader report in PowerPoint: the PowerPoint is the session pack.
 
 ### Question types
 

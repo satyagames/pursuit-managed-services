@@ -270,52 +270,54 @@ test('Guests and QR at 683 px: the steps follow one another', async ({ page }) =
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
-// Step 3, Results: on a laptop the open sessions are on the left, their charts in two columns and in three from 1,600 px, and the sessions not
-// opened are a narrow list on the right (so the page still reads newest first: the newest opens by itself). The cards and their reads are as before: only where they stand changes. Below 1,100 px, one list as before.
+// Step 3, Results (Prompt 34): on a laptop the page's sessions are a narrow list on the left and the session chosen is beside it, its charts in
+// two columns and in three from 1,600 px (the newest is shown by itself). Below 1,100 px the list is above the session. Choosing a session read
+// before reads nothing again.
 const chartColumns = (page: Page) => page.locator('.tally__grid').first().evaluate((grid) => getComputedStyle(grid).gridTemplateColumns.split(' ').length);
 
-test('Results on a laptop: the open session on the left, its charts in 2 columns and 3 from 1,600 px, the other sessions a narrow list on the right', async ({ page }) => {
+test('Results on a laptop: the sessions a narrow list on the left, the one chosen beside it, its charts in 2 columns and 3 from 1,600 px', async ({ page }) => {
   await mkdir(pictures, { recursive: true });
   await ds.activateClient('c-dominos', today);
   for (const size of LAPTOPS) {
     await page.setViewportSize(size);
     await openAdmin(page, local!, 'Results');
     const at = `Results at ${size.width} x ${size.height}`;
-    await expect(page.locator('article.card[data-session]')).toHaveCount(2);
-    await expect(page.locator('article.card[data-shut]')).toHaveCount(1);
-    const list = await page.locator('.results-split__list').boundingBox();
-    const open = await page.locator('.results-split__open').boundingBox();
+    await expect(page.locator('[data-open-session]')).toHaveCount(2);
+    await expect(page.locator('article.card[data-session]'), `${at}: one session shown`).toHaveCount(1);
+    const list = await page.locator('.session-list').boundingBox();
+    const shown = await page.locator('.results-layout__session').boundingBox();
     expect(list, `${at}: the list`).not.toBeNull();
-    expect(list!.x, `${at}: the list beside the open session`).toBeGreaterThanOrEqual(open!.x + open!.width);
-    expect(list!.width, `${at}: the list is narrow`).toBeLessThanOrEqual(open!.width / 2);
-    await page.locator('.results-split__open summary').first().click();
+    expect(shown!.x, `${at}: the session beside the list`).toBeGreaterThanOrEqual(list!.x + list!.width);
+    expect(list!.width, `${at}: the list is narrow`).toBeLessThanOrEqual(shown!.width / 2);
+    await expect(page.locator('details.tally')).toHaveAttribute('open', '');
     await expect(page.locator('.tally__grid').first()).toBeVisible();
     expect(await chartColumns(page), `${at}: the charts' columns`).toBe(size.width >= 1600 ? 3 : 2);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `${at}: no sideways scroll`).toBe(true);
     if (size.width === 1366 || size.width === 1920) await page.screenshot({ path: `${pictures}results-${size.width}x${size.height}.png` });
-    // With every session open there is no list left: the open sessions take the whole width, one under the other.
-    await page.locator('article.card[data-shut]').getByRole('button', { name: 'Open' }).click();
-    await expect(page.locator('article.card[data-shut]')).toHaveCount(0);
-    await expect(page.locator('.results-split--on')).toHaveCount(0);
-    await expect(page.locator('article.card[data-session]')).toHaveCount(2);
+    // The other session, chosen in the list: it takes the place of the first, which is marked no more.
+    const other = page.locator('[data-open-session]').nth(1);
+    await other.click();
+    await expect(other).toHaveAttribute('aria-current', 'true');
+    await expect(page.locator('[aria-current="true"][data-open-session]')).toHaveCount(1);
+    await expect(page.locator(`article.card[data-session="${await other.getAttribute('data-open-session')}"]`)).toBeVisible();
+    await expect(page.locator('article.card[data-session]')).toHaveCount(1);
   }
 });
 
-test('Results at 683 px: one list of sessions, as before', async ({ page }) => {
+test('Results at 683 px: the list of sessions above the session chosen', async ({ page }) => {
   await ds.activateClient('c-dominos', today);
   await page.setViewportSize(ZOOMED);
   await openAdmin(page, local!, 'Results');
-  await expect(page.locator('article.card[data-session]')).toHaveCount(2);
-  // (The columns are there and take no room: each card stands in its place in the one list, newest first.)
-  const tops = await page.locator('article.card[data-session]').evaluateAll((cards) => cards.map((card) => card.getBoundingClientRect()));
-  expect(tops[1].top, 'the second card under the first').toBeGreaterThanOrEqual(tops[0].bottom);
-  expect(tops[1].left, 'one column').toBe(tops[0].left);
+  await expect(page.locator('[data-open-session]')).toHaveCount(2);
+  const list = (await page.locator('.session-list').boundingBox())!;
+  const shown = (await page.locator('.results-layout__session').boundingBox())!;
+  expect(shown.y, 'the session under the list').toBeGreaterThanOrEqual(list.y + list.height);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  // Widening the window past 1,100 px rebuilds no card: the same element is in the two columns.
-  await page.locator('article.card[data-shut]').evaluate((card) => { (card as HTMLElement).dataset.kept = 'yes'; });
+  // Widening the window past 1,100 px rebuilds nothing: the same session element moves beside the list.
+  await page.locator('article.card[data-session]').evaluate((card) => { (card as HTMLElement).dataset.kept = 'yes'; });
   await page.setViewportSize({ width: 1366, height: 650 });
-  await expect(page.locator('article.card[data-shut][data-kept="yes"]')).toHaveCount(1);
-  expect((await page.locator('.results-split__list').boundingBox())!.x).toBeGreaterThan((await page.locator('.results-split__open').boundingBox())!.x);
+  await expect(page.locator('article.card[data-session][data-kept="yes"]')).toHaveCount(1);
+  expect((await page.locator('.results-layout__session').boundingBox())!.x).toBeGreaterThan((await page.locator('.session-list').boundingBox())!.x);
 });
 
 // Step 3, the measures across the tabs: at 1366 x 650 no tab but People (which the owner chose to let scroll, 5 Nov 2026) is taller than one and a

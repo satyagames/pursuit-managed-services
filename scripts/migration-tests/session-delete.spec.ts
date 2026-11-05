@@ -13,7 +13,13 @@ const PIN = '2468';
 const OLD = 'kroger-2026-10-09';
 const LIVE = 'dominos-2026-10-15';
 const card = (page: Page, sessionId: string) => page.locator(`article[data-session="${sessionId}"]`);
-const cardIds = (page: Page) => page.locator('article[data-session]').evaluateAll((cards) => cards.map((element) => element.getAttribute('data-session')));
+/** The sessions of the page, in the list's order (Prompt 34: one list, and the session chosen shown beside it). */
+const cardIds = (page: Page) => page.locator('[data-open-session]').evaluateAll((rows) => rows.map((element) => element.getAttribute('data-open-session')));
+/** Chooses a session in the list and waits for it. */
+async function show(page: Page, sessionId: string) {
+  await page.locator(`[data-open-session="${sessionId}"]`).click();
+  await expect(card(page, sessionId)).toBeVisible();
+}
 /** Every item keyed by a session, list by list. */
 const holding = (fake: Fake, sessionId: string) => Object.fromEntries(SESSION_OWNED.map(({ list, key }) => [list, fake.lists.get(list)!.filter((row) => (key === 'id' ? row.AppId : row.SessionId) === sessionId).length]));
 
@@ -47,14 +53,17 @@ async function openResults(page: Page, fake: Fake) {
 }
 const dialog = (page: Page) => page.getByRole('dialog', { name: DELETE_SESSION.title });
 
-test('Delete session... is on every card; opening the warning writes nothing; Cancel and Escape delete nothing (Phase 16)', async ({ page }) => {
+test('Delete session... is at the foot of every session; opening the warning writes nothing; Cancel and Escape delete nothing (Phase 16, Prompt 34)', async ({ page }) => {
   const { fake } = await site();
   await openResults(page, fake);
-  for (const id of await cardIds(page)) await expect(card(page, id!).getByRole('button', { name: DELETE_SESSION.button })).toBeVisible();
-  // It is in the card's head, after Live display, and not among the export buttons.
-  await expect(card(page, OLD).locator('.card__head button')).toHaveText(['Live display', DELETE_SESSION.button, 'Open']); // (shut: Prompt 26)
-  await card(page, OLD).getByRole('button', { name: 'Open', exact: true }).click();
-  await expect(card(page, OLD).locator('.card__head button')).toHaveText(['Live display', DELETE_SESSION.button]);
+  // Prompt 34: never in the list of sessions; in the session shown, at its foot, not beside Live display and not among the downloads.
+  await expect(page.locator('.session-list').getByRole('button', { name: DELETE_SESSION.button })).toHaveCount(0);
+  for (const id of await cardIds(page)) {
+    await show(page, id!);
+    await expect(card(page, id!).locator('.card__foot').getByRole('button', { name: DELETE_SESSION.button })).toBeVisible();
+  }
+  await show(page, OLD);
+  await expect(card(page, OLD).locator('.card__head button')).toHaveText(['Live display']);
   await expect(card(page, OLD).locator('.report-exports').getByRole('button', { name: DELETE_SESSION.button })).toHaveCount(0);
 
   const writes = fake.writes().length;
@@ -81,7 +90,7 @@ test('Delete session... is on every card; opening the warning writes nothing; Ca
 test('only "Delete permanently" deletes, once even on a double click; only that card goes, the others keep their place and open panels (Phase 16)', async ({ page }) => {
   const { fake } = await site();
   await openResults(page, fake);
-  await card(page, LIVE).locator('summary').click();
+  // (Prompt 34: the charts are open unless folded.)
   await expect(card(page, LIVE).locator('details.tally')).toHaveAttribute('open', '');
   const order = await cardIds(page);
   const others = { live: holding(fake, LIVE), first: holding(fake, 'kroger-2026-10-01') };
@@ -89,6 +98,7 @@ test('only "Delete permanently" deletes, once even on a double click; only that 
   const writesBefore = fake.writes().length;
   const content = ['clients', 'sections', 'questions', 'options', 'adminusers', 'appsettings'].map((list) => JSON.stringify(fake.lists.get(list)));
 
+  await show(page, OLD);
   await card(page, OLD).getByRole('button', { name: DELETE_SESSION.button }).click();
   await dialog(page).getByRole('button', { name: DELETE_SESSION.confirm }).dblclick();
   await expect(page.getByText('Kroger 2026-10-09 deleted')).toBeVisible();
@@ -99,12 +109,13 @@ test('only "Delete permanently" deletes, once even on a double click; only that 
   expect(deletes.every((entry) => SESSION_OWNED.some(({ list }) => list === entry.list)), 'only the lists a session owns were written to').toBe(true);
   expect(deletes.length).toBe(Object.values(owned).reduce((sum, count) => sum + count, 0));
   expect(await cardIds(page)).toEqual(order.filter((id) => id !== OLD));
-  await expect(card(page, LIVE).locator('details.tally')).toHaveAttribute('open', '');
   expect(holding(fake, LIVE)).toEqual(others.live);
   expect(holding(fake, 'kroger-2026-10-01')).toEqual(others.first);
   expect(['clients', 'sections', 'questions', 'options', 'adminusers', 'appsettings'].map((list) => JSON.stringify(fake.lists.get(list)))).toEqual(content);
-  // Focus is on the next card's title.
+  // The session that took its place is shown, and focus is on its title (Prompt 34); the live one's charts are still open.
   await expect(card(page, 'kroger-2026-10-01').locator('[data-card-title]')).toBeFocused();
+  await show(page, LIVE);
+  await expect(card(page, LIVE).locator('details.tally')).toHaveAttribute('open', '');
 });
 
 test('the live session is refused in words, and nothing is deleted (Phase 16)', async ({ page }) => {
@@ -122,6 +133,7 @@ test('the live session is refused in words, and nothing is deleted (Phase 16)', 
 test('an answer that arrives while the warning is open is said, with the new numbers, and the person presses again (Phase 16)', async ({ page }) => {
   const { fake, tracks, questionId } = await site();
   await openResults(page, fake);
+  await show(page, OLD);
   await card(page, OLD).getByRole('button', { name: DELETE_SESSION.button }).click();
   await expect(dialog(page)).toContainText('2 iPads, 2 answers, 1 guest code');
   await onSite(fake, (ds) => ds.saveParticipantResponses({ trackId: tracks[1].id, sessionId: OLD, clientId: 'c-kroger', responses: [{ questionId, answer: 'y', firstAnswer: 'y', attempts: 1, correct: null, answeredAt: '2026-10-09T11:00:00.000Z' }] }));
@@ -137,6 +149,7 @@ test('a refused delete (403) says what is missing in words; the card stays and T
   const { fake } = await site();
   await openResults(page, fake);
   fake.forbid((entry) => entry.list === 'tracks');
+  await show(page, OLD);
   await card(page, OLD).getByRole('button', { name: DELETE_SESSION.button }).click();
   await dialog(page).getByRole('button', { name: DELETE_SESSION.confirm }).click();
   await expect(dialog(page).getByRole('alert')).toContainText(`Your account may not delete items in ${fake.titleOf('tracks')}`);
@@ -153,6 +166,7 @@ test('the warning passes axe, keeps focus inside, and its buttons have names (Ph
   test.skip(test.info().project.name !== 'chromium', 'axe-core reads the DOM, which is the same in every engine');
   const { fake } = await site();
   await openResults(page, fake);
+  await show(page, OLD);
   await card(page, OLD).getByRole('button', { name: DELETE_SESSION.button }).click();
   await expect(dialog(page)).toBeVisible();
   const { findings } = await axeCheck(page, 'Results: the delete warning');

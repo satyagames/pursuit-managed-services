@@ -87,7 +87,8 @@ folded at the foot of their page: press it to read it; it is closed again on you
 Open **Results**, a session, then **Live**. Follow the three steps: check how many have answered (**Refresh** reads again), choose the wall's look
 (**Dark** for a projector, **Light** for a bright room) and press **Show the wall full screen**; for a second screen, **Open the wall in a new tab**.
 The wall never shows a name. For leaders, choose the packs' look under **Download** (Light prints well) and press **Download PDF pack** or
-**Download PowerPoint pack**; **Download CSV** is the table.
+**Download PowerPoint pack**; **Download CSV** is the table. The same files are under **Downloads** on the session's own page in **Results**,
+with the leader report (a PDF; there is no leader report in PowerPoint).
 
 ## If the error stays
 

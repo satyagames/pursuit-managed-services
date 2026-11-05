@@ -269,7 +269,7 @@ test.describe('the admin page', () => {
     }
     await page.route(`**/${FACE_NAME}`, (route) => route.fulfill({ status: 200, contentType: 'image/png', body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64') }));
     await admin(page, fake, 'results');
-    await page.locator('summary', { hasText: 'Live results' }).first().click();
+    // (Prompt 34: the session's charts are open unless folded.)
     const card = page.locator('[data-kind="matrix"]');
     await expect(card).toBeVisible();
     await expect(card).toContainText('2 of 2 guests answered · 2 sub-processes · 7 people in scope');

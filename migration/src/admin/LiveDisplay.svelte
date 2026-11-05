@@ -1,12 +1,11 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
-  import { loadBrand } from '../lib/brand/branding.js';
-  import { downloadCsv, downloadPdf, downloadPptx, liveSections } from '../lib/exports/resultsExport.js';
+  import { downloadCsv, liveSections } from '../lib/exports/resultsExport.js';
+  import { downloadPack } from '../lib/exports/pack-download.js';
   import { APP_NAME } from '../lib/common/app-name.js';
   import { getSessionResults, type SessionResults } from '../lib/admin/adminData.js';
   import { loadLiveStructure, readLive, type LiveRead, type LiveStructure } from '../lib/admin/live-session.js';
-  import { withStoredColours } from '../lib/admin/master-brand.js';
   import { createPageWatcher, type PageWatcher } from '../lib/common/page-watch.js';
   import { adminDelay } from '../lib/common/poll-schedule.js';
   import { heldNameSources } from '../lib/admin/admin-results.js';
@@ -16,7 +15,6 @@
   } from '../lib/admin/live-view.js';
   import { nextFit, scaleOf } from '../lib/results/present-fit.js';
   import { answerCounts, answersFrom, answersOf, chartsOf, namesFor } from '../lib/results/results-chart-model.js';
-  import { RESULTS_PALETTE } from '../lib/results/results-palette-source.js';
   import LiveHead from './LiveHead.svelte';
   import LiveNotReady from './LiveNotReady.svelte';
   import LiveNotices from './LiveNotices.svelte';
@@ -89,7 +87,6 @@
   let watcher: PageWatcher | undefined;
   let active = false;
   let nativeFullscreen = false;
-  let exportLibraryPromise: Promise<void> | null = null;
   // A logo that cannot be loaded leaves no empty chip behind: the client's name is the heading anyway.
   let failedLogo = $state('');
   /** Prompt 34: the wall's look (dark for a projector, light for a bright room) and the packs' (light prints well). In memory for this visit only. */
@@ -405,18 +402,6 @@
 
   // ---- Exports (as the Master screen had them) -------------------------------------------------------------------
 
-  async function loadLibraries() {
-    exportLibraryPromise ??= Promise.all([import('jspdf'), import('pptxgenjs')])
-      .then(([pdfModule, pptModule]) => {
-        const globals = window as unknown as { jspdf?: { jsPDF: unknown }; PptxGenJS?: unknown };
-        globals.jspdf = { jsPDF: pdfModule.jsPDF };
-        globals.PptxGenJS = pptModule.default;
-        Object.assign(globalThis, { CEC_EMBEDDED_EXPORTS: true });
-      })
-      .catch((cause) => { exportLibraryPromise = null; throw cause; });
-    await exportLibraryPromise;
-  }
-
   async function exportCurrent(kind: 'csv' | 'pdf' | 'pptx') {
     const id = structure?.session.id;
     if (!id || exporting) return;
@@ -430,16 +415,8 @@
       let fileName: string;
       // The summary by activity (Phase 13): the client's name is the one this display already holds, so the file costs no read of its own.
       if (kind === 'csv') fileName = downloadCsv(current, { name: (typeof structure?.client?.name === 'string' ? structure.client.name.trim() : '') });
-      else {
-        const [loaded] = await Promise.all([
-          loadBrand({ state: { clientId: current.session.clientId }, sessionId: current.session.id }),
-          loadLibraries(),
-        ]);
-        const exportBrand = { ...(await withStoredColours(loaded)), appName: APP_NAME, palette: RESULTS_PALETTE, look: fileLook };
-        if (!active) return;
-        if (exportBrand.clientId !== current.session.clientId) throw new Error('Could not load the session client branding. Please try again.');
-        fileName = kind === 'pdf' ? await downloadPdf(current, exportBrand) : await downloadPptx(current, exportBrand);
-      }
+      // The pack (lib/exports/pack-download.js, the maker Results' Downloads uses too): the client's brand, the libraries, the look chosen.
+      else fileName = await downloadPack(kind, current, fileLook);
       exportMessage = `Saved ${fileName}`;
       onToast(`Saved ${fileName}`, 'success');
     } catch (cause) {

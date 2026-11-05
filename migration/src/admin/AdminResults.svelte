@@ -5,14 +5,14 @@
   import Icon from './Icon.svelte';
   import Fold from './Fold.svelte';
   /** (Prompt 33) A session's status in words, not the stored word ("in-progress"). */
-  const sessionWord = (status: string | null | undefined) => ({ 'in-progress': 'In progress', completed: 'Ended', planned: 'Planned', scheduled: 'Planned' } as Record<string, string>)[String(status)] ?? (status ? String(status) : 'Status unknown');
+  const sessionWord = (status: string | null | undefined) => ({ 'in-progress': 'In progress', 'not-started': 'Not started', completed: 'Ended', planned: 'Planned', scheduled: 'Planned' } as Record<string, string>)[String(status)] ?? (status ? String(status) : 'Status unknown');
   import { restartClientTrack, getSessionResults, removeEmptyVisit } from '../lib/admin/adminData.js';
   import type { SessionResults, SessionTrack, SessionSection } from '../lib/admin/adminData.js';
   import { loadLiveStructure, readLive, type LiveStructure } from '../lib/admin/live-session.js';
   import { namesByVisit, unreadableNotice } from '../lib/results/unreadable.js';
   import { createPageWatcher, type PageWatcher } from '../lib/common/page-watch.js';
   import { adminDelay } from '../lib/common/poll-schedule.js';
-  import { REMOVE_VISIT_CONFIRM, canRemoveVisit, forgetNameSources, holdNameSources, keepShownOrder, newestFirst, readNameSources, resultRows, rowsInOrder, rowsToLookForAgain, sessionsNeedingNames, type NameSources } from '../lib/admin/admin-results.js';
+  import { REMOVE_VISIT_CONFIRM, canRemoveVisit, forgetNameSources, glanceOf, holdNameSources, keepShownOrder, newestFirst, readNameSources, resultRows, rowsInOrder, rowsToLookForAgain, sessionsNeedingNames, type NameSources } from '../lib/admin/admin-results.js';
   import { answerCounts, answersFrom, answersOf, chartsOf, namesFor, picturesFor } from '../lib/results/results-chart-model.js';
   import GuestAvatar from '../components/GuestAvatar.svelte';
   import { DELETE_SESSION, cardCounts, deleteSessionData, deleteSessionWarning, deletedText, progressText, refusedText, stoppedText } from '../lib/admin/session-delete.js';
@@ -53,18 +53,18 @@
   let page = $state(pageOfHash(window.location.hash));
   const where = $derived(pagerState({ total: sessionRows.length, pageSize: PER_PAGE.sessions, page }));
   const visible = $derived(pageRows(sessionRows, where));
-  // Prompt 32: on a laptop the open sessions are on the left and the others a narrow list on the right, so the page still reads newest first (the
-  // newest opens by itself); below 1,100 px, one list as before.
+  // Prompt 34: the page's sessions are one list on the left, and the session chosen is shown on the right, one at a time (the newest opens by
+  // itself). A session read once keeps its card in memory, so choosing it again reads nothing.
   const opened = $derived(visible.filter((row) => cards.some((card) => card.results.session.id === row.id)));
-  const shut = $derived(visible.filter((row) => !opened.includes(row)));
-  // (The two columns are always there, so turning an iPad or resizing a window rebuilds no card; below 1,100 px they are display: contents, and
-  // each card's order puts it back in its place in the one list.)
-  const split = $derived(opened.length > 0 && shut.length > 0);
-  const placeOf = (id: string) => visible.findIndex((row) => row.id === id);
+  /** The session the person chose in the list (null: the first one read on this page). */
+  let chosenId = $state<string | null>(null);
+  const shownId = $derived(chosenId && visible.some((row) => row.id === chosenId) ? chosenId : (opened[0]?.id ?? null));
+  const shownCard = $derived(shownId ? cards.find((card) => card.results.session.id === shownId) ?? null : null);
   let loading = $state(true);
   let error = $state('');
   let updated = $state('');
-  let openResults = $state<string[]>([]);
+  /** The sessions whose charts the person folded (Prompt 34: the charts are open, unless folded). */
+  let shutResults = $state<string[]>([]);
   /** Each chart's open answer (its names) or chosen word, by session and question: a refresh keeps them. In memory only. */
   let chosen = $state<Record<string, string | null>>({});
   let restartTrack = $state<TrackRow | null>(null);
@@ -137,7 +137,7 @@
     page = next;
     try { window.history.replaceState(window.history.state, '', hashWithPage(window.location.hash, next)); } catch { /* the page still changes */ }
     const first = pageRows(sessionRows, pagerState({ total: sessionRows.length, pageSize: PER_PAGE.sessions, page: next }))[0];
-    if (first) void openCard(first.id);
+    if (first) void choose(first.id);
   }
 
   function statusText(status: string) {
@@ -148,8 +148,16 @@
     return `pill pill--${status}`;
   }
 
-  function toggleResults(sessionId: string) {
-    openResults = openResults.includes(sessionId) ? openResults.filter((id) => id !== sessionId) : [...openResults, sessionId];
+  /** A session chosen in the list: shown at once if it was read before, otherwise read first (the page says so meanwhile). */
+  async function choose(id: string) {
+    chosenId = id;
+    await openCard(id);
+  }
+
+  /** "60 answers", for a session's line in the list (once it has been read). */
+  function answersOnly(card: SessionCard) {
+    const { answers } = answerCounts(card.results.sections.flatMap((section) => section.questions));
+    return `${answers} ${answers === 1 ? 'answer' : 'answers'}`;
   }
 
   function counts(codes: string[]) {
@@ -226,7 +234,7 @@
   function forgetSession(id: string) {
     cards = cards.filter((card) => card.results.session.id !== id);
     sessionRows = sessionRows.filter((session) => session.id !== id);
-    openResults = openResults.filter((open) => open !== id);
+    shutResults = shutResults.filter((shut) => shut !== id);
     chosen = Object.fromEntries(Object.entries(chosen).filter(([key]) => !key.startsWith(`${id}/`)));
     sourcesHeld = new Map([...sourcesHeld].filter(([sessionId]) => sessionId !== id));
     forgetNameSources(id);
@@ -271,10 +279,12 @@
       deleting = null;
       onToast(deletedText(label), 'success');
       await tick();
-      // (The next card by its session, not its place in the page: on a laptop the open cards and the others are in two columns.)
+      // (Prompt 34: the session that took its place in the list is shown, and its title takes the focus.)
       const nextRow = visible[Math.min(at, visible.length - 1)];
+      if (nextRow) await choose(nextRow.id);
+      await tick();
       const next = nextRow ? document.querySelector<HTMLElement>(`article[data-session="${CSS.escape(nextRow.id)}"] [data-card-title]`) ?? undefined : undefined;
-      focusHeading(cards.length ? next : pageHeading);
+      focusHeading(next ?? pageHeading);
     }
     // What is there now, after a delete that stopped: the card stays, with what is left.
     if (refresh && active) await refreshNow().catch(() => {});
@@ -378,13 +388,6 @@
     }
   }
 
-  /** Delete session... on a card not yet opened: the warning's numbers need its session, so it is read first. */
-  async function deleteShut(id: string) {
-    await openCard(id);
-    const card = cards.find((each) => each.results.session.id === id);
-    if (card) openDelete(card);
-  }
-
   /** Everything, from the start: the list of sessions, and in full the cards already open and the first card of the page (and the live session, when it is on the page). */
   async function refreshNow() {
     const version = ++requestVersion;
@@ -466,11 +469,26 @@
   {:else if error}<p class="error" role="alert">{error}</p>
   {:else if sessionRows.length === 0}<p class="muted">No sessions yet.</p>
   {:else}
-    <div class="results-split" class:results-split--on={split}>
-      <div class="results-split__open">{#each opened as row (row.id)}{@render sessionCard(row)}{/each}</div>
-      <div class="results-split__list">{#each shut as row (row.id)}{@render sessionCard(row)}{/each}</div>
+    <div class="results-layout">
+      <nav class="session-list" aria-label="Sessions">
+        <ul class="session-list__items">
+          {#each visible as row (row.id)}
+            {@const held = cards.find((card) => card.results.session.id === row.id)}
+            <li>
+              <button class="session-list__item" type="button" data-open-session={row.id} aria-current={row.id === shownId ? 'true' : undefined} onclick={() => void choose(row.id)}>
+                <span class="session-list__name">{namesHeld.get(row.clientId) ?? row.clientId}</span>
+                <span class="session-list__meta">{[row.date ?? '', sessionWord(row.status), held ? answersOnly(held) : ''].filter(Boolean).join(' · ')}</span>
+              </button>
+            </li>
+          {/each}
+        </ul>
+        <Pager state={where} label="Pages of sessions" heading={pageHeading} onPage={goToPage} />
+      </nav>
+      <div class="results-layout__session">
+        {#if shownCard}{@render sessionCard(shownCard)}
+        {:else if shownId || opening.length}<p class="muted" role="status">Loading this session...</p>{/if}
+      </div>
     </div>
-    <Pager state={where} label="Pages of sessions" heading={pageHeading} onPage={goToPage} />
   {/if}
 
   {#if deleting}
@@ -486,36 +504,26 @@
 
 </section>
 
-<!-- One session's card: shut (its name, date and Open) or open (its exports, charts and iPads). -->
-{#snippet sessionCard(row: Session)}
-      {@const card = cards.find((each) => each.results.session.id === row.id)}
-      {#if !card}
-      <article class="card" data-session={row.id} data-shut style:order={placeOf(row.id)}>
-        <header class="card__head">
-          <strong data-card-title tabindex="-1">{namesHeld.get(row.clientId) ?? row.clientId}</strong><span class="muted">{row.date ?? ''}</span><span class="tag">{sessionWord(row.status)}</span><span class="card__spacer"></span>
-          {#if may('results.live', row)}<button class="btn btn--small" type="button" onclick={() => onLiveDisplay(row.id)}>Live display</button>{/if}
-          {#if may('results.delete', row)}<button class="btn btn--small btn--danger" type="button" data-delete-session onclick={() => void deleteShut(row.id)} disabled={busy || opening.includes(row.id)}>{DELETE_SESSION.button}</button>{/if}
-          <button class="btn btn--small" type="button" data-open-session onclick={() => void openCard(row.id)} disabled={opening.includes(row.id)}>Open</button>
-        </header>
-        {#if opening.includes(row.id)}<p class="muted" role="status">Loading this session...</p>{/if}
-      </article>
-      {:else}
+<!-- The session chosen (Prompt 34): its head and Live display; four figures; Downloads; the charts, open; the people, folded; Delete at the foot. -->
+{#snippet sessionCard(card: SessionCard)}
       {@const session = card.results.session}
-      <article class="card" data-session={session.id} style:order={placeOf(session.id)} aria-busy={deleting?.working && deleting.card.results.session.id === session.id}>
+      {@const answered = answerCounts(card.results.sections.flatMap((section) => section.questions))}
+      <article class="card" data-session={session.id} aria-busy={deleting?.working && deleting.card.results.session.id === session.id}>
         <header class="card__head">
-          <strong data-card-title tabindex="-1">{card.owner}</strong><span class="muted">{session.date ?? ''}</span><span class="tag">{sessionWord(session.status)}</span><span class="card__spacer"></span>
-          {#if may('results.live', session)}<button class="btn btn--small" type="button" onclick={() => onLiveDisplay(session.id)}>Live display</button>{/if}
-          <!-- (Phase 16: after Live display, never beside the export buttons. It opens a warning; only its "Delete permanently" deletes.) -->
-          {#if may('results.delete', session)}<button class="btn btn--small btn--danger" type="button" data-delete-session onclick={() => openDelete(card)} disabled={busy}>{DELETE_SESSION.button}</button>{/if}
+          <strong class="session__title" data-card-title tabindex="-1">{card.owner}</strong><span class="muted">{session.date ?? ''}</span><span class="tag">{sessionWord(session.status)}</span><span class="card__spacer"></span>
+          {#if may('results.live', session)}<button class="btn btn--small session__live" type="button" onclick={() => onLiveDisplay(session.id)}><Icon name="screen" size={18} />Live display</button>{/if}
         </header>
-        {#if may('results.export', session)}<ReportExports sessionId={session.id} clientName={card.clientName} {hideNames} {onToast} />{/if}
+        <ul class="glance" aria-label="At a glance">
+          {#each glanceOf(card.tracks, answered) as each (each.key)}<li class="glance__item" data-glance={each.key}><span class="glance__figure">{each.figure}</span><span class="glance__label">{each.label}</span></li>{/each}
+        </ul>
         {#if card.unreadable}<p class="notice card__unreadable" role="status" data-testid="unreadable-notice"><strong>{card.unreadable}</strong></p>{/if}
-        {#if card.results.confidenceCheck}<ConfidenceShift check={card.results.confidenceCheck} />{/if}
-        <!-- (Phase 12, F-08: the charts first; with sixty people the list ran 5,000 px above them.) -->
-        <details class="tally" open={openResults.includes(session.id)} ontoggle={(event) => { const isOpen = (event.currentTarget as HTMLDetailsElement).open; if (isOpen) void readRosterForFaces(session.id); openResults = isOpen ? [...new Set([...openResults, session.id])] : openResults.filter((id) => id !== session.id); }}>
-          <summary>Live results · {answersFrom(answerCounts(card.results.sections.flatMap((section) => section.questions)))}</summary>
-          {#if openResults.includes(session.id)}
+        {#if may('results.export', session)}<ReportExports sessionId={session.id} clientName={card.clientName} {hideNames} {onToast} />{/if}
+        <!-- (Phase 12, F-08: the charts before the people. Prompt 34: open unless folded, the confidence check first.) -->
+        <details class="tally" open={!shutResults.includes(session.id)} ontoggle={(event) => { const isOpen = (event.currentTarget as HTMLDetailsElement).open; if (isOpen) void readRosterForFaces(session.id); shutResults = isOpen ? shutResults.filter((id) => id !== session.id) : [...new Set([...shutResults, session.id])]; }}>
+          <summary>Charts · {answersFrom(answered)}</summary>
+          {#if !shutResults.includes(session.id)}
             <div class="tally__charts">
+              {#if card.results.confidenceCheck}<ConfidenceShift check={card.results.confidenceCheck} />{/if}
               {#each card.charts as section (section.id)}
                 <h3 class="tally__section">{section.title}</h3>
                 <div class="tally__grid">
@@ -527,8 +535,8 @@
             </div>
           {/if}
         </details>
-        <!-- (Prompt 33: the people who took part are folded under the charts, closed on every visit; the rows are the card's, read as before.) -->
-        <Fold title="Participant details" icon="people" summary={card.tracks.length === 1 ? '1 person' : `${card.tracks.length} people`} testid="participant-details">
+        <!-- (Prompt 33: the people who took part are folded under the charts, closed on every visit; Prompt 34: the QR codes' count beside them.) -->
+        <Fold title="People" icon="people" summary={[card.tracks.length === 1 ? '1 person' : `${card.tracks.length} people`, card.codes.length ? `QR codes: ${counts(card.codes)}` : ''].filter(Boolean).join(' · ')} testid="participant-details">
           {#if card.tracks.length === 0}<p class="card__note muted">No one has joined yet: people appear here as their iPads open the session.</p>
           {:else}
             <ul class="rows rows--flat">
@@ -546,9 +554,9 @@
             </ul>
           {/if}
         </Fold>
-        {#if card.codes.length}<p class="card__note muted small">QR codes: {counts(card.codes)}</p>{/if}
+        <!-- (Phase 16: Delete opens a warning; only its "Delete permanently" deletes. Prompt 34: at the foot of the session, away from Live display and the files.) -->
+        {#if may('results.delete', session)}<footer class="card__foot"><button class="btn btn--small btn--danger" type="button" data-delete-session onclick={() => openDelete(card)} disabled={busy}>{DELETE_SESSION.button}</button></footer>{/if}
       </article>
-      {/if}
 {/snippet}
 
 <!-- The Restart form, under the row of the iPad it restarts (Phase 16). Escape closes it, as Cancel does. -->
@@ -618,34 +626,130 @@
     gap: 1rem;
   }
 
-  /* On a laptop (Prompt 32): the open sessions on the left, the others a narrow list on the right; the charts in two columns, three from 1,600 px. */
-  .results-split {
-    display: flex;
-    flex-direction: column;
+  /* Prompt 34: the sessions of the page one list, and the session chosen beside it on a laptop (above it, narrower than 1,100 px). */
+  .results-layout {
+    display: grid;
+    gap: 1rem;
+    align-items: start;
   }
 
-  .results-split__list,
-  .results-split__open {
-    display: contents;
+  .session-list {
+    display: grid;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+
+  .session-list__items {
+    display: grid;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .session-list__item {
+    display: grid;
+    gap: 0.15rem;
+    width: 100%;
+    min-height: 44px;
+    padding: 0.65rem 0.9rem;
+    border: 1px solid var(--adm-line);
+    border-left: 4px solid transparent;
+    border-radius: 0;
+    background: var(--adm-card);
+    color: var(--adm-ink);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .session-list__item:hover {
+    background: var(--adm-wash);
+  }
+
+  .session-list__item[aria-current='true'] {
+    border-left-color: var(--adm-green);
+    background: var(--adm-green-wash);
+  }
+
+  .session-list__name {
+    font-weight: 600;
+  }
+
+  .session-list__meta {
+    color: var(--adm-muted);
+    font-size: 1rem;
+  }
+
+  .results-layout__session {
+    min-width: 0;
+  }
+
+  .results-layout__session :global(.card) {
+    margin: 0;
+  }
+
+  .results-layout__session > :global(article) {
+    display: grid;
+    gap: 1rem;
+    padding-bottom: 1rem;
+  }
+
+  .results-layout__session > :global(article > :not(.card__head)) {
+    margin-inline: 1rem;
+  }
+
+  .session__title {
+    font-size: 1.25rem;
+  }
+
+  .session__live {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  /* The four figures: joined, answered, answers, finished every activity. */
+  .glance {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .glance__item {
+    display: grid;
+    gap: 0.1rem;
+    padding: 0.75rem 1rem;
+    border-left: 4px solid var(--adm-lime);
+    background: var(--adm-wash);
+  }
+
+  .glance__figure {
+    color: var(--adm-ink);
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .glance__label {
+    color: var(--adm-muted);
+    font-size: 1rem;
+  }
+
+  .card__foot {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--adm-line);
   }
 
   @media (min-width: 1100px) {
-    .results-split--on {
-      display: grid;
-      grid-template-columns: minmax(0, 3fr) minmax(16rem, 1fr);
-      gap: 1rem;
-      align-items: start;
-    }
-
-    .results-split--on .results-split__list,
-    .results-split--on .results-split__open {
-      display: grid;
-      gap: 1rem;
-      min-width: 0;
-    }
-
-    .results-split--on :global(.card) {
-      margin: 0;
+    .results-layout {
+      grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr);
     }
   }
 

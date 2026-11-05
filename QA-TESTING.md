@@ -41,6 +41,7 @@
 20. Items **330 to 339** (Prompt 32: the admin page on a real laptop at 100 and 125 percent, the projector, your role beside your name for each role, the welcome strip, each tab's columns). At the end of this file.
 21. Items **340 to 349** (Prompt 33: each tab said in your own words, Guests and QR's steps, the three folds, the switches, the last Super admin, the named forms, Content's two parts, the print sheet and an iPad unchanged). At the end of this file.
 22. Items **350 to 359** (Prompt 34: the wall from the back row, Dark and Light, the packs in PowerPoint with and without Open Sans, a black-and-white print, a screen reader, held names and no data, quotes never highlighted). At the end of this file.
+23. Items **360 to 364** (Prompt 34, the session page on Results: the list and one session, the four figures, Downloads with the packs, Delete at the foot, a Leadership role). At the end of this file.
 16. Item **293** (Prompt 25: the line about SharePoint access in Give access, Add user and No access; the document ONBOARDING.md). Below item 292.
 17. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
    160, 161, 164, 165, 166, 167, 168, 169, 170.
@@ -1868,3 +1869,11 @@ items 15, 26 to 28, 35, 40 to 44, 46 and 53 to 56 above, is `DEVICE-TEST-SHEET.m
 357. **Quotes never highlighted.** *(Still to see.)* Find a written answer in the wall, the pack and the leader report. **Expect** its words exactly as written: never bold, recoloured or underlined; only the figures and the measure's name in a headline are.
 358. **No client colour.** *(Still to see.)* Download the packs and the leader report for a client with a strong brand colour. **Expect** the client's name and logo, and none of its colour.
 359. **The print sheet and the participant page.** *(Still to see.)* Print a QR sheet and run a session on an iPad. **Expect** both exactly as before (`npm run test:bundle`: the same bytes).
+
+### Prompt 34: Results' session page
+
+360. **The list and one session.** *(Still to see.)* Open **Results** on the real site on a laptop with at least three sessions. **Expect** the sessions as a list on the left, the newest shown beside it with its figures, Downloads and charts; choosing another shows it at once the second time; the chosen one marked in the list; no sideways scroll at 1366 and at 125 percent.
+361. **The four figures.** *(Still to see.)* For a session you ran, compare joined, answered, answers and "finished every activity" with the leader report's At a glance. **Expect** the same numbers.
+362. **Downloads.** *(Still to see.)* From the session's Downloads, download the leader report, both packs in Light and in Dark, and both CSVs. **Expect** each file as the Live display and the leader report make it, the packs with no names, and the PowerPoint opening in PowerPoint.
+363. **Delete at the foot.** *(Still to see.)* **Expect** no Delete in the list or beside Live display; **Delete session...** at the foot of the session opens the same warning, and after a delete the next session is shown with the focus on its name.
+364. **A Leadership role.** *(Still to see.)* Sign in as Leadership. **Expect** the list, the figures, the charts and Downloads; no Delete and no Restart.

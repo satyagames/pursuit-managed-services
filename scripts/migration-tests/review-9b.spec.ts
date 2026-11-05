@@ -79,7 +79,7 @@ test('Results, the Live display, the exports and the leader report show the rest
   // Results: the notice is beside the export buttons, in bold; the damaged visit says so instead of "Not started"; the others are counted.
   await expect(here.getByTestId('unreadable-notice')).toHaveText(NOTICE);
   await expect(here.getByTestId('unreadable-notice').locator('strong')).toHaveCount(1);
-  await here.getByRole('button', { name: /^Participant details/ }).click(); // (Prompt 33: the participants are folded under the charts.)
+  await here.getByRole('button', { name: /^People/ }).click(); // (Prompt 33: the participants are folded under the charts.)
   const row = here.locator('.row').filter({ hasText: 'Ada Lovelace' });
   await expect(row).toContainText('Answers unreadable');
   await expect(row).not.toContainText('Not started');
@@ -166,7 +166,7 @@ test('Results: only a visit with no answers has Remove; it asks first, removes t
   const here = card(page, session.id);
   await expect(here.locator('.row')).toHaveCount(3);
   // The two empty visits are "not started" and have Remove; the one with an answer does not.
-  await here.getByRole('button', { name: /^Participant details/ }).click(); // (Prompt 33: the participants are folded under the charts.)
+  await here.getByRole('button', { name: /^People/ }).click(); // (Prompt 33: the participants are folded under the charts.)
   await expect(here.getByRole('button', { name: 'Remove...' })).toHaveCount(2);
   await expect(here.locator('.row').filter({ hasText: 'In progress' }).getByRole('button', { name: 'Remove...' })).toHaveCount(0);
   // Cancel leaves everything as it was.
@@ -195,7 +195,7 @@ test('Results: an answer that arrived after the screen was drawn stops the remov
   await openAdmin(page, fake, '#results');
   const here = card(page, session.id);
   const one = here.locator('.row').filter({ hasText: 'Empty One' });
-  await here.getByRole('button', { name: /^Participant details/ }).click(); // (Prompt 33: the participants are folded under the charts.)
+  await here.getByRole('button', { name: /^People/ }).click(); // (Prompt 33: the participants are folded under the charts.)
   await expect(one.getByRole('button', { name: 'Remove...' })).toBeVisible();
   // The iPad answers a moment after Results showed it as "not started", before Remove is pressed.
   await onSite(fake, (ds) => ds.saveParticipantResponses({ trackId: tracks[0].id, sessionId: session.id, clientId: 'c-kroger', responses: [{ questionId: 'q-trivia-1', answer: 'o-trivia-1-a', firstAnswer: 'o-trivia-1-a', attempts: 1, correct: null, answeredAt: '2026-10-11T12:01:00.000Z' }] }));
@@ -214,7 +214,7 @@ test('Results: an ended session has no Remove at all, and Reopen brings it back 
   await onSite(fake, (ds) => ds.endSession(session.id));
   await openAdmin(page, fake, '#results');
   await expect(card(page, session.id).locator('.row')).toHaveCount(3);
-  await card(page, session.id).getByRole('button', { name: /^Participant details/ }).click(); // (Prompt 33: the participants are folded under the charts.)
+  await card(page, session.id).getByRole('button', { name: /^People/ }).click(); // (Prompt 33: the participants are folded under the charts.)
   await expect(card(page, session.id).locator('.row').first()).toBeVisible();
   await expect(card(page, session.id).getByRole('button', { name: 'Remove...' })).toHaveCount(0);
   await onSite(fake, (ds) => ds.reopenSession(session.id));
@@ -425,7 +425,7 @@ test('axe finds nothing on the new states: the notices, the Remove buttons, the 
   const visits = await visitsSite();
   const removable = await fresh();
   await openAdmin(removable, visits.fake, '#results');
-  await card(removable, visits.session.id).getByRole('button', { name: /^Participant details/ }).click(); // (Prompt 33: the participants are folded under the charts.)
+  await card(removable, visits.session.id).getByRole('button', { name: /^People/ }).click(); // (Prompt 33: the participants are folded under the charts.)
   await expect(card(removable, visits.session.id).getByRole('button', { name: 'Remove...' }).first()).toBeVisible();
   await look(removable, 'Results with Remove buttons');
 

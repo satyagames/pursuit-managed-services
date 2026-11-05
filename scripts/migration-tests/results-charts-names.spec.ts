@@ -174,7 +174,7 @@ test('Results: each session card\'s live results draw the same charts and open t
   await openAdmin(page, local, 'Results');
   const sessionCard = page.locator(`article[data-session="${session.id}"]`);
   await expect(sessionCard).toContainText('Søren Kjær');
-  await sessionCard.locator('summary').click();
+  await expect(sessionCard.locator('details.tally')).toHaveAttribute('open', ''); // (Prompt 34: the charts are open unless folded.)
   const vine = sessionCard.locator('.result-card[data-question="v1"] [data-mark="v1b"]');
   await vine.click();
   await expect(sessionCard.getByTestId('names-panel').getByRole('heading')).toHaveText(`Who picked: ${VINE} (3 people)`);
