@@ -196,3 +196,31 @@ test('Clients at 683 px: a client\'s sessions and team replace the list, as befo
   await page.getByRole('button', { name: 'Back to clients' }).click();
   await expect(page.getByRole('button', { name: 'Sessions and team: Kroger' })).toBeFocused();
 });
+
+// Step 3, Content: the activities on the left and the chosen activity's questions on the right (from 960 px, since Phase 16); Brand's controls on the
+// left and its preview on the right, the preview held under the bar and the client strip as the controls scroll. Already so before Prompt 32: this
+// pins it at the laptop sizes, now that the page is the whole width.
+test('Content on a laptop: activities beside their questions, and Brand\'s controls beside the preview, which stays in view', async ({ page }) => {
+  await mkdir(pictures, { recursive: true });
+  for (const size of LAPTOPS) {
+    await page.setViewportSize(size);
+    await openAdmin(page, local!);
+    await openTab(page, 'Content');
+    const at = `Content at ${size.width} x ${size.height}`;
+    const activities = await page.locator('.content-activities').boundingBox();
+    const questions = await page.locator('.content-detail').boundingBox();
+    expect(questions!.x, `${at}: the questions beside the activities`).toBeGreaterThanOrEqual(activities!.x + activities!.width);
+    await page.getByRole('tab', { name: /^Brand/ }).click();
+    const controls = await page.locator('.brand__controls').boundingBox();
+    const preview = page.locator('.brand__preview');
+    expect((await preview.boundingBox())!.x, `${at}: the preview beside the controls`).toBeGreaterThanOrEqual(controls!.x + controls!.width);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `${at}: no sideways scroll`).toBe(true);
+    if (size.width === 1366 || size.width === 1920) await page.screenshot({ path: `${pictures}content-brand-${size.width}x${size.height}.png` });
+    // (Part of the way down the controls: the preview is held until the controls end, and an iPhone's preview is taller than a 650 px window.)
+    await page.evaluate(() => window.scrollTo(0, 400));
+    const strip = await page.locator('.content-strip').boundingBox(); // (sticky alone below 700 px high, inside the sticky spine above)
+    const held = await preview.boundingBox();
+    expect(held!.y, `${at}: the preview under the bar and the client strip`).toBeGreaterThanOrEqual(strip!.y + strip!.height - 1);
+    expect(held!.y, `${at}: the preview stays in view`).toBeLessThan(size.height);
+  }
+});
