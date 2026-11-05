@@ -114,12 +114,152 @@ test.describe('the Art of Possibility, one calm screen (Prompt 35)', () => {
     });
   }
 
+  test('press and hold opens the choices and never also rates; the keys; Escape; Undo (laptop)', async ({ page }) => {
+    const { fake, token } = await site();
+    await open(page, fake, token, SIZES.laptop);
+    await expect(page.getByText('Tap a box to rate it. Press and hold for choices.')).toBeVisible();
+    await expect(page.getByTestId('matrix-teach')).toHaveText('Tap to rate. Press and hold for choices.');
+    const gl = box(page, 'Corp accounting – GL', 'Strategic value');
+    const menu = page.getByRole('menu');
+
+    // Hold: the ring fills, the choices open, and letting go does not also rate. A frame strip of the hold is kept for the report.
+    const at = (await gl.boundingBox())!;
+    const clip = { x: at.x - 24, y: at.y - 24, width: at.width + 48, height: at.height + 140 };
+    await page.mouse.move(at.x + at.width / 2, at.y + at.height / 2);
+    await page.mouse.down();
+    for (const ms of [0, 200, 400]) {
+      await page.screenshot({ path: `${shots}hold-${String(ms).padStart(3, '0')}ms.png`, clip });
+      await page.waitForTimeout(200);
+    }
+    await expect(menu).toBeVisible();
+    await page.screenshot({ path: `${shots}hold-open.png`, clip });
+    await page.mouse.up();
+    await expect(menu).toBeVisible();
+    await expect(gl).toHaveAttribute('data-level', '0');
+    await expect(page.getByTestId('matrix-teach')).toHaveCount(0);
+    await expect(menu.getByRole('menuitemradio')).toHaveText(['L Low', 'M Medium', 'H High', 'Clear']);
+    await expect(menu.getByRole('menuitemradio', { name: 'Low' })).toBeFocused();
+    for (const item of await menu.getByRole('menuitemradio').all()) expect((await item.boundingBox())!.height).toBeGreaterThanOrEqual(48);
+    await axeOn(page);
+    await page.screenshot({ path: `${shots}laptop-menu-open.png`, fullPage: true });
+    await menu.getByRole('menuitemradio', { name: 'Medium' }).click();
+    await expect(menu).toHaveCount(0);
+    await expect(gl).toHaveAttribute('data-level', '2');
+    await expect(gl).toBeFocused();
+
+    // A short press still rates the next level.
+    await gl.click();
+    await expect(gl).toHaveAttribute('data-level', '3');
+
+    // Escape closes the choices, changes nothing, and puts the keyboard back on the box.
+    await page.mouse.move(at.x + at.width / 2, at.y + at.height / 2);
+    await page.mouse.down();
+    await expect(menu).toBeVisible();
+    await page.mouse.up();
+    await expect(menu.getByRole('menuitemradio', { name: 'High' })).toHaveAttribute('aria-checked', 'true');
+    await page.keyboard.press('Escape');
+    await expect(menu).toHaveCount(0);
+    await expect(gl).toBeFocused();
+    await expect(gl).toHaveAttribute('data-level', '3');
+
+    // The keyboard's equal: Enter opens the choices on the box's level; arrows and Enter pick; a cleared box offers Undo.
+    await page.keyboard.press('Enter');
+    await expect(menu.getByRole('menuitemradio', { name: 'High' })).toBeFocused();
+    await page.keyboard.press('ArrowDown');
+    await expect(menu.getByRole('menuitemradio', { name: 'Clear' })).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(gl).toHaveAttribute('data-level', '0');
+    await expect(gl).toBeFocused();
+    await expect(page.getByTestId('matrix-undo')).toContainText('Cleared.');
+    await page.getByRole('button', { name: 'Undo' }).click();
+    await expect(gl).toHaveAttribute('data-level', '3');
+    await expect(page.getByTestId('matrix-undo')).toHaveCount(0);
+
+    // The menu key (Shift+F10) opens it too, and Tab leaves it: it is not a trap.
+    await gl.focus();
+    await page.keyboard.press('Shift+F10');
+    await expect(menu).toBeVisible();
+    await page.keyboard.press('Tab');
+    await expect(menu).toHaveCount(0);
+
+    // L, M, H set; Delete clears; Space takes the next level.
+    await gl.focus();
+    for (const [key, level] of [['l', '1'], ['m', '2'], ['h', '3'], ['Delete', '0'], ['Space', '1']]) {
+      await page.keyboard.press(key);
+      await expect(gl).toHaveAttribute('data-level', level);
+    }
+
+    // On the last row the choices open above the box when there is no room below.
+    const last = box(page, 'National admin', 'Outsourcing suitability');
+    await last.scrollIntoViewIfNeeded();
+    await last.focus();
+    await page.keyboard.press('Enter');
+    const lastAt = (await last.boundingBox())!;
+    const menuAt = (await menu.boundingBox())!;
+    if (lastAt.y + lastAt.height + menuAt.height > SIZES.laptop.height) expect(menuAt.y + menuAt.height).toBeLessThanOrEqual(lastAt.y + 1);
+    expect(menuAt.x + menuAt.width).toBeLessThanOrEqual(SIZES.laptop.width);
+    await page.keyboard.press('Escape');
+
+    // Clear all asks, then offers Undo for 8 seconds, and Undo puts every rating back.
+    await page.keyboard.press('h');
+    await expect(page.getByTestId('matrix-count')).toHaveText('2 of 65 rated');
+    await page.getByRole('button', { name: 'More choices' }).click();
+    await page.getByRole('button', { name: 'Clear all' }).click();
+    await page.getByRole('button', { name: 'Yes, clear all' }).click();
+    await expect(page.getByTestId('matrix-count')).toHaveText('0 of 65 rated');
+    await expect(page.getByTestId('matrix-undo')).toContainText('Cleared.');
+    await page.getByRole('button', { name: 'Undo' }).click();
+    await expect(page.getByTestId('matrix-count')).toHaveText('2 of 65 rated');
+    await expect(gl).toHaveAttribute('data-level', '1');
+    await page.getByRole('button', { name: 'More choices' }).click();
+    await page.getByRole('button', { name: 'Clear all' }).click();
+    await page.getByRole('button', { name: 'Yes, clear all' }).click();
+    await expect(page.getByTestId('matrix-undo')).toBeVisible();
+    await page.waitForTimeout(8300);
+    await expect(page.getByTestId('matrix-undo')).toHaveCount(0);
+  });
+
+  test('a tap shows its colour within 100 ms at a 4x slower processor (Chromium, measured and printed)', async ({ page, browserName }) => {
+    test.skip(browserName !== 'chromium', 'the processor slowdown is Chromium\'s (DevTools protocol)');
+    const { fake, token } = await site();
+    await open(page, fake, token, SIZES['ipad-landscape']);
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+    // From the press to the first frame painted after the box took its level: a capture listener stamps the press, a MutationObserver sees the
+    // level, and the frame after next is when it is on screen.
+    await page.evaluate(() => {
+      const scope = window as unknown as { pmsTaps: number[] };
+      scope.pmsTaps = [];
+      let pressed = 0;
+      document.addEventListener('pointerdown', () => { pressed = performance.now(); }, true);
+      new MutationObserver(() => {
+        const from = pressed;
+        if (!from) return;
+        pressed = 0;
+        requestAnimationFrame(() => requestAnimationFrame(() => scope.pmsTaps.push(performance.now() - from)));
+      }).observe(document.querySelector('[data-testid="matrix"]')!, { subtree: true, attributeFilter: ['data-level'] });
+    });
+    for (const row of ROWS.slice(0, 4)) {
+      for (const criterion of CRITERIA.slice(0, 3)) {
+        await box(page, row[0], criterion.label).click();
+        await page.waitForTimeout(120);
+      }
+    }
+    const taps = await page.evaluate(() => (window as unknown as { pmsTaps: number[] }).pmsTaps.slice().sort((a, b) => a - b));
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+    const median = taps[Math.floor(taps.length / 2)];
+    const worst = taps[taps.length - 1];
+    console.log(`  tap to paint at 4x slowdown, ${taps.length} taps: median ${median.toFixed(1)} ms, slowest ${worst.toFixed(1)} ms`);
+    expect(taps.length).toBe(12);
+    expect(median).toBeLessThan(100);
+  });
+
   test('the bubble, the strip, the notes and the stored answer (iPad landscape)', async ({ page }) => {
     const { fake, token } = await site();
     await open(page, fake, token, SIZES['ipad-landscape']);
     // The bubble points at the first empty box, and goes for this visit after the first rating.
     const teach = page.getByTestId('matrix-teach');
-    await expect(teach).toHaveText('Tap to rate.');
+    await expect(teach).toHaveText('Tap to rate. Press and hold for choices.');
     const firstBox = box(page, 'Corp accounting – GL', 'Strategic value');
     await expect(firstBox).toHaveAttribute('aria-describedby', /teach/);
     await firstBox.click();

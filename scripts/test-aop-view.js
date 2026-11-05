@@ -6,7 +6,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { cycle, decodeAnswer, encodeAnswer } from '../migration/src/lib/participant/aop-answer.js';
-import { GRID_MIN_WIDTH, defaultView, gridWidthFor, levelCounts, rowIsDone, setCell } from '../migration/src/lib/participant/aop-view.js';
+import { GRID_MIN_WIDTH, HOLD_MS, UNDO_MS, clearedOf, defaultView, gridWidthFor, levelCounts, restoreInto, rowIsDone, setCell } from '../migration/src/lib/participant/aop-view.js';
+import { TOKENS } from '../migration/src/lib/motion/motion-plan.js';
 
 const shapeOf = (rows, criteria) => ({
   rows: Array.from({ length: rows }, (_, at) => ({ id: `o-${at + 1}` })),
@@ -93,5 +94,27 @@ describe('the per-box update stores what Prompt 34 stored', () => {
     setCell(grid, 'o-1', 'c-000000', undefined);
     setCell(grid, 'o-1', 'c-111111', undefined);
     assert.deepEqual(encodeAnswer(grid), ['o-2:c-111111=3,c-000000=1', 'o-13:c-444444=1,c-333333=2,c-222222=3,c-111111=1,c-000000=2'], 'an emptied row is not stored');
+  });
+});
+
+describe('press and hold, and Undo (Prompt 35)', () => {
+  it('a press held 650 ms opens the choices (the motion token the ring fills in), and Undo waits 8 seconds', () => {
+    assert.equal(HOLD_MS, 650);
+    assert.equal(HOLD_MS, TOKENS.aop.hold);
+    assert.equal(UNDO_MS, 8000);
+  });
+
+  it('what a clear took away is kept, and Undo puts it back only where the box is still empty', () => {
+    const shape = shapeOf(3, 2);
+    const [a, b] = shape.criteria.map((each) => each.id);
+    const grid = { 'o-1': { [a]: 1, [b]: 3 }, 'o-2': { [a]: 2 }, 'o-9': { [a]: 3 } };
+    const all = clearedOf(grid, shape);
+    assert.deepEqual(all, [{ rowId: 'o-1', criterionId: a, level: 1 }, { rowId: 'o-1', criterionId: b, level: 3 }, { rowId: 'o-2', criterionId: a, level: 2 }], 'the rows and criteria the question has now');
+    assert.deepEqual(clearedOf(grid, shape, [{ rowId: 'o-2', criterionId: a }, { rowId: 'o-3', criterionId: a }]), [{ rowId: 'o-2', criterionId: a, level: 2 }], 'an empty box clears nothing');
+    const after = {};
+    setCell(after, 'o-1', a, 2); // rated again before Undo: that rating stays
+    assert.equal(restoreInto(after, all), 2);
+    assert.deepEqual(after, { 'o-1': { [a]: 2, [b]: 3 }, 'o-2': { [a]: 2 } });
+    assert.deepEqual(encodeAnswer(after), encodeAnswer({ 'o-1': { [a]: 2, [b]: 3 }, 'o-2': { [a]: 2 } }));
   });
 });

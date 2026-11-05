@@ -76,18 +76,18 @@ flowchart LR
 | `migration/src/lib/effects/` | Sounds and confetti, behind one door (`effects.ts`): which moment makes which effect, the cues as data, Web Audio, canvas-confetti. | 6 |
 | `migration/src/lib/exports/` | The files a leader gets: the leader report (data, counting, layout, PDF writer, fonts) and the Live display's summary pack (PDF, PowerPoint) and summary CSV. | 9 |
 | `migration/src/lib/motion/` | The participant screens' motion, behind one door (`motion.ts`): the plan by kind of question and part of a screen, the tokens and shapes (CSS), the level and the governor. | 2 |
-| `migration/src/lib/participant/` | The participant page: the boot sequence, the visit, the activities held for the page's life, the pager's rules, saving answers, screen moves. | 17 |
+| `migration/src/lib/participant/` | The participant page: the boot sequence, the visit, the activities held for the page's life, the pager's rules, saving answers, screen moves. | 19 |
 | `migration/src/lib/results/` | Results counted and shown: the tally, the chart model (every number a chart shows), the palette, the figure on paper, names, the takeaways, where a tooltip goes. | 17 |
 | `migration/src/lib/schema/` | The lists and columns: `pms-schema.js`, the names every page carries, and `pms-schema-meta.js`, everything else about them (Setup, the tests and the generators only). | 3 |
 | `migration/src/lib/settings/` | How a page starts: the browser check, where its settings come from (`pms-config.txt`, the build, its address), which site and lists are its own, and the stop screen. | 8 |
 | `migration/src/lib/setup/` | The Setup page's own modules: the plan and Create, Mark the site as ready, the admins, the seed-file import, the sample clients and their pictures, the self-test's probes. | 11 |
-| `migration/src/pager/` | The pager: one question per screen, its answers, and an activity's completion screen. | 4 |
+| `migration/src/pager/` | The pager: one question per screen, its answers, and an activity's completion screen. | 5 |
 | `migration/src/routes/` | The participant page's screens: Welcome, the Activities hub, the quiz route, the finale, "not live", the preview, and the old addresses that redirect. | 10 |
 | `migration/src/setup/` | Setup's pieces (Svelte): the copy panel, where the lists are, the plan view, and the sample pictures as data. | 6 |
 | `migration/src/unsupported/` | The "needs a recent browser" notice: a page and an ES5 check, put into each HTML shell at build time. | 1 |
-| `scripts/` | Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager. | 164 |
+| `scripts/` | Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager. | 165 |
 | `scripts/local-site/` | The local PCOE stand-in (`npm run local:site`), its scenarios and VJR's dummy dataset, the screenshot harness and the measurements. | 11 |
-| `scripts/migration-tests/` | The Playwright specs of `npm run test:migration`, and their harnesses (`admin-local.ts`, `polling-support.ts`, `fixtures.ts`). | 89 |
+| `scripts/migration-tests/` | The Playwright specs of `npm run test:migration`, and their harnesses (`admin-local.ts`, `polling-support.ts`, `fixtures.ts`). | 90 |
 | `scripts/rehearsal-tests/` | The rehearsal of RUNBOOK.md on the mock with a package's own pages (`npm run test:rehearsal`). | 1 |
 | `scripts/schema-baseline/` | The schema as it was before Phase 10c-2b, and the scripts that translated the request baselines (each baseline names the one that touched it). | 12 |
 | `scripts/styleguide-tests/` | The styleguide's audit (`npm run test:styleguide`). | 1 |
@@ -292,7 +292,7 @@ The participant screens' motion, behind one door (`motion.ts`): the plan by kind
 
 - **Imports from:** nothing of the app
 - **Imported by:** `lib/effects`, `lib/participant`, `src/admin`, `src/components`, `src/pager`, `src/routes`
-- **Node suites that import it:** `test-hub-moment.js`, `test-motion-engine.js`, `test-motion-plan.js`
+- **Node suites that import it:** `test-aop-view.js`, `test-hub-moment.js`, `test-motion-engine.js`, `test-motion-plan.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
@@ -305,7 +305,7 @@ The participant page: the boot sequence, the visit, the activities held for the 
 
 - **Imports from:** `lib/brand`, `lib/common`, `lib/data`, `lib/motion`
 - **Imported by:** `lib/admin`, `lib/brand`, `lib/data`, `lib/exports`, `lib/results`, `lib/setup`, `src`, `src/admin`, `src/pager`, `src/routes`
-- **Node suites that import it:** `test-aop-math.js`, `test-aop-results.js`, `test-confidence-check.js`, `test-duplicates.js`, `test-effects.js`, `test-fewer-calls.js`, `test-hub-moment.js`, `test-list-namespace.js`, `test-local-site.js`, `test-pager.js`, `test-participant-contrast.js`, `test-participant-storage.js`, `test-participant-waits.js`, `test-results-pack.js`, `test-review-9a.js`, `test-review-9b.js`, `test-session.js`, `test-sign-in-again.js`
+- **Node suites that import it:** `test-aop-math.js`, `test-aop-results.js`, `test-aop-view.js`, `test-confidence-check.js`, `test-duplicates.js`, `test-effects.js`, `test-fewer-calls.js`, `test-hub-moment.js`, `test-list-namespace.js`, `test-local-site.js`, `test-pager.js`, `test-participant-contrast.js`, `test-participant-storage.js`, `test-participant-waits.js`, `test-results-pack.js`, `test-review-9a.js`, `test-review-9b.js`, `test-session.js`, `test-sign-in-again.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
@@ -313,6 +313,7 @@ The participant page: the boot sequence, the visit, the activities held for the 
 | `answer-store.js` | One participant's answers on this device, and the saving of them. | `STORAGE_PREFIX`, `SAVE_ATTEMPTS`, `BACKOFF_MS`, `COOL_DOWN_MS`, `MAX_RETRY_AFTER_MS`, `SaveFailedError`, `createAnswerStore` |
 | `aop-answer.js` | An Art of the Possible answer (Prompt 23): what a guest's ratings are in the page, and how they are stored in `ResponsesJson`. | `MATRIX_TYPE`, `MAX_MATRIX_ANSWER`, `LEVELS`, `encodeAnswer`, `decodeAnswer`, `cycle`, `cellsLeft`, `isComplete`, `nextEmpty` |
 | `aop-levels.js` | How each Art of Possibility rating looks (Prompt 35): its word, its letter and its shape, so a box never says its level by colour alone. | `LEVEL_LOOK` |
+| `aop-view.js` | The rules behind the Art of Possibility's one calm screen (Prompt 35), with no DOM (scripts/test-aop-view.js): which view a guest starts in, the counts of the status strip, a finished row, and the per-box update. pager/MatrixRating.svelte draws what this says. | `GRID_MIN_WIDTH`, `gridWidthFor`, `GRID_FROM`, `defaultView`, `levelCounts`, `rowIsDone`, `setCell`, `HOLD_MS`, `UNDO_MS`, `clearedOf`, `restoreInto` |
 | `boot.js` | What the participant page reads before its first screen, and in what order. | `bootParticipant`, `writesAhead` |
 | `confidence-check.js` | The confidence check, Before and After (Phase 20): where a guest's visit goes next, and how its two answers are named. | 18 exports |
 | `experience.svelte.ts` | Today's experience as the participant screens need it: is anything live, whose it is, how it looks, what it says, and which activities it has. | `experience`, `activityContent`, `showTheme`, `adoptExperience`, `isStale`, `currentActivities`, `adoptWatch`, `sessionCheck`, `knownActivity`, `knownActivities`, `refreshActivities`, `holdsActivities`, `holdActivityContent`, `loadActivity` |
@@ -324,6 +325,7 @@ The participant page: the boot sequence, the visit, the activities held for the 
 | `roving.ts` | Arrow-key movement inside a group of answer buttons. | `arrowKeys` |
 | `session.svelte.ts` | Who this participant page is for: the visit (track) and session it holds, as Svelte state the screens read. setTrack() is called by App.svelte with what the boot sequence found and by Welcome.svelte when a visit begins or a QR code is claimed; clearTrack() when a visit ends or is removed. | `participant`, `setTrack`, `setGuestPicture`, `clearTrack`, `offerEarlierVisit`, `takeEarlierVisit` |
 | `sign-in.js` | Has the SharePoint sign-in run out? Plain JS with JSDoc and no DOM, so `node --test` imports it. | `isSignedOut`, `loadFailureText` |
+| `stage.svelte.ts` | Which column the participant page lays a screen in (Prompt 35). | `stageRequest` |
 | `visit-id.js` | The id of the visit "Click here to begin" makes. | `newVisitId`, `visitIdFor`, `visitBegun` |
 | `visit-notice.js` | What a participant page says when the visit it holds is no longer on record (Phase 9b, DI-9): a facilitator removed it from Results (a visit with no answers), or it was cleaned up. | `visitGoneNotice` |
 

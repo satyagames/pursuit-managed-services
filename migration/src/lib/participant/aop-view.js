@@ -5,6 +5,7 @@
 // drawn again) instead of copying the whole grid on every tap; lib/participant/aop-answer.js's encodeAnswer then stores exactly what a copy stored.
 
 import { LEVELS } from './aop-answer.js';
+import { TOKENS } from '../motion/motion-plan.js';
 
 /** @typedef {import('./aop-answer.js').Grid} Grid */
 /** @typedef {import('./aop-answer.js').Shape} Shape */
@@ -53,4 +54,37 @@ export const rowIsDone = (grid, { criteria }, rowId) => criteria.length > 0 && c
 export function setCell(grid, rowId, criterionId, level) {
   if (level === undefined) { if (grid[rowId]) delete grid[rowId][criterionId]; return; }
   (grid[rowId] ??= {})[criterionId] = level;
+}
+
+/** How long a press is held before the level menu opens, ms: the motion token the ring fills in (lib/motion/motion-tokens.css --motion-aop-hold). */
+export const HOLD_MS = TOKENS.aop.hold;
+/** How long "Cleared. Undo" stays, ms. */
+export const UNDO_MS = 8000;
+
+/** @typedef {{ rowId: string, criterionId: string, level: number }} Cleared */
+
+/**
+ * The ratings a clear takes away: of `boxes` when given, else of every box of the question as it is now. An empty box gives nothing.
+ * @param {Grid} grid @param {Shape} shape @param {{ rowId: string, criterionId: string }[]} [boxes] @returns {Cleared[]}
+ */
+export function clearedOf(grid, { rows, criteria }, boxes) {
+  const list = boxes ?? rows.flatMap((row) => criteria.map((criterion) => ({ rowId: row.id, criterionId: criterion.id })));
+  /** @type {Cleared[]} */
+  const out = [];
+  for (const { rowId, criterionId } of list) {
+    const level = grid?.[rowId]?.[criterionId];
+    if (LEVELS.includes(level)) out.push({ rowId, criterionId, level });
+  }
+  return out;
+}
+
+/** Undo: puts the cleared ratings back, each only where its box is still empty (a box rated since keeps that rating). Returns how many came back. @param {Grid} grid @param {Cleared[]} cleared */
+export function restoreInto(grid, cleared) {
+  let back = 0;
+  for (const { rowId, criterionId, level } of cleared) {
+    if (LEVELS.includes(grid?.[rowId]?.[criterionId])) continue;
+    setCell(grid, rowId, criterionId, level);
+    back += 1;
+  }
+  return back;
 }

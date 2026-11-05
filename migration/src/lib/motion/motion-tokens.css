@@ -31,6 +31,7 @@
   --motion-hub-stamp: 400ms;
   --motion-hub-sweep: 500ms;
   --motion-hub-pulse: 1200ms;
+  --motion-aop-hold: 650ms;
 }
 
 /* motion.ts sets data-motion (the shape) and --m-duration, --m-ease, --m-delay and --m-stretch (in steps of the stagger) and --m-distance, from

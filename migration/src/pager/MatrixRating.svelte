@@ -10,7 +10,7 @@
   import { PillButton } from '../components/index.js';
   import { cellsLeft, cycle, decodeAnswer, encodeAnswer, nextEmpty, type Grid } from '../lib/participant/aop-answer.js';
   import { LEVEL_LOOK } from '../lib/participant/aop-levels.js';
-  import { defaultView, gridWidthFor, levelCounts, rowIsDone, setCell } from '../lib/participant/aop-view.js';
+  import { HOLD_MS, UNDO_MS, clearedOf, defaultView, gridWidthFor, levelCounts, restoreInto, rowIsDone, setCell, type Cleared } from '../lib/participant/aop-view.js';
   import { motion } from '../lib/motion/motion.js';
   import type { Question } from '../lib/participant/pager-logic.js';
   import '../styles/aop-level-tokens.css';
@@ -19,7 +19,8 @@
   // and One at a time; the ratings are the pager's draft, as the stored answer's list of strings (lib/participant/aop-answer.js), so a reload, Send and Preview all
   // treat them as any other answer. The ratings are this component's own state, changed one box at a time (lib/participant/aop-view.js), and every change is
   // handed up encoded, exactly as Prompt 34 stored it. Three fixed colours on a white well (styles/aop-level-tokens.css), and every box also has its shape and
-  // its letter: never colour alone.
+  // its letter: never colour alone. A tap takes the next level; a press held 650 ms (the ring fills) opens the level menu, as Enter, the menu key or a
+  // right-click do; a clear offers Undo for 8 seconds.
   let { question, draft, labelledby, onchange }: {
     question: Question;
     draft: string[] | undefined;
@@ -28,6 +29,8 @@
   } = $props();
 
   const KEYS: Record<string, number> = { l: 1, m: 2, h: 3 };
+  /** The level menu's rows: Low, Medium, High, and Clear (0). */
+  const CHOICES = [1, 2, 3, 0];
   const uid = $props.id();
 
   const rows = $derived(question.options);
@@ -65,6 +68,20 @@
   let confirmingClear = $state(false);
   let teach = $state(!taught);
   let stripHeight = $state(0);
+  /** The box whose level menu is open, and where it opens (above the box when there is no room below; from the right on the last columns). */
+  let menuAt = $state<{ r: number; c: number } | null>(null);
+  let menuAbove = $state(false);
+  let menuEnd = $state(false);
+  /** The box being pressed (its ring is filling), as "row-column". */
+  let holding = $state<string | null>(null);
+  let holdTimer: ReturnType<typeof setTimeout> | undefined;
+  let holdFrom = { x: 0, y: 0 };
+  let pressed = false;
+  /** A press that opened the menu: the click its release makes is not also a tap. */
+  let swallowClick = false;
+  /** What the last clear took away, while "Cleared. Undo" shows. */
+  let undo = $state<Cleared[] | null>(null);
+  let undoTimer: ReturnType<typeof setTimeout> | undefined;
   let spoken = $state('');
   let spokenAt = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -74,7 +91,7 @@
     if (!chosenView) view = defaultView({ width: window.innerWidth, height: window.innerHeight, criteria: criteria.length });
     fit();
     window.addEventListener('resize', fit, { passive: true });
-    return () => { clearTimeout(timer); window.removeEventListener('resize', fit); };
+    return () => { clearTimeout(timer); clearTimeout(holdTimer); clearTimeout(undoTimer); window.removeEventListener('resize', fit); };
   });
 
   function choose(next: 'grid' | 'single') {
@@ -96,10 +113,116 @@
     say();
   }
 
+  function stopTeaching() {
+    if (teach) { teach = false; taught = true; }
+  }
+
   function set(rowId: string, criterionId: string, level: number | undefined) {
+    const cleared = level === undefined ? clearedOf(cells, shape, [{ rowId, criterionId }]) : [];
     setCell(cells, rowId, criterionId, level);
-    if (level !== undefined && teach) { teach = false; taught = true; }
+    if (level !== undefined) stopTeaching();
     handUp();
+    offerUndo(cleared);
+  }
+
+  /** "Cleared. Undo" for 8 seconds after a clear: one box or all of them. */
+  function offerUndo(cleared: Cleared[]) {
+    if (!cleared.length) return;
+    clearTimeout(undoTimer);
+    undo = cleared;
+    undoTimer = setTimeout(() => { undo = null; }, UNDO_MS);
+  }
+
+  function undoClear() {
+    if (!undo) return;
+    clearTimeout(undoTimer);
+    restoreInto(cells, undo);
+    undo = null;
+    handUp();
+  }
+
+  const cellAt = (r: number, c: number) => host?.querySelector<HTMLElement>(`[data-cell="${r}-${c}"]`);
+
+  /** The level menu of a box, anchored to it: it flips above when there is no room below. Focus goes to the box's own level (or Low). */
+  async function openMenu(r: number, c: number) {
+    stopTeaching();
+    const rect = cellAt(r, c)?.getBoundingClientRect();
+    const room = 4 * 48 + 24;
+    menuAbove = rect ? rect.bottom + room > window.innerHeight && rect.top - room > 0 : false;
+    menuEnd = c >= criteria.length - 2;
+    focusRow = r;
+    focusColumn = c;
+    menuAt = { r, c };
+    await tick();
+    const level = levelOf(rows[r].id, criteria[c].id) ?? 1;
+    host?.querySelector<HTMLElement>(`[data-menu] [data-choice="${level}"]`)?.focus();
+  }
+
+  function closeMenu(refocus: boolean) {
+    const at = menuAt;
+    menuAt = null;
+    if (refocus && at) void focusCell(at.r, at.c);
+  }
+
+  function pick(choice: number) {
+    if (!menuAt) return;
+    const { r, c } = menuAt;
+    set(rows[r].id, criteria[c].id, choice || undefined);
+    closeMenu(true);
+  }
+
+  function onMenuKey(event: KeyboardEvent) {
+    const items = [...(event.currentTarget as HTMLElement).querySelectorAll<HTMLElement>('[role="menuitemradio"]')];
+    const at = items.indexOf(document.activeElement as HTMLElement);
+    const to: Record<string, number> = { ArrowDown: at + 1, ArrowUp: at - 1, Home: 0, End: items.length - 1 };
+    if (event.key in to) {
+      event.preventDefault();
+      items[(to[event.key] + items.length) % items.length]?.focus();
+      return;
+    }
+    const level = KEYS[event.key.toLowerCase()];
+    if (level || event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); pick(level ?? 0); }
+  }
+
+  /** Focus leaving the menu (Tab, a tap elsewhere) closes it: it is never a trap. */
+  function onMenuOut(event: FocusEvent) {
+    if (!(event.currentTarget as HTMLElement).contains(event.relatedTarget as Node | null)) closeMenu(false);
+  }
+
+  // ---- Press and hold: the ring fills for HOLD_MS, then the menu opens; a move of the finger, or letting go sooner, is a tap. ----
+  function onPress(event: PointerEvent, r: number, c: number) {
+    swallowClick = false;
+    pressed = true;
+    if (event.button !== 0) return;
+    holdFrom = { x: event.clientX, y: event.clientY };
+    holding = `${r}-${c}`;
+    clearTimeout(holdTimer);
+    holdTimer = setTimeout(() => { holding = null; swallowClick = true; void openMenu(r, c); }, HOLD_MS);
+  }
+
+  function onPressMove(event: PointerEvent) {
+    if (holding && Math.hypot(event.clientX - holdFrom.x, event.clientY - holdFrom.y) > 10) stopHold();
+  }
+
+  function stopHold() {
+    clearTimeout(holdTimer);
+    holding = null;
+    pressed = false;
+  }
+
+  /** A long press on a touch screen, a right-click or the menu key: the same menu (a press already open does nothing more). */
+  function onContextMenu(event: MouseEvent, r: number, c: number) {
+    event.preventDefault();
+    const fromPress = pressed;
+    stopHold();
+    if (menuAt) return;
+    swallowClick = fromPress;
+    void openMenu(r, c);
+  }
+
+  function onTap(rowId: string, criterionId: string, level: number | undefined) {
+    if (swallowClick) { swallowClick = false; return; }
+    set(rowId, criterionId, cycle(level));
   }
 
   const levelOf = (rowId: string, criterionId: string): number | undefined => cells[rowId]?.[criterionId];
@@ -122,6 +245,11 @@
     if (step) {
       event.preventDefault();
       void focusCell(Math.min(rows.length - 1, Math.max(0, row + step[0])), Math.min(criteria.length - 1, Math.max(0, column + step[1])));
+      return;
+    }
+    if (event.key === 'Enter' || event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
+      event.preventDefault();
+      void openMenu(row, column);
       return;
     }
     const level = KEYS[event.key.toLowerCase()];
@@ -150,8 +278,10 @@
   function clearAll() {
     confirmingClear = false;
     moreOpen = false;
+    const cleared = clearedOf(cells, shape);
     cells = {};
     handUp();
+    offerUndo(cleared);
   }
 
   /** A note or the menu closes on Escape and on a tap anywhere else; a tap on its own button is that button's to handle. */
@@ -159,9 +289,11 @@
     const target = event.target as Element | null;
     if (about !== null && !target?.closest('[data-about]')) about = null;
     if (moreOpen && !target?.closest('[data-more]')) { moreOpen = false; confirmingClear = false; }
+    if (menuAt && !target?.closest('[data-menu]')) closeMenu(false);
   }
   function onDocumentKey(event: KeyboardEvent) {
     if (event.key !== 'Escape') return;
+    if (menuAt) { closeMenu(true); return; }
     if (about !== null) {
       const open = about;
       about = null;
@@ -183,7 +315,7 @@
 
 <div class="matrix" bind:this={host} data-testid="matrix" data-view={view} style:--matrix-strip="{stripHeight}px" use:motion={{ role: 'options', type: question.type }}>
   <div class="matrix-top">
-    <p class="matrix-how">{view === 'grid' ? 'Tap a box to rate it: Low, Medium, High, then clear.' : 'Choose Low, Medium or High for each criterion.'}</p>
+    <p class="matrix-how">{view === 'grid' ? 'Tap a box to rate it. Press and hold for choices.' : 'Choose Low, Medium or High for each criterion.'}</p>
     <div class="matrix-views" role="group" aria-label="How to rate">
       <button type="button" class="matrix-view" aria-pressed={view === 'grid'} onclick={() => choose('grid')}>All at once</button>
       <button type="button" class="matrix-view" aria-pressed={view === 'single'} onclick={() => choose('single')}>One at a time</button>
@@ -217,6 +349,12 @@
     <button type="button" class="matrix-next" disabled={left === 0} onclick={() => void goToEmpty()}>
       {#if left === 0}All rated{:else}Next empty box <span class="matrix-left">{left} left</span>{/if}
     </button>
+    {#if undo}
+      <div class="matrix-undo" role="status" data-testid="matrix-undo">
+        <span>Cleared.</span>
+        <button type="button" class="matrix-tool" onclick={undoClear}>Undo</button>
+      </div>
+    {/if}
     <p class="sr-only" role="status" aria-live="polite">{spoken}</p>
   </div>
   <p class="matrix-caption">Colour shows the rating, not good or bad.</p>
@@ -271,12 +409,19 @@
                     class="matrix-cell"
                     data-level={level ?? 0}
                     data-cell="{r}-{c}"
+                    data-holding={holding === `${r}-${c}` || undefined}
                     tabindex={r === focusRow && c === focusColumn ? 0 : -1}
                     aria-label={cellName(row.label, criterion.label, level)}
                     aria-describedby={first ? `${uid}-teach` : undefined}
                     onfocus={() => { focusRow = r; focusColumn = c; }}
                     onkeydown={(event) => onCellKey(event, r, c)}
-                    onclick={() => set(row.id, criterion.id, cycle(level))}
+                    onclick={() => onTap(row.id, criterion.id, level)}
+                    onpointerdown={(event) => onPress(event, r, c)}
+                    onpointermove={onPressMove}
+                    onpointerup={stopHold}
+                    onpointercancel={stopHold}
+                    onpointerleave={stopHold}
+                    oncontextmenu={(event) => onContextMenu(event, r, c)}
                   >
                     {#if level}
                       {@render mark(level, 12)}<span class="matrix-letter">{look(level).letter}</span>
@@ -284,7 +429,16 @@
                       <svg class="matrix-plus" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10" /></svg>
                     {/if}
                   </button>
-                  {#if first}<p class="matrix-teach" id="{uid}-teach" data-testid="matrix-teach">Tap to rate.</p>{/if}
+                  {#if first}<p class="matrix-teach" id="{uid}-teach" data-testid="matrix-teach">Tap to rate. Press and hold for choices.</p>{/if}
+                  {#if menuAt && menuAt.r === r && menuAt.c === c}
+                    <div class="matrix-menu" role="menu" tabindex="-1" aria-label={`Rating for ${row.label}, ${criterion.label}`} data-menu data-above={menuAbove || undefined} data-end={menuEnd || undefined} onkeydown={onMenuKey} onfocusout={onMenuOut}>
+                      {#each CHOICES as choice (choice)}
+                        <button type="button" role="menuitemradio" class="matrix-choice" tabindex="-1" data-choice={choice} aria-checked={(level ?? 0) === choice} onclick={() => pick(choice)}>
+                          {#if choice}<span class="matrix-chip" data-level={choice}>{@render mark(choice, 12)}<span class="matrix-chip-letter">{look(choice).letter}</span></span> {look(choice).name}{:else}<span class="matrix-chip matrix-chip--clear"></span> Clear{/if}
+                        </button>
+                      {/each}
+                    </div>
+                  {/if}
                 </td>
               {/each}
             </tr>
@@ -667,6 +821,30 @@
     transition: background-color var(--motion-duration-cell) var(--motion-ease-standard);
   }
 
+  /* A press is not a text selection, a callout or a double-tap zoom. */
+  .matrix-cell {
+    position: relative;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+  }
+
+  /* The hold: a ring closes in on the box over the hold's length (--motion-aop-hold), transform and opacity only; the menu opens as it lands. */
+  .matrix-cell[data-holding]::after {
+    position: absolute;
+    inset: -6px;
+    content: '';
+    border: 3px solid var(--aop-well-ink);
+    border-radius: 12px;
+    pointer-events: none;
+    animation: matrix-hold var(--motion-aop-hold) var(--motion-ease-standard) backwards;
+  }
+
+  @keyframes matrix-hold {
+    from { opacity: 0; transform: scale(1.25); }
+  }
+
   .matrix-cell:hover {
     border-color: var(--aop-well-ink);
   }
@@ -709,6 +887,92 @@
     color: var(--aop-on-high);
     background: var(--aop-high);
     border: 2px solid var(--aop-high-edge);
+  }
+
+  .matrix-undo {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 0 0 0 13px;
+    color: var(--aop-well);
+    font-weight: var(--fw-semibold);
+    background: var(--aop-well-ink);
+    border-radius: 8px;
+  }
+
+  .matrix-undo .matrix-tool {
+    color: var(--aop-well);
+    background: none;
+    border-color: var(--aop-well);
+  }
+
+  /* The level menu, anchored to its box: four 48 px rows, each with the box's colour, shape and letter in a chip and its word in ink. */
+  .matrix-menu {
+    position: absolute;
+    top: calc(100% - 2px);
+    left: 2px;
+    z-index: 6;
+    display: grid;
+    gap: 2px;
+    width: max-content;
+    min-width: 11rem;
+    padding: 6px;
+    background: var(--aop-well);
+    border: 1px solid var(--aop-well-ink);
+    border-radius: 12px;
+  }
+
+  .matrix-menu[data-above] {
+    top: auto;
+    bottom: calc(100% - 2px);
+  }
+
+  .matrix-menu[data-end] {
+    right: 2px;
+    left: auto;
+  }
+
+  .matrix-choice {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    min-height: 48px;
+    padding: 0 13px 0 6px;
+    color: var(--aop-well-ink);
+    font: inherit;
+    font-weight: var(--fw-semibold);
+    text-align: left;
+    background: none;
+    border: 0;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  .matrix-choice:hover,
+  .matrix-choice[aria-checked='true'] {
+    background: var(--matrix-wash);
+  }
+
+  .matrix-choice[aria-checked='true'] {
+    box-shadow: inset 0 0 0 2px var(--aop-well-ink);
+  }
+
+  .matrix-choice .matrix-chip {
+    gap: 2px;
+    width: 52px;
+    height: 36px;
+    grid-auto-flow: column;
+    border-radius: 8px;
+  }
+
+  .matrix-chip-letter {
+    font-size: var(--aop-letter-size);
+    font-weight: var(--aop-letter-weight);
+    line-height: 1;
+  }
+
+  .matrix-chip--clear {
+    border: 1.5px dashed var(--aop-empty-edge);
   }
 
   .matrix-teach {

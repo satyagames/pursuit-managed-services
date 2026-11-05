@@ -268,6 +268,13 @@ describe('the tokens', () => {
     for (const [name, value] of Object.entries(TOKENS.hub)) assert.equal(ms(declared[`--motion-hub-${name}`]), value, `hub ${name}`);
   });
 
+  it('the Art of Possibility\'s lengths (Prompt 35) are the brief\'s, and the CSS declares them', async () => {
+    assert.deepEqual({ ...TOKENS.aop }, { hold: 650 });
+    const css = await tokensCss();
+    const declared = Object.fromEntries([...css.matchAll(/(--motion-[\w-]+)\s*:\s*([^;]+);/g)].map((match) => [match[1], match[2].trim()]));
+    for (const [name, value] of Object.entries(TOKENS.aop)) assert.equal(ms(declared[`--motion-aop-${name}`]), value, `aop ${name}`);
+  });
+
   it('the hub moment\'s lengths (Prompt 24) are the brief\'s', () => {
     assert.deepEqual({ ...TOKENS.hub }, { fade: 150, wave: 60, journey: 180, shackle: 220, crossfade: 260, shake: 280, stamp: 400, sweep: 500, pulse: 1200 });
   });
