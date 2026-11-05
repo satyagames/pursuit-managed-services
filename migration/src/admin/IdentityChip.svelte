@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from './Icon.svelte';
   // The person in the bar (Prompt 32, step 2; board 19): their initials, name, role and reach, and "Ends 12 Dec" when a role ends within 14 days,
   // on a button that opens "Your access". The popover is a labelled region under the chip, not a dialog: it does not hold focus, and Esc, a click
   // outside or a second press closes it, focus back on the chip. Every word is lib/access/identity-words.js's, from the access the page already holds.
@@ -64,7 +65,7 @@
       <span class="who__name">{identity.name}</span>
       <span class="who__role" data-testid="identity-role">{identity.roleLine}{#if identity.endsSoon}<span class="who__ends" data-testid="identity-ends">Ends {identity.endsSoon.day}</span>{/if}</span>
     </span>
-    <svg class="who__arrow" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+    <span class="who__arrow" aria-hidden="true"><Icon name="chevron-down" size={16} /></span>
   </button>
 
   {#if open}
@@ -178,6 +179,7 @@
   }
 
   .who__arrow {
+    display: inline-flex;
     flex: none;
   }
 

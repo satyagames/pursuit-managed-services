@@ -455,6 +455,38 @@ describe('colours', () => {
     }
   });
 
+  // Prompt 33: the main action, the fold, the switches, the icon buttons, the breadcrumb, Guests and QR's steps and Content's two parts. Words are
+  // held to 4.5:1 and marks (an icon, a track, a segment's line) to 3:1, and the new components write no colour of their own: only the tokens,
+  // currentColor, and the system colours of forced-colors mode.
+  const EXPLAINS_TEXT = [
+    ['adm-on-deep', 'adm-green'], // the main action; a switch that is on
+    ['adm-on-deep', 'adm-deep'], // Content's chosen part; a done step's mark
+    ['adm-text', 'adm-card'], ['adm-text-muted', 'adm-card'], // a part not chosen, with its meaning
+    ['adm-link', 'adm-card'], ['adm-link', 'adm-bg'], // Show and Hide; the breadcrumb on a card and on the page
+    ['adm-muted', 'adm-card'], // a fold's count; a switch's reason
+    ['adm-text', 'adm-green-wash'], // "Do this now"
+    ['adm-on-deep', 'adm-bar-black'], // a tooltip
+  ];
+  const EXPLAINS_MARKS = [['adm-deep', 'adm-card'], ['adm-deep', 'adm-bg'], ['adm-green', 'adm-card'], ['adm-muted', 'adm-card']];
+  it('the fold, the switches, the icon buttons, the breadcrumb, the steps and the two parts pass on their surfaces, with no colour of their own', async () => {
+    const css = await readFile(path.join(ROOT, 'migration/src/styles/admin-tokens.css'), 'utf8');
+    const value = (name) => new RegExp(`--${name}:\\s*(#[0-9a-f]{6})`, 'i').exec(css)?.[1];
+    for (const [pairs, least] of [[EXPLAINS_TEXT, 4.5], [EXPLAINS_MARKS, 3]]) {
+      for (const [ink, ground] of pairs) {
+        assert.ok(value(ink) && value(ground), `${ink} and ${ground} are defined`);
+        assert.ok(contrastRatio(value(ink), value(ground)) >= least, `${ink} on ${ground}: ${contrastRatio(value(ink), value(ground)).toFixed(2)}`);
+      }
+    }
+    for (const file of ['Icon.svelte', 'Fold.svelte', 'IconButton.svelte', 'RoleSwitch.svelte', 'Breadcrumb.svelte']) {
+      const source = await readFile(path.join(ROOT, 'migration/src/admin', file), 'utf8');
+      const style = /<style>([\s\S]*)<\/style>/.exec(source)?.[1] ?? '';
+      assert.ok(style, `${file} has its styles`);
+      assert.doesNotMatch(style, /#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(|:\s*(?:white|black)\b/i, `${file}: a colour of its own`);
+      const used = [...style.matchAll(/var\(--(adm-[a-z-]+)\)/g)].map((match) => match[1]);
+      for (const token of used) assert.ok(value(token), `${file}: --${token} is a colour of admin-tokens.css`);
+    }
+  });
+
   it('the Deloitte look fails when a text pair is set to 4.4:1', async () => {
     const css = await readFile(path.join(ROOT, 'migration/src/styles/admin-tokens.css'), 'utf8');
     // #787878 on white is 4.42:1.
