@@ -63,6 +63,20 @@ export function chartFigure(chart, { x, width, palette, measure, size = 8.5, max
   return barsFigure(chart, { x, width, palette, measure, size, maxLabelLines, points });
 }
 
+/** A band's mark as a shape (Prompt 34): the chart model's ▲ ● ▼ for High, Medium and Low. */
+const MARK_SHAPES = Object.freeze({ High: 'up', Medium: 'dot', Low: 'down' });
+
+/**
+ * Where a `mark` item's shape goes, for a writer to draw: a triangle's three corners, or a circle's centre and radius. One definition, so the
+ * pack's PDF and PowerPoint and the leader report draw the same mark.
+ * @param {{ x: number, y: number, size: number, shape: string }} item
+ */
+export function markShape({ x, y, size, shape }) {
+  if (shape === 'dot') return { circle: { cx: x + size / 2, cy: y + size / 2, r: size * 0.42 } };
+  const [top, bottom] = shape === 'down' ? [y + size, y] : [y, y + size];
+  return { triangle: [[x + size / 2, top], [x + size, bottom], [x, bottom]], flip: shape === 'down' };
+}
+
 /** A line of text: one line, its box `w` wide and `h` high, its top at `y`. */
 const line = (x, y, w, h, text, size, color, style = {}) => ({ kind: 'text', x, y, w, h, text, size, color, ...style });
 
@@ -76,10 +90,20 @@ function matrixFigure(chart, { x, width, palette, measure, size, maxLabelLines, 
   const small = size * 0.88;
   const smallLh = measure.lineHeight(small);
   const criteria = chart.criteria ?? [];
-  const peopleWidth = Math.max(10, width * 0.08);
-  const scoreWidth = Math.max(16, width * 0.11);
-  const bandWidth = Math.max(16, width * 0.11);
-  const labelWidth = Math.max(20, width * 0.3);
+  // (Prompt 34) The people, opportunity and band columns are as wide as their own words ("Opportunity", the mark and "Medium") with a gutter, so
+  // nothing runs into the next column or past the card. A criterion's column is as wide as the longest word of its name where it can be (29 mm at
+  // most), so a name breaks between words; the sub-processes take what is left, between a fifth and three tenths, in up to two lines. The band's
+  // mark is a shape (a `mark` item: up, dot or down), as the files' font has no ▲, ● or ▼.
+  const gutter = 2;
+  const markSize = smallLh * 0.45;
+  const fit = (text) => measure.width(text, small, true) + gutter;
+  const peopleWidth = Math.max(10, fit('People'));
+  const scoreWidth = Math.max(16, fit('Opportunity') + 1);
+  const bandWidth = Math.max(16, fit('Band'), ...chart.rows.map((row) => (row.band ? markSize + 1.2 + fit(row.band) : fit('No ratings'))));
+  const longestWord = Math.max(0, ...criteria.flatMap((criterion) => String(criterion.label ?? '').split(/\s+/).map((word) => measure.width(word, small, true))));
+  const fixed = peopleWidth + scoreWidth + bandWidth;
+  const wantCell = Math.max(8, Math.min(29, longestWord + 1.4));
+  const labelWidth = Math.max(20, width * 0.2, Math.min(width * 0.3, width - fixed - wantCell * criteria.length));
   const cellWidth = Math.max(8, (width - labelWidth - peopleWidth - scoreWidth - bandWidth) / Math.max(1, criteria.length));
   const peopleX = x + labelWidth;
   const cellX = peopleX + peopleWidth;
@@ -89,11 +113,11 @@ function matrixFigure(chart, { x, width, palette, measure, size, maxLabelLines, 
   const breaks = [];
   let y = 0;
   // The header: each column's name, in as many lines as it takes.
-  const heads = criteria.map((criterion) => measure.wrap(criterion.label, cellWidth - 0.6, small, true, 3));
+  const heads = criteria.map((criterion) => headLines(criterion.label, cellWidth - 0.6, small, measure, 3));
   const headHeight = Math.max(1, ...heads.map((lines) => lines.length)) * smallLh + 1;
-  items.push(line(peopleX, y, peopleWidth - 0.5, smallLh, 'People', small, palette.textSecondary, { bold: true, role: 'head' }));
+  items.push(line(peopleX, y, peopleWidth - gutter, smallLh, 'People', small, palette.textSecondary, { bold: true, role: 'head' }));
   heads.forEach((lines, at) => lines.forEach((text, n) => items.push(line(cellX + at * cellWidth, y + n * smallLh, cellWidth - 0.6, smallLh, text, small, palette.textSecondary, { bold: true, role: 'head' }))));
-  items.push(line(scoreX, y, scoreWidth - 0.5, smallLh, 'Opportunity', small, palette.textSecondary, { bold: true, role: 'head' }));
+  items.push(line(scoreX + 1, y, scoreWidth - 1 - gutter, smallLh, 'Opportunity', small, palette.textSecondary, { bold: true, role: 'head' }));
   items.push(line(bandX, y, bandWidth, smallLh, 'Band', small, palette.textSecondary, { bold: true, role: 'head' }));
   y += headHeight;
   breaks.push(y);
@@ -103,13 +127,17 @@ function matrixFigure(chart, { x, width, palette, measure, size, maxLabelLines, 
     const labels = measure.wrap(row.label, labelWidth - 1, size, false, maxLabelLines);
     const height = Math.max(labels.length * lh, lh) + 1.4;
     labels.forEach((text, at) => items.push(line(x, y + at * lh, labelWidth - 1, lh, text, size, palette.text, { role: 'label' })));
-    items.push(line(peopleX, y, peopleWidth - 0.5, lh, String(row.people), size, palette.text, { role: 'people' }));
+    items.push(line(peopleX, y, peopleWidth - gutter, lh, String(row.people), size, palette.text, { role: 'people' }));
     row.criteria.forEach((cell, at) => {
       if (cell.tone !== null) items.push({ kind: 'rect', x: cellX + at * cellWidth, y, w: cellWidth - 0.6, h: height - 0.6, fill: palette.ramps[4][cell.tone], role: 'heat' });
       if (cell.meanText) items.push(line(cellX + at * cellWidth + 0.8, y, cellWidth - 2, lh, cell.meanText, size, cell.tone >= 2 ? palette.surface : palette.text, { bold: true, role: 'value' }));
     });
-    if (row.opportunityText) items.push(line(scoreX, y, scoreWidth - 0.5, lh, row.opportunityText, size, palette.text, { bold: true, role: 'value' }));
-    items.push(line(bandX, y, bandWidth, lh, row.band ? `${row.mark} ${row.band}` : 'No ratings', small, bandInk[row.band] ?? palette.textSecondary, { bold: true, role: 'band' }));
+    if (row.opportunityText) items.push(line(scoreX + 1, y, scoreWidth - 1 - gutter, lh, row.opportunityText, size, palette.text, { bold: true, role: 'value' }));
+    const ink = bandInk[row.band] ?? palette.textSecondary;
+    if (row.band) {
+      items.push({ kind: 'mark', shape: MARK_SHAPES[row.band] ?? 'dot', x: bandX, y: y + (lh - markSize) / 2, size: markSize, color: ink, role: 'band-mark' });
+      items.push(line(bandX + markSize + 1.2, y, bandWidth - markSize - 1.2, lh, row.band, small, ink, { bold: true, role: 'band' }));
+    } else items.push(line(bandX, y, bandWidth, lh, 'No ratings', small, ink, { bold: true, role: 'band' }));
     y += height;
     breaks.push(y);
   }
@@ -120,6 +148,38 @@ function matrixFigure(chart, { x, width, palette, measure, size, maxLabelLines, 
     breaks[breaks.length - 1] = y;
   }
   return { h: y, items, breaks };
+}
+
+/**
+ * A column's name in bold, in at most `max` lines that fit `w`: whole words where they fit (two words on a line leave a millimetre to spare, so they never
+ * run into the next column's name), and a word wider than the column broken with a hyphen
+ * ("Standardi-", "sation"), never in the middle of a word with nothing to say so. The last line ends in "…" when something is left out.
+ * @param {string} text @param {number} w @param {number} size @param {Measure} measure @param {number} max
+ */
+function headLines(text, w, size, measure, max) {
+  const fits = (words) => measure.width(words, size, true) <= w;
+  const joins = (words) => measure.width(words, size, true) <= w - 1;
+  const lines = [];
+  let line = '';
+  for (let word of String(text ?? '').split(/\s+/).filter(Boolean)) {
+    if (line && joins(`${line} ${word}`)) { line = `${line} ${word}`; continue; }
+    if (line) lines.push(line);
+    line = '';
+    while (!fits(word)) {
+      const letters = [...word];
+      let cut = letters.length - 1;
+      while (cut > 1 && !fits(`${letters.slice(0, cut).join('')}-`)) cut -= 1;
+      if (cut <= 1) break;
+      lines.push(`${letters.slice(0, cut).join('')}-`);
+      word = letters.slice(cut).join('');
+    }
+    line = word;
+  }
+  if (line) lines.push(line);
+  if (lines.length <= max) return lines;
+  let last = `${lines[max - 1].replace(/-$/, '')}…`;
+  while (!fits(last) && last.length > 2) last = `${last.slice(0, -2)}…`;
+  return [...lines.slice(0, max - 1), last];
 }
 
 function barsFigure(chart, { x, width, palette, measure, size, maxLabelLines, points }) {

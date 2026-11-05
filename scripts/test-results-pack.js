@@ -18,6 +18,30 @@ import * as resultsExport from '../migration/src/lib/exports/resultsExport.js';
 import { inspectPdf, squash } from './pdf-inspect.js';
 import { bigResults, krogerResults, oddResults, vineResults } from './results-export-fixtures.js';
 import { nodePalette } from './results-palette-node.js';
+import { encodeAnswer } from '../migration/src/lib/participant/aop-answer.js';
+
+// (Prompt 34) An Art of the Possible session as Kroger ran it: thirteen sub-processes, the five criteria the editor starts with, eight guests. The
+// pack drew its heat map in half a page, so the column names ran into each other and the rows ran past the card and into the footer.
+const AOP_CRITERIA = [['Strategic value', 'against'], ['Volume / repeatability', 'favours'], ['Standardisation', 'favours'], ['Compliance / risk', 'against'], ['Outsourcing suitability', 'favours']]
+  .map(([label, direction], at) => ({ id: `c-${at}`, label, hint: '', direction }));
+const AOP_ROWS = [['Corporate accounting – general ledger', 29], ['Corporate payables and receivables', 28], ['Other finance', 11], ['Supply chain finance', 8], ['Internal audit', 6],
+  ['Franchise accounting', 5], ['International finance', 5], ['IT finance', 5], ['Team Finance Operations', 3], ['Risk and controls', 3], ['Treasury', 2], ['Payroll', 2], ['Tax', 1]];
+function aopResults() {
+  const at = '2026-10-30T10:00:00.000Z';
+  const optionIds = AOP_ROWS.map((_, n) => `o${n}`);
+  const tracks = Array.from({ length: 8 }, (_, n) => ({ id: `t${n}`, createdAt: at }));
+  const answers = tracks.map((track, guest) => {
+    const answer = encodeAnswer(Object.fromEntries(optionIds.map((id, row) => [id, Object.fromEntries(AOP_CRITERIA.map((criterion, c) => [criterion.id, 1 + ((row + c + guest) % 3)]))])));
+    return { questionId: 'q', clientTrackId: track.id, clientId: 'c-k', answer, firstAnswer: answer, finalAnswer: answer, attempts: 1, correct: null, timestamp: at };
+  });
+  return buildResults({
+    session: { id: 's-aop', clientId: 'c-k', date: '2026-10-30', sectionIds: ['art'] }, tracks,
+    sections: [{ id: 'art', title: 'The Art of Possibility', enabled: true, questionIds: ['q'] }],
+    questions: [{ id: 'q', sectionId: 'art', type: 'art-of-the-possible', prompt: 'Rate each sub-process on five criteria', optionIds, criteria: AOP_CRITERIA }],
+    options: AOP_ROWS.map(([label, value], n) => ({ id: optionIds[n], questionId: 'q', label, value })),
+    answers,
+  });
+}
 
 const VINE_BRAND = { name: 'Vine Street Partners', primaryColor: '#7A1F5C', secondaryColor: '#64748B' };
 const VINE_TAKEAWAY = 'Across two graded questions, an average of 63% of first answers were right; the most missed was “Where is the head office?” (2 of 4 right first time). Only four answers.';
@@ -46,6 +70,7 @@ let vine;
 let kroger;
 let big;
 let odd;
+let aop;
 
 before(async () => {
   fonts = await loadReportFonts();
@@ -54,6 +79,7 @@ before(async () => {
   kroger = await make(krogerResults(), { name: 'Kroger', primaryColor: '#0C4EA2', secondaryColor: '#E31837' });
   big = await make(bigResults(), { name: 'A client with a rather long name, Incorporated', primaryColor: '#F2C200' });
   odd = await make(oddResults(), { name: 'Søren & Co', primaryColor: '#046A38' });
+  aop = await make(aopResults(), { name: 'Kroger' });
 });
 
 describe('the pages', () => {
@@ -73,7 +99,7 @@ describe('the pages', () => {
       const activityPages = made.pages.filter((page) => page.kind === 'activity');
       assert.deepEqual(activityPages.map((page) => page.items.filter((item) => item.role === 'card').length), cards, name);
     }
-    for (const [name, made] of [['Vine', vine], ['Kroger', kroger], ['sixty people', big], ['other scripts', odd]]) {
+    for (const [name, made] of [['Vine', vine], ['Kroger', kroger], ['sixty people', big], ['other scripts', odd], ['Art of the Possible', aop]]) {
       for (const page of made.pages) {
         const frames = page.items.filter((item) => item.role === 'card');
         assert.ok(frames.length <= 4, `${name}: at most four cards a page`);
@@ -131,9 +157,60 @@ describe('the pages', () => {
   });
 });
 
+describe('an Art of the Possible heat map (Prompt 34)', () => {
+  // (Under its takeaway the activity's first page has room for four rows: fewer than five, so the card starts the next page, as any card too tall
+  // for what is left of a page does.)
+  const page = () => aop.pages.find((each) => each.items.some((item) => item.role === 'card'));
+  const inCard = (role) => page().items.filter((item) => item.role === role);
+
+  it('has a card the width of the page to itself', () => {
+    assert.equal(page().kind, 'activity');
+    const frames = inCard('card');
+    assert.equal(frames.length, 1);
+    assert.ok(Math.abs(frames[0].w - (resultsExport.PACK_PAGE.width - resultsExport.PACK_PAGE.margin * 2)) < 0.01, `${frames[0].w} mm wide`);
+  });
+
+  it('shows as many sub-processes as the page has room for (seven here), in their order, each name whole, and says how many more', () => {
+    const shown = inCard('people').length;
+    assert.ok(shown >= 7, `${shown} rows`);
+    assert.equal(inCard('label').map((item) => item.text).join(' '), AOP_ROWS.slice(0, shown).map(([label]) => label).join(' '), 'each name whole, in up to two lines');
+    assert.equal(inCard('more')[0]?.text, `And ${AOP_ROWS.length - shown} more sub-processes.`);
+  });
+
+  it('writes each column\'s name in its own column, breaking a word only with a hyphen, and the band in words beside its shape', () => {
+    const heads = inCard('head');
+    for (const name of ['People', 'Opportunity', 'Band']) assert.ok(heads.some((item) => item.text === name), name);
+    const columns = [...new Map(heads.map((item) => [item.x, item])).values()].sort((a, b) => a.x - b.x);
+    columns.slice(1).forEach((item, at) => assert.ok(columns[at].x + columns[at].w <= item.x + 0.01, `"${columns[at].text}" runs into "${item.text}"`));
+    const words = new Set(AOP_CRITERIA.flatMap((criterion) => criterion.label.split(' ')));
+    for (const item of heads.filter((each) => !['People', 'Opportunity', 'Band'].includes(each.text))) {
+      for (const word of item.text.split(' ')) assert.ok(words.has(word) || word.endsWith('-') || [...words].some((whole) => whole.endsWith(word)), `"${word}" is a whole word or ends with a hyphen`);
+    }
+    for (const item of inCard('band')) assert.match(item.text, /^(High|Medium|Low)$/);
+  });
+
+  it('draws each band\'s mark as a shape beside its word (the PDF\'s font has no ▲, ● or ▼, and printed "�"), and prints every word', () => {
+    const marks = inCard('band-mark');
+    assert.equal(marks.length, inCard('band').length);
+    const shapes = { High: 'up', Medium: 'dot', Low: 'down' };
+    inCard('band').forEach((word, at) => {
+      assert.equal(marks[at].kind, 'mark');
+      assert.equal(marks[at].shape, shapes[word.text]);
+      assert.equal(marks[at].color, word.color, 'the mark in its word\'s colour');
+      assert.ok(marks[at].x + marks[at].size < word.x, 'before the word');
+    });
+    for (const item of page().items.filter((each) => each.kind === 'text')) assert.ok(!measure.clean(item.text).includes('�'), `"${item.text}" prints`);
+    // The PowerPoint draws them as shapes too: a dot for each Medium row on the heat map's slide, and no ▲ ● ▼ as text anywhere.
+    const slide = aop.slides[aop.pages.indexOf(page())];
+    assert.equal((slide.match(/prst="ellipse"/g) ?? []).length, marks.filter((mark) => mark.shape === 'dot').length);
+    assert.ok(!aop.slides.some((each) => /[▲●▼]/.test(inSlide(each))));
+    assert.ok(!squash(aop.read.pages.map((each) => each.text).join(' ')).includes('�'), 'the PDF prints no replacement mark');
+  });
+});
+
 describe('a slide must read when projected', () => {
   it('writes no word under 12 pt, the titles at 28 pt, the takeaway and each card\'s headline at 18 pt', () => {
-    for (const [name, made] of [['Vine', vine], ['Kroger', kroger], ['sixty people', big], ['other scripts', odd]]) {
+    for (const [name, made] of [['Vine', vine], ['Kroger', kroger], ['sixty people', big], ['other scripts', odd], ['Art of the Possible', aop]]) {
       const words = made.pages.flatMap((page) => page.items.filter((item) => item.kind === 'text' && item.text.trim()));
       assert.deepEqual(words.filter((item) => item.size < 12).map((item) => `${item.text.slice(0, 30)} ${item.size}`), [], name);
       for (const item of words.filter((each) => each.role === 'page-title')) assert.equal(item.size, 28, `${name}: ${item.text}`);
@@ -145,7 +222,7 @@ describe('a slide must read when projected', () => {
     const { width, height } = resultsExport.PACK_PAGE;
     assert.ok(Math.abs(width / height - 16 / 9) < 0.001, `16:9: ${width} x ${height}`);
     const problems = [];
-    for (const [name, made] of [['Vine', vine], ['Kroger', kroger], ['sixty people', big], ['other scripts', odd]]) {
+    for (const [name, made] of [['Vine', vine], ['Kroger', kroger], ['sixty people', big], ['other scripts', odd], ['Art of the Possible', aop]]) {
       made.pages.forEach((page, index) => {
         for (const item of page.items) {
           const right = item.kind === 'line' ? Math.max(item.x, item.x2) : item.x + (item.w ?? item.size ?? 0);

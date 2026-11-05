@@ -18,7 +18,7 @@
 import { embeddedAssetUrl } from '../brand/assets.js';
 import { MULTI_CAPTION, RANKING_CAPTION, answerCounts, answersFrom, chartOf, fewAnswersLine } from '../results/results-chart-model.js';
 import { confidenceLine } from '../results/confidence-shift.js';
-import { chartFigure } from '../results/results-chart-figure.js';
+import { chartFigure, markShape } from '../results/results-chart-figure.js';
 import { summarizeSession } from '../results/export-summary.js';
 import { binaryString, createMeasure, loadReportFonts } from './report-fonts.js';
 import { csvCell } from './leader-report.js';
@@ -235,6 +235,7 @@ function textMeasure(measure) {
 // Primitives: { kind: 'rect', x, y, w, h, fill?, stroke?, radius? }
 //             { kind: 'line', x, y, x2, y2, color, width }                 (width in mm)
 //             { kind: 'tick', x, y, size, color }                           (the mark beside a correct answer)
+//             { kind: 'mark', x, y, size, shape, color }                    (a band's mark: 'up', 'dot' or 'down'; results-chart-figure.js markShape)
 //             { kind: 'text', x, y, w, h, text, size, bold?, color, align? }  (one line, centred in h)
 //             { kind: 'image', x, y, w, h, data }
 // An item inside a question's card carries `card: <question id>`; the card's frame is `role: 'card'`. A page is { kind, items, notes }.
@@ -255,7 +256,7 @@ function countingRule(chart) {
 
 /** The figure's neutral items as this file's primitives: a text line keeps its box, centred in it. */
 function fromFigure(item) {
-  if (item.kind === 'text' || item.kind === 'line' || item.kind === 'tick') return { ...item, color: bare(item.color) };
+  if (item.kind === 'text' || item.kind === 'line' || item.kind === 'tick' || item.kind === 'mark') return { ...item, color: bare(item.color) };
   return { ...item, ...(item.fill && { fill: bare(item.fill) }), ...(item.stroke && { stroke: bare(item.stroke) }) };
 }
 
@@ -263,7 +264,7 @@ function fromFigure(item) {
  * One question's card at (x, y), `w` wide: the headline (the answer first), the question, how many answered (and "Only N answers." under five),
  * "N of M got it right first time", the chart and its caption. Returns { items, height }.
  */
-function layoutCard(question, palette, text, x, y, w, { compact = false } = {}) {
+function layoutCard(question, palette, text, x, y, w, { compact = false, matrixRows = 10 } = {}) {
   // A compact card (one too tall for a page otherwise) keeps two lines of headline, one of question, one a label and one comment; the full words are
   // in the speaker notes and the summary CSV.
   const [headlineLines, promptLines, labelLines, comments] = compact ? [2, 1, 1, 1] : [4, 3, 2, 3];
@@ -290,7 +291,7 @@ function layoutCard(question, palette, text, x, y, w, { compact = false } = {}) 
   lines(fewAnswersLine(chart.answered) || `${chart.answered.toLocaleString('en-US')} answered.`, SIZE.small, soft, { max: 1, after: chart.gradedLine ? 0 : 1.6 });
   if (chart.gradedLine) lines(chart.gradedLine, SIZE.small, soft, { bold: true, max: 2, after: 1.6 });
 
-  const figure = chartFigure(chart, { x: x + pad, width: inner, palette, measure: text.figure, size: SIZE.chart, maxLabelLines: labelLines, comments, matrixRows: 10, plot: 16, points: false });
+  const figure = chartFigure(chart, { x: x + pad, width: inner, palette, measure: text.figure, size: SIZE.chart, maxLabelLines: labelLines, comments, matrixRows, plot: 16, points: false });
   for (const item of figure.items) items.push(fromFigure({ ...item, y: item.y + cursor, ...(item.y2 === undefined ? {} : { y2: item.y2 + cursor }) }));
   cursor += figure.h;
   if (chart.caption) { cursor += 0.8; lines(chart.caption, SIZE.small, soft, { max: 3 }); }
@@ -407,9 +408,22 @@ export function layoutReport(report, logo = null, palette = null, measure = null
   }
   page.notes = notes.join(' ');
 
-  // ---- Each live activity: its title and takeaway, then its cards, two across, four a page at most.
+  // ---- Each live activity: its title and takeaway, then its cards, two across, four a page at most. (Prompt 34) An Art of the Possible heat map
+  // has a card the width of the page to itself, with as many of its sub-processes as the page has room for, and "And N more" for the rest (the
+  // leader report and the summary CSV have every one).
   const gap = 8;
   const cardWidth = (W - M * 2 - gap) / 2;
+  const fullWidth = W - M * 2;
+  const isMatrix = (question) => question?.chart.kind === 'matrix';
+  const MATRIX_ROWS = 10;
+  /** The heat map's card with the most rows (ten at most) that is no taller than `limit`, and how many rows it shows; null when not even one fits. */
+  const fitMatrix = (question, limit) => {
+    for (let rows = Math.max(1, Math.min(MATRIX_ROWS, question.chart.rows.length)); rows >= 1; rows -= 1) {
+      const card = layoutCard(question, charts, text, M, 0, fullWidth, { matrixRows: rows });
+      if (card.height <= limit) return { card, rows };
+    }
+    return null;
+  };
   report.summary.activities.forEach((activity, index) => {
     const own = report.questions.filter((question) => question.activityId === report.activities[index].id);
     const start = (first) => {
@@ -441,14 +455,27 @@ export function layoutReport(report, logo = null, palette = null, measure = null
     }
     // The room under a fresh page's head (its label and title, nothing else).
     const empty = bottom - (6 + lineHeight(SIZE.small) + 1 + lineHeight(SIZE.title) + 1 + 4);
-    for (let at = 0; at < own.length; at += 2) {
-      const row = own.slice(at, at + 2);
+    for (let at = 0; at < own.length;) {
+      // A heat map is a row of its own, and so is a card just before one.
+      const row = isMatrix(own[at]) || isMatrix(own[at + 1]) ? [own[at]] : own.slice(at, at + 2);
+      at += row.length;
+      const width = isMatrix(row[0]) ? fullWidth : cardWidth;
       const cardX = (column) => M + column * (cardWidth + gap);
-      // Laid out with two-line labels; a card too tall for an empty page is laid out again with one line a label and one comment.
-      const measured = row.map((question, column) => {
-        const card = layoutCard(question, charts, text, cardX(column), 0, cardWidth);
-        return card.height <= empty ? card : layoutCard(question, charts, text, cardX(column), 0, cardWidth, { compact: true });
-      });
+      let measured;
+      if (isMatrix(row[0])) {
+        // Here, under what is on the page already, when at least five of its rows (or all of them) fit; else at the top of a fresh page.
+        const here = sheet.cards < CARDS_A_PAGE ? fitMatrix(row[0], room()) : null;
+        if (!here || (here.rows < Math.min(5, row[0].chart.rows.length) && !(sheet.fresh && sheet.cards === 0))) {
+          if (!(sheet.fresh && sheet.cards === 0)) sheet = start(false);
+          measured = [(fitMatrix(row[0], room()) ?? { card: layoutCard(row[0], charts, text, M, 0, fullWidth, { compact: true, matrixRows: 1 }) }).card];
+        } else measured = [here.card];
+      } else {
+        // Laid out with two-line labels; a card too tall for an empty page is laid out again with one line a label and one comment.
+        measured = row.map((question, column) => {
+          const card = layoutCard(question, charts, text, cardX(column), 0, cardWidth);
+          return card.height <= empty ? card : layoutCard(question, charts, text, cardX(column), 0, cardWidth, { compact: true });
+        });
+      }
       const rowHeight = Math.max(...measured.map((card) => card.height));
       // A row that does not fit what is left goes to a fresh page; on a fresh page that holds nothing yet it is placed as it is.
       if (!(sheet.fresh && sheet.cards === 0) && (sheet.cards + row.length > CARDS_A_PAGE || rowHeight > room())) sheet = start(false);
@@ -457,8 +484,8 @@ export function layoutReport(report, logo = null, palette = null, measure = null
         const top = sheet.top;
         const id = question.chart.id;
         // (Prompt 34) An outlined card, and a band across its top in the pale green (Dark: the near-black) naming it with its headline.
-        sheet.items.push(rect(cardX(column), top, cardWidth, rowHeight, { fill: ui.ground, stroke: ui.frame, radius: 3, card: id, role: 'card', of: id }));
-        sheet.items.push(rect(cardX(column) + 0.8, top + 0.8, cardWidth - 1.6, measured[column].band - 0.8, { fill: ui.band, radius: 2, card: id, role: 'card-band' }));
+        sheet.items.push(rect(cardX(column), top, width, rowHeight, { fill: ui.ground, stroke: ui.frame, radius: 3, card: id, role: 'card', of: id }));
+        sheet.items.push(rect(cardX(column) + 0.8, top + 0.8, width - 1.6, measured[column].band - 0.8, { fill: ui.band, radius: 2, card: id, role: 'card-band' }));
         sheet.items.push(...measured[column].items.map((item) => ({ ...item, y: item.y + top, ...(item.y2 === undefined ? {} : { y2: item.y2 + top }), card: id })));
         const { chart } = question;
         sheet.notes.push([`Question ${question.number}: ${chart.prompt}`, chart.headline, `${chart.answered} answered.`, chart.gradedLine, fewAnswersLine(chart.answered), countingRule(chart)].filter(Boolean).join(' '));
@@ -586,6 +613,11 @@ export function pdfBytes(pages, report, { jsPDF, fonts, producer = 'Pursuits CEC
         doc.setLineCap('round');
         for (const [x1, y1, x2, y2] of strokes) doc.line(x1, y1, x2, y2);
         doc.setLineCap('butt');
+      } else if (item.kind === 'mark') {
+        const { circle, triangle } = markShape({ ...item, y: item.y + dy });
+        doc.setFillColor(...rgb(item.color));
+        if (circle) doc.circle(circle.cx, circle.cy, circle.r, 'F');
+        else doc.triangle(...triangle.flat(), 'F');
       } else if (item.kind === 'image') {
         doc.addImage(item.data, 'PNG', item.x, item.y + dy, item.w, item.h, undefined, 'FAST'); // compressed, or the logo alone is over a megabyte
       } else {
@@ -653,6 +685,13 @@ export async function pptxFile(pages, report, { PptxGenJS, producer = 'Pursuits 
             line: { color: item.color, width: (width * 72) / 25.4 },
           });
         }
+      } else if (item.kind === 'mark') {
+        const { circle, flip } = markShape(item);
+        const size = circle ? circle.r * 2 : item.size;
+        const at = circle ? { x: circle.cx - circle.r, y: circle.cy - circle.r } : { x: item.x, y: item.y };
+        slide.addShape(circle ? pptx.ShapeType.ellipse : pptx.ShapeType.triangle, {
+          x: inches(at.x), y: inches(at.y), w: inches(size), h: inches(size), flipV: Boolean(flip), fill: { color: item.color }, line: { type: 'none' },
+        });
       } else if (item.kind === 'image') {
         slide.addImage({ data: item.data, ...box });
       } else {

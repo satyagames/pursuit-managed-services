@@ -305,7 +305,7 @@ The participant page: the boot sequence, the visit, the activities held for the 
 
 - **Imports from:** `lib/brand`, `lib/common`, `lib/data`, `lib/motion`
 - **Imported by:** `lib/admin`, `lib/brand`, `lib/data`, `lib/exports`, `lib/results`, `lib/setup`, `src`, `src/admin`, `src/pager`, `src/routes`
-- **Node suites that import it:** `test-aop-math.js`, `test-aop-results.js`, `test-confidence-check.js`, `test-duplicates.js`, `test-effects.js`, `test-fewer-calls.js`, `test-hub-moment.js`, `test-list-namespace.js`, `test-local-site.js`, `test-pager.js`, `test-participant-storage.js`, `test-participant-waits.js`, `test-review-9a.js`, `test-review-9b.js`, `test-session.js`, `test-sign-in-again.js`
+- **Node suites that import it:** `test-aop-math.js`, `test-aop-results.js`, `test-confidence-check.js`, `test-duplicates.js`, `test-effects.js`, `test-fewer-calls.js`, `test-hub-moment.js`, `test-list-namespace.js`, `test-local-site.js`, `test-pager.js`, `test-participant-storage.js`, `test-participant-waits.js`, `test-results-pack.js`, `test-review-9a.js`, `test-review-9b.js`, `test-session.js`, `test-sign-in-again.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
@@ -344,7 +344,7 @@ Results counted and shown: the tally, the chart model (every number a chart show
 | `metric-words.js` | The words of every figure on the Leadership dashboard (Prompt 21, Phase 5; wireframe boards 9 and 12): its name, the formula, what it means and an example, written once here and shown by the dashboard's i button on each figure (hover or focus) and by board 12's glossary. | `HIDE_NAMES_BY_DEFAULT`, `METRICS`, `metricWords` |
 | `participant-names.js` | The one rule that names a participant. | `ownerOf`, `nameParticipants`, `withNamesHidden` |
 | `present-fit.js` | The full screen's type, a step at a time (Phase 11a-3; until then these lines were inside LiveDisplay.svelte). | `SMALLEST`, `scaleOf`, `nextFit` |
-| `results-chart-figure.js` | A Results chart on paper (Phase 11b): what the screen's charts (admin/charts/) draw, as rectangles, lines, ticks and single lines of text in millimetres, from the chart model (lib/results/results-chart-model.js chartOf) and the palette (lib/results/results-palette.js). | `valueOf`, `barRows`, `chartFigure`, `MULTI_CAPTION` |
+| `results-chart-figure.js` | A Results chart on paper (Phase 11b): what the screen's charts (admin/charts/) draw, as rectangles, lines, ticks and single lines of text in millimetres, from the chart model (lib/results/results-chart-model.js chartOf) and the palette (lib/results/results-palette.js). | `valueOf`, `barRows`, `chartFigure`, `markShape`, `MULTI_CAPTION` |
 | `results-chart-model.js` | What a Results chart shows, worked out from the tally and the answers, with no drawing in it (Phase 11a). | 30 exports |
 | `results-palette-source.ts` | The Results palette on the admin page (Phase 11b): styles/results-tokens.css itself, imported as text and read by lib/results/results-palette.js, so the files the admin makes (the Live display's PDF and PowerPoint, the leader report) take their colours from the one file the screen does. | `RESULTS_PALETTE` |
 | `results-palette.js` | The Results palette for paper (Phase 11b): the colours of styles/results-tokens.css, read from that file's own text, so the Live display's one-page PDF and PowerPoint and the leader report's charts wear exactly what the screen wears, and a change of colour is a change of that one file. | `PALETTE_TOKENS`, `readPalette`, `toneFill`, `rampFill` |
