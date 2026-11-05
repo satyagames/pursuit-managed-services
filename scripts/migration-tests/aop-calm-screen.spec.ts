@@ -278,6 +278,139 @@ test.describe('the Art of Possibility, one calm screen (Prompt 35)', () => {
     await expect(card.getByText('Sub-process 1 of 13')).toBeVisible();
   });
 
+  test('the motion: a pop and a ripple, a finished row, the milestones once each, Clear all\'s fly-away and the wave under the cap (iPad landscape)', async ({ page }) => {
+    const { fake, token } = await site();
+    await open(page, fake, token, SIZES['ipad-landscape']);
+    const running = () => page.evaluate(() => document.getAnimations().filter((each) => each.playState === 'running').length);
+    /** The most animations running at once over `ms`, sampled each frame, while `act` runs. */
+    const most = async (act: () => Promise<unknown>, ms: number) => {
+      await page.evaluate((span) => {
+        const scope = window as unknown as { pmsMost: number };
+        scope.pmsMost = 0;
+        const end = performance.now() + span;
+        const sample = () => { scope.pmsMost = Math.max(scope.pmsMost, document.getAnimations().filter((each) => each.playState === 'running').length); if (performance.now() < end) requestAnimationFrame(sample); };
+        requestAnimationFrame(sample);
+      }, ms);
+      await act();
+      await page.waitForTimeout(ms);
+      return page.evaluate(() => (window as unknown as { pmsMost: number }).pmsMost);
+    };
+    const nextAndRate = async (times: number, key = 'h') => {
+      for (let at = 0; at < times; at += 1) {
+        await page.getByRole('button', { name: /Next empty box/ }).click();
+        await page.keyboard.press(key);
+      }
+    };
+
+    // A tap: the box's content pops and a ripple grows from the touch point.
+    const gl = box(page, 'Corp accounting – GL', 'Strategic value');
+    await gl.click();
+    expect(await gl.locator('.matrix-face').evaluate((node) => node.getAnimations().length)).toBe(1);
+    expect(await page.locator('.matrix-ripple').evaluate((node) => node.getAnimations().length)).toBe(1);
+    await page.waitForTimeout(500);
+    expect(await running()).toBe(0);
+
+    // A finished row: its check arrives and the sheen sweeps across it.
+    await gl.focus();
+    for (const key of ['ArrowRight', 'h', 'ArrowRight', 'h', 'ArrowRight', 'h']) await page.keyboard.press(key);
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('h');
+    expect(await page.getByRole('row', { name: /Corp accounting/ }).getByTestId('matrix-row-done').evaluate((node) => node.getAnimations().length)).toBe(1);
+    expect(await page.locator('.matrix-sheen').evaluate((node) => node.getAnimations().length)).toBe(1);
+
+    // The milestones: 17, 33 and 49 of 65, each said once, gone after 1.6 seconds.
+    const label = page.getByTestId('matrix-milestone');
+    await nextAndRate(11);
+    await expect(label).toHaveCount(0);
+    await nextAndRate(1);
+    await expect(label).toHaveText('A quarter done');
+    await page.screenshot({ path: `${shots}milestone.png` });
+    await expect(label).toHaveCount(0, { timeout: 2500 });
+    await nextAndRate(16);
+    await expect(label).toHaveText('Halfway');
+    await nextAndRate(16);
+    await expect(label).toHaveText('Nearly there');
+    await expect(page.getByTestId('matrix-count')).toHaveText('49 of 65 rated');
+
+    // Clear all: copies of the rated boxes fly off, never more than 16 things moving, and they are gone; Undo brings the ratings back and says no milestone again.
+    await page.waitForTimeout(1800);
+    await page.getByRole('button', { name: 'More choices' }).click();
+    await page.getByRole('button', { name: 'Clear all' }).click();
+    const flying = await most(() => page.getByRole('button', { name: 'Yes, clear all' }).click(), 1200);
+    console.log(`  Clear all: at most ${flying} animations at once`);
+    expect(flying).toBeGreaterThan(0);
+    expect(flying).toBeLessThanOrEqual(16);
+    await expect(page.locator('.motion-copy')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Undo' }).click();
+    await expect(page.getByTestId('matrix-count')).toHaveText('49 of 65 rated');
+    await expect(label).toHaveCount(0);
+
+    // The last box: the wave runs through the grid under the cap, and the bar's check arrives.
+    await nextAndRate(15);
+    await page.waitForTimeout(700);
+    const waving = await most(() => nextAndRate(1), 1200);
+    console.log(`  the wave: at most ${waving} animations at once`);
+    expect(waving).toBeGreaterThan(5);
+    expect(waving).toBeLessThanOrEqual(16);
+    await expect(page.getByTestId('matrix-bar-check')).toBeVisible();
+    await page.screenshot({ path: `${shots}ipad-landscape-all-rated.png`, fullPage: true });
+  });
+
+  test('with motion off nothing moves, and a milestone\'s words still show', async ({ page }) => {
+    const { fake, token } = await site();
+    await page.setViewportSize(SIZES['ipad-landscape']);
+    await serveSharePoint(page, fake);
+    await page.goto(`${pageUrl('index.html')}?qr=${token}&motion=off`);
+    await page.getByRole('button', { name: 'Click here to begin' }).click();
+    await page.getByRole('button', { name: /The Art of Possibility/ }).click();
+    for (let at = 0; at < 17; at += 1) {
+      await page.getByRole('button', { name: /Next empty box/ }).click();
+      await page.keyboard.press('m');
+    }
+    await expect(page.getByTestId('matrix-milestone')).toHaveText('A quarter done');
+    expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
+    await page.getByRole('button', { name: 'More choices' }).click();
+    await page.getByRole('button', { name: 'Clear all' }).click();
+    await page.getByRole('button', { name: 'Yes, clear all' }).click();
+    await expect(page.locator('.motion-copy')).toHaveCount(0);
+    expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
+  });
+
+  test('at a 4x slower processor the wave and Clear all keep 30 frames a second (Chromium, measured and printed)', async ({ page, browserName }) => {
+    test.skip(browserName !== 'chromium', 'the processor slowdown is Chromium\'s (DevTools protocol)');
+    const { fake, token } = await site();
+    await open(page, fake, token, SIZES['ipad-landscape']);
+    for (let at = 0; at < 64; at += 1) {
+      await page.getByRole('button', { name: /Next empty box/ }).click();
+      await page.keyboard.press('m');
+    }
+    await page.waitForTimeout(2000);
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+    const frames = async (act: () => Promise<unknown>, ms: number) => {
+      await page.evaluate((span) => {
+        const scope = window as unknown as { pmsFrames: number[] };
+        scope.pmsFrames = [];
+        let last = 0;
+        const end = performance.now() + span;
+        const step = (now: number) => { if (last) scope.pmsFrames.push(now - last); last = now; if (now < end) requestAnimationFrame(step); };
+        requestAnimationFrame(step);
+      }, ms);
+      await act();
+      await page.waitForTimeout(ms + 200);
+      const gaps = await page.evaluate(() => (window as unknown as { pmsFrames: number[] }).pmsFrames);
+      return { fps: 1000 / (gaps.reduce((sum, gap) => sum + gap, 0) / gaps.length), worst: Math.max(...gaps) };
+    };
+    const wave = await frames(async () => { await page.getByRole('button', { name: /Next empty box/ }).click(); await page.keyboard.press('m'); }, 1000);
+    await page.getByRole('button', { name: 'More choices' }).click();
+    await page.getByRole('button', { name: 'Clear all' }).click();
+    const cleared = await frames(() => page.getByRole('button', { name: 'Yes, clear all' }).click(), 1000);
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+    console.log(`  4x slowdown: the wave ${wave.fps.toFixed(0)} fps (slowest frame ${wave.worst.toFixed(0)} ms); Clear all ${cleared.fps.toFixed(0)} fps (slowest frame ${cleared.worst.toFixed(0)} ms)`);
+    expect(wave.fps).toBeGreaterThanOrEqual(30);
+    expect(cleared.fps).toBeGreaterThanOrEqual(30);
+  });
+
   test('a tap shows its colour within 100 ms at a 4x slower processor (Chromium, measured and printed)', async ({ page, browserName }) => {
     test.skip(browserName !== 'chromium', 'the processor slowdown is Chromium\'s (DevTools protocol)');
     const { fake, token } = await site();

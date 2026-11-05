@@ -297,7 +297,7 @@ The participant screens' motion, behind one door (`motion.ts`): the plan by kind
 | Module | What it is (its header) | Exports |
 |---|---|---|
 | `motion-plan.js` | The motion plan of the participant screens (Phase 15): which shape each thing on a screen moves with, for how long, after how much delay and over what distance, as a TABLE keyed by the moment, the kind of question and the part of the screen, never as numbers in a component. | 27 exports |
-| `motion.ts` | The one door to motion on the participant screens (Phase 15). | `motionLevel`, `setMotionEnabled`, `setMotionDirection`, `watchMoment`, `motion`, `movingCount` |
+| `motion.ts` | The one door to motion on the participant screens (Phase 15). | `motionLevel`, `setMotionEnabled`, `setMotionDirection`, `watchMoment`, `motion`, `playEffect`, `flyOff`, `playWave`, `movingCount` |
 
 ## `lib/participant/`
 

@@ -3,6 +3,8 @@
   let chosenView: 'grid' | 'single' | null = null;
   // The first-box bubble has gone for this visit (Prompt 35): after the first rating it does not come back until the page is opened again.
   let taught = false;
+  // The milestones each question has said this visit (Prompt 35): each is said once, and a reload starts from the ratings it opens with.
+  const milestonesShown = new Map<string, Set<string>>();
 </script>
 
 <script lang="ts">
@@ -10,7 +12,9 @@
   import { cellsLeft, cycle, decodeAnswer, encodeAnswer, nextEmpty, type Grid } from '../lib/participant/aop-answer.js';
   import { LEVEL_LOOK } from '../lib/participant/aop-levels.js';
   import { ADVANCE_MS, HOLD_MS, UNDO_MS, advancesAfter, clearedOf, defaultView, gridWidthFor, levelCounts, restoreInto, rowIsDone, setCell, type Cleared } from '../lib/participant/aop-view.js';
-  import { motion, motionLevel } from '../lib/motion/motion.js';
+  import { flyOff, motion, motionLevel, playEffect, playWave } from '../lib/motion/motion.js';
+  import { milestonesCrossed } from '../lib/motion/aop-motion-plan.js';
+  import { ENTRANCE_BUDGET, TOKENS } from '../lib/motion/motion-plan.js';
   import { focusHeading } from '../lib/common/focus.js';
   import type { Question } from '../lib/participant/pager-logic.js';
   import '../styles/aop-level-tokens.css';
@@ -86,6 +90,19 @@
   let advancing = $state(false);
   let advanceTimer: ReturnType<typeof setTimeout> | undefined;
   let cardHeading = $state<HTMLElement>();
+  // The effects' few fixed elements (Prompt 35): one ripple and one sheen for the whole grid, the bar's glow and check, and a milestone's words.
+  let well = $state<HTMLElement>();
+  let ripple = $state<HTMLElement>();
+  let sheen = $state<HTMLElement>();
+  let glow = $state<HTMLElement>();
+  let barCheck = $state<Element>();
+  let milestoneLabel = $state<HTMLElement>();
+  let milestone = $state<string | null>(null);
+  let milestoneTimer: ReturnType<typeof setTimeout> | undefined;
+  /** The first empty box's one swell after the screen comes in: it stops when the bubble goes. */
+  let firstPulse: Animation | null = null;
+  /** Clear all or its Undo is changing many boxes at once: their colour change is not a fade, so the change moves no more than the cap allows. */
+  let bulk = $state(false);
   let spoken = $state('');
   let spokenAt = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -95,7 +112,13 @@
     if (!chosenView) view = defaultView({ width: window.innerWidth, height: window.innerHeight, criteria: criteria.length });
     fit();
     window.addEventListener('resize', fit, { passive: true });
-    return () => { clearTimeout(timer); clearTimeout(holdTimer); clearTimeout(undoTimer); clearTimeout(advanceTimer); window.removeEventListener('resize', fit); };
+    if (!milestonesShown.has(question.id)) {
+      const shown = new Set<string>();
+      milestonesCrossed(0, rated, total, shown, { quietly: true });
+      milestonesShown.set(question.id, shown);
+    }
+    void tick().then(() => { if (teach) firstPulse = playEffect(host?.querySelector(`[aria-describedby="${uid}-teach"]`), 'pulse', { delay: ENTRANCE_BUDGET }); });
+    return () => { clearTimeout(timer); clearTimeout(holdTimer); clearTimeout(undoTimer); clearTimeout(advanceTimer); clearTimeout(milestoneTimer); window.removeEventListener('resize', fit); };
   });
 
   function choose(next: 'grid' | 'single') {
@@ -118,15 +141,17 @@
   }
 
   function stopTeaching() {
-    if (teach) { teach = false; taught = true; }
+    if (teach) { teach = false; taught = true; firstPulse?.cancel(); }
   }
 
-  function set(rowId: string, criterionId: string, level: number | undefined) {
+  function set(rowId: string, criterionId: string, level: number | undefined, point?: { x: number; y: number }) {
     const cleared = level === undefined ? clearedOf(cells, shape, [{ rowId, criterionId }]) : [];
+    const before = { rated, counts: { ...counts }, rowDone: rowDone(rowId) };
     setCell(cells, rowId, criterionId, level);
     if (level !== undefined) stopTeaching();
     handUp();
     offerUndo(cleared);
+    void react(rowId, criterionId, level, before, point);
   }
 
   /** "Cleared. Undo" for 8 seconds after a clear: one box or all of them. */
@@ -137,9 +162,16 @@
     undoTimer = setTimeout(() => { undo = null; }, UNDO_MS);
   }
 
+  /** Many boxes change in one go: for the next two frames none of them fades its colour. */
+  function inBulk() {
+    bulk = true;
+    requestAnimationFrame(() => requestAnimationFrame(() => { bulk = false; }));
+  }
+
   function undoClear() {
     if (!undo) return;
     clearTimeout(undoTimer);
+    if (undo.length > 1) inBulk();
     restoreInto(cells, undo);
     undo = null;
     handUp();
@@ -160,6 +192,7 @@
     await tick();
     const level = levelOf(rows[r].id, criteria[c].id) ?? 1;
     host?.querySelector<HTMLElement>(`[data-menu] [data-choice="${level}"]`)?.focus();
+    playEffect(host?.querySelector('[data-menu]'), 'spring');
   }
 
   function closeMenu(refocus: boolean) {
@@ -224,9 +257,71 @@
     void openMenu(r, c);
   }
 
-  function onTap(rowId: string, criterionId: string, level: number | undefined) {
+  function onTap(event: MouseEvent, rowId: string, criterionId: string, level: number | undefined) {
     if (swallowClick) { swallowClick = false; return; }
-    set(rowId, criterionId, cycle(level));
+    // (A key's click has no point: the ripple starts from the middle of the box.)
+    const box = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const point = event.detail > 0 ? { x: event.clientX, y: event.clientY } : { x: box.left + box.width / 2, y: box.top + box.height / 2 };
+    set(rowId, criterionId, cycle(level), point);
+  }
+
+  // ---- The effects (Prompt 35): each through lib/motion/motion.ts, at the page's one motion level; nothing here times or moves anything itself. ----
+  type Before = { rated: number; counts: Record<number, number>; rowDone: boolean };
+
+  async function react(rowId: string, criterionId: string, level: number | undefined, before: Before, point?: { x: number; y: number }) {
+    await tick();
+    const r = rows.findIndex((row) => row.id === rowId);
+    const c = criteria.findIndex((criterion) => criterion.id === criterionId);
+    if (level !== undefined) {
+      const box = view === 'grid' ? cellAt(r, c) : host?.querySelector(`[data-segments="${c}"] [aria-pressed="true"]`);
+      playEffect(box?.querySelector('.matrix-face') ?? box, 'pop');
+      if (view === 'grid' && point && well) {
+        const at = well.getBoundingClientRect();
+        playEffect(ripple, 'ripple', { x: point.x - at.left, y: point.y - at.top });
+      }
+    }
+    for (const each of [1, 2, 3]) if (counts[each] !== before.counts[each]) playEffect(host?.querySelector(`[data-pill="${each}"]`), 'bump');
+    if (!before.rowDone && rowDone(rowId)) {
+      playEffect(host?.querySelector(view === 'grid' ? `[data-row="${r}"] .matrix-check` : '[data-testid="matrix-card-done"] .matrix-check'), 'check');
+      if (view === 'grid') sweep(r);
+    }
+    const shown = milestonesShown.get(question.id) ?? new Set<string>();
+    milestonesShown.set(question.id, shown);
+    const said = milestonesCrossed(before.rated, rated, total, shown);
+    if (said) void showMilestone(said.words);
+    if (total > 0 && before.rated < total && rated === total) allRated();
+  }
+
+  /** A finished row: one light sweeps across it (the grid's one sheen, placed on the row). */
+  function sweep(r: number) {
+    const row = host?.querySelector<HTMLElement>(`[data-row="${r}"]`);
+    if (!row || !well || !sheen) return;
+    const frame = well.getBoundingClientRect();
+    const place = row.getBoundingClientRect();
+    sheen.style.top = `${place.top - frame.top}px`;
+    sheen.style.height = `${place.height}px`;
+    playEffect(sheen, 'sheen', { width: frame.width });
+  }
+
+  /** A milestone: the bar glows once and its words rise from it, then go (with motion off they simply show for the same time). */
+  async function showMilestone(words: string) {
+    clearTimeout(milestoneTimer);
+    milestone = words;
+    await tick();
+    playEffect(milestoneLabel, 'milestone');
+    playEffect(glow, 'glow');
+    milestoneTimer = setTimeout(() => { milestone = null; }, TOKENS.aop.milestone);
+  }
+
+  /** Every box rated: the wave runs through the grid and the bar's check arrives. */
+  function allRated() {
+    playEffect(barCheck, 'check');
+    if (view !== 'grid' || !host) return;
+    const boxes = [...host.querySelectorAll<HTMLElement>('[data-cell]')].map((node) => {
+      const [r, c] = (node.dataset.cell ?? '0-0').split('-').map(Number);
+      return { node, r, c };
+    });
+    playWave(boxes, rows.length, criteria.length);
   }
 
   const levelOf = (rowId: string, criterionId: string): number | undefined => cells[rowId]?.[criterionId];
@@ -272,7 +367,7 @@
     if (!box) return;
     const row = rows.findIndex((each) => each.id === box.rowId);
     const column = criteria.findIndex((each) => each.id === box.criterionId);
-    if (view === 'grid') { await focusCell(row, column); return; }
+    if (view === 'grid') { await focusCell(row, column); playEffect(cellAt(row, column), 'pulse'); return; }
     rowAt = row;
     focusColumn = column;
     await tick();
@@ -283,6 +378,9 @@
     confirmingClear = false;
     moreOpen = false;
     const cleared = clearedOf(cells, shape);
+    // The rated boxes fly off (copies, at most what the cap allows) as the ratings go.
+    if (view === 'grid') flyOff([...(host?.querySelectorAll<HTMLElement>('.matrix-cell:not([data-level="0"])') ?? [])]);
+    inBulk();
     cells = {};
     handUp();
     offerUndo(cleared);
@@ -372,10 +470,15 @@
 
   <div class="matrix-strip" data-pinned={view === 'grid' || undefined} bind:clientHeight={stripHeight}>
     <p class="matrix-count" data-testid="matrix-count">{rated} of {total} rated</p>
-    <div class="matrix-bar" aria-hidden="true"><span style:transform="scaleX({total ? rated / total : 0})"></span></div>
+    <div class="matrix-line">
+      <div class="matrix-bar" aria-hidden="true"><span style:transform="scaleX({total ? rated / total : 0})"></span></div>
+      {#if left === 0}<svg class="matrix-bar-check" bind:this={barCheck} width="22" height="22" viewBox="0 0 20 20" aria-hidden="true" data-testid="matrix-bar-check"><circle cx="10" cy="10" r="9" /><path d="M5.5 10.2l3 3 6-6.4" /></svg>{/if}
+      <span class="matrix-glow" bind:this={glow} aria-hidden="true"></span>
+      {#if milestone}<p class="matrix-milestone" bind:this={milestoneLabel} role="status" data-testid="matrix-milestone">{milestone}</p>{/if}
+    </div>
     <ul class="matrix-pills" aria-label="Your ratings so far">
       {#each [1, 2, 3] as level (level)}
-        <li class="matrix-pill" data-testid="matrix-pill-{look(level).token}"><span class="matrix-chip" data-level={level}>{@render mark(level, 12)}</span><span>{look(level).name}</span> <b>{counts[level]}</b></li>
+        <li class="matrix-pill" data-pill={level} data-testid="matrix-pill-{look(level).token}"><span class="matrix-chip" data-level={level}>{@render mark(level, 12)}</span><span>{look(level).name}</span> <b>{counts[level]}</b></li>
       {/each}
     </ul>
     <button type="button" class="matrix-next" disabled={left === 0} onclick={() => void goToEmpty()}>
@@ -392,7 +495,9 @@
   <p class="matrix-caption">Colour shows the rating, not good or bad.</p>
 
   {#if view === 'grid'}
-    <div class="matrix-well" data-cramped={cramped || undefined}>
+    <div class="matrix-well" data-cramped={cramped || undefined} data-bulk={bulk || undefined} bind:this={well}>
+      <span class="matrix-ripple" bind:this={ripple} aria-hidden="true"></span>
+      <span class="matrix-sheen" bind:this={sheen} aria-hidden="true"></span>
       <table class="matrix-grid" aria-labelledby={labelledby} style:--matrix-columns={criteria.length}>
         <colgroup>
           <col class="matrix-col-process" />
@@ -424,7 +529,7 @@
         <tbody>
           {#each rows as row, r (row.id)}
             {@const done = rowDone(row.id)}
-            <tr class="matrix-band" data-done={done || undefined} data-alt={r % 2 === 1 || undefined}>
+            <tr class="matrix-band" data-row={r} data-done={done || undefined} data-alt={r % 2 === 1 || undefined}>
               <th scope="row" class="matrix-row">
                 <span class="matrix-row-name">
                   {#if done}<svg class="matrix-check" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" data-testid="matrix-row-done"><circle cx="10" cy="10" r="9" /><path d="M5.5 10.2l3 3 6-6.4" /></svg>{/if}
@@ -447,7 +552,7 @@
                     aria-describedby={first ? `${uid}-teach` : undefined}
                     onfocus={() => { focusRow = r; focusColumn = c; }}
                     onkeydown={(event) => onCellKey(event, r, c)}
-                    onclick={() => onTap(row.id, criterion.id, level)}
+                    onclick={(event) => onTap(event, row.id, criterion.id, level)}
                     onpointerdown={(event) => onPress(event, r, c)}
                     onpointermove={onPressMove}
                     onpointerup={stopHold}
@@ -456,7 +561,7 @@
                     oncontextmenu={(event) => onContextMenu(event, r, c)}
                   >
                     {#if level}
-                      {@render mark(level, 12)}<span class="matrix-letter">{look(level).letter}</span>
+                      <span class="matrix-face">{@render mark(level, 12)}<span class="matrix-letter">{look(level).letter}</span></span>
                     {:else}
                       <svg class="matrix-plus" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10" /></svg>
                     {/if}
@@ -642,8 +747,55 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .matrix-bar {
+  /* The bar, its glow at a milestone, its check when every box is rated, and a milestone's words above it. */
+  .matrix-line {
+    position: relative;
+    display: flex;
     flex: 1 1 8rem;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .matrix-glow {
+    position: absolute;
+    inset: -4px;
+    border-radius: 8px;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--aop-well-ink) 30%, transparent);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .matrix-milestone {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 6px);
+    left: 0;
+    z-index: 4;
+    width: max-content;
+    margin: 0 auto !important;
+    padding: 4px 13px;
+    color: var(--aop-well);
+    font-weight: var(--fw-semibold);
+    background: var(--aop-well-ink);
+    border-radius: 14px;
+    pointer-events: none;
+  }
+
+  .matrix-bar-check {
+    flex: none;
+    fill: var(--aop-well-ink);
+    stroke: var(--aop-well);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .matrix-bar-check circle {
+    stroke: none;
+  }
+
+  .matrix-bar {
+    flex: 1 1 auto;
     height: 8px;
     overflow: hidden;
     background: var(--matrix-rule);
@@ -701,6 +853,46 @@
   }
 
   /* The page scrolls once: the grid has no scroll of its own, unless a guest chose it on a screen too narrow for its columns. */
+  .matrix-well {
+    position: relative;
+  }
+
+  /* One ripple and one sheen for the whole grid: moved to where they are needed, never one element per tap. */
+  .matrix-ripple {
+    position: absolute;
+    top: -40px;
+    left: -40px;
+    z-index: 1;
+    width: 80px;
+    height: 80px;
+    background: radial-gradient(circle, var(--aop-well-ink) 0%, transparent 70%);
+    border-radius: 50%;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .matrix-sheen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    width: 120px;
+    height: 0;
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.75), transparent);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .matrix-well[data-bulk] .matrix-cell {
+    transition: none;
+  }
+
+  .matrix-face {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+  }
+
   .matrix-well[data-cramped] {
     overflow-x: auto;
   }
@@ -967,14 +1159,24 @@
     border-radius: 12px;
   }
 
+  .matrix-menu {
+    transform-origin: top left;
+  }
+
   .matrix-menu[data-above] {
     top: auto;
     bottom: calc(100% - 2px);
+    transform-origin: bottom left;
   }
 
   .matrix-menu[data-end] {
     right: 2px;
     left: auto;
+    transform-origin: top right;
+  }
+
+  .matrix-menu[data-end][data-above] {
+    transform-origin: bottom right;
   }
 
   .matrix-choice {
