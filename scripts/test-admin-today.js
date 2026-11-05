@@ -494,6 +494,35 @@ describe('colours', () => {
     assert.notEqual(weakened, css);
     assert.ok(lookFailures(weakened).some((failure) => failure.startsWith('adm-text-muted on adm-card: 4.4')));
   });
+
+  // Prompt 34: the exported files (the pack and the leader report) and the projected wall take the same colours. The files' hex values are written
+  // once, in lib/exports/report-look.js, and must equal the tokens; the wall's words and figures are held to 7:1 on black (read from the back of a
+  // room), the files' words to 4.5:1 and their marks to 3:1, and the highlighter's black words to 7.9:1 on lime.
+  const tokensCss = () => readFile(path.join(ROOT, 'migration/src/styles/admin-tokens.css'), 'utf8');
+  const look = () => import('../migration/src/lib/exports/report-look.js');
+
+  it('the files\' colours equal the admin tokens they are named after', async () => {
+    const css = await tokensCss();
+    const { LOOK, LOOK_TOKENS } = await look();
+    const value = (name) => new RegExp(`--${name}:\\s*(#[0-9a-f]{6})`, 'i').exec(css)?.[1]?.toUpperCase();
+    assert.deepEqual(Object.keys(LOOK).sort(), Object.keys(LOOK_TOKENS).sort());
+    for (const [key, token] of Object.entries(LOOK_TOKENS)) assert.equal(LOOK[key], value(token), `${key} is --${token}`);
+  });
+
+  it('the wall\'s words and figures are 7:1 on black, the files\' words 4.5:1 and marks 3:1, the highlighter 7.9:1', async () => {
+    const { LOOK, lookFailures: fileFailures, WALL_PAIRS, HIGHLIGHT_PAIR } = await look();
+    assert.deepEqual(fileFailures(LOOK), []);
+    assert.ok(WALL_PAIRS.some(([ink, ground]) => ink === 'lime' && ground === 'black'), 'lime figures on black are held');
+    assert.ok(contrastRatio(LOOK[HIGHLIGHT_PAIR[0]], LOOK[HIGHLIGHT_PAIR[1]]) >= 7.9);
+  });
+
+  it('the checks fail when a file pair is set to 4.4:1 and when a wall pair is set under 7:1', async () => {
+    const { LOOK, lookFailures: fileFailures } = await look();
+    // #787878 on white is 4.42:1; #3c8f0f on black is 5.13:1 (a pass on white paper's rule, not on the wall's).
+    assert.ok(fileFailures({ ...LOOK, textMuted: '#787878' }).some((failure) => failure.startsWith('textMuted on page: 4.4')));
+    assert.ok(fileFailures({ ...LOOK, lime: '#3C8F0F' }).includes('lime on black: 5.13 (needs 7)'));
+  });
+
 });
 
 // ---- Requests: SharePoint (mocked) ----------------------------------------------------------------
