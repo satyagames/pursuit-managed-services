@@ -156,7 +156,7 @@ test('the exports from the admin page are the same files on SharePoint: CSV byte
   await expect(meta(page)).toContainText(/4 answers from 3 iPads/);
 
   const csv = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Export CSV' }).click();
+  await page.getByRole('button', { name: 'Download CSV' }).click();
   const text = (await readFile((await (await csv).path())!, 'utf8')).replace(/^﻿/, '');
   // Phase 13: the summary by activity, with the client's name (the one the display shows) in every row; shares as whole numbers.
   const client = (await page.locator('.live__client').innerText()).trim();
@@ -166,14 +166,14 @@ test('the exports from the admin page are the same files on SharePoint: CSV byte
   expect(text, 'the third iPad\'s answer is counted').toContain('Kroger grocery and Baking co.,1,33,');
 
   const pdf = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Export PDF' }).click();
+  await page.getByRole('button', { name: 'Download PDF pack' }).click();
   const pdfBytes = await readFile((await (await pdf).path())!);
   expect(pdfBytes.subarray(0, 5).toString()).toBe('%PDF-');
   expect(pdfBytes.toString('latin1')).toContain('/Creator (Pursuit Managed Services)');
   expect(pdfBytes.toString('latin1')).toContain('Kroger');
 
   const ppt = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Export PPT' }).click();
+  await page.getByRole('button', { name: 'Download PowerPoint pack' }).click();
   const archive = await JSZip.loadAsync(await readFile((await (await ppt).path())!));
   expect(await archive.file('ppt/slides/slide1.xml')!.async('string')).toContain('Kroger');
   expect(await archive.file('docProps/app.xml')!.async('string')).toContain('<Company>Pursuit Managed Services</Company>');

@@ -276,7 +276,7 @@ test('PPT exports use each selected session client branding', async ({ page }) =
   await mockApi(page);
   for (const [sessionId, name, color] of [['session-a', 'Synthetic Alpha', '0060A9'], ['session-b', 'Synthetic Beta', '008044']]) {
     await openLiveDisplay(page, sessionId);
-    const exportButton = page.getByRole('button', { name: 'Export PPT', exact: true });
+    const exportButton = page.getByRole('button', { name: 'Download PowerPoint pack', exact: true });
     await expect(exportButton).toBeVisible();
     const downloadPromise = page.waitForEvent('download');
     await exportButton.click();
@@ -292,7 +292,7 @@ test('PPT exports use each selected session client branding', async ({ page }) =
 test('PDF exports record the product name as the creator', async ({ page }) => {
   await mockApi(page);
   await openLiveDisplay(page, 'session-a');
-  const exportButton = page.getByRole('button', { name: 'Export PDF', exact: true });
+  const exportButton = page.getByRole('button', { name: 'Download PDF pack', exact: true });
   await expect(exportButton).toBeVisible();
   const downloadPromise = page.waitForEvent('download');
   await exportButton.click();

@@ -31,3 +31,59 @@ describe('the wall display\'s address', () => {
     assert.equal(liveDisplayOfHash('#live-display/vine-2026-10-15'), 'vine-2026-10-15');
   });
 });
+
+// Prompt 34: the wall's dark data look. Its one headline sentence per question puts the figures in Bold and underlines the measure's name, from the
+// headline's own template (never from the words people wrote), and each question has one hero figure with a line saying what it is. Both come from the
+// chart model (lib/results/results-chart-model.js), where every number a chart shows is worked out.
+import { chartsOf } from '../migration/src/lib/results/results-chart-model.js';
+import { bigResults, oddResults, vineResults } from './results-export-fixtures.js';
+
+const allCharts = () => [vineResults(), bigResults(), oddResults()].flatMap((results) => chartsOf(results).flatMap((section) => section.charts));
+
+describe('the wall\'s headline and hero figure (Prompt 34)', () => {
+  it('the headline\'s parts, joined, are the headline itself, for every question of every kind', () => {
+    const charts = allCharts();
+    assert.ok(new Set(charts.map((chart) => chart.kind)).size >= 6, 'every kind of question is here');
+    for (const chart of charts) {
+      assert.ok(Array.isArray(chart.headlineParts) && chart.headlineParts.length > 0, `${chart.id} has parts`);
+      assert.equal(chart.headlineParts.map((part) => part.text).join(''), chart.headline, chart.id);
+    }
+  });
+
+  it('only figures are Bold, at most one measure is underlined, and an answer, a word people wrote or a label is never emphasised', () => {
+    for (const chart of allCharts()) {
+      const strong = chart.headlineParts.filter((part) => part.strong);
+      for (const part of strong) assert.match(part.text, /^\d+(\.\d)?%?$/, `${chart.id}: "${part.text}" is a figure`);
+      assert.ok(chart.headlineParts.filter((part) => part.measure).length <= 1, `${chart.id}: one measure at most`);
+      const labels = [...(chart.options ?? []).map((option) => option.label), ...(chart.words ?? []).map((word) => word.word), ...(chart.comments ?? []).map((comment) => comment.text)];
+      for (const part of chart.headlineParts.filter((each) => each.strong || each.measure)) assert.ok(!labels.includes(part.text) || /^\d+%?$/.test(part.text), `${chart.id}: "${part.text}" is not an answer`);
+    }
+  });
+
+  it('a choice says its top share, a scale its average, a ranking its top support score, written answers how many; none with no answers', () => {
+    const charts = allCharts();
+    const first = (kind) => charts.find((chart) => chart.kind === kind && chart.answered > 0);
+    const choice = charts.find((chart) => chart.kind === 'choice' && chart.answered > 0 && chart.options.filter((option) => option.isTop).length === 1);
+    const lead = choice.options.find((option) => option.isTop);
+    assert.deepEqual(choice.hero, { figure: `${lead.percent}%`, context: `chose the top answer · ${lead.count} of ${choice.answered}` });
+    // A tie shows the count the leaders share (their rounded shares can differ by one: 34%, 33%, 33%).
+    const tie = charts.find((chart) => chart.kind === 'choice' && chart.options.filter((option) => option.isTop).length > 1);
+    assert.deepEqual(tie.hero, { figure: String(tie.options.find((option) => option.isTop).count), context: 'each, a tie for the top' });
+    const scale = first('scale');
+    assert.deepEqual(scale.hero, { figure: scale.scale.average.toFixed(1), context: `average, out of ${scale.scale.top}` });
+    const ranking = first('ranking');
+    assert.equal(ranking.hero.figure, String(ranking.options[0].score));
+    assert.equal(ranking.hero.context, 'support score of the top answer, out of 100');
+    const text = first('text');
+    assert.equal(text.hero.figure, String(text.comments.length));
+    assert.equal(text.hero.context, text.comments.length === 1 ? 'comment' : 'comments');
+    for (const chart of charts.filter((each) => each.answered === 0 || each.kind === 'matrix')) assert.equal(chart.hero, null, chart.id);
+  });
+
+  it('the headline of a choice reads Bold figure and underlined measure in the template\'s places', () => {
+    const choice = allCharts().find((chart) => chart.kind === 'choice' && chart.answered > 0 && chart.options.filter((option) => option.isTop).length === 1);
+    const measure = choice.headlineParts.find((part) => part.measure);
+    assert.ok(['Most people', 'top choice'].includes(measure.text), measure.text);
+    assert.ok(choice.headlineParts.some((part) => part.strong && part.text.endsWith('%')));
+  });
+});

@@ -9,6 +9,7 @@
   import { withStoredColours } from '../lib/admin/master-brand.js';
   import { createPageWatcher, type PageWatcher } from '../lib/common/page-watch.js';
   import { adminDelay } from '../lib/common/poll-schedule.js';
+  import { focusHeading } from '../lib/common/focus.js';
   import { heldNameSources } from '../lib/admin/admin-results.js';
   import { wallAddress } from '../lib/admin/live-wall.js';
   import {
@@ -20,7 +21,8 @@
   import LiveHead from './LiveHead.svelte';
   import LiveNotReady from './LiveNotReady.svelte';
   import LiveNotices from './LiveNotices.svelte';
-  import LiveCheckCard from './LiveCheckCard.svelte';
+  import LiveSteps from './LiveSteps.svelte';
+  import Breadcrumb from './Breadcrumb.svelte';
   import LiveSections from './LiveSections.svelte';
   import LiveStage from './LiveStage.svelte';
 
@@ -84,6 +86,8 @@
   let footHeight = $state(0);
   let stage = $state<HTMLElement>();
   let root = $state<HTMLElement>();
+  /** The display's heading: full screen focuses it as it opens, so the way out is the next Tab (the button that opened it has gone). */
+  let wallHeading = $state<HTMLElement>();
   let watcher: PageWatcher | undefined;
   let active = false;
   let nativeFullscreen = false;
@@ -251,6 +255,7 @@
     spill = false;
     wake();
     await tick();
+    focusHeading(wallHeading);
     const target = root as (HTMLElement & { webkitRequestFullscreen?: () => Promise<void> | void }) | undefined;
     try {
       if (target?.requestFullscreen) await target.requestFullscreen({ navigationUI: 'hide' });
@@ -446,6 +451,10 @@
   }
 
   const newTabAddress = $derived(structure ? wallAddress(window.location.href, structure.session.id) : '#');
+  /** "48 answers from 6 iPads · updated 11:59:18", or what the page is doing. */
+  const metaLine = $derived(results ? `${answersFrom(answered)} · updated ${updated}` : message);
+  /** The breadcrumb's session: its client and its date (Prompt 34: "Results › Kroger · 2026-09-18 › Live"). */
+  const crumbLabel = $derived(structure ? [brand.name, structure.session.date].filter(Boolean).join(' · ') : 'Session');
 
   function select(questionId: string, id: string | null) {
     selected = { ...selected, [questionId]: id };
@@ -474,17 +483,22 @@
   style:--brand-secondary={brand.secondary}
   style:--chart-scale={scale}
 >
+  {#if !presenting}<Breadcrumb parts={[{ label: 'Results', onclick: onBack }, { label: crumbLabel }, { label: 'Live' }]} />{/if}
   <header class="live__head">
     <LiveHead
-      {brand} {failedLogo} clientName={structure ? brand.name : APP_NAME} {wallPage} meta={results ? `${answersFrom(answered)} · updated ${updated}` : message}
-      {phase} {presenting} {exporting} {newTabAddress} onLogoFailed={() => { failedLogo = brand.logoUrl ?? ''; }} onExport={(kind) => void exportCurrent(kind)}
-      onRefresh={refreshStructure} onEnter={() => void enter()} onLeave={() => leave()} {onBack}
+      bind:heading={wallHeading} {brand} {failedLogo} clientName={structure ? brand.name : APP_NAME} {wallPage} meta={metaLine} {phase} {presenting}
+      onLogoFailed={() => { failedLogo = brand.logoUrl ?? ''; }} onEnter={() => void enter()} onLeave={() => leave()}
     />
   </header>
 
   {#if phase === 'display'}
+    {#if !wall}
+      <LiveSteps
+        meta={metaLine} answers={answered.answers} check={results?.confidenceCheck} {exporting} {newTabAddress}
+        onExport={(kind) => void exportCurrent(kind)} onRefresh={refreshStructure} onEnter={() => void enter()}
+      />
+    {/if}
     <LiveNotices {message} {unreadableText} {wall} {exportMessage} {presenting} {namesShown} onToggleNames={() => { namesShown = !namesShown; }} />
-    {#if !wall && results?.confidenceCheck}<LiveCheckCard check={results.confidenceCheck} />{/if}
     {#if presenting}
       <LiveStage
         bind:stage bind:footHeight {current} {currentChart} {currentTitle} {at} {count} {revealed} {selected} {scale} {spill} {atEnd} {autoAdvance}
@@ -515,7 +529,7 @@
     align-items: center;
     gap: 0.75rem 1.5rem;
     padding-bottom: 0.75rem;
-    border-bottom: 3px solid var(--brand-primary);
+    border-bottom: 1px solid var(--adm-line);
   }
 
   .live__status {
@@ -537,8 +551,54 @@
     box-sizing: border-box;
     padding: var(--live-pad);
     overflow: hidden; /* a projector has no scroll wheel: nothing scrolls, the card is sized to the room */
-    color: #fff;
-    background: linear-gradient(180deg, #000102 0%, color-mix(in srgb, var(--brand-primary) 72%, #000102) 100%);
+    color: var(--adm-on-deep);
+    /* Prompt 34: the dark data look. Flat black (no gradient, no client colour: the client's logo keeps its place in the heading), white words and
+       lime figures, each 7:1 or better on black (scripts/test-admin-today.js). The charts' colour names point at the admin tokens here, so a chart
+       draws on black with nothing of its own changed: the top choice lime, the rest deep green, the correct answer sky (with its tick and the word),
+       lines in the muted grey, and a scale's steps in one lime (each has its count written). */
+    background: var(--adm-bar-black);
+    --viz-surface: var(--adm-bar-black);
+    --viz-text: var(--adm-on-deep);
+    --viz-text-secondary: var(--adm-on-deep);
+    --viz-text-muted: var(--adm-on-deep);
+    --viz-grid: var(--adm-text-muted);
+    --viz-band-shade: var(--adm-text);
+    --viz-primary: var(--adm-lime);
+    --viz-primary-tint: var(--adm-deep);
+    --viz-correct: var(--adm-sky);
+    --viz-marker: var(--adm-on-deep);
+    --viz-brand: var(--adm-lime);
+    --viz-band-high: var(--adm-lime);
+    --viz-band-medium: var(--adm-on-deep);
+    --viz-band-low: var(--adm-sky);
+  }
+
+  .live--present :global(.scale) {
+    --viz-ramp-3-1: var(--adm-lime); --viz-ramp-3-2: var(--adm-lime); --viz-ramp-3-3: var(--adm-lime);
+    --viz-ramp-4-1: var(--adm-lime); --viz-ramp-4-2: var(--adm-lime); --viz-ramp-4-3: var(--adm-lime); --viz-ramp-4-4: var(--adm-lime);
+    --viz-ramp-5-1: var(--adm-lime); --viz-ramp-5-2: var(--adm-lime); --viz-ramp-5-3: var(--adm-lime); --viz-ramp-5-4: var(--adm-lime); --viz-ramp-5-5: var(--adm-lime);
+  }
+
+  /* Words on a fill the wall recolours: a chosen word is black on lime (9.2:1); Art of the Possible's light heat steps black, its dark ones white. */
+  .live--present :global(.words__word[aria-pressed='true']) {
+    color: var(--adm-bar-black);
+  }
+
+  .live--present :global(.aop__heat:is([data-tone='0'], [data-tone='1'])) {
+    color: var(--adm-bar-black);
+  }
+
+  .live--present :global(.aop__heat:is([data-tone='2'], [data-tone='3'])) {
+    color: var(--adm-on-deep);
+  }
+
+  /* The wall's buttons: outlined, white words on black, the lime hairline. */
+  .live--present :global(.btn) {
+    color: var(--adm-on-deep);
+    background: var(--adm-bar-black);
+    border: 1.5px solid var(--adm-lime);
+    border-radius: 12px;
+    font-size: calc(0.95rem * var(--chart-scale, 1));
   }
 
   .live--present .live__head {
@@ -555,7 +615,7 @@
   }
 
   .live--present .live__head {
-    border-bottom-color: rgb(255 255 255 / 0.55);
+    border-bottom: 1.5px solid var(--adm-lime);
   }
 
   .live--present .live__status {

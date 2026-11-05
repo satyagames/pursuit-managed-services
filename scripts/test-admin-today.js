@@ -523,6 +523,12 @@ describe('colours', () => {
     assert.ok(fileFailures({ ...LOOK, lime: '#3C8F0F' }).includes('lime on black: 5.13 (needs 7)'));
   });
 
+  it('the wall is flat black: no gradient, no colour of its own beside the tokens', async () => {
+    for (const file of ['LiveDisplay.svelte', 'LiveStage.svelte', 'LiveHead.svelte']) {
+      const style = /<style>([\s\S]*)<\/style>/.exec(await readFile(path.join(ROOT, 'migration/src/admin', file), 'utf8'))?.[1] ?? '';
+      assert.doesNotMatch(style, /gradient\(|#000102/i, `${file}: the wall's old gradient or near-black`);
+    }
+  });
 });
 
 // ---- Requests: SharePoint (mocked) ----------------------------------------------------------------

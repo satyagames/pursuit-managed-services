@@ -5,7 +5,7 @@
 // drift. No colour is added: a file draws with these and nothing else. Plain JS, no DOM.
 //
 // The rules the files keep with them:
-//   - Lime and sky are marks, never words on white (2.3:1 and 2.8:1): a lime bar or a sky underline always has a word or a label beside it.
+//   - Lime and sky are marks, never words on white (2.3:1 and 2.8:1): a lime bar or a sky rule under words always has a word or a label beside it.
 //   - The highlighter is black words on lime (9.2:1); the dark text token on lime is only 7.7:1, under the 7.9:1 the owner asked for.
 //   - On black (the wall, and a dark figures page) words and figures are white or lime, both 7:1 or better.
 //   - Charts take CHART_ORDER in order: deep green, lime, sky, teal, link blue.

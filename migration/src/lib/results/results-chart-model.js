@@ -168,6 +168,38 @@ const listOf = (items) => (items.length <= 1 ? items.join('') : `${items.slice(0
 
 const labelOf = (option) => (typeof option.label === 'string' && option.label.trim() ? option.label.trim() : 'Untitled answer');
 
+// ---- The headline in parts, and the hero figure (Prompt 34) ------------------------------------------------------------------------------
+// The wall draws its one headline sentence with the figures in Bold and the measure's name underlined. Which words those are is the template's,
+// never read from the words: each headline below is written as parts, `{ text, strong }` for a figure and `{ text, measure }` for the measure's
+// name, and the headline is those parts joined. An answer, a label, a word people wrote or a name is always a plain part.
+
+/** @typedef {{ text: string, strong?: true, measure?: true }} HeadlinePart */
+const plain = (/** @type {string} */ text) => ({ text });
+const figure = (/** @type {string | number} */ text) => ({ text: String(text), strong: /** @type {const} */ (true) });
+const measureOf = (/** @type {string} */ text) => ({ text, measure: /** @type {const} */ (true) });
+/** The parts as one string. @param {HeadlinePart[]} parts */
+export const joinParts = (parts) => parts.map((part) => part.text).join('');
+/** The parts as a sentence: a full stop after the last unless the words already end with one (as `sentence`). @param {HeadlinePart[]} parts */
+const asSentence = (parts) => (ENDS_A_SENTENCE.test(joinParts(parts)) ? parts : [...parts, plain('.')]);
+
+/**
+ * The one figure the wall shows largest on a question's card, and the line under it that says what it is: the top share of a choice, the average
+ * of a scale, the top support score of a ranking, how many comments; null when nobody has answered, and for Art of the Possible (its grid is the figure).
+ * @param {any} chart @returns {{ figure: string, context: string } | null}
+ */
+function heroOf(chart) {
+  if (!(chart.answered > 0)) return null;
+  if (chart.kind === 'scale') return chart.scale?.average === null || chart.scale?.average === undefined ? null : { figure: chart.scale.average.toFixed(1), context: `average, out of ${chart.scale.top}` };
+  if (chart.kind === 'ranking') return chart.options[0] ? { figure: String(chart.options[0].score), context: 'support score of the top answer, out of 100' } : null;
+  if (chart.kind === 'text') return chart.comments.length > 0 ? { figure: String(chart.comments.length), context: chart.comments.length === 1 ? 'comment' : 'comments' } : null;
+  if (chart.kind === 'matrix') return null;
+  const leaders = (chart.options ?? []).filter((option) => option.isTop);
+  if (leaders.length === 0) return null;
+  return leaders.length > 1
+    ? { figure: String(leaders[0].count), context: 'each, a tie for the top' } // (the shares of a tie can differ by one when rounded)
+    : { figure: `${leaders[0].percent}%`, context: `chose the top answer · ${leaders[0].count} of ${chart.answered}` };
+}
+
 // ---- One question ---------------------------------------------------------------------------------------------------------------------
 
 /** Which chart a question type gets. @param {string} type */
@@ -190,7 +222,10 @@ export function chartKind(type) {
  * @param {{ names?: Map<string, string> | null, pictures?: Map<string, string> | null, guests?: number | null, groups?: Map<string, string> | null }} [options] `pictures`: the admin view's faces (Prompt 23); `guests`, how many joined; `groups`, each visit's guest group.
  */
 export function chartOf(question, { names = null, pictures = null, guests = null, groups = null } = {}) {
-  const chart = questionChart(question, { names, guests, groups });
+  const built = questionChart(question, { names, guests, groups });
+  // (A headline written as one string, a matrix's or "No answers yet.", is one plain part.)
+  const headlineParts = built.headlineParts ?? [plain(built.headline)];
+  const chart = { ...built, headline: joinParts(headlineParts), headlineParts, hero: heroOf(built) };
   return pictures ? withPictures(chart, pictures) : chart;
 }
 
@@ -287,7 +322,8 @@ function choiceChart(kind, question, options, responses, names, answered) {
     chart.options = chart.sides;
   }
   if (kind === 'scale') chart.scale = scaleOf(rows, answered);
-  chart.headline = answered === 0 ? NO_ANSWERS : headlineOf(kind, rows, leaders, answered, chart.scale);
+  chart.headlineParts = answered === 0 ? [plain(NO_ANSWERS)] : headlineOf(kind, rows, leaders, answered, chart.scale);
+  chart.headline = joinParts(chart.headlineParts);
   return chart;
 }
 
@@ -312,15 +348,23 @@ export const sentence = (text) => (ENDS_A_SENTENCE.test(text) ? text : `${text}.
  */
 export const isMost = (lead, answered) => lead.count * 2 > answered && lead.percent > 50;
 
-/** @param {string} kind @param {any[]} rows @param {any[]} leaders @param {number} answered @param {any} [scale] */
+/**
+ * The headline of a choice, true or false or scale, in parts (Prompt 34; joined, the words are as they were). A scale's average leads, its
+ * measure "Average" and its figures; otherwise the measure is "Most people", "top choice" or "top answer" and the figure the share.
+ * @param {string} kind @param {any[]} rows @param {any[]} leaders @param {number} answered @param {any} [scale] @returns {HeadlinePart[]}
+ */
 function headlineOf(kind, rows, leaders, answered, scale) {
-  const average = scale?.averageText ? `${scale.averageText}. ` : '';
-  if (leaders.length === 0) return `${average}None of the answers given is still on the question.`;
-  if (leaders.length > 1) return `${average}A tie between ${listOf(leaders.map((row) => row.label))} (${leaders[0].count} each).`;
+  const averaged = Boolean(scale?.averageText);
+  const average = averaged ? [measureOf('Average'), plain(' '), figure(scale.average.toFixed(1)), plain(' of '), figure(scale.top), plain('. ')] : [];
+  // (One measure underlined: after a scale's average, the rest of its sentence names none.)
+  const name = (/** @type {string} */ text) => (averaged ? plain(text) : measureOf(text));
+  if (leaders.length === 0) return [...average, plain('None of the answers given is still on the question.')];
+  if (leaders.length > 1) return [...average, plain(`A tie between ${listOf(leaders.map((row) => row.label))} (`), figure(leaders[0].count), plain(' each).')];
   const [lead] = leaders;
   const most = isMost(lead, answered);
-  if (kind === 'truefalse') return sentence(most ? `Most people (${lead.percent}%) said ${lead.label}` : `The top answer (${lead.percent}%) was ${lead.label}`);
-  return `${average}${sentence(most ? `Most people (${lead.percent}%) chose ${lead.label}` : `The top choice (${lead.percent}%) was ${lead.label}`)}`;
+  const share = figure(`${lead.percent}%`);
+  if (kind === 'truefalse') return asSentence(most ? [name('Most people'), plain(' ('), share, plain(') said '), plain(lead.label)] : [plain('The '), name('top answer'), plain(' ('), share, plain(') was '), plain(lead.label)]);
+  return [...average, ...asSentence(most ? [name('Most people'), plain(' ('), share, plain(') chose '), plain(lead.label)] : [plain('The '), name('top choice'), plain(' ('), share, plain(') was '), plain(lead.label)])];
 }
 
 // ---- A confidence scale ---------------------------------------------------------------------------------------------------------------
@@ -422,10 +466,10 @@ function rankingChart(options, responses, names, answered) {
     return { ...item, rank, tied, rankLabel: String(rank) };
   });
   const leaders = ranked.filter((item) => item.rank === 1);
-  let headline = NO_ANSWERS;
-  if (answered > 0 && leaders.length === 1) headline = `${leaders[0].label} ranked highest, with a support score of ${leaders[0].score}.`;
-  else if (answered > 0 && leaders.length > 1) headline = `A tie between ${listOf(leaders.map((item) => item.label))} (support score ${leaders[0].score} each).`;
-  return { options: ranked, caption: RANKING_CAPTION, headline };
+  let headlineParts = [plain(NO_ANSWERS)];
+  if (answered > 0 && leaders.length === 1) headlineParts = [plain(`${leaders[0].label} ranked highest, with a `), measureOf('support score'), plain(' of '), figure(leaders[0].score), plain('.')];
+  else if (answered > 0 && leaders.length > 1) headlineParts = [plain(`A tie between ${listOf(leaders.map((item) => item.label))} (`), measureOf('support score'), plain(' '), figure(leaders[0].score), plain(' each).')];
+  return { options: ranked, caption: RANKING_CAPTION, headline: joinParts(headlineParts), headlineParts };
 }
 
 // ---- Art of the Possible (Prompt 23) --------------------------------------------------------------------------------------------------
@@ -570,9 +614,10 @@ function textChart(responses, names, answered) {
   });
   const words = topWords(comments);
   const count = comments.length;
-  let headline = answered === 0 || count === 0 ? NO_ANSWERS : `${count} ${count === 1 ? 'comment' : 'comments'}.`;
-  if (words.length > 0) headline += ` The word that came up most is “${words[0].word}”, in ${words[0].count} of them.`;
-  return { comments, words, headline, options: [] };
+  // (The word that came up most is people's own: always a plain part.)
+  const headlineParts = answered === 0 || count === 0 ? [plain(NO_ANSWERS)] : [figure(count), plain(` ${count === 1 ? 'comment' : 'comments'}.`)];
+  if (words.length > 0) headlineParts.push(plain(` The word that came up most is “${words[0].word}”, in `), figure(words[0].count), plain(' of them.'));
+  return { comments, words, headline: joinParts(headlineParts), headlineParts, options: [] };
 }
 
 // ---- A whole session --------------------------------------------------------------------------------------------------------------------

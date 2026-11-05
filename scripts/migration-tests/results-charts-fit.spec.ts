@@ -206,7 +206,7 @@ test('a card beside one with its names open keeps its own height, on the Live di
   });
   for (const scope of ['section.live', `article[data-session="${sessions.vine}"]`]) {
     if (scope !== 'section.live') {
-      await page.getByRole('button', { name: '← Results' }).click();
+      await page.getByRole('button', { name: 'Results', exact: true }).click();
       await page.locator(`${scope} summary`).click();
       await expect(page.locator(`${scope} .result-card`).first()).toBeVisible();
       await settle(page);

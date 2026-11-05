@@ -520,5 +520,17 @@ export const PHASE_32 = Object.freeze({
  */
 export const PHASE_33 = Object.freeze({
   participantBefore: 180_179, adminBefore: 685_989, participantAllowance: 0, adminAllowance: 10_000,
+  participantAfter: 180_179, adminAfter: 694_288,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
+
+/**
+ * Prompt 34 (Live results, the PDF and the PowerPoint in one look), measured from where Prompt 33 left the pages (f903716, built on 5 Nov 2026).
+ * The participant page may not change at all (a word such as the one for a line under text, in any file under migration/, would add a Tailwind
+ * rule to it). The admin page gains admin/LiveSteps.svelte, the wall's dark look, the headline's parts and hero figures, and the files' new look:
+ * at most what is left under the 700,000 B budget (the brief names only the budget).
+ */
+export const PHASE_34 = Object.freeze({
+  participantBefore: 180_179, adminBefore: 694_288, participantAllowance: 0, adminAllowance: 700_000 - 694_288,
   participantUtilities: PHASE_11A.participantUtilities,
 });

@@ -213,7 +213,7 @@ test('the wall has no participant\'s name anywhere in the page: full screen from
   expect(await walkTheWall(page, 'full screen from the admin view'), 'names found on the wall').toEqual([]);
   await page.keyboard.press('Escape');
   // The page "Open in a new tab" opens, and full screen from it.
-  const [tab] = await Promise.all([context.waitForEvent('page'), page.getByRole('link', { name: 'Open in a new tab' }).click()]);
+  const [tab] = await Promise.all([context.waitForEvent('page'), page.getByRole('link', { name: 'Open the wall in a new tab' }).click()]);
   await useServer(tab, local);
   await tab.setViewportSize({ width: 1280, height: 800 });
   await tab.getByRole('textbox', { name: 'PIN' }).fill(PIN);

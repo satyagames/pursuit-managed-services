@@ -127,8 +127,20 @@
   style:--chart-scale={scale}
   bind:this={card}
 >
-  <p class="result-card__headline" data-tip-avoid>{chart.headline}</p>
-  <svelte:element this={`h${level}`} class="result-card__prompt" id={promptId} data-tip-avoid>{chart.prompt}</svelte:element>
+  {#if fit}
+    <!-- Full screen (Prompt 34): the headline's figures in Bold and its measure underlined, where the chart model's template puts them, and the
+         question's one hero figure beside it with the line saying what it is. The same words as the admin view's. -->
+    <div class="result-card__top">
+      <div class="result-card__words">
+        <p class="result-card__headline" data-tip-avoid>{#each chart.headlineParts as part, index (index)}{#if part.strong}<strong class="result-card__figure">{part.text}</strong>{:else if part.measure}<span class="result-card__measure">{part.text}</span>{:else}{part.text}{/if}{/each}</p>
+        <svelte:element this={`h${level}`} class="result-card__prompt" id={promptId} data-tip-avoid>{chart.prompt}</svelte:element>
+      </div>
+      {#if chart.hero}<p class="result-card__hero" data-tip-avoid data-testid="wall-hero"><span class="result-card__hero-figure">{chart.hero.figure}</span><span class="result-card__hero-context">{chart.hero.context}</span></p>{/if}
+    </div>
+  {:else}
+    <p class="result-card__headline" data-tip-avoid>{chart.headline}</p>
+    <svelte:element this={`h${level}`} class="result-card__prompt" id={promptId} data-tip-avoid>{chart.prompt}</svelte:element>
+  {/if}
   <!-- (The two buttons say what they will do, so they carry no aria-pressed: a toggle changes its words or its pressed state, never both.) -->
   <div class="result-card__bar">
     <p class="result-card__meta" data-tip-avoid>{#if chart.kind === 'matrix'}{wall ? chart.wallLine : chart.metaLine}{:else}{chart.answered} answered{marked && chart.gradedLine ? ` · ${chart.gradedLine}` : ''}{/if}</p>
@@ -281,5 +293,87 @@
   .result-card--fit.result-card--spill .result-card__body {
     flex: 0 0 auto;
     min-height: auto;
+  }
+
+  /* ---- The wall's dark data look (Prompt 34): an outlined panel on black, a 1.5 px lime hairline and a 12 px radius; the headline and the hero
+     figure side by side; small labels upper case and tracked, never under 28 px at 1080p (0.95rem at the wall's 1.9). Its colours are the wall's
+     (LiveDisplay.svelte points the --viz-* names at the admin tokens while it is full screen). */
+  .result-card--fit {
+    border: 1.5px solid var(--adm-lime);
+    border-radius: 12px;
+  }
+
+  .result-card__top {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: calc(0.5rem * var(--chart-scale, 1)) calc(1.5rem * var(--chart-scale, 1));
+  }
+
+  .result-card__words {
+    display: flex;
+    flex-direction: column;
+    gap: calc(0.5rem * var(--chart-scale, 1));
+    min-width: 0;
+  }
+
+  .result-card--fit .result-card__headline {
+    font-weight: var(--fw-regular, 400);
+  }
+
+  .result-card__figure {
+    font-weight: 700;
+  }
+
+  /* The measure's name: a 4 px sky rule under its words, a mark that is never the only cue (the words say it). Drawn as a border: the one word
+     for a text line would add a rule of that name to the participant page (Tailwind reads every file under migration/). */
+  .result-card__measure {
+    border-bottom: 4px solid var(--adm-sky);
+    box-decoration-break: clone;
+  }
+
+  .result-card__hero {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    max-width: calc(12rem * var(--chart-scale, 1));
+    text-wrap: balance;
+    margin: 0;
+    text-align: right;
+  }
+
+  .result-card__hero-figure {
+    color: var(--adm-lime);
+    font-size: calc(3.2rem * var(--chart-scale, 1));
+    font-weight: 600;
+    font-variant-numeric: proportional-nums;
+    line-height: 1;
+  }
+
+  .result-card__hero-context,
+  .result-card--fit .result-card__meta {
+    font-size: calc(0.95rem * var(--chart-scale, 1));
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .result-card--fit :is(.result-card__caption, .result-card__tool) {
+    font-size: calc(0.95rem * var(--chart-scale, 1));
+  }
+
+  .result-card--fit .result-card__tool {
+    border: 1.5px solid var(--adm-lime);
+    border-radius: 12px;
+  }
+
+  /* The charts' own small words (a tag, an axis, a count) at the same least size on the wall. */
+  .result-card--fit :global(:is(.bars__tag, .bars__ticks, .split__count, .scale__band-name, .words__more, .words__who, .aop__note, .aop__grid thead th, .numbers__grid thead th)) {
+    font-size: max(0.875em, calc(0.95rem * var(--chart-scale, 1)));
+  }
+
+  @media (forced-colors: active) {
+    .result-card__measure { border-bottom-color: CanvasText; }
+    .result-card__hero-figure { color: CanvasText; }
   }
 </style>

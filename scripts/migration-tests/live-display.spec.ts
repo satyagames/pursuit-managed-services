@@ -99,7 +99,7 @@ test('the Live display is reached from Today and from Results, and shows the tal
   await shoot(page, 'live-display-1440x900');
 
   // From Results: each session's card has the same button, and Back returns to the list.
-  await page.getByRole('button', { name: '← Results' }).click();
+  await page.getByRole('button', { name: 'Results', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Results', exact: true })).toBeVisible();
   await expect(page).toHaveURL(/#results$/);
   await page.locator(`article[data-session="${live.session.id}"]`).getByRole('button', { name: 'Live display' }).click();
@@ -176,8 +176,8 @@ test('Full screen covers the page with large type, no navigation and a way out; 
   await expect.poll(async () => (await sizes()).chart).toBeGreaterThan(normal.chart * 1.2);
   expect((await sizes()).title).toBeGreaterThan(normal.title * 1.7);
   // No navigation of the page inside it: no exports, no Back, no tabs; the way out, which appears when the pointer moves, and (Phase 7c) Previous, Next and Auto-advance.
-  for (const name of ['Export CSV', 'Export PDF', 'Export PPT', '← Results', 'Refresh', 'Open in a new tab', 'Full screen']) {
-    await expect(display(page).getByRole(name === 'Open in a new tab' ? 'link' : 'button', { name, exact: true }), name).toHaveCount(0);
+  for (const name of ['Download CSV', 'Download PDF pack', 'Download PowerPoint pack', 'Results', 'Refresh', 'Open the wall in a new tab', 'Show the wall full screen']) {
+    await expect(display(page).getByRole(name === 'Open the wall in a new tab' ? 'link' : 'button', { name, exact: true }), name).toHaveCount(0);
   }
   // The way out shows at first, fades with the pointer after a few idle seconds, and any movement brings it back.
   const exit = display(page).getByRole('button', { name: 'Exit full screen' });
@@ -578,7 +578,7 @@ test('Export CSV downloads exactly the rows the tally has, through the one reade
   await page.getByRole('button', { name: 'Live display' }).click();
   await expect(meta(page)).toContainText(/7 answers/);
   const download = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Export CSV' }).click();
+  await page.getByRole('button', { name: 'Download CSV' }).click();
   const file = await download;
   // Phase 13: the summary by activity, with the client's name in every row.
   expect(file.suggestedFilename()).toBe(`summary-by-activity-${live.session.id}-${new Date().toISOString().slice(0, 10)}.csv`);
@@ -598,7 +598,7 @@ test('Export PDF and Export PPT download real files from the admin page, branded
   await expect(meta(page)).toContainText(/7 answers/);
 
   const pdfDownload = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Export PDF' }).click();
+  await page.getByRole('button', { name: 'Download PDF pack' }).click();
   const pdf = await readFile(((await (await pdfDownload).path()))!);
   expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
   const pdfText = pdf.toString('latin1');
@@ -612,7 +612,7 @@ test('Export PDF and Export PPT download real files from the admin page, branded
   expect(pdf.length).toBeGreaterThan(5000);
 
   const pptDownload = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Export PPT' }).click();
+  await page.getByRole('button', { name: 'Download PowerPoint pack' }).click();
   const file = await pptDownload;
   expect(file.suggestedFilename()).toBe(`results-${live.session.id}-${new Date().toISOString().slice(0, 10)}.pptx`);
   const archive = await JSZip.loadAsync(await readFile((await file.path())!));
@@ -621,7 +621,7 @@ test('Export PDF and Export PPT download real files from the admin page, branded
   expect(slide).toContain(Object.values(legacyColours({ primary: '#045BCC' }))[0].slice(1)); // the theme's page colour is in the slide
   expect(await archive.file('docProps/app.xml')!.async('string')).toContain('<Company>Pursuit Managed Services</Company>');
   // Neither export left the page in a bad state.
-  await expect(page.getByRole('button', { name: 'Export PPT' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Download PowerPoint pack' })).toBeEnabled();
   await expect(page.locator('.live__status[role="alert"]')).toHaveCount(0);
 });
 
@@ -633,7 +633,7 @@ test('each session\'s exports use that session\'s client colours: Domino\'s PPT 
   await unlock(page);
   await expect(page.locator('.live__client')).toHaveText('Kroger');
   const download = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Export PPT' }).click();
+  await page.getByRole('button', { name: 'Download PowerPoint pack' }).click();
   const slide = await (await JSZip.loadAsync(await readFile(((await (await download).path()))!))).file('ppt/slides/slide1.xml')!.async('string');
   expect(slide).toContain('Kroger');
   expect(slide).not.toContain("Domino's");
@@ -722,7 +722,7 @@ test('"Open in a new tab" is a link to the same session\'s wall display on the a
   const live = await liveKroger();
   await openAdmin(page, local);
   await page.getByRole('button', { name: 'Live display' }).click();
-  const link = page.getByRole('link', { name: 'Open in a new tab' });
+  const link = page.getByRole('link', { name: 'Open the wall in a new tab' });
   await expect(link).toHaveAttribute('target', '_blank');
   // Phase 11a: the new tab is the wall (no names in it), told apart from the facilitator's own view by the end of its address.
   expect(new URL((await link.getAttribute('href'))!).hash).toBe(`#live-display/${live.session.id}/wall`);
@@ -739,7 +739,35 @@ test('every capability the Master screen had is in the Live display: live tally,
   await openAdmin(page, local);
   await page.getByRole('button', { name: 'Live display' }).click();
   await expect(meta(page)).toContainText(/\d+ answers from \d+ iPads · updated /);
-  for (const name of ['Export CSV', 'Export PDF', 'Export PPT', 'Full screen']) await expect(page.getByRole('button', { name })).toBeEnabled();
+  for (const name of ['Download CSV', 'Download PDF pack', 'Download PowerPoint pack', 'Show the wall full screen']) await expect(page.getByRole('button', { name })).toBeEnabled();
   await expect(display(page).locator(`.result-card :is(${CHART})`).first()).toBeVisible();
   expect((await brandOf(page))[0]).toMatch(/^#[0-9A-F]{6}$/);
+});
+
+// Prompt 34: the wall's dark data look, read from the back of a room. At 1920 by 1080 each question's hero figure is 96 px or more and every label
+// 28 px or more; the wall is flat black; neither the wall at 1366 or 1920 nor the admin view scrolls sideways; the headline's figures are Bold and
+// one measure is underlined, never an answer.
+test('the wall at 1080p: a hero figure of 96 px, labels of 28 px, flat black, the headline\'s figures in Bold, no sideways scroll', async ({ page }) => {
+  await liveKroger();
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await openAdmin(page, local);
+  await page.getByRole('button', { name: 'Live display' }).click();
+  await expect(meta(page)).toContainText(/answers from/);
+  await expect(page.getByRole('navigation', { name: 'Breadcrumb' })).toContainText('Results');
+  await page.getByRole('button', { name: 'Show the wall full screen' }).click();
+  await expect(display(page)).toHaveAttribute('data-presenting', 'true');
+  expect(await display(page).evaluate((element) => getComputedStyle(element).backgroundImage)).toBe('none');
+  expect(await display(page).evaluate((element) => getComputedStyle(element).backgroundColor)).toBe('rgb(0, 0, 0)');
+  const hero = display(page).getByTestId('wall-hero');
+  await expect(hero).toBeVisible();
+  const px = (selector: string) => display(page).locator(selector).evaluateAll((elements) => elements.map((element) => parseFloat(getComputedStyle(element).fontSize)));
+  for (const size of await px('.result-card__hero-figure')) expect(size).toBeGreaterThanOrEqual(96);
+  for (const size of await px('.result-card__hero-context, .result-card__meta, .live__eyebrow, .bars__ticks, .bars__tag, .result-card__tool')) expect(size).toBeGreaterThanOrEqual(28);
+  const strong = await display(page).locator('.result-card__headline strong').allTextContents();
+  for (const text of strong) expect(text).toMatch(/^\d+(\.\d)?%?$/);
+  expect(await display(page).locator('.result-card__headline .result-card__measure').count()).toBeLessThanOrEqual(1);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(1920);
+  await page.getByRole('button', { name: 'Exit full screen' }).click();
+  await page.setViewportSize({ width: 1366, height: 768 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(1366);
 });

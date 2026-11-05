@@ -569,7 +569,7 @@ test.describe('capabilities that moved', () => {
     await card.getByRole('button', { name: 'Live display' }).click();
     await expect(page.getByRole('heading', { name: 'Live results' })).toBeVisible();
     await expect(page.locator('.live__meta')).toContainText('1 answer from 1 iPad');
-    await page.getByRole('button', { name: '← Results' }).click();
+    await page.getByRole('button', { name: 'Results', exact: true }).click();
     await expect(card).toContainText('1 of');
     await card.locator('summary').click();
     await expect(card.getByText(/1 answer from 1 iPad\b/)).toBeVisible();
