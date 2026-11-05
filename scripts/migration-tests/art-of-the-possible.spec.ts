@@ -134,7 +134,7 @@ test.describe('the guest', () => {
     expect(segment!.height).toBeGreaterThanOrEqual(56);
     await page.getByRole('group', { name: 'Volume / repeatability' }).getByRole('button', { name: 'High' }).click();
     await expect(page.getByTestId('matrix-count')).toHaveText('2 of 15 rated');
-    await page.getByRole('button', { name: 'Next', exact: true }).click();
+    await page.getByRole('button', { name: 'Next sub-process' }).click(); // (Prompt 35: the card's own Next)
     await expect(page.getByText('Sub-process 2 of 3')).toBeVisible();
     await page.screenshot({ path: `${shots}one-at-a-time-ipad.png`, fullPage: true });
   });

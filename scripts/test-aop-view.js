@@ -6,7 +6,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { cycle, decodeAnswer, encodeAnswer } from '../migration/src/lib/participant/aop-answer.js';
-import { GRID_MIN_WIDTH, HOLD_MS, UNDO_MS, clearedOf, defaultView, gridWidthFor, levelCounts, restoreInto, rowIsDone, setCell } from '../migration/src/lib/participant/aop-view.js';
+import { ADVANCE_MS, GRID_MIN_WIDTH, HOLD_MS, UNDO_MS, advancesAfter, clearedOf, defaultView, gridWidthFor, levelCounts, restoreInto, rowIsDone, setCell } from '../migration/src/lib/participant/aop-view.js';
 import { TOKENS } from '../migration/src/lib/motion/motion-plan.js';
 
 const shapeOf = (rows, criteria) => ({
@@ -102,6 +102,17 @@ describe('press and hold, and Undo (Prompt 35)', () => {
     assert.equal(HOLD_MS, 650);
     assert.equal(HOLD_MS, TOKENS.aop.hold);
     assert.equal(UNDO_MS, 8000);
+  });
+
+  it('One at a time moves on 600 ms after a sub-process\'s last box (the motion token), never from the last one, never with motion off', () => {
+    assert.equal(ADVANCE_MS, 600);
+    assert.equal(ADVANCE_MS, TOKENS.aop.advance);
+    assert.equal(advancesAfter({ wasDone: false, isDone: true, at: 3, count: 13, level: 'full' }), true);
+    assert.equal(advancesAfter({ wasDone: false, isDone: true, at: 3, count: 13, level: 'reduced' }), true);
+    assert.equal(advancesAfter({ wasDone: false, isDone: true, at: 3, count: 13, level: 'none' }), false, 'with motion off it waits for Next');
+    assert.equal(advancesAfter({ wasDone: false, isDone: true, at: 12, count: 13, level: 'full' }), false, 'the last sub-process');
+    assert.equal(advancesAfter({ wasDone: true, isDone: true, at: 3, count: 13, level: 'full' }), false, 'a change on a finished one');
+    assert.equal(advancesAfter({ wasDone: false, isDone: false, at: 3, count: 13, level: 'full' }), false);
   });
 
   it('what a clear took away is kept, and Undo puts it back only where the box is still empty', () => {

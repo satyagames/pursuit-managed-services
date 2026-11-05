@@ -269,7 +269,7 @@ describe('the tokens', () => {
   });
 
   it('the Art of Possibility\'s lengths (Prompt 35) are the brief\'s, and the CSS declares them', async () => {
-    assert.deepEqual({ ...TOKENS.aop }, { hold: 650 });
+    assert.deepEqual({ ...TOKENS.aop }, { hold: 650, advance: 600 });
     const css = await tokensCss();
     const declared = Object.fromEntries([...css.matchAll(/(--motion-[\w-]+)\s*:\s*([^;]+);/g)].map((match) => [match[1], match[2].trim()]));
     for (const [name, value] of Object.entries(TOKENS.aop)) assert.equal(ms(declared[`--motion-aop-${name}`]), value, `aop ${name}`);

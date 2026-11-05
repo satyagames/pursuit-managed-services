@@ -7,11 +7,11 @@
 
 <script lang="ts">
   import { onMount, tick } from 'svelte';
-  import { PillButton } from '../components/index.js';
   import { cellsLeft, cycle, decodeAnswer, encodeAnswer, nextEmpty, type Grid } from '../lib/participant/aop-answer.js';
   import { LEVEL_LOOK } from '../lib/participant/aop-levels.js';
-  import { HOLD_MS, UNDO_MS, clearedOf, defaultView, gridWidthFor, levelCounts, restoreInto, rowIsDone, setCell, type Cleared } from '../lib/participant/aop-view.js';
-  import { motion } from '../lib/motion/motion.js';
+  import { ADVANCE_MS, HOLD_MS, UNDO_MS, advancesAfter, clearedOf, defaultView, gridWidthFor, levelCounts, restoreInto, rowIsDone, setCell, type Cleared } from '../lib/participant/aop-view.js';
+  import { motion, motionLevel } from '../lib/motion/motion.js';
+  import { focusHeading } from '../lib/common/focus.js';
   import type { Question } from '../lib/participant/pager-logic.js';
   import '../styles/aop-level-tokens.css';
 
@@ -82,6 +82,10 @@
   /** What the last clear took away, while "Cleared. Undo" shows. */
   let undo = $state<Cleared[] | null>(null);
   let undoTimer: ReturnType<typeof setTimeout> | undefined;
+  /** One at a time: a finished sub-process is showing its check before the next one comes (Previous stops it). */
+  let advancing = $state(false);
+  let advanceTimer: ReturnType<typeof setTimeout> | undefined;
+  let cardHeading = $state<HTMLElement>();
   let spoken = $state('');
   let spokenAt = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -91,7 +95,7 @@
     if (!chosenView) view = defaultView({ width: window.innerWidth, height: window.innerHeight, criteria: criteria.length });
     fit();
     window.addEventListener('resize', fit, { passive: true });
-    return () => { clearTimeout(timer); clearTimeout(holdTimer); clearTimeout(undoTimer); window.removeEventListener('resize', fit); };
+    return () => { clearTimeout(timer); clearTimeout(holdTimer); clearTimeout(undoTimer); clearTimeout(advanceTimer); window.removeEventListener('resize', fit); };
   });
 
   function choose(next: 'grid' | 'single') {
@@ -303,6 +307,34 @@
   }
 
   const single = $derived(rows[Math.min(rowAt, rows.length - 1)]);
+
+  // ---- One at a time: a card per sub-process; after its last box it shows a check and moves on (ADVANCE_MS), unless motion is off. ----
+  function rateSingle(rowId: string, criterionId: string, level: number | undefined) {
+    const wasDone = rowDone(rowId);
+    set(rowId, criterionId, level);
+    if (!advancesAfter({ wasDone, isDone: rowDone(rowId), at: rowAt, count: rows.length, level: motionLevel() })) return;
+    clearTimeout(advanceTimer);
+    advancing = true;
+    advanceTimer = setTimeout(() => { advancing = false; void showCard(rowAt + 1); }, ADVANCE_MS);
+  }
+
+  function stopAdvance() {
+    clearTimeout(advanceTimer);
+    advancing = false;
+  }
+
+  async function showCard(at: number) {
+    stopAdvance();
+    rowAt = Math.min(rows.length - 1, Math.max(0, at));
+    await tick();
+    focusHeading(cardHeading);
+  }
+
+  /** Previous: while the card is about to move on, it only stays; otherwise the sub-process before. */
+  function previous() {
+    if (advancing) { stopAdvance(); return; }
+    void showCard(rowAt - 1);
+  }
   const peopleOf = (value: unknown) => Number(value) || 0;
   const peopleWords = (value: unknown) => { const count = peopleOf(value); return `${count} ${count === 1 ? 'person' : 'people'} in scope`; };
 </script>
@@ -338,7 +370,7 @@
     </div>
   </div>
 
-  <div class="matrix-strip" bind:clientHeight={stripHeight}>
+  <div class="matrix-strip" data-pinned={view === 'grid' || undefined} bind:clientHeight={stripHeight}>
     <p class="matrix-count" data-testid="matrix-count">{rated} of {total} rated</p>
     <div class="matrix-bar" aria-hidden="true"><span style:transform="scaleX({total ? rated / total : 0})"></span></div>
     <ul class="matrix-pills" aria-label="Your ratings so far">
@@ -447,13 +479,15 @@
       </table>
     </div>
   {:else if single}
-    <div class="matrix-single">
-      <p class="matrix-where">Sub-process {Math.min(rowAt, rows.length - 1) + 1} of {rows.length}</p>
-      <h3 class="matrix-name">{single.label}</h3>
-      <p class="matrix-people-line">{peopleWords(single.value)}</p>
-      <div class="matrix-dots" aria-hidden="true">
-        {#each rows as row, r (row.id)}<span class="matrix-dot" data-done={rowDone(row.id) || undefined} data-here={r === rowAt || undefined}></span>{/each}
+    <section class="matrix-card" data-testid="matrix-card" aria-labelledby="{uid}-card">
+      <div class="matrix-card-top">
+        <p class="matrix-where">Sub-process {Math.min(rowAt, rows.length - 1) + 1} of {rows.length}</p>
+        <div class="matrix-dots" aria-hidden="true">
+          {#each rows as row, r (row.id)}<span class="matrix-dot" data-done={rowDone(row.id) || undefined} data-here={r === rowAt || undefined}></span>{/each}
+        </div>
       </div>
+      <h3 class="matrix-name" id="{uid}-card" tabindex="-1" bind:this={cardHeading}>{single.label}</h3>
+      <p class="matrix-people-line">{peopleOf(single.value)} {peopleOf(single.value) === 1 ? 'person' : 'people'}</p>
       {#each criteria as criterion, c (criterion.id)}
         {@const level = levelOf(single.id, criterion.id)}
         <div class="matrix-criterion" role="group" aria-label={criterion.label} data-segments={c}>
@@ -461,16 +495,23 @@
           {#if criterion.hint}<p class="matrix-hint">{criterion.hint}</p>{/if}
           <div class="matrix-segments">
             {#each [1, 2, 3] as choice (choice)}
-              <button type="button" class="matrix-segment" data-level={level === choice ? choice : 0} aria-pressed={level === choice} onclick={() => set(single.id, criterion.id, level === choice ? undefined : choice)}>{@render mark(choice, 12)}{look(choice).name}</button>
+              <button type="button" class="matrix-segment" data-level={level === choice ? choice : 0} aria-pressed={level === choice} onclick={() => rateSingle(single.id, criterion.id, level === choice ? undefined : choice)}>{@render mark(choice, 14)}{look(choice).name}</button>
             {/each}
           </div>
         </div>
       {/each}
+      {#if rowDone(single.id)}
+        <p class="matrix-card-done" data-testid="matrix-card-done">
+          <svg class="matrix-check" width="24" height="24" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9" /><path d="M5.5 10.2l3 3 6-6.4" /></svg>
+          {advancing ? 'All rated. On to the next one.' : 'All rated.'}
+        </p>
+      {/if}
       <div class="matrix-steps">
-        <PillButton variant="secondary" disabled={rowAt === 0} onclick={() => { rowAt -= 1; }}>Previous</PillButton>
-        {#if rowAt < rows.length - 1}<PillButton variant="secondary" onclick={() => { rowAt += 1; }}>Next</PillButton>{/if}
+        <!-- (The page's pill buttons are drawn for the client's colour; on the white well the card's own two are in the well's ink.) -->
+        <button type="button" class="matrix-tool matrix-step" disabled={rowAt === 0 && !advancing} onclick={previous}>Previous</button>
+        {#if rowAt < rows.length - 1}<button type="button" class="matrix-tool matrix-step matrix-step--next" onclick={() => void showCard(rowAt + 1)}>Next sub-process</button>{/if}
       </div>
-    </div>
+    </section>
   {/if}
 </div>
 
@@ -580,8 +621,12 @@
   }
 
   /* The one row that stays on screen while the page scrolls. */
-  .matrix-strip {
+  .matrix-strip[data-pinned] {
     position: sticky;
+  }
+
+  .matrix-strip {
+    position: relative;
     top: 0;
     z-index: 3;
     display: flex;
@@ -991,9 +1036,52 @@
     pointer-events: none;
   }
 
-  .matrix-single {
+  /* One at a time: a card, the sub-process's name large, each criterion's words shown, three big choices. */
+  .matrix-card {
     display: grid;
     gap: 13px;
+    padding: 13px;
+    border: 1px solid var(--matrix-rule);
+    border-radius: 13px;
+  }
+
+  .matrix-card-top {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 13px;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .matrix-where {
+    font-weight: var(--fw-semibold);
+  }
+
+  .matrix-people-line {
+    margin-top: -8px !important;
+  }
+
+  .matrix-hint {
+    color: var(--aop-well-ink);
+  }
+
+  .matrix-step {
+    min-height: 48px;
+    padding: 0 21px;
+    border-radius: 24px;
+  }
+
+  .matrix-step--next {
+    color: var(--aop-well);
+    background: var(--aop-well-ink);
+    border-color: var(--aop-well-ink);
+  }
+
+  .matrix-card-done {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-weight: var(--fw-semibold);
   }
 
   .matrix-name {
@@ -1045,6 +1133,7 @@
     align-items: center;
     justify-content: center;
     min-height: 56px;
+    padding: 0 4px;
     font-size: var(--aop-letter-size);
     font-weight: var(--aop-letter-weight);
     transition: background-color var(--motion-duration-cell) var(--motion-ease-standard);

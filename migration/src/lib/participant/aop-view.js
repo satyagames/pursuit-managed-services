@@ -58,6 +58,15 @@ export function setCell(grid, rowId, criterionId, level) {
 
 /** How long a press is held before the level menu opens, ms: the motion token the ring fills in (lib/motion/motion-tokens.css --motion-aop-hold). */
 export const HOLD_MS = TOKENS.aop.hold;
+/** How long One at a time shows a finished sub-process before the next, ms (the motion token --motion-aop-advance). */
+export const ADVANCE_MS = TOKENS.aop.advance;
+
+/**
+ * Whether One at a time moves on by itself: the rating just finished this sub-process, it is not the last, and motion is on (with motion off the guest
+ * moves on with Next, so nothing changes under them). @param {{ wasDone: boolean, isDone: boolean, at: number, count: number, level: 'full' | 'reduced' | 'none' }} input
+ */
+export const advancesAfter = ({ wasDone, isDone, at, count, level }) => !wasDone && isDone && at < count - 1 && level !== 'none';
+
 /** How long "Cleared. Undo" stays, ms. */
 export const UNDO_MS = 8000;
 

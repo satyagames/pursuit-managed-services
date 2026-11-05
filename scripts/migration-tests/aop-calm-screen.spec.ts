@@ -219,6 +219,65 @@ test.describe('the Art of Possibility, one calm screen (Prompt 35)', () => {
     await expect(page.getByTestId('matrix-undo')).toHaveCount(0);
   });
 
+  test('One at a time on a phone: a card per sub-process, the words shown, it moves on after the last box, Previous stops it', async ({ page }) => {
+    const { fake, token } = await site();
+    await open(page, fake, token, SIZES.phone);
+    const card = page.getByTestId('matrix-card');
+    await expect(card.getByText('Sub-process 1 of 13')).toBeVisible();
+    await expect(card.getByRole('heading', { name: 'Corp accounting – GL' })).toBeVisible();
+    await expect(card.getByText('29 people', { exact: true })).toBeVisible();
+    // Five criteria, each with its words shown (not behind an i) and three 56 px choices with their shape.
+    const groups = card.getByRole('group');
+    await expect(groups).toHaveCount(5);
+    for (const [at, criterion] of CRITERIA.entries()) {
+      const group = groups.nth(at);
+      await expect(group).toHaveAccessibleName(criterion.label);
+      await expect(group.getByText(criterion.hint)).toBeVisible();
+      await expect(group.getByRole('button')).toHaveText(['Low', 'Medium', 'High']);
+      for (const choice of await group.getByRole('button').all()) {
+        expect((await choice.boundingBox())!.height).toBeGreaterThanOrEqual(56);
+        await expect(choice.locator('svg path')).toHaveCount(1);
+      }
+    }
+    await expect(card.getByRole('button', { name: 'About' })).toHaveCount(0);
+    expect(await noSidewaysScroll(page)).toBe(true);
+    await axeOn(page);
+    await page.screenshot({ path: `${shots}phone-card.png`, fullPage: true });
+
+    // The fifth rating: a check, then the next sub-process 600 ms later.
+    const rateRow = async (choice: string) => { for (const criterion of CRITERIA) await card.getByRole('group', { name: criterion.label }).getByRole('button', { name: choice }).click(); };
+    await rateRow('High');
+    await expect(card.getByTestId('matrix-card-done')).toBeVisible();
+    await page.screenshot({ path: `${shots}phone-card-done.png`, fullPage: true });
+    await expect(card.getByText('Sub-process 2 of 13')).toBeVisible({ timeout: 2000 });
+    await expect(card.getByRole('heading', { name: 'AP / AR' })).toBeFocused();
+
+    // Previous, tapped before it moves on, keeps the guest on this one.
+    await rateRow('Low');
+    await card.getByRole('button', { name: 'Previous' }).click();
+    await page.waitForTimeout(900);
+    await expect(card.getByText('Sub-process 2 of 13')).toBeVisible();
+    await card.getByRole('button', { name: 'Next sub-process' }).click();
+    await card.getByRole('button', { name: 'Next sub-process' }).click();
+    await expect(card.getByText('Sub-process 4 of 13')).toBeVisible();
+    await expect(card.getByRole('heading', { name: 'Treasury' })).toBeVisible();
+    await expect(page.getByTestId('matrix-count')).toHaveText('10 of 65 rated');
+  });
+
+  test('One at a time with motion off waits for Next', async ({ page }) => {
+    const { fake, token } = await site();
+    await page.setViewportSize(SIZES.phone);
+    await serveSharePoint(page, fake);
+    await page.goto(`${pageUrl('index.html')}?qr=${token}&motion=off`);
+    await page.getByRole('button', { name: 'Click here to begin' }).click();
+    await page.getByRole('button', { name: /The Art of Possibility/ }).click();
+    const card = page.getByTestId('matrix-card');
+    for (const criterion of CRITERIA) await card.getByRole('group', { name: criterion.label }).getByRole('button', { name: 'Medium' }).click();
+    await expect(card.getByTestId('matrix-card-done')).toBeVisible();
+    await page.waitForTimeout(1000);
+    await expect(card.getByText('Sub-process 1 of 13')).toBeVisible();
+  });
+
   test('a tap shows its colour within 100 ms at a 4x slower processor (Chromium, measured and printed)', async ({ page, browserName }) => {
     test.skip(browserName !== 'chromium', 'the processor slowdown is Chromium\'s (DevTools protocol)');
     const { fake, token } = await site();
