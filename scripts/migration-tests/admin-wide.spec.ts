@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright';
 import { test, expect, type Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -292,7 +293,7 @@ test('Results on a laptop: the open session on the left, its charts in 2 columns
     // With every session open there is no list left: the open sessions take the whole width, one under the other.
     await page.locator('article.card[data-shut]').getByRole('button', { name: 'Open' }).click();
     await expect(page.locator('article.card[data-shut]')).toHaveCount(0);
-    await expect(page.locator('.results-split')).toHaveCount(0);
+    await expect(page.locator('.results-split--on')).toHaveCount(0);
     await expect(page.locator('article.card[data-session]')).toHaveCount(2);
   }
 });
@@ -302,6 +303,40 @@ test('Results at 683 px: one list of sessions, as before', async ({ page }) => {
   await page.setViewportSize(ZOOMED);
   await openAdmin(page, local!, 'Results');
   await expect(page.locator('article.card[data-session]')).toHaveCount(2);
-  await expect(page.locator('.results-split__list')).toHaveCount(0);
+  // (The columns are there and take no room: each card stands in its place in the one list, newest first.)
+  const tops = await page.locator('article.card[data-session]').evaluateAll((cards) => cards.map((card) => card.getBoundingClientRect()));
+  expect(tops[1].top, 'the second card under the first').toBeGreaterThanOrEqual(tops[0].bottom);
+  expect(tops[1].left, 'one column').toBe(tops[0].left);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  // Widening the window past 1,100 px rebuilds no card: the same element is in the two columns.
+  await page.locator('article.card[data-shut]').evaluate((card) => { (card as HTMLElement).dataset.kept = 'yes'; });
+  await page.setViewportSize({ width: 1366, height: 650 });
+  await expect(page.locator('article.card[data-shut][data-kept="yes"]')).toHaveCount(1);
+  expect((await page.locator('.results-split__list').boundingBox())!.x).toBeGreaterThan((await page.locator('.results-split__open').boundingBox())!.x);
+});
+
+// Step 3, the measures across the tabs: at 1366 x 650 no tab but People (which the owner chose to let scroll, 5 Nov 2026) is taller than one and a
+// half windows on the sample data; and axe finds nothing on any tab at the four laptop sizes and at 683 px.
+test('at 1366 x 650 each tab scrolls no more than one and a half windows', async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 650 });
+  await openAdmin(page, local!);
+  for (const tab of TABS) {
+    await openTab(page, tab);
+    const tall = await page.evaluate(() => document.documentElement.scrollHeight / window.innerHeight);
+    expect(tall, `${tab}: ${tall.toFixed(2)} windows`).toBeLessThanOrEqual(1.5);
+  }
+});
+
+test('axe finds nothing on any tab at the four laptop sizes and at 683 px', async ({ page }) => {
+  test.setTimeout(240_000);
+  for (const size of [...LAPTOPS, ZOOMED]) {
+    await page.setViewportSize(size);
+    await openAdmin(page, local!);
+    for (const tab of TABS) {
+      await openTab(page, tab);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      const result = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
+      expect(result.violations.map((each) => `${each.id}: ${each.nodes.map((node) => node.target.join(' ')).join(', ')}`), `${tab} at ${size.width} x ${size.height}`).toEqual([]);
+    }
+  }
 });

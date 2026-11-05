@@ -325,12 +325,12 @@
   </div>
 </div>
 
-<SampleNotice client={client as never} {busy} onConfirm={() => void confirmSample()} />
-
 {#if working}<p role="status" class="content-working">{working}</p>{/if}
 
 <div class="content-layout">
   <section class="content-activities" aria-labelledby="activities-heading">
+    <!-- (Prompt 32: at the top of the activities, so the questions beside them start higher on a laptop.) -->
+    <SampleNotice client={client as never} {busy} onConfirm={() => void confirmSample()} />
     <div class="content-check" data-testid="content-check">
       {#if check}
         <ul class="rows" aria-label="Confidence check">

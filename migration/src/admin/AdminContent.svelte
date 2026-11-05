@@ -304,6 +304,30 @@
     display: contents;
   }
 
+  /* A laptop under 700 px high (Prompt 32): the client and the strip of views share one line, the strip still sticky on its own. */
+  @media (min-width: 1100px) and (max-height: 699px) {
+    .content-panel:has(.content-spine) {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      column-gap: 1rem;
+      align-items: center;
+    }
+
+    .content-panel:has(.content-spine) > :global(*) {
+      grid-column: 1 / -1;
+    }
+
+    .content-client {
+      grid-column: 1;
+      margin-bottom: 1rem;
+    }
+
+    .content-strip {
+      grid-column: 2;
+      justify-self: end;
+    }
+  }
+
   .content-client {
     display: flex;
     flex-wrap: wrap;

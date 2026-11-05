@@ -4,6 +4,7 @@
   // outside or a second press closes it, focus back on the chip. Every word is lib/access/identity-words.js's, from the access the page already holds.
   import { tick } from 'svelte';
   import { myDetails, OWNER_BANNER } from '../lib/access/access-words.js';
+  import { focusHeading } from '../lib/common/focus.js';
 
   type Identity = ReturnType<typeof import('../lib/access/identity-words.js').identityOf>;
   let { identity, person, open = $bindable(false) }: { identity: Identity; person: { name?: string; email?: string } | null; open?: boolean } = $props();
@@ -26,7 +27,7 @@
   // Opened from elsewhere (the welcome strip's "What can I do?"): the popover's heading takes focus, so a keyboard is in it.
   let wasOpen = false;
   $effect(() => {
-    if (open && !wasOpen && document.activeElement !== chip) void tick().then(() => panel?.querySelector<HTMLElement>('h2')?.focus());
+    if (open && !wasOpen && document.activeElement !== chip) void tick().then(() => focusHeading(panel?.querySelector<HTMLElement>('h2') ?? undefined));
     wasOpen = open;
   });
 

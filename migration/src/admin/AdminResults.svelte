@@ -53,15 +53,10 @@
   // newest opens by itself); below 1,100 px, one list as before.
   const opened = $derived(visible.filter((row) => cards.some((card) => card.results.session.id === row.id)));
   const shut = $derived(visible.filter((row) => !opened.includes(row)));
-  let wide = $state(false);
-  const split = $derived(wide && opened.length > 0 && shut.length > 0);
-  $effect(() => {
-    const laptop = window.matchMedia('(min-width: 1100px)');
-    const follow = () => { wide = laptop.matches; };
-    follow();
-    laptop.addEventListener('change', follow);
-    return () => laptop.removeEventListener('change', follow);
-  });
+  // (The two columns are always there, so turning an iPad or resizing a window rebuilds no card; below 1,100 px they are display: contents, and
+  // each card's order puts it back in its place in the one list.)
+  const split = $derived(opened.length > 0 && shut.length > 0);
+  const placeOf = (id: string) => visible.findIndex((row) => row.id === id);
   let loading = $state(true);
   let error = $state('');
   let updated = $state('');
@@ -467,14 +462,10 @@
   {:else if error}<p class="error" role="alert">{error}</p>
   {:else if sessionRows.length === 0}<p class="muted">No sessions yet.</p>
   {:else}
-    {#if split}
-      <div class="results-split">
-        <div class="results-split__open">{#each opened as row (row.id)}{@render sessionCard(row)}{/each}</div>
-        <div class="results-split__list">{#each shut as row (row.id)}{@render sessionCard(row)}{/each}</div>
-      </div>
-    {:else}
-      {#each visible as row (row.id)}{@render sessionCard(row)}{/each}
-    {/if}
+    <div class="results-split" class:results-split--on={split}>
+      <div class="results-split__open">{#each opened as row (row.id)}{@render sessionCard(row)}{/each}</div>
+      <div class="results-split__list">{#each shut as row (row.id)}{@render sessionCard(row)}{/each}</div>
+    </div>
     <Pager state={where} label="Pages of sessions" heading={pageHeading} onPage={goToPage} />
   {/if}
 
@@ -495,7 +486,7 @@
 {#snippet sessionCard(row: Session)}
       {@const card = cards.find((each) => each.results.session.id === row.id)}
       {#if !card}
-      <article class="card" data-session={row.id} data-shut>
+      <article class="card" data-session={row.id} data-shut style:order={placeOf(row.id)}>
         <header class="card__head">
           <strong data-card-title tabindex="-1">{namesHeld.get(row.clientId) ?? row.clientId}</strong><span class="muted">{row.date ?? ''}</span><span class="tag">Session: {row.status ?? 'unknown'}</span><span class="card__spacer"></span>
           {#if may('results.live', row)}<button class="btn btn--small" type="button" onclick={() => onLiveDisplay(row.id)}>Live display</button>{/if}
@@ -506,7 +497,7 @@
       </article>
       {:else}
       {@const session = card.results.session}
-      <article class="card" data-session={session.id} aria-busy={deleting?.working && deleting.card.results.session.id === session.id}>
+      <article class="card" data-session={session.id} style:order={placeOf(session.id)} aria-busy={deleting?.working && deleting.card.results.session.id === session.id}>
         <header class="card__head">
           <strong data-card-title tabindex="-1">{card.owner}</strong><span class="muted">{session.date ?? ''}</span><span class="tag">Session: {session.status ?? 'unknown'}</span><span class="card__spacer"></span>
           {#if may('results.live', session)}<button class="btn btn--small" type="button" onclick={() => onLiveDisplay(session.id)}>Live display</button>{/if}
@@ -622,21 +613,33 @@
 
   /* On a laptop (Prompt 32): the open sessions on the left, the others a narrow list on the right; the charts in two columns, three from 1,600 px. */
   .results-split {
-    display: grid;
-    grid-template-columns: minmax(0, 3fr) minmax(16rem, 1fr);
-    gap: 1rem;
-    align-items: start;
+    display: flex;
+    flex-direction: column;
   }
 
   .results-split__list,
   .results-split__open {
-    display: grid;
-    gap: 1rem;
-    min-width: 0;
+    display: contents;
   }
 
-  .results-split__list > :global(.card) {
-    margin: 0;
+  @media (min-width: 1100px) {
+    .results-split--on {
+      display: grid;
+      grid-template-columns: minmax(0, 3fr) minmax(16rem, 1fr);
+      gap: 1rem;
+      align-items: start;
+    }
+
+    .results-split--on .results-split__list,
+    .results-split--on .results-split__open {
+      display: grid;
+      gap: 1rem;
+      min-width: 0;
+    }
+
+    .results-split--on :global(.card) {
+      margin: 0;
+    }
   }
 
   @media (min-width: 1100px) {

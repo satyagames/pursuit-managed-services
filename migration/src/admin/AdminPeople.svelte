@@ -155,7 +155,7 @@
     <div class="people__detail">
       {#key open.key}
         <UserDetail {access} person={open} {users} {assignments} {clients} {sessions} waiting={waitingKeys ? waitingKeys.includes(open.key) : null}
-          onBack={() => { openKey = null; void tick().then(() => heading?.focus()); }} onChanged={changed} />
+          onBack={() => { openKey = null; void tick().then(() => focusHeading(heading)); }} onChanged={changed} />
       {/key}
     </div>
   {/if}
