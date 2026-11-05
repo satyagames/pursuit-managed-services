@@ -73,7 +73,13 @@ describe('the wall\'s headline and hero figure (Prompt 34)', () => {
     assert.deepEqual(scale.hero, { figure: scale.scale.average.toFixed(1), context: `average, out of ${scale.scale.top}` });
     const ranking = first('ranking');
     assert.equal(ranking.hero.figure, String(ranking.options[0].score));
-    assert.equal(ranking.hero.context, 'support score of the top answer, out of 100');
+    // (The headline names the support score; the line under the figure says only its scale, and "each" for a tie at the top.)
+    const tied = ranking.options.length > 1 && ranking.options[1].score === ranking.options[0].score;
+    assert.equal(ranking.hero.context, tied ? 'each, out of 100' : 'out of 100');
+    const rankTie = allCharts().find((chart) => chart.kind === 'ranking' && chart.options.length > 1 && chart.options[0].score === chart.options[1].score);
+    if (rankTie) assert.equal(rankTie.hero.context, 'each, out of 100', 'a tie at the top of a ranking says each');
+    // A ranking's line stays short, so on a 1280 by 800 wall it takes no more room than the headline beside it (results-charts-layout.spec.ts).
+    for (const chart of charts.filter((each) => each.kind === 'ranking' && each.hero)) assert.ok(chart.hero.context.length <= 16, `${chart.id}: "${chart.hero.context}"`);
     const text = first('text');
     assert.equal(text.hero.figure, String(text.comments.length));
     assert.equal(text.hero.context, text.comments.length === 1 ? 'comment' : 'comments');

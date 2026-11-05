@@ -190,7 +190,9 @@ const asSentence = (parts) => (ENDS_A_SENTENCE.test(joinParts(parts)) ? parts : 
 function heroOf(chart) {
   if (!(chart.answered > 0)) return null;
   if (chart.kind === 'scale') return chart.scale?.average === null || chart.scale?.average === undefined ? null : { figure: chart.scale.average.toFixed(1), context: `average, out of ${chart.scale.top}` };
-  if (chart.kind === 'ranking') return chart.options[0] ? { figure: String(chart.options[0].score), context: 'support score of the top answer, out of 100' } : null;
+  // (A ranking's headline names the support score; under the figure, only its scale, and "each" when two share the top. A longer line took
+  // three lines on a 1280 by 800 wall and made the question's type smaller.)
+  if (chart.kind === 'ranking') return chart.options[0] ? { figure: String(chart.options[0].score), context: chart.options[1]?.score === chart.options[0].score ? 'each, out of 100' : 'out of 100' } : null;
   if (chart.kind === 'text') return chart.comments.length > 0 ? { figure: String(chart.comments.length), context: chart.comments.length === 1 ? 'comment' : 'comments' } : null;
   if (chart.kind === 'matrix') return null;
   const leaders = (chart.options ?? []).filter((option) => option.isTop);
