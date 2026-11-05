@@ -130,7 +130,8 @@ test('an Admin gives Kroger an Industry and a Region on its page, suggested from
   await about.getByLabel('Region').fill('North America');
   await about.getByRole('button', { name: 'Save details' }).click();
   await expect(page.getByText('Kroger: details saved')).toBeVisible();
-  await expect(page.getByTestId('client-tag-industry').first()).toHaveText('Industry: Retail');
+  // (On the client's page: from 1,100 px the list stays beside it, Prompt 32, and its first label is Domino's.)
+  await expect(page.locator('.workspace').getByTestId('client-tag-industry')).toHaveText('Industry: Retail');
   const item = fake.lists.get('clients')!.find((entry) => entry.AppId === 'c-kroger')!;
   expect([item.Industry, item.Region]).toEqual(['Retail', 'North America']);
   expect(auditOf(fake, 'client')).toEqual(['Industry: none to Retail; Region: none to North America']);

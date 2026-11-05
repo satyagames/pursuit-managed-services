@@ -158,3 +158,41 @@ test('Today live at 1366 x 650: End session in view, Controls stay in view as th
   await expect(page.getByTestId('flow-meaning')).toHaveText('Every activity is open from the start, in any order.');
   await page.screenshot({ path: `${pictures}today-live-1366x650.png` });
 });
+
+// Step 3, Clients: on a laptop the list stays on the left and the chosen client's sessions and team open on the right, in place. The client's page
+// reads what it read before (its sessions, the people and their roles, once it opens): no new request. Below 1,100 px it replaces the list, as before.
+test('Clients on a laptop: a client\'s sessions and team open beside the list, in place; Back to clients closes them', async ({ page }) => {
+  await mkdir(pictures, { recursive: true });
+  for (const size of LAPTOPS) {
+    await page.setViewportSize(size);
+    await openAdmin(page, local!);
+    await openTab(page, 'Clients');
+    const at = `Clients at ${size.width} x ${size.height}`;
+    await page.getByRole('button', { name: 'Sessions and team: Kroger' }).click();
+    await expect(page.getByRole('heading', { name: 'Kroger', level: 2 }), `${at}: the client's page has the focus`).toBeFocused();
+    const list = await page.locator('.clients__list').boundingBox();
+    const detail = await page.locator('.clients__detail').boundingBox();
+    expect(list, `${at}: the list stays`).not.toBeNull();
+    expect(detail!.x, `${at}: the client is beside the list`).toBeGreaterThanOrEqual(list!.x + list!.width);
+    await expect(page.locator('.client-row[aria-current="true"]'), `${at}: the open client is marked`).toContainText('Kroger');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `${at}: no sideways scroll`).toBe(true);
+    await page.screenshot({ path: `${pictures}clients-${size.width}x${size.height}.png` });
+    // Another client opens in the same place.
+    await page.getByRole('button', { name: "Sessions and team: Domino's" }).click();
+    await expect(page.getByRole('heading', { name: "Domino's", level: 2 })).toBeFocused();
+    await page.getByRole('button', { name: 'Back to clients' }).click();
+    await expect(page.locator('.clients__detail')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: "Sessions and team: Domino's" })).toBeFocused();
+  }
+});
+
+test('Clients at 683 px: a client\'s sessions and team replace the list, as before', async ({ page }) => {
+  await page.setViewportSize(ZOOMED);
+  await openAdmin(page, local!);
+  await openTab(page, 'Clients');
+  await page.getByRole('button', { name: 'Sessions and team: Kroger' }).click();
+  await expect(page.locator('.clients__list')).toBeHidden();
+  await expect(page.locator('.clients__detail')).toBeVisible();
+  await page.getByRole('button', { name: 'Back to clients' }).click();
+  await expect(page.getByRole('button', { name: 'Sessions and team: Kroger' })).toBeFocused();
+});

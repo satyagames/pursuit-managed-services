@@ -73,7 +73,7 @@
   let qrWarning = $state('');
   let qrSessionDate = $state('');
   let qrCodes = $state<Token[]>([]);
-  /** The client whose page (its sessions and team) is open, Prompt 21 Phase 3. */
+  /** The client whose page (its sessions and team) is open, Prompt 21 Phase 3: beside the list on a laptop, in its place below 1,100 px (Prompt 32). */
   let workspace = $state<Client | null>(null);
 
   const rows = $derived(clientRows({ clients, sessions, sections, liveClientId }));
@@ -300,10 +300,8 @@
   function statusOf(token: Token) { return dataService.qrTokenStatus(token); }
 </script>
 
-{#if workspace}
-  <ClientWorkspace client={workspace} {clients} {access} {onToast} onBack={() => { const back = workspace?.id; workspace = null; void refresh().catch(() => {}); void tick().then(() => document.getElementById(`sessions-${back}`)?.focus()); }} />
-{:else}
-<section class="panel clients-panel" aria-busy={loading || busy}>
+<div class="clients" class:clients--open={workspace !== null}>
+<section class="panel clients-panel clients__list" aria-busy={loading || busy}>
   <header class="panel__head">
     <div>
       <h2 bind:this={clientsHeading} tabindex="-1">Clients</h2>
@@ -318,7 +316,7 @@
     <ul class="rows">
       {#each shownRows as row (row.client.id)}
         {@const client = row.client}
-        <li class="row client-row" class:client-row--archived={row.archived}>
+        <li class="row client-row" class:client-row--archived={row.archived} class:row--open={workspace?.id === client.id} aria-current={workspace?.id === client.id ? 'true' : undefined}>
           {#if withoutRetiredLogo(client.logoUrl)}<img class="logo" src={embeddedAssetUrl(withoutRetiredLogo(client.logoUrl) ?? '') ?? ''} alt="" onerror={(event) => { (event.currentTarget as HTMLImageElement).hidden = true; }} />{/if}
           <div class="row__main">
             <span class="row__title">{client.name}
@@ -391,9 +389,45 @@
     </section>
   {/if}
 </section>
+{#if workspace}
+  <div class="clients__detail">
+    {#key workspace.id}
+      <ClientWorkspace client={workspace} {clients} {access} {onToast} onBack={() => { const back = workspace?.id; workspace = null; void refresh().catch(() => {}); void tick().then(() => document.getElementById(`sessions-${back}`)?.focus()); }} />
+    {/key}
+  </div>
 {/if}
+</div>
 
 <style>
+  .clients {
+    display: grid;
+    gap: 1rem;
+    align-items: start;
+  }
+
+  /* Below 1,100 px a client's page replaces the list, as before. */
+  @media (max-width: 1099px) {
+    .clients--open .clients__list {
+      display: none;
+    }
+  }
+
+  /* On a laptop the list stays on the left and the client's sessions and team open on the right (Prompt 32). */
+  @media (min-width: 1100px) {
+    .clients--open {
+      grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    }
+
+    .clients__detail {
+      min-width: 0;
+    }
+
+    .row--open {
+      border-color: var(--adm-deep);
+      box-shadow: inset 4px 0 0 var(--adm-deep);
+    }
+  }
+
   .client-row {
     flex-wrap: wrap;
   }
