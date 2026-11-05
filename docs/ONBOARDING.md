@@ -75,6 +75,13 @@ Pressing it opens **Your access**: what they can do, what is not available to th
 with **Copy my details** to paste into a message. A first visit, and the first visit after a change of role, starts with a one-line welcome saying the
 same. A role given in People shows when their page next reads their access (a reload, or a tab opened five minutes or more after the last read); nothing about it reaches the site's groups (the two steps above).
 
+## Giving and removing roles in People (Prompt 33)
+
+Open the person in **People**. **Super admin** and **Admin** for all clients are switches: turning one on gives the role at once; turning one off asks
+first, naming the person and the role. A switch you cannot move (your own roles, the last Super admin, or you are not a Super admin) is greyed with the
+reason beside it. A role for one client is removed with the round red minus beside it, which also asks first. The person's **History of changes** is
+folded at the foot of their page: press it to read it; it is closed again on your next visit.
+
 ## If the error stays
 
 - Ask them to sign out of Microsoft 365 in that browser and sign in with the work account they were added with (a personal account, or a second

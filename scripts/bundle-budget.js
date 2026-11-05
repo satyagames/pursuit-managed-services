@@ -512,3 +512,13 @@ export const PHASE_32 = Object.freeze({
   participantAfter: 180_179, adminAfter: 685_989,
   participantUtilities: PHASE_11A.participantUtilities,
 });
+
+/**
+ * Prompt 33 (the admin page explains itself: icons, folds, switches, breadcrumbs, steps), measured from where Prompt 32 left the pages (e53eb60,
+ * built on 5 Nov 2026). The participant page may not change at all. The admin page gains admin/Icon.svelte, Fold, IconButton, RoleSwitch and
+ * Breadcrumb and the tabs' new markup: at most 10,000 B gzip (ASSUMED: the brief names only the 700,000 B budget).
+ */
+export const PHASE_33 = Object.freeze({
+  participantBefore: 180_179, adminBefore: 685_989, participantAllowance: 0, adminAllowance: 10_000,
+  participantUtilities: PHASE_11A.participantUtilities,
+});

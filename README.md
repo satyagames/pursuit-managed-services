@@ -37,6 +37,21 @@ folder and keeps everything in SharePoint lists: there is no server, nothing to 
 | The Activities hub | Between activities each guest sees what is done, started, ready and locked, how far they have come, and a short moment of sound and motion when the next activity opens. |
 | Leadership | **Leader report (PDF)**: at a glance on page 1, then each activity on its own pages, every question as a chart, the counting rules on the last page. **Summary pack (PDF and PowerPoint, 16:9)** from the Live display, with speaker notes. **Summary by activity (CSV)** and **All answers (CSV)**. **Hide names** on Results (the dashboard and Sessions alike) numbers everyone Guest 1, Guest 2 in the order they joined, on the screen, in the leader report and in All answers (CSV) (Prompt 21, Phase 6). The **Leadership dashboard** shows each client's confidence index with its shift and how many moved to confident, by client and by session (Prompt 22); a Super admin sets the fiscal-year start month and the minimum sample on **Reporting settings**, and a client's Industry and Region are set on its page. |
 
+### The admin page explains itself (Prompt 33)
+
+Every tab starts the same way: its icon and title, one sentence on what it is for, and at most one main action, in the deep green. Low-priority blocks are folded.
+
+- **Today**: the calendar icon and its one sentence; nothing else changed.
+- **Clients**: a client's page has a breadcrumb (Clients › Kroger › New session) and three named sections, **Client details** (with **Edit client details**),
+  **Sessions** (**Add session**) and **Team** (**Add team member**); each form's title names the verb and the client, marks what is Required, and ends
+  with Cancel and the specific verb; a new session is marked "Just added".
+- **Content**: two large parts, **Activities** (what people answer) and **Brand** (how it looks), deep green when chosen; a breadcrumb says which.
+- **Guests and QR codes**: three numbered steps, **Add guests**, **Make codes** ("Make 24 QR codes"), **Print or share**, the current one marked "Do this
+  now", a done one with a check; a step that cannot work yet says why. **Recent app entries** is folded.
+- **Results**: each session's **Participant details** are folded under its charts.
+- **People**: Super admin and Admin are on/off switches (turning one off asks first); removing a client role is the round red minus; a person's
+  **History of changes** is folded; a breadcrumb (People › name).
+
 ### Question types
 
 | Type | The participant | Counted as | Charted as |

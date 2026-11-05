@@ -1783,6 +1783,41 @@ Results is a leader's view as well (boards 9 and 12): `admin/LeaderDashboard.sve
 - **Colours only from `admin-tokens.css`**, each pair with its contrast test (`scripts/test-admin-today.js`). The participant page's bytes do not change (`npm run test:bundle`): a comment's word such as "table" in a new admin file can add a Tailwind rule to it.
 - `scripts/migration-tests/admin-wide.spec.ts`, `people-wide.spec.ts` and `identity-chip.spec.ts` hold the sizes 1366 by 650, 1440 by 780, 1536 by 740, 1920 by 950 and 683 by 700.
 
+## Rules from Prompt 33 (the admin page explains itself; keep them holding)
+
+The whole-panel rules. Each tab, sub-view, form and dialog of the admin page keeps them; `scripts/migration-tests/admin-review.spec.ts` reads every tab
+against them at 1366 by 650, 1920 by 950 and 683 by 700, and `admin-explains.spec.ts` holds the parts below.
+
+1. **One page pattern.** A tab's title line is its icon, its title, one plain sentence on what the tab is for, and at most one main action, on the right,
+   in the deep green (`.btn--primary` is `--adm-green`). Under it, the work in the order it is done.
+2. **Name the thing being changed.** A form, panel or dialog's title says the verb and the object, with the owner: "Add a session to Kroger", "Edit
+   client details: Kroger", "Add a team member to Kroger", "Remove Admin from Mathur, Pulkit?". Its buttons repeat the verb: "Add session", "Save
+   client", "Save brand", "Save question", "Save activity"; never a bare Save, OK or Submit.
+3. **Show where you are.** Inside a client, a person or a part of Content, a breadcrumb (`admin/Breadcrumb.svelte`) names the way there, every part
+   but the last a button back.
+4. **Show the steps** only where a task has an order (Guests and QR): numbered, the current one marked in words ("Do this now") and with its border,
+   a done one with a check and a line of what was done; a step that cannot work yet is disabled with its reason beside it (aria-describedby).
+5. **Fold what is not the main job** (`admin/Fold.svelte`): a header button with aria-expanded and aria-controls (chevron, icon, title, a count or
+   one-line summary, Show or Hide in words), the panel `hidden` while closed so Tab skips it. It starts closed on every visit: open or closed is held
+   in the component alone, never stored. Folding reads nothing new; what is inside is read as it was.
+6. **Icons** (`admin/Icon.svelte`, one 24 px grid, a 2 px stroke in the text's colour, round caps, one of each): plus adds, the pencil edits, the round
+   minus (`minus-circle`) removes one grant, the bin (`trash`) is only for deleting a whole record, the chevrons fold, the eye shows or hides, the
+   clock is history, the arrow goes back, the printer prints, the download arrow downloads, copy copies, the check is done. An icon beside words is
+   aria-hidden; an icon alone is an `IconButton` with an aria-label naming what it acts on and a tooltip on hover and focus, 44 px.
+7. **Empty states teach**: what the list is for and the button that fills it ("No sessions yet. Add the first one for Kroger with Add session.").
+8. **Alignment**: gaps of 8 px steps (16 inside a card, 24 between sections), labels above their fields, a form's footer right-aligned with Cancel then
+   the main action last, no sideways scroll, targets 44 px.
+9. **Plain words**: no new help line longer than one sentence; a word of the code ("slug", "track") is replaced by what it means.
+
+- **Roles for all clients are switches** (`admin/RoleSwitch.svelte`): role="switch", aria-checked, the name "Super admin for all clients: on", the
+  state in words beside the track. On grants at once (the same `grantRole` the buttons called); off opens the confirmation that names the person and
+  the role and removes as Remove did. A guard (`revokeProblem`: your own roles, only a Super admin, the last Super admin) disables the switch and
+  shows its words beside it; nothing is hidden. There is no Undo: a removal deletes the role's item.
+- **Remove a client role, a team entry or a grant** with the round red minus (`IconButton`, `--danger` and the icon's own shape), labelled "Remove
+  Producer for Kroger from Aedla, Rajeshwar"; the confirmation still comes first.
+- **The participant page does not change** (the same bytes: `npm run test:bundle`, `PHASE_33`); the Live display, the print sheet and the PDF do not
+  change. New colours only as pairs of `admin-tokens.css` with their contrast test (`scripts/test-admin-today.js`).
+
 ## Before finishing a change
 
 - Always: `npm run check:svelte` and `npm test` (the documents, the module map and the project map among it). If you added, moved or renamed a
