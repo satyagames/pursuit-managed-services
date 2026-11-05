@@ -320,12 +320,13 @@ test('Results at 683 px: the list of sessions above the session chosen', async (
   expect((await page.locator('.results-layout__session').boundingBox())!.x).toBeGreaterThan((await page.locator('.session-list').boundingBox())!.x);
 });
 
-// Step 3, the measures across the tabs: at 1366 x 650 no tab but People (which the owner chose to let scroll, 5 Nov 2026) is taller than one and a
-// half windows on the sample data; and axe finds nothing on any tab at the four laptop sizes and at 683 px.
-test('at 1366 x 650 each tab scrolls no more than one and a half windows', async ({ page }) => {
+// Step 3, the measures across the tabs: at 1366 x 650 no tab but People and Results (which the owner chose to let scroll, 5 Nov 2026: Results
+// shows its session's charts open, Prompt 34) is taller than one and a half windows on the sample data; and axe finds nothing on any tab at the
+// four laptop sizes and at 683 px.
+test('at 1366 x 650 each tab scrolls no more than one and a half windows (People and Results scroll)', async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 650 });
   await openAdmin(page, local!);
-  for (const tab of TABS) {
+  for (const tab of TABS.filter((each) => each !== 'Results')) {
     await openTab(page, tab);
     const tall = await page.evaluate(() => document.documentElement.scrollHeight / window.innerHeight);
     expect(tall, `${tab}: ${tall.toFixed(2)} windows`).toBeLessThanOrEqual(1.5);

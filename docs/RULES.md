@@ -1846,7 +1846,8 @@ against them at 1366 by 650, 1920 by 950 and 683 by 700, and `admin-explains.spe
 - **Results shows one session at a time** (`admin/AdminResults.svelte`): the list of the page's sessions, the one chosen beside it. Its four
   figures come from `glanceOf` in `lib/admin/admin-results.js`, over what the screen already holds (nothing is read for them). Its charts are open
   unless folded, which reads the roster for the guests' pictures as opening them did (for someone who may see names, with guests). **Delete
-  session...** is at the foot of the session, never in the list and never beside Live display or the downloads.
+  session...** is at the foot of the session, never in the list and never beside Live display or the downloads. With its charts open, Results
+  may scroll past one and a half windows at 1366 by 650, as People does (the owner's choice; `admin-wide.spec.ts` measures the other tabs).
 - **One maker of the session pack**, `migration/src/lib/exports/pack-download.js` (the client's brand, the two libraries, the look): the Live display's Download
   and Results' Downloads both call it. The pack never has names.
 
