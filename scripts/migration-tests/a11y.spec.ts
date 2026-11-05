@@ -198,7 +198,7 @@ test.describe('admin', () => {
 
       // Guests and QR (a few guests, a code each), and the print sheet.
       await page.getByRole('tab', { name: 'Guests and QR', exact: true }).click();
-      await expect(page.getByRole('heading', { name: 'Guests and QR', exact: true }).first()).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Guests and QR codes', exact: true }).first()).toBeVisible();
       findings.push(...await check(page, `admin ${at}: Guests and QR`));
 
       // Results.

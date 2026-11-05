@@ -331,7 +331,7 @@
 
       <div class="brand__actions card" role="group" aria-label="Save">
         <div class="brand__buttons">
-          <button class="btn btn--primary" type="button" onclick={() => void save()} disabled={busy || !dirty}>{busy ? 'Saving...' : 'Save'}</button>
+          <button class="btn btn--primary" type="button" onclick={() => void save()} disabled={busy || !dirty}>{busy ? 'Saving...' : 'Save brand'}</button>
           <button class="btn" type="button" onclick={revert} disabled={busy || !dirty}>Revert to saved</button>
           <button class="btn" type="button" onclick={resetToStandard} disabled={busy}>Reset to standard blue</button>
           <button class="btn" type="button" onclick={() => { copying = true; }} disabled={busy}>Copy brand from another client...</button>

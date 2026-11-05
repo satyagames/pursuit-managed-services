@@ -48,7 +48,8 @@ const geometry = (page: Page) => page.evaluate(() => {
 
 const openTab = async (page: Page, tab: string) => {
   await page.getByRole('tab', { name: tab, exact: true }).click();
-  await expect(page.getByRole('heading', { name: tab, exact: true }).first()).toBeVisible();
+  // (Prompt 33: the Guests and QR tab's title is "Guests and QR codes".)
+  await expect(page.getByRole('heading', { name: tab === 'Guests and QR' ? 'Guests and QR codes' : tab, exact: true }).first()).toBeVisible();
   // Measured once the tab has read what it shows: a loading line is shorter than the screen it stands for.
   await expect(page.locator('#admin-panel [aria-busy="true"]')).toHaveCount(0);
   await expect(page.locator('#admin-panel').getByRole('status').filter({ hasText: /^Loading/ })).toHaveCount(0);
@@ -226,15 +227,17 @@ test('Content on a laptop: activities beside their questions, and Brand\'s contr
   }
 });
 
-// Step 3, Guests and QR: on a laptop the names are added on the left (Paste names, one visitor) and the guests' codes on the right, under the roster's
-// Generate all codes and Print QR sheet; below 1,100 px the codes follow the names, as before. Kroger live, guests scanning a personal QR.
+// Step 3, Guests and QR. Prompt 33 replaced Prompt 32's names-left, codes-right layout with three numbered steps: on a laptop Add guests, Make codes
+// and Print or share stand left to right in one row of one height, and the guest list (each guest's code) follows under them; below 1,100 px the
+// steps follow one another. Kroger live, guests scanning a personal QR.
 async function guestsLive(count: number) {
   const { session } = await ds.activateClient('c-kroger', today);
   await ds.setSessionParticipationMode(session.id, 'client-visit');
   for (let index = 1; index <= count; index += 1) await ds.createVisitor({ sessionId: session.id, displayName: `Guest ${String(index).padStart(2, '0')}`, enabled: true });
 }
+const stepBoxes = (page: Page) => page.locator('.steps > .step').evaluateAll((steps) => steps.map((step) => step.getBoundingClientRect().toJSON() as DOMRect));
 
-test('Guests and QR on a laptop: paste names on the left, the codes and the print sheet on the right', async ({ page }) => {
+test('Guests and QR on a laptop: the three steps left to right, the guest list under them', async ({ page }) => {
   await mkdir(pictures, { recursive: true });
   await guestsLive(8);
   for (const size of LAPTOPS) {
@@ -242,28 +245,28 @@ test('Guests and QR on a laptop: paste names on the left, the codes and the prin
     await openAdmin(page, local!, 'Guests and QR');
     const at = `Guests and QR at ${size.width} x ${size.height}`;
     await expect(page.locator('li.row[data-guest]').first()).toBeVisible();
-    const paste = await page.locator('.guests__names').boundingBox();
-    const codes = await page.locator('.guests__codes').boundingBox();
-    expect(paste, `${at}: the names`).not.toBeNull();
-    expect(codes!.x, `${at}: the codes beside the names`).toBeGreaterThanOrEqual(paste!.x + paste!.width);
-    expect(codes!.y, `${at}: side by side, not under`).toBeLessThan(paste!.y + paste!.height);
+    const [add, make, print] = await stepBoxes(page);
+    expect(make.x, `${at}: Make codes beside Add guests`).toBeGreaterThanOrEqual(add.x + add.width);
+    expect(print.x, `${at}: Print or share beside Make codes`).toBeGreaterThanOrEqual(make.x + make.width);
+    expect(Math.abs(make.y - add.y) + Math.abs(print.y - add.y), `${at}: one row`).toBeLessThanOrEqual(1);
+    expect(Math.abs(make.height - add.height) + Math.abs(print.height - add.height), `${at}: one height`).toBeLessThanOrEqual(2);
     const rows = await page.locator('li.row[data-guest]').first().boundingBox();
-    expect(rows!.x, `${at}: the guests' codes are on the right`).toBeGreaterThanOrEqual(codes!.x);
-    const print = await page.getByRole('button', { name: /^Print QR sheet/ }).boundingBox();
-    expect(print!.x, `${at}: Print QR sheet on the right`).toBeGreaterThanOrEqual(codes!.x);
+    expect(rows!.y, `${at}: the guest list under the steps`).toBeGreaterThanOrEqual(add.y + add.height);
+    const printButton = await page.getByRole('button', { name: /^Print QR sheet/ }).boundingBox();
+    expect(printButton!.x, `${at}: Print QR sheet in its step`).toBeGreaterThanOrEqual(print.x);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `${at}: no sideways scroll`).toBe(true);
     if (size.width === 1366 || size.width === 1920) await page.screenshot({ path: `${pictures}guests-${size.width}x${size.height}.png` });
   }
 });
 
-test('Guests and QR at 683 px: the codes follow the names, as before', async ({ page }) => {
+test('Guests and QR at 683 px: the steps follow one another', async ({ page }) => {
   await guestsLive(3);
   await page.setViewportSize(ZOOMED);
   await openAdmin(page, local!, 'Guests and QR');
   await expect(page.locator('li.row[data-guest]').first()).toBeVisible();
-  const paste = await page.locator('.guests__names').boundingBox();
-  const codes = await page.locator('.guests__codes').boundingBox();
-  expect(codes!.y).toBeGreaterThanOrEqual(paste!.y + paste!.height);
+  const [add, make, print] = await stepBoxes(page);
+  expect(make.y).toBeGreaterThanOrEqual(add.y + add.height);
+  expect(print.y).toBeGreaterThanOrEqual(make.y + make.height);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 

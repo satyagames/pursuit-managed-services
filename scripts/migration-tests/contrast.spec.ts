@@ -290,7 +290,7 @@ test.describe('admin: text and the focus ring', () => {
     await look('Today');
     for (const tab of ['Clients', 'Content', 'Guests and QR', 'Results']) {
       await page.getByRole('tab', { name: tab, exact: true }).click();
-      await expect(page.getByRole('heading', { name: tab, exact: true }).first()).toBeVisible();
+      await expect(page.getByRole('heading', { name: tab === 'Guests and QR' ? 'Guests and QR codes' : tab, exact: true }).first()).toBeVisible();
       await look(tab);
     }
     for (const [theme, name] of [['kroger', 'Kroger'], ['dominos', "Domino's"], ['light', 'Lemon Co'], ['default', 'Plain Co']] as const) {

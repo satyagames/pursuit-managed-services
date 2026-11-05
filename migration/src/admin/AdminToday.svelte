@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
+  import Icon from './Icon.svelte';
   import {
     POLL_MS, blockedReason, evaluateReadiness, goLive, isCalendarDate, liveStatus, loadReadinessInputs, heldSchemaOf, holdSchema, loadToday, localDate, makeSessionLive,
     needsSwitchConfirmation, pollToday, startPlannedSession, switchDialog,
@@ -441,7 +442,7 @@
 
 <section class="today" aria-busy={!loaded || busy}>
   <header class="panel__head">
-    <div><h2>Today</h2><p class="muted">Pick the client and the date, press Go live, and know what participants will see.</p></div>
+    <div><h2><Icon name="calendar" />Today</h2><p class="muted">Pick the client and the date, press Go live, and check what participants will see.</p></div>
   </header>
 
   {#if !loaded}

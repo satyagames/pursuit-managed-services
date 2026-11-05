@@ -2,6 +2,10 @@
   import { errorText } from '../lib/admin/session-notice.js';
   import { onMount, tick, untrack } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
+  import Icon from './Icon.svelte';
+  import Fold from './Fold.svelte';
+  /** (Prompt 33) A session's status in words, not the stored word ("in-progress"). */
+  const sessionWord = (status: string | null | undefined) => ({ 'in-progress': 'In progress', completed: 'Ended', planned: 'Planned', scheduled: 'Planned' } as Record<string, string>)[String(status)] ?? (status ? String(status) : 'Status unknown');
   import { restartClientTrack, getSessionResults, removeEmptyVisit } from '../lib/admin/adminData.js';
   import type { SessionResults, SessionTrack, SessionSection } from '../lib/admin/adminData.js';
   import { loadLiveStructure, readLive, type LiveStructure } from '../lib/admin/live-session.js';
@@ -457,7 +461,7 @@
 </script>
 
 <section class="panel sessions-panel" aria-busy={loading || busy}>
-  <header class="panel__head"><div><h2 bind:this={pageHeading} tabindex="-1">Results</h2><p class="muted">Each iPad is its own client track. Answers merge into live results as submitted. The live session refreshes by itself every {local ? 'few seconds' : '15 seconds'}; Refresh reads every session again. To end or reopen a session, use Today.</p></div><span class="muted small">{updated}</span><div class="results-actions">{#if mayName}<label class="choice"><input type="checkbox" checked={hideNames} onchange={(event) => onHideNames((event.currentTarget as HTMLInputElement).checked)} /><span>Hide names</span></label>{/if}<button class="btn btn--small" type="button" onclick={() => refreshAll()} disabled={busy}>Refresh</button></div></header>
+  <header class="panel__head"><div><h2 bind:this={pageHeading} tabindex="-1"><Icon name="chart" />Results</h2><p class="muted">How each session went: open one for its charts, the people who took part and the reports for leaders.</p></div><span class="muted">{updated}{updated ? ' · ' : ''}the live session refreshes every {local ? 'few seconds' : '15 seconds'}</span><div class="results-actions">{#if mayName}<label class="choice"><input type="checkbox" checked={hideNames} onchange={(event) => onHideNames((event.currentTarget as HTMLInputElement).checked)} /><span>Hide names</span></label>{/if}<button class="btn btn--small" type="button" onclick={() => refreshAll()} disabled={busy}>Refresh</button></div></header>
   {#if loading}<p role="status">Loading results...</p>
   {:else if error}<p class="error" role="alert">{error}</p>
   {:else if sessionRows.length === 0}<p class="muted">No sessions yet.</p>
@@ -488,7 +492,7 @@
       {#if !card}
       <article class="card" data-session={row.id} data-shut style:order={placeOf(row.id)}>
         <header class="card__head">
-          <strong data-card-title tabindex="-1">{namesHeld.get(row.clientId) ?? row.clientId}</strong><span class="muted">{row.date ?? ''}</span><span class="tag">Session: {row.status ?? 'unknown'}</span><span class="card__spacer"></span>
+          <strong data-card-title tabindex="-1">{namesHeld.get(row.clientId) ?? row.clientId}</strong><span class="muted">{row.date ?? ''}</span><span class="tag">{sessionWord(row.status)}</span><span class="card__spacer"></span>
           {#if may('results.live', row)}<button class="btn btn--small" type="button" onclick={() => onLiveDisplay(row.id)}>Live display</button>{/if}
           {#if may('results.delete', row)}<button class="btn btn--small btn--danger" type="button" data-delete-session onclick={() => void deleteShut(row.id)} disabled={busy || opening.includes(row.id)}>{DELETE_SESSION.button}</button>{/if}
           <button class="btn btn--small" type="button" data-open-session onclick={() => void openCard(row.id)} disabled={opening.includes(row.id)}>Open</button>
@@ -499,7 +503,7 @@
       {@const session = card.results.session}
       <article class="card" data-session={session.id} style:order={placeOf(session.id)} aria-busy={deleting?.working && deleting.card.results.session.id === session.id}>
         <header class="card__head">
-          <strong data-card-title tabindex="-1">{card.owner}</strong><span class="muted">{session.date ?? ''}</span><span class="tag">Session: {session.status ?? 'unknown'}</span><span class="card__spacer"></span>
+          <strong data-card-title tabindex="-1">{card.owner}</strong><span class="muted">{session.date ?? ''}</span><span class="tag">{sessionWord(session.status)}</span><span class="card__spacer"></span>
           {#if may('results.live', session)}<button class="btn btn--small" type="button" onclick={() => onLiveDisplay(session.id)}>Live display</button>{/if}
           <!-- (Phase 16: after Live display, never beside the export buttons. It opens a warning; only its "Delete permanently" deletes.) -->
           {#if may('results.delete', session)}<button class="btn btn--small btn--danger" type="button" data-delete-session onclick={() => openDelete(card)} disabled={busy}>{DELETE_SESSION.button}</button>{/if}
@@ -523,22 +527,25 @@
             </div>
           {/if}
         </details>
-        {#if card.tracks.length === 0}<p class="card__note muted">No iPads have joined yet.</p>
-        {:else}
-          <ul class="rows rows--flat">
-            {#each card.tracks as row (row.track.id)}
-              {@const notes = `${row.answered} of ${row.total} questions answered · joined ${row.track.createdAt ? new Date(row.track.createdAt).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}) : ''} via ${row.track.joinedVia === 'qr' ? 'QR code' : 'manual select'}${row.track.resumeCount ? ` · resumed ${row.track.resumeCount}×` : ''}${row.track.restartedAt ? ` · restarted ${new Date(row.track.restartedAt).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}` : ''}`}
-              {@const restarting = restartTrack?.track.id === row.track.id && restartIn === session.id}
-              <li class="row" class:row--open={restarting}>
-                {#if sourcesHeld.has(session.id)}<GuestAvatar src={row.pictureUrl ?? null} size={40} />{/if}<div class="row__main"><span class="row__title">{row.name}</span><span class="muted">{notes}</span></div>
-                <span class={statusClass(row.status)}>{statusText(row.status)}</span>
-                {#if canRemoveVisit(row, session)}{#if may('events.run', session)}<button class="btn btn--small" type="button" onclick={() => void removeVisit(row)} disabled={busy}>Remove...</button>{/if}{/if}
-                {#if may('events.run', session)}<button class="btn btn--small" type="button" data-restart={row.track.id} aria-expanded={restarting} aria-controls={restarting ? RESTART_FORM : undefined} onclick={() => openRestart(row, session.id)} disabled={busy || row.status === 'unreadable'} title={row.status === 'unreadable' ? `Its saved answers cannot be read, so they cannot be restarted. Correct or delete the damaged item in the ${dataService.sharePointListTitles().responses} list.` : undefined}>Restart...</button>{/if}
-                {#if restarting && restartTrack}{@render restartForm(restartTrack)}{/if}
-              </li>
-            {/each}
-          </ul>
-        {/if}
+        <!-- (Prompt 33: the people who took part are folded under the charts, closed on every visit; the rows are the card's, read as before.) -->
+        <Fold title="Participant details" icon="people" summary={card.tracks.length === 1 ? '1 person' : `${card.tracks.length} people`} testid="participant-details">
+          {#if card.tracks.length === 0}<p class="card__note muted">No one has joined yet: people appear here as their iPads open the session.</p>
+          {:else}
+            <ul class="rows rows--flat">
+              {#each card.tracks as row (row.track.id)}
+                {@const notes = `${row.answered} of ${row.total} questions answered · joined ${row.track.createdAt ? new Date(row.track.createdAt).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}) : ''} via ${row.track.joinedVia === 'qr' ? 'QR code' : 'the participant link'}${row.track.resumeCount ? ` · resumed ${row.track.resumeCount}×` : ''}${row.track.restartedAt ? ` · restarted ${new Date(row.track.restartedAt).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}` : ''}`}
+                {@const restarting = restartTrack?.track.id === row.track.id && restartIn === session.id}
+                <li class="row" class:row--open={restarting}>
+                  {#if sourcesHeld.has(session.id)}<GuestAvatar src={row.pictureUrl ?? null} size={40} />{/if}<div class="row__main"><span class="row__title">{row.name}</span><span class="muted">{notes}</span></div>
+                  <span class={statusClass(row.status)}>{statusText(row.status)}</span>
+                  {#if canRemoveVisit(row, session)}{#if may('events.run', session)}<button class="btn btn--small" type="button" onclick={() => void removeVisit(row)} disabled={busy}>Remove...</button>{/if}{/if}
+                  {#if may('events.run', session)}<button class="btn btn--small" type="button" data-restart={row.track.id} aria-expanded={restarting} aria-controls={restarting ? RESTART_FORM : undefined} onclick={() => openRestart(row, session.id)} disabled={busy || row.status === 'unreadable'} title={row.status === 'unreadable' ? `Its saved answers cannot be read, so they cannot be restarted. Correct or delete the damaged item in the ${dataService.sharePointListTitles().responses} list.` : undefined}>Restart...</button>{/if}
+                  {#if restarting && restartTrack}{@render restartForm(restartTrack)}{/if}
+                </li>
+              {/each}
+            </ul>
+          {/if}
+        </Fold>
         {#if card.codes.length}<p class="card__note muted small">QR codes: {counts(card.codes)}</p>{/if}
       </article>
       {/if}

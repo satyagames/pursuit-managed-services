@@ -9,6 +9,8 @@
   import { PER_PAGE, pageRows, pagerState } from '../lib/common/paging.js';
   import { focusHeading } from '../lib/common/focus.js';
   import Pager from './Pager.svelte';
+  import Icon from './Icon.svelte';
+  import Fold from './Fold.svelte';
   import { loadGuestState, refreshGuestState, type GuestState, type GuestToken, type GuestVisitor } from '../lib/admin/adminData.js';
   import { copyText, participantPageUrl, qrImage } from '../lib/admin/admin-links.js';
   import { isAccessDenied } from '../lib/access/access-denied.js';
@@ -71,6 +73,15 @@
   const shownRows = $derived(pageRows(matching, guestPager));
   const cardCount = $derived(printCards(rows, (id) => id).cards.length);
   const missing = $derived(counts.none);
+  /** (Prompt 33) The three steps, in the order they are done: add the guests, make their codes, print or share them. */
+  const addedDone = $derived(rows.length > 0);
+  const codesDone = $derived(addedDone && missing === 0);
+  const step = $derived(!addedDone ? 1 : !codesDone ? 2 : 3);
+  const makeWhy = $derived(ended ? 'The session has ended.' : rows.length === 0 ? 'Add at least one guest first.' : missing === 0 ? 'Everyone who can scan already has a code.' : '');
+  const printWhy = $derived(cardCount === 0 ? 'Make codes first: no guest has a code waiting to be scanned.' : '');
+  /** Recent app entries, newest first: what the guest state already holds (nothing is read for the fold). */
+  const recent = $derived((guestState?.visits ?? []).slice(-12).reverse());
+  const recentSummary = $derived(recent.length === 0 ? 'none yet' : `${recent.length}, latest ${recent[0].visitedAt ? new Date(recent[0].visitedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'time unavailable'}`);
 
   onMount(() => {
     let active = true;
@@ -230,7 +241,7 @@
       };
       const problem = result.failed.length + result.notAttempted.length;
       report = problem
-        ? { level: result.created.length ? 'warning' : 'error', text: `Made ${result.created.length} codes. ${plural(problem, 'guest has', 'guests have')} no code yet (${result.failed[0]?.error.message ?? 'stopped'}). Press Generate all codes again: guests who have a code are skipped.` }
+        ? { level: result.created.length ? 'warning' : 'error', text: `Made ${result.created.length} codes. ${plural(problem, 'guest has', 'guests have')} no code yet (${result.failed[0]?.error.message ?? 'stopped'}). Press Make QR codes again: guests who have a code are skipped.` }
         : { level: 'success', text: result.created.length ? `Made ${plural(result.created.length, 'code', 'codes')}. Everyone who can scan has one.` : 'Nobody was missing a code.' };
       await refresh();
     } catch (cause) {
@@ -306,7 +317,8 @@
 
 <section class="panel guests-panel" aria-busy={loading || busy}>
   <header class="panel__head">
-    <div><h2>Guests and QR</h2><p class="muted">Add the guests for the live session, give each a single-use QR code, and print the codes. Who is identified how is set on Today.</p></div>
+    <div><h2><Icon name="qr" />Guests and QR codes</h2><p class="muted">Add the people you expect, make a QR code for each, then print or share them.</p></div>
+    {#if session && guestMode}<div class="panel__actions"><button class="btn" type="button" onclick={() => void refresh()} disabled={busy}>Refresh</button></div>{/if}
   </header>
   {#if loading}<p role="status">Loading Guests and QR...</p>
   {:else if elsewhere}<p class="notice" role="status" data-testid="guests-elsewhere">A session you have not been given is live. Guests and QR works on the live session of the clients and sessions you hold.</p>
@@ -315,25 +327,48 @@
     <p class="muted">Nothing is live, so there is no session to add guests to. Go live on Today first; codes can only be made for the live session.</p>
     <button class="btn btn--primary" type="button" onclick={() => onNavigate('today')}>Open Today</button>
   {:else}
-    <p class="muted">Live session: <strong>{client?.name ?? session.clientId}</strong>, {session.date ?? 'undated'}{ended ? ' (ended)' : ''}. Only this session is offered on participant devices.</p>
+    <p class="muted">Live session: <strong>{client?.name ?? session.clientId}</strong>, {session.date ?? 'undated'}{ended ? ' (ended)' : ''}. Only this session is offered on participant devices; how guests are identified is chosen on Today.</p>
     {#if error}<p class="error" role="alert">{error}</p>{/if}
     {#if guestMode}
-      <section class="user-setup__roster" aria-labelledby="roster-heading">
-        <div class="panel__head">
-          <div>
-            <h3 id="roster-heading" bind:this={rosterHeading} tabindex="-1">Visitor roster</h3>
-            <p class="muted" data-testid="guest-summary">
-              {#if rows.length === 0}No guests yet.{:else}{plural(rows.length, 'guest', 'guests')}: {counts.none} no code, {counts.waiting} not scanned, {counts.joined} joined, {counts.completed} completed{counts.disabled ? `, ${counts.disabled} disabled` : ''}.{/if}
-            </p>
-            {#if rows.length > 0}<p class="muted small" data-testid="guest-pictures-line">{picturesLine(guestState?.visitors ?? [])}</p>{/if}
+      <ol class="steps" aria-label="Steps">
+        <li class="step" aria-current={step === 1 ? 'step' : undefined} data-done={addedDone}>
+          <h3 class="step__title"><span class="step__mark" aria-hidden="true">{#if addedDone}<Icon name="check" size={18} />{:else}1{/if}</span><span class="sr-only">Step 1{addedDone ? ', done' : ''}:</span>Add guests{#if step === 1}<span class="step__now">Do this now</span>{/if}</h3>
+          <p class="muted step__summary">{addedDone ? `${plural(rows.length, 'guest', 'guests')} added.` : 'Paste the names you expect, one per line.'}</p>
+          <div class="guests-add">
+            <div class="field">
+              <label class="field__label" for="paste-names">Paste names</label>
+              <textarea id="paste-names" class="input" rows="4" bind:value={pasted} placeholder={'One name per line, or separated by commas. A group may follow a bar:\nJordan Lee | Finance\nCasey Park, Morgan Day'} disabled={busy || ended} aria-describedby="paste-summary"></textarea>
+              <span id="paste-summary" class="muted small" data-testid="paste-summary">{pasted.trim() ? `${pasteSummary(parsed)} Commas separate names, so write "Jordan Lee", not "Lee, Jordan". A name is kept to ${MAX_GUEST_NAME} characters.` : `One name per line, or separated by commas. Names already on the list are skipped. A name is kept to ${MAX_GUEST_NAME} characters.`}</span>
+            </div>
+            <label class="field"><span class="field__label">Group for lines with none (optional)</span><input class="input" bind:value={pasteGroup} maxlength={MAX_GUEST_GROUP} autocomplete="off" disabled={busy || ended} /></label>
+            <button class="btn" class:btn--primary={step === 1} type="button" onclick={() => void addPasted()} disabled={busy || ended || parsed.names.length === 0}>{parsed.names.length > 0 ? `Add ${plural(parsed.names.length, 'guest', 'guests')}` : 'Add guests'}</button>
           </div>
-          <div class="panel__actions guests-actions">
-            <button class="btn btn--primary" type="button" onclick={() => void generateAll()} disabled={busy || ended || missing === 0} title={missing === 0 ? 'Everyone who can scan already has a code' : undefined}>Generate all codes{missing ? ` (${missing})` : ''}</button>
-            <button class="btn" type="button" onclick={onPrint} disabled={busy || cardCount === 0} title={cardCount === 0 ? 'Make codes first: no guest has a code waiting to be scanned' : undefined}>Print QR sheet{cardCount ? ` (${cardCount})` : ''}</button>
-            <button class="btn" type="button" onclick={exportCsv} disabled={rows.length === 0}>Export CSV</button>
-            <button class="btn" type="button" onclick={() => void refresh()} disabled={busy}>Refresh</button>
+          <form class="field-row" onsubmit={addVisitor}>
+            <label class="field"><span class="field__label">Visitor name</span><input class="input" bind:value={visitorName} maxlength={MAX_GUEST_NAME} autocomplete="off" disabled={busy || ended} /></label>
+            <label class="field"><span class="field__label">Group (optional)</span><input class="input" bind:value={visitorGroup} maxlength={MAX_GUEST_GROUP} autocomplete="off" disabled={busy || ended} /></label>
+            <button class="btn guest-picture-pick" type="button" aria-label={newPicture ? 'Picture chosen. Change it' : 'Picture, optional'} onclick={() => { picturing = 'new'; }} disabled={busy || ended}><GuestAvatar src={newPicture?.url ?? null} size={32} /> Picture</button>
+            <button class="btn" type="submit" disabled={busy || ended || !visitorName.trim()}>Add visitor</button>
+          </form>
+        </li>
+        <li class="step" aria-current={step === 2 ? 'step' : undefined} data-done={codesDone}>
+          <h3 class="step__title"><span class="step__mark" aria-hidden="true">{#if codesDone}<Icon name="check" size={18} />{:else}2{/if}</span><span class="sr-only">Step 2{codesDone ? ', done' : ''}:</span>Make codes{#if step === 2}<span class="step__now">Do this now</span>{/if}</h3>
+          <p class="muted step__summary">{codesDone ? 'Every guest has a code.' : addedDone ? `${plural(missing, 'guest has', 'guests have')} no code yet.` : 'Each guest gets a single-use QR code.'}</p>
+          <div class="step__actions">
+            <button class="btn" class:btn--primary={step === 2} type="button" onclick={() => void generateAll()} disabled={busy || Boolean(makeWhy)} aria-describedby={makeWhy ? 'make-why' : undefined}>{missing ? `Make ${plural(missing, 'QR code', 'QR codes')}` : 'Make QR codes'}</button>
           </div>
-        </div>
+          {#if makeWhy}<p id="make-why" class="step__why">{makeWhy}</p>{/if}
+        </li>
+        <li class="step" aria-current={step === 3 ? 'step' : undefined}>
+          <h3 class="step__title"><span class="step__mark" aria-hidden="true">3</span><span class="sr-only">Step 3:</span>Print or share{#if step === 3}<span class="step__now">Do this now</span>{/if}</h3>
+          <p class="muted step__summary">{cardCount ? `${plural(cardCount, 'code is', 'codes are')} ready to print.` : "Print a sheet of the codes, or share one guest's link."}</p>
+          <div class="step__actions">
+            <button class="btn" class:btn--primary={step === 3} type="button" onclick={onPrint} disabled={busy || cardCount === 0} aria-describedby={printWhy ? 'print-why' : undefined}><Icon name="printer" /> Print QR sheet{cardCount ? ` (${cardCount})` : ''}</button>
+            <button class="btn" type="button" onclick={exportCsv} disabled={rows.length === 0}><Icon name="download" /> Export CSV</button>
+          </div>
+          {#if printWhy}<p id="print-why" class="step__why">{printWhy}</p>{/if}
+          <p class="muted">To share one guest's link, choose Show QR beside their name, then Copy link.</p>
+        </li>
+      </ol>
 
         {#if progress}
           <div role="status" class="guests-progress" data-testid="guest-progress">
@@ -343,23 +378,15 @@
         {/if}
         {#if report}<p class="guests-report guests-report--{report.level}" role="status" data-testid="guest-report">{report.text}</p>{/if}
 
-        <div class="guests__grid">
-        <div class="guests__names">
-        <div class="guests-add">
-          <div class="field">
-            <label class="field__label" for="paste-names">Paste names</label>
-            <textarea id="paste-names" class="input" rows="4" bind:value={pasted} placeholder={'One name per line, or separated by commas. A group may follow a bar:\nJordan Lee | Finance\nCasey Park, Morgan Day'} disabled={busy || ended} aria-describedby="paste-summary"></textarea>
-            <span id="paste-summary" class="muted small" data-testid="paste-summary">{pasted.trim() ? `${pasteSummary(parsed)} Commas separate names, so write "Jordan Lee", not "Lee, Jordan". A name is kept to ${MAX_GUEST_NAME} characters.` : `One name per line, or separated by commas. Names already on the list are skipped. A name is kept to ${MAX_GUEST_NAME} characters.`}</span>
+      <section class="user-setup__roster" aria-labelledby="roster-heading">
+        <div class="panel__head">
+          <div>
+            <h3 id="roster-heading" bind:this={rosterHeading} tabindex="-1">Guest list</h3>
+            <p class="muted" data-testid="guest-summary">
+              {#if rows.length === 0}No guests yet.{:else}{plural(rows.length, 'guest', 'guests')}: {counts.none} no code, {counts.waiting} not scanned, {counts.joined} joined, {counts.completed} completed{counts.disabled ? `, ${counts.disabled} disabled` : ''}.{/if}
+            </p>
+            {#if rows.length > 0}<p class="muted small" data-testid="guest-pictures-line">{picturesLine(guestState?.visitors ?? [])}</p>{/if}
           </div>
-          <label class="field"><span class="field__label">Group for lines with none (optional)</span><input class="input" bind:value={pasteGroup} maxlength={MAX_GUEST_GROUP} autocomplete="off" disabled={busy || ended} /></label>
-          <button class="btn" type="button" onclick={() => void addPasted()} disabled={busy || ended || parsed.names.length === 0}>{parsed.names.length > 0 ? `Add ${plural(parsed.names.length, 'guest', 'guests')}` : 'Add guests'}</button>
-        </div>
-        <form class="field-row" onsubmit={addVisitor}>
-          <label class="field"><span class="field__label">Visitor name</span><input class="input" bind:value={visitorName} maxlength={MAX_GUEST_NAME} autocomplete="off" disabled={busy || ended} /></label>
-          <label class="field"><span class="field__label">Group (optional)</span><input class="input" bind:value={visitorGroup} maxlength={MAX_GUEST_GROUP} autocomplete="off" disabled={busy || ended} /></label>
-          <button class="btn guest-picture-pick" type="button" aria-label={newPicture ? 'Picture chosen. Change it' : 'Picture, optional'} onclick={() => { picturing = 'new'; }} disabled={busy || ended}><GuestAvatar src={newPicture?.url ?? null} size={32} /> Picture</button>
-          <button class="btn" type="submit" disabled={busy || ended || !visitorName.trim()}>Add visitor</button>
-        </form>
         </div>
         <div class="guests__codes">
 
@@ -412,19 +439,17 @@
           </section>
         {/if}
         </div>
-        </div>
       </section>
     {:else}
       <p class="hint">Staff sign in is on: participants are greeted by their signed-in SharePoint display name and need no code. To use personal QR codes for guests, choose "Guests scan a personal QR" on Today.</p>
       <button class="btn" type="button" onclick={() => onNavigate('today')}>Open Today</button>
     {/if}
-    <section class="user-setup__visits" aria-labelledby="visit-log-heading">
-      <h3 id="visit-log-heading">Recent app entries</h3>
-      {#if (guestState?.visits ?? []).length === 0}<p class="muted">No visits recorded for this session yet.</p>
-      {:else}<ul class="rows rows--flat">{#each (guestState?.visits ?? []).slice(-12).reverse() as visit (visit.id)}
+    <Fold title="Recent app entries" icon="clock" summary={recentSummary} testid="visits-fold">
+      {#if recent.length === 0}<p class="muted">Entries appear here as guests scan their codes; none yet.</p>
+      {:else}<ul class="rows rows--flat">{#each recent as visit (visit.id)}
         <li class="row"><div class="row__main"><span class="row__title">{visit.visitorName || visit.displayName || 'Signed-in user'}</span><span class="muted">{visit.entryMode === 'client-visit' ? 'Client visit' : 'SharePoint account'} · {visit.visitedAt ? new Date(visit.visitedAt).toLocaleString() : 'Time unavailable'}</span></div></li>
       {/each}</ul>{/if}
-    </section>
+    </Fold>
   {/if}
 </section>
 
@@ -438,24 +463,3 @@
     onclose={() => { picturing = null; }}
   />
 {/if}
-
-<style>
-  /* On a laptop the names are added on the left and the guests' codes are on the right (Prompt 32); below 1,100 px the codes follow the names. */
-  @media (min-width: 1100px) {
-    .guests__grid {
-      display: grid;
-      grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
-      gap: 1.5rem;
-      align-items: start;
-    }
-
-    .guests__names :global(.guests-add) {
-      max-width: none;
-      margin-top: 0;
-    }
-
-    .guests__codes > :global(:first-child) {
-      margin-top: 0;
-    }
-  }
-</style>

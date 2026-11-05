@@ -220,7 +220,7 @@ test('Generate all codes on SharePoint: one write per code, three at a time, not
   const seen = watchInFlight(page);
   fake.reset();
   const started = Date.now();
-  await page.getByRole('button', { name: /^Generate all codes/ }).click();
+  await page.getByRole('button', { name: /^Make (\d+ )?QR codes?$/ }).click();
   await expect(page.getByTestId('guest-report')).toHaveText('Made 12 codes. Everyone who can scan has one.', { timeout: 30_000 });
   const elapsed = Date.now() - started;
   const posts = fake.requests.filter((entry) => entry.method === 'POST' && entry.list === 'qrtokens');
@@ -232,7 +232,7 @@ test('Generate all codes on SharePoint: one write per code, three at a time, not
   measured.generateAllCodes = { guests: 12, requests: fake.requests.length, writes: posts.length, others: others.length, otherRequests: others, maxInFlight: seen.max, ms: elapsed, pacing: '3 lanes, 120 ms between one lane\'s writes, Retry-After honoured by the adapter' };
 
   await page.getByRole('button', { name: 'Refresh' }).click();
-  await expect(page.getByRole('button', { name: 'Generate all codes' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Make QR codes' })).toBeDisabled();
   fake.reset();
   await page.getByRole('button', { name: 'Refresh' }).click();
   await page.waitForTimeout(400);
@@ -308,7 +308,7 @@ test('smoke: Content, a new activity, the copy dialog, and Guests with its print
   await page.keyboard.press('Escape');
 
   await page.getByRole('tab', { name: 'Guests and QR', exact: true }).click();
-  await page.getByRole('button', { name: /^Generate all codes/ }).click();
+  await page.getByRole('button', { name: /^Make (\d+ )?QR codes?$/ }).click();
   await expect(page.getByTestId('guest-report')).toHaveText('Made 14 codes. Everyone who can scan has one.', { timeout: 30_000 });
   await page.getByRole('button', { name: /^Print QR sheet/ }).click();
   await expect(page.locator('[data-card]')).toHaveCount(14);
@@ -324,7 +324,7 @@ test('smoke: Content, a new activity, the copy dialog, and Guests with its print
   await page.screenshot({ path: `${shots}guests-print-${browserName}.png` });
   await page.emulateMedia({ media: 'screen' });
   await page.getByRole('button', { name: 'Back to Guests and QR' }).click();
-  await expect(page.getByRole('heading', { name: 'Visitor roster' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Guest list' })).toBeVisible();
   expect(served.unexpected).toEqual([]);
   expect(problems).toEqual([]);
 });

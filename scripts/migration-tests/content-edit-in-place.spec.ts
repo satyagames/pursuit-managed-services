@@ -100,7 +100,7 @@ test('Save keeps the change, closes the editor and puts focus back on its Edit; 
   expect(Math.abs(await page.evaluate(() => window.scrollY) - before), 'nothing moved: the editor was in view').toBeLessThanOrEqual(2);
   await question(page).fill('Question number 1, revised');
   await expect(page.getByTestId('question-status')).toHaveText('Unsaved changes');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(page.getByText('Saved', { exact: true })).toBeVisible();
   await expect(editors(page)).toHaveCount(0);
   await expect(rowOf(page, 1).locator('.row__title')).toHaveText('Question number 1, revised');
@@ -154,7 +154,7 @@ test('Escape closes a clean editor, and asks about one with changes; Add questio
   await question(page).fill('A brand new question');
   await page.getByLabel('Option 1 text').fill('Yes');
   await page.getByLabel('Option 2 text').fill('No');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(slot).toHaveCount(0);
   await expect(page.locator('.questions ul.rows > li').last().locator('.row__title')).toHaveText('A brand new question');
   await expect(page.locator('.questions ul.rows > li').last().getByRole('button', { name: 'Edit', exact: true })).toBeFocused();
@@ -172,7 +172,7 @@ test('a question deleted by someone else while it is open: said in words, the ed
     await ds.deleteQuestion('q-many-6');
     for (const id of ['o-many-6-1', 'o-many-6-2']) await ds.deleteOption(id);
   });
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(page.getByTestId('question-gone')).toContainText('This question was deleted by someone else while you were editing it, so your changes were not saved. You wrote: "My careful wording"');
   await expect(editors(page)).toHaveCount(0);
   await page.getByRole('button', { name: 'Add it as a new question' }).click();
@@ -192,7 +192,7 @@ for (const size of [{ width: 820, height: 1180 }, { width: 1180, height: 820 }, 
     // Wherever the person is in the editor, the buttons are on the screen.
     for (const label of ['Option 1 picture address', 'Option 5 picture address', 'Option 8 picture address']) {
       await page.getByLabel(label).scrollIntoViewIfNeeded();
-      for (const name of ['Save', 'Cancel']) {
+      for (const name of ['Save question', 'Cancel']) {
         const box = await page.locator('.questions .content-editor').getByRole('button', { name, exact: true }).boundingBox();
         expect(box && box.y >= 0 && box.y + box.height <= size.height + 1, `${name} is on the screen near ${label}`).toBe(true);
         expect(box!.height).toBeGreaterThanOrEqual(44);
@@ -219,7 +219,7 @@ test('keyboard only: Edit, type, Save, and the editor passes axe (Phase 16)', as
   await page.keyboard.press('Tab');
   await expect(question(page)).toBeFocused();
   await page.keyboard.press('Control+Enter');
-  await page.locator('.questions .content-editor').getByRole('button', { name: 'Save', exact: true }).focus();
+  await page.locator('.questions .content-editor').getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).focus();
   await page.keyboard.press('Enter');
   await expect(editors(page)).toHaveCount(0);
   await expect(rowOf(page, 2).locator('.row__title')).toHaveText('Question number 2 (keyboard)');

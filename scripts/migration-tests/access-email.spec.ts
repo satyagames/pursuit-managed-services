@@ -38,7 +38,7 @@ async function open(page: Page, fake: Fake) {
 }
 
 const person = async (page: Page, name: string) => {
-  await page.getByRole('tab', { name: 'People' }).click();
+  await page.getByRole('tab', { name: 'People', exact: true }).click();
   await page.getByLabel('Search people').fill(name.split(',')[0]);
   await page.getByRole('button', { name: `Open ${name}` }).click();
   await expect(page.getByRole('heading', { name })).toBeFocused();
@@ -160,20 +160,20 @@ test.describe('Email them about this', () => {
     await open(page, fake);
     await page.getByRole('tab', { name: 'Clients' }).click();
     await page.getByRole('button', { name: 'Sessions and team: Kroger' }).click();
-    await page.getByRole('button', { name: 'Add to team' }).click();
+    await page.locator('.part__head').getByRole('button', { name: 'Add team member' }).click();
     await expect(page.getByRole('checkbox', { name: 'Email them about this' })).not.toBeChecked();
     await page.getByLabel('Search people').fill('milder');
     await page.getByLabel('Person').selectOption({ label: 'Milder, Brian (bmilder@deloitte.com)' });
     await expect(page.getByTestId('email-box')).toContainText('To: bmilder@deloitte.com.');
     await page.getByRole('checkbox', { name: 'Email them about this' }).check();
-    await page.getByRole('button', { name: 'Add', exact: true }).click();
+    await page.locator('form').getByRole('button', { name: 'Add team member' }).click();
     const panel = page.getByTestId('email-panel');
     await expect(panel.getByRole('textbox')).toHaveValue(/has added you to a client's team on .*, as a Producer\./);
     await expect(panel.getByRole('link', { name: 'Open email draft' })).toHaveAttribute('href', /^mailto:bmilder%40deloitte\.com\?/);
-    await page.getByRole('button', { name: 'Add to team' }).click();
+    await page.locator('.part__head').getByRole('button', { name: 'Add team member' }).click();
     await expect(page.getByRole('checkbox', { name: 'Email them about this' })).not.toBeChecked(); // (the form opens unticked again)
     await page.getByRole('button', { name: 'Cancel' }).click();
-    await page.getByRole('button', { name: /^Remove Milder, Brian/ }).click();
+    await page.getByRole('button', { name: /^Remove Producer for .* from Milder, Brian/ }).click();
     const dialog = page.getByRole('dialog');
     await expect(dialog.getByRole('checkbox', { name: 'Email them about this' })).not.toBeChecked();
     await dialog.getByRole('checkbox', { name: 'Email them about this' }).check();
@@ -186,7 +186,7 @@ test.describe('Email them about this', () => {
       const fake = await site(me(name, full));
       await open(page, fake);
       await expect(page.getByRole('navigation', { name: 'Admin sections' }).getByRole('tablist')).toBeVisible();
-      await expect(page.getByRole('tab', { name: 'People' })).toHaveCount(0);
+      await expect(page.getByRole('tab', { name: 'People', exact: true })).toHaveCount(0);
       await expect(page.getByTestId('email-box')).toHaveCount(0);
       await expect(page.getByTestId('email-panel')).toHaveCount(0);
     });

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from './Icon.svelte';
   // The Sessions part of a client's page (Prompt 21, Phase 3; board 5): every session of the client with its date and time, title, period, label
   // (Planned, Live, Ended) and team, the latest day first; and New session (the date, the start time, a title when the client has another session
   // that day, and whether the client's team runs it). Rules in lib/admin/session-plan.js; the write is the data layer's planSession(), which takes
@@ -10,7 +11,7 @@
   import { localDate } from '../lib/admin/admin-today.js';
   import { planProblems, planSessionFor, sessionRows } from '../lib/admin/session-plan.js';
 
-  let { client, access = null, sessions, settings, users, assignments, fiscalStartMonth, onPlanned, onToast }: {
+  let { open = $bindable(false), client, access = null, sessions, settings, users, assignments, fiscalStartMonth, onPlanned, onToast }: {
     client: { id: string; name: string; slug?: string };
     access?: any;
     /** The client's sessions. */
@@ -22,12 +23,15 @@
     /** A session was planned: the words to say, its id, and whether it has a team of its own (the team panel opens on it). */
     onPlanned: (words: string, sessionId: string, ownTeam: boolean) => void;
     onToast: (message: string, kind?: 'info' | 'success' | 'error') => void;
+    /** (Prompt 33) Whether Add session is open: the client's breadcrumb names it. */
+    open?: boolean;
   } = $props();
+  /** (Prompt 33) The session just added, marked in the list for this visit. */
+  let fresh = $state<string | null>(null);
 
   const mayPlan = $derived(!access || can(access, 'clients.manage', { clientId: client.id }));
   const rows = $derived(sessionRows(sessions, { clientId: client.id, settings, fiscalStartMonth }));
 
-  let open = $state(false);
   let date = $state(localDate());
   let startTime = $state('');
   let title = $state('');
@@ -59,7 +63,8 @@
       const fields = planSessionFor(dataService, client, { date, startTime, title }, { sessions, fiscalStartMonth });
       const made = await dataService.planSession(fields) as { id: string };
       open = false;
-      onPlanned(`Session planned for ${date} at ${startTime}`, made.id, !clientTeam);
+      fresh = made.id;
+      onPlanned(`Session added to ${client.name}: ${date} at ${startTime}`, made.id, !clientTeam);
     } catch (cause) {
       formError = errorText(cause, 'Could not plan this session.');
       onToast(formError, 'error');
@@ -72,19 +77,20 @@
 <section class="part" aria-labelledby="sessions-heading">
   <div class="part__head">
     <h3 id="sessions-heading">Sessions</h3>
-    {#if mayPlan}<button class="btn btn--primary" type="button" onclick={openForm} disabled={busy || open}>New session</button>{/if}
+    {#if mayPlan}<button class="btn btn--primary btn--with-icon" type="button" onclick={openForm} disabled={busy || open}><Icon name="plus" /> Add session</button>{/if}
   </div>
+  <p class="part__intro">Sessions: each time you run the app for this client.</p>
   {#if !mayPlan}<p class="muted small">Sessions are planned by an Admin. A Producer starts them on Today.</p>{/if}
 
   {#if open}
     <form class="editor-form plan" onsubmit={plan} novalidate aria-labelledby="plan-heading">
-      <h4 id="plan-heading">New session</h4>
+      <h4 id="plan-heading">Add a session to {client.name}</h4>
       <div class="plan__fields">
-        <div class="field"><label class="field__label" for="plan-date">Date</label>
+        <div class="field"><span class="field__line"><label class="field__label" for="plan-date">Date</label><span class="field__required">Required</span></span>
           <input id="plan-date" class="input" type="date" bind:value={date} disabled={busy} required aria-invalid={submitted && Boolean(problems.date)} aria-describedby={submitted && problems.date ? 'plan-date-problem' : undefined} />
           {#if submitted && problems.date}<span id="plan-date-problem" class="error small">{problems.date}</span>{/if}
         </div>
-        <div class="field"><label class="field__label" for="plan-time">Start time</label>
+        <div class="field"><span class="field__line"><label class="field__label" for="plan-time">Start time</label><span class="field__required">Required</span></span>
           <input id="plan-time" class="input" type="time" bind:value={startTime} disabled={busy} required aria-invalid={submitted && Boolean(problems.startTime)} aria-describedby={submitted && problems.startTime ? 'plan-time-problem' : undefined} />
           {#if submitted && problems.startTime}<span id="plan-time-problem" class="error small">{problems.startTime}</span>{/if}
         </div>
@@ -98,13 +104,13 @@
       {#if formError}<p class="error" role="alert">{formError}</p>{/if}
       <div class="dialog__actions">
         <button class="btn" type="button" onclick={() => { open = false; }} disabled={busy}>Cancel</button>
-        <button class="btn btn--primary" type="submit" disabled={busy}>{busy ? 'Planning...' : 'Plan session'}</button>
+        <button class="btn btn--primary" type="submit" disabled={busy}>{busy ? 'Adding...' : 'Add session'}</button>
       </div>
     </form>
   {/if}
 
   {#if rows.length === 0}
-    <p class="muted">No sessions yet.</p>
+    <p class="muted">No sessions yet. {mayPlan ? `Add the first one for ${client.name} with Add session.` : 'An Admin adds them.'}</p>
   {:else}
     <div class="sessions__scroll">
       <table class="sessions" data-testid="client-sessions">
@@ -112,8 +118,8 @@
         <thead><tr><th scope="col">Date and time</th><th scope="col">Title</th><th scope="col">Period</th><th scope="col">Status</th><th scope="col">Team</th></tr></thead>
         <tbody>
           {#each rows as row (row.session.id)}
-            <tr data-session-id={row.session.id}>
-              <td>{row.when}{#if row.sequence}<span class="muted small sessions__order">{row.sequence}</span>{/if}</td>
+            <tr data-session-id={row.session.id} class:sessions__fresh={row.session.id === fresh}>
+              <td>{row.when}{#if row.session.id === fresh}<span class="sessions__new">Just added</span>{/if}{#if row.sequence}<span class="muted small sessions__order">{row.sequence}</span>{/if}</td>
               <td>{row.title || '-'}</td>
               <td>{row.period || '-'}</td>
               <td><span class="pill" class:pill--live={row.stage === 'Live'} class:pill--ended={row.stage === 'Ended'}>{row.stage}</span></td>
@@ -127,6 +133,21 @@
 </section>
 
 <style>
+  .sessions__fresh td {
+    background: var(--adm-green-wash);
+  }
+
+  .sessions__new {
+    margin-inline-start: 0.5rem;
+    font-weight: var(--fw-semibold);
+  }
+
+  .btn--with-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
   .part {
     display: grid;
     gap: 0.9rem;

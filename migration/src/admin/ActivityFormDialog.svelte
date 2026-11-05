@@ -61,7 +61,7 @@
     </div>
     <div class="dialog__actions">
       <button class="btn" type="button" onclick={onCancel} disabled={busy}>Cancel</button>
-      <button class="btn btn--primary" type="submit" disabled={busy}>{busy ? 'Saving...' : mode === 'add' ? 'Add activity' : 'Save'}</button>
+      <button class="btn btn--primary" type="submit" disabled={busy}>{busy ? 'Saving...' : mode === 'add' ? 'Add activity' : 'Save activity'}</button>
     </div>
   </form>
 </dialog>

@@ -229,7 +229,7 @@ test('Layout and option pictures round-trip through the editor, and the particip
   // A link that is not a web address is refused, with the reason.
   await page.getByLabel('Option 1 picture address').fill('javascript:alert(1)');
   await expect(page.locator('.opt__preview').first()).toContainText('Use an address that starts with https://');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(page.getByRole('alert')).toContainText('Option 1 (Alpha): Use an address that starts with https://');
   // Two pictures and one text tile.
   await page.getByLabel('Option 1 picture address').fill('https://img.test/alpha.svg');
@@ -237,7 +237,7 @@ test('Layout and option pictures round-trip through the editor, and the particip
   await expect(page.locator('.opt__preview img').first()).toHaveJSProperty('complete', true);
   await expect(page.locator('.opt__preview').nth(2)).toContainText('A text tile will be used');
   await shoot(page, 'content-question-picture-tiles', { full: false });
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(page.locator('.toast')).toContainText('Saved');
   const section = (await ds.listClientSections('c-dominos')).find((entry: { title: string }) => entry.title === 'Which logo?');
   const question = await ds.getQuestion(section.questionIds[0]);
@@ -264,7 +264,7 @@ test('Layout and option pictures round-trip through the editor, and the particip
   await expect(page.getByLabel('Option 1 picture address')).toHaveValue('https://img.test/alpha.svg');
   await page.getByLabel('Layout').selectOption('text-list');
   await expect(page.getByLabel(/picture address/)).toHaveCount(0);
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(page.locator('.toast')).toContainText('Saved');
   expect((await ds.getQuestion(question.id)).layout).toBe('text-list');
   expect((await ds.getOption(question.optionIds[0])).imageUrl, 'the picture is kept for when tiles are chosen again').toBe('https://img.test/alpha.svg');
@@ -276,7 +276,7 @@ test('Layout and option pictures round-trip through the editor, and the particip
   await page.locator('.content-detail .row').filter({ hasText: 'pizza logo' }).getByRole('button', { name: 'Edit' }).click();
   await page.getByLabel('Layout').selectOption('image-grid');
   await page.getByLabel('Option 1 picture address').fill('');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(page.locator('.toast')).toContainText('Saved');
   // (Polled: the toast may be the previous save's, so the write can still be on its way when it shows.)
   await expect.poll(async () => (await ds.getOption(question.optionIds[0])).imageUrl).toBeNull();
@@ -294,7 +294,7 @@ test('an older question with no stored layout opens as tiles when every answer h
   await page.getByRole('button', { name: 'Edit' }).click();
   await expect(page.getByLabel('Layout')).toHaveValue('image-grid');
   await page.getByLabel('Question', { exact: true }).fill('Pick one now');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(page.locator('.toast')).toContainText('Saved');
   expect((await ds.getQuestion(`${id}-q0`)).layout).toBe('image-grid');
 });
@@ -310,7 +310,7 @@ test('picking another activity while a question is being saved does not move the
   await page.getByLabel('Question', { exact: true }).fill('A question that takes a moment');
   await page.getByLabel('Option 1 text').fill('One');
   await page.getByLabel('Option 2 text').fill('Two');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await activityRow(page, 'sec-dominos-innovation').locator('.activity__select').click();
   await expect.poll(async () => (await ds.getSection('sec-dominos-history')).questionIds.length, { timeout: 10_000 }).toBe(6);
   expect((await ds.getSection('sec-dominos-innovation')).questionIds, 'the other activity was not touched').toHaveLength(3);

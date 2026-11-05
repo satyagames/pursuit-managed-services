@@ -7,7 +7,6 @@
   import * as dataService from '../lib/data/dataService.js';
   import { focusHeading } from '../lib/common/focus.js';
   import { can } from '../lib/access/can.js';
-  import { EXTRAS } from '../lib/access/access-matrix.js';
   import { grantRole, revokeProblem } from '../lib/access/grants.js';
   import { dayWords, reachWords } from '../lib/access/people.js';
   import { historyOf, loseWords, removeRole, setExtras, setStatus } from '../lib/access/people-ops.js';
@@ -18,6 +17,11 @@
   import EmailBox from './EmailBox.svelte';
   import EmailPanel from './EmailPanel.svelte';
   import { MANAGED_GROUPS, desiredGroups, groupIds } from '../lib/access/site-access.js';
+  import Icon from './Icon.svelte';
+  import IconButton from './IconButton.svelte';
+  import Breadcrumb from './Breadcrumb.svelte';
+  import Fold from './Fold.svelte';
+  import RoleSwitch from './RoleSwitch.svelte';
 
   type Row = { key: string; name: string; email: string; status: string; assignments: any[] };
   let { access, person, users, assignments, clients, sessions, waiting = null, onBack, onChanged }: {
@@ -77,6 +81,14 @@
   const ended = (row: any) => Boolean(row.validUntil) && String(row.validUntil).slice(0, 10) < today;
   const names = $derived(Object.fromEntries(users.map((user) => [user.id, user.fullName || user.email || user.id])));
   const mayRemove = (row: any) => revokeProblem(access, row, assignments) === null;
+  /** (Prompt 33) Why a role-for-all-clients switch cannot move, in the guards' own words (lib/access/grants.js); '' when it can. */
+  const switchWhy = (row: any) => (own ? 'You cannot change your own roles.'
+    : !mayGlobal ? 'Only a Super admin can give or remove roles for all clients.'
+    : row ? (revokeProblem(access, row, assignments) ?? '') : '');
+  /** Turning a role for all clients on gives it at once; turning it off asks first, as Remove did. */
+  const flip = (row: any, give: () => Promise<void>) => (row ? ask({ kind: 'remove', assignment: row }) : void give());
+  const historySummary = $derived(history === null ? (historyError ? 'could not be read' : 'reading') : history.length === 0 ? 'none yet'
+    : `${history.length} ${history.length === 1 ? 'entry' : 'entries'}, latest ${history[0].day}`);
 
   onMount(() => {
     focusHeading(heading);
@@ -129,11 +141,12 @@
 </script>
 
 <section class="panel" aria-labelledby="user-heading" aria-busy={busy}>
-  <button class="btn" type="button" onclick={onBack}>Back to people</button>
+  <Breadcrumb parts={[{ label: 'People', onclick: onBack }, { label: person.name }]} />
+  <button class="btn btn--back" type="button" onclick={onBack}><Icon name="arrow-left" /> Back to people</button>
   <header class="panel__head detail__head">
     <div>
-      <h2 id="user-heading" bind:this={heading} tabindex="-1">{person.name}</h2>
-      <p class="muted">{person.email}</p>
+      <h2 id="user-heading" bind:this={heading} tabindex="-1"><Icon name="people" />{person.name}</h2>
+      <p class="muted">{person.email}: what they may do, for all clients and for each client.</p>
     </div>
     <div class="panel__actions">
       <span class="pill" class:pill--expired={person.status === 'Disabled'}>{person.status === 'Disabled' ? 'Turned off' : 'Active'}</span>
@@ -156,43 +169,30 @@
     <h3 id="global-heading">Roles for all clients</h3>
     <ul class="rows">
       <li class="row">
-        <div class="row__main"><span class="row__title">Super admin</span><span class="muted small">{superRow ? 'Manages people, clients, sessions, content and results.' : 'Not a Super admin.'}</span></div>
-        {#if mayGlobal && !own}
-          {#if superRow}
-            <button class="btn" type="button" onclick={() => ask({ kind: 'remove', assignment: superRow })} disabled={busy} aria-label="Remove Super admin from {person.name}">Remove</button>
-          {:else}
-            <button class="btn" type="button" onclick={() => void makeSuperAdmin()} disabled={busy} aria-label="Make {person.name} a Super admin">Make Super admin</button>
-          {/if}
-        {/if}
+        <div class="row__main"><span class="row__title">Super admin</span><span class="muted">Manages people, clients, sessions, content and results.</span></div>
+        <RoleSwitch role="Super admin" on={Boolean(superRow)} {busy} disabled={Boolean(switchWhy(superRow))} reason={switchWhy(superRow)} onflip={() => flip(superRow, makeSuperAdmin)} />
       </li>
       <li class="row">
         <div class="row__main">
           <span class="row__title">Admin</span>
-          <span class="muted small">{adminRow ? 'Creates clients and sessions and chooses each team.' : 'Not an Admin.'}</span>
+          <span class="muted">Creates clients and sessions and chooses each team.</span>
           {#if adminRow}
             <label class="detail__check">
               <input type="checkbox" checked={String(adminRow.extras ?? '').includes('users.manage')} disabled={busy || !mayGlobal || own}
                 onchange={(event) => void switchExtra(adminRow, 'users.manage', event.currentTarget.checked)} />
-              Also allowed to add people ({EXTRAS['users.manage'].words})
+              Also allowed to add people
             </label>
           {/if}
         </div>
-        {#if mayGlobal && !own}
-          {#if adminRow}
-            <button class="btn" type="button" onclick={() => ask({ kind: 'remove', assignment: adminRow })} disabled={busy} aria-label="Remove Admin from {person.name}">Remove</button>
-          {:else}
-            <button class="btn" type="button" onclick={() => void makeAdmin()} disabled={busy} aria-label="Make {person.name} an Admin">Make Admin</button>
-          {/if}
-        {/if}
+        <RoleSwitch role="Admin" on={Boolean(adminRow)} {busy} disabled={Boolean(switchWhy(adminRow))} reason={switchWhy(adminRow)} onflip={() => flip(adminRow, makeAdmin)} />
       </li>
     </ul>
-    {#if !mayGlobal}<p class="muted small">Only a Super admin can give or remove these.</p>{/if}
   </section>
 
   <section class="detail__block" aria-labelledby="access-heading">
     <div class="detail__line">
       <h3 id="access-heading">Access to clients and sessions</h3>
-      {#if mayGive && !own}<button class="btn btn--primary" type="button" onclick={() => { giving = true; }} disabled={busy}>Give access</button>{/if}
+      {#if mayGive && !own}<button class="btn btn--primary" type="button" onclick={() => { giving = true; }} disabled={busy}><Icon name="plus" /> Give access</button>{/if}
     </div>
     {#if team.length === 0}
       <p class="muted" data-testid="no-access-rows">{person.name} has no access to any client or session yet.</p>
@@ -212,7 +212,7 @@
               {/if}
             </div>
             {#if !own && mayRemove(row)}
-              <button class="btn btn--danger" type="button" onclick={() => ask({ kind: 'remove', assignment: row })} disabled={busy} aria-label="Remove {row.role}, {reachWords(row, at)}">Remove</button>
+              <IconButton icon="minus-circle" danger tip="Remove" label="Remove {row.role} for {reachWords(row, at)} from {person.name}" disabled={busy} onclick={() => ask({ kind: 'remove', assignment: row })} />
             {/if}
           </li>
         {/each}
@@ -220,8 +220,7 @@
     {/if}
   </section>
 
-  <section class="detail__block" aria-labelledby="history-heading">
-    <h3 id="history-heading">History</h3>
+  <Fold title="History of changes" icon="clock" summary={historySummary} testid="person-history">
     {#if historyError}<p class="error" role="alert">{historyError}</p>
     {:else if history === null}<p class="muted" role="status">Reading the history...</p>
     {:else if history.length === 0}<p class="muted">Nothing recorded yet.</p>
@@ -230,7 +229,7 @@
         {#each history as entry (entry.id)}<li class="row"><span class="muted small detail__day">{entry.day}</span><span>{entry.words}</span></li>{/each}
       </ul>
     {/if}
-  </section>
+  </Fold>
 </section>
 
 {#if confirm?.kind === 'disable'}
@@ -240,7 +239,7 @@
     <EmailBox {access} email={person.email} bind:checked={confirmEmail} disabled={busy} />
   </ConfirmDialog>
 {:else if confirm?.kind === 'remove'}
-  <ConfirmDialog title="Remove {confirm.assignment.role}?" lead={loseWords(confirm.assignment, person.name, at)} confirmLabel="Remove" tone="danger" {busy}
+  <ConfirmDialog title="Remove {confirm.assignment.role} from {person.name}?" lead={loseWords(confirm.assignment, person.name, at)} confirmLabel="Remove" tone="danger" {busy}
     points={['You can give the access again later.']}
     onConfirm={() => { if (confirm?.kind === 'remove') void remove(confirm.assignment); }} onCancel={() => { confirm = null; }}>
     <EmailBox {access} email={person.email} bind:checked={confirmEmail} disabled={busy} />
@@ -283,5 +282,11 @@
 
   .detail__day {
     min-width: 7rem;
+  }
+
+  .btn--back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 </style>

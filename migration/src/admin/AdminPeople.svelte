@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from './Icon.svelte';
   // Users (Prompt 21, Phase 2; boards 3 and 4): the people who may use the admin page, and what each may do. Shown to a Super admin, to an Admin
   // (who may look, and give team roles) and to nobody else (the menu comes from the role matrix: AdminApp.svelte). It reads the four lists once, as an index (people, their
   // assignments, the names of clients and sessions: lib/admin/list-index.js), filters them here (lib/access/people.js: role chips, search, Client and Session, Status, pages of 5) and
@@ -88,12 +89,12 @@
   <section class="panel people__list" aria-labelledby="users-heading" aria-busy={loading}>
     <header class="panel__head">
       <div>
-        <h2 id="users-heading" bind:this={heading} tabindex="-1">People</h2>
-        <p class="muted">Who can use the admin page, and what each person may do. Roles are given to a person for all clients, one client or one session.</p>
+        <h2 id="users-heading" bind:this={heading} tabindex="-1"><Icon name="people" />People</h2>
+        <p class="muted">Who can use the admin page, and what each person may do for all clients, one client or one session.</p>
       </div>
       <div class="panel__actions">
-        {#if mayReview}<button class="btn" type="button" onclick={() => { reviewing = true; }}>History of changes</button>{/if}
-        {#if mayAdd}<button class="btn btn--primary" type="button" onclick={() => { adding = true; }}>Add user</button>{/if}
+        {#if mayReview}<button class="btn" type="button" onclick={() => { reviewing = true; }}><Icon name="clock" /> History of changes</button>{/if}
+        {#if mayAdd}<button class="btn btn--primary" type="button" onclick={() => { adding = true; }}><Icon name="plus" /> Add user</button>{/if}
       </div>
     </header>
 

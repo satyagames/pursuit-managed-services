@@ -66,7 +66,7 @@ test('opening Brand Studio costs no request of its own; Save costs 1 read and 1 
   // A colour change: one read of the client (has anyone else changed it?), then one write of it.
   await page.getByRole('button', { name: /Teal/ }).click();
   fake.reset();
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(page.getByTestId('brand-status')).toHaveText('All changes saved');
   await quiet(page);
   measured['Save a colour change'] = { requests: fake.count(), shapes: words(fake) };
@@ -86,7 +86,7 @@ test('opening Brand Studio costs no request of its own; Save costs 1 read and 1 
   await expect(card(page, 'hero').getByTestId('hero-status')).toHaveText('Not saved yet');
   await quiet(page);
   expect(words(fake), 'cropping and compressing happen in the browser: no request').toEqual([]);
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(page.getByTestId('brand-status')).toHaveText('All changes saved');
   await quiet(page);
   measured['Save with one new picture (hero)'] = { requests: fake.count(), shapes: words(fake) };
@@ -105,7 +105,7 @@ test('opening Brand Studio costs no request of its own; Save costs 1 read and 1 
   await crop(page).getByRole('button', { name: 'Use this picture' }).click();
   await expect(card(page, 'hero').getByTestId('hero-status')).toHaveText('Not saved yet');
   fake.reset();
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(page.getByTestId('brand-status')).toHaveText('All changes saved');
   await quiet(page);
   measured['Save replacing that picture (adds the removal of the old one)'] = { requests: fake.count(), shapes: words(fake) };
@@ -127,7 +127,7 @@ test('on SharePoint a participant\'s page reads the uploaded hero from the libra
 
   await card(page, 'hero').locator('input[type="file"]').setInputFiles({ name: 'badge.png', mimeType: 'image/png', buffer: await makeImage(page, { width: 1300, height: 1300, type: 'image/png', paint: 'photo' }) });
   await crop(page).getByRole('button', { name: 'Use this picture' }).click();
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(page.getByTestId('brand-status')).toHaveText('All changes saved');
 
   const guest = await browser.newContext({ viewport: { width: 390, height: 844 } });
@@ -151,7 +151,7 @@ test('the first write on a freshly opened page also needs the write token and th
   await crop(page).getByRole('button', { name: 'Use this picture' }).click();
   await expect(card(page, 'hero').getByTestId('hero-status')).toHaveText('Not saved yet');
   fake.reset();
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(page.getByTestId('brand-status')).toHaveText('All changes saved');
   await quiet(page);
   measured['First Save on a page, with one new picture (adds the write token and the list\'s columns)'] = { requests: fake.count(), shapes: words(fake) };

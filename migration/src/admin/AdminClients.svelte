@@ -6,6 +6,7 @@
   import { focusHeading } from '../lib/common/focus.js';
   import { heldRead, holdRead } from '../lib/admin/list-cache.js';
   import Pager from './Pager.svelte';
+  import Icon from './Icon.svelte';
   import { embeddedAssetUrl } from '../lib/brand/assets.js';
   import { viewById } from '../lib/admin/admin-content-views.js';
   import SampleNotice from './SampleNotice.svelte';
@@ -75,6 +76,8 @@
   let qrCodes = $state<Token[]>([]);
   /** The client whose page (its sessions and team) is open, Prompt 21 Phase 3: beside the list on a laptop, in its place below 1,100 px (Prompt 32). */
   let workspace = $state<Client | null>(null);
+  /** (Prompt 33) The client's own details are being edited from its page: the editor is drawn there, under Client details. */
+  const inWorkspace = $derived(Boolean(workspace && editing && editing.id === workspace.id));
 
   const rows = $derived(clientRows({ clients, sessions, sections, liveClientId }));
   const where = $derived(pagerState({ total: rows.length, pageSize: PER_PAGE.clients, page }));
@@ -174,8 +177,9 @@
       if (editing) await updateClientRecord(dataService, editing, form, { slugLocked });
       else await createClientRecord(dataService, form);
       editorOpen = false;
-      onToast('Saved', 'success');
+      onToast(`Saved ${form.name}`, 'success');
       await refresh();
+      if (workspace) workspace = clients.find((each) => each.id === workspace?.id) ?? workspace;
     } catch (cause) {
       formError = cause instanceof Error ? cause.message : 'Could not save this client.';
     } finally {
@@ -300,14 +304,42 @@
   function statusOf(token: Token) { return dataService.qrTokenStatus(token); }
 </script>
 
+{#snippet clientEditor()}
+    <section class="content-editor" aria-labelledby="client-editor-heading">
+      <h3 id="client-editor-heading">{editing ? `Edit client details: ${editing.name}` : 'Add a client'}</h3>
+      <form class="editor-form" onsubmit={saveClient} novalidate>
+        <div class="field"><span class="field__line"><label class="field__label" for="client-name">Name</label><span class="field__required">Required</span></span>
+          <input id="client-name" class="input" bind:value={name} oninput={nameChanged} required maxlength={MAX_CLIENT_NAME} disabled={busy} aria-invalid={submitted && Boolean(problems.name)} aria-describedby={submitted && problems.name ? 'name-problem' : name.length >= MAX_CLIENT_NAME ? 'name-limit' : undefined} />
+          {#if submitted && problems.name}<span id="name-problem" class="error small">{problems.name}</span>
+          {:else if name.length >= MAX_CLIENT_NAME}<span id="name-limit" class="muted small">{MAX_CLIENT_NAME} characters: the most a client's name can hold.</span>{/if}
+        </div>
+        <span class="muted small" id="name-seen">Participants see this name on their screens.</span>
+        <div class="field"><label class="field__label" for="client-slug">Short name in session ids</label>
+          <input id="client-slug" class="input mono" bind:value={slug} oninput={() => { slugTouched = true; }} disabled={busy || slugLocked} autocapitalize="off" autocorrect="off" spellcheck="false" aria-invalid={Boolean(slug) && Boolean(slugText)} aria-describedby="slug-help" />
+          <span id="slug-help" class="small" class:muted={!slugText || !slug} class:error={Boolean(slug) && Boolean(slugText)}>
+            {#if slugLocked}Locked: this client already has sessions, and their ids start with the slug.
+            {:else if slug && slugText}{slugText}
+            {:else}Session ids are the slug, the date and the start time, like {slug || 'kroger'}-2026-10-11-0930. a to z, 0 to 9 and hyphens.{/if}
+          </span>
+        </div>
+        <label class="field"><span class="field__label">Event title</span><input class="input" bind:value={eventTitle} oninput={() => { titleTouched = true; }} disabled={busy} placeholder={defaultEventTitle(name) || 'KROGER TRIVIA NIGHT'} /></label>
+        <label class="field"><span class="field__label">Subtitle</span><input class="input" bind:value={eventSubtitle} disabled={busy} placeholder="One line under the title on the activities screen" /></label>
+        <label class="field"><span class="field__label">Welcome line</span><input class="input" bind:value={welcomeLine} disabled={busy} placeholder={`Welcome to the ${name.trim() || 'Kroger'} experience.`} /></label>
+        <p class="muted small">Colours, the logo, hero art and the background are set in Brand Studio{editing ? '' : ' once the client is added'}.</p>
+        {#if formError}<p class="error" role="alert">{formError}</p>{/if}
+        <div class="dialog__actions"><button class="btn" type="button" onclick={() => { editorOpen = false; }} disabled={busy}>Cancel</button><button class="btn btn--primary" type="submit" disabled={busy}>{busy ? 'Saving...' : 'Save client'}</button></div>
+      </form>
+    </section>
+{/snippet}
+
 <div class="clients" class:clients--open={workspace !== null}>
 <section class="panel clients-panel clients__list" aria-busy={loading || busy}>
   <header class="panel__head">
     <div>
-      <h2 bind:this={clientsHeading} tabindex="-1">Clients</h2>
-      <p class="muted">Add, edit and archive clients, with each one's event title, subtitle, welcome line. <strong>{brand.label}</strong> opens the client's {brand.label} view in Content, beside its activities: the colours, logo, hero art and background, with a preview on a phone, an iPad and a desktop. A new client starts with the standard blue. Check-in codes for iPads (staff sign-in) are made here; personal codes for guests are under Guests and QR.</p>
+      <h2 bind:this={clientsHeading} tabindex="-1"><Icon name="building" />Clients</h2>
+      <p class="muted">The clients you visit: open one to plan its sessions and choose its team, or open its Brand to set its look.</p>
     </div>
-    <button class="btn btn--primary" type="button" onclick={() => openEditor(null)} disabled={busy}>Add client</button>
+    <button class="btn btn--primary btn--with-icon" type="button" onclick={() => openEditor(null)} disabled={busy}><Icon name="plus" /> Add client</button>
   </header>
   {#if loading}<p role="status">Loading clients...</p>
   {:else if error}<p class="error" role="alert">{error}</p>
@@ -345,32 +377,7 @@
     <Pager state={where} label="Pages of clients" onPage={goToPage} />
   {/if}
 
-  {#if editorOpen}
-    <section class="content-editor" aria-labelledby="client-editor-heading">
-      <h3 id="client-editor-heading">{editing ? 'Edit client' : 'Add client'}</h3>
-      <form class="editor-form" onsubmit={saveClient} novalidate>
-        <div class="field"><label class="field__label" for="client-name">Name</label>
-          <input id="client-name" class="input" bind:value={name} oninput={nameChanged} required maxlength={MAX_CLIENT_NAME} disabled={busy} aria-invalid={submitted && Boolean(problems.name)} aria-describedby={submitted && problems.name ? 'name-problem' : name.length >= MAX_CLIENT_NAME ? 'name-limit' : undefined} />
-          {#if submitted && problems.name}<span id="name-problem" class="error small">{problems.name}</span>
-          {:else if name.length >= MAX_CLIENT_NAME}<span id="name-limit" class="muted small">{MAX_CLIENT_NAME} characters: the most a client's name can hold.</span>{/if}
-        </div>
-        <div class="field"><label class="field__label" for="client-slug">Slug</label>
-          <input id="client-slug" class="input mono" bind:value={slug} oninput={() => { slugTouched = true; }} disabled={busy || slugLocked} autocapitalize="off" autocorrect="off" spellcheck="false" aria-invalid={Boolean(slug) && Boolean(slugText)} aria-describedby="slug-help" />
-          <span id="slug-help" class="small" class:muted={!slugText || !slug} class:error={Boolean(slug) && Boolean(slugText)}>
-            {#if slugLocked}Locked: this client already has sessions, and their ids start with the slug.
-            {:else if slug && slugText}{slugText}
-            {:else}Session ids are the slug, the date and the start time, like {slug || 'kroger'}-2026-10-11-0930. a to z, 0 to 9 and hyphens.{/if}
-          </span>
-        </div>
-        <label class="field"><span class="field__label">Event title</span><input class="input" bind:value={eventTitle} oninput={() => { titleTouched = true; }} disabled={busy} placeholder={defaultEventTitle(name) || 'KROGER TRIVIA NIGHT'} /></label>
-        <label class="field"><span class="field__label">Subtitle</span><input class="input" bind:value={eventSubtitle} disabled={busy} placeholder="One line under the title on the activities screen" /></label>
-        <label class="field"><span class="field__label">Welcome line</span><input class="input" bind:value={welcomeLine} disabled={busy} placeholder={`Welcome to the ${name.trim() || 'Kroger'} experience.`} /></label>
-        <p class="muted small">Colours, the logo, hero art and the background are set in Brand Studio{editing ? '' : ' once the client is added'}.</p>
-        {#if formError}<p class="error" role="alert">{formError}</p>{/if}
-        <div class="dialog__actions"><button class="btn" type="button" onclick={() => { editorOpen = false; }} disabled={busy}>Cancel</button><button class="btn btn--primary" type="submit" disabled={busy}>{busy ? 'Saving...' : 'Save'}</button></div>
-      </form>
-    </section>
-  {/if}
+  {#if editorOpen && !inWorkspace}{@render clientEditor()}{/if}
 
   {#if qrClient && qrToken}
     <section class="content-editor qr-editor" aria-labelledby="qr-title">
@@ -392,7 +399,7 @@
 {#if workspace}
   <div class="clients__detail">
     {#key workspace.id}
-      <ClientWorkspace client={workspace} {clients} {access} {onToast} onBack={() => { const back = workspace?.id; workspace = null; void refresh().catch(() => {}); void tick().then(() => document.getElementById(`sessions-${back}`)?.focus()); }} />
+      <ClientWorkspace client={workspace} {clients} {access} {onToast} onEdit={() => { if (workspace) openEditor(workspace); }} editor={editorOpen && inWorkspace ? clientEditor : undefined} onBack={() => { const back = workspace?.id; workspace = null; void refresh().catch(() => {}); void tick().then(() => document.getElementById(`sessions-${back}`)?.focus()); }} />
     {/key}
   </div>
 {/if}

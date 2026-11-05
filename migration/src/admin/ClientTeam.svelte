@@ -14,10 +14,12 @@
   import { errorText } from '../lib/admin/session-notice.js';
   import SiteAccessHandoff from './SiteAccessHandoff.svelte';
   import ConfirmDialog from './ConfirmDialog.svelte';
+  import IconButton from './IconButton.svelte';
+  import Icon from './Icon.svelte';
   import EmailBox from './EmailBox.svelte';
   import EmailPanel from './EmailPanel.svelte';
 
-  let { client, access = null, sessions, users, assignments, preset = null, onChanged, onToast }: {
+  let { open = $bindable(false), client, access = null, sessions, users, assignments, preset = null, onChanged, onToast }: {
     client: { id: string; name: string };
     access?: any;
     /** The client's sessions. */
@@ -28,13 +30,14 @@
     preset?: string | null;
     onChanged: (words: string) => void;
     onToast: (message: string, kind?: 'info' | 'success' | 'error') => void;
+    /** (Prompt 33) Whether Add team member is open: the client's breadcrumb names it. */
+    open?: boolean;
   } = $props();
 
   const mayAssign = $derived(Boolean(access) && can(access, 'team.assign', { clientId: client.id }));
   const team = $derived(teamRows(assignments, users, { clientId: client.id, sessions }));
   const choices = $derived([...sessions].sort((a, b) => String(b.date ?? '').localeCompare(String(a.date ?? '')) || String(a.startTime ?? '').localeCompare(String(b.startTime ?? ''))));
 
-  let open = $state(false);
   let role = $state('Producer');
   let search = $state('');
   let userKey = $state('');
@@ -129,18 +132,19 @@
 
 <section class="part" aria-labelledby="team-heading">
   <div class="part__head">
-    <h3 id="team-heading" bind:this={heading} tabindex="-1">Client team</h3>
-    {#if mayAssign}<button class="btn btn--primary" type="button" onclick={() => openForm()} disabled={busy || open}>Add to team</button>{/if}
+    <h3 id="team-heading" bind:this={heading} tabindex="-1">Team</h3>
+    {#if mayAssign}<button class="btn btn--primary btn--with-icon" type="button" onclick={() => openForm()} disabled={busy || open}><Icon name="plus" /> Add team member</button>{/if}
   </div>
+  <p class="part__intro">Team: who runs, designs or looks at this client's sessions.</p>
   <p class="muted small">A Producer runs the sessions, a Designer edits the brand, Leadership sees the results. Give a role for the whole client, or only for some sessions.{mayAssign ? '' : ' An Admin chooses the team.'}</p>
   {#if added && access}<SiteAccessHandoff {access} person={added} {assignments} changed={teamChanges} />{/if}
   {#if mail && access}<EmailPanel {access} {mail} onClose={() => { mail = null; }} />{/if}
 
   {#if open}
     <form class="editor-form team-form" onsubmit={add} novalidate aria-labelledby="team-form-heading">
-      <h4 id="team-form-heading">Add to {client.name}'s team</h4>
-      <div class="field"><label class="field__label" for="team-role">Role</label>
-        <select id="team-role" class="select" bind:value={role} disabled={busy} onchange={() => { if (role !== 'Designer') editActivities = false; }}>
+      <h4 id="team-form-heading">Add a team member to {client.name}</h4>
+      <div class="field"><span class="field__line"><label class="field__label" for="team-role">Role</label><span class="field__required">Required</span></span>
+        <select id="team-role" class="select" aria-required="true" bind:value={role} disabled={busy} onchange={() => { if (role !== 'Designer') editActivities = false; }}>
           {#each TEAM_ROLES as each (each)}<option value={each}>{each}</option>{/each}
         </select>
       </div>
@@ -148,8 +152,8 @@
         <input id="team-search" class="input" type="search" bind:value={search} disabled={busy} autocomplete="off" aria-describedby="team-search-help" />
         <span id="team-search-help" class="muted small">Only people added under People can be chosen. {candidates.length} match{candidates.length === 1 ? '' : 'es'}.</span>
       </div>
-      <div class="field"><label class="field__label" for="team-person">Person</label>
-        <select id="team-person" class="select" bind:value={userKey} disabled={busy} aria-invalid={submitted && Boolean(problems.userKey)} aria-describedby={submitted && problems.userKey ? 'team-person-problem' : undefined}>
+      <div class="field"><span class="field__line"><label class="field__label" for="team-person">Person</label><span class="field__required">Required</span></span>
+        <select id="team-person" class="select" aria-required="true" bind:value={userKey} disabled={busy} aria-invalid={submitted && Boolean(problems.userKey)} aria-describedby={submitted && problems.userKey ? 'team-person-problem' : undefined}>
           <option value="">Choose a person</option>
           {#each candidates as user (user.id)}<option value={user.id}>{user.fullName || user.email || user.id} ({user.email || user.id})</option>{/each}
         </select>
@@ -175,7 +179,7 @@
       <EmailBox {access} email={chosenEmail} bind:checked={emailed} disabled={busy} />
       <div class="dialog__actions">
         <button class="btn" type="button" onclick={() => { open = false; }} disabled={busy}>Cancel</button>
-        <button class="btn btn--primary" type="submit" disabled={busy}>{busy ? 'Adding...' : 'Add'}</button>
+        <button class="btn btn--primary" type="submit" disabled={busy}>{busy ? 'Adding...' : 'Add team member'}</button>
       </div>
     </form>
   {/if}
@@ -190,7 +194,7 @@
             <span class="row__title">{row.name} <span class="pill">{row.role}</span></span>
             <span class="muted small">{row.reach}{row.extras ? ` · ${row.extras}` : ''}</span>
           </div>
-          {#if mayAssign}<button class="btn btn--small btn--danger" type="button" onclick={() => { emailed = false; confirm = row; }} disabled={busy} aria-label="Remove {row.name}, {row.role}, {row.reach}">Remove</button>{/if}
+          {#if mayAssign}<IconButton icon="minus-circle" danger tip="Remove" label="Remove {row.role} for {client.name}{row.reach === 'Whole client' ? '' : `, ${row.reach}`} from {row.name}" disabled={busy} onclick={() => { emailed = false; confirm = row; }} />{/if}
         </li>
       {/each}
     </ul>
@@ -205,6 +209,12 @@
 {/if}
 
 <style>
+  .btn--with-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
   .part {
     display: grid;
     gap: 0.9rem;

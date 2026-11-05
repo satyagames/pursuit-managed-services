@@ -51,6 +51,6 @@
   .results-views__choice[aria-pressed='true'] {
     border-color: var(--ink);
     background: var(--ink);
-    color: #fff;
+    color: var(--adm-on-deep);
   }
 </style>

@@ -252,7 +252,7 @@ test.describe('the admin page', () => {
     await expect(page.getByTestId('matrix-line')).toHaveText('3 sub-processes, 1240 people in scope');
     await page.screenshot({ path: `${shots}editor.png`, fullPage: true });
     expect((await new AxeBuilder({ page }).include('.content-editor').analyze()).violations.map((each) => each.id)).toEqual([]);
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
     await expect(page.getByText('Art of the Possible: 3 sub-processes by 5 criteria')).toBeVisible();
     const question = fake.lists.get('questions')?.find((row: { QuestionType: string; AppId: string }) => row.QuestionType === 'art-of-the-possible' && row.AppId !== 'q-aop');
     expect(JSON.parse(question.Criteria).map((each: { direction: string }) => each.direction)).toEqual(['against', 'favours', 'favours', 'against', 'favours']);

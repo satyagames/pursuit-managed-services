@@ -49,8 +49,8 @@ test.describe('the People screens', () => {
   test('a Super admin signs in with no PIN, sees People, filters it by role chip, search and client, and axe finds nothing', async ({ page }) => {
     const fake = await site(me('vsatyadev', 'Satyadev, Vedala Venkata'));
     const served = await open(page, fake);
-    await expect(page.getByRole('tab', { name: 'People' })).toBeVisible();
-    await page.getByRole('tab', { name: 'People' }).click();
+    await expect(page.getByRole('tab', { name: 'People', exact: true })).toBeVisible();
+    await page.getByRole('tab', { name: 'People', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'People' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'People' })).toBeFocused(); // (a new screen: its heading takes focus, through focusHeading)
     // (5 to a page since Prompt 26: six people, so two pages. Next says the new range, moves focus to the heading, and a reload comes back to the page.)
@@ -89,7 +89,7 @@ test.describe('the People screens', () => {
   test('Add user, by keyboard alone: search as you type, Down and Enter, Add user, then Give access; the guards refuse the rest', async ({ page }) => {
     const fake = await site(me('vsatyadev', 'Satyadev, Vedala Venkata'));
     await open(page, fake);
-    await page.getByRole('tab', { name: 'People' }).click();
+    await page.getByRole('tab', { name: 'People', exact: true }).click();
     // (The list's heading takes focus once the people are read: pressing Add user before then lost the focus to it under load, in WebKit.)
     await expect(page.getByRole('heading', { name: 'People' })).toBeFocused();
     await page.getByRole('button', { name: 'Add user' }).focus();
@@ -136,7 +136,7 @@ test.describe('the People screens', () => {
   test('Remove says what they lose, and a Super admin cannot remove their own roles or the last Super admin', async ({ page }) => {
     const fake = await site(me('vsatyadev', 'Satyadev, Vedala Venkata'));
     await open(page, fake);
-    await page.getByRole('tab', { name: 'People' }).click();
+    await page.getByRole('tab', { name: 'People', exact: true }).click();
     await page.getByRole('button', { name: 'Open Aedla, Rajeshwar' }).click();
     await expect(page.getByRole('heading', { name: 'Aedla, Rajeshwar' })).toBeFocused();
     await page.getByRole('button', { name: /^Remove Producer/ }).click();
@@ -159,7 +159,7 @@ test.describe('the People screens', () => {
   test('a site that refuses the people picker says unverified, and a typed email is taken', async ({ page }) => {
     const fake = await site(me('vsatyadev', 'Satyadev, Vedala Venkata'), { pickerStatus: 403 });
     await open(page, fake);
-    await page.getByRole('tab', { name: 'People' }).click();
+    await page.getByRole('tab', { name: 'People', exact: true }).click();
     await page.getByRole('button', { name: 'Add user' }).click();
     const field = page.getByRole('combobox', { name: 'Name or email' });
     await field.pressSequentially('new.person@deloitte.com');
@@ -175,11 +175,12 @@ test.describe('the People screens', () => {
   test('an Admin sees People and may give a team role, but has no Add user (without the extra) and no global roles; a Producer has no People tab', async ({ page }) => {
     const admin = await site(me('pulmathur', 'Mathur, Pulkit'));
     await open(page, admin);
-    await page.getByRole('tab', { name: 'People' }).click();
+    await page.getByRole('tab', { name: 'People', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Add user' })).toHaveCount(0);
     await page.getByRole('button', { name: 'Open Aedla, Rajeshwar' }).click();
     await expect(page.getByRole('button', { name: 'Give access' })).toBeVisible();
-    await expect(page.getByText('Only a Super admin can give or remove these.')).toBeVisible();
+    // (Prompt 33: the roles for all clients are switches, each disabled with this reason beside it.)
+    await expect(page.getByText('Only a Super admin can give or remove roles for all clients.')).toHaveCount(2);
     await page.getByRole('button', { name: 'Back to people' }).click();
     await page.getByLabel('Search people').fill('Satyadev'); // (on the second page: Prompt 26)
     await page.getByRole('button', { name: 'Open Satyadev, Vedala Venkata' }).click();
@@ -187,7 +188,7 @@ test.describe('the People screens', () => {
     await page.goto('about:blank');
     const producer = await site(me('raedla', 'Aedla, Rajeshwar'));
     await open(page, producer);
-    await expect(page.getByRole('tab', { name: 'People' })).toHaveCount(0);
+    await expect(page.getByRole('tab', { name: 'People', exact: true })).toHaveCount(0);
   });
 
   test('(Prompt 21, Phase 7) a Super admin reviews the history of changes, read only, filtered; an Admin has no such button', async ({ page }) => {
@@ -198,7 +199,7 @@ test.describe('the People screens', () => {
     });
     line(1, 'add-user', 'raedla'); line(2, 'grant', 'raedla'); line(3, 'disable', 'gone');
     const served = await open(page, fake);
-    await page.getByRole('tab', { name: 'People' }).click();
+    await page.getByRole('tab', { name: 'People', exact: true }).click();
     const before = fake.requests.length;
     await page.getByRole('button', { name: 'History of changes' }).click();
     await expect(page.getByRole('heading', { name: 'History of changes' })).toBeFocused();
@@ -216,7 +217,7 @@ test.describe('the People screens', () => {
     expect(fake.requests.slice(before).filter((request: { method: string }) => request.method !== 'GET')).toEqual([]); // (read only)
     await page.goto('about:blank');
     await open(page, await site(me('pulmathur', 'Mathur, Pulkit')));
-    await page.getByRole('tab', { name: 'People' }).click();
+    await page.getByRole('tab', { name: 'People', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'People' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'History of changes' })).toHaveCount(0);
   });

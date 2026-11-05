@@ -89,8 +89,8 @@ test('Generate all codes makes one single-use code for each guest without one, s
   });
   await page.getByRole('tab', { name: 'Guests and QR', exact: true }).click();
   await expect(page.getByTestId('guest-summary')).toContainText('6 guests: 4 no code, 1 not scanned, 0 joined, 0 completed, 1 disabled.');
-  const generate = page.getByRole('button', { name: /^Generate all codes/ });
-  await expect(generate).toHaveText('Generate all codes (4)');
+  const generate = page.getByRole('button', { name: /^Make (\d+ )?QR codes?$/ });
+  await expect(generate).toHaveText('Make 4 QR codes');
   const before = requests.length;
   await generate.click();
   await expect(page.getByTestId('guest-progress')).toContainText('Making codes');
@@ -104,12 +104,12 @@ test('Generate all codes makes one single-use code for each guest without one, s
   expect(tokens.every((token) => token.used === false)).toBe(true);
   expect(tokens.some((token) => token.visitorId === visitors[1].id), 'the disabled guest has none').toBe(false);
   await expect(generate).toBeDisabled();
-  await expect(generate).toHaveText('Generate all codes');
+  await expect(generate).toHaveText('Make QR codes');
 
   // A guest is added: one is missing, and one more is made. Nothing else is touched.
   await ds.createVisitor({ sessionId: session.id, displayName: 'Late Guest', enabled: true });
   await livePage(page);
-  await expect(generate).toHaveText('Generate all codes (1)');
+  await expect(generate).toHaveText('Make 1 QR code');
   const second = requests.length;
   await generate.click();
   await expect(page.getByTestId('guest-report')).toHaveText('Made 1 code. Everyone who can scan has one.');
@@ -126,12 +126,12 @@ test('a failed write stops being a problem on the next press: the codes made sta
     if (route.request().method() === 'POST' && (posts += 1) === 3) return route.fulfill({ status: 503, json: { error: 'Injected failure' } });
     return route.fallback();
   });
-  await page.getByRole('button', { name: /^Generate all codes/ }).click();
-  await expect(page.getByTestId('guest-report')).toContainText('Made 4 codes. 1 guest has no code yet (Injected failure). Press Generate all codes again');
+  await page.getByRole('button', { name: /^Make (\d+ )?QR codes?$/ }).click();
+  await expect(page.getByTestId('guest-report')).toContainText('Made 4 codes. 1 guest has no code yet (Injected failure). Press Make QR codes again');
   await expect(page.getByTestId('guest-report')).toHaveClass(/guests-report--warning/);
   expect((await tokensOf(session.id)).length).toBe(4);
-  await expect(page.getByRole('button', { name: /^Generate all codes/ })).toHaveText('Generate all codes (1)');
-  await page.getByRole('button', { name: /^Generate all codes/ }).click();
+  await expect(page.getByRole('button', { name: /^Make (\d+ )?QR codes?$/ })).toHaveText('Make 1 QR code');
+  await page.getByRole('button', { name: /^Make (\d+ )?QR codes?$/ }).click();
   await expect(page.getByTestId('guest-report')).toHaveText('Made 1 code. Everyone who can scan has one.');
   expect((await tokensOf(session.id)).length).toBe(5);
 });
@@ -214,7 +214,9 @@ test('the actions that were there stay: show a code, replace it, the new visit c
   expect((await ds.getQrToken((await tokensOf(session.id))[2].id)).expiredAt).toBeTruthy();
   await guest.getByRole('button', { name: 'Enable' }).click();
   await expect(guest).not.toContainText('Disabled');
-  await expect(page.getByRole('heading', { name: 'Recent app entries' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^Recent app entries/ })).toBeVisible();
+  // (Prompt 33: Recent app entries is folded, closed on every visit.)
+  await page.getByRole('button', { name: /^Recent app entries/ }).click();
   await expect(page.getByText('Earlier Guest')).toBeVisible();
   expect(visitors).toHaveLength(1);
 });
@@ -271,7 +273,7 @@ test('the print sheet has a card for each guest with a code waiting: name, QR, c
   await shoot(page, 'guests-print-view-screen', { full: false });
   // Back to the roster.
   await page.getByRole('button', { name: 'Back to Guests and QR' }).click();
-  await expect(page.getByRole('heading', { name: 'Guests and QR', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Guests and QR codes', exact: true })).toBeVisible();
   await expect(page.getByTestId('print-view')).toHaveCount(0);
   expect(new URL(page.url()).hash).toBe('#guests');
 });
@@ -400,7 +402,7 @@ test('Guests and QR and the print view fit 390, 820 and 1440 wide: no sideways s
   for (const size of viewports) {
     const tag = `${size.width}x${size.height}`;
     await page.setViewportSize(size);
-    await expect(page.getByRole('heading', { name: 'Visitor roster' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Guest list' })).toBeVisible();
     await expectFits(page, `Guests and QR at ${tag}`);
     await shoot(page, `guests-roster-${tag}`);
     await page.getByRole('button', { name: /^Print QR sheet/ }).click();
@@ -427,13 +429,13 @@ test('keyboard: the guest controls come in reading order and show the green ring
   await guestSession(names(2));
   await openAdmin(page, local, 'Guests and QR');
   await expect(page.locator('li.row[data-guest]')).toHaveCount(2);
-  await page.getByRole('button', { name: /^Generate all codes/ }).focus();
+  await page.getByRole('button', { name: 'Refresh' }).focus();
   // Focus given by a script draws no ring until a key has been used: move off and back with the keyboard.
   await page.keyboard.press('Shift+Tab');
   await page.keyboard.press('Tab');
   const order: string[] = [];
   const rings: string[] = [];
-  for (let step = 0; step < 14; step += 1) { // (11 until Prompt 23: the form's Picture, and each row's Add picture)
+  for (let step = 0; step < 15; step += 1) { // (11 until Prompt 23: the form's Picture, and each row's Add picture; 15 from Prompt 33: the fold)
     const focused = await page.evaluate(() => {
       const element = document.activeElement as HTMLElement;
       const style = getComputedStyle(element);
@@ -444,9 +446,10 @@ test('keyboard: the guest controls come in reading order and show the green ring
     await page.keyboard.press('Tab');
   }
   expect(rings).toEqual([]);
-  // Print is off while no code is waiting, so the order skips it.
+  // Print is off while no code is waiting, and Add guests and Add visitor while nothing is typed, so the order skips them.
   // (Prompt 21, Phase 4: a guest's group adds a field after the pasted names, one for lines with none, and one after the visitor's name.)
-  expect(order).toEqual(['Generate all codes (2)', 'Export CSV', 'Refresh', 'paste-names', 'group-for-lines', 'visitor-name-field', 'visitor-group-field', 'Picture, optional', 'Add picture', 'Disable', 'Generate QR', 'Add picture', 'Disable', 'Generate QR'].map((name) => (name.endsWith('-field') || name === 'group-for-lines' ? expect.stringMatching(/./) : name)));
+  // (Prompt 33: the three steps come first, left to right, then the guest list, then the folded Recent app entries.)
+  expect(order).toEqual(['Refresh', 'paste-names', 'group-for-lines', 'visitor-name-field', 'visitor-group-field', 'Picture, optional', 'Make 2 QR codes', 'Export CSV', 'Add picture', 'Disable', 'Generate QR', 'Add picture', 'Disable', 'Generate QR', 'Recent app entries'].map((name) => (name.endsWith('-field') || name === 'group-for-lines' ? expect.stringMatching(/./) : name === 'Recent app entries' ? expect.stringMatching(/^Recent app entries/) : name)));
 });
 
 // ---- The participant, for completeness ----------------------------------------------------------------------------------
