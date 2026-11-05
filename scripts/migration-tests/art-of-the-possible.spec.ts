@@ -60,7 +60,8 @@ test.describe('the guest', () => {
     await atQuestion(page, fake, tokens[0]);
     await expect(send(page)).toHaveText('Send (4 boxes left)');
     await expect(send(page)).toBeDisabled();
-    await page.getByRole('button', { name: 'Grid' }).click();
+    // (Prompt 35: "Grid" is "All at once"; an iPad in portrait starts One at a time.)
+    await page.getByRole('button', { name: 'All at once' }).click();
     const first = page.getByRole('button', { name: 'Sub-process 1, Strategic value: not rated' });
     await expect(first).toHaveAttribute('tabindex', '0');
     await first.focus();
@@ -101,6 +102,7 @@ test.describe('the guest', () => {
   test('a reload keeps what was rated and not sent, and nothing is written until Send', async ({ page }) => {
     const { fake, tokens } = await site();
     await atQuestion(page, fake, tokens[0]);
+    await page.getByRole('button', { name: 'All at once' }).click(); // (Prompt 35: an iPad in portrait starts One at a time)
     await page.getByRole('button', { name: 'Sub-process 1, Strategic value: not rated' }).click();
     await page.getByRole('button', { name: 'Sub-process 2, Volume / repeatability: not rated' }).click();
     await expect(page.getByTestId('matrix-count')).toHaveText('2 of 4 rated');
@@ -112,6 +114,7 @@ test.describe('the guest', () => {
   test('axe finds nothing in either view, Next empty box finds the box, the hint opens, and the targets are big enough', async ({ page }) => {
     const { fake, tokens } = await site({ rows: 3, criteria: 5 });
     await atQuestion(page, fake, tokens[0]);
+    await page.getByRole('button', { name: 'All at once' }).click(); // (Prompt 35: an iPad in portrait starts One at a time)
     await axeOn(page);
     const box = await page.getByRole('button', { name: 'Sub-process 1, Strategic value: not rated' }).boundingBox();
     expect(box!.height).toBeGreaterThanOrEqual(44);
@@ -120,7 +123,9 @@ test.describe('the guest', () => {
     await page.getByRole('button', { name: 'Next empty box' }).click();
     await expect(page.getByRole('button', { name: 'Sub-process 1, Volume / repeatability: not rated' })).toBeFocused();
     await page.getByRole('button', { name: 'About Strategic value' }).first().click();
-    await expect(page.getByTestId('matrix-hint')).toContainText('What High means for 0.');
+    // (Prompt 35: the note opens beside its heading, not in a strip of its own.)
+    await expect(page.getByTestId('matrix-about')).toContainText('What High means for 0.');
+    await page.keyboard.press('Escape');
     await page.screenshot({ path: `${shots}grid-ipad.png`, fullPage: true });
     await page.getByRole('button', { name: 'One at a time' }).click();
     await expect(page.getByText('Sub-process 1 of 3')).toBeVisible();
@@ -147,11 +152,12 @@ test.describe('the guest', () => {
   test('25 rows by 6 criteria: the rows scroll under a header that stays, and the answer goes through', async ({ page }) => {
     const { fake, tokens } = await site({ rows: 25, criteria: 6 });
     await atQuestion(page, fake, tokens[0]);
+    await page.getByRole('button', { name: 'All at once' }).click();
     await expect(page.getByTestId('matrix-count')).toHaveText('0 of 150 rated');
+    // (Prompt 35: the page scrolls, not the grid, and the header stays under the strip that stays at the top.)
     const head = page.getByRole('columnheader', { name: 'Interest' });
-    const before = (await head.boundingBox())!.y;
-    await page.locator('.matrix-scroll').evaluate((node) => { node.scrollTop = 400; });
-    await expect.poll(async () => Math.abs((await head.boundingBox())!.y - before)).toBeLessThan(2);
+    await page.evaluate(() => window.scrollTo(0, 1200));
+    await expect.poll(async () => Math.abs((await head.boundingBox())!.y - (await page.locator('.matrix-strip').evaluate((node) => node.getBoundingClientRect().bottom)))).toBeLessThan(2);
     for (let at = 0; at < 150; at += 1) {
       await page.getByRole('button', { name: 'Next empty box' }).click();
       await page.keyboard.press('h');

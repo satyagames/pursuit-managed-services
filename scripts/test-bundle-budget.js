@@ -482,6 +482,10 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
     assert.ok(built.participant.htmlGzip < BUDGET.participantCeiling);
     assert.deepEqual(utilityClasses(built.participant.html), [...PHASE_35.participantUtilities], "the participant page's Tailwind rules are the ones it had");
     assert.ok(built.admin.htmlGzip < BUDGET.admin, `the admin page is under its ${bytes(BUDGET.admin)} budget`);
+    // Brand Studio's preview carries the participant's pager, but its sample has no Art of Possibility question: the admin build swaps the rating grid
+    // for a stand-in (migration/vite.admin.config.ts), so the grid's growth here never reaches the admin page.
+    assert.match(built.participant.html, /matrix-cell/, 'the participant page has the rating grid');
+    assert.doesNotMatch(built.admin.html, /matrix-cell|matrix-strip/, 'the admin page does not');
   });
 
 

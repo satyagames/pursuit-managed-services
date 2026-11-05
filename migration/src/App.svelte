@@ -30,6 +30,7 @@
   import AppShell from './components/AppShell.svelte';
   import HeaderGreeting from './components/HeaderGreeting.svelte';
   import SoundToggle from './components/SoundToggle.svelte';
+  import { stageRequest } from './lib/participant/stage.svelte.js';
 
   const routes: RouteDefinition = {
     '/': Welcome,
@@ -419,7 +420,7 @@
 <title>{pageTitle}</title>
 </svelte:head>
 
-<AppShell stage={wideStage ? 'wide' : 'narrow'} background={movedRoute ? null : experience.backgroundUrl} focus={experience.backgroundFocus}>
+<AppShell stage={wideStage ? 'wide' : stageRequest.full ? 'full' : 'narrow'} background={movedRoute ? null : experience.backgroundUrl} focus={experience.backgroundFocus}>
   {#snippet right()}
     {#if !movedRoute}
       {#if !onWelcome && initialized && !startupError}<HeaderGreeting text={greeting} guest={Boolean(participant.visitorId)} picture={participant.pictureUrl} />{/if}

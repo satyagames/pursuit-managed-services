@@ -18,6 +18,7 @@
   import { answerRecord, dropMatrixDraft, flushActivity, getSavedAnswers, keepMatrixDraft, knownProgress, loadFailure, matrixDraft, pendingAnswers, recordAnswer, visitStepPath } from '../lib/participant/participantData.js';
   import { MATRIX_TYPE } from '../lib/participant/aop-answer.js';
   import { participant } from '../lib/participant/session.svelte.js';
+  import { stageRequest } from '../lib/participant/stage.svelte.js';
   import { isSignedOut } from '../lib/participant/sign-in.js';
   import { APP_NAME } from '../lib/common/app-name.js';
   import ActivityComplete from './ActivityComplete.svelte';
@@ -71,6 +72,13 @@
   const isMatrix = $derived(question?.type === MATRIX_TYPE);
   const matrixBoxesLeft = $derived(question && isMatrix ? matrixLeft(question, drafts[question.id]) : 0);
   const hasMatrix = $derived(questions.some((entry) => entry.type === MATRIX_TYPE));
+  /** (Prompt 35) The rating grid on its own: the page's title is its one heading line, with no "Question 1 of 1" and no number before the question. */
+  const compact = $derived(isMatrix && questions.length === 1);
+  // (Prompt 35) While the rating grid shows, the page lays it out across the full width; it gives the width back when it goes.
+  $effect(() => {
+    stageRequest.full = isMatrix && phase === 'question';
+    return () => { stageRequest.full = false; };
+  });
   const settled = $derived(!question ? false : graded ? isGradedResolved(gradedState) : isAnswerComplete(question, drafts[question.id]));
   const name = $derived(greetingName({
     participantName: participant.participantName,
@@ -409,19 +417,21 @@
       <h1 class="pms-title">{title}</h1>
       {#if description}<p class="pms-description">{description}</p>{/if}
     </header>
-    <Divider motion={{ role: 'rule', type: question?.type, count: question?.options.length }} />
+    {#if !compact}<Divider motion={{ role: 'rule', type: question?.type, count: question?.options.length }} />{/if}
 
     {#if phase === 'empty'}
       <p class="pms-status">This activity has no questions yet.</p>
       {#if !preview}<ActionBar><HomeButton onclick={goHome} /></ActionBar>{/if}
     {:else if question}
-      <p class="pms-count">Question {index + 1} of {questions.length}</p>
-      <ProgressBar value={index + 1} max={questions.length} label={`Question ${index + 1} of ${questions.length}`} />
+      {#if !compact}
+        <p class="pms-count">Question {index + 1} of {questions.length}</p>
+        <ProgressBar value={index + 1} max={questions.length} label={`Question ${index + 1} of ${questions.length}`} />
+      {/if}
 
       {#key index}
-        <div class="pms-step">
-          <h2 class="pms-question" id={headingId} tabindex="-1" bind:this={heading} use:motion={{ role: 'question', type: question.type, count: question.options.length }}>
-            <span class="pms-number" aria-hidden="true">{index + 1}.</span>
+        <div class="pms-step" class:pms-step--compact={compact}>
+          <h2 class="pms-question" class:pms-question--compact={compact} id={headingId} tabindex="-1" bind:this={heading} use:motion={{ role: 'question', type: question.type, count: question.options.length }}>
+            {#if !compact}<span class="pms-number" aria-hidden="true">{index + 1}.</span>{/if}
             <span>{question.prompt}</span>
           </h2>
           <div bind:this={optionsHost}>
@@ -505,6 +515,14 @@
     gap: 0.6em;
     margin: 0;
     font: var(--fw-bold) var(--fs-question) / 1.35 var(--font-sans);
+  }
+
+  .pms-step--compact {
+    margin-top: 0.5rem;
+  }
+
+  .pms-question--compact {
+    font: var(--fw-semibold) var(--fs-body) / 1.35 var(--font-sans);
   }
 
   .pms-number {
