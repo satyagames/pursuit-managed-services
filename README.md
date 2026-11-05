@@ -52,6 +52,23 @@ Every tab starts the same way: its icon and title, one sentence on what it is fo
 - **People**: Super admin and Admin are on/off switches (turning one off asks first); removing a client role is the round red minus; a person's
   **History of changes** is folded; a breadcrumb (People › name).
 
+### Live results and the files in one look (Prompt 34)
+
+- **Live results** (Results › a session › Live) runs the whole width of a laptop screen. A breadcrumb, the chart icon, "Live results" and one
+  sentence; then three numbered steps: **Check the room is ready** (how many answered, the confidence check's counts, **Refresh**), **Show the wall**
+  (**Wall: Dark | Light**, then **Show the wall full screen**, the one main action) and **Share the wall** (**Open the wall in a new tab**). Under
+  them one **Download** row: **Packs: Dark | Light**, **Download PDF pack**, **Download PowerPoint pack** and **Download CSV**. Both choices last for
+  the visit only; the wall starts Dark and the packs Light.
+- **The wall** is flat: Dark is black with white words and lime figures, Light is white with deep green figures, each panel outlined. Each question
+  has one large figure with a line saying what it is (the top share, a scale's average, the top support score, how many comments), and its
+  headline puts the figures in bold and draws a sky-blue line under the measure's name ("top choice", "Most people", "support score", "Average").
+  Nothing it does changed: the fit, the polling, Previous, Next, Auto-advance, Show answer and no names.
+- **The summary pack (PDF and PowerPoint)** is in the same look, Light or Dark: a cover with the session's figures (answers, iPads, activities) in
+  an outlined box and one takeaway per activity; each activity's page with outlined cards, a pale band naming each; every page ends "Source:
+  <session> · <n> people". The speaker notes are as they were.
+- **The leader report** takes the Light look: its title band deep green, each activity's band pale green, its charts as the pack's.
+- No file or wall wears the client's colours any more; the client's name and logo stay.
+
 ### Question types
 
 | Type | The participant | Counted as | Charted as |

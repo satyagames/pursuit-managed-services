@@ -575,6 +575,7 @@ in `migration/src/`, not by editing them, so that what the tests measure stays w
     400 kB target) is the one that matters, and Phase 8 needs room for accessibility fixes. Nothing was dropped to make the room: PowerPoint,
     both faces and the jsPDF stubs are as they were, and size is measured as it always was. `npm run test:bundle` prints each page's size and
     its headroom. Past 700,000 B, make room first (MIGRATION-PLAN.md, "Phase 7b", has what each way is worth); do not raise it again to fit.
+    (The site owner raised it once more, to 710,000 B, for Prompt 34, when the page stood at 698,147 B: `BUDGET.admin` in `scripts/bundle-budget.js`.)
   - **Tailwind reads every file under `migration/` for class names, comments included.** The words `table`, `absolute` and `invisible`
     in the new files each added a utility rule to BOTH pages (22 bytes on the participant page) until they were reworded. After adding
     a file there, check that the participant page is still the size it was (`npm run test:bundle` prints it).
@@ -1816,7 +1817,31 @@ against them at 1366 by 650, 1920 by 950 and 683 by 700, and `admin-explains.spe
 - **Remove a client role, a team entry or a grant** with the round red minus (`IconButton`, `--danger` and the icon's own shape), labelled "Remove
   Producer for Kroger from Aedla, Rajeshwar"; the confirmation still comes first.
 - **The participant page does not change** (the same bytes: `npm run test:bundle`, `PHASE_33`); the Live display, the print sheet and the PDF do not
-  change. New colours only as pairs of `admin-tokens.css` with their contrast test (`scripts/test-admin-today.js`).
+  change. New colours only as pairs of `admin-tokens.css` with their contrast test (`scripts/test-admin-today.js`). (Prompt 34 lifted this for the
+  Live display, the wall, the summary pack and the leader report; the print sheet is still as it was.)
+
+## Rules from Prompt 34 (Live results, the PDF and the PowerPoint in one look; keep them holding)
+
+- **The files' colours are written once**, in `lib/exports/report-look.js`: each one named after the admin token it equals, and
+  `scripts/test-admin-today.js` fails when a value and its token differ. No file draws a colour of its own. The charts in a file take
+  `packPalette(look, palette)` there: Light, the top choice deep green, the rest lime (each bar has its value written beside it), the correct
+  answer link blue with its tick and "Correct", a green ramp; Dark, as the wall.
+- **No client colour in a file or on the wall.** The client's name and logo keep their places; the logo sits on a white plate.
+- **Dark or Light** is chosen on the Live display (Wall, for full screen; Packs, for the PDF and PowerPoint) and held for the visit only: nothing
+  is stored. The wall starts Dark, the packs Light. The leader report, a printed A4 document, is Light only.
+- **The wall's minimums:** words and figures 7:1 or better on black (white and lime; `WALL_PAIRS`), on white 7:1 for words and 4.5:1 for the hero
+  figures (`LIGHT_WALL_PAIRS`); at 1920 by 1080 each hero figure 96 px or more and every label 28 px or more (`live-display.spec.ts`). The wall
+  changes only colour, type, outlines and spacing: `present-fit.js`, the polling, held names and the not-ready states are as they were.
+- **Emphasis only where a template puts it.** A chart's headline is written as parts in `lib/results/results-chart-model.js` (`headlineParts`):
+  a figure is bold, the measure's name ("top choice", "Most people", "top answer", "support score", "Average") has the 4 px sky line under it, one
+  at most, and an answer, a label, a word people wrote or a name is always plain. The wall draws them; the same model gives each question its
+  `hero` figure. The highlighter (black on lime, 7.9:1: `HIGHLIGHT_PAIR`) is defined but not yet drawn anywhere.
+- **The line under the measure is a border**, not text decoration: the one word for a line under text, anywhere under `migration/`, adds a
+  Tailwind rule to the participant page. So does `table`: the CSV's icon is `sheet`.
+- **No Deloitte mark or image is copied from the reference slides.** The leader report's cover keeps the wordmark it already had.
+- **The pack's pages**, one model drawn by both writers: a small upper-case label (SUMMARY, ACTIVITY N OF M), the 28 pt title with a lime bar, the
+  cover's figures in an outlined box, outlined cards with a band naming each, "Source: <session> · <n> people" at every foot. A Dark page fills
+  its whole PDF sheet and its slide black. Speaker notes, the title, the language and the company are as they were.
 
 ## Before finishing a change
 

@@ -82,6 +82,13 @@ first, naming the person and the role. A switch you cannot move (your own roles,
 reason beside it. A role for one client is removed with the round red minus beside it, which also asks first. The person's **History of changes** is
 folded at the foot of their page: press it to read it; it is closed again on your next visit.
 
+## Showing results in the room (Prompt 34)
+
+Open **Results**, a session, then **Live**. Follow the three steps: check how many have answered (**Refresh** reads again), choose the wall's look
+(**Dark** for a projector, **Light** for a bright room) and press **Show the wall full screen**; for a second screen, **Open the wall in a new tab**.
+The wall never shows a name. For leaders, choose the packs' look under **Download** (Light prints well) and press **Download PDF pack** or
+**Download PowerPoint pack**; **Download CSV** is the table.
+
 ## If the error stays
 
 - Ask them to sign out of Microsoft 365 in that browser and sign in with the work account they were added with (a personal account, or a second

@@ -40,6 +40,7 @@
 19. Items **318 to 328** (Prompt 28; item 329 records the SendEmail test, nothing to run: Email them about this, the draft in Outlook, the copy in Teams, each kind of change). At the end of this file.
 20. Items **330 to 339** (Prompt 32: the admin page on a real laptop at 100 and 125 percent, the projector, your role beside your name for each role, the welcome strip, each tab's columns). At the end of this file.
 21. Items **340 to 349** (Prompt 33: each tab said in your own words, Guests and QR's steps, the three folds, the switches, the last Super admin, the named forms, Content's two parts, the print sheet and an iPad unchanged). At the end of this file.
+22. Items **350 to 359** (Prompt 34: the wall from the back row, Dark and Light, the packs in PowerPoint with and without Open Sans, a black-and-white print, a screen reader, held names and no data, quotes never highlighted). At the end of this file.
 16. Item **293** (Prompt 25: the line about SharePoint access in Give access, Add user and No access; the document ONBOARDING.md). Below item 292.
 17. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
    160, 161, 164, 165, 166, 167, 168, 169, 170.
@@ -1854,3 +1855,16 @@ items 15, 26 to 28, 35, 40 to 44, 46 and 53 to 56 above, is `DEVICE-TEST-SHEET.m
 347. **Content's two parts.** *(Still to see.)* Open Content and ask someone how many parts it has. **Expect** "two": Activities and Brand, the chosen one deep green, arrows, Home and End moving between them, and the breadcrumb saying which.
 348. **Print and PDF unchanged.** *(Still to see.)* Print a QR sheet and run a leader report PDF. **Expect** both exactly as before.
 349. **The participant page.** *(Still to see.)* Run a session on an iPad. **Expect** it exactly as before: Prompt 33 changes nothing in it (the same bytes, `npm run test:bundle`).
+
+### Prompt 34: Live results, the PDF and the PowerPoint in one look
+
+350. **The wall from the back row.** *(Still to see.)* Project the wall (Dark) on the room's screen at 1920 by 1080 and read each question's large figure and the labels from the back row, in daylight and with the lights off. **Expect** every figure and label readable, nothing cut at the edges, and Previous, Next and Auto-advance as before.
+351. **The Light wall.** *(Still to see.)* Choose **Light** under step 2 and show the wall in a bright room. **Expect** white panels, deep green figures, the same questions and no names.
+352. **Live on a laptop.** *(Still to see.)* Open Results › a session › Live on a 1366 by 768 laptop and on a wide screen. **Expect** the three steps across the page, Download as one row, the charts two across on the laptop, and no sideways scroll.
+353. **The packs in PowerPoint.** *(Still to see.)* Download the PowerPoint pack, Light and Dark, for a real session; open each in PowerPoint on a computer with Open Sans and one without. **Expect** every slide titled, nothing running out of its box with the fallback font, Dark slides black, and the speaker notes as before.
+354. **The PDF on paper.** *(Still to see.)* Print the Light PDF pack and the leader report on a black-and-white printer. **Expect** every page to read: the correct answer by its tick and "Correct", the top choice by its words, each bar's value beside it.
+355. **A screen reader.** *(Still to see.)* Open both packs and the leader report with a screen reader. **Expect** the document title and language read, every slide's title, the reading order as the page shows it.
+356. **Held names, and a session with no data.** *(Still to see.)* Show the wall and download both packs for a session with held names, and for one nobody has answered. **Expect** no name anywhere, and "No answers yet." where there is nothing.
+357. **Quotes never highlighted.** *(Still to see.)* Find a written answer in the wall, the pack and the leader report. **Expect** its words exactly as written: never bold, recoloured or underlined; only the figures and the measure's name in a headline are.
+358. **No client colour.** *(Still to see.)* Download the packs and the leader report for a client with a strong brand colour. **Expect** the client's name and logo, and none of its colour.
+359. **The print sheet and the participant page.** *(Still to see.)* Print a QR sheet and run a session on an iPad. **Expect** both exactly as before (`npm run test:bundle`: the same bytes).
