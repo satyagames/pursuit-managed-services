@@ -14,6 +14,7 @@
   import { ADVANCE_MS, HOLD_MS, UNDO_MS, advancesAfter, clearedOf, defaultView, gridWidthFor, levelCounts, restoreInto, rowIsDone, setCell, type Cleared } from '../lib/participant/aop-view.js';
   import { flyOff, motion, motionLevel, playEffect, playWave } from '../lib/motion/motion.js';
   import { milestonesCrossed } from '../lib/motion/aop-motion-plan.js';
+  import { aopAllRated, aopClearAll, aopHoldOpen, aopMilestone, aopRate, aopRowDone } from '../lib/effects/effects.js';
   import { ENTRANCE_BUDGET, TOKENS } from '../lib/motion/motion-plan.js';
   import { focusHeading } from '../lib/common/focus.js';
   import type { Question } from '../lib/participant/pager-logic.js';
@@ -149,6 +150,7 @@
     const before = { rated, counts: { ...counts }, rowDone: rowDone(rowId) };
     setCell(cells, rowId, criterionId, level);
     if (level !== undefined) stopTeaching();
+    aopRate(level);
     handUp();
     offerUndo(cleared);
     void react(rowId, criterionId, level, before, point);
@@ -234,7 +236,7 @@
     holdFrom = { x: event.clientX, y: event.clientY };
     holding = `${r}-${c}`;
     clearTimeout(holdTimer);
-    holdTimer = setTimeout(() => { holding = null; swallowClick = true; void openMenu(r, c); }, HOLD_MS);
+    holdTimer = setTimeout(() => { holding = null; swallowClick = true; aopHoldOpen(); void openMenu(r, c); }, HOLD_MS);
   }
 
   function onPressMove(event: PointerEvent) {
@@ -281,15 +283,20 @@
       }
     }
     for (const each of [1, 2, 3]) if (counts[each] !== before.counts[each]) playEffect(host?.querySelector(`[data-pill="${each}"]`), 'bump');
+    const everyBox = total > 0 && before.rated < total && rated === total;
     if (!before.rowDone && rowDone(rowId)) {
+      if (!everyBox) aopRowDone();
       playEffect(host?.querySelector(view === 'grid' ? `[data-row="${r}"] .matrix-check` : '[data-testid="matrix-card-done"] .matrix-check'), 'check');
       if (view === 'grid') sweep(r);
     }
     const shown = milestonesShown.get(question.id) ?? new Set<string>();
     milestonesShown.set(question.id, shown);
     const said = milestonesCrossed(before.rated, rated, total, shown);
-    if (said) void showMilestone(said.words);
-    if (total > 0 && before.rated < total && rated === total) allRated();
+    if (said) {
+      if (!everyBox) aopMilestone(said.key as 'quarter' | 'half' | 'nearly');
+      void showMilestone(said.words);
+    }
+    if (everyBox) allRated();
   }
 
   /** A finished row: one light sweeps across it (the grid's one sheen, placed on the row). */
@@ -315,6 +322,7 @@
 
   /** Every box rated: the wave runs through the grid and the bar's check arrives. */
   function allRated() {
+    aopAllRated(host?.querySelector('.matrix-bar'));
     playEffect(barCheck, 'check');
     if (view !== 'grid' || !host) return;
     const boxes = [...host.querySelectorAll<HTMLElement>('[data-cell]')].map((node) => {
@@ -381,6 +389,7 @@
     // The rated boxes fly off (copies, at most what the cap allows) as the ratings go.
     if (view === 'grid') flyOff([...(host?.querySelectorAll<HTMLElement>('.matrix-cell:not([data-level="0"])') ?? [])]);
     inBulk();
+    aopClearAll();
     cells = {};
     handUp();
     offerUndo(cleared);

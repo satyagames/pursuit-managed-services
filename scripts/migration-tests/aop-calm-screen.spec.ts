@@ -5,6 +5,8 @@ import { localDate } from '../../migration/src/lib/admin/admin-today.js';
 import { DEFAULT_CRITERIA } from '../../migration/src/lib/admin/aop-editor.js';
 import { encodeAnswer } from '../../migration/src/lib/participant/aop-answer.js';
 import { newFake, onSite, pageUrl, serveSharePoint, type Fake } from './sharepoint.js';
+import { installAudioStub, installConfettiSpy, readAudio, readConfetti, resetConfetti } from './effects-support.js';
+import { CUES, toneSignature } from '../../migration/src/lib/effects/sound-cues.js';
 
 // Prompt 35: the Art of Possibility as one calm screen, in the BUILT participant page against the mocked SharePoint REST, with the manager's sample (13
 // sub-processes by the five default criteria). At an iPad in landscape and in portrait, a 1366 x 650 laptop and a 390 px phone: no sideways scroll, the page
@@ -409,6 +411,108 @@ test.describe('the Art of Possibility, one calm screen (Prompt 35)', () => {
     console.log(`  4x slowdown: the wave ${wave.fps.toFixed(0)} fps (slowest frame ${wave.worst.toFixed(0)} ms); Clear all ${cleared.fps.toFixed(0)} fps (slowest frame ${cleared.worst.toFixed(0)} ms)`);
     expect(wave.fps).toBeGreaterThanOrEqual(30);
     expect(cleared.fps).toBeGreaterThanOrEqual(30);
+  });
+
+  test('the sounds, with sound on: a note per level, the clear\'s tick, the hold, a finished row, the milestones, Clear all, every box rated with its burst; a fast run never piles up', async ({ page }) => {
+    const { fake, token } = await site();
+    await installAudioStub(page, {});
+    await installConfettiSpy(page);
+    await page.addInitScript(() => { window.localStorage.setItem('pms.sound', 'on'); });
+    await open(page, fake, token, SIZES['ipad-landscape']);
+    const heard = async () => (await readAudio(page)).oscillators;
+    const since = async (count: number) => (await heard()).slice(count);
+    const first = (name: keyof typeof CUES) => toneSignature(CUES[name])[0];
+    const gl = box(page, 'Corp accounting – GL', 'Strategic value');
+
+    // A tap a level: Low G3, Medium E4, High C5; a clear is the soft tick (noise, no note).
+    for (const name of ['rateLow', 'rateMedium', 'rateHigh'] as const) {
+      const before = (await heard()).length;
+      await gl.click();
+      await expect.poll(async () => (await since(before))[0]).toBe(first(name));
+      await page.waitForTimeout(80);
+    }
+    const noise = (await readAudio(page)).noise;
+    const before = (await heard()).length;
+    await gl.click();
+    await expect.poll(async () => (await readAudio(page)).noise).toBeGreaterThan(noise);
+    expect(await since(before)).toEqual([]);
+
+    // The hold opens the menu with its blip (E5, G5 and a quiet A5).
+    const at = (await gl.boundingBox())!;
+    let mark = (await heard()).length;
+    await page.mouse.move(at.x + at.width / 2, at.y + at.height / 2);
+    await page.mouse.down();
+    await expect(page.getByRole('menu')).toBeVisible();
+    await page.mouse.up();
+    await expect.poll(async () => await since(mark)).toEqual(toneSignature(CUES.holdOpen));
+    await page.keyboard.press('m');
+    await page.waitForTimeout(80);
+
+    // A fast run of 20 key presses: the rating cues start at most once every 60 ms.
+    mark = (await heard()).length;
+    const started = Date.now();
+    for (let at = 0; at < 20; at += 1) await page.keyboard.press(['l', 'm', 'h'][at % 3]);
+    const span = Date.now() - started;
+    await page.waitForTimeout(100);
+    const notes = (await since(mark)).filter((freq) => [first('rateLow'), first('rateMedium'), first('rateHigh')].includes(freq)).length;
+    console.log(`  20 key presses in ${span} ms: ${notes} rating cues`);
+    expect(notes).toBeGreaterThan(0);
+    expect(notes).toBeLessThanOrEqual(Math.floor(span / 60) + 1);
+
+    // A finished row: two notes up, E5 then G5 (no A5: that is the hold's).
+    await gl.focus();
+    for (const key of ['ArrowRight', 'm', 'ArrowRight', 'm', 'ArrowRight', 'm']) { await page.keyboard.press(key); await page.waitForTimeout(70); }
+    await page.keyboard.press('ArrowRight');
+    mark = (await heard()).length;
+    await page.keyboard.press('m');
+    await expect.poll(async () => await since(mark)).toEqual([...toneSignature(CUES.rateMedium), ...toneSignature(CUES.rowDone)]);
+
+    // The quarter milestone (17 of 65, not a row's end): C5 alone after the Medium's E4.
+    for (let at = 0; at < 11; at += 1) { await page.getByRole('button', { name: /Next empty box/ }).click(); await page.keyboard.press('m'); await page.waitForTimeout(70); }
+    await page.getByRole('button', { name: /Next empty box/ }).click();
+    mark = (await heard()).length;
+    await page.keyboard.press('m');
+    await expect(page.getByTestId('matrix-milestone')).toHaveText('A quarter done');
+    await expect.poll(async () => await since(mark)).toEqual([...toneSignature(CUES.rateMedium), ...toneSignature(CUES.milestoneQuarter)]);
+
+    // Clear all: the descending run.
+    await page.getByRole('button', { name: 'More choices' }).click();
+    await page.getByRole('button', { name: 'Clear all' }).click();
+    mark = (await heard()).length;
+    await page.getByRole('button', { name: 'Yes, clear all' }).click();
+    await expect.poll(async () => await since(mark)).toEqual(toneSignature(CUES.clearAll));
+    await page.getByRole('button', { name: 'Undo' }).click();
+
+    // Every box rated: the arpeggio, and the small burst from the bar.
+    for (let at = 0; at < 47; at += 1) { await page.getByRole('button', { name: /Next empty box/ }).click(); await page.keyboard.press('l'); }
+    await page.waitForTimeout(400);
+    await resetConfetti(page);
+    mark = (await heard()).length;
+    await page.getByRole('button', { name: /Next empty box/ }).click();
+    await page.keyboard.press('l');
+    await expect.poll(async () => await since(mark)).toEqual([...toneSignature(CUES.rateLow), ...toneSignature(CUES.allRated)]);
+    await expect.poll(async () => (await readConfetti(page)).added).toBe(1);
+  });
+
+  test('with sound off nothing plays and no audio is ever started; with sound on nothing plays until the first tap', async ({ page }) => {
+    const { fake, token } = await site();
+    await installAudioStub(page, {});
+    await open(page, fake, token, SIZES['ipad-landscape']);
+    for (let at = 0; at < 6; at += 1) { await page.getByRole('button', { name: /Next empty box/ }).click(); await page.keyboard.press('h'); }
+    const off = await readAudio(page);
+    expect(off.contexts).toBe(0);
+    expect(off.oscillators).toEqual([]);
+
+    const second = await site();
+    const quiet = await page.context().newPage();
+    await installAudioStub(quiet, {});
+    await quiet.addInitScript(() => { window.localStorage.setItem('pms.sound', 'on'); });
+    await quiet.setViewportSize(SIZES['ipad-landscape']);
+    await serveSharePoint(quiet, second.fake);
+    await quiet.goto(`${pageUrl('index.html')}?qr=${second.token}`);
+    await quiet.waitForTimeout(500);
+    expect((await readAudio(quiet)).oscillators).toEqual([]);
+    expect((await readAudio(quiet)).contexts).toBe(0);
   });
 
   test('a tap shows its colour within 100 ms at a 4x slower processor (Chromium, measured and printed)', async ({ page, browserName }) => {

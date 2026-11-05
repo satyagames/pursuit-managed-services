@@ -195,6 +195,19 @@ test('the rating cues share one gate: at most one starts in any 60 ms, so a run 
   assert.equal(other.request('milestoneHalf', 20, 350).play, true);
 });
 
+test('the Art of Possibility\'s moments (Prompt 35): each its own cue, confetti only when every box is rated, through the one door', async () => {
+  for (const name of ['rateLow', 'rateMedium', 'rateHigh', 'rateClear', 'holdOpen', 'rowDone', 'milestoneQuarter', 'milestoneHalf', 'milestoneNearly', 'clearAll']) {
+    assert.deepEqual(EFFECTS[name], { cue: name, confetti: null }, name);
+  }
+  assert.deepEqual(EFFECTS.allRated, { cue: 'allRated', confetti: 'small' }, 'the small burst, from the bar');
+  const effects = await readFile(path.join(root, 'migration/src/lib/effects/effects.ts'), 'utf8');
+  for (const name of ['aopRate', 'aopHoldOpen', 'aopRowDone', 'aopMilestone', 'aopClearAll', 'aopAllRated']) assert.match(effects, new RegExp(`export function ${name}\\(`), name);
+  assert.match(effects, /export function aopRate\(level: number \| undefined\): void \{\s*run\(/, 'a rating goes through run(), behind the switch');
+  const grid = await readFile(path.join(root, 'migration/src/pager/MatrixRating.svelte'), 'utf8');
+  assert.match(grid, /from '\.\.\/lib\/effects\/effects\.js'/, 'the grid asks effects.ts for its moments');
+  assert.doesNotMatch(grid, /sound-engine|sound-cues|confetti/, 'and never names a sound or a burst itself');
+});
+
 // ---- The voice gate -------------------------------------------------------------------------------------
 
 test('the same cue within 80 ms is ignored, a different cue is not, and the same cue after 80 ms plays', () => {
@@ -262,7 +275,8 @@ test('the other moments: a tick on a pick, the activity and finale cues with the
 });
 
 test('Next, Back, Home and the Welcome tap have no effect to run', () => {
-  assert.deepEqual(Object.keys(EFFECTS).sort(), ['activityComplete', 'allDone', 'finale', 'locked', 'pick', 'soundOn', 'stamp', 'unlock']);
+  // (Prompt 35 adds the Art of Possibility's eleven moments, none of them a Next, a Back, a Home or the Welcome tap.)
+  assert.deepEqual(Object.keys(EFFECTS).sort(), ['activityComplete', 'allDone', 'allRated', 'clearAll', 'finale', 'holdOpen', 'locked', 'milestoneHalf', 'milestoneNearly', 'milestoneQuarter', 'pick', 'rateClear', 'rateHigh', 'rateLow', 'rateMedium', 'rowDone', 'soundOn', 'stamp', 'unlock']);
 });
 
 // ---- The saved choice ---------------------------------------------------------------------------------------

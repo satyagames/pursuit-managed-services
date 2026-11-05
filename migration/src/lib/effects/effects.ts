@@ -188,6 +188,41 @@ export function hubAllDone(anchor?: Element | null): void {
   run(EFFECTS.allDone, anchor);
 }
 
+// The Art of Possibility (Prompt 35). Every one is behind the Sound switch and paired with something the guest sees; the burst is behind the motion level.
+
+const RATE_EFFECTS = [EFFECTS.rateClear, EFFECTS.rateLow, EFFECTS.rateMedium, EFFECTS.rateHigh];
+const MILESTONE_EFFECTS = { quarter: EFFECTS.milestoneQuarter, half: EFFECTS.milestoneHalf, nearly: EFFECTS.milestoneNearly };
+
+/** A box took a level (1 to 3), or was cleared (undefined). */
+export function aopRate(level: number | undefined): void {
+  run(RATE_EFFECTS[level ?? 0] ?? EFFECTS.rateClear);
+}
+
+/** The press-and-hold ring has filled and the level menu opens. */
+export function aopHoldOpen(): void {
+  run(EFFECTS.holdOpen);
+}
+
+/** A row (a sub-process) has every box rated. */
+export function aopRowDone(): void {
+  run(EFFECTS.rowDone);
+}
+
+/** A quarter, half or three quarters of the boxes are rated. */
+export function aopMilestone(key: keyof typeof MILESTONE_EFFECTS): void {
+  run(MILESTONE_EFFECTS[key]);
+}
+
+/** Every rating was cleared. */
+export function aopClearAll(): void {
+  run(EFFECTS.clearAll);
+}
+
+/** Every box is rated; `anchor` is the progress bar, where the small burst comes from. */
+export function aopAllRated(anchor?: Element | null): void {
+  run(EFFECTS.allRated, anchor);
+}
+
 // ---- Setup ------------------------------------------------------------------------------------------
 
 /**
