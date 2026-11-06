@@ -215,9 +215,9 @@ export function showerPlan({ width, height, reducedMotion = false, level = 'full
   const cap = Math.floor(showerCap(width) * 0.9);
   /** [wave, from, until, pieces a second, left, right, sweeps, speed, life ms] */
   const waves = /** @type {const} */ ([
-    ['curtain', 350, 1500, 120, 0, 1, true, 1.1, 2500],
-    ['fall', 1200, 3600, 70, 0, 1, false, 1, 2500],
-    ['centre', 2400, SHOWER.showerEnd, 50, 0.3, 0.7, false, 0.9, 2300],
+    ['curtain', 350, 1500, 100, 0, 1, true, 1.1, 2000],
+    ['fall', 1200, 3600, 70, 0, 1, false, 1, 2000],
+    ['centre', 2400, SHOWER.showerEnd, 50, 0.3, 0.7, false, 0.9, 1900],
     ['afterglow', SHOWER.showerEnd, SHOWER.afterglowEnd, 6, 0, 1, false, 0.55, 2300],
   ]);
   /** @type {Drop[]} */
@@ -235,10 +235,12 @@ export function showerPlan({ width, height, reducedMotion = false, level = 'full
       owed -= count;
       const across = sweeps ? left + (right - left) * ((at - from) / (until - from)) + (random() - 0.5) * 0.2 : left + random() * (right - left);
       plan.push({
-        wave, at, count, ticks, angle: 270, spread: 50, startVelocity: 3, decay: 0.94, drift: (random() - 0.5) * 1.2,
-        // The library moves a piece 3 x gravity px a frame: through about the screen's height in its life.
-        gravity: (height * (0.95 + random() * 0.4) * speed) / (3 * ticks),
-        scalar: (narrow ? 0.9 : 1.1) * (0.9 + speed * 0.2), origin: { x: Math.max(0, Math.min(1, across)), y: -0.05 },
+        // A wide, quick spread that soon slows scatters a burst's pieces about 100 px apart rather than in a clump.
+        wave, at, count, ticks, angle: 270, spread: 140, startVelocity: 12, decay: 0.9, drift: (random() - 0.5) * 1.2,
+        // The library moves a piece 3 x gravity px a frame: down through the screen in about its life (it fades as it falls), so that a piece
+        // the cap counts is one on the screen.
+        gravity: (height * (1.05 + random() * 0.25) * speed) / (3 * ticks),
+        scalar: (narrow ? 1.2 : 1.5) * (0.9 + speed * 0.2), origin: { x: Math.max(0, Math.min(1, across)), y: -0.05 },
       });
     }
   }

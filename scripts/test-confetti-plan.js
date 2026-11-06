@@ -134,11 +134,11 @@ test('the shower: the live pieces never pass the cap at any size, a narrow scree
   assert.ok(pieces(plan({ width: 390, height: 844 })) < pieces(plan()) * 0.7, 'fewer on a phone');
 });
 
-test('the shower falls through the screen in its life, whatever its height', () => {
+test('the shower falls through the screen in about its life (so the cap counts pieces on the screen), whatever its height', () => {
   for (const view of [{ width: 1366, height: 650 }, { width: 820, height: 1180 }, { width: 390, height: 844 }]) {
     for (const burst of of(plan(view), 'fall')) {
       const travel = burst.gravity * 3 * burst.ticks; // the library moves a piece 3 x gravity px a frame
-      assert.ok(travel >= view.height * 0.7 && travel <= view.height * 1.6, `${view.width}x${view.height}: ${Math.round(travel)} px`);
+      assert.ok(travel >= view.height && travel <= view.height * 1.4, `${view.width}x${view.height}: ${Math.round(travel)} px`);
     }
   }
 });
