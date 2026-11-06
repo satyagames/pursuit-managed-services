@@ -128,7 +128,8 @@ export function unlockAudio(): void {
 function run(effect: Effect, anchor?: Element | null): void {
   if (effect.cue && soundState().on) engine.playCue(effect.cue);
   // Confetti is motion: the client's Animations switch, ?motion=off and the governor at its lowest leave it out (Phase 15), as reduced motion does.
-  if (effect.confetti && motionLevel() !== 'none') void celebrate(effect.confetti, anchor);
+  // The finale's shower is not a burst: finale() runs it.
+  if (effect.confetti && effect.confetti !== 'shower' && motionLevel() !== 'none') void celebrate(effect.confetti, anchor);
 }
 
 /** A choice was made in a question that is not graded: a soft tick. */

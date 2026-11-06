@@ -259,7 +259,7 @@ Sounds and confetti, behind one door (`effects.ts`): which moment makes which ef
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
-| `confetti-plan.js` | How much confetti, where from, in which colours. | 17 exports |
+| `confetti-plan.js` | How much confetti, where from, in which colours, and the finale's petal shower (Prompt 36). | 26 exports |
 | `confetti.ts` | The confetti overlay. | `clearConfetti`, `celebrate`, `sparks` |
 | `effect-plan.js` | What each moment in the participant flow should do, and how the sound choice is remembered. | `EFFECTS`, `answerEffect`, `SOUND_KEY`, `readChoice`, `writeChoice`, `soundIsOn`, `UNAVAILABLE_TITLE` |
 | `effects.ts` | The one door to sound and confetti. | 27 exports |
