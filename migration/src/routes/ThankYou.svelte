@@ -10,14 +10,13 @@
   import { clearTrack, participant } from '../lib/participant/session.svelte.js';
   import { APP_NAME } from '../lib/common/app-name.js';
   import { motion, playFinale } from '../lib/motion/motion.js';
-  import { FINALE } from '../lib/motion/finale-motion-plan.js';
   import { visitRatings } from '../lib/participant/aop-glance.svelte.js';
 
   // The finale: every activity is finished. Re-checked against the server (a bookmark or a back
   // button must not show it early), unless the pager just handed over what it saved.
   //
   // (Prompt 36) The grand finale: a petal shower from above (lib/effects/), and on this page the hush (a veil behind the content), the medal
-  // landing with its rays, rings and check, the name rising letter by letter, the cards counting up and the sheen; then "Celebrate again" in
+  // landing with its rays, rings and check, the name rising in, the cards counting up and the sheen; then "Celebrate again" in
   // the afterglow. What moves when is lib/motion/finale-motion-plan.js, played by motion.ts; the buttons work from the first frame.
   const handoff = consumeNavigationData();
   const ownHandoff = handoff?.sessionId === participant.sessionId && handoff?.clientTrackId === participant.clientTrackId ? handoff : null;
@@ -42,7 +41,6 @@
   let check = $state<SVGPathElement>();
   let againNode = $state<HTMLElement>();
   const rings = $state<HTMLElement[]>([]);
-  const letterNodes = $state<HTMLElement[]>([]);
   const cardNodes = $state<HTMLElement[]>([]);
   /** What each card's figure shows while it counts up; its own value otherwise. */
   const shown = $state<(number | undefined)[]>([]);
@@ -157,7 +155,7 @@
     stop?.();
     finale();
     stop = playFinale(
-      { veil, medal, ray: rays, check, ring: rings, letter: letterNodes, card: cardNodes, sheen: sweep, again: again ? null : againNode },
+      { veil, medal, ray: rays, check, ring: rings, name: heading, card: cardNodes, sheen: sweep, again: again ? null : againNode },
       {
         counts: cards.map((each) => each.value),
         width: (card?.getBoundingClientRect().width ?? 0) + 120,
@@ -182,23 +180,6 @@
   }
 
   const headline = $derived(name ? `Thank you, ${name}!` : 'Thank you!');
-
-  /**
-   * The headline as words of letters, so it rises letter by letter and still breaks only between words. Past FINALE.lettersMax letters the rest of
-   * the name (from the next whole word) rises together as one.
-   */
-  const glyphs = $derived.by(() => {
-    const words = headline.split(' ');
-    const head: { letters: { char: string; index: number }[] }[] = [];
-    let count = 0;
-    let at = 0;
-    for (; at < words.length; at += 1) {
-      if (at > 0 && count + words[at].length > FINALE.lettersMax - 1) break;
-      head.push({ letters: [...words[at]].map((char) => ({ char, index: count++ })) });
-    }
-    const rest = at < words.length ? { text: words.slice(at).join(' '), index: count } : null;
-    return { head, rest };
-  });
 
   /** The cards, in the brief's order: activities finished, ratings given, right first try; each only when the app has it. */
   const cards = $derived([
@@ -236,9 +217,7 @@
         </svg>
       </span>
     </span>
-    <h1 bind:this={heading} tabindex="-1" aria-label={headline}>
-      {#each glyphs.head as word, at (at)}{#if at > 0}{' '}{/if}<span class="pms-word" aria-hidden="true">{#each word.letters as letter (letter.index)}<span class="pms-letter" bind:this={letterNodes[letter.index]}>{letter.char}</span>{/each}</span>{/each}{#if glyphs.rest}{' '}<span class="pms-letter pms-rest" aria-hidden="true" bind:this={letterNodes[glyphs.rest.index]}>{glyphs.rest.text}</span>{/if}
-    </h1>
+    <h1 bind:this={heading} tabindex="-1">{headline}</h1>
     <p class="pms-line">Your responses have been recorded.</p>
     {#if ratings > 0}<p class="pms-line">Your ratings are in.</p>{/if}
     <ul class="pms-cards">
@@ -348,17 +327,6 @@
     overflow-wrap: anywhere;
   }
 
-  .pms-word {
-    white-space: nowrap;
-  }
-
-  .pms-letter {
-    display: inline-block;
-  }
-
-  .pms-rest {
-    white-space: normal;
-  }
 
   .pms-line,
   .pms-status {

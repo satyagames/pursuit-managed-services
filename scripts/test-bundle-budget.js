@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
 import { PAGES, ROOT, analyzePage } from './analyze-bundle.js';
-import { BUDGET, FORBIDDEN, PHASE_8, PHASE_9A, PHASE_9B, PHASE_10B, PHASE_10C1, PHASE_10C2A, PHASE_10C2B, PHASE_10C3, PHASE_10F, PHASE_10G, PHASE_10H, PHASE_10I, PHASE_10J, PHASE_11A, PHASE_11A3, PHASE_11B, PHASE_12, PHASE_13, PHASE_14, PHASE_15, PHASE_16, PHASE_17, PHASE_18, PHASE_19, PHASE_20, PHASE_21A, PHASE_21B, PHASE_21C, PHASE_21D, PHASE_21E, PHASE_21F, PHASE_21G, PHASE_22, PHASE_23, PHASE_24, PHASE_26, PHASE_32, PHASE_33, PHASE_34, PHASE_35, checkBudgets, utilityClasses } from './bundle-budget.js';
+import { BUDGET, FORBIDDEN, PHASE_8, PHASE_9A, PHASE_9B, PHASE_10B, PHASE_10C1, PHASE_10C2A, PHASE_10C2B, PHASE_10C3, PHASE_10F, PHASE_10G, PHASE_10H, PHASE_10I, PHASE_10J, PHASE_11A, PHASE_11A3, PHASE_11B, PHASE_12, PHASE_13, PHASE_14, PHASE_15, PHASE_16, PHASE_17, PHASE_18, PHASE_19, PHASE_20, PHASE_21A, PHASE_21B, PHASE_21C, PHASE_21D, PHASE_21E, PHASE_21F, PHASE_21G, PHASE_22, PHASE_23, PHASE_24, PHASE_26, PHASE_32, PHASE_33, PHASE_34, PHASE_35, PHASE_36, checkBudgets, utilityClasses } from './bundle-budget.js';
 import { SAMPLE_PICTURE_NAMES } from '../migration/src/lib/setup/sample-pictures.js';
 import { pageProblems } from './release-proofs.js';
 
@@ -476,8 +476,8 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
   });
 
   it('Prompt 35 (the Art of Possibility rebuilt) grew the participant page by at most 12 KB gzip, kept it under its ceiling and its Tailwind rules, and kept the admin page under its budget', () => {
-    const grown = built.participant.htmlGzip - PHASE_35.participantBefore;
-    console.log(`  Prompt 35: the participant page ${bytes(PHASE_35.participantBefore)} -> ${bytes(built.participant.htmlGzip)} gzip (${grown >= 0 ? '+' : ''}${grown} B of ${bytes(PHASE_35.participantAllowance)}); the admin page ${bytes(PHASE_35.adminBefore)} -> ${bytes(built.admin.htmlGzip)}`);
+    // (Measured when the prompt ended: Prompt 36's growth is held to its own allowance below.)
+    const grown = PHASE_35.participantAfter - PHASE_35.participantBefore;
     assert.ok(grown <= PHASE_35.participantAllowance, `the participant page grew ${grown} B, over the ${PHASE_35.participantAllowance} B allowance`);
     assert.ok(built.participant.htmlGzip < BUDGET.participantCeiling);
     assert.deepEqual(utilityClasses(built.participant.html), [...PHASE_35.participantUtilities], "the participant page's Tailwind rules are the ones it had");
@@ -486,6 +486,15 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
     // for a stand-in (migration/vite.admin.config.ts), so the grid's growth here never reaches the admin page.
     assert.match(built.participant.html, /matrix-cell/, 'the participant page has the rating grid');
     assert.doesNotMatch(built.admin.html, /matrix-cell|matrix-strip/, 'the admin page does not');
+  });
+
+  it('Prompt 36 (the grand finale) grew the participant page by at most 4 KB gzip, kept it under its ceiling and its Tailwind rules, and kept the admin page under its budget', () => {
+    const grown = built.participant.htmlGzip - PHASE_36.participantBefore;
+    console.log(`  Prompt 36: the participant page ${bytes(PHASE_36.participantBefore)} -> ${bytes(built.participant.htmlGzip)} gzip (${grown >= 0 ? '+' : ''}${grown} B of ${bytes(PHASE_36.participantAllowance)}); the admin page ${bytes(PHASE_36.adminBefore)} -> ${bytes(built.admin.htmlGzip)}`);
+    assert.ok(grown <= PHASE_36.participantAllowance, `the participant page grew ${grown} B, over the ${PHASE_36.participantAllowance} B allowance`);
+    assert.ok(built.participant.htmlGzip < BUDGET.participantCeiling);
+    assert.deepEqual(utilityClasses(built.participant.html), [...PHASE_36.participantUtilities], "the participant page's Tailwind rules are the ones it had");
+    assert.ok(built.admin.htmlGzip < BUDGET.admin, `the admin page is under its ${bytes(BUDGET.admin)} budget`);
   });
 
 

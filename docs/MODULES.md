@@ -259,8 +259,8 @@ Sounds and confetti, behind one door (`effects.ts`): which moment makes which ef
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
-| `confetti-plan.js` | How much confetti, where from, in which colours, and the finale's petal shower (Prompt 36). | 26 exports |
-| `confetti.ts` | The confetti overlay. | `clearConfetti`, `celebrate`, `sparks`, `stopShower`, `startShower` |
+| `confetti-plan.js` | How much confetti, where from, in which colours, and the finale's petal shower (Prompt 36). | 23 exports |
+| `confetti.ts` | The confetti overlay. | `clearConfetti`, `celebrate`, `sparks`, `startShower` |
 | `effect-plan.js` | What each moment in the participant flow should do, and how the sound choice is remembered. | `EFFECTS`, `answerEffect`, `SOUND_KEY`, `readChoice`, `writeChoice`, `soundIsOn`, `UNAVAILABLE_TITLE` |
 | `effects.ts` | The one door to sound and confetti. | 27 exports |
 | `sound-cues.js` | The participant sounds, as DATA. | `CUES`, `CUE_NAMES`, `noteEnd`, `cueEnd`, `toneSignature`, `MAX_VOICES`, `RETRIGGER_MS`, `RATE_GAP_MS`, `RATING_CUES`, `createVoiceGate` |
@@ -297,7 +297,7 @@ The participant screens' motion, behind one door (`motion.ts`): the plan by kind
 | Module | What it is (its header) | Exports |
 |---|---|---|
 | `aop-motion-plan.js` | The Art of Possibility's motion (Prompt 35) as a plan: for each effect, at each level, the keyframes, length, curve and delay, or null for nothing. | `FLY_REACH`, `AOP_EFFECTS`, `aopEffect`, `flyPath`, `flyCount`, `waveDelay`, `waveLength`, `MILESTONES`, `milestonePoints`, `milestonesCrossed` |
-| `finale-motion-plan.js` | The grand finale's acts (Prompt 36) as a plan: for each part of the thank-you page, at each level, its keyframes, length, curve and delay from the start of the finale. | `FINALE`, `letterGap`, `finaleParts`, `finaleCount`, `countValue` |
+| `finale-motion-plan.js` | The grand finale's acts (Prompt 36) as a plan: for each part of the thank-you page, at each level, its keyframes, length, curve and delay from the start of the finale. | `FINALE`, `finaleParts`, `finaleCount`, `countValue` |
 | `motion-plan.js` | The motion plan of the participant screens (Phase 15): which shape each thing on a screen moves with, for how long, after how much delay and over what distance, as a TABLE keyed by the moment, the kind of question and the part of the screen, never as numbers in a component. | 27 exports |
 | `motion.ts` | The one door to motion on the participant screens (Phase 15). | `motionLevel`, `setMotionEnabled`, `setMotionDirection`, `watchMoment`, `motion`, `playEffect`, `flyOff`, `playWave`, `playFinale`, `movingCount` |
 

@@ -153,8 +153,14 @@ export async function installConfettiSpy(page: Page) {
       if (mine(this)) { state.max = Math.max(state.max, state.current); state.current = 0; }
       return clearRect.apply(this, args);
     };
+    // (Prompt 36) A path shape (the finale's petals and ribbons) is filled twice by canvas-confetti, its path and then an empty one: one piece.
+    let afterPath = false;
     proto.fill = function patchedFill(this: CanvasRenderingContext2D, ...args: Parameters<typeof fill>) {
-      if (mine(this)) { state.current += 1; state.colors.add(String(this.fillStyle)); }
+      if (mine(this)) {
+        const path = args[0] instanceof Path2D;
+        if (path || !afterPath) { state.current += 1; state.colors.add(String(this.fillStyle)); }
+        afterPath = path;
+      }
       return fill.apply(this, args);
     };
   });

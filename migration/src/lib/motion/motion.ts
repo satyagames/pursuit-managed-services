@@ -290,7 +290,7 @@ export function playFinale(
 ): () => void {
   const level = document.hidden ? 'none' : motionLevel();
   const many = (name: PartName) => (nodes[name] as Node[] | undefined)?.length ?? 0;
-  const animations = finaleParts(level, { letters: many('letter'), cards: many('card'), width }).flatMap((part) => {
+  const animations = finaleParts(level, { cards: many('card'), width }).flatMap((part) => {
     const at = nodes[part.part];
     const target = Array.isArray(at) ? at[part.index] : at;
     return target ? [play(target, part)] : [];

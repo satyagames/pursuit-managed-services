@@ -164,7 +164,7 @@ export function finale(): void {
   const level = motionLevel();
   if (EFFECTS.finale.confetti === 'shower' && level === 'full') {
     watchMoment();
-    startShower(level);
+    void startShower(level, () => motionLevel() === 'full');
   }
 }
 

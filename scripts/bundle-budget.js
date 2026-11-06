@@ -546,5 +546,18 @@ export const PHASE_34 = Object.freeze({
  */
 export const PHASE_35 = Object.freeze({
   participantBefore: 180_179, adminBefore: 700_114, participantAllowance: 12_288,
+  participantAfter: 189_903, adminAfter: 700_077,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
+
+/**
+ * Prompt 36 (the grand finale: a petal shower from above, the medal, the name and the numbers, the afterglow), measured from where Prompt 35 left
+ * the pages (ffff3b7, built on 6 Nov 2026). The participant page may grow by at most 4 KB gzip (the brief's allowance) and stays under its
+ * ceiling; to fit, the shower is fired through the confetti library the page already carries, and the name rises in as one line rather than
+ * letter by letter. The admin page carries the thank-you page for Brand Studio's preview, so it grows by what that page grows; it stays under
+ * its budget.
+ */
+export const PHASE_36 = Object.freeze({
+  participantBefore: 189_903, adminBefore: 700_077, participantAllowance: 4_096,
   participantUtilities: PHASE_11A.participantUtilities,
 });

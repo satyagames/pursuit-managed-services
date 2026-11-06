@@ -8,6 +8,7 @@
  * @typedef {{
  *   at: number, count: number, angle: number, spread: number, startVelocity: number,
  *   gravity: number, ticks: number, scalar: number, origin: Origin,
+ *   drift?: number, decay?: number,
  * }} Burst `at` is milliseconds after the plan starts; `ticks` is the life of a piece in frames (about 16.7 ms each)
  */
 
@@ -167,34 +168,30 @@ export function sparkPlan(kind, { rect, viewport, tokens, level }) {
 }
 
 // ---- The finale's petal shower (Prompt 36) ----------------------------------------------------------------------------------------
-// Petals, discs and thin ribbons fall from above across the whole width in three waves, then a few slow petals drift for the afterglow.
-// The waves are data; the loop in confetti.ts asks showerDue how many are due each frame, makes them with makePiece, moves them with
-// stepPiece and fades them with pieceAlpha, never more than showerCap alive. A device that falls under 30 frames a second
-// (showerStruggling) is cut to SHOWER.struggleCap pieces and spawns no more.
+// Petals, discs and thin ribbons fall from just above the top edge across the whole width in three waves, then a few slow petals drift for the
+// afterglow. The plan is a list of small bursts (the same Burst every other celebration uses, aimed down), one every SHOWER.step ms in each
+// wave, so confetti.ts fires them on the one overlay through the same library: its pieces tilt and wobble as they fall, which reads as a petal
+// turning over, and fade over their life. The plan counts what is alive and never lets it pass the cap.
 
-/**
- * @typedef {'petal' | 'disc' | 'ribbon'} PieceShape
- * @typedef {{ name: 'curtain' | 'fall' | 'centre' | 'afterglow', at: number, until: number, rate: number,
- *   region: { left: number, right: number }, sweep: boolean, boost: number, life: [number, number], fade: boolean }} Wave
- *   `at` and `until` in ms from the start; `rate` pieces a second; `region` the viewport fractions they fall over (a `sweep` moves left
- *   to right through it); `boost` scales a piece's speed and size; `life` its shortest and longest life, ms; `fade` fades it all its life.
- * @typedef {{ x: number, y: number, vx: number, vy: number, size: number, shape: PieceShape, color: string, sway: number, swayAmp: number,
- *   swaySpeed: number, rot: number, spin: number, flip: number, flipSpeed: number, born: number, life: number, fade: boolean }} Piece
- */
+/** @typedef {Burst & { wave: 'curtain' | 'fall' | 'centre' | 'afterglow', drift: number, decay: number }} Drop */
 
 const GREEN_RGB = /** @type {[number, number, number]} */ (parseColor(DELOITTE_GREEN));
 
 export const SHOWER = Object.freeze({
   /** The most pieces alive at once, and below `narrowWidth` px. */
   cap: 160, narrowCap: 90, narrowWidth: 560,
-  /** What a struggling device is cut down to. */
-  struggleCap: 40,
   /** The shower is over by this, ms; the afterglow drifts until `afterglowEnd`. */
   showerEnd: 4200, afterglowEnd: 8000,
-  /** A narrow screen's rate, as a share. */
-  narrowScale: 0.6,
+  /** One burst every this many ms in each wave. */
+  step: 120,
   paleLime: toHex(tint(GREEN_RGB, 0.6)).toUpperCase(),
   paleYellow: '#FFE9A8',
+});
+
+/** The petal (two curves to a point) and the ribbon, as paths about 10 units across with their own matrix, so the library never measures them. */
+export const SHOWER_SHAPES = Object.freeze({
+  petal: { path: 'M0 -5Q3.8 0 0 5Q-3.8 0 0 -5Z', matrix: [1, 0, 0, 1, 0, 0] },
+  ribbon: { path: 'M-0.7 -5H0.7V5H-0.7Z', matrix: [1, 0, 0, 1, 0, 0] },
 });
 
 /** The most pieces alive at once at this width. @param {number} width */
@@ -203,97 +200,47 @@ export const showerCap = (width) => (width < SHOWER.narrowWidth ? SHOWER.narrowC
 /** The shower's colours: the confetti palette (never red) plus a pale lime and a warm pale yellow. @param {{ success?: string, action?: string, primary?: string }} tokens */
 export const showerPalette = (tokens) => [...new Set([...buildPalette(tokens), SHOWER.paleLime, SHOWER.paleYellow])];
 
+/** How many pieces of `plan` are alive at `now` ms. @param {Burst[]} plan @param {number} now */
+export const showerAlive = (plan, now) => plan.reduce((sum, burst) => sum + (now >= burst.at && now < burst.at + (burst.ticks * 1000) / 60 ? burst.count : 0), 0);
+
 /**
- * The waves, or null when there is no shower (any level below full, or the device's reduced motion).
- * @param {{ width: number, reducedMotion?: boolean, level?: 'full' | 'reduced' | 'none' }} context
- * @returns {Wave[] | null}
+ * The shower's bursts in time order, or null when there is none (any level below full, or the device's reduced motion).
+ * @param {{ width: number, height: number, reducedMotion?: boolean, level?: 'full' | 'reduced' | 'none', random?: () => number }} context
+ * @returns {Drop[] | null}
  */
-export function showerPlan({ width, reducedMotion = false, level = 'full' }) {
+export function showerPlan({ width, height, reducedMotion = false, level = 'full', random = Math.random }) {
   if (reducedMotion || level !== 'full') return null;
-  const scale = width < SHOWER.narrowWidth ? SHOWER.narrowScale : 1;
-  const whole = { left: 0, right: 1 };
-  return [
-    { name: 'curtain', at: 350, until: 1500, rate: 120 * scale, region: whole, sweep: true, boost: 1.1, life: [2200, 2800], fade: false },
-    { name: 'fall', at: 1200, until: 3600, rate: 70 * scale, region: whole, sweep: false, boost: 1, life: [2200, 2800], fade: false },
-    { name: 'centre', at: 2400, until: SHOWER.showerEnd, rate: 50 * scale, region: { left: 0.3, right: 0.7 }, sweep: false, boost: 0.9, life: [2000, 2600], fade: false },
-    { name: 'afterglow', at: SHOWER.showerEnd, until: SHOWER.afterglowEnd, rate: 6, region: whole, sweep: false, boost: 0.55, life: [2000, 2600], fade: true },
-  ];
-}
-
-/**
- * How many pieces each wave owes between `from` and `to` (ms), carrying the fractions over to the next frame.
- * @param {Wave[]} plan @param {number} from @param {number} to @param {number[]} carry
- */
-export function showerDue(plan, from, to, carry) {
-  const counts = [];
-  const next = [];
-  for (const [index, wave] of plan.entries()) {
-    const overlap = Math.max(0, Math.min(to, wave.until) - Math.max(from, wave.at));
-    const exact = (carry[index] ?? 0) + (wave.rate * overlap) / 1000;
-    counts.push(Math.floor(exact));
-    next.push(exact - Math.floor(exact));
+  const narrow = width < SHOWER.narrowWidth;
+  // A tenth held back: in a browser the timers fire a little late and a piece lives a number of frames, so the bursts overlap a little more than planned.
+  const cap = Math.floor(showerCap(width) * 0.9);
+  /** [wave, from, until, pieces a second, left, right, sweeps, speed, life ms] */
+  const waves = /** @type {const} */ ([
+    ['curtain', 350, 1500, 120, 0, 1, true, 1.1, 2500],
+    ['fall', 1200, 3600, 70, 0, 1, false, 1, 2500],
+    ['centre', 2400, SHOWER.showerEnd, 50, 0.3, 0.7, false, 0.9, 2300],
+    ['afterglow', SHOWER.showerEnd, SHOWER.afterglowEnd, 6, 0, 1, false, 0.55, 2300],
+  ]);
+  /** @type {Drop[]} */
+  const plan = [];
+  for (const [wave, from, until, rate, left, right, sweeps, speed, life] of waves) {
+    let owed = 0;
+    for (let at = from; at < until; at += SHOWER.step) {
+      owed += ((wave === 'afterglow' || !narrow ? rate : rate * 0.6) * SHOWER.step) / 1000;
+      const ticks = Math.round(((life + (random() - 0.5) * 400) * 60) / 1000);
+      // The most alive while these would be: at their start, and at the start of each burst already planned within their life.
+      const end = at + (ticks * 1000) / 60;
+      const peak = Math.max(showerAlive(plan, at), ...plan.filter((burst) => burst.at > at && burst.at < end).map((burst) => showerAlive(plan, burst.at)));
+      const count = Math.min(Math.floor(owed), cap - peak);
+      if (count < 1) continue;
+      owed -= count;
+      const across = sweeps ? left + (right - left) * ((at - from) / (until - from)) + (random() - 0.5) * 0.2 : left + random() * (right - left);
+      plan.push({
+        wave, at, count, ticks, angle: 270, spread: 50, startVelocity: 3, decay: 0.94, drift: (random() - 0.5) * 1.2,
+        // The library moves a piece 3 x gravity px a frame: through about the screen's height in its life.
+        gravity: (height * (0.95 + random() * 0.4) * speed) / (3 * ticks),
+        scalar: (narrow ? 0.9 : 1.1) * (0.9 + speed * 0.2), origin: { x: Math.max(0, Math.min(1, across)), y: -0.05 },
+      });
+    }
   }
-  return { counts, carry: next };
-}
-
-/**
- * One piece of `wave`, born at `now` just above the top edge.
- * @param {Wave} wave @param {number} now @param {{ width: number, height: number }} view @param {() => number} random @param {string[]} colors
- * @returns {Piece}
- */
-export function makePiece(wave, now, view, random, colors) {
-  const { left, right } = wave.region;
-  let across;
-  if (wave.sweep) {
-    const progress = Math.max(0, Math.min(1, (now - wave.at) / (wave.until - wave.at)));
-    across = left + (right - left) * progress + (random() - 0.5) * 0.24;
-  } else {
-    across = left + random() * (right - left);
-  }
-  const pick = random();
-  const base = view.width < SHOWER.narrowWidth ? 9 : 12;
-  return {
-    x: Math.max(-0.02, Math.min(1.02, across)) * view.width,
-    y: -(12 + random() * 60),
-    vx: (random() - 0.5) * 0.04,
-    vy: ((view.height * (0.34 + random() * 0.18)) / 1000) * wave.boost,
-    size: base * (0.75 + random() * 0.6) * (0.8 + wave.boost * 0.2),
-    shape: pick < 0.45 ? 'petal' : pick < 0.75 ? 'disc' : 'ribbon',
-    color: colors[Math.floor(random() * colors.length) % colors.length] ?? DELOITTE_GREEN,
-    sway: random() * Math.PI * 2,
-    swayAmp: 10 + random() * 20,
-    swaySpeed: 0.0015 + random() * 0.0015,
-    rot: random() * Math.PI * 2,
-    spin: (random() - 0.5) * 0.006,
-    flip: random() * Math.PI * 2,
-    flipSpeed: 0.004 + random() * 0.005,
-    born: now,
-    life: wave.life[0] + random() * (wave.life[1] - wave.life[0]),
-    fade: wave.fade,
-  };
-}
-
-/** Moves a piece `dt` ms on; false when it has gone (past its life, or below the bottom edge). @param {Piece} piece @param {number} dt @param {number} now @param {{ height: number }} view */
-export function stepPiece(piece, dt, now, view) {
-  if (now - piece.born >= piece.life) return false;
-  piece.y += piece.vy * dt;
-  piece.x += piece.vx * dt;
-  piece.sway += piece.swaySpeed * dt;
-  piece.rot += piece.spin * dt;
-  piece.flip += piece.flipSpeed * dt;
-  return piece.y < view.height + piece.size * 2;
-}
-
-/** How opaque a piece is at `now`: whole, then fading over its last second (an afterglow petal fades all its life). @param {Piece} piece @param {number} now */
-export function pieceAlpha(piece, now) {
-  const left = piece.born + piece.life - now;
-  if (left <= 0) return 0;
-  return Math.min(1, piece.fade ? left / piece.life : left / 1000);
-}
-
-/** Is the device under 30 frames a second? Judged on the last 20 frames, and not before there are 20. @param {number[]} deltas ms between frames */
-export function showerStruggling(deltas) {
-  if (deltas.length < 20) return false;
-  const last = deltas.slice(-20);
-  return last.reduce((sum, delta) => sum + delta, 0) / last.length > 1000 / 30;
+  return plan.sort((a, b) => a.at - b.at);
 }

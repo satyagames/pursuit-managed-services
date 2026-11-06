@@ -58,12 +58,17 @@ export function averageLuminance(png: Buffer): number {
   return sum / (width * height);
 }
 
-/** The most changes of more than `threshold` (a share of the larger value) within any one second of samples `[ms, luminance]`. */
-export function mostChangesInASecond(samples: [number, number][], threshold = 0.1): number {
+/**
+ * The most changes of more than `threshold` within any one second of samples `[ms, luminance]`. WCAG 2.3.1's general flash threshold counts a
+ * change of 0.1 in relative luminance (on its 0 to 1 scale): `relative: false`, the default. `relative: true` counts a change of that share of
+ * the brighter sample instead, which on a dark page counts any white content appearing; it is reported, not asserted.
+ */
+export function mostChangesInASecond(samples: [number, number][], threshold = 0.1, { relative = false } = {}): number {
   const changes: number[] = [];
   for (let index = 1; index < samples.length; index += 1) {
     const [before, after] = [samples[index - 1][1], samples[index][1]];
-    if (Math.abs(after - before) / Math.max(before, after, 1e-6) > threshold) changes.push(samples[index][0]);
+    const change = Math.abs(after - before) / (relative ? Math.max(before, after, 1e-6) : 1);
+    if (change > threshold) changes.push(samples[index][0]);
   }
   let most = 0;
   for (const start of changes) most = Math.max(most, changes.filter((at) => at >= start && at < start + 1000).length);

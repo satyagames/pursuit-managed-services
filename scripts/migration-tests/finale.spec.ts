@@ -5,7 +5,7 @@ import { showerCap } from '../../migration/src/lib/effects/confetti-plan.js';
 
 // Prompt 36: the grand finale on the thank-you page, against the built release page with a synthetic API. Every activity is already done, so the page
 // opens straight on the finale. At the full motion level: the petal shower falls from the top, across the whole width; the medal lands and its check is
-// drawn by 2.5 s; the name's letters are all in by 3 s and the numbers final by 3.6 s; "Celebrate again" shows in the afterglow and replays; the shower
+// drawn by 2.5 s; the name is in by 3 s and the numbers final by 3.6 s; "Celebrate again" shows in the afterglow and replays; the shower
 // is gone by 11 s and asks for no more frames. The buttons work from the first frame and nothing covers them. The status line is said once.
 // The frame strip, the frame rate at 4x slowdown, the flashing check and the layout shift are in finale-perf.spec.ts (Chromium, DevTools).
 
@@ -24,7 +24,7 @@ async function at(page: Page, ms: number) {
 
 /** Which thirds of the shower canvas (left, middle, right) have a piece drawn in the top `rows` share of it, now. */
 const paintedThirds = (page: Page, rows = 1) => page.evaluate((share) => {
-  const canvas = document.querySelector<HTMLCanvasElement>('canvas[data-pms-shower]');
+  const canvas = document.querySelector<HTMLCanvasElement>('canvas[data-pms-confetti]');
   if (!canvas) return null;
   const { data, width, height } = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, Math.max(1, Math.round(canvas.height * share)));
   const thirds = [false, false, false];
@@ -60,9 +60,8 @@ for (const viewport of VIEWPORTS) {
     expect(medal, 'the medal has landed and its check is drawn by 2.5 s').toEqual({ opacity: '1', moving: 0, dash: 0 });
 
     await at(page, 3000);
-    const letters = await page.evaluate(() => [...document.querySelectorAll('.pms-letter')].map((node) => getComputedStyle(node).opacity));
-    expect(letters.length).toBeGreaterThan(5);
-    expect(letters.every((opacity) => opacity === '1'), `every letter is in by 3 s (${letters.join(' ')})`).toBe(true);
+    const name = await page.getByRole('heading', { name: HEADLINE }).evaluate((node) => ({ opacity: getComputedStyle(node).opacity, moving: node.getAnimations().length }));
+    expect(name, 'the name is in by 3 s').toEqual({ opacity: '1', moving: 0 });
 
     await at(page, 3300);
     await expect(page.getByRole('button', { name: 'Celebrate again' }), 'not before the afterglow').toBeHidden();
@@ -102,7 +101,7 @@ test('"Celebrate again" replays the whole thing, keeps its place and its focus, 
   const place = await again.boundingBox();
   await again.click();
   await expect(again).toBeFocused();
-  await page.waitForFunction(() => document.querySelectorAll('canvas[data-pms-shower]').length === 1, null, { timeout: 2000 });
+  await page.waitForFunction(() => document.querySelectorAll('canvas[data-pms-confetti]').length === 1, null, { timeout: 2000 });
   await expect(page.locator('canvas[data-pms-confetti]'), 'one canvas, not two').toHaveCount(1);
   const moving = await page.evaluate(() => document.querySelector('.pms-medal')!.getAnimations().length);
   expect(moving, 'the medal lands again').toBeGreaterThan(0);
@@ -126,7 +125,7 @@ test('the buttons work from the first frame: nothing covers them and the canvas 
     });
     expect(hit, `Home is the topmost thing under a tap at ${ms} ms`).toBe(true);
   }
-  const canvas = await page.locator('canvas[data-pms-shower]').evaluate((node) => getComputedStyle(node).pointerEvents);
+  const canvas = await page.locator('canvas[data-pms-confetti]').evaluate((node) => getComputedStyle(node).pointerEvents);
   expect(canvas).toBe('none');
   await home.click();
   await expect(page.getByRole('heading', { name: 'Hi Jordan Lee!' })).toBeVisible();
@@ -139,7 +138,7 @@ test('the numbers are text, the medal and the shower are hidden from assistive t
   await at(page, 3700);
   await expect(page.getByRole('heading', { name: HEADLINE })).toBeVisible();
   await expect(page.locator('.pms-medal-wrap')).toHaveAttribute('aria-hidden', 'true');
-  await expect(page.locator('canvas[data-pms-shower]')).toHaveAttribute('aria-hidden', 'true');
+  await expect(page.locator('canvas[data-pms-confetti]')).toHaveAttribute('aria-hidden', 'true');
   const cards = await page.locator('.pms-card').allInnerTexts();
   expect(cards.map((text) => text.replace(/\s+/g, ' ').trim())).toEqual(['3 activities completed', '5 of 5 right on the first try']);
 });

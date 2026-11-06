@@ -6,7 +6,7 @@ import { averageLuminance, mostChangesInASecond } from './png-luma.js';
 
 // Prompt 36: what the finale costs and looks like over time, in Chromium through the DevTools protocol. The frame strip (0, 0.5, 1.2, 2, 3, 4 and 8 s
 // at iPad landscape and phone width, written to test-results/finale/), the frame rate at 4x CPU slowdown (30 fps or more, or the shower stepped itself
-// down), no flashing (the page's average luminance sampled about every 100 ms: no more than 2 changes of over 10 percent in any second), no long task
+// down), no flashing (the page's average luminance sampled about every 100 ms: no more than 2 changes of 0.1, WCAG 2.3.1's threshold, in any second), no long task
 // as the page starts, and no layout shift during the sequence. The numbers are written to test-results/finale/measures.<width>.json.
 
 const out = fileURLToPath(new URL('../../test-results/finale/', import.meta.url));
@@ -37,8 +37,9 @@ async function installWatch(page: Page) {
     new PerformanceObserver((list) => { for (const entry of list.getEntries()) watch.longTasks.push([entry.startTime, entry.duration]); }).observe({ type: 'longtask', buffered: true });
     const frame = (now: number) => { watch.frames.push(now); requestAnimationFrame(frame); };
     requestAnimationFrame(frame);
-    new MutationObserver(() => { if (document.querySelector('canvas[data-pms-shower][data-state="struggling"]')) watch.struggling = true; })
-      .observe(document, { attributes: true, subtree: true, attributeFilter: ['data-state'] });
+    // The governor stepping the motion level down (it is written on the page's root), which stops the shower's further bursts.
+    new MutationObserver(() => { if (document.documentElement.dataset.motionLevel && document.documentElement.dataset.motionLevel !== 'full') watch.struggling = true; })
+      .observe(document.documentElement, { attributes: true, attributeFilter: ['data-motion-level'] });
   });
 }
 type Watch = { shifts: [number, number, string[]][]; longTasks: [number, number][]; frames: number[]; struggling: boolean };
@@ -89,7 +90,7 @@ for (const viewport of [{ width: 1180, height: 820 }, { width: 390, height: 844 
   });
 }
 
-test('at 4x CPU slowdown the shower holds 30 fps or steps itself down, and never passes its cap', async ({ page }) => {
+test('at 4x CPU slowdown the shower holds 30 fps or the governor steps the motion down', async ({ page }) => {
   test.setTimeout(90_000);
   await page.setViewportSize({ width: 1180, height: 820 });
   await installWatch(page);
@@ -102,12 +103,12 @@ test('at 4x CPU slowdown the shower holds 30 fps or steps itself down, and never
   const fps = fpsBetween(watch.frames, start + 350, start + 4200);
   await mkdir(out, { recursive: true });
   await writeFile(`${out}measures.slow.json`, `${JSON.stringify({ throttle: 4, fps: Math.round(fps * 10) / 10, steppedDown: watch.struggling }, null, 2)}\n`);
-  console.log(`finale at 4x slowdown: ${fps.toFixed(1)} fps, stepped down: ${watch.struggling}`);
-  expect(fps >= 30 || watch.struggling, `${fps.toFixed(1)} fps and the shower did not step down`).toBe(true);
+  console.log(`finale at 4x slowdown: ${fps.toFixed(1)} fps, governor stepped down: ${watch.struggling}`);
+  expect(fps >= 30 || watch.struggling, `${fps.toFixed(1)} fps and the governor did not step down`).toBe(true);
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
 });
 
-test('no flashing: the page\'s average luminance changes by more than 10 percent at most twice in any second', async ({ page }) => {
+test('no flashing: the page\'s average luminance changes by more than 0.1 (WCAG 2.3.1) at most twice in any second', async ({ page }) => {
   test.setTimeout(60_000);
   await page.setViewportSize({ width: 1180, height: 820 });
   await openFinale(page);
@@ -121,9 +122,10 @@ test('no flashing: the page\'s average luminance changes by more than 10 percent
     await page.waitForTimeout(Math.max(0, 100 - ((await sinceStart(page)) - ms)));
   }
   const most = mostChangesInASecond(samples, 0.1);
+  const relative = mostChangesInASecond(samples, 0.1, { relative: true });
   await mkdir(out, { recursive: true });
-  await writeFile(`${out}luminance.json`, `${JSON.stringify({ most, samples: samples.map(([ms, luma]) => [Math.round(ms), Math.round(luma * 1000) / 1000]) }, null, 2)}\n`);
-  console.log(`finale luminance: ${samples.length} samples, at most ${most} changes of over 10 percent in a second`);
+  await writeFile(`${out}luminance.json`, `${JSON.stringify({ most, relative, samples: samples.map(([ms, luma]) => [Math.round(ms), Math.round(luma * 1000) / 1000]) }, null, 2)}\n`);
+  console.log(`finale luminance: ${samples.length} samples, at most ${most} changes of 0.1 (WCAG) in a second; ${relative} of over 10 percent of the brighter sample`);
   expect(samples.length, 'sampled about every 100 ms').toBeGreaterThan(25);
   expect(most).toBeLessThanOrEqual(2);
 });

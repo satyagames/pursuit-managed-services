@@ -27,8 +27,8 @@ export async function openFinale(page: Page, { hash = '#/thank-you?t=track-a' } 
     window.requestAnimationFrame = (callback) => { state.frames += 1; return request(callback); };
     new MutationObserver((records) => {
       for (const record of records) {
-        for (const node of record.addedNodes) if (node instanceof HTMLCanvasElement && node.hasAttribute('data-pms-shower')) state.showerAt = performance.now();
-        for (const node of record.removedNodes) if (node instanceof HTMLCanvasElement && node.hasAttribute('data-pms-shower')) state.showerGone = performance.now();
+        for (const node of record.addedNodes) if (node instanceof HTMLCanvasElement && node.hasAttribute('data-pms-confetti')) state.showerAt = performance.now();
+        for (const node of record.removedNodes) if (node instanceof HTMLCanvasElement && node.hasAttribute('data-pms-confetti')) state.showerGone = performance.now();
       }
     }).observe(document, { childList: true, subtree: true });
   });
