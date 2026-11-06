@@ -32,6 +32,10 @@ const PAIRS = [
   ['--aop-high-edge', '--aop-well', 3, 'High box edge on the well'],
   ['--aop-empty-edge', '--aop-well', 3, 'empty box edge and its + on the well'],
   ['--aop-well-ink', '--aop-well', 4.5, 'words on the well'],
+  // (The washes are fixed colours, not a mix: WebKit's checker could not read a color-mix() ground.)
+  ['--aop-well-ink', '--aop-wash', 4.5, 'words on a row band and the view switch'],
+  ['--aop-well-ink', '--aop-done-wash', 4.5, 'words on a finished row'],
+  ['--aop-well-ink', '--aop-rule', 4.5, 'words on the track of the bar'],
 ];
 
 describe('the three rating colours (Prompt 35)', () => {

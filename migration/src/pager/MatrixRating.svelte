@@ -659,9 +659,9 @@
 <style>
   /* A white well on the client's plate: the three level colours read the same on every client's colour (styles/aop-level-tokens.css). */
   .matrix {
-    --matrix-wash: color-mix(in srgb, var(--aop-well-ink) 4%, var(--aop-well));
-    --matrix-done: color-mix(in srgb, var(--aop-well-ink) 9%, var(--aop-well));
-    --matrix-rule: color-mix(in srgb, var(--aop-well-ink) 14%, var(--aop-well));
+    --matrix-wash: var(--aop-wash);
+    --matrix-done: var(--aop-done-wash);
+    --matrix-rule: var(--aop-rule);
     display: grid;
     gap: 8px;
     margin-top: 13px;

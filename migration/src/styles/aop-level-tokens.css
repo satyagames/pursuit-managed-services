@@ -21,6 +21,11 @@
   --aop-well: #FFFFFF;
   --aop-well-ink: #1A1A2E;
   --aop-empty-edge: #6B6B7B;
+  /* The well's washes: a row band and the view switch, a finished row, the bar's track and the thin rules. Fixed colours, not a mix, so every
+     browser's contrast checker reads the ground. */
+  --aop-wash: #F5F5F6;
+  --aop-done-wash: #EBEBED;
+  --aop-rule: #DDDDE0;
   --aop-letter-size: 19px;
   --aop-letter-weight: 700;
 }
