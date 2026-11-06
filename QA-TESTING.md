@@ -42,6 +42,7 @@
 21. Items **340 to 349** (Prompt 33: each tab said in your own words, Guests and QR's steps, the three folds, the switches, the last Super admin, the named forms, Content's two parts, the print sheet and an iPad unchanged). At the end of this file.
 22. Items **350 to 359** (Prompt 34: the wall from the back row, Dark and Light, the packs in PowerPoint with and without Open Sans, a black-and-white print, a screen reader, held names and no data, quotes never highlighted). At the end of this file.
 23. Items **360 to 365** (Prompt 34, the session page on Results: the list and one session, the four figures, Downloads with the packs, Delete at the foot, a Leadership role; and an Art of the Possible heat map in the packs). At the end of this file.
+24. Items **366 to 377** (Prompt 35: the Art of Possibility on a real iPad and a phone, a first-time guest, press and hold, whole headings, milestones, Undo, the finish, sound and the silent switch, reduce motion, a colour-blind colleague, the network panel). At the end of this file.
 16. Item **293** (Prompt 25: the line about SharePoint access in Give access, Add user and No access; the document ONBOARDING.md). Below item 292.
 17. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
    160, 161, 164, 165, 166, 167, 168, 169, 170.
@@ -1878,3 +1879,20 @@ items 15, 26 to 28, 35, 40 to 44, 46 and 53 to 56 above, is `DEVICE-TEST-SHEET.m
 363. **Delete at the foot.** *(Still to see.)* **Expect** no Delete in the list or beside Live display; **Delete session...** at the foot of the session opens the same warning, and after a delete the next session is shown with the focus on its name.
 364. **A Leadership role.** *(Still to see.)* Sign in as Leadership. **Expect** the list, the figures, the charts and Downloads; no Delete and no Restart.
 365. **An Art of the Possible heat map in the packs.** *(Still to see.)* For a session with an Art of the Possible question (Kroger's, thirteen sub-processes), download the PDF pack and the PowerPoint pack in Light and in Dark, and the leader report. **Expect** the heat map in a card the width of the slide; each column's name in its own column, broken between words ("Standardisa-" the one hyphen); each sub-process's name whole, in up to two lines; nothing past the card or into the source line; "And N more sub-processes." under the rows; and each band a triangle or a dot beside its word, never "�", in the PDF, in PowerPoint and in the leader report.
+
+### Prompt 35: the Art of Possibility on the guest's page
+
+On the real SharePoint site, on an iPad held sideways and upright and on a phone, with Kroger's thirteen sub-processes and five criteria.
+
+366. **A first-time guest.** *(Still to see.)* Hand the iPad to someone who has never seen it. **Expect** them to rate one box without help, from "Tap a box to rate it. Press and hold for choices." and the bubble on the first box.
+367. **Press and hold.** *(Still to see.)* Press and hold a box. **Expect** the ring to close in, the four choices to open beside the box (above it on the last rows), and letting go not to change the box.
+368. **Whole headings.** *(Still to see.)* Read every criterion heading sideways and upright. **Expect** each word whole, never split, and each ⓘ to open its words under its own heading.
+369. **A row and the milestones.** *(Still to see.)* Rate a whole row, then on to 17, 33 and 49 boxes. **Expect** the row's check and sweep, and "A quarter done", "Halfway" and "Nearly there" once each.
+370. **Clear all, then Undo.** *(Still to see.)* Clear all from the three dots, then press Undo within eight seconds. **Expect** every rating back.
+371. **The finish.** *(Still to see.)* Rate the last box and send. **Expect** the wave, the small burst from the bar, "Your ratings at a glance" with the right counts and sentence, the mosaic beside "Done" on the activities, and "Your ratings are in." with the count on the thank-you.
+372. **One at a time.** *(Still to see.)* On a phone, rate a sub-process's five criteria. **Expect** the check, then the next one after a moment; Previous in that moment keeps you there.
+373. **Sound, and the silent switch.** *(Still to see.)* With Sound on, rate, hold, finish a row, reach a milestone, clear all and finish. **Expect** a soft note for each, never a pile-up on fast taps; then with the silent switch on, the same (the owner's default: Sound on plays through the switch).
+374. **Reduce motion.** *(Still to see.)* Turn on the iPad's Reduce Motion. **Expect** nothing moving, every rating, check, milestone word and card still shown.
+375. **A colour-blind colleague.** *(Still to see.)* Ask one to tell Low from High across the grid. **Expect** them to do it by the shape and the letter.
+376. **The network panel.** *(Still to see.)* Open the page on a slow connection with the network panel open and rate every box. **Expect** the one page file and no new request for the ratings, the card, the mosaic or the sounds; compare the load time with Prompt 34's.
+377. **The other questions.** *(Still to see.)* Run an activity with single-choice, ranking and open text questions. **Expect** them exactly as before.

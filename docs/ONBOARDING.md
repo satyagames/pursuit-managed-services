@@ -90,6 +90,13 @@ The wall never shows a name. For leaders, choose the packs' look under **Downloa
 **Download PowerPoint pack**; **Download CSV** is the table. The same files are under **Downloads** on the session's own page in **Results**,
 with the leader report (a PDF; there is no leader report in PowerPoint).
 
+## What a guest does in the Art of Possibility (Prompt 35)
+
+On a laptop or an iPad held sideways the guest sees every sub-process and criterion at once; on a phone or an iPad held upright, one sub-process at a
+time. A tap on a box rates it Low, then Medium, then High, then clears it; pressing and holding a box opens the choices. **Next empty box** finds
+the next one to rate; **Clear all** is under the three dots and can be undone for eight seconds. Once every box is rated the guest sees their own
+ratings at a glance, then presses **Send**.
+
 ## If the error stays
 
 - Ask them to sign out of Microsoft 365 in that browser and sign in with the work account they were added with (a personal account, or a second

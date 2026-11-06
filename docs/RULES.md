@@ -1851,6 +1851,31 @@ against them at 1366 by 650, 1920 by 950 and 683 by 700, and `admin-explains.spe
 - **One maker of the session pack**, `migration/src/lib/exports/pack-download.js` (the client's brand, the two libraries, the look): the Live display's Download
   and Results' Downloads both call it. The pack never has names.
 
+## Rules from Prompt 35 (the Art of Possibility on the guest's page; keep them holding)
+
+- **Three level colours, each with a shape and a letter.** Low `#E63A2E` (a chevron down, L), Medium `#F5A623` (a dash, M), High `#3DBB5E` (a chevron
+  up, H), in `migration/src/styles/aop-level-tokens.css` on a white well: the one set of colours on the participant page that is not the client's plate
+  (the site owner's grant, for this question only). Medium and High are too light for white alone, so every rated box has an edge of its own darker
+  colour (3:1 or more); Low's white letter is 19 px bold. `scripts/test-participant-contrast.js` reads the file and fails when a pair drops under its
+  floor. The words "Colour shows the rating, not good or bad." stay under the strip.
+- **Boxes are 48 px or more, headings are whole words, the page scrolls once.** A criterion heading wraps between words only; the grid has no scroll
+  of its own (only when a guest chose it on a screen narrower than `gridWidthFor`, `lib/participant/aop-view.js`); the strip stays at the top in the
+  grid. The view starts from the width and the orientation (`defaultView`), and a choice lasts the visit.
+- **The stored answer does not change.** A box changes in place (`setCell`) and `encodeAnswer` stores exactly what Prompt 34 stored
+  (`scripts/test-aop-view.js`: random runs of taps against the old copy, and a golden answer).
+- **A press held 650 ms opens the level menu and never also rates**; Enter, the menu key, Shift+F10 and a right-click open the same menu; Escape
+  closes it and puts the keyboard back on the box; it is never a trap. A clear offers Undo for 8 seconds; Undo fills only boxes still empty.
+- **Motion through the plan only.** Every effect is in `lib/motion/aop-motion-plan.js` (transform and opacity only, each length a token of
+  `TOKENS.aop`, a fade at the reduced level, nothing at none) and is played by `lib/motion/motion.ts` (`playEffect`, `flyOff`, `playWave`). No
+  more than `MAX_CONCURRENT` (16) things move at once: Clear all flies at most 15 copies, the wave is spaced to 13 or fewer, and many boxes changing in
+  one go do not fade their colour. The milestones are 25, 50 and 75 percent rounded up (17, 33 and 49 of 65), each said once a visit.
+- **Sound through `lib/effects/effects.ts` only** (`aopRate`, `aopHoldOpen`, `aopRowDone`, `aopMilestone`, `aopClearAll`, `aopAllRated`), behind the
+  Sound switch, started only inside a tap; the cues are data in `sound-cues.js`, in C major pentatonic, and the rating cues share one 60 ms gate.
+- **"Your ratings at a glance", the hub's mosaic and the thank-you's count are the guest's own**, made on the device (`highestRated`, `glanceOf`;
+  `lib/participant/aop-glance.svelte.ts` holds this visit's, in memory): nothing new is stored or sent and no one else sees them.
+- **The admin page does not carry the rating grid**: `migration/vite.admin.config.ts` puts `MatrixRating.admin.svelte` in its place (Brand Studio's
+  sample has no such question). The participant page may grow by 12,288 B gzip for this prompt (`PHASE_35`).
+
 ## Before finishing a change
 
 - Always: `npm run check:svelte` and `npm test` (the documents, the module map and the project map among it). If you added, moved or renamed a
