@@ -13,11 +13,11 @@
  * Next, Back, Home and "Click here to begin" make no sound.
  */
 import { CONFETTI_SIZES, type ConfettiSize } from './confetti-plan.js';
-import { celebrate, clearConfetti, sparks } from './confetti.js';
+import { celebrate, clearConfetti, sparks, startShower } from './confetti.js';
 import { EFFECTS, UNAVAILABLE_TITLE, answerEffect, readChoice, soundIsOn, writeChoice, type Effect } from './effect-plan.js';
 import { CUES, CUE_NAMES, type CueName } from './sound-cues.js';
 import * as engine from './sound-engine.js';
-import { motionLevel } from '../motion/motion.js';
+import { motionLevel, watchMoment } from '../motion/motion.js';
 
 export { UNAVAILABLE_TITLE };
 export type { ConfettiSize, CueName };
@@ -155,9 +155,17 @@ export function clearEffects(): void {
   clearConfetti();
 }
 
-/** Every activity is finished. */
+/**
+ * Every activity is finished (Prompt 36): the finale cue behind the Sound switch, and the petal shower at the full motion level only (the
+ * governor watches its first frames, as it does an entrance). "Celebrate again" calls this again and the whole thing starts from the top.
+ */
 export function finale(): void {
   run(EFFECTS.finale);
+  const level = motionLevel();
+  if (EFFECTS.finale.confetti === 'shower' && level === 'full') {
+    watchMoment();
+    startShower(level);
+  }
 }
 
 // The hub's moment (Prompt 24). Sound behind the switch, sparks behind the motion level: `reduced` motion does not silence a cue, the Sound switch does.
