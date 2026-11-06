@@ -12,7 +12,8 @@
  */
 import type { Fire, Options, Shape } from 'canvas-confetti';
 import {
-  SHOWER_SHAPES, buildPalette, confettiPlan, originFromRect, planDuration, showerPalette, showerPlan, sparkAllowance, sparkPlan, type Burst, type ConfettiSize,
+  SHOWER_SHAPES, buildPalette, confettiPlan, originFromRect, planDuration, showerCap, showerGate, showerPalette, showerPlan, sparkAllowance, sparkPlan,
+  type Burst, type ConfettiSize,
 } from './confetti-plan.js';
 import type { Level } from '../motion/motion-plan.js';
 
@@ -88,7 +89,7 @@ export async function celebrate(size: ConfettiSize, anchor?: Element | null): Pr
 }
 
 /** Fires a plan on the one overlay, which goes when its last piece has fallen. */
-async function throwBursts(plan: Burst[], colorsNow: () => string[], shapes: Shape[], onDone?: () => void, keep?: () => boolean): Promise<void> {
+async function throwBursts(plan: Burst[], colorsNow: () => string[], shapes: Shape[], onDone?: () => void, keep?: (burst: Burst) => boolean): Promise<void> {
   const born = generation;
   const lib = await loadLibrary();
   if (born !== generation) { onDone?.(); return; }
@@ -101,7 +102,7 @@ async function throwBursts(plan: Burst[], colorsNow: () => string[], shapes: Sha
 
   const fireBurst = (burst: Burst) => {
     if (born !== generation) { onDone?.(); return; }
-    if (keep && !keep()) {
+    if (keep && !keep(burst)) {
       active.pending -= 1;
       if (active.pending <= 0) closeOverlay(active);
       return;
@@ -163,14 +164,28 @@ const SHAPES = [SHOWER_SHAPES.petal, SHOWER_SHAPES.petal, SHOWER_SHAPES.ribbon].
 
 /**
  * The finale's shower at `level`: the plan decides (nothing below the full level or under the device's reduced motion). Its bursts go on the one
- * overlay; each is fired only while the tab is shown and `stillFull()` says the motion level is still full, so a device the governor steps down
- * mid-way gets no more. A second call starts it again from the top. Never throws.
+ * overlay; each is fired only while `stillFull()` says the motion level is still full (a device the governor steps down mid-way gets no more) and the
+ * gate, counting the frames drawn, has room under the cap (a slower device, or a hidden tab, gets fewer). A second call starts it again from the top.
+ * Never throws.
  */
 export async function startShower(level: Level, stillFull: () => boolean): Promise<void> {
   try {
     clearConfetti();
     const plan = showerPlan({ width: window.innerWidth, height: window.innerHeight, reducedMotion: prefersReducedMotion(), level });
-    if (plan) await throwBursts(plan, () => showerPalette(pageTokens()), [...SHAPES, 'circle'], undefined, () => !document.hidden && stillFull());
+    if (!plan) return;
+    const gate = showerGate(showerCap(window.innerWidth));
+    // The library's own frames, counted as it clears the overlay for each: it ages its pieces by them (and draws no more than 60 a second).
+    let frame = 0;
+    let counted: HTMLCanvasElement | null = null;
+    const frames = () => {
+      const canvas = overlay?.canvas;
+      if (!canvas || canvas === counted) return;
+      counted = canvas;
+      const context = canvas.getContext('2d')!;
+      const clear = context.clearRect.bind(context);
+      context.clearRect = (...area) => { frame += 1; clear(...area); };
+    };
+    await throwBursts(plan, () => showerPalette(pageTokens()), [...SHAPES, 'circle'], undefined, (burst) => (frames(), stillFull() && gate(burst, frame)));
   } catch (cause) {
     console.warn('The shower could not run', cause);
   }

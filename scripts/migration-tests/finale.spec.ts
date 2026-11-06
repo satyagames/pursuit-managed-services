@@ -99,7 +99,9 @@ test('"Celebrate again" replays the whole thing, keeps its place and its focus, 
   await expect(status).toHaveText(`All activities done. ${HEADLINE}`);
   const again = page.getByRole('button', { name: 'Celebrate again' });
   const place = await again.boundingBox();
-  await again.click();
+  // From the keyboard: WebKit, like Safari, does not focus a button that is clicked; the focus must stay on it as it replays.
+  await again.focus();
+  await page.keyboard.press('Enter');
   await expect(again).toBeFocused();
   await page.waitForFunction(() => document.querySelectorAll('canvas[data-pms-confetti]').length === 1, null, { timeout: 2000 });
   await expect(page.locator('canvas[data-pms-confetti]'), 'one canvas, not two').toHaveCount(1);

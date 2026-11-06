@@ -1889,15 +1889,19 @@ against them at 1366 by 650, 1920 by 950 and 683 by 700, and `admin-explains.spe
 - **Replace, not stack.** `EFFECTS.finale` is `{ cue: 'finale', confetti: 'shower' }`; the old `large` bottom bursts and their tests are gone,
   and `CONFETTI_SIZES` is small and medium. The shower is `showerPlan` (`lib/effects/confetti-plan.js`): small bursts from just above the top
   edge, aimed down, in three waves (a curtain sweeping left to right from 0.35 to 1.5 s, a full-width fall from 1.2 to 3.6 s, a fall over the
-  middle from 2.4 to 4.2 s) and an afterglow of about six slow petals a second until 8 s; everything is gone by 11 s. It is fired on the one
+  middle from 2.4 to 4.2 s) and an afterglow of about six slow petals a second until 7.5 s; everything is gone by 11 s (at 60 frames a second, and
+  in WebKit here at about 40). It is fired on the one
   overlay through canvas-confetti, which the page already carries (no new library), in petal and ribbon paths (each with its own matrix, so
   nothing is measured at run time) and discs, in `showerPalette` (the confetti palette, a pale lime and a warm pale yellow; never red).
-- **The caps.** The plan never has more than 160 pieces alive (90 below 560 px), less a tenth held back for the browser's own timing; a piece
-  crosses the screen in about its life, so what the cap counts is on the screen. A burst is fired only while the tab is shown and the motion level
-  is still full, so the governor stepping down mid-way stops the shower; the overlay goes when its last piece has fallen.
+- **The caps.** Never more than 160 pieces alive (90 below 560 px). The library ages its pieces by the frames it draws (60 a second at most), so
+  the cap is kept in those frames: `showerGate` counts the overlay's frames as the library clears it for each, and lets a burst in only if what is
+  still alive and the burst fit. A slower device, whose pieces live longer in seconds, gets fewer new ones; a hidden tab draws no frames and gets
+  none. A piece crosses the screen in about its life, so what the cap counts is on the screen. A burst is fired only while the motion level is still
+  full, so the governor stepping down mid-way stops the shower; the overlay goes when its last piece has fallen.
 - **Each motion level.** Full: all of the above. Reduced (the governor has stepped down): no shower, veil, rings, turning rays, rise or count-up;
   the medal (its check drawn), the name and the cards fade in together in 200 ms, **Celebrate again** shows at once, and a still garland of petals
-  (one CSS element along the top of the card) shows at once and is gone after 6 s. None (the device's reduced motion, the client's switch,
+  (one CSS element along the top of the card, in pale lime and pale yellow) shows at once and is gone after 6 s. The medal keeps 1.5 rem
+  above and below it, so its rays never reach behind the headline's words. None (the device's reduced motion, the client's switch,
   `?motion=off`): the final state at once, no garland. Sound, if the guest turned it on, is the same at every level. Brand Studio's preview shows
   the final state with the garland held still, no motion and no sound.
 - **Never in the way.** The overlay is `pointer-events: none` and `aria-hidden`; the veil is behind the content, never over a button; nothing
@@ -1908,7 +1912,7 @@ against them at 1366 by 650, 1920 by 950 and 683 by 700, and `admin-explains.spe
 - **The cue.** `finale` (`sound-cues.js`, `max: 4.6`): a swell of noise whose band rises from 500 to 3,600 Hz (a noise note may have a `filter.to`),
   a C5 E5 G5 C6 bloom 60 ms apart at 1 s, then 14 bells from C major pentatonic about every 200 ms from 1.4 s, fading by 10 dB from -14 dBFS
   (the brief's -24 left the cue 10 dB under every other), each 0.55 s long; nothing in the afterglow.
-- **The budget.** The participant page may grow by 4,096 B gzip for this prompt (`PHASE_36`); it ended 50 B under it, so the next change to that
+- **The budget.** The participant page may grow by 4,096 B gzip for this prompt (`PHASE_36`); it ended 21 B under it, so the next change to that
   page will need room found first. The medal's ink on its lime and the cards' words on white are held to 4.5:1 (`scripts/test-participant-contrast.js`).
 
 ## Before finishing a change

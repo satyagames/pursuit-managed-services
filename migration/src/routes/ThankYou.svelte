@@ -266,7 +266,7 @@
     pointer-events: none;
   }
 
-  /* (Prompt 36) The reduced level's garland: petals in three colours along the top edge, drawn once by the CSS (shown by motion.ts, still in a
+  /* (Prompt 36) The reduced level's garland: petals in two colours along the top edge, drawn once by the CSS (shown by motion.ts, still in a
      preview). */
   .pms-garland {
     position: absolute;
@@ -274,8 +274,7 @@
     height: 3rem;
     background:
       radial-gradient(0.3rem 0.6rem at 20% 40%, #cfe4a8 90%, #0000) 0 0 / 4.5rem 3rem,
-      radial-gradient(0.3rem 0.6rem at 60% 60%, #ffe9a8 90%, #0000) 0 0 / 5.5rem 3rem,
-      radial-gradient(0.25rem 0.5rem at 40% 30%, #fff 90%, #0000) 0 0 / 3.5rem 3rem;
+      radial-gradient(0.3rem 0.6rem at 60% 60%, #ffe9a8 90%, #0000) 0 0 / 3.5rem 3rem;
     opacity: 0;
   }
 
@@ -303,6 +302,8 @@
     flex: none;
     width: clamp(6rem, min(26vw, 18dvh), 9rem);
     aspect-ratio: 1;
+    /* Room for the rays, which reach about a third of the medal beyond it: never behind the headline's words. */
+    margin: 1.5rem 0;
   }
 
   .pms-medal {

@@ -171,7 +171,8 @@ export function sparkPlan(kind, { rect, viewport, tokens, level }) {
 // Petals, discs and thin ribbons fall from just above the top edge across the whole width in three waves, then a few slow petals drift for the
 // afterglow. The plan is a list of small bursts (the same Burst every other celebration uses, aimed down), one every SHOWER.step ms in each
 // wave, so confetti.ts fires them on the one overlay through the same library: its pieces tilt and wobble as they fall, which reads as a petal
-// turning over, and fade over their life. The plan counts what is alive and never lets it pass the cap.
+// turning over, and fade over their life. The library counts a piece's life in frames, so the cap is kept by showerGate, in frames, as each burst
+// is about to be fired: on a device drawing fewer frames a second the pieces live longer, and fewer new ones are let in.
 
 /** @typedef {Burst & { wave: 'curtain' | 'fall' | 'centre' | 'afterglow', drift: number, decay: number }} Drop */
 
@@ -181,7 +182,7 @@ export const SHOWER = Object.freeze({
   /** The most pieces alive at once, and below `narrowWidth` px. */
   cap: 160, narrowCap: 90, narrowWidth: 560,
   /** The shower is over by this, ms; the afterglow drifts until `afterglowEnd`. */
-  showerEnd: 4200, afterglowEnd: 8000,
+  showerEnd: 4200, afterglowEnd: 7500,
   /** One burst every this many ms in each wave. */
   step: 120,
   paleLime: toHex(tint(GREEN_RGB, 0.6)).toUpperCase(),
@@ -200,8 +201,22 @@ export const showerCap = (width) => (width < SHOWER.narrowWidth ? SHOWER.narrowC
 /** The shower's colours: the confetti palette (never red) plus a pale lime and a warm pale yellow. @param {{ success?: string, action?: string, primary?: string }} tokens */
 export const showerPalette = (tokens) => [...new Set([...buildPalette(tokens), SHOWER.paleLime, SHOWER.paleYellow])];
 
-/** How many pieces of `plan` are alive at `now` ms. @param {Burst[]} plan @param {number} now */
-export const showerAlive = (plan, now) => plan.reduce((sum, burst) => sum + (now >= burst.at && now < burst.at + (burst.ticks * 1000) / 60 ? burst.count : 0), 0);
+/**
+ * The gate that keeps the cap: asked, as each burst is about to be fired, with the overlay's frame count, it lets the burst in only if the pieces
+ * still alive (each lives its burst's `ticks` frames) and these fit under `cap`, and then counts them. A tab that is hidden draws no frames, so
+ * nothing more is let in until it shows again.
+ * @param {number} cap @returns {(burst: Burst, frame: number) => boolean}
+ */
+export function showerGate(cap) {
+  /** @type {[number, number][]} the frame each burst's pieces end, and how many */
+  let alive = [];
+  return (burst, frame) => {
+    alive = alive.filter(([end]) => end > frame);
+    if (alive.reduce((sum, [, count]) => sum + count, 0) + burst.count > cap) return false;
+    alive.push([frame + burst.ticks, burst.count]);
+    return true;
+  };
+}
 
 /**
  * The shower's bursts in time order, or null when there is none (any level below full, or the device's reduced motion).
@@ -211,14 +226,12 @@ export const showerAlive = (plan, now) => plan.reduce((sum, burst) => sum + (now
 export function showerPlan({ width, height, reducedMotion = false, level = 'full', random = Math.random }) {
   if (reducedMotion || level !== 'full') return null;
   const narrow = width < SHOWER.narrowWidth;
-  // A tenth held back: in a browser the timers fire a little late and a piece lives a number of frames, so the bursts overlap a little more than planned.
-  const cap = Math.floor(showerCap(width) * 0.9);
   /** [wave, from, until, pieces a second, left, right, sweeps, speed, life ms] */
   const waves = /** @type {const} */ ([
     ['curtain', 350, 1500, 100, 0, 1, true, 1.1, 2000],
     ['fall', 1200, 3600, 70, 0, 1, false, 1, 2000],
     ['centre', 2400, SHOWER.showerEnd, 50, 0.3, 0.7, false, 0.9, 1900],
-    ['afterglow', SHOWER.showerEnd, SHOWER.afterglowEnd, 6, 0, 1, false, 0.55, 2300],
+    ['afterglow', SHOWER.showerEnd, SHOWER.afterglowEnd, 6, 0, 1, false, 0.55, 2000],
   ]);
   /** @type {Drop[]} */
   const plan = [];
@@ -227,10 +240,7 @@ export function showerPlan({ width, height, reducedMotion = false, level = 'full
     for (let at = from; at < until; at += SHOWER.step) {
       owed += ((wave === 'afterglow' || !narrow ? rate : rate * 0.6) * SHOWER.step) / 1000;
       const ticks = Math.round(((life + (random() - 0.5) * 400) * 60) / 1000);
-      // The most alive while these would be: at their start, and at the start of each burst already planned within their life.
-      const end = at + (ticks * 1000) / 60;
-      const peak = Math.max(showerAlive(plan, at), ...plan.filter((burst) => burst.at > at && burst.at < end).map((burst) => showerAlive(plan, burst.at)));
-      const count = Math.min(Math.floor(owed), cap - peak);
+      const count = Math.min(Math.floor(owed), 12);
       if (count < 1) continue;
       owed -= count;
       const across = sweeps ? left + (right - left) * ((at - from) / (until - from)) + (random() - 0.5) * 0.2 : left + random() * (right - left);
