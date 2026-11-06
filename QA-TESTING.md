@@ -139,16 +139,16 @@ per cue and per confetti size (they play whatever the header switch says).
       on. Confirm that is acceptable and that it resumes when the switch goes off.
 - [ ] **Each cue, by ear.** Listen to all eight: Sound on (two-note chime), Option picked (soft tick), Correct first
       try (bright rising two notes), Correct after a retry (one gentler note), Incorrect (soft, low, falling),
-      Answer revealed (one neutral note), Activity complete (rising three notes), Finale (major-chord fanfare).
+      Answer revealed (one neutral note), Activity complete (rising three notes), Finale (a rising swell, a chord and a rain of bells, Prompt 36).
       Are they pleasant, never harsh, never startling? Are they about equally loud? Can you tell a first-try win
       from a retry win, and a wrong answer from a reveal, without looking?
 - [ ] **The tick** follows the tap with no noticeable delay and does not machine-gun when you tap options quickly.
 - [ ] **Next, Back and Home are silent.**
 - [ ] **A real flow.** Answer a graded activity wrong, retry, right; then a first-try right; then a double wrong
       (reveal). Each gives exactly one sound, and confetti only on the first-try right. Finish the activity (rising
-      three notes and a medium burst), then the last activity (fanfare and the big finale).
-- [ ] **Confetti.** Small is near the green "Correct" pill, medium comes from both lower corners, large fills the
-      screen over about 2.5 seconds. It is smooth on the oldest iPad in use, never blocks a tap (tap Next while it
+      three notes and a medium burst), then the last activity (the grand finale: see Prompt 36 below).
+- [ ] **Confetti.** Small is near the green "Correct" pill, medium comes from both lower corners, and the finale's
+      petals fall from above over about four seconds. It is smooth on the oldest iPad in use, never blocks a tap (tap Next while it
       is falling), leaves nothing behind, and never makes the page scroll sideways. It is not red on any client.
 - [ ] **Reduce Motion** (Settings, Accessibility, Motion): no confetti anywhere, but with sound on the cues still play.
 - [ ] **Interruptions.** With sound on, take a call or ask Siri, lock and unlock the iPad, switch to another app
@@ -1896,3 +1896,19 @@ On the real SharePoint site, on an iPad held sideways and upright and on a phone
 375. **A colour-blind colleague.** *(Still to see.)* Ask one to tell Low from High across the grid. **Expect** them to do it by the shape and the letter.
 376. **The network panel.** *(Still to see.)* Open the page on a slow connection with the network panel open and rate every box. **Expect** the one page file and no new request for the ratings, the card, the mosaic or the sounds; compare the load time with Prompt 34's.
 377. **The other questions.** *(Still to see.)* Run an activity with single-choice, ranking and open text questions. **Expect** them exactly as before.
+
+### Prompt 36: the grand finale
+
+On the real SharePoint site, on an iPad held sideways and upright and on a phone. Finish the last activity each time (or use `?debug=1` and Start over).
+
+378. **Sound on and off.** *(Still to see.)* Finish with Sound off, then on. **Expect** the same finale both times; with Sound on, a soft swell, a chord as the medal lands and a rain of bells that thins out, nothing after about four and a half seconds, and not louder than is comfortable in a meeting room.
+379. **The silent switch.** *(Still to see.)* With Sound on, set the iPad's silent switch. **Expect** what the other cues do on this site (the playback session keeps them), and the finale looks the same.
+380. **Reduce Motion.** *(Still to see.)* Turn on the iPad's Reduce Motion. **Expect** no petals and nothing moving: the medal, the name and the cards shown at once, and the cue if Sound is on.
+381. **A button during the shower.** *(Still to see.)* Press Home while the petals fall. **Expect** Home to work at once, and the petals gone on the next screen.
+382. **Leave and come back.** *(Still to see.)* Switch to another app during the shower and back. **Expect** no burst of piled-up petals and no error; the page at rest or finishing.
+383. **The oldest iPad.** *(Still to see.)* Run it on the oldest iPad in use. **Expect** it smooth; note any stutter, and whether the petals stop early (the governor stepping down).
+384. **Each client's colours.** *(Still to see.)* Finish for each client. **Expect** petals in that client's tints with nothing red, and the white cards readable.
+385. **Celebrate again.** *(Still to see.)* Press it after the afterglow. **Expect** the whole finale again, the button still where it was.
+386. **Load time.** *(Still to see.)* Compare how long the thank-you page takes to show with `pms-35`. **Expect** no difference you can feel (no new request).
+387. **Three guests.** *(Still to see.)* Ask three guests for one word for how it felt, and note them.
+388. **The thinner shower.** *(Still to see.)* To fit the page's budget the petals are drawn by the confetti library and the name rises as one line. **Expect** it still to feel like an occasion; if it feels thin, say so (a bigger budget would bring back the hand-drawn petals and letter by letter).

@@ -323,13 +323,13 @@ in `migration/src/`, not by editing them, so that what the tests measure stays w
   - **Confetti** is one fixed, full-viewport canvas with `pointer-events: none` and `aria-hidden`, removed when
     the burst ends, drawn by canvas-confetti (ISC, no Web Worker) loaded by a dynamic `import()`. Small
     (first-try correct only) is about 40 pieces, medium (activity complete) about 120 from both lower corners,
-    large (finale) about 250 in three bursts; all scale by 0.6 below 500 px wide. The palette is Deloitte green,
+    and the finale's petal shower (Prompt 36, below); the bursts scale by 0.6 below 500 px wide. The palette is Deloitte green,
     white, `--success` and light tints of `--action` and the client primary, and never red. Under
     `prefers-reduced-motion` there is no overlay at all (the cue still plays). No confetti on a wrong answer, a
     right answer after a Retry, or a reveal.
   - **Changing a cue.** Edit its notes in `sound-cues.js`, then run `npm run test:effects` and read the table it
-    prints: peak must stay at or below -5 dBFS (the brief asks -6; the finale sits near -7), duration within the
-    brief, and A-weighted level within 2 dB of the other cues. Adjust that cue's `gain` from the report. The
+    prints: peak must stay at or below -5 dBFS (the brief asks -6; the finale sits near -6.5), duration within the
+    brief, and A-weighted level within 2 dB of the other cues (the finale, the visit's peak, may sit up to 3 dB above them, never under the quietest). Adjust that cue's `gain` from the report. The
     tests measure level, length, pitch order, clicks and brightness; they cannot say whether it sounds good, so
     listen to the WAVs and then on a real iPad (`QA-TESTING.md`, "Sound and confetti on a real iPad").
   - **Auditioning.** `#/styleguide` (dev server only) has a "Sound and confetti" section with a button per cue and
@@ -1875,6 +1875,41 @@ against them at 1366 by 650, 1920 by 950 and 683 by 700, and `admin-explains.spe
   `lib/participant/aop-glance.svelte.ts` holds this visit's, in memory): nothing new is stored or sent and no one else sees them.
 - **The admin page does not carry the rating grid**: `migration/vite.admin.config.ts` puts `MatrixRating.admin.svelte` in its place (Brand Studio's
   sample has no such question). The participant page may grow by 12,288 B gzip for this prompt (`PHASE_35`).
+
+## Rules from Prompt 36 (the grand finale; keep them holding)
+
+- **One finale, in five acts, over by 4.2 s.** When the thank-you page has checked that every activity is done, `finale()` (`lib/effects/effects.ts`)
+  plays the `finale` cue and, at the full motion level only, the petal shower; the page plays its acts through `playFinale` (`lib/motion/motion.ts`)
+  from `lib/motion/finale-motion-plan.js`: the hush (a 35 percent veil behind the content, in by 0.35 s, lifted from 3.6 s), the medal (lands at
+  1.1 s with a spring, its rays turn once, three rings spread, the check draws itself), the name (rises in from 1.9 s, in by 3 s) and the cards
+  (one after another from 2.3 s, each counting up from 0 over 800 ms, final by 3.6 s), the sheen at 3 s, and **Celebrate again** in the afterglow
+  from 3.6 s, which replays all of it (sound included) and keeps its place and its focus. Every length is a `TOKENS.finale` token
+  (`--motion-finale-*`); every part moves transform and opacity only (the check its stroke); no more than `MAX_CONCURRENT` move at once
+  (`scripts/test-finale-motion.js`). Nothing else changed: the per-question, per-activity and hub celebrations are as they were.
+- **Replace, not stack.** `EFFECTS.finale` is `{ cue: 'finale', confetti: 'shower' }`; the old `large` bottom bursts and their tests are gone,
+  and `CONFETTI_SIZES` is small and medium. The shower is `showerPlan` (`lib/effects/confetti-plan.js`): small bursts from just above the top
+  edge, aimed down, in three waves (a curtain sweeping left to right from 0.35 to 1.5 s, a full-width fall from 1.2 to 3.6 s, a fall over the
+  middle from 2.4 to 4.2 s) and an afterglow of about six slow petals a second until 8 s; everything is gone by 11 s. It is fired on the one
+  overlay through canvas-confetti, which the page already carries (no new library), in petal and ribbon paths (each with its own matrix, so
+  nothing is measured at run time) and discs, in `showerPalette` (the confetti palette, a pale lime and a warm pale yellow; never red).
+- **The caps.** The plan never has more than 160 pieces alive (90 below 560 px), less a tenth held back for the browser's own timing; a piece
+  crosses the screen in about its life, so what the cap counts is on the screen. A burst is fired only while the tab is shown and the motion level
+  is still full, so the governor stepping down mid-way stops the shower; the overlay goes when its last piece has fallen.
+- **Each motion level.** Full: all of the above. Reduced (the governor has stepped down): no shower, veil, rings, turning rays, rise or count-up;
+  the medal (its check drawn), the name and the cards fade in together in 200 ms, **Celebrate again** shows at once, and a still garland of petals
+  (one CSS element along the top of the card) shows at once and is gone after 6 s. None (the device's reduced motion, the client's switch,
+  `?motion=off`): the final state at once, no garland. Sound, if the guest turned it on, is the same at every level. Brand Studio's preview shows
+  the final state with the garland held still, no motion and no sound.
+- **Never in the way.** The overlay is `pointer-events: none` and `aria-hidden`; the veil is behind the content, never over a button; nothing
+  moves the layout (layout shift 0) and no long task starts it. The page says once, in a status line, "All activities done. Thank you, <name>!";
+  the heading keeps its name and focus (`focusHeading`), and each card's sentence is one line of real text ("5 of 5 right on the first try").
+- **No flashing** (WCAG 2.3.1): the page's average luminance, sampled about every 100 ms, changes by 0.1 or more at most twice in any second
+  (`scripts/migration-tests/finale-perf.spec.ts`, which also writes the frame strip and the frame rate at 4x slowdown to `test-results/finale/`).
+- **The cue.** `finale` (`sound-cues.js`, `max: 4.6`): a swell of noise whose band rises from 500 to 3,600 Hz (a noise note may have a `filter.to`),
+  a C5 E5 G5 C6 bloom 60 ms apart at 1 s, then 14 bells from C major pentatonic about every 200 ms from 1.4 s, fading by 10 dB from -14 dBFS
+  (the brief's -24 left the cue 10 dB under every other), each 0.55 s long; nothing in the afterglow.
+- **The budget.** The participant page may grow by 4,096 B gzip for this prompt (`PHASE_36`); it ended 50 B under it, so the next change to that
+  page will need room found first. The medal's ink on its lime and the cards' words on white are held to 4.5:1 (`scripts/test-participant-contrast.js`).
 
 ## Before finishing a change
 

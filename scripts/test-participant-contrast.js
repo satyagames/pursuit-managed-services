@@ -95,3 +95,24 @@ describe('the three rating colours (Prompt 35)', () => {
     }
   });
 });
+
+// Prompt 36: the finale's fixed colours, read from routes/ThankYou.svelte's own styles: the medal's ink on its lime, and the cards' figures and words
+// on their white (the figures are large; the words are body text, held to 4.5:1).
+describe('the finale\'s medal and cards (Prompt 36)', () => {
+  it('the medal\'s ink on the lime and the cards\' text on white are readable', async () => {
+    const svelte = await readFile(path.join(ROOT, 'migration', 'src', 'routes', 'ThankYou.svelte'), 'utf8');
+    const rule = (selector) => {
+      const body = svelte.split(`\n  ${selector} {`)[1]?.split('}')[0] ?? '';
+      const colour = (property) => new RegExp(`\\n\\s*${property}:\\s*(#[0-9a-f]{6})`, 'i').exec(body)?.[1];
+      return { color: colour('color'), background: colour('background') };
+    };
+    const medal = rule('.pms-medal');
+    const card = rule('.pms-card');
+    assert.ok(medal.color && medal.background && card.color && card.background, 'the colours are found');
+    const medalRatio = contrastRatio(medal.color, medal.background);
+    const cardRatio = contrastRatio(card.color, card.background);
+    console.log(`  medal ink ${medal.color} on ${medal.background}: ${medalRatio.toFixed(2)}:1; card text ${card.color} on ${card.background}: ${cardRatio.toFixed(2)}:1`);
+    assert.ok(medalRatio >= 4.5, `the medal's check ${medalRatio.toFixed(2)}:1`);
+    assert.ok(cardRatio >= 4.5, `the cards' words ${cardRatio.toFixed(2)}:1`);
+  });
+});

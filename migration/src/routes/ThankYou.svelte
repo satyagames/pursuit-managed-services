@@ -312,7 +312,7 @@
     justify-content: center;
     width: 100%;
     height: 100%;
-    color: #0b1d00; /* the medal's ink on the lime: 11.5:1 (scripts/test-participant-contrast.js) */
+    color: #0b1d00; /* the medal's ink on the lime: 7.8:1 (scripts/test-participant-contrast.js) */
     background: #86bc25;
     border-radius: 50%;
     box-shadow: 0 0 0 0.6rem rgb(134 188 37 / 0.25), 0 0.5rem 2rem rgb(0 1 2 / 0.35);
