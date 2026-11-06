@@ -53,59 +53,28 @@ export function letterGap(count) {
 export function finaleParts(level, { letters, cards, width }) {
   /** @type {Part[]} */
   const parts = [];
-  if (level === 'none') return parts;
+  const add = (/** @type {PartName} */ part, /** @type {number} */ delay, /** @type {number} */ duration, /** @type {keyof typeof TOKENS.ease} */ ease,
+    /** @type {Part['keyframes']} */ keyframes, index = 0) => parts.push({ part, index, keyframes, duration, delay, easing: curve(ease) });
+  const rise = (/** @type {string} */ from) => [{ transform: `translateY(${from})`, opacity: 0 }, { transform: 'none', opacity: 1 }];
   if (level === 'reduced') {
-    const fade = (/** @type {PartName} */ part, index = 0) => parts.push({ part, index, keyframes: [{ opacity: 0 }, { opacity: 1 }], duration: T.fade, delay: 0, easing: curve('standard') });
-    fade('medal');
-    fade('name');
-    for (let index = 0; index < cards; index += 1) fade('card', index);
-    return parts;
+    for (const part of /** @type {PartName[]} */ (['medal', 'name'])) add(part, 0, T.fade, 'standard', [{ opacity: 0 }, { opacity: 1 }]);
+    for (let index = 0; index < cards; index += 1) add('card', 0, T.fade, 'standard', [{ opacity: 0 }, { opacity: 1 }], index);
   }
-  const at = (/** @type {number} */ ms) => ms / T.hush;
-  parts.push({
-    part: 'veil', index: 0, duration: T.hush, delay: 0, easing: curve('standard'),
-    keyframes: [{ opacity: 0, easing: 'linear' }, { opacity: FINALE.veil, offset: at(FINALE.veilIn) }, { opacity: FINALE.veil, offset: at(FINALE.veilLift) }, { opacity: 0 }],
-  });
-  parts.push({
-    part: 'medal', index: 0, duration: T.medal, delay: FINALE.medal, easing: curve('standard'),
-    keyframes: [
-      { transform: 'scale(0) rotate(-14deg)', opacity: 0 },
-      { transform: 'scale(1.12) rotate(4deg)', opacity: 1, offset: 0.6 },
-      { transform: 'scale(1) rotate(0deg)', opacity: 1 },
-    ],
-  });
-  parts.push({
-    part: 'ray', index: 0, duration: T.rays, delay: FINALE.rays, easing: curve('enter'),
-    keyframes: [{ transform: 'scale(0.4) rotate(0deg)', opacity: 0 }, { opacity: 1, offset: 0.25 }, { transform: 'scale(1) rotate(360deg)', opacity: 1 }],
-  });
+  if (level !== 'full') return parts;
+  add('veil', 0, T.hush, 'standard', [{ opacity: 0, easing: 'linear' }, { opacity: FINALE.veil, offset: FINALE.veilIn / T.hush }, { opacity: FINALE.veil, offset: FINALE.veilLift / T.hush }, { opacity: 0 }]);
+  add('medal', FINALE.medal, T.medal, 'standard', [
+    { transform: 'scale(0) rotate(-14deg)', opacity: 0 }, { transform: 'scale(1.12) rotate(4deg)', opacity: 1, offset: 0.6 }, { transform: 'none', opacity: 1 },
+  ]);
+  add('ray', FINALE.rays, T.rays, 'enter', [{ transform: 'scale(0.4) rotate(0deg)', opacity: 0 }, { opacity: 1, offset: 0.25 }, { transform: 'scale(1) rotate(360deg)', opacity: 1 }]);
   for (let index = 0; index < 3; index += 1) {
-    parts.push({
-      part: 'ring', index, duration: T.ring, delay: FINALE.rings + index * FINALE.ringGap, easing: curve('enter'),
-      keyframes: [{ transform: 'scale(0.6)', opacity: 0 }, { transform: 'scale(0.8)', opacity: 0.55, offset: 0.1 }, { transform: 'scale(2.4)', opacity: 0 }],
-    });
+    add('ring', FINALE.rings + index * FINALE.ringGap, T.ring, 'enter', [{ transform: 'scale(0.6)', opacity: 0 }, { transform: 'scale(0.8)', opacity: 0.55, offset: 0.1 }, { transform: 'scale(2.4)', opacity: 0 }], index);
   }
-  parts.push({ part: 'check', index: 0, duration: T.check, delay: FINALE.check, easing: curve('enter'), keyframes: [{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }] });
+  add('check', FINALE.check, T.check, 'enter', [{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }]);
   const gap = letterGap(letters);
-  for (let index = 0; index < Math.min(letters, FINALE.lettersMax); index += 1) {
-    parts.push({
-      part: 'letter', index, duration: T.letter, delay: FINALE.letters + index * gap, easing: curve('enter'),
-      keyframes: [{ transform: 'translateY(0.45em)', opacity: 0 }, { transform: 'translateY(0)', opacity: 1 }],
-    });
-  }
-  for (let index = 0; index < cards; index += 1) {
-    parts.push({
-      part: 'card', index, duration: T.card, delay: FINALE.cards + index * FINALE.cardGap, easing: curve('enter'),
-      keyframes: [{ transform: 'translateY(12px)', opacity: 0 }, { transform: 'translateY(0)', opacity: 1 }],
-    });
-  }
-  parts.push({
-    part: 'sheen', index: 0, duration: T.sheen, delay: FINALE.sheen, easing: curve('standard'),
-    keyframes: [{ transform: 'translateX(-120px)', opacity: 0 }, { opacity: 1, offset: 0.3 }, { transform: `translateX(${Math.round(width)}px)`, opacity: 0 }],
-  });
-  parts.push({
-    part: 'again', index: 0, duration: T.again, delay: FINALE.afterglow, easing: curve('enter'),
-    keyframes: [{ transform: 'translateY(6px)', opacity: 0 }, { transform: 'translateY(0)', opacity: 1 }],
-  });
+  for (let index = 0; index < Math.min(letters, FINALE.lettersMax); index += 1) add('letter', FINALE.letters + index * gap, T.letter, 'enter', rise('0.45em'), index);
+  for (let index = 0; index < cards; index += 1) add('card', FINALE.cards + index * FINALE.cardGap, T.card, 'enter', rise('12px'), index);
+  add('sheen', FINALE.sheen, T.sheen, 'standard', [{ transform: 'translateX(-120px)', opacity: 0 }, { opacity: 1, offset: 0.3 }, { transform: `translateX(${Math.round(width)}px)`, opacity: 0 }]);
+  add('again', FINALE.afterglow, T.again, 'enter', rise('6px'));
   return parts;
 }
 

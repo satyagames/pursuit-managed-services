@@ -9,7 +9,7 @@
   import { loadActivity, sessionCheck } from '../lib/participant/experience.svelte.js';
   import { clearTrack, participant } from '../lib/participant/session.svelte.js';
   import { APP_NAME } from '../lib/common/app-name.js';
-  import { motion, playFinale, type FinaleHandle } from '../lib/motion/motion.js';
+  import { motion, playFinale } from '../lib/motion/motion.js';
   import { FINALE } from '../lib/motion/finale-motion-plan.js';
   import { visitRatings } from '../lib/participant/aop-glance.svelte.js';
 
@@ -38,7 +38,7 @@
   let sweep = $state<HTMLElement>();
   let veil = $state<HTMLElement>();
   let medal = $state<HTMLElement>();
-  let rays = $state<SVGElement>();
+  let rays = $state<HTMLElement>();
   let check = $state<SVGPathElement>();
   let againNode = $state<HTMLElement>();
   const rings = $state<HTMLElement[]>([]);
@@ -50,7 +50,8 @@
   let againShown = $state(false);
   /** The one status line, said once when the finale starts. */
   let announced = $state('');
-  let handle: FinaleHandle | null = null;
+  /** Lets go of the finale's animations, count-ups and timer. */
+  let stop: (() => void) | null = null;
   /** (Prompt 35) The Art of Possibility boxes this guest rated during this visit (lib/participant/aop-glance.svelte.ts). */
   const ratings = $derived(preview ? 0 : Object.values(visitRatings).reduce((sum, each) => sum + each.total, 0));
   let active = false;
@@ -73,8 +74,7 @@
     void verifyCompletion();
     return () => {
       active = false;
-      handle?.cancel();
-      handle = null;
+      stop?.();
       clearEffects(); // the shower does not follow the guest to the next screen
     };
   });
@@ -154,10 +154,10 @@
 
   /** The finale's sound, shower and acts, from the top. Pressing "Celebrate again" keeps the button where it is (and focused). */
   function celebrate(again: boolean) {
-    handle?.cancel();
+    stop?.();
     finale();
-    handle = playFinale(
-      { veil, medal, ray: rays, check, rings, letters: letterNodes, cards: cardNodes, sheen: sweep, again: again ? null : againNode },
+    stop = playFinale(
+      { veil, medal, ray: rays, check, ring: rings, letter: letterNodes, card: cardNodes, sheen: sweep, again: again ? null : againNode },
       {
         counts: cards.map((each) => each.value),
         width: (card?.getBoundingClientRect().width ?? 0) + 120,
@@ -207,7 +207,6 @@
     ...(score ? [{ key: 'score', value: score.right, label: `of ${score.total} right on the first try` }] : []),
   ]);
 
-  const RAYS = Array.from({ length: 16 }, (_, index) => (index * 360) / 16);
 </script>
 
 <svelte:head>{#if !preview}<title>Thank you | {APP_NAME}</title>{/if}</svelte:head>
@@ -230,9 +229,7 @@
     {#if !preview}<p class="sr-only" role="status">{announced}</p>{/if}
     <span class="pms-medal-wrap" aria-hidden="true">
       {#each [0, 1, 2] as ring (ring)}<span class="pms-ring" bind:this={rings[ring]}></span>{/each}
-      <svg class="pms-rays" bind:this={rays} viewBox="-100 -100 200 200" focusable="false">
-        {#each RAYS as angle (angle)}<line x1="0" y1="-66" x2="0" y2="-90" transform="rotate({angle})" />{/each}
-      </svg>
+      <span class="pms-rays" bind:this={rays}></span>
       <span class="pms-medal" bind:this={medal}>
         <svg viewBox="0 0 24 24" width="55%" height="55%" focusable="false">
           <path bind:this={check} pathLength="1" d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
@@ -328,16 +325,13 @@
     stroke-dashoffset: 0;
   }
 
+  /* The sixteen rays: thin wedges of one conic gradient, cut to a band round the medal. */
   .pms-rays {
     position: absolute;
     inset: -40%;
-    width: 180%;
-    height: 180%;
-    stroke: #c9e39b;
-    stroke-width: 5;
-    stroke-linecap: round;
+    background: repeating-conic-gradient(#c9e39b 0 3deg, transparent 0 22.5deg);
+    mask: radial-gradient(closest-side, transparent 66%, #000 0 90%, transparent 0);
     opacity: 0.55;
-    pointer-events: none;
   }
 
   .pms-ring {
@@ -346,7 +340,6 @@
     border: 3px solid #c9e39b;
     border-radius: 50%;
     opacity: 0;
-    pointer-events: none;
   }
 
   h1 {

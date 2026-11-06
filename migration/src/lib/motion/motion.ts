@@ -25,7 +25,7 @@ import {
   resolveLevel, type Direction, type Governor, type Level, type Recipe, type Role, type Verdict,
 } from './motion-plan.js';
 import { aopEffect, flyCount, waveDelay, type Effect as AopEffect, type Where } from './aop-motion-plan.js';
-import { FINALE, countValue, finaleCount, finaleParts, type Part, type PartName } from './finale-motion-plan.js';
+import { FINALE, countValue, finaleCount, finaleParts, type PartName } from './finale-motion-plan.js';
 
 export type { Direction, Level };
 
@@ -276,65 +276,43 @@ export function playWave(cells: { node: Element; r: number; c: number }[], rows:
 // wave's does), so every part of it is played. The cards' numbers count up through `onCount` (the page owns the text), and `onAfterglow` says when
 // "Celebrate again" may show: at once below the full level. Every animation, frame and timer is let go by `cancel`, and by the end of the counts.
 
-export type FinaleNodes = Partial<Record<Exclude<PartName, 'ring' | 'letter' | 'card'>, Element | null | undefined>> & {
-  rings?: (Element | null | undefined)[];
-  letters?: (Element | null | undefined)[];
-  cards?: (Element | null | undefined)[];
-};
+type Node = Element | null | undefined;
+/** Each part's element, by the plan's part name; the ring, letter and card parts are lists, by index. */
+export type FinaleNodes = Partial<Record<PartName, Node | Node[]>>;
 
-export interface FinaleHandle { level: Level; cancel(): void }
-
+/**
+ * Plays the finale's acts; `onCount` gets each card's number as it counts up, `onAfterglow` says "Celebrate again" may show. Returns the cancel
+ * that lets go of every animation, frame and timer.
+ */
 export function playFinale(
   nodes: FinaleNodes,
   { counts = [], width = 0, onCount, onAfterglow }: { counts?: number[]; width?: number; onCount?: (index: number, value: number) => void; onAfterglow?: () => void } = {},
-): FinaleHandle {
-  const level = typeof document === 'undefined' || document.hidden ? 'none' : motionLevel();
-  const animations: Animation[] = [];
-  let frame: number | null = null;
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const node = (part: Part): Element | null | undefined => {
-    if (part.part === 'ring') return nodes.rings?.[part.index];
-    if (part.part === 'letter') return nodes.letters?.[part.index];
-    if (part.part === 'card') return nodes.cards?.[part.index];
-    return nodes[part.part];
+): () => void {
+  const level = document.hidden ? 'none' : motionLevel();
+  const many = (name: PartName) => (nodes[name] as Node[] | undefined)?.length ?? 0;
+  const animations = finaleParts(level, { letters: many('letter'), cards: many('card'), width }).flatMap((part) => {
+    const at = nodes[part.part];
+    const target = Array.isArray(at) ? at[part.index] : at;
+    return target ? [play(target, part)] : [];
+  });
+  const start = performance.now();
+  let frame = 0;
+  const tick = (now: number) => {
+    let running = false;
+    counts.forEach((value, index) => {
+      const plan = finaleCount(level, index);
+      const progress = plan ? (now - start - plan.delay) / plan.duration : 1;
+      if (progress < 1) running = true;
+      onCount?.(index, countValue(value, progress));
+    });
+    if (running) frame = requestAnimationFrame(tick);
   };
-  const parts = finaleParts(level, { letters: nodes.letters?.length ?? 0, cards: nodes.cards?.length ?? 0, width });
-  for (const part of parts) {
-    const target = node(part);
-    if (!target || typeof (target as HTMLElement).animate !== 'function') continue;
-    animations.push(play(target, { keyframes: part.keyframes, duration: part.duration, easing: part.easing, delay: part.delay }));
-  }
-
-  const plans = counts.map((_, index) => finaleCount(level, index));
-  counts.forEach((value, index) => onCount?.(index, plans[index] ? 0 : value));
-  if (plans.some(Boolean) && typeof requestAnimationFrame === 'function') {
-    const start = performance.now();
-    const tick = (now: number) => {
-      frame = null;
-      let running = false;
-      counts.forEach((value, index) => {
-        const plan = plans[index];
-        if (!plan) return;
-        const progress = (now - start - plan.delay) / plan.duration;
-        if (progress < 1) running = true;
-        onCount?.(index, countValue(value, progress));
-      });
-      if (running) frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
-  }
-  if (level === 'full') timer = setTimeout(() => { timer = undefined; onAfterglow?.(); }, FINALE.afterglow);
-  else onAfterglow?.();
-
-  return {
-    level,
-    cancel() {
-      for (const animation of animations) animation.cancel();
-      if (frame !== null) cancelAnimationFrame(frame);
-      frame = null;
-      if (timer !== undefined) clearTimeout(timer);
-      timer = undefined;
-    },
+  tick(start);
+  const timer = setTimeout(() => onAfterglow?.(), level === 'full' ? FINALE.afterglow : 0);
+  return () => {
+    for (const animation of animations) animation.cancel();
+    cancelAnimationFrame(frame);
+    clearTimeout(timer);
   };
 }
 
