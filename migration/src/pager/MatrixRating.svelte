@@ -11,14 +11,15 @@
   import { onMount, tick } from 'svelte';
   import { cellsLeft, cycle, decodeAnswer, encodeAnswer, nextEmpty, type Grid } from '../lib/participant/aop-answer.js';
   import { LEVEL_LOOK } from '../lib/participant/aop-levels.js';
-  import { ADVANCE_MS, HOLD_MS, UNDO_MS, advancesAfter, clearedOf, defaultView, gridWidthFor, levelCounts, restoreInto, rowIsDone, setCell, type Cleared } from '../lib/participant/aop-view.js';
+  import { ADVANCE_MS, HOLD_MS, UNDO_MS, advancesAfter, clearedOf, glanceOf, highestRated, highestSentence, defaultView, gridWidthFor, levelCounts, restoreInto, rowIsDone, setCell, type Cleared } from '../lib/participant/aop-view.js';
   import { flyOff, motion, motionLevel, playEffect, playWave } from '../lib/motion/motion.js';
-  import { milestonesCrossed } from '../lib/motion/aop-motion-plan.js';
+  import { milestonesCrossed, waveLength } from '../lib/motion/aop-motion-plan.js';
   import { aopAllRated, aopClearAll, aopHoldOpen, aopMilestone, aopRate, aopRowDone } from '../lib/effects/effects.js';
   import { ENTRANCE_BUDGET, TOKENS } from '../lib/motion/motion-plan.js';
   import { focusHeading } from '../lib/common/focus.js';
   import type { Question } from '../lib/participant/pager-logic.js';
   import '../styles/aop-level-tokens.css';
+  import RatingMosaic from '../components/RatingMosaic.svelte';
 
   // An Art of Possibility question (Prompt 23, rebuilt in Prompt 35): a guest rates every sub-process against every criterion. Two views of one answer, All at once
   // and One at a time; the ratings are the pager's draft, as the stored answer's list of strings (lib/participant/aop-answer.js), so a reload, Send and Preview all
@@ -99,6 +100,10 @@
   let barCheck = $state<Element>();
   let milestoneLabel = $state<HTMLElement>();
   let milestone = $state<string | null>(null);
+  let glance = $state<HTMLElement>();
+  /** The card shows once the wave has run (at once when the page opens complete, or with motion off), so the two never move together. */
+  let glanceReady = $state(true);
+  let glanceTimer: ReturnType<typeof setTimeout> | undefined;
   let milestoneTimer: ReturnType<typeof setTimeout> | undefined;
   /** The first empty box's one swell after the screen comes in: it stops when the bubble goes. */
   let firstPulse: Animation | null = null;
@@ -119,7 +124,7 @@
       milestonesShown.set(question.id, shown);
     }
     void tick().then(() => { if (teach) firstPulse = playEffect(host?.querySelector(`[aria-describedby="${uid}-teach"]`), 'pulse', { delay: ENTRANCE_BUDGET }); });
-    return () => { clearTimeout(timer); clearTimeout(holdTimer); clearTimeout(undoTimer); clearTimeout(advanceTimer); clearTimeout(milestoneTimer); window.removeEventListener('resize', fit); };
+    return () => { clearTimeout(timer); clearTimeout(holdTimer); clearTimeout(undoTimer); clearTimeout(advanceTimer); clearTimeout(milestoneTimer); clearTimeout(glanceTimer); window.removeEventListener('resize', fit); };
   });
 
   function choose(next: 'grid' | 'single') {
@@ -324,6 +329,10 @@
   function allRated() {
     aopAllRated(host?.querySelector('.matrix-bar'));
     playEffect(barCheck, 'check');
+    const wait = motionLevel() === 'none' ? 0 : waveLength(rows.length, criteria.length);
+    glanceReady = wait === 0;
+    clearTimeout(glanceTimer);
+    glanceTimer = setTimeout(() => { glanceReady = true; void tick().then(() => playEffect(glance, 'rise')); }, wait);
     if (view !== 'grid' || !host) return;
     const boxes = [...host.querySelectorAll<HTMLElement>('[data-cell]')].map((node) => {
       const [r, c] = (node.dataset.cell ?? '0-0').split('-').map(Number);
@@ -414,6 +423,8 @@
   }
 
   const single = $derived(rows[Math.min(rowAt, rows.length - 1)]);
+  /** "Your ratings at a glance": the sentence, from the guest's own ratings on this device. */
+  const best = $derived(left === 0 && total > 0 ? highestSentence(highestRated(cells, shape)) : '');
 
   // ---- One at a time: a card per sub-process; after its last box it shows a check and moves on (ADVANCE_MS), unless motion is off. ----
   function rateSingle(rowId: string, criterionId: string, level: number | undefined) {
@@ -624,6 +635,22 @@
         <!-- (The page's pill buttons are drawn for the client's colour; on the white well the card's own two are in the well's ink.) -->
         <button type="button" class="matrix-tool matrix-step" disabled={rowAt === 0 && !advancing} onclick={previous}>Previous</button>
         {#if rowAt < rows.length - 1}<button type="button" class="matrix-tool matrix-step matrix-step--next" onclick={() => void showCard(rowAt + 1)}>Next sub-process</button>{/if}
+      </div>
+    </section>
+  {/if}
+
+  {#if left === 0 && total > 0 && glanceReady}
+    <!-- (Prompt 35) Made on the device from the draft: stored nowhere, sent nowhere, shown to no one else. -->
+    <section class="matrix-glance" data-testid="matrix-glance" bind:this={glance} aria-labelledby="{uid}-glance">
+      <h3 class="matrix-glance-title" id="{uid}-glance">You rated all {total} boxes</h3>
+      <RatingMosaic levels={glanceOf(cells, shape).levels} label="Your {total} ratings: {counts[1]} Low, {counts[2]} Medium, {counts[3]} High" />
+      <div class="matrix-glance-words">
+      <ul class="matrix-tallies">
+        {#each [1, 2, 3] as level (level)}
+          <li data-testid="matrix-tally"><span class="matrix-chip" data-level={level}>{@render mark(level, 12)}</span> {look(level).name} <b class="matrix-tally" style:--to={counts[level]}><span class="sr-only">{counts[level]}</span></b></li>
+        {/each}
+      </ul>
+      {#if best}<p class="matrix-best">{best}</p>{/if}
       </div>
     </section>
   {/if}
@@ -1229,6 +1256,61 @@
 
   .matrix-chip--clear {
     border: 1.5px dashed var(--aop-empty-edge);
+  }
+
+  /* "Your ratings at a glance": the 65 ratings as a small mosaic, the three figures counting up, and one sentence. */
+  .matrix-glance {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px 21px;
+    align-items: center;
+    padding: 13px;
+    border: 1px solid var(--matrix-rule);
+    border-radius: 13px;
+  }
+
+  .matrix-glance-title {
+    grid-column: 1 / -1;
+    margin: 0;
+    font: var(--fw-bold) var(--fs-body) / 1.3 var(--font-sans);
+  }
+
+  .matrix-glance-words {
+    display: grid;
+    gap: 13px;
+  }
+
+  .matrix-tallies {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 21px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .matrix-tallies li {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    font-weight: var(--fw-semibold);
+  }
+
+  /* Each figure counts up from 0 to --to (the browser animates the whole number; with motion off it is simply there). */
+  .matrix-tally {
+    --aop-count: var(--to);
+    font-size: var(--fs-question);
+    font-variant-numeric: tabular-nums;
+    counter-reset: tally var(--aop-count);
+    animation: matrix-count var(--motion-aop-count) var(--motion-ease-enter) backwards;
+  }
+
+  .matrix-tally::after {
+    content: counter(tally);
+  }
+
+  @keyframes matrix-count {
+    from { --aop-count: 0; }
   }
 
   .matrix-teach {

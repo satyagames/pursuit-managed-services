@@ -461,14 +461,14 @@ test.describe('the Art of Possibility, one calm screen (Prompt 35)', () => {
 
     // A finished row: two notes up, E5 then G5 (no A5: that is the hold's).
     await gl.focus();
-    for (const key of ['ArrowRight', 'm', 'ArrowRight', 'm', 'ArrowRight', 'm']) { await page.keyboard.press(key); await page.waitForTimeout(70); }
+    for (const key of ['ArrowRight', 'm', 'ArrowRight', 'm', 'ArrowRight', 'm']) { await page.keyboard.press(key); await page.waitForTimeout(100); }
     await page.keyboard.press('ArrowRight');
     mark = (await heard()).length;
     await page.keyboard.press('m');
     await expect.poll(async () => await since(mark)).toEqual([...toneSignature(CUES.rateMedium), ...toneSignature(CUES.rowDone)]);
 
     // The quarter milestone (17 of 65, not a row's end): C5 alone after the Medium's E4.
-    for (let at = 0; at < 11; at += 1) { await page.getByRole('button', { name: /Next empty box/ }).click(); await page.keyboard.press('m'); await page.waitForTimeout(70); }
+    for (let at = 0; at < 11; at += 1) { await page.getByRole('button', { name: /Next empty box/ }).click(); await page.keyboard.press('m'); await page.waitForTimeout(100); }
     await page.getByRole('button', { name: /Next empty box/ }).click();
     mark = (await heard()).length;
     await page.keyboard.press('m');
@@ -614,6 +614,7 @@ test.describe('the Art of Possibility, one calm screen (Prompt 35)', () => {
     await page.getByRole('button', { name: 'Clear all' }).click();
     await page.getByRole('button', { name: 'Yes, clear all' }).click();
     await expect(page.getByTestId('matrix-count')).toHaveText('0 of 65 rated');
+    await expect(page.getByTestId('matrix-glance')).toHaveCount(0);
 
     // Every box High through Next empty box, then Send: the answer Prompt 34 stored for the same ratings.
     for (let at = 0; at < 65; at += 1) {
@@ -621,11 +622,33 @@ test.describe('the Art of Possibility, one calm screen (Prompt 35)', () => {
       await page.keyboard.press('h');
     }
     await expect(page.getByRole('button', { name: 'All rated' })).toBeDisabled();
+    // (Prompt 35) Your ratings at a glance: under the grid once every box is rated; made on the device from the draft, nothing more is stored or sent.
+    const glance = page.getByTestId('matrix-glance');
+    await expect(glance.getByRole('heading', { name: 'You rated all 65 boxes' })).toBeVisible();
+    await expect(glance.getByRole('img', { name: 'Your 65 ratings: 0 Low, 0 Medium, 65 High' })).toBeVisible();
+    await expect(glance.getByTestId('matrix-tally')).toHaveText(['Low 0', 'Medium 0', 'High 65']);
+    await expect(glance).toContainText('Your highest-rated sub-process was Corp accounting – GL (5 High).');
+    await axeOn(page);
     await page.screenshot({ path: `${shots}ipad-landscape-complete.png`, fullPage: true });
     await page.getByRole('button', { name: /^Send/ }).click();
     await expect(page.getByRole('heading', { name: /Nice work/ })).toBeVisible();
     const [record] = saved(fake);
     const all = Object.fromEntries(OPTION_IDS.map((id) => [id, Object.fromEntries(CRITERIA.map((criterion) => [criterion.id, 3]))]));
     expect(record.answer).toEqual(encodeAnswer(all));
+
+    // (Prompt 35) The hub: the finished activity carries a small mosaic of this guest's ratings (this visit's, from the device; no request).
+    const requests: string[] = [];
+    page.on('request', (request) => requests.push(request.url()));
+    await page.getByRole('button', { name: 'Back to activities' }).click();
+    await expect(page.getByRole('img', { name: 'Your ratings: 0 Low, 0 Medium, 65 High' })).toBeVisible();
+    await page.waitForTimeout(2500); // (the hub's stamp moment settles)
+    await page.screenshot({ path: `${shots}hub-badge.png`, fullPage: true });
+    // The thank-you: the ratings are in, and how many.
+    await page.getByRole('button', { name: 'Finish' }).click();
+    await expect(page.getByText('Your ratings are in.')).toBeVisible();
+    await expect(page.getByText('65 ratings', { exact: true })).toBeVisible();
+    await page.waitForTimeout(3000); // (the finale's confetti settles)
+    await page.screenshot({ path: `${shots}thank-you.png`, fullPage: true });
+    expect(requests.filter((url) => /aop|glance|ratings/i.test(url))).toEqual([]);
   });
 });

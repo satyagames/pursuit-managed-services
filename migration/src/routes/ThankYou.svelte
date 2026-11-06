@@ -9,7 +9,8 @@
   import { loadActivity, sessionCheck } from '../lib/participant/experience.svelte.js';
   import { clearTrack, participant } from '../lib/participant/session.svelte.js';
   import { APP_NAME } from '../lib/common/app-name.js';
-  import { motion } from '../lib/motion/motion.js';
+  import { motion, playEffect } from '../lib/motion/motion.js';
+  import { visitRatings } from '../lib/participant/aop-glance.svelte.js';
 
   // The finale: every activity is finished. Re-checked against the server (a bookmark or a back
   // button must not show it early), unless the pager just handed over what it saved.
@@ -27,6 +28,10 @@
   /** The confidence check's two answers (Phase 20), shown only once both exist: how it moved, Before and After. */
   let moved = $state<{ direction: string; before: string; after: string } | null>(null);
   let heading = $state<HTMLElement>();
+  let card = $state<HTMLElement>();
+  let sweep = $state<HTMLElement>();
+  /** (Prompt 35) The Art of Possibility boxes this guest rated during this visit (lib/participant/aop-glance.svelte.ts). */
+  const ratings = $derived(preview ? 0 : Object.values(visitRatings).reduce((sum, each) => sum + each.total, 0));
   let active = false;
   const loading = $derived(fetching && !preview);
   const allowed = $derived(preview ? true : fetchedAllowed);
@@ -112,6 +117,7 @@
       if (!active) return;
       focusHeading(heading);
       finale();
+      if (card) playEffect(sweep, 'sheen', { width: card.getBoundingClientRect().width + 120 });
     } catch (cause) {
       if (active) error = 'Could not check your progress. Your saved answers are safe. Please try again.';
       console.error('Thank-you progress check failed', cause);
@@ -151,13 +157,16 @@
     </div>
   </section>
 {:else if allowed}
-  <section class="pms-final" use:motion={{ role: 'card' }}>
+  <section class="pms-final" bind:this={card} use:motion={{ role: 'card' }}>
+    <span class="pms-sweep" bind:this={sweep} aria-hidden="true"></span>
     <CheckBadge />
     <h1 bind:this={heading} tabindex="-1">{headline}</h1>
     <p class="pms-line">Your responses have been recorded.</p>
+    {#if ratings > 0}<p class="pms-line">Your ratings are in.</p>{/if}
     <ul class="pms-summary">
       <li>{activities === 1 ? '1 activity completed' : `${activities} activities completed`}</li>
       {#if score}<li>{score.right} of {score.total} right on the first try</li>{/if}
+      {#if ratings > 0}<li>{ratings === 1 ? '1 rating' : `${ratings} ratings`}</li>{/if}
     </ul>
     {#if moved}
       <div class="pms-moved">
@@ -174,7 +183,19 @@
 {/if}
 
 <style>
+  /* (Prompt 35) One light sweep across the card as the finale starts (motion.ts; at the full level only). */
+  .pms-sweep {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 120px;
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.12), transparent);
+    opacity: 0;
+    pointer-events: none;
+  }
+
   .pms-final {
+    position: relative;
+    overflow: hidden;
     display: flex;
     flex: 1;
     flex-direction: column;

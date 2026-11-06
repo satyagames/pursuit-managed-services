@@ -24,3 +24,10 @@
   --aop-letter-size: 19px;
   --aop-letter-weight: 700;
 }
+
+/* "Your ratings at a glance" counts each figure up from 0 (MatrixRating.svelte, over --motion-aop-count): the browser animates this whole number, no script. */
+@property --aop-count {
+  syntax: '<integer>';
+  inherits: false;
+  initial-value: 0;
+}

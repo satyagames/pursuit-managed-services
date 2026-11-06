@@ -16,7 +16,9 @@
     type Answer, type GradedState, type Question,
   } from '../lib/participant/pager-logic.js';
   import { answerRecord, dropMatrixDraft, flushActivity, getSavedAnswers, keepMatrixDraft, knownProgress, loadFailure, matrixDraft, pendingAnswers, recordAnswer, visitStepPath } from '../lib/participant/participantData.js';
-  import { MATRIX_TYPE } from '../lib/participant/aop-answer.js';
+  import { MATRIX_TYPE, decodeAnswer } from '../lib/participant/aop-answer.js';
+  import { glanceOf } from '../lib/participant/aop-view.js';
+  import { visitRatings } from '../lib/participant/aop-glance.svelte.js';
   import { participant } from '../lib/participant/session.svelte.js';
   import { stageRequest } from '../lib/participant/stage.svelte.js';
   import { isSignedOut } from '../lib/participant/sign-in.js';
@@ -321,7 +323,12 @@
       if (!isAnswerComplete(question, draft)) return;
       const answer = normalizeAnswer(question, draft);
       recordAnswer(sectionId, ungradedRecord(question, answer, answerRecord(question.id)));
-      if (isMatrix) dropMatrixDraft(question.id);
+      if (isMatrix) {
+        dropMatrixDraft(question.id);
+        // (Prompt 35) What the hub's mosaic and the thank-you count draw: this visit's, in memory, from the answer just saved.
+        const shape = { rows: question.options, criteria: question.criteria ?? [] };
+        visitRatings[sectionId] = glanceOf(decodeAnswer(answer, shape).grid, shape);
+      }
     }
     if (isLast) { await finish(); return; }
     setMotionDirection('forward');

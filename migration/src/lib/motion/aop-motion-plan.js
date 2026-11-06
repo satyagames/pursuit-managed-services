@@ -83,6 +83,11 @@ export const AOP_EFFECTS = Object.freeze({
     full: () => ({ keyframes: [{ transform: scale(0.72), opacity: 0 }, { transform: scale(1), opacity: 1 }], easing: curve('pop') }),
     reduced: () => ({ keyframes: [{ opacity: 0 }, { opacity: 1 }], easing: curve('standard') }),
   },
+  // "Your ratings at a glance" rises in under the grid.
+  rise: {
+    full: () => ({ keyframes: [{ transform: 'translateY(16px)', opacity: 0 }, { transform: 'translateY(0)', opacity: 1 }], easing: curve('enter') }),
+    reduced: () => ({ keyframes: [{ opacity: 0 }, { opacity: 1 }], easing: curve('standard') }),
+  },
   // The box Next empty box went to, and the first empty box, swell once, softly.
   pulse: { full: ({ delay = 0 }) => ({ keyframes: [{ transform: scale(1) }, { transform: scale(1.08), offset: 0.35 }, { transform: scale(1) }], easing: curve('standard'), delay }) },
 });

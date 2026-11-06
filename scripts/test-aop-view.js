@@ -6,7 +6,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { cycle, decodeAnswer, encodeAnswer } from '../migration/src/lib/participant/aop-answer.js';
-import { ADVANCE_MS, GRID_MIN_WIDTH, HOLD_MS, UNDO_MS, advancesAfter, clearedOf, defaultView, gridWidthFor, levelCounts, restoreInto, rowIsDone, setCell } from '../migration/src/lib/participant/aop-view.js';
+import { ADVANCE_MS, GRID_MIN_WIDTH, HOLD_MS, UNDO_MS, advancesAfter, clearedOf, glanceOf, highestRated, highestSentence, defaultView, gridWidthFor, levelCounts, restoreInto, rowIsDone, setCell } from '../migration/src/lib/participant/aop-view.js';
 import { TOKENS } from '../migration/src/lib/motion/motion-plan.js';
 
 const shapeOf = (rows, criteria) => ({
@@ -127,5 +127,31 @@ describe('press and hold, and Undo (Prompt 35)', () => {
     assert.equal(restoreInto(after, all), 2);
     assert.deepEqual(after, { 'o-1': { [a]: 2, [b]: 3 }, 'o-2': { [a]: 2 } });
     assert.deepEqual(encodeAnswer(after), encodeAnswer({ 'o-1': { [a]: 2, [b]: 3 }, 'o-2': { [a]: 2 } }));
+  });
+});
+
+describe('your ratings at a glance (Prompt 35)', () => {
+  const shape = { rows: [{ id: 'o-1', label: 'GL' }, { id: 'o-2', label: 'AP / AR' }, { id: 'o-3', label: 'Tax' }], criteria: [{ id: 'a' }, { id: 'b' }, { id: 'c' }] };
+
+  it('the highest-rated sub-process is the first row with the most Highs', () => {
+    assert.deepEqual(highestRated({ 'o-1': { a: 3, b: 1, c: 1 }, 'o-2': { a: 3, b: 3, c: 2 }, 'o-3': { a: 3, b: 3, c: 1 } }, shape), { label: 'AP / AR', highs: 2 }, 'a tie: the first in the list');
+    assert.deepEqual(highestRated({ 'o-1': { a: 1 }, 'o-3': { c: 3 } }, shape), { label: 'Tax', highs: 1 });
+    assert.equal(highestRated({ 'o-1': { a: 1, b: 2 } }, shape), null, 'no High: nothing to say');
+    assert.equal(highestRated({}, { rows: [], criteria: [] }), null);
+  });
+
+  it('says it in one fixed sentence, with no judgement words', () => {
+    assert.equal(highestSentence({ label: 'Payroll', highs: 5 }), 'Your highest-rated sub-process was Payroll (5 High).');
+    assert.equal(highestSentence({ label: 'Tax', highs: 1 }), 'Your highest-rated sub-process was Tax (1 High).');
+    assert.equal(highestSentence(null), '');
+    assert.doesNotMatch(highestSentence({ label: 'Tax', highs: 1 }), /good|strong|best|great/i);
+  });
+});
+
+describe('the visit\'s ratings summary for the hub badge and the thank-you (Prompt 35)', () => {
+  it('holds each box\'s level row by row (0 for an empty one) and the three counts', () => {
+    const shape = { rows: [{ id: 'o-1' }, { id: 'o-2' }], criteria: [{ id: 'a' }, { id: 'b' }] };
+    assert.deepEqual(glanceOf({ 'o-1': { a: 3, b: 1 }, 'o-2': { b: 2 }, 'o-9': { a: 3 } }, shape), { levels: [[3, 1], [0, 2]], low: 1, medium: 1, high: 1, total: 3 });
+    assert.deepEqual(glanceOf({}, { rows: [], criteria: [] }), { levels: [], low: 0, medium: 0, high: 0, total: 0 });
   });
 });

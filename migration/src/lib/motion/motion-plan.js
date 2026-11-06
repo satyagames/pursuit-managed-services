@@ -62,7 +62,7 @@ export const TOKENS = Object.freeze({
    * a finished sub-process before it moves on; then each effect of lib/motion/aop-motion-plan.js. Each is a --motion-aop-* in the CSS. */
   aop: Object.freeze({
     hold: 650, advance: 600, pop: 160, bump: 120, ripple: 400, sheen: 450, check: 250, glow: 600, milestone: 1600, fly: 420, flyStagger: 30,
-    wave: 120, waveStep: 40, spring: 160, pulse: 600,
+    wave: 120, waveStep: 40, spring: 160, pulse: 600, rise: 400, count: 700,
   }),
 });
 

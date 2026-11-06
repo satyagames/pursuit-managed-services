@@ -97,3 +97,33 @@ export function restoreInto(grid, cleared) {
   }
   return back;
 }
+
+/**
+ * "Your ratings at a glance" (Prompt 35): the guest's highest-rated sub-process, the first row with the most Highs, or null when no row has one. Made on
+ * the device from the draft, stored nowhere and shown to no one else. @param {Grid} grid @param {{ rows: { id: string, label: string }[], criteria: { id: string }[] }} shape
+ * @returns {{ label: string, highs: number } | null}
+ */
+export function highestRated(grid, { rows, criteria }) {
+  /** @type {{ label: string, highs: number } | null} */
+  let best = null;
+  for (const row of rows) {
+    const highs = criteria.filter((criterion) => grid?.[row.id]?.[criterion.id] === 3).length;
+    if (highs > 0 && highs > (best?.highs ?? 0)) best = { label: row.label, highs };
+  }
+  return best;
+}
+
+/** The card's one sentence, from a fixed template with no judgement words; '' when there is nothing to say. @param {{ label: string, highs: number } | null} best */
+export const highestSentence = (best) => (best ? `Your highest-rated sub-process was ${best.label} (${best.highs} High).` : '');
+
+/** @typedef {{ levels: number[][], low: number, medium: number, high: number, total: number }} Glance */
+
+/**
+ * A grid as the hub and the thank-you keep it for the visit (lib/participant/aop-glance.svelte.ts): each box's level row by row (0 for an empty box) and the
+ * three counts. @param {Grid} grid @param {Shape} shape @returns {Glance}
+ */
+export function glanceOf(grid, shape) {
+  const levels = shape.rows.map((row) => shape.criteria.map((criterion) => (LEVELS.includes(grid?.[row.id]?.[criterion.id]) ? grid[row.id][criterion.id] : 0)));
+  const counts = levelCounts(grid, shape);
+  return { levels, low: counts[1], medium: counts[2], high: counts[3], total: counts[1] + counts[2] + counts[3] };
+}

@@ -13,13 +13,13 @@ const seeded = (seed) => () => { seed = (seed * 1103515245 + 12345) % 2147483648
 const propertiesOf = (keyframes) => [...new Set(keyframes.flatMap((frame) => Object.keys(frame)))].filter((key) => !['offset', 'easing'].includes(key));
 
 describe('the effects (Prompt 35)', () => {
-  const NAMES = ['pop', 'bump', 'ripple', 'sheen', 'check', 'glow', 'milestone', 'fly', 'wave', 'spring', 'pulse'];
+  const NAMES = ['pop', 'bump', 'ripple', 'sheen', 'check', 'glow', 'milestone', 'fly', 'wave', 'spring', 'pulse', 'rise'];
 
   it('are the brief\'s, and each lasts its token', () => {
     assert.deepEqual(Object.keys(AOP_EFFECTS).sort(), [...NAMES].sort());
     assert.deepEqual({ ...TOKENS.aop }, {
       hold: 650, advance: 600, pop: 160, bump: 120, ripple: 400, sheen: 450, check: 250, glow: 600, milestone: 1600, fly: 420, flyStagger: 30,
-      wave: 120, waveStep: 40, spring: 160, pulse: 600,
+      wave: 120, waveStep: 40, spring: 160, pulse: 600, rise: 400, count: 700,
     });
     for (const name of NAMES) assert.equal(aopEffect(name, 'full', { x: 10, y: 10, width: 300 }).duration, TOKENS.aop[name], name);
   });
@@ -44,7 +44,7 @@ describe('the effects (Prompt 35)', () => {
       if (reduced) assert.deepEqual(propertiesOf(reduced.keyframes), ['opacity'], `${name} only fades at reduced`);
     }
     for (const name of ['pop', 'bump', 'ripple', 'sheen', 'wave', 'pulse']) assert.equal(aopEffect(name, 'reduced', {}), null, `${name} is movement only`);
-    for (const name of ['check', 'milestone', 'fly', 'spring', 'glow']) assert.ok(aopEffect(name, 'reduced', { random: seeded(3) }), `${name} fades at reduced`);
+    for (const name of ['check', 'milestone', 'fly', 'spring', 'glow', 'rise']) assert.ok(aopEffect(name, 'reduced', { random: seeded(3) }), `${name} fades at reduced`);
   });
 });
 

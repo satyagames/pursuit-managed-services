@@ -46,6 +46,8 @@
   --motion-aop-wave-step: 40ms;
   --motion-aop-spring: 160ms;
   --motion-aop-pulse: 600ms;
+  --motion-aop-rise: 400ms;
+  --motion-aop-count: 700ms;
 }
 
 /* motion.ts sets data-motion (the shape) and --m-duration, --m-ease, --m-delay and --m-stretch (in steps of the stagger) and --m-distance, from
