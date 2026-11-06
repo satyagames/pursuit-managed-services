@@ -42,19 +42,13 @@ function closeOverlay(target: Overlay): void {
   if (overlay === target) overlay = null;
 }
 
-/** The one kind of overlay canvas: fixed over the whole viewport, never tapped, hidden from assistive tech. */
-function makeCanvas(): HTMLCanvasElement {
+function openOverlay(lib: Library): Overlay {
+  if (overlay) return overlay;
   const canvas = document.createElement('canvas');
   canvas.setAttribute('aria-hidden', 'true');
   canvas.setAttribute('data-pms-confetti', '');
   canvas.style.cssText = `position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:${Z_INDEX};`;
   document.body.append(canvas);
-  return canvas;
-}
-
-function openOverlay(lib: Library): Overlay {
-  if (overlay) return overlay;
-  const canvas = makeCanvas();
   overlay = { canvas, fire: lib.create(canvas, { resize: true, useWorker: false }), pending: 0, deadline: 0, failsafe: undefined };
   return overlay;
 }

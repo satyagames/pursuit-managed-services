@@ -127,6 +127,17 @@ test('the preview draws the real screens at the real size of each device (screen
   await expect(previewFrame(page).getByRole('button', { name: 'Next' })).toBeEnabled();
   await sceneButton(page, 'Finale').click();
   await expect(previewFrame(page).getByRole('heading', { name: 'Thank you, Jane Doe!' })).toBeVisible();
+  // (Prompt 36) The finale's final state only: the medal, the name, the cards and a still garland; no shower, no motion, no sound.
+  const finale = () => previewFrame(page).locator('.pms-final').evaluate((node) => ({
+    garland: getComputedStyle(node.querySelector('.pms-garland')!).opacity,
+    medal: getComputedStyle(node.querySelector('.pms-medal')!).opacity,
+    moving: node.getAnimations({ subtree: true }).filter((animation) => animation.playState === 'running').length,
+    canvas: node.ownerDocument.querySelectorAll('canvas[data-pms-confetti]').length,
+  }));
+  expect(await finale()).toEqual({ garland: '1', medal: '1', moving: 0, canvas: 0 });
+  await page.waitForTimeout(1000);
+  expect(await finale(), 'and it stays still').toEqual({ garland: '1', medal: '1', moving: 0, canvas: 0 });
+  await expect(previewFrame(page).getByRole('button', { name: 'Celebrate again' })).toBeVisible();
 });
 
 test('the preview is read-only: nothing in it can be clicked, it writes nothing, and the admin page keeps its own title', async ({ page }) => {

@@ -60,6 +60,7 @@
   --motion-finale-sheen: 450ms;
   --motion-finale-fade: 200ms;
   --motion-finale-again: 320ms;
+  --motion-finale-garland: 6500ms;
 }
 
 /* motion.ts sets data-motion (the shape) and --m-duration, --m-ease, --m-delay and --m-stretch (in steps of the stagger) and --m-distance, from

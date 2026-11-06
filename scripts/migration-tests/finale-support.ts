@@ -11,7 +11,7 @@ const ALL = ['q-h1', 'q-h2', 'q-h3', 'q-b1', 'q-b2', 'q-p1'];
 export const HEADLINE = 'Thank you, Jordan Lee!';
 
 /** Opens the thank-you page with every activity done (all right first time), the confetti counter and a frame counter installed. */
-export async function openFinale(page: Page, { hash = '#/thank-you?t=track-a' } = {}) {
+export async function openFinale(page: Page, { hash = '#/thank-you?t=track-a', motion = 'full' as 'full' | 'reduced' | 'none' } = {}) {
   const problems: string[] = [];
   page.on('pageerror', (error) => problems.push(error.message));
   page.on('console', (message) => { if (message.type() === 'error') problems.push(message.text()); });
@@ -20,6 +20,9 @@ export async function openFinale(page: Page, { hash = '#/thank-you?t=track-a' } 
   makeVisitor(fixture);
   fixture.give(ALL.map((id) => ({ questionId: id, answer: id === 'q-p1' ? 'q-p1-a' : right(id) })));
   await installConfettiSpy(page);
+  // The reduced level comes from the governor (kept for the session); none, here, from the device's reduced-motion setting.
+  if (motion === 'reduced') await page.addInitScript(() => sessionStorage.setItem('pms.motion', JSON.stringify({ level: 'reduced', bad: 0, clean: 3, watching: false })));
+  if (motion === 'none') await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.addInitScript(() => {
     const state = { frames: 0, showerAt: 0, showerGone: 0 };
     (window as unknown as Record<string, unknown>).__finale = state;

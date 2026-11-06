@@ -11,12 +11,13 @@
 //
 // Every length is a token (TOKENS.finale, declared again as --motion-finale-* in motion-tokens.css); every part moves transform and opacity only (the
 // check its stroke); no more than MAX_CONCURRENT move at once. At the reduced level the medal, the name and the cards fade in together in 200 ms, with
-// the check already drawn and the numbers already final; at none, the final state is shown at once.
+// the check already drawn and the numbers already final, and a still garland of petals frames the top of the page until 6 s; at none, the final state
+// is shown at once, with no garland.
 
 import { TOKENS } from './motion-plan.js';
 
 /** @typedef {'full' | 'reduced' | 'none'} Level */
-/** @typedef {'veil' | 'medal' | 'ray' | 'ring' | 'check' | 'name' | 'card' | 'sheen' | 'again'} PartName */
+/** @typedef {'veil' | 'medal' | 'ray' | 'ring' | 'check' | 'name' | 'card' | 'sheen' | 'again' | 'garland'} PartName */
 /** @typedef {{ part: PartName, index: number, keyframes: Record<string, string | number>[], duration: number, delay: number, easing: string }} Part */
 
 const curve = (/** @type {keyof typeof TOKENS.ease} */ name) => `cubic-bezier(${TOKENS.ease[name].join(', ')})`;
@@ -44,6 +45,8 @@ export function finaleParts(level, { cards, width }) {
   if (level === 'reduced') {
     for (const part of /** @type {PartName[]} */ (['medal', 'name'])) add(part, 0, T.fade, 'standard', [{ opacity: 0 }, { opacity: 1 }]);
     for (let index = 0; index < cards; index += 1) add('card', 0, T.fade, 'standard', [{ opacity: 0 }, { opacity: 1 }], index);
+    // In place of the shower, a still garland of petals along the top edge, shown at once and gone after 6 s.
+    add('garland', 0, T.garland, 'standard', [{ opacity: 1 }, { opacity: 1, offset: 6000 / T.garland }, { opacity: 0 }]);
   }
   if (level !== 'full') return parts;
   add('veil', 0, T.hush, 'standard', [{ opacity: 0 }, { opacity: FINALE.veil, offset: FINALE.veilIn / T.hush }, { opacity: FINALE.veil, offset: FINALE.veilLift / T.hush }, { opacity: 0 }]);

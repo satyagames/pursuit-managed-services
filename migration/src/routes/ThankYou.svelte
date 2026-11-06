@@ -40,6 +40,7 @@
   let rays = $state<HTMLElement>();
   let check = $state<SVGPathElement>();
   let againNode = $state<HTMLElement>();
+  let garland = $state<HTMLElement>();
   const rings = $state<HTMLElement[]>([]);
   const cardNodes = $state<HTMLElement[]>([]);
   /** What each card's figure shows while it counts up; its own value otherwise. */
@@ -155,7 +156,7 @@
     stop?.();
     finale();
     stop = playFinale(
-      { veil, medal, ray: rays, check, ring: rings, name: heading, card: cardNodes, sheen: sweep, again: again ? null : againNode },
+      { veil, medal, ray: rays, check, ring: rings, name: heading, card: cardNodes, sheen: sweep, again: again ? null : againNode, garland },
       {
         counts: cards.map((each) => each.value),
         width: (card?.getBoundingClientRect().width ?? 0) + 120,
@@ -207,6 +208,7 @@
   <section class="pms-final" bind:this={card} use:motion={{ role: 'card' }}>
     <span class="pms-veil" bind:this={veil} aria-hidden="true"></span>
     <span class="pms-sweep" bind:this={sweep} aria-hidden="true"></span>
+    <span class="pms-garland" class:pms-still={preview} bind:this={garland} aria-hidden="true"></span>
     {#if !preview}<p class="sr-only" role="status">{announced}</p>{/if}
     <span class="pms-medal-wrap" aria-hidden="true">
       {#each [0, 1, 2] as ring (ring)}<span class="pms-ring" bind:this={rings[ring]}></span>{/each}
@@ -262,6 +264,23 @@
     background: radial-gradient(ellipse at 50% 42%, #000000 35%, rgb(0 0 0 / 0) 72%);
     opacity: 0;
     pointer-events: none;
+  }
+
+  /* (Prompt 36) The reduced level's garland: petals in three colours along the top edge, drawn once by the CSS (shown by motion.ts, still in a
+     preview). */
+  .pms-garland {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 3rem;
+    background:
+      radial-gradient(0.3rem 0.6rem at 20% 40%, #cfe4a8 90%, #0000) 0 0 / 4.5rem 3rem,
+      radial-gradient(0.3rem 0.6rem at 60% 60%, #ffe9a8 90%, #0000) 0 0 / 5.5rem 3rem,
+      radial-gradient(0.25rem 0.5rem at 40% 30%, #fff 90%, #0000) 0 0 / 3.5rem 3rem;
+    opacity: 0;
+  }
+
+  .pms-still {
+    opacity: 1;
   }
 
   .pms-final {

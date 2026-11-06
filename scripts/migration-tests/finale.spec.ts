@@ -142,3 +142,31 @@ test('the numbers are text, the medal and the shower are hidden from assistive t
   const cards = await page.locator('.pms-card').allInnerTexts();
   expect(cards.map((text) => text.replace(/\s+/g, ' ').trim())).toEqual(['3 activities completed', '5 of 5 right on the first try']);
 });
+
+for (const motion of ['reduced', 'none'] as const) {
+  test(`${motion} motion: no shower, the final state within 300 ms, ${motion === 'reduced' ? 'a still garland that goes after 6 s' : 'no garland'}`, async ({ page }) => {
+    test.setTimeout(40_000);
+    await page.setViewportSize({ width: 1180, height: 820 });
+    const { problems } = await openFinale(page, { motion });
+    const shown = Date.now();
+    await page.waitForTimeout(300);
+    const state = () => page.evaluate(() => {
+      const opacity = (selector: string) => getComputedStyle(document.querySelector(selector)!).opacity;
+      return { medal: opacity('.pms-medal'), name: opacity('h1'), cards: [...document.querySelectorAll('.pms-card')].map((card) => getComputedStyle(card).opacity), garland: opacity('.pms-garland') };
+    });
+    const early = await state();
+    expect({ medal: early.medal, name: early.name, cards: early.cards }, 'the medal, the name and the cards, within 300 ms').toEqual({ medal: '1', name: '1', cards: ['1', '1'] });
+    await expect(page.getByText('3 activities completed')).toBeVisible();
+    await expect(page.getByText('5 of 5 right on the first try'), 'the numbers, with no count-up').toBeVisible();
+    await expect(page.getByRole('button', { name: 'Celebrate again' }), 'at once below the full level').toBeVisible();
+    expect(Number(early.garland), 'the garland').toBe(motion === 'reduced' ? 1 : 0);
+    const check = await page.locator('.pms-medal path').evaluate((path) => parseFloat(getComputedStyle(path).strokeDashoffset));
+    expect(check, 'the check is already drawn').toBe(0);
+    await page.waitForTimeout(Math.max(0, 6800 - (Date.now() - shown)));
+    expect(Number((await state()).garland), 'gone after 6 s').toBe(0);
+    const drawn = await readConfetti(page);
+    expect(drawn.added, 'no shower canvas, not even briefly').toBe(0);
+    expect(drawn.maxPerFrame, 'no piece drawn').toBe(0);
+    expect(problems).toEqual([]);
+  });
+}

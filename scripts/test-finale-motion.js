@@ -86,7 +86,7 @@ describe('the finale\'s acts (Prompt 36)', () => {
   });
 
   it('at the reduced level: the medal, the name and the cards fade in together in 200 ms; no veil, rings, rays, rise or count-up', () => {
-    const parts = finaleParts('reduced', { cards: 3, width: 600 });
+    const parts = finaleParts('reduced', { cards: 3, width: 600 }).filter((part) => part.part !== 'garland');
     assert.deepEqual([...new Set(parts.map((part) => part.part))].sort(), ['card', 'medal', 'name']);
     for (const part of parts) {
       assert.deepEqual(propertiesOf(part.keyframes), ['opacity'], `${part.part} only fades`);
@@ -94,6 +94,19 @@ describe('the finale\'s acts (Prompt 36)', () => {
       assert.equal(part.duration, 200);
     }
     assert.equal(finaleCount('reduced', 0), null);
+  });
+
+  it('at the reduced level a still garland frames the page, and fades out after 6 s; at full and none there is none', () => {
+    const [garland, ...more] = finaleParts('reduced', { cards: 3, width: 600 }).filter((part) => part.part === 'garland');
+    assert.ok(garland && more.length === 0, 'one garland');
+    assert.deepEqual(propertiesOf(garland.keyframes), ['opacity'], 'it never moves, it only goes');
+    assert.equal(garland.delay, 0);
+    assert.equal(garland.keyframes[0].opacity, 1, 'shown at once');
+    const held = garland.keyframes.filter((frame) => frame.opacity === 1).at(-1).offset * garland.duration;
+    assert.ok(Math.abs(held - 6000) <= 1, 'until 6 s');
+    assert.equal(garland.keyframes.at(-1).opacity, 0);
+    assert.ok(garland.duration <= 7000, 'then fades out, quickly');
+    assert.ok(!finaleParts('full', { cards: 3, width: 600 }).some((part) => part.part === 'garland'), 'the full level has the shower instead');
   });
 
   it('at none: nothing moves, the final state is shown at once', () => {
