@@ -6,9 +6,15 @@
  * fallen. The pieces are drawn by canvas-confetti (ISC), loaded with a dynamic import the first time
  * it is needed and used without Web Workers. How many, how fast and which colours is decided by the
  * pure functions in confetti-plan.js; under `prefers-reduced-motion: reduce` there is no overlay at all.
+ *
+ * The finale's petal shower (Prompt 36) is a plan of small bursts from above (confetti-plan.js showerPlan) fired on the same overlay with the
+ * same library, in petal, ribbon and disc shapes; the overlay goes when its last piece has fallen, as for any burst.
  */
-import type { Fire, Options } from 'canvas-confetti';
-import { buildPalette, confettiPlan, originFromRect, planDuration, sparkAllowance, sparkPlan, type Burst, type ConfettiSize } from './confetti-plan.js';
+import type { Fire, Options, Shape } from 'canvas-confetti';
+import {
+  SHOWER_SHAPES, buildPalette, confettiPlan, originFromRect, planDuration, showerCap, showerGate, showerPalette, showerPlan, sparkAllowance, sparkPlan,
+  type Burst, type ConfettiSize,
+} from './confetti-plan.js';
 import type { Level } from '../motion/motion-plan.js';
 
 const Z_INDEX = 9999;
@@ -83,7 +89,7 @@ export async function celebrate(size: ConfettiSize, anchor?: Element | null): Pr
 }
 
 /** Fires a plan on the one overlay, which goes when its last piece has fallen. */
-async function throwBursts(plan: Burst[], colorsNow: () => string[], shapes: string[], onDone?: () => void): Promise<void> {
+async function throwBursts(plan: Burst[], colorsNow: () => string[], shapes: Shape[], onDone?: () => void, keep?: (burst: Burst) => boolean): Promise<void> {
   const born = generation;
   const lib = await loadLibrary();
   if (born !== generation) { onDone?.(); return; }
@@ -96,6 +102,11 @@ async function throwBursts(plan: Burst[], colorsNow: () => string[], shapes: str
 
   const fireBurst = (burst: Burst) => {
     if (born !== generation) { onDone?.(); return; }
+    if (keep && !keep(burst)) {
+      active.pending -= 1;
+      if (active.pending <= 0) closeOverlay(active);
+      return;
+    }
     const options: Options = {
       particleCount: burst.count,
       angle: burst.angle,
@@ -104,6 +115,8 @@ async function throwBursts(plan: Burst[], colorsNow: () => string[], shapes: str
       gravity: burst.gravity,
       ticks: burst.ticks,
       scalar: burst.scalar,
+      drift: burst.drift,
+      decay: burst.decay,
       origin: burst.origin,
       colors,
       shapes,
@@ -142,5 +155,38 @@ export async function sparks(kind: 'stamp' | 'unlock', anchor: Element | null | 
     await throwBursts([{ ...plan.bursts[0], count: allowed }], () => plan.colors, plan.shapes, () => { liveSparks = Math.max(0, liveSparks - allowed); });
   } catch (cause) {
     console.warn('Sparks could not run', cause);
+  }
+}
+
+// ---- The finale's petal shower (Prompt 36) ----------------------------------------------------------------------------------------
+
+const SHAPES = [SHOWER_SHAPES.petal, SHOWER_SHAPES.petal, SHOWER_SHAPES.ribbon].map((shape): Shape => ({ type: 'path', ...shape }));
+
+/**
+ * The finale's shower at `level`: the plan decides (nothing below the full level or under the device's reduced motion). Its bursts go on the one
+ * overlay; each is fired only while `stillFull()` says the motion level is still full (a device the governor steps down mid-way gets no more) and the
+ * gate, counting the frames drawn, has room under the cap (a slower device, or a hidden tab, gets fewer). A second call starts it again from the top.
+ * Never throws.
+ */
+export async function startShower(level: Level, stillFull: () => boolean): Promise<void> {
+  try {
+    clearConfetti();
+    const plan = showerPlan({ width: window.innerWidth, height: window.innerHeight, reducedMotion: prefersReducedMotion(), level });
+    if (!plan) return;
+    const gate = showerGate(showerCap(window.innerWidth));
+    // The library's own frames, counted as it clears the overlay for each: it ages its pieces by them (and draws no more than 60 a second).
+    let frame = 0;
+    let counted: HTMLCanvasElement | null = null;
+    const frames = () => {
+      const canvas = overlay?.canvas;
+      if (!canvas || canvas === counted) return;
+      counted = canvas;
+      const context = canvas.getContext('2d')!;
+      const clear = context.clearRect.bind(context);
+      context.clearRect = (...area) => { frame += 1; clear(...area); };
+    };
+    await throwBursts(plan, () => showerPalette(pageTokens()), [...SHAPES, 'circle'], undefined, (burst) => (frames(), stillFull() && gate(burst, frame)));
+  } catch (cause) {
+    console.warn('The shower could not run', cause);
   }
 }

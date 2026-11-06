@@ -31,19 +31,18 @@ export const myDetails = (person) => [person?.name, person?.email].filter(Boolea
 export const ONBOARDING_DOC = 'docs/ONBOARDING.md';
 
 /** The line under Add user's search. */
-export const SITE_ACCESS_ADD_USER = 'Adding a person here does not give them access to the SharePoint site.';
+export const SITE_ACCESS_ADD_USER = 'Adding a person here does not give them access to the SharePoint site. A Super admin does that once they have a role.';
 
 /** The line the No access screen adds, after its own "ask an Admin" line: a person who sees it already has site access. */
 export const NO_ACCESS_SITE_LINE = 'If SharePoint itself said the item has not been shared with you, ask the site owner to add you to this site.';
 
 /**
- * Give access's line about the site: Producer, Designer and Admin need Edit access to the site, Leadership needs Read. Nothing when a person gives
- * themselves a role (they are in the site already).
+ * Give access's line about the site: what is left to do and who does it (Prompt 27). Nothing when a person gives themselves a role (they are in the
+ * site already).
  * @param {string} role @param {{ person?: { key?: string } | null, me?: { key?: string } | null }} who
  */
 export function siteAccessNote(role, { person, me } = {}) {
   if (person?.key && person.key === me?.key) return '';
-  const link = `How to add them: ${ONBOARDING_DOC}.`;
-  if (role === 'Leadership') return `This person also needs access to this SharePoint site to open the pages. Read access is enough. Roles here do not give that. ${link}`;
-  return `This person also needs Edit access to this SharePoint site to open the pages. Roles here do not give that. ${link}`;
+  const group = role === 'Leadership' ? 'PMS leadership' : role === 'Admin' || role === 'Super admin' ? 'PMS staff and PMS access managers' : 'PMS staff';
+  return `A Super admin adds them to ${group}, so that the pages open for them. Roles here do not give that. How to add them: ${ONBOARDING_DOC}.`;
 }

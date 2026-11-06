@@ -18,14 +18,15 @@
 //
 // Phase 13 (EXPORT-DESIGN.md): page 1 is "At a glance" (four tiles, one takeaway per activity from lib/results/export-summary.js, the hardest and easiest
 // question, how to read the report) and never needs a second page; each activity then starts a page of its own under a band with its title, its
-// three numbers and its takeaway, and each question is one framed card that is never split. The client's colour is the cover's title band and
-// nothing else; rules and marks are the Results palette's (Deloitte Green, brand guide p. 42), words its black and grey (p. 37).
+// three numbers and its takeaway, and each question is one framed card that is never split. Prompt 34: the app's Light look (lib/exports/report-look.js,
+// packPalette): the title band deep green, an activity's band the pale green, the charts as the pack's; no client colour (its name and logo stay).
 //
 // Plain JS with JSDoc and no DOM.
 
 import { LIVE_FILES_NOTE, NO_ANSWERS, STRAY_TITLE, UNREADABLE_PERSON, answeredLine, scoreLine, wholePercent } from './leader-report.js';
 import { MISSING } from './report-fonts.js';
 import { chartFigure } from '../results/results-chart-figure.js';
+import { LOOK, packPalette } from './report-look.js';
 import { fewAnswersLine, numberWords } from '../results/results-chart-model.js';
 
 /** @typedef {import('./leader-report.js').LeaderReport} LeaderReport */
@@ -65,6 +66,8 @@ const sum = (values) => values.reduce((total, value) => total + value, 0);
  */
 export function layoutLeaderReport(report, measure, { logo = null, palette } = /** @type {any} */ ({})) {
   if (!palette) throw new Error('layoutLeaderReport needs the Results palette (lib/results-palette.js).');
+  // (Prompt 34) The app's Light look, as the pack's: its charts and words in packPalette, its bands in report-look.js's colours.
+  palette = packPalette('light', palette);
   const before = measure.stats.missing;
   let pages = compose(report, measure, logo, false, palette);
   const missing = measure.stats.missing - before;
@@ -74,7 +77,8 @@ export function layoutLeaderReport(report, measure, { logo = null, palette } = /
 }
 
 function compose(report, measure, logo, noteMissing, palette) {
-  const { accent, ink } = report.brand;
+  // (Prompt 34) The title band is the app's deep green with white words: no client colour in the file (its name and logo stay).
+  const [accent, ink] = [LOOK.deep, LOOK.onDeep];
   const joined = report.summary.joined;
   // The words and rules of every page are the Results palette's: black and its secondary grey (brand guide p. 37), its gridline grey and shade.
   const INK = palette.text;
@@ -397,7 +401,7 @@ function compose(report, measure, logo, noteMissing, palette) {
     const bandH = parts.reduce((total, part) => total + leading(part.size) + (part.after ?? 0), 0) + 8;
     let top = 4;
     const bandItems = [
-      { kind: 'rect', x: LEFT, y: 0, w: WIDTH, h: bandH, fill: TINT, radius: 2, role: 'activity-band' },
+      { kind: 'rect', x: LEFT, y: 0, w: WIDTH, h: bandH, fill: LOOK.greenWash, radius: 2, role: 'activity-band' },
       { kind: 'rect', x: LEFT, y: 0, w: 1.4, h: bandH, fill: GREEN },
     ];
     for (const part of parts) {

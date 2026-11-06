@@ -16,12 +16,16 @@
  *   attribute is taken away; a hidden tab finishes everything at once; an element that leaves the page is forgotten.
  *
  * Reads sessionStorage and the address's `?motion=off`; writes sessionStorage `pms.motion`. Never fetches, never plays a sound or
- * confetti (lib/effects/effects.ts asks `motionLevel()` whether confetti may show).
+ * confetti (lib/effects/effects.ts asks `motionLevel()` whether confetti may show). The Art of Possibility's effects (Prompt 35, lib/motion/aop-motion-plan.js)
+ * are played here too, with the Web Animations API: `playEffect`, `flyOff`, `playWave`; and the grand finale's acts (Prompt 36,
+ * lib/motion/finale-motion-plan.js): `playFinale`, whose cards count up with requestAnimationFrame for 800 ms and then stop.
  */
 import {
   LONG_LABEL, MAX_CONCURRENT, WATCH_WINDOW, diagnosticOff, governorStep, motionRecipe, readGovernor,
   resolveLevel, type Direction, type Governor, type Level, type Recipe, type Role, type Verdict,
 } from './motion-plan.js';
+import { aopEffect, flyCount, waveDelay, type Effect as AopEffect, type Where } from './aop-motion-plan.js';
+import { FINALE, countValue, finaleCount, finaleParts, type PartName } from './finale-motion-plan.js';
 
 export type { Direction, Level };
 
@@ -207,7 +211,112 @@ export function motion(node: HTMLElement, params: MotionParams | null) {
   };
 }
 
+// ---- The Art of Possibility's effects (Prompt 35) -----------------------------------------------------------------------------------
+// A screen names an effect of lib/motion/aop-motion-plan.js and where it happens; this plays it with the Web Animations API (no per-frame script), at the
+// one resolved level (the governor's too), counted with everything else that moves: past MAX_CONCURRENT an effect simply does not run.
+
+const running = new Set<Animation>();
+const moving = (): number => active.size + running.size;
+
+function play(node: Element, effect: Pick<AopEffect, 'keyframes' | 'duration' | 'easing' | 'delay'>): Animation {
+  const animation = node.animate(effect.keyframes as Keyframe[], { duration: effect.duration, easing: effect.easing, delay: effect.delay ?? 0, fill: 'backwards' });
+  running.add(animation);
+  const done = () => { running.delete(animation); };
+  animation.addEventListener('finish', done);
+  animation.addEventListener('cancel', done);
+  return animation;
+}
+
+/** Plays one effect on `node`, or nothing (motion off, a hidden tab, the cap reached). */
+export function playEffect(node: Element | null | undefined, name: string, where: Where = {}): Animation | null {
+  if (!node || typeof document === 'undefined' || document.hidden || typeof (node as HTMLElement).animate !== 'function') return null;
+  const effect = aopEffect(name, motionLevel(), where);
+  if (!effect || moving() >= MAX_CONCURRENT) return null;
+  return play(node, effect);
+}
+
+/**
+ * Clear all: copies of the rated boxes fly a short way and fade, staggered; at most what the cap leaves room for (the rest simply clear). The copies sit over
+ * the page where the boxes were, take no input and are gone when they land. Reads every place first, then writes.
+ */
+export function flyOff(nodes: HTMLElement[]): void {
+  if (typeof document === 'undefined' || document.hidden) return;
+  const level = motionLevel();
+  if (level === 'none') return;
+  // (One place is kept for what the clearing itself moves: the progress bar draining.)
+  const chosen = nodes.slice(0, flyCount(nodes.length, moving() + 1));
+  const places = chosen.map((node) => node.getBoundingClientRect());
+  watchMoment();
+  chosen.forEach((node, index) => {
+    const effect = aopEffect('fly', level, { index });
+    if (!effect) return;
+    const copy = node.cloneNode(true) as HTMLElement;
+    copy.removeAttribute('data-cell');
+    copy.setAttribute('aria-hidden', 'true');
+    copy.inert = true;
+    copy.classList.add('motion-copy');
+    Object.assign(copy.style, { position: 'fixed', left: `${places[index].left}px`, top: `${places[index].top}px`, width: `${places[index].width}px`, height: `${places[index].height}px`, margin: '0', zIndex: '20', pointerEvents: 'none' });
+    document.body.append(copy);
+    play(copy, effect).finished.catch(() => undefined).finally(() => copy.remove());
+  });
+}
+
+/** Every box rated: the wave runs corner to corner. Its spacing (the plan's waveDelay) keeps it under the cap by itself, so each box of it is played. */
+export function playWave(cells: { node: Element; r: number; c: number }[], rows: number, columns: number): void {
+  if (typeof document === 'undefined' || document.hidden || motionLevel() !== 'full' || moving() > 0) return;
+  watchMoment();
+  for (const { node, r, c } of cells) {
+    const effect = aopEffect('wave', 'full', { delay: waveDelay(r, c, rows, columns) });
+    if (effect && typeof (node as HTMLElement).animate === 'function') play(node, effect);
+  }
+}
+
+// ---- The grand finale (Prompt 36) ------------------------------------------------------------------------------------------------------
+// The thank-you page hands over its parts; the plan says what each does at the one resolved level. The plan's own spacing keeps it under the cap (as the
+// wave's does), so every part of it is played. The cards' numbers count up through `onCount` (the page owns the text), and `onAfterglow` says when
+// "Celebrate again" may show: at once below the full level. Every animation, frame and timer is let go by `cancel`, and by the end of the counts.
+
+type Node = Element | null | undefined;
+/** Each part's element, by the plan's part name; the ring, letter and card parts are lists, by index. */
+export type FinaleNodes = Partial<Record<PartName, Node | Node[]>>;
+
+/**
+ * Plays the finale's acts; `onCount` gets each card's number as it counts up, `onAfterglow` says "Celebrate again" may show. Returns the cancel
+ * that lets go of every animation, frame and timer.
+ */
+export function playFinale(
+  nodes: FinaleNodes,
+  { counts = [], width = 0, onCount, onAfterglow }: { counts?: number[]; width?: number; onCount?: (index: number, value: number) => void; onAfterglow?: () => void } = {},
+): () => void {
+  const level = document.hidden ? 'none' : motionLevel();
+  const many = (name: PartName) => (nodes[name] as Node[] | undefined)?.length ?? 0;
+  const animations = finaleParts(level, { cards: many('card'), width }).flatMap((part) => {
+    const at = nodes[part.part];
+    const target = Array.isArray(at) ? at[part.index] : at;
+    return target ? [play(target, part)] : [];
+  });
+  const start = performance.now();
+  let frame = 0;
+  const tick = (now: number) => {
+    let running = false;
+    counts.forEach((value, index) => {
+      const plan = finaleCount(level, index);
+      const progress = plan ? (now - start - plan.delay) / plan.duration : 1;
+      if (progress < 1) running = true;
+      onCount?.(index, countValue(value, progress));
+    });
+    if (running) frame = requestAnimationFrame(tick);
+  };
+  tick(start);
+  const timer = setTimeout(() => onAfterglow?.(), level === 'full' ? FINALE.afterglow : 0);
+  return () => {
+    for (const animation of animations) animation.cancel();
+    cancelAnimationFrame(frame);
+    clearTimeout(timer);
+  };
+}
+
 // ---- For the tests -----------------------------------------------------------------------------------------------------------------
 
 /** How many elements are moving (or waiting for their turn) now. */
-export const movingCount = (): number => active.size;
+export const movingCount = (): number => moving();

@@ -149,6 +149,8 @@ seven sizes.
   parts 4 and 5 hold the dashboard's empty states and its words. In the browser: `leader-report.spec.ts` (Hide names on Sessions, the PDF and the CSV),
   `role-scoping.spec.ts` (turned off while open, with the clock moved on five minutes), `leader-dashboard.spec.ts` (no summary yet; the switch shared with
   Sessions). Three failures of `npm run test:a11y` are older than this phase and fail the same on its starting commit (RELEASE-21F.md).
+- `node --test scripts/test-site-sync.js` (part of `npm test`, Prompt 27, Part 4): the guard (a Super admin's only; the three learned groups only), the lazy cached ids, and syncSiteAccess: add, remove, twice, Admin, switch off, may not edit, Typed, refused, and Apply leaving its maker out of the groups.
+- `node --test scripts/test-site-access.js` (part of `npm test`, Prompt 27): who belongs in which PMS group, the matrix, the plan's states, Apply's order and stops, Remove the site's groups, and the drift report, against `sitePermissions` of `scripts/sharepoint-fake.js`, an approximation written from the brief: the real site is the proof (QA-TESTING.md).
 - `node --test scripts/test-hardening.js` (part of `npm test`, Prompt 21, Phase 7): the access lists' permissions (the plan's four steps, the findings for
   a list that still inherits, a member who may change a people list, an audit list a member may edit or no one may add to, the self-test probe's six
   GETs and a refused read), the answer readers and the Live feed refusing a session not held before any request (and reading one held, and a global role
@@ -245,6 +247,12 @@ seven sizes.
   200 presses leave nothing behind. Its style recalculations are inflated by its own frame recorder (any frame callback makes Chromium update running
   animations on the main thread). `PMS_PAGES=<folder>` measures another build. `node scripts/motion-bench.js` is the micro-benchmark of RELEASE-15.md;
   `node scripts/local-site/filmstrip.js` photographs the motion every 50 ms. `?motion=off` on the participant address turns motion off for one device.
+- **The grand finale (Prompt 36).** `scripts/test-finale-motion.js` (the acts: times, tokens, the cap, each level) and the shower's tests in
+  `scripts/test-confetti-plan.js` (waves, caps, sizes, colours) are in `npm test`. `finale.spec.ts` opens the thank-you page with every activity done
+  (`finale-support.ts`) at four sizes: the shower from the top across the width, the medal by 2.5 s, the name by 3 s, the numbers by 3.6 s, the cap,
+  nothing left and no frames asked for by 11 s; "Celebrate again"; the buttons usable from the first frame; the status line once; and the reduced and
+  none levels with the garland. **`finale-perf.spec.ts`** (Chromium) writes the frame strip (0 to 8 s, iPad landscape and phone), the frame rate at
+  4x CPU slowdown, the luminance samples (`png-luma.ts`, WCAG 2.3.1's 0.1) and the layout shift to `test-results/finale/`.
 - `npm run test:devices` — `devices.spec.ts`: iPhone and iPad in both orientations, iPad Pro, a 1366x768 laptop and a 1440x900 desktop, on every participant
   screen and every admin tab (no sideways scroll, nothing cut off, 44 px on touch, the safe areas on the iPhone: Chromium emulates the insets, the other
   engines show the stylesheets use them) and turning the device over mid-question. `npm run test:perf` — `performance.spec.ts` and `latency.spec.ts`
@@ -259,7 +267,7 @@ seven sizes.
   estimates scaled to add up to the page's exact gzip; the page totals are exact.
 - `npm run test:bundle` — [scripts/test-bundle-budget.js](../scripts/test-bundle-budget.js) (also part of `npm test`): builds the real pages and holds
   them to the budgets in [scripts/bundle-budget.js](../scripts/bundle-budget.js) (participant gzip ceiling 450,000 B with a 400,000 B target,
-  admin 700,000 B since Phase 7c, and prints each page's size and its headroom), checks that no export library (jsPDF, PptxGenJS, html2canvas, Chart.js, `resultsExport.js`,
+  admin 700,000 B since Phase 7c and 710,000 B since Prompt 34, and prints each page's size and its headroom), checks that no export library (jsPDF, PptxGenJS, html2canvas, Chart.js, `resultsExport.js`,
   the Results charts of Phase 11a) is anywhere in the participant page (by the modules the bundler reports and by text), and has negative controls: the
   check is run against the admin page standing in for the participant page, at one byte over each limit, and against a real participant
   build into which the libraries are imported. Run it after touching `migration/src/main.ts`, `App.svelte`, an import in a participant

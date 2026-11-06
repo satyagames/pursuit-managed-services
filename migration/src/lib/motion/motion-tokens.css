@@ -31,6 +31,36 @@
   --motion-hub-stamp: 400ms;
   --motion-hub-sweep: 500ms;
   --motion-hub-pulse: 1200ms;
+  --motion-aop-hold: 650ms;
+  --motion-aop-advance: 600ms;
+  --motion-aop-pop: 160ms;
+  --motion-aop-bump: 120ms;
+  --motion-aop-ripple: 400ms;
+  --motion-aop-sheen: 450ms;
+  --motion-aop-check: 250ms;
+  --motion-aop-glow: 600ms;
+  --motion-aop-milestone: 1600ms;
+  --motion-aop-fly: 420ms;
+  --motion-aop-fly-stagger: 30ms;
+  --motion-aop-wave: 120ms;
+  --motion-aop-wave-step: 40ms;
+  --motion-aop-spring: 160ms;
+  --motion-aop-pulse: 600ms;
+  --motion-aop-rise: 400ms;
+  --motion-aop-count: 700ms;
+  /* The grand finale (Prompt 36; the acts are lib/motion/finale-motion-plan.js). */
+  --motion-finale-hush: 4200ms;
+  --motion-finale-medal: 600ms;
+  --motion-finale-rays: 1300ms;
+  --motion-finale-ring: 800ms;
+  --motion-finale-check: 450ms;
+  --motion-finale-name: 500ms;
+  --motion-finale-card: 400ms;
+  --motion-finale-count: 800ms;
+  --motion-finale-sheen: 450ms;
+  --motion-finale-fade: 200ms;
+  --motion-finale-again: 320ms;
+  --motion-finale-garland: 6500ms;
 }
 
 /* motion.ts sets data-motion (the shape) and --m-duration, --m-ease, --m-delay and --m-stretch (in steps of the stagger) and --m-distance, from

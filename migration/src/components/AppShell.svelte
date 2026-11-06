@@ -12,8 +12,8 @@
     background?: string | null;
     /** The part of the picture that should stay in view when the screen is not its shape: percentages, 50/50 is the middle. */
     focus?: { x: number; y: number } | null;
-    /** `narrow` is the participant column (about 800px); `wide` is for the facilitator's displays. */
-    stage?: 'narrow' | 'wide';
+    /** `narrow` is the participant column (about 800px); `wide` is for the facilitator's displays; `full` is a participant screen that needs the width (Prompt 35: the Art of Possibility's grid), with slimmer gutters. */
+    stage?: 'narrow' | 'wide' | 'full';
     /** Fills its parent instead of the viewport. Only for framing the shell inside the styleguide. */
     contained?: boolean;
     /** Header content on the right of the wordmark: a greeting, the sound switch. */
@@ -181,6 +181,11 @@
   }
 
   .shell[data-stage='wide'] .stage {
+    max-width: calc(var(--stage-wide-max) + 2 * var(--gutter));
+  }
+
+  .shell[data-stage='full'] .stage {
+    --gutter: clamp(1rem, 2.5vw, 2rem);
     max-width: calc(var(--stage-wide-max) + 2 * var(--gutter));
   }
 </style>

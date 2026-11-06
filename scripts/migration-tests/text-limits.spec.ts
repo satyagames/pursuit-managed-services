@@ -23,7 +23,7 @@ test('an answer\'s text stops at 255 characters and says so, and the question sa
   await expect(page.getByLabel('Option 1 text')).toHaveValue('x'.repeat(255));
   await expect(page.getByTestId('option-limit')).toHaveText("255 characters: the most an answer's text can hold.");
   await page.getByLabel('Option 2 text').fill('Short');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(page.locator('.toast')).toContainText('Saved');
   await expect(page.getByRole('alert')).toHaveCount(0);
 });

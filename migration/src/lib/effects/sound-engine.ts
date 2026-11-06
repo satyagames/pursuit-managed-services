@@ -73,7 +73,7 @@ export function scheduleCue(ctx: BaseAudioContext, destination: AudioNode, spec:
     const end = when + noteEnd(note);
 
     let source: AudioScheduledSourceNode;
-    let filter: { type: BiquadFilterType; freq: number; q: number } | null = null;
+    let filter: { type: BiquadFilterType; freq: number; q: number; to?: number } | null = null;
     if (note.kind === 'noise') {
       const noise = ctx.createBufferSource();
       noise.buffer = noiseBuffer(ctx);
@@ -98,6 +98,11 @@ export function scheduleCue(ctx: BaseAudioContext, destination: AudioNode, spec:
       const biquad = ctx.createBiquadFilter();
       biquad.type = filter.type;
       biquad.frequency.value = filter.freq;
+      // (Prompt 36) A band that moves: the finale's swell rises from `freq` to `to` over the note.
+      if (filter.to) {
+        biquad.frequency.setValueAtTime(filter.freq, start);
+        biquad.frequency.exponentialRampToValueAtTime(filter.to, end);
+      }
       biquad.Q.value = filter.q;
       source.connect(biquad);
       biquad.connect(envelope);

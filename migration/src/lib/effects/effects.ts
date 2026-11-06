@@ -13,11 +13,11 @@
  * Next, Back, Home and "Click here to begin" make no sound.
  */
 import { CONFETTI_SIZES, type ConfettiSize } from './confetti-plan.js';
-import { celebrate, clearConfetti, sparks } from './confetti.js';
+import { celebrate, clearConfetti, sparks, startShower } from './confetti.js';
 import { EFFECTS, UNAVAILABLE_TITLE, answerEffect, readChoice, soundIsOn, writeChoice, type Effect } from './effect-plan.js';
 import { CUES, CUE_NAMES, type CueName } from './sound-cues.js';
 import * as engine from './sound-engine.js';
-import { motionLevel } from '../motion/motion.js';
+import { motionLevel, watchMoment } from '../motion/motion.js';
 
 export { UNAVAILABLE_TITLE };
 export type { ConfettiSize, CueName };
@@ -128,7 +128,8 @@ export function unlockAudio(): void {
 function run(effect: Effect, anchor?: Element | null): void {
   if (effect.cue && soundState().on) engine.playCue(effect.cue);
   // Confetti is motion: the client's Animations switch, ?motion=off and the governor at its lowest leave it out (Phase 15), as reduced motion does.
-  if (effect.confetti && motionLevel() !== 'none') void celebrate(effect.confetti, anchor);
+  // The finale's shower is not a burst: finale() runs it.
+  if (effect.confetti && effect.confetti !== 'shower' && motionLevel() !== 'none') void celebrate(effect.confetti, anchor);
 }
 
 /** A choice was made in a question that is not graded: a soft tick. */
@@ -154,9 +155,17 @@ export function clearEffects(): void {
   clearConfetti();
 }
 
-/** Every activity is finished. */
+/**
+ * Every activity is finished (Prompt 36): the finale cue behind the Sound switch, and the petal shower at the full motion level only (the
+ * governor watches its first frames, as it does an entrance). "Celebrate again" calls this again and the whole thing starts from the top.
+ */
 export function finale(): void {
   run(EFFECTS.finale);
+  const level = motionLevel();
+  if (EFFECTS.finale.confetti === 'shower' && level === 'full') {
+    watchMoment();
+    void startShower(level, () => motionLevel() === 'full');
+  }
 }
 
 // The hub's moment (Prompt 24). Sound behind the switch, sparks behind the motion level: `reduced` motion does not silence a cue, the Sound switch does.
@@ -186,6 +195,41 @@ export function hubLocked(): void {
 /** Every activity is done on the hub; `anchor` is Finish, where the burst comes from. */
 export function hubAllDone(anchor?: Element | null): void {
   run(EFFECTS.allDone, anchor);
+}
+
+// The Art of Possibility (Prompt 35). Every one is behind the Sound switch and paired with something the guest sees; the burst is behind the motion level.
+
+const RATE_EFFECTS = [EFFECTS.rateClear, EFFECTS.rateLow, EFFECTS.rateMedium, EFFECTS.rateHigh];
+const MILESTONE_EFFECTS = { quarter: EFFECTS.milestoneQuarter, half: EFFECTS.milestoneHalf, nearly: EFFECTS.milestoneNearly };
+
+/** A box took a level (1 to 3), or was cleared (undefined). */
+export function aopRate(level: number | undefined): void {
+  run(RATE_EFFECTS[level ?? 0] ?? EFFECTS.rateClear);
+}
+
+/** The press-and-hold ring has filled and the level menu opens. */
+export function aopHoldOpen(): void {
+  run(EFFECTS.holdOpen);
+}
+
+/** A row (a sub-process) has every box rated. */
+export function aopRowDone(): void {
+  run(EFFECTS.rowDone);
+}
+
+/** A quarter, half or three quarters of the boxes are rated. */
+export function aopMilestone(key: keyof typeof MILESTONE_EFFECTS): void {
+  run(MILESTONE_EFFECTS[key]);
+}
+
+/** Every rating was cleared. */
+export function aopClearAll(): void {
+  run(EFFECTS.clearAll);
+}
+
+/** Every box is rated; `anchor` is the progress bar, where the small burst comes from. */
+export function aopAllRated(anchor?: Element | null): void {
+  run(EFFECTS.allRated, anchor);
 }
 
 // ---- Setup ------------------------------------------------------------------------------------------

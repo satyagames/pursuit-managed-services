@@ -323,13 +323,13 @@ in `migration/src/`, not by editing them, so that what the tests measure stays w
   - **Confetti** is one fixed, full-viewport canvas with `pointer-events: none` and `aria-hidden`, removed when
     the burst ends, drawn by canvas-confetti (ISC, no Web Worker) loaded by a dynamic `import()`. Small
     (first-try correct only) is about 40 pieces, medium (activity complete) about 120 from both lower corners,
-    large (finale) about 250 in three bursts; all scale by 0.6 below 500 px wide. The palette is Deloitte green,
+    and the finale's petal shower (Prompt 36, below); the bursts scale by 0.6 below 500 px wide. The palette is Deloitte green,
     white, `--success` and light tints of `--action` and the client primary, and never red. Under
     `prefers-reduced-motion` there is no overlay at all (the cue still plays). No confetti on a wrong answer, a
     right answer after a Retry, or a reveal.
   - **Changing a cue.** Edit its notes in `sound-cues.js`, then run `npm run test:effects` and read the table it
-    prints: peak must stay at or below -5 dBFS (the brief asks -6; the finale sits near -7), duration within the
-    brief, and A-weighted level within 2 dB of the other cues. Adjust that cue's `gain` from the report. The
+    prints: peak must stay at or below -5 dBFS (the brief asks -6; the finale sits near -6.5), duration within the
+    brief, and A-weighted level within 2 dB of the other cues (the finale, the visit's peak, may sit up to 3 dB above them, never under the quietest). Adjust that cue's `gain` from the report. The
     tests measure level, length, pitch order, clicks and brightness; they cannot say whether it sounds good, so
     listen to the WAVs and then on a real iPad (`QA-TESTING.md`, "Sound and confetti on a real iPad").
   - **Auditioning.** `#/styleguide` (dev server only) has a "Sound and confetti" section with a button per cue and
@@ -575,6 +575,7 @@ in `migration/src/`, not by editing them, so that what the tests measure stays w
     400 kB target) is the one that matters, and Phase 8 needs room for accessibility fixes. Nothing was dropped to make the room: PowerPoint,
     both faces and the jsPDF stubs are as they were, and size is measured as it always was. `npm run test:bundle` prints each page's size and
     its headroom. Past 700,000 B, make room first (MIGRATION-PLAN.md, "Phase 7b", has what each way is worth); do not raise it again to fit.
+    (The site owner raised it once more, to 710,000 B, for Prompt 34, when the page stood at 698,147 B: `BUDGET.admin` in `scripts/bundle-budget.js`.)
   - **Tailwind reads every file under `migration/` for class names, comments included.** The words `table`, `absolute` and `invisible`
     in the new files each added a utility rule to BOTH pages (22 bytes on the participant page) until they were reworded. After adding
     a file there, check that the participant page is still the size it was (`npm run test:bundle` prints it).
@@ -1756,6 +1757,163 @@ Results is a leader's view as well (boards 9 and 12): `admin/LeaderDashboard.sve
 - **Memory only.** What a page holds of a read is in its memory (`lib/admin/list-cache.js`), and any write of its own clears it. No answer or name in `localStorage`.
 - **A style's comment does not ship** (`migration/svelte.config.js`): comment a component's CSS as much as it needs.
 - `npm run perf` and `npm run console:errors` before a change that reads or writes.
+
+## Rules from Prompt 27 (the PMS groups and Apply; keep them holding)
+
+- **The matrix is `GROUP_MATRIX`** in `lib/setup/list-permissions.js`, settled with the owner. Participants hold nothing on the five secret lists.
+- **Apply only adds:** rehearsal first, grants on a copy of what was inherited, grants added to a list with its own permissions (nothing removed there), a list where a PMS group holds another level left alone, never a whole library, and on the site itself nothing but "PMS site entry" for the four groups. Only **Remove the site's groups** takes anyone away, and never the site's owners or a PMS group.
+- **The admin page changes no permission.** It changes who is in PMS access managers, PMS staff and PMS leadership only for a Super admin, only with Setup's switch on, only the difference (`syncSiteAccess` in `lib/access/site-access.js`), and the write guard refuses any other group (`LIST_WRITES.sitegroup`, the ids it learned). It reads the groups' row and members only when asked, so sign-in and a person's page cost no more requests.
+- **Each copy has its own groups**, named with its list prefix (`groupNames`, `prefixOf` in `lib/setup/list-permissions.js`); its row holds their ids and titles, and nothing on the admin page names a group by a fixed title.
+- **`desiredGroups` is the one rule** of who belongs where. The groups' ids are in the settings list's `site-groups` item, never in a page.
+
+## Rules from Prompt 28 (the email about an access change; keep them holding)
+
+- **Unticked every time.** "Email them about this" (`admin/EmailBox.svelte`) starts unticked whenever its screen, form or confirmation opens, and nothing stores it.
+- **No address is typed.** The draft goes to the person's stored email, with a copy to the signed-in account's; neither is asked for.
+- **The words are `lib/access/access-message.js`'s**, plain JS held by `scripts/test-access-message.js`: every name, client and role is escaped in the HTML, a draft is never longer than `MAILTO_MAX` and never cut, and a removal or a turn-off has no link. No PIN, QR code or participant link, ever.
+- **The change first.** The message appears only after the change has saved (`admin/EmailPanel.svelte`), and a box left unticked costs no request. The app sends nothing: one `access-email` audit line per press of Open email draft or Copy message, none for showing it.
+- **Only those who may give a role** (`team.assign`) see the box or the message.
+
+## Rules from Prompt 32 (your role beside your name, the admin page on the whole laptop screen; keep them holding)
+
+- **The words of who you are come from `identityOf`** (`lib/access/identity-words.js`, held by `scripts/test-identity-words.js`), made from the access the page already read: no request for the chip, the Your access popover or the welcome strip. A PIN sign-in has no chip. "Ends" shows within `ENDS_SOON_DAYS` (14); the popover names the person, never their email.
+- **The welcome strip's one memory** is `localStorage` under `pms.welcome.<hash>`, read and written in try/catch; when storage is blocked it shows once in each tab. Nothing else of a person is stored.
+- **No container is capped.** The admin page runs edge to edge with the gutter `clamp(1rem, 2vw, 2rem)`; running text is at most 72ch. From 1,100 px the brand, the tabs and the person are one sticky 52 px bar (`admin.css`); below it, the two rows of before, and only the tab row sticks. `scroll-padding-top` clears whichever sticks, with room for the 9 px ring.
+- **Each tab's columns start at 1,100 px**, by CSS grid, and below it the tab is as it was: Today's three zones (Controls sticky, End session always in view), People's person and Clients' client beside the list, Guests and QR's names and codes, Results' open sessions and the narrow list of the others, the dashboard's charts beside the By client rows. Content's two views were side by side already.
+- **A column moves nothing's order.** What a test or a screen reader reads first stays first: Results keeps the open (newest) session on the left, and the card after a delete is found by its session, not its place in the page.
+- **Colours only from `admin-tokens.css`**, each pair with its contrast test (`scripts/test-admin-today.js`). The participant page's bytes do not change (`npm run test:bundle`): a comment's word such as "table" in a new admin file can add a Tailwind rule to it.
+- `scripts/migration-tests/admin-wide.spec.ts`, `people-wide.spec.ts` and `identity-chip.spec.ts` hold the sizes 1366 by 650, 1440 by 780, 1536 by 740, 1920 by 950 and 683 by 700.
+
+## Rules from Prompt 33 (the admin page explains itself; keep them holding)
+
+The whole-panel rules. Each tab, sub-view, form and dialog of the admin page keeps them; `scripts/migration-tests/admin-review.spec.ts` reads every tab
+against them at 1366 by 650, 1920 by 950 and 683 by 700, and `admin-explains.spec.ts` holds the parts below.
+
+1. **One page pattern.** A tab's title line is its icon, its title, one plain sentence on what the tab is for, and at most one main action, on the right,
+   in the deep green (`.btn--primary` is `--adm-green`). Under it, the work in the order it is done.
+2. **Name the thing being changed.** A form, panel or dialog's title says the verb and the object, with the owner: "Add a session to Kroger", "Edit
+   client details: Kroger", "Add a team member to Kroger", "Remove Admin from Mathur, Pulkit?". Its buttons repeat the verb: "Add session", "Save
+   client", "Save brand", "Save question", "Save activity"; never a bare Save, OK or Submit.
+3. **Show where you are.** Inside a client, a person or a part of Content, a breadcrumb (`admin/Breadcrumb.svelte`) names the way there, every part
+   but the last a button back.
+4. **Show the steps** only where a task has an order (Guests and QR): numbered, the current one marked in words ("Do this now") and with its border,
+   a done one with a check and a line of what was done; a step that cannot work yet is disabled with its reason beside it (aria-describedby).
+5. **Fold what is not the main job** (`admin/Fold.svelte`): a header button with aria-expanded and aria-controls (chevron, icon, title, a count or
+   one-line summary, Show or Hide in words), the panel `hidden` while closed so Tab skips it. It starts closed on every visit: open or closed is held
+   in the component alone, never stored. Folding reads nothing new; what is inside is read as it was.
+6. **Icons** (`admin/Icon.svelte`, one 24 px grid, a 2 px stroke in the text's colour, round caps, one of each): plus adds, the pencil edits, the round
+   minus (`minus-circle`) removes one grant, the bin (`trash`) is only for deleting a whole record, the chevrons fold, the eye shows or hides, the
+   clock is history, the arrow goes back, the printer prints, the download arrow downloads, copy copies, the check is done. An icon beside words is
+   aria-hidden; an icon alone is an `IconButton` with an aria-label naming what it acts on and a tooltip on hover and focus, 44 px.
+7. **Empty states teach**: what the list is for and the button that fills it ("No sessions yet. Add the first one for Kroger with Add session.").
+8. **Alignment**: gaps of 8 px steps (16 inside a card, 24 between sections), labels above their fields, a form's footer right-aligned with Cancel then
+   the main action last, no sideways scroll, targets 44 px.
+9. **Plain words**: no new help line longer than one sentence; a word of the code ("slug", "track") is replaced by what it means.
+
+- **Roles for all clients are switches** (`admin/RoleSwitch.svelte`): role="switch", aria-checked, the name "Super admin for all clients: on", the
+  state in words beside the track. On grants at once (the same `grantRole` the buttons called); off opens the confirmation that names the person and
+  the role and removes as Remove did. A guard (`revokeProblem`: your own roles, only a Super admin, the last Super admin) disables the switch and
+  shows its words beside it; nothing is hidden. There is no Undo: a removal deletes the role's item.
+- **Remove a client role, a team entry or a grant** with the round red minus (`IconButton`, `--danger` and the icon's own shape), labelled "Remove
+  Producer for Kroger from Aedla, Rajeshwar"; the confirmation still comes first.
+- **The participant page does not change** (the same bytes: `npm run test:bundle`, `PHASE_33`); the Live display, the print sheet and the PDF do not
+  change. New colours only as pairs of `admin-tokens.css` with their contrast test (`scripts/test-admin-today.js`). (Prompt 34 lifted this for the
+  Live display, the wall, the summary pack and the leader report; the print sheet is still as it was.)
+
+## Rules from Prompt 34 (Live results, the PDF and the PowerPoint in one look; keep them holding)
+
+- **The files' colours are written once**, in `lib/exports/report-look.js`: each one named after the admin token it equals, and
+  `scripts/test-admin-today.js` fails when a value and its token differ. No file draws a colour of its own. The charts in a file take
+  `packPalette(look, palette)` there: Light, the top choice deep green, the rest lime (each bar has its value written beside it), the correct
+  answer link blue with its tick and "Correct", a green ramp; Dark, as the wall.
+- **No client colour in a file or on the wall.** The client's name and logo keep their places; the logo sits on a white plate.
+- **Dark or Light** is chosen on the Live display (Wall, for full screen; Packs, for the PDF and PowerPoint) and held for the visit only: nothing
+  is stored. The wall starts Dark, the packs Light. The leader report, a printed A4 document, is Light only.
+- **The wall's minimums:** words and figures 7:1 or better on black (white and lime; `WALL_PAIRS`), on white 7:1 for words and 4.5:1 for the hero
+  figures (`LIGHT_WALL_PAIRS`); at 1920 by 1080 each hero figure 96 px or more and every label 28 px or more (`live-display.spec.ts`). The wall
+  changes only colour, type, outlines and spacing: `present-fit.js`, the polling, held names and the not-ready states are as they were.
+- **Emphasis only where a template puts it.** A chart's headline is written as parts in `lib/results/results-chart-model.js` (`headlineParts`):
+  a figure is bold, the measure's name ("top choice", "Most people", "top answer", "support score", "Average") has the 4 px sky line under it, one
+  at most, and an answer, a label, a word people wrote or a name is always plain. The wall draws them; the same model gives each question its
+  `hero` figure. The highlighter (black on lime, 7.9:1: `HIGHLIGHT_PAIR`) is defined but not yet drawn anywhere.
+- **The line under the measure is a border**, not text decoration: the one word for a line under text, anywhere under `migration/`, adds a
+  Tailwind rule to the participant page. So does `table`: the CSV's icon is `sheet`.
+- **No Deloitte mark or image is copied from the reference slides.** The leader report's cover keeps the wordmark it already had.
+- **The pack's pages**, one model drawn by both writers: a small upper-case label (SUMMARY, ACTIVITY N OF M), the 28 pt title with a lime bar, the
+  cover's figures in an outlined box, outlined cards with a band naming each, "Source: <session> · <n> people" at every foot. A Dark page fills
+  its whole PDF sheet and its slide black. Speaker notes, the title, the language and the company are as they were.
+
+- **Results shows one session at a time** (`admin/AdminResults.svelte`): the list of the page's sessions, the one chosen beside it. Its four
+  figures come from `glanceOf` in `lib/admin/admin-results.js`, over what the screen already holds (nothing is read for them). Its charts are open
+  unless folded, which reads the roster for the guests' pictures as opening them did (for someone who may see names, with guests). **Delete
+  session...** is at the foot of the session, never in the list and never beside Live display or the downloads. With its charts open, Results
+  may scroll past one and a half windows at 1366 by 650, as People does (the owner's choice; `admin-wide.spec.ts` measures the other tabs).
+- **One maker of the session pack**, `migration/src/lib/exports/pack-download.js` (the client's brand, the two libraries, the look): the Live display's Download
+  and Results' Downloads both call it. The pack never has names.
+
+## Rules from Prompt 35 (the Art of Possibility on the guest's page; keep them holding)
+
+- **Three level colours, each with a shape and a letter.** Low `#E63A2E` (a chevron down, L), Medium `#F5A623` (a dash, M), High `#3DBB5E` (a chevron
+  up, H), in `migration/src/styles/aop-level-tokens.css` on a white well: the one set of colours on the participant page that is not the client's plate
+  (the site owner's grant, for this question only). Medium and High are too light for white alone, so every rated box has an edge of its own darker
+  colour (3:1 or more); Low's white letter is 19 px bold. `scripts/test-participant-contrast.js` reads the file and fails when a pair drops under its
+  floor. The words "Colour shows the rating, not good or bad." stay under the strip.
+- **Boxes are 48 px or more, headings are whole words, the page scrolls once.** A criterion heading wraps between words only; the grid has no scroll
+  of its own (only when a guest chose it on a screen narrower than `gridWidthFor`, `lib/participant/aop-view.js`); the strip stays at the top in the
+  grid. The view starts from the width and the orientation (`defaultView`), and a choice lasts the visit.
+- **The stored answer does not change.** A box changes in place (`setCell`) and `encodeAnswer` stores exactly what Prompt 34 stored
+  (`scripts/test-aop-view.js`: random runs of taps against the old copy, and a golden answer).
+- **A press held 650 ms opens the level menu and never also rates**; Enter, the menu key, Shift+F10 and a right-click open the same menu; Escape
+  closes it and puts the keyboard back on the box; it is never a trap. A clear offers Undo for 8 seconds; Undo fills only boxes still empty.
+- **Motion through the plan only.** Every effect is in `lib/motion/aop-motion-plan.js` (transform and opacity only, each length a token of
+  `TOKENS.aop`, a fade at the reduced level, nothing at none) and is played by `lib/motion/motion.ts` (`playEffect`, `flyOff`, `playWave`). No
+  more than `MAX_CONCURRENT` (16) things move at once: Clear all flies at most 15 copies, the wave is spaced to 13 or fewer, and many boxes changing in
+  one go do not fade their colour. The milestones are 25, 50 and 75 percent rounded up (17, 33 and 49 of 65), each said once a visit.
+- **Sound through `lib/effects/effects.ts` only** (`aopRate`, `aopHoldOpen`, `aopRowDone`, `aopMilestone`, `aopClearAll`, `aopAllRated`), behind the
+  Sound switch, started only inside a tap; the cues are data in `sound-cues.js`, in C major pentatonic, and the rating cues share one 60 ms gate.
+- **"Your ratings at a glance", the hub's mosaic and the thank-you's count are the guest's own**, made on the device (`highestRated`, `glanceOf`;
+  `lib/participant/aop-glance.svelte.ts` holds this visit's, in memory): nothing new is stored or sent and no one else sees them.
+- **The admin page does not carry the rating grid**: `migration/vite.admin.config.ts` puts `MatrixRating.admin.svelte` in its place (Brand Studio's
+  sample has no such question). The participant page may grow by 12,288 B gzip for this prompt (`PHASE_35`).
+
+## Rules from Prompt 36 (the grand finale; keep them holding)
+
+- **One finale, in five acts, over by 4.2 s.** When the thank-you page has checked that every activity is done, `finale()` (`lib/effects/effects.ts`)
+  plays the `finale` cue and, at the full motion level only, the petal shower; the page plays its acts through `playFinale` (`lib/motion/motion.ts`)
+  from `lib/motion/finale-motion-plan.js`: the hush (a 35 percent veil behind the content, in by 0.35 s, lifted from 3.6 s), the medal (lands at
+  1.1 s with a spring, its rays turn once, three rings spread, the check draws itself), the name (rises in from 1.9 s, in by 3 s) and the cards
+  (one after another from 2.3 s, each counting up from 0 over 800 ms, final by 3.6 s), the sheen at 3 s, and **Celebrate again** in the afterglow
+  from 3.6 s, which replays all of it (sound included) and keeps its place and its focus. Every length is a `TOKENS.finale` token
+  (`--motion-finale-*`); every part moves transform and opacity only (the check its stroke); no more than `MAX_CONCURRENT` move at once
+  (`scripts/test-finale-motion.js`). Nothing else changed: the per-question, per-activity and hub celebrations are as they were.
+- **Replace, not stack.** `EFFECTS.finale` is `{ cue: 'finale', confetti: 'shower' }`; the old `large` bottom bursts and their tests are gone,
+  and `CONFETTI_SIZES` is small and medium. The shower is `showerPlan` (`lib/effects/confetti-plan.js`): small bursts from just above the top
+  edge, aimed down, in three waves (a curtain sweeping left to right from 0.35 to 1.5 s, a full-width fall from 1.2 to 3.6 s, a fall over the
+  middle from 2.4 to 4.2 s) and an afterglow of about six slow petals a second until 7.5 s; everything is gone by 11 s (at 60 frames a second, and
+  in WebKit here at about 40). It is fired on the one
+  overlay through canvas-confetti, which the page already carries (no new library), in petal and ribbon paths (each with its own matrix, so
+  nothing is measured at run time) and discs, in `showerPalette` (the confetti palette, a pale lime and a warm pale yellow; never red).
+- **The caps.** Never more than 160 pieces alive (90 below 560 px). The library ages its pieces by the frames it draws (60 a second at most), so
+  the cap is kept in those frames: `showerGate` counts the overlay's frames as the library clears it for each, and lets a burst in only if what is
+  still alive and the burst fit. A slower device, whose pieces live longer in seconds, gets fewer new ones; a hidden tab draws no frames and gets
+  none. A piece crosses the screen in about its life, so what the cap counts is on the screen. A burst is fired only while the motion level is still
+  full, so the governor stepping down mid-way stops the shower; the overlay goes when its last piece has fallen.
+- **Each motion level.** Full: all of the above. Reduced (the governor has stepped down): no shower, veil, rings, turning rays, rise or count-up;
+  the medal (its check drawn), the name and the cards fade in together in 200 ms, **Celebrate again** shows at once, and a still garland of petals
+  (one CSS element along the top of the card, in pale lime and pale yellow) shows at once and is gone after 6 s. The medal keeps 1.5 rem
+  above and below it, so its rays never reach behind the headline's words. None (the device's reduced motion, the client's switch,
+  `?motion=off`): the final state at once, no garland. Sound, if the guest turned it on, is the same at every level. Brand Studio's preview shows
+  the final state with the garland held still, no motion and no sound.
+- **Never in the way.** The overlay is `pointer-events: none` and `aria-hidden`; the veil is behind the content, never over a button; nothing
+  moves the layout (layout shift 0) and no long task starts it. The page says once, in a status line, "All activities done. Thank you, <name>!";
+  the heading keeps its name and focus (`focusHeading`), and each card's sentence is one line of real text ("5 of 5 right on the first try").
+- **No flashing** (WCAG 2.3.1): the page's average luminance, sampled about every 100 ms, changes by 0.1 or more at most twice in any second
+  (`scripts/migration-tests/finale-perf.spec.ts`, which also writes the frame strip and the frame rate at 4x slowdown to `test-results/finale/`).
+- **The cue.** `finale` (`sound-cues.js`, `max: 4.6`): a swell of noise whose band rises from 500 to 3,600 Hz (a noise note may have a `filter.to`),
+  a C5 E5 G5 C6 bloom 60 ms apart at 1 s, then 14 bells from C major pentatonic about every 200 ms from 1.4 s, fading by 10 dB from -14 dBFS
+  (the brief's -24 left the cue 10 dB under every other), each 0.55 s long; nothing in the afterglow.
+- **The budget.** The participant page may grow by 4,096 B gzip for this prompt (`PHASE_36`); it ended 21 B under it, so the next change to that
+  page will need room found first. The medal's ink on its lime and the cards' words on white are held to 4.5:1 (`scripts/test-participant-contrast.js`).
 
 ## Before finishing a change
 

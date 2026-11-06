@@ -45,7 +45,7 @@ The code, the screens and the lists use different words for some lists.
 | `options` | PMSAnswerOptions | The answers a question offers, including which one is right. | participant, admin | admin, setup | 0 | about 32 per new client |
 | `tracks` | PMSParticipants | One item for each visit: one person on one device in one session. | participant, admin | participant, admin | 60 | 6,000 |
 | `qrtokens` | PMSGuestQRCodes | One item for each single-use QR code. | participant, admin, setup | admin, participant | up to 60 in guest mode | up to 6,000 |
-| `appsettings` | PMSAppSettings | One item, `default`: which session and client are live, and the version of the lists. Every page reads it first. Setup writes it when it makes the lists; nobody makes it by hand. | participant, admin, setup | admin, setup | 0 | 1 in total |
+| `appsettings` | PMSAppSettings | One item, `default`: which session and client are live, and the version of the lists. Every page reads it first. Setup writes it when it makes the lists; nobody makes it by hand. A second item, `site-groups`, holds the ids of the PMS groups as JSON in its Title, written by Setup's Apply (Prompt 27); the participant page never reads it. | participant, admin, setup | admin, setup | 0 | 2 in total |
 | `visitorroster` | PMSGuestList | The guest list: one item for each named guest of a session. | participant, admin | admin | up to 60 in guest mode | up to 6,000 |
 | `uservisitlogs` | PMSVisitLog | The visit log: one row for each browser tab that opened the participant page. Results read it for names, and Delete session removes a session's rows. | admin | participant, admin | 60 or more | 6,000 to 9,000 |
 | `adminusers` | PMSAdminUsers | The facilitators who may unlock the admin page: a name and a hash of a PIN each. | admin | setup | 0 | a handful in total |
@@ -180,11 +180,11 @@ Key `qrtokens` (on the local server, `server/data/qrtokens.json`). One item for 
 
 ## PMSAppSettings
 
-Key `appsettings` (on the local server, `server/data/appsettings.json`). One item, `default`: which session and client are live, and the version of the lists. Every page reads it first. Setup writes it when it makes the lists; nobody makes it by hand. Read by participant, admin, setup; written by admin, setup.
+Key `appsettings` (on the local server, `server/data/appsettings.json`). One item, `default`: which session and client are live, and the version of the lists. Every page reads it first. Setup writes it when it makes the lists; nobody makes it by hand. A second item, `site-groups`, holds the ids of the PMS groups as JSON in its Title, written by Setup's Apply (Prompt 27); the participant page never reads it. Read by participant, admin, setup; written by admin, setup.
 
 | Column | Type | Must exist | Indexed | Unique | Required | Allowed values | Longest | Default | Personal data | What it holds | Read by | Written by |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `AppId` | Single line of text | yes | yes | yes | yes |  | 255 |  | no | The record's own id: always default. | participant, admin, setup | admin, setup |
+| `AppId` | Single line of text | yes | yes | yes | yes |  | 255 |  | no | The record's own id: default, or site-groups. | participant, admin, setup | admin, setup |
 | `ActiveSessionId` | Single line of text | yes | no | no | no |  | 255 |  | no | The live session (a Sessions.AppId). | participant, admin, setup | admin, setup |
 | `ActiveClientId` | Single line of text | yes | no | no | no |  | 255 |  | no | The live client (a Clients.AppId). With none named, nothing is live. | participant, admin, setup | admin, setup |
 | `ActivatedAt` | Date and Time, shown as Date & Time | yes | no | no | no |  |  |  | no | When Go live was last pressed: open pages notice a change by it. | participant, admin, setup | admin, setup |
@@ -286,7 +286,7 @@ Key `auditlog` (on the local server, `server/data/auditlog.json`). One line for 
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | `AppId` | Single line of text | yes | yes | yes | yes |  | 255 |  | no | The record's own id: audit-&lt;UUID>. | admin, setup | admin, setup |
 | `Actor` | Single line of text | yes | no | no | no |  | 255 |  | **yes** | Who did it (a Users.AppId). | admin, setup | admin, setup |
-| `Action` | Single line of text | yes | no | no | no | `grant`, `revoke`, `add-user`, `disable`, `enable`, `migrate`, `settings`, `client`, `picture` | 255 |  | no | What was done; settings (a reporting setting) and client (a client's Industry or Region) since Prompt 22, in this text column, so no new version. | admin, setup | admin, setup |
+| `Action` | Single line of text | yes | no | no | no | `grant`, `revoke`, `add-user`, `disable`, `enable`, `migrate`, `settings`, `client`, `picture`, `site-add`, `site-remove`, `access-email` | 255 |  | no | What was done; settings (a reporting setting) and client (a client's Industry or Region) since Prompt 22, in this text column, so no new version. | admin, setup | admin, setup |
 | `TargetUser` | Single line of text | yes | no | no | no |  | 255 |  | **yes** | To whom (a Users.AppId). | admin, setup | admin, setup |
 | `Role` | Single line of text | yes | no | no | no |  | 255 |  | no | The role, for a grant or a removal. | admin, setup | admin, setup |
 | `ClientId` | Single line of text | yes | no | no | no |  | 255 |  | no | The client, when the role was for one. | admin, setup | admin, setup |
@@ -344,7 +344,7 @@ Worked out from who reads and writes each list (the `reads` and `writes` of pms-
 | PMSAnswerOptions | The answers a question offers, including which one is right. | Read | Contribute (add and edit items) |
 | PMSParticipants | One item for each visit: one person on one device in one session. | Contribute (add and edit items) | Contribute (add and edit items) |
 | PMSGuestQRCodes | One item for each single-use QR code. | Contribute (add and edit items) | Contribute (add and edit items) |
-| PMSAppSettings | One item, `default`: which session and client are live, and the version of the lists. Every page reads it first. Setup writes it when it makes the lists; nobody makes it by hand. | Read | Contribute (add and edit items) |
+| PMSAppSettings | One item, `default`: which session and client are live, and the version of the lists. Every page reads it first. Setup writes it when it makes the lists; nobody makes it by hand. A second item, `site-groups`, holds the ids of the PMS groups as JSON in its Title, written by Setup's Apply (Prompt 27); the participant page never reads it. | Read | Contribute (add and edit items) |
 | PMSGuestList | The guest list: one item for each named guest of a session. | Read | Contribute (add and edit items) |
 | PMSVisitLog | The visit log: one row for each browser tab that opened the participant page. Results read it for names, and Delete session removes a session's rows. | Contribute (add and edit items) | Contribute (add and edit items) |
 | PMSAdminUsers | The facilitators who may unlock the admin page: a name and a hash of a PIN each. | **No access** | Read |

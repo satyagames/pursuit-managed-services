@@ -1,0 +1,129 @@
+// The rules behind the Art of Possibility's one calm screen (Prompt 35), with no DOM (scripts/test-aop-view.js): which view a guest starts in, the counts
+// of the status strip, a finished row, and the per-box update. pager/MatrixRating.svelte draws what this says.
+//
+// The per-box update changes one box of the guest's grid in place (in the page the grid is Svelte state, so only that box, its row and the strip are
+// drawn again) instead of copying the whole grid on every tap; lib/participant/aop-answer.js's encodeAnswer then stores exactly what a copy stored.
+
+import { LEVELS } from './aop-answer.js';
+import { TOKENS } from '../motion/motion-plan.js';
+
+/** @typedef {import('./aop-answer.js').Grid} Grid */
+/** @typedef {import('./aop-answer.js').Shape} Shape */
+
+/**
+ * The narrowest each part of the grid may be, px: the sub-process column, the People column, a criterion (whole words, Prompt 35), and the page's
+ * gutters with the card's own padding on the stage this question uses.
+ */
+export const GRID_MIN_WIDTH = Object.freeze({ process: 112, people: 56, criterion: 96, frame: 52 });
+
+/** The narrowest window, px, in which the grid of `criteria` criteria fits with no sideways scroll. @param {number} criteria */
+export const gridWidthFor = (criteria) => GRID_MIN_WIDTH.process + GRID_MIN_WIDTH.people + criteria * GRID_MIN_WIDTH.criterion + GRID_MIN_WIDTH.frame;
+
+/** The width from which a landscape window starts in the grid. */
+export const GRID_FROM = 700;
+
+/**
+ * The view a guest starts in: the grid on a laptop or an iPad in landscape (700 px or wider, wider than tall, and wide enough for this many
+ * criteria), one at a time otherwise. What they chose this visit wins.
+ * @param {{ width: number, height: number, criteria: number, chosen?: 'grid' | 'single' | null }} input
+ * @returns {'grid' | 'single'}
+ */
+export function defaultView({ width, height, criteria, chosen = null }) {
+  if (chosen) return chosen;
+  return width >= GRID_FROM && width > height && width >= gridWidthFor(criteria) ? 'grid' : 'single';
+}
+
+/** How many boxes are Low, Medium and High, of the rows and criteria the question has now. @param {Grid} grid @param {Shape} shape */
+export function levelCounts(grid, { rows, criteria }) {
+  /** @type {Record<number, number>} */
+  const counts = { 1: 0, 2: 0, 3: 0 };
+  for (const row of rows) for (const criterion of criteria) {
+    const level = grid?.[row.id]?.[criterion.id];
+    if (LEVELS.includes(level)) counts[level] += 1;
+  }
+  return counts;
+}
+
+/** Every criterion of the row has a rating. @param {Grid} grid @param {Shape} shape @param {string} rowId */
+export const rowIsDone = (grid, { criteria }, rowId) => criteria.length > 0 && criteria.every((criterion) => LEVELS.includes(grid?.[rowId]?.[criterion.id]));
+
+/**
+ * Changes one box in place: a level sets it, undefined clears it. @param {Grid} grid @param {string} rowId @param {string} criterionId
+ * @param {number | undefined} level
+ */
+export function setCell(grid, rowId, criterionId, level) {
+  if (level === undefined) { if (grid[rowId]) delete grid[rowId][criterionId]; return; }
+  (grid[rowId] ??= {})[criterionId] = level;
+}
+
+/** How long a press is held before the level menu opens, ms: the motion token the ring fills in (lib/motion/motion-tokens.css --motion-aop-hold). */
+export const HOLD_MS = TOKENS.aop.hold;
+/** How long One at a time shows a finished sub-process before the next, ms (the motion token --motion-aop-advance). */
+export const ADVANCE_MS = TOKENS.aop.advance;
+
+/**
+ * Whether One at a time moves on by itself: the rating just finished this sub-process, it is not the last, and motion is on (with motion off the guest
+ * moves on with Next, so nothing changes under them). @param {{ wasDone: boolean, isDone: boolean, at: number, count: number, level: 'full' | 'reduced' | 'none' }} input
+ */
+export const advancesAfter = ({ wasDone, isDone, at, count, level }) => !wasDone && isDone && at < count - 1 && level !== 'none';
+
+/** How long "Cleared. Undo" stays, ms. */
+export const UNDO_MS = 8000;
+
+/** @typedef {{ rowId: string, criterionId: string, level: number }} Cleared */
+
+/**
+ * The ratings a clear takes away: of `boxes` when given, else of every box of the question as it is now. An empty box gives nothing.
+ * @param {Grid} grid @param {Shape} shape @param {{ rowId: string, criterionId: string }[]} [boxes] @returns {Cleared[]}
+ */
+export function clearedOf(grid, { rows, criteria }, boxes) {
+  const list = boxes ?? rows.flatMap((row) => criteria.map((criterion) => ({ rowId: row.id, criterionId: criterion.id })));
+  /** @type {Cleared[]} */
+  const out = [];
+  for (const { rowId, criterionId } of list) {
+    const level = grid?.[rowId]?.[criterionId];
+    if (LEVELS.includes(level)) out.push({ rowId, criterionId, level });
+  }
+  return out;
+}
+
+/** Undo: puts the cleared ratings back, each only where its box is still empty (a box rated since keeps that rating). Returns how many came back. @param {Grid} grid @param {Cleared[]} cleared */
+export function restoreInto(grid, cleared) {
+  let back = 0;
+  for (const { rowId, criterionId, level } of cleared) {
+    if (LEVELS.includes(grid?.[rowId]?.[criterionId])) continue;
+    setCell(grid, rowId, criterionId, level);
+    back += 1;
+  }
+  return back;
+}
+
+/**
+ * "Your ratings at a glance" (Prompt 35): the guest's highest-rated sub-process, the first row with the most Highs, or null when no row has one. Made on
+ * the device from the draft, stored nowhere and shown to no one else. @param {Grid} grid @param {{ rows: { id: string, label: string }[], criteria: { id: string }[] }} shape
+ * @returns {{ label: string, highs: number } | null}
+ */
+export function highestRated(grid, { rows, criteria }) {
+  /** @type {{ label: string, highs: number } | null} */
+  let best = null;
+  for (const row of rows) {
+    const highs = criteria.filter((criterion) => grid?.[row.id]?.[criterion.id] === 3).length;
+    if (highs > 0 && highs > (best?.highs ?? 0)) best = { label: row.label, highs };
+  }
+  return best;
+}
+
+/** The card's one sentence, from a fixed template with no judgement words; '' when there is nothing to say. @param {{ label: string, highs: number } | null} best */
+export const highestSentence = (best) => (best ? `Your highest-rated sub-process was ${best.label} (${best.highs} High).` : '');
+
+/** @typedef {{ levels: number[][], low: number, medium: number, high: number, total: number }} Glance */
+
+/**
+ * A grid as the hub and the thank-you keep it for the visit (lib/participant/aop-glance.svelte.ts): each box's level row by row (0 for an empty box) and the
+ * three counts. @param {Grid} grid @param {Shape} shape @returns {Glance}
+ */
+export function glanceOf(grid, shape) {
+  const levels = shape.rows.map((row) => shape.criteria.map((criterion) => (LEVELS.includes(grid?.[row.id]?.[criterion.id]) ? grid[row.id][criterion.id] : 0)));
+  const counts = levelCounts(grid, shape);
+  return { levels, low: counts[1], medium: counts[2], high: counts[3], total: counts[1] + counts[2] + counts[3] };
+}

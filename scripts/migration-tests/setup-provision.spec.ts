@@ -51,10 +51,10 @@ test('Show the plan on a complete site says "Nothing to create", and names what 
   await showPlan(page);
   await expect(page.getByTestId('plan-summary')).toHaveText('Nothing to create.');
   await expect(page.getByTestId('plan-settled')).toContainText('Already as the app needs: PMSClients, PMSClientSessions');
-  // (Prompt 21, Phase 7: the access lists' permissions, which a site owner sets by hand; Setup writes none of them.)
-  await expect(page.getByTestId('plan-permissions').getByRole('listitem')).toHaveCount(4);
-  await expect(page.getByTestId('plan-permissions')).toContainText('PMSUsers and PMSRoleAssignments: stop inheriting permissions');
-  await expect(page.getByTestId('plan-permissions')).toContainText('PMSAuditLog: stop inheriting permissions');
+  // (Prompt 27: the permissions moved out of the plan to a section with its own Apply, which the owner chose; showing the plan still writes nothing.)
+  await expect(page.getByTestId('plan-permissions')).toHaveCount(0);
+  await expect(page.getByTestId('permissions-matrix').getByRole('row')).toHaveCount(19);
+  await expect(page.getByTestId('permissions-matrix')).toContainText('PMS add only');
   expect(fake.writes()).toEqual([]);
 });
 

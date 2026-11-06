@@ -83,6 +83,18 @@
     font-weight: var(--fw-bold);
   }
 
+  /* (Prompt 32: Today's first column of three, on a laptop under 1,300 px, is too narrow for all of it on one line: the client takes a line.) */
+  @media (min-width: 1100px) and (max-width: 1299px) {
+    .picker,
+    .picker--sessions {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .picker > :first-child {
+      grid-column: 1 / -1;
+    }
+  }
+
   @media (max-width: 640px) {
     .picker {
       grid-template-columns: 1fr;

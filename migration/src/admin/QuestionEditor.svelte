@@ -424,7 +424,7 @@
     {/if}
     {#if error}<p class="error" role="alert">{error}</p>{/if}
     <!-- (Phase 16: the buttons stay in reach at the foot of a tall editor, a question of eight picture tiles, above the iPad's safe area.) -->
-    <div class="dialog__actions content-editor__actions"><button class="btn" type="button" onclick={cancel} disabled={busy}>Cancel</button><button class="btn btn--primary" type="submit" disabled={busy}>{busy ? 'Saving...' : 'Save'}</button></div>
+    <div class="dialog__actions content-editor__actions"><button class="btn" type="button" onclick={cancel} disabled={busy}>Cancel</button><button class="btn btn--primary" type="submit" disabled={busy}>{busy ? 'Saving...' : 'Save question'}</button></div>
   </form>
 </section>
 

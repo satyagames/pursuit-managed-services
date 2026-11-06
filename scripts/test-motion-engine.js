@@ -74,7 +74,10 @@ describe('the motion engine', () => {
     const plan = pathToFileURL(path.join(ROOT, 'migration/src/lib/motion/motion-plan.js')).href;
     folder = await mkdtemp(path.join(os.tmpdir(), 'pms-motion-'));
     file = path.join(folder, 'motion.mjs');
-    await writeFile(file, code.replace(/from ['"]\.\/motion-plan\.js['"]/, `from '${plan}'`));
+    // (Prompt 35: the Art of Possibility's plan is imported too; Prompt 36: and the finale's.)
+    const aopPlan = pathToFileURL(path.join(ROOT, 'migration/src/lib/motion/aop-motion-plan.js')).href;
+    const finalePlan = pathToFileURL(path.join(ROOT, 'migration/src/lib/motion/finale-motion-plan.js')).href;
+    await writeFile(file, code.replace(/from ['"]\.\/motion-plan\.js['"]/, `from '${plan}'`).replace(/from ['"]\.\/aop-motion-plan\.js['"]/, `from '${aopPlan}'`).replace(/from ['"]\.\/finale-motion-plan\.js['"]/, `from '${finalePlan}'`));
   });
   after(async () => { if (folder) await rm(folder, { recursive: true, force: true }); });
 

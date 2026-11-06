@@ -1,11 +1,11 @@
 # Adding a person: the app's role and the SharePoint site are two steps
 
 A role in **People** (Producer, Designer, Admin, Leadership, Super admin) decides what a person may do **inside** the app. It does not give them access to the
-PCOE SharePoint site, where the pages (`index.html`, `admin.html`, `setup.html`) and the sixteen lists live. A person needs both. The app cannot do the
-second step for you: it never reads or changes the site's permissions (Prompt 25 changed words only).
+PCOE SharePoint site, where the pages (`index.html`, `admin.html`, `setup.html`) and the sixteen lists live. A person needs both. The app does not do the
+second step: a Super admin does, in the app's own SharePoint groups (Prompt 27). Those groups are made once, by a site owner, with **Apply** on the Setup page.
+The site also holds other, unrelated content, so nobody belongs in the site's built-in Members or Visitors for the sake of this app.
 
-*(The brief for this document pointed at `claude/onboarding-sharepoint-access.md`; that file was not in the tree, so this text was written from the brief's
-outline and [SHAREPOINT.md](SHAREPOINT.md#who-may-do-what). Check the group names below against the real site.)*
+*(Every SharePoint step of Prompt 27 is ASSUMED until tried on the real site: [QA-TESTING.md](../QA-TESTING.md).)*
 
 ## Which message means what
 
@@ -20,37 +20,92 @@ A person who sees the app's No access screen already has site access.
 
 ## Add a person to the site
 
-1. Open the PCOE SharePoint site and choose **Settings** (the gear), then **Site permissions**.
-2. Choose **Share site** (or **Advanced permissions settings** if your site uses groups).
-3. Enter the person's name or email. Pick the level in the table below. Leave "Send an email invitation" on if you want them told.
-4. Choose **Share**. Ask them to reload the page they were trying to open.
-5. Give them their role in the app: **People**, the person, **Give access**.
+1. Give them their role in the app: **People**, the person, **Give access**. An Admin stops here: the person now shows under **Waiting for site access** until a Super admin finishes.
+2. A Super admin opens the person in **People**. With Setup's switch on, **Check and fix** (or any change a Super admin makes there) adds them to the right groups, and you are done. Otherwise, press **Open site groups**. It copies the person's email and opens the group's SharePoint page.
+3. Choose **New**, paste the email, and choose **Share**. Ask them to reload the page they were trying to open.
 
-Only a site owner (or someone with Full control of the site) can do steps 1 to 4. Ask the site owner if the gear shows no Site permissions.
+**Check site access** on the People page (a Super admin's) lists who is waiting, who has more access than the role says, and who is in a group but not in People. It only reads.
 
-## The level each role needs
+## The group each role needs
 
-| Role in the app | Site level | Why |
+| Role in the app | Group | Why |
 |---|---|---|
-| Super admin, Admin, Producer, Designer | **Edit** (the site's Members group) | The admin page writes sessions, content and the visit log, and the library for pictures. |
-| Leadership | **Read** (the site's Visitors group) is enough | Leadership reads results, the dashboard and the exports; nothing is written. |
-| Participants (iPads, the participant link) | As [SHAREPOINT.md](SHAREPOINT.md#who-may-do-what) lists: Contribute on the lists they write, Read on the rest, no access to `PMSAdminUsers` | The participant page saves answers and the visit log. |
+| Super admin, Admin | **PMS staff** and **PMS access managers** | The admin page writes sessions, content and the visit log; these two also write the people lists. |
+| Producer, Designer | **PMS staff** | The admin page writes sessions, content and the visit log, and the library for pictures. |
+| Leadership | **PMS leadership** | Leadership reads results, the dashboard and the exports; nothing is written. |
+| Participants (iPads, the participant link) | **PMS participants**, by a site owner or as IT's directory group | The participant page saves answers and the visit log. It cannot read the five secret lists. |
 
-The names Members and Visitors are SharePoint's defaults; a site may call its groups something else. What matters is the level, not the group's name.
+**PMS super admins** owns the three groups a Super admin changes; a site owner alone chooses who is in it, and in PMS participants. What each group holds on each list is printed on the Setup page and in [SHAREPOINT.md](SHAREPOINT.md#who-may-do-what).
+
+## Email the person
+
+Every screen that changes a person's access (Give access, Make Super admin or Admin, Remove, Turn access off and on, the switch of an extra, and a
+client's Add to team and Remove) offers one box: **Email them about this**. It is unticked every time the screen opens, and nothing remembers it; only
+a Super admin or an Admin sees it. Nobody types an address: the line under the box shows the person's (from People) and says a copy comes to you
+(your sign-in's).
+
+Ticked, the message appears under the change once it has saved, never before, in a box you may edit. **Open email draft** opens it in your own mail
+program, to the person with a copy to you: you press Send, so it comes from your own address under your own name. **Copy message** puts it on the
+clipboard for Teams or anywhere else. The app does not send it, and SharePoint does not either: on PCOE only a site owner may send mail through
+SharePoint (tested 4 Nov 2026), so every message goes from the sender's own mail. Each press writes one line in the person's history ("Email draft opened", "Email
+message copied"), which says you prepared it, not that it arrived.
+
+| Change | What the message says |
+|---|---|
+| A role given (Give access, Make Super admin, Make Admin) | who gave which role, what the role lets them do, which clients, any end date, the admin page's link |
+| A role changed (an extra switched) | the role it is now, what it lets them do, the link |
+| A role removed | which role was removed and who to ask; no link |
+| Access turned off | that it was turned off and who to ask; no link |
+| Access turned on | that it is on again, their roles, the link |
+| Added to a client's team | the role on the team, the client or sessions, the link |
+
+A message with the link says to sign in with the work account it came to, that opening the link does not give access (SharePoint decides who may
+enter), and to ask a Super admin if SharePoint says "Sorry, this item hasn't been shared with you". When **Check site access** has just found the
+person waiting for their groups, it adds that they may not be able to open it until a Super admin adds them; nothing is read to know it. A message
+never holds a PIN, a QR code, a participant link or anyone else's details. A long client list becomes a count, so that the draft fits; the box says so.
+
+## A site that already has people: the existing PCOE site
+
+Apply removes nobody: people who reach the app through the site's Members or Visitors keep working. When ready, the owner moves them into the PMS groups (**Check site access** lists them as waiting, whichever other group they are in), then presses **Remove the site's groups** on the Setup page. That takes the site's own groups off the app's lists and folder only; it changes nothing else on the site, and until it is pressed anyone in Members can still read the five secret lists.
+
+## What the person sees once they are in
+
+Their role is beside their name in the admin page's bar: "Producer · Kroger", "Admin · All clients", and "Ends 12 Dec" when it ends within 14 days.
+Pressing it opens **Your access**: what they can do, what is not available to them and who does it, and "Need a different role? Ask a Super admin.",
+with **Copy my details** to paste into a message. A first visit, and the first visit after a change of role, starts with a one-line welcome saying the
+same. A role given in People shows when their page next reads their access (a reload, or a tab opened five minutes or more after the last read); nothing about it reaches the site's groups (the two steps above).
+
+## Giving and removing roles in People (Prompt 33)
+
+Open the person in **People**. **Super admin** and **Admin** for all clients are switches: turning one on gives the role at once; turning one off asks
+first, naming the person and the role. A switch you cannot move (your own roles, the last Super admin, or you are not a Super admin) is greyed with the
+reason beside it. A role for one client is removed with the round red minus beside it, which also asks first. The person's **History of changes** is
+folded at the foot of their page: press it to read it; it is closed again on your next visit.
+
+## Showing results in the room (Prompt 34)
+
+Open **Results**, a session, then **Live**. Follow the three steps: check how many have answered (**Refresh** reads again), choose the wall's look
+(**Dark** for a projector, **Light** for a bright room) and press **Show the wall full screen**; for a second screen, **Open the wall in a new tab**.
+The wall never shows a name. For leaders, choose the packs' look under **Download** (Light prints well) and press **Download PDF pack** or
+**Download PowerPoint pack**; **Download CSV** is the table. The same files are under **Downloads** on the session's own page in **Results**,
+with the leader report (a PDF; there is no leader report in PowerPoint).
+
+## What a guest does in the Art of Possibility (Prompt 35)
+
+On a laptop or an iPad held sideways the guest sees every sub-process and criterion at once; on a phone or an iPad held upright, one sub-process at a
+time. A tap on a box rates it Low, then Medium, then High, then clears it; pressing and holding a box opens the choices. **Next empty box** finds
+the next one to rate; **Clear all** is under the three dots and can be undone for eight seconds. Once every box is rated the guest sees their own
+ratings at a glance, then presses **Send**.
 
 ## If the error stays
 
 - Ask them to sign out of Microsoft 365 in that browser and sign in with the work account they were added with (a personal account, or a second
   work account, is a different person to SharePoint).
-- Check the site's **Site permissions** list for their name; a person added to the app's People list is not there unless you added them.
-- Check they were not added to a group that has been given less than Edit on the lists, or had permissions stopped inheriting from the site.
+- Press **Check site access**; a person added to the app's People list is in no group until a Super admin adds them.
 - A link copied from someone else's browser opens the same page, but still asks SharePoint who you are: the link itself never grants access.
 - Wait a few minutes after a change, then reload. Send IT the **Details** (the SPRequestGuid) from the error page if it persists.
   A tenant's sign-in rules can differ: [SHAREPOINT.md](SHAREPOINT.md#sessions-tokens-and-the-403).
 
 ## The honest limit
 
-The app does not know whether a person can open the site: it only sees people who already got in. So Give access and Add user can only **remind** you
-(Prompt 25 added that line to both and to the No access screen). Proposed, not built: Setup listing the site's groups and the level each holds; Give access
-checking whether the person can already open the site (needs a permission read that Admins may not be allowed); an "Invite by email" button that sends
-the site link.
+With Setup's switch on, a Super admin's changes put the person in or take them out of the PMS groups by themselves, and their page says **Site access** and which groups. With it off, or when SharePoint does not let that Super admin change a group, the person's page offers **Open site groups** instead. An Admin's changes never touch the site: the person waits for a Super admin.

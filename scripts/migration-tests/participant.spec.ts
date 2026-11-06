@@ -276,7 +276,7 @@ test('PPT exports use each selected session client branding', async ({ page }) =
   await mockApi(page);
   for (const [sessionId, name, color] of [['session-a', 'Synthetic Alpha', '0060A9'], ['session-b', 'Synthetic Beta', '008044']]) {
     await openLiveDisplay(page, sessionId);
-    const exportButton = page.getByRole('button', { name: 'Export PPT', exact: true });
+    const exportButton = page.getByRole('button', { name: 'Download PowerPoint pack', exact: true });
     await expect(exportButton).toBeVisible();
     const downloadPromise = page.waitForEvent('download');
     await exportButton.click();
@@ -284,7 +284,8 @@ test('PPT exports use each selected session client branding', async ({ page }) =
     const archive = await JSZip.loadAsync(await readFile((await download.path())!));
     const slide = await archive.file('ppt/slides/slide1.xml')!.async('string');
     expect(slide).toContain(name);
-    expect(slide).toContain(color);
+    // (Prompt 34: each session's client is named on its slides; the pack wears the app's look, not the client's colour.)
+    expect(slide).not.toContain(color);
     expect(await archive.file('docProps/app.xml')!.async('string')).toContain('<Company>Pursuit Managed Services</Company>');
   }
 });
@@ -292,7 +293,7 @@ test('PPT exports use each selected session client branding', async ({ page }) =
 test('PDF exports record the product name as the creator', async ({ page }) => {
   await mockApi(page);
   await openLiveDisplay(page, 'session-a');
-  const exportButton = page.getByRole('button', { name: 'Export PDF', exact: true });
+  const exportButton = page.getByRole('button', { name: 'Download PDF pack', exact: true });
   await expect(exportButton).toBeVisible();
   const downloadPromise = page.waitForEvent('download');
   await exportButton.click();
@@ -401,11 +402,11 @@ test('Admin Content rolls back a partial create and preserves the editable draft
   await page.getByLabel('Option 1 text').fill('First');
   await page.getByLabel('Option 2 text').fill('Second');
   fixture.failOptionCreateAt = 2;
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(page.getByRole('alert')).toContainText('Synthetic option create failure');
   await expect(page.getByLabel('Question', { exact: true })).toHaveValue('Synthetic new draft');
   await expect(page.getByLabel('Option 1 text')).toHaveValue('First');
-  await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ })).toBeEnabled();
   expect(fixture.deleted).toEqual(['created-options-1', 'created-questions-1']);
 });
 
@@ -420,7 +421,7 @@ test('Admin Content converts question types, updates records, and unlinks delete
   await row.getByRole('button', { name: 'Edit' }).click();
   await page.getByLabel('Question', { exact: true }).fill('Converted multi question');
   await page.getByLabel('Type').selectOption('multi-select');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(page.getByText('Converted multi question')).toBeVisible();
   expect(fixture.records.questions.find((question) => question.id === 'question-b')).toMatchObject({ prompt: 'Converted multi question', type: 'multi-select' });
   expect(fixture.records.options.filter((option) => option.questionId === 'question-b').every((option) => option.correct == null)).toBe(true);
@@ -475,7 +476,7 @@ test('Admin Clients blocks deleting a referenced client, and Brand Studio surfac
   const logo = await makeImage(page, { width: 900, height: 450, type: 'image/png', paint: 'logo' });
   await fileInput.setInputFiles({ name: 'logo.png', mimeType: 'image/png', buffer: logo });
   await page.getByRole('dialog', { name: /Crop and fit/ }).getByRole('button', { name: 'Use this picture' }).click();
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(page.locator('.brand__actions').getByRole('alert')).toContainText('Synthetic logo upload denied');
   expect(fixture.logoUploadRequests).toBe(1);
 });
@@ -490,7 +491,8 @@ test('Admin Results restarts only the selected track answers from the chosen act
   // (Phase 7c: a visit with no name anywhere is "Unnamed participant N", as the leader report says, not the client's name.)
   const trackRow = card.locator('li.row').filter({ hasText: 'Unnamed participant 1' });
   // (A card is read when opened: Prompt 26.)
-  await card.getByRole('button', { name: 'Open', exact: true }).click();
+  await page.locator('[data-open-session="session-a"]').click(); // (Prompt 34: the sessions are a list; the one chosen is shown.)
+  await card.getByRole('button', { name: /^People/ }).click(); // (Prompt 33: the participants are folded under the charts.)
   await trackRow.getByRole('button', { name: 'Restart...' }).click();
   await page.getByRole('radio', { name: /Module A/ }).locator('..').click();
   await page.getByRole('button', { name: 'Restart', exact: true }).click();
@@ -527,20 +529,20 @@ test('Admin Clients creates and edits a client record', async ({ page }) => {
   await page.getByRole('tab', { name: 'Clients' }).click();
   await page.getByRole('button', { name: 'Add client' }).click();
   await page.getByLabel('Name', { exact: true }).fill('Synthetic New Client');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   const client = page.locator('.row').filter({ hasText: 'Synthetic New Client' });
   await expect(client).toBeVisible();
   await client.getByRole('button', { name: 'Edit' }).click();
   await page.getByLabel('Name', { exact: true }).fill('Synthetic Edited Client');
   await expect(page.getByLabel('Primary color'), 'colours are not on the Clients form any more').toHaveCount(0);
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(page.locator('.row').filter({ hasText: 'Synthetic Edited Client' })).toBeVisible();
   // A new client's older colour fields come from the default palette, and the name edit left them alone.
   expect(fixture.records.clients.find((entry) => entry.id === 'client-created')).toMatchObject({ name: 'Synthetic Edited Client', primaryColor: '#045BCC', secondaryColor: '#296CD4' });
   // The colours are Brand Studio's: saving there writes the older fields from the theme.
   await page.locator('.row').filter({ hasText: 'Synthetic Edited Client' }).getByRole('button', { name: /^Brand/ }).click();
   await page.getByLabel('Primary', { exact: true }).fill('#123456');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(page.getByTestId('brand-status')).toHaveText('All changes saved');
   expect(fixture.records.clients.find((entry) => entry.id === 'client-created')).toMatchObject({ name: 'Synthetic Edited Client', primaryColor: '#123456', themeVersion: 3 });
 });
@@ -559,7 +561,7 @@ test('Admin Today and Guests and QR: live session, visit mode, roster, QR codes,
   expect(fixture.records.sessions[0].participationMode).toBe('client-visit');
   expect(fixture.records.appsettings[0].activeSessionId).toBe('session-a');
   await page.getByRole('tab', { name: 'Guests and QR' }).click();
-  await expect(page.getByRole('heading', { name: 'Guests and QR', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Guests and QR codes', exact: true })).toBeVisible();
   await page.getByRole('textbox', { name: 'Visitor name' }).fill('Jordan Lee');
   await page.getByRole('button', { name: 'Add visitor' }).click();
   const visitorRow = page.getByRole('listitem').filter({ hasText: 'Jordan Lee' });
@@ -577,7 +579,8 @@ test('Admin Today and Guests and QR: live session, visit mode, roster, QR codes,
   expect(fixture.records.visitors[0].enabled).toBe(false);
   expect(fixture.records.tokens[1].used).toBe(true);
   expect(fixture.records.tokens[1].expiredAt).toBeTruthy();
-  await expect(page.getByRole('heading', { name: 'Recent app entries' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^Recent app entries/ })).toBeVisible();
+  await page.getByRole('button', { name: /^Recent app entries/ }).click(); // (Prompt 33: folded, closed on every visit.)
   await expect(page.getByText('Casey Example')).toBeVisible();
 
   // Another existing session can be made live from Today; with a participant in this one, it asks first.

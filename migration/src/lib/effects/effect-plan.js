@@ -4,8 +4,8 @@
 
 /**
  * @typedef {import('./sound-cues.js').CueName} CueName
- * @typedef {'small' | 'medium' | 'large'} ConfettiSize
- * @typedef {{ cue: CueName | null, confetti: ConfettiSize | null }} Effect
+ * @typedef {'small' | 'medium'} ConfettiSize
+ * @typedef {{ cue: CueName | null, confetti: ConfettiSize | 'shower' | null }} Effect `shower` is the finale's petal shower (Prompt 36), not a burst
  */
 
 /** Next, Back, Home and "Click here to begin" make no sound of their own, so they are not here. */
@@ -13,12 +13,26 @@ export const EFFECTS = /** @type {const} */ ({
   soundOn: { cue: 'soundOn', confetti: null },
   pick: { cue: 'pick', confetti: null },
   activityComplete: { cue: 'activityComplete', confetti: 'medium' },
-  finale: { cue: 'finale', confetti: 'large' },
+  // The finale (Prompt 36): the petal shower from above, which replaced the three bursts from the bottom.
+  finale: { cue: 'finale', confetti: 'shower' },
   // The hub (Prompt 24). Its small sprays are not confetti: they are the plan's sparkPlan, asked for by effects.ts.
   stamp: { cue: 'stamp', confetti: null },
   unlock: { cue: 'unlock', confetti: null },
   locked: { cue: 'locked', confetti: null },
   allDone: { cue: 'allDone', confetti: 'medium' },
+  // The Art of Possibility (Prompt 35): a note for each level a box takes, the clear's tick, the hold's blip, a finished row, the three milestones,
+  // Clear all, and every box rated with the small burst from the bar (the activity's own medium burst still comes when it is sent).
+  rateLow: { cue: 'rateLow', confetti: null },
+  rateMedium: { cue: 'rateMedium', confetti: null },
+  rateHigh: { cue: 'rateHigh', confetti: null },
+  rateClear: { cue: 'rateClear', confetti: null },
+  holdOpen: { cue: 'holdOpen', confetti: null },
+  rowDone: { cue: 'rowDone', confetti: null },
+  milestoneQuarter: { cue: 'milestoneQuarter', confetti: null },
+  milestoneHalf: { cue: 'milestoneHalf', confetti: null },
+  milestoneNearly: { cue: 'milestoneNearly', confetti: null },
+  clearAll: { cue: 'clearAll', confetti: null },
+  allRated: { cue: 'allRated', confetti: 'small' },
 });
 
 /**

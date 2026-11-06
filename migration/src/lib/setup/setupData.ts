@@ -8,6 +8,7 @@ import { schemaSpecs, selfTestProbes } from './setup-checks.js';
 import { problem } from '../settings/deploy-problems.js';
 import { create, makePlan, markReady, showPlan, siteApi } from './provision.js';
 import { addAdmin, adminNames } from './setup-admins.js';
+import { applyPermissions, permissionPlan, readPermissionState, removalPlan, removeSiteGroups, setSiteGroupsSync } from './list-permissions.js';
 import { adminsInSeed, importSeed } from './setup-import.js';
 import { evidenceLine } from '../data/session.js';
 
@@ -93,7 +94,14 @@ export const createFromPlan = (plan: SitePlan, onProgress: (line: string) => voi
 /** Mark the site as ready (Phase 10c-3): Setup's strict check and the picture library first; the version of the lists is written only when both are clean. */
 export type ReadyResult = Awaited<ReturnType<typeof markReady>>;
 export const markSiteReady = () => markReady(siteApi(dataService as never), listTitles(), { check: async () => (await checkSharePointSchema()).checks });
-/** Add an admin (Phase 10c-3, lib/setup/setup-admins.js): a name and the hash of a PIN in PMSAdminUsers, as the admin page compares it. Resolves to { name }. */
+/** The PMS groups and the lists' permissions (Prompt 27, lib/setup/list-permissions.js): a plan from reads alone, Apply, and later the removal. Neither ever throws for a refusal. */
+export type PermissionPlan = ReturnType<typeof permissionPlan>;
+export const readSitePermissions = async (folder: string) => permissionPlan(await readPermissionState(siteApi(dataService as never).read, listTitles(), folder) as never, listTitles());
+export const applySitePermissions = (plan: PermissionPlan, folder: string, onProgress: (line: string) => void) => applyPermissions(siteApi(dataService as never), plan as never, { titles: listTitles(), folder, onProgress });
+export const siteGroupsRemoval = (plan: PermissionPlan) => removalPlan(plan.state as never, listTitles());
+export const setSiteGroupsSyncNow = (on: boolean) => setSiteGroupsSync(siteApi(dataService as never), listTitles(), on);
+export const removeSiteGroupsNow = (plan: PermissionPlan, onProgress: (line: string) => void) => removeSiteGroups(siteApi(dataService as never), plan.state as never, listTitles(), { onProgress });
+/** Add an admin (Phase 10c-3,lib/setup/setup-admins.js): a name and the hash of a PIN in PMSAdminUsers, as the admin page compares it. Resolves to { name }. */
 export const addAnAdmin = (input: { name: string; pin: string; again: string }) => addAdmin(dataService as never, input);
 /** The admins' names, and nothing else of them. */
 export const listAdminNames = () => adminNames(dataService as never) as Promise<string[]>;

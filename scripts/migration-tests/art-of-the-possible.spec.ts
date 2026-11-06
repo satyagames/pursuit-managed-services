@@ -60,7 +60,8 @@ test.describe('the guest', () => {
     await atQuestion(page, fake, tokens[0]);
     await expect(send(page)).toHaveText('Send (4 boxes left)');
     await expect(send(page)).toBeDisabled();
-    await page.getByRole('button', { name: 'Grid' }).click();
+    // (Prompt 35: "Grid" is "All at once"; an iPad in portrait starts One at a time.)
+    await page.getByRole('button', { name: 'All at once' }).click();
     const first = page.getByRole('button', { name: 'Sub-process 1, Strategic value: not rated' });
     await expect(first).toHaveAttribute('tabindex', '0');
     await first.focus();
@@ -101,6 +102,7 @@ test.describe('the guest', () => {
   test('a reload keeps what was rated and not sent, and nothing is written until Send', async ({ page }) => {
     const { fake, tokens } = await site();
     await atQuestion(page, fake, tokens[0]);
+    await page.getByRole('button', { name: 'All at once' }).click(); // (Prompt 35: an iPad in portrait starts One at a time)
     await page.getByRole('button', { name: 'Sub-process 1, Strategic value: not rated' }).click();
     await page.getByRole('button', { name: 'Sub-process 2, Volume / repeatability: not rated' }).click();
     await expect(page.getByTestId('matrix-count')).toHaveText('2 of 4 rated');
@@ -112,6 +114,7 @@ test.describe('the guest', () => {
   test('axe finds nothing in either view, Next empty box finds the box, the hint opens, and the targets are big enough', async ({ page }) => {
     const { fake, tokens } = await site({ rows: 3, criteria: 5 });
     await atQuestion(page, fake, tokens[0]);
+    await page.getByRole('button', { name: 'All at once' }).click(); // (Prompt 35: an iPad in portrait starts One at a time)
     await axeOn(page);
     const box = await page.getByRole('button', { name: 'Sub-process 1, Strategic value: not rated' }).boundingBox();
     expect(box!.height).toBeGreaterThanOrEqual(44);
@@ -120,7 +123,9 @@ test.describe('the guest', () => {
     await page.getByRole('button', { name: 'Next empty box' }).click();
     await expect(page.getByRole('button', { name: 'Sub-process 1, Volume / repeatability: not rated' })).toBeFocused();
     await page.getByRole('button', { name: 'About Strategic value' }).first().click();
-    await expect(page.getByTestId('matrix-hint')).toContainText('What High means for 0.');
+    // (Prompt 35: the note opens beside its heading, not in a strip of its own.)
+    await expect(page.getByTestId('matrix-about')).toContainText('What High means for 0.');
+    await page.keyboard.press('Escape');
     await page.screenshot({ path: `${shots}grid-ipad.png`, fullPage: true });
     await page.getByRole('button', { name: 'One at a time' }).click();
     await expect(page.getByText('Sub-process 1 of 3')).toBeVisible();
@@ -129,7 +134,7 @@ test.describe('the guest', () => {
     expect(segment!.height).toBeGreaterThanOrEqual(56);
     await page.getByRole('group', { name: 'Volume / repeatability' }).getByRole('button', { name: 'High' }).click();
     await expect(page.getByTestId('matrix-count')).toHaveText('2 of 15 rated');
-    await page.getByRole('button', { name: 'Next', exact: true }).click();
+    await page.getByRole('button', { name: 'Next sub-process' }).click(); // (Prompt 35: the card's own Next)
     await expect(page.getByText('Sub-process 2 of 3')).toBeVisible();
     await page.screenshot({ path: `${shots}one-at-a-time-ipad.png`, fullPage: true });
   });
@@ -147,11 +152,12 @@ test.describe('the guest', () => {
   test('25 rows by 6 criteria: the rows scroll under a header that stays, and the answer goes through', async ({ page }) => {
     const { fake, tokens } = await site({ rows: 25, criteria: 6 });
     await atQuestion(page, fake, tokens[0]);
+    await page.getByRole('button', { name: 'All at once' }).click();
     await expect(page.getByTestId('matrix-count')).toHaveText('0 of 150 rated');
+    // (Prompt 35: the page scrolls, not the grid, and the header stays under the strip that stays at the top.)
     const head = page.getByRole('columnheader', { name: 'Interest' });
-    const before = (await head.boundingBox())!.y;
-    await page.locator('.matrix-scroll').evaluate((node) => { node.scrollTop = 400; });
-    await expect.poll(async () => Math.abs((await head.boundingBox())!.y - before)).toBeLessThan(2);
+    await page.evaluate(() => window.scrollTo(0, 1200));
+    await expect.poll(async () => Math.abs((await head.boundingBox())!.y - (await page.locator('.matrix-strip').evaluate((node) => node.getBoundingClientRect().bottom)))).toBeLessThan(2);
     for (let at = 0; at < 150; at += 1) {
       await page.getByRole('button', { name: 'Next empty box' }).click();
       await page.keyboard.press('h');
@@ -252,7 +258,7 @@ test.describe('the admin page', () => {
     await expect(page.getByTestId('matrix-line')).toHaveText('3 sub-processes, 1240 people in scope');
     await page.screenshot({ path: `${shots}editor.png`, fullPage: true });
     expect((await new AxeBuilder({ page }).include('.content-editor').analyze()).violations.map((each) => each.id)).toEqual([]);
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
     await expect(page.getByText('Art of the Possible: 3 sub-processes by 5 criteria')).toBeVisible();
     const question = fake.lists.get('questions')?.find((row: { QuestionType: string; AppId: string }) => row.QuestionType === 'art-of-the-possible' && row.AppId !== 'q-aop');
     expect(JSON.parse(question.Criteria).map((each: { direction: string }) => each.direction)).toEqual(['against', 'favours', 'favours', 'against', 'favours']);
@@ -269,7 +275,7 @@ test.describe('the admin page', () => {
     }
     await page.route(`**/${FACE_NAME}`, (route) => route.fulfill({ status: 200, contentType: 'image/png', body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64') }));
     await admin(page, fake, 'results');
-    await page.locator('summary', { hasText: 'Live results' }).first().click();
+    // (Prompt 34: the session's charts are open unless folded.)
     const card = page.locator('[data-kind="matrix"]');
     await expect(card).toBeVisible();
     await expect(card).toContainText('2 of 2 guests answered · 2 sub-processes · 7 people in scope');

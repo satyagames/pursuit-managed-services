@@ -29,12 +29,12 @@ function brandBadge({ client = null, brandDirty = false }) {
 
 /**
  * The views, in the order of the strip. `segment` is the address after `#content/` ('' for plain #content); `component` is the key the screen
- * draws the view by; `heading` is the id of the view's heading, where focus goes when the view is opened; `isDefault` marks the one view a plain #content, an unknown segment or nothing remembered opens.
- * @type {readonly { id: string, label: string, segment: string, component: string, heading: string, isDefault: boolean, badge: (state: ViewState) => Badge }[]}
+ * draws the view by; `icon` and `meaning` are its large segment's icon (admin/Icon.svelte) and one line (Prompt 33); `heading` is the id of the view's heading, where focus goes when the view is opened; `isDefault` marks the one view a plain #content, an unknown segment or nothing remembered opens.
+ * @type {readonly { id: string, label: string, icon: string, meaning: string, segment: string, component: string, heading: string, isDefault: boolean, badge: (state: ViewState) => Badge }[]}
  */
 export const CONTENT_VIEWS = Object.freeze([
-  Object.freeze({ id: 'activities', label: 'Activities', segment: '', component: 'activities', heading: 'activities-heading', isDefault: true, badge: activitiesBadge }),
-  Object.freeze({ id: 'brand', label: 'Brand', segment: 'brand', component: 'brand', heading: 'brand-title', isDefault: false, badge: brandBadge }),
+  Object.freeze({ id: 'activities', label: 'Activities', icon: 'list', meaning: 'What people answer: activities and questions', segment: '', component: 'activities', heading: 'activities-heading', isDefault: true, badge: activitiesBadge }),
+  Object.freeze({ id: 'brand', label: 'Brand', icon: 'palette', meaning: 'How it looks: logo, colours and fonts', segment: 'brand', component: 'brand', heading: 'brand-title', isDefault: false, badge: brandBadge }),
 ]);
 
 /** The view a plain #content opens. */

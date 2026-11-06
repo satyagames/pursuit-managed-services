@@ -4,6 +4,8 @@
   import * as dataService from '../lib/data/dataService.js';
   import { heldRead, holdRead } from '../lib/admin/list-cache.js';
   import { activitiesOfClient, defaultClientId, lastClientId, rememberClient } from '../lib/admin/admin-content.js';
+  import Icon, { type IconName } from './Icon.svelte';
+  import Breadcrumb from './Breadcrumb.svelte';
   import { CONTENT_VIEWS, DEFAULT_VIEW, lookWord, stepView, viewBadge, viewById } from '../lib/admin/admin-content-views.js';
   import { mayLeave } from '../lib/admin/unsaved.js';
   import { focusHeading } from '../lib/common/focus.js';
@@ -197,8 +199,8 @@
 <section class="panel content-panel" aria-busy={loading || busy}>
   <header class="panel__head">
     <div>
-      <h2>Content</h2>
-      <p class="muted">Each client's activities, with their questions and options, and the client's look beside them. Switch an activity on to put it on that client's participant agenda; changes to a live activity are live at once.</p>
+      <h2><Icon name="file" />Content</h2>
+      <p class="muted">Choose a client, then change what its people answer or how its pages look.</p>
     </div>
   </header>
 
@@ -227,19 +229,24 @@
         <ClientTagChips {client} />
       </div>
       <div class="content-strip">
-        <div class="content-strip__track" role="tablist" aria-label={`${client.name}: views`}>
+        <div class="content-strip__track" role="tablist" aria-label="Content has two parts">
         {#each CONTENT_VIEWS as entry, index (entry.id)}
           {@const badge = viewBadge(entry.id, { sections, clientId, client, brandDirty })}
           <button id={tabId(entry.id)} class="content-strip__tab" type="button" role="tab" aria-selected={view === entry.id} aria-controls={panelId(entry.id)}
             tabindex={view === entry.id ? 0 : -1} data-view={entry.id} onkeydown={(event) => onStripKeydown(event, index)} onclick={() => void show(entry.id)}>
-            <span class="content-strip__label">{entry.label}</span>
-            <span class="content-strip__badge" data-testid={`content-badge-${entry.id}`}>{badge.text}</span>
+            <Icon name={entry.icon as IconName} size={24} />
+            <span class="content-strip__words">
+              <span class="content-strip__name"><span class="content-strip__label">{entry.label}</span>
+                <span class="content-strip__badge" data-testid={`content-badge-${entry.id}`}>{badge.text}</span></span>
+              <span class="content-strip__meaning">{entry.meaning}</span>
+            </span>
             {#if badge.flag}<span class="content-strip__flag" data-testid={`content-flag-${entry.id}`}><span class="content-strip__dot" aria-hidden="true"></span>{badge.flag}</span>{/if}
           </button>
         {/each}
         </div>
       </div>
     </div>
+    <Breadcrumb parts={[{ label: 'Content' }, { label: viewById(view).label }]} />
     <p class="sr-only" role="status">{showing}</p>
 
     {#key clientId}
@@ -286,14 +293,47 @@
 
 <style>
   :global(html:has(.content-spine)) {
+    --content-part: 4rem;
     --adm-nav-height: calc(var(--target-min) + 18px + 1px);
-    --adm-content-sticky: calc(var(--target-min) + 6px + 18px);
+    --adm-content-sticky: calc(var(--content-part) + 18px);
     --adm-sticky-top: calc(var(--adm-nav-height) + var(--adm-content-sticky));
     --adm-sticky-room: calc(5.5rem + var(--adm-content-sticky));
   }
 
+  /* From 1,100 px the tab row is the one 52 px bar (admin.css, Prompt 32). */
+  @media (min-width: 1100px) {
+    :global(html:has(.content-spine)) {
+      --adm-nav-height: 52px;
+      --adm-sticky-room: calc(4.5rem + var(--adm-content-sticky));
+    }
+  }
+
   .content-spine {
     display: contents;
+  }
+
+  /* A laptop under 700 px high (Prompt 32): the client and the strip of views share one line, the strip still sticky on its own. */
+  @media (min-width: 1100px) and (max-height: 699px) {
+    .content-panel:has(.content-spine) {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      column-gap: 1rem;
+      align-items: center;
+    }
+
+    .content-panel:has(.content-spine) > :global(*) {
+      grid-column: 1 / -1;
+    }
+
+    .content-client {
+      grid-column: 1;
+      margin-bottom: 1rem;
+    }
+
+    .content-strip {
+      grid-column: 2;
+      justify-self: end;
+    }
   }
 
   .content-client {
@@ -349,33 +389,93 @@
 
   .content-strip__track {
     display: flex;
-    gap: 3px;
+    gap: 0.5rem;
     width: max-content;
-    padding: 3px;
-    border-radius: 0.75rem;
-    background: var(--adm-idle-bg);
   }
 
   .content-strip__tab {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.75rem;
     flex: none;
-    min-height: var(--target-min);
-    padding: 0 0.9rem;
-    border: 1px solid transparent;
-    border-radius: 0.6rem;
-    background: transparent;
-    color: var(--adm-ink);
+    min-height: var(--content-part);
+    padding: 0.5rem 1rem;
+    border: 2px solid var(--adm-green);
+    border-radius: 0.65rem;
+    background: var(--adm-card);
+    color: var(--adm-text);
     font: inherit;
+    text-align: start;
     white-space: nowrap;
     cursor: pointer;
   }
 
+  .content-strip__tab > :global(.icon) {
+    color: var(--adm-deep);
+  }
+
   .content-strip__tab[aria-selected='true'] {
-    border-color: var(--adm-line);
-    background: var(--adm-card);
-    box-shadow: 0 1px 2px rgb(11 31 58 / 0.15);
+    border-color: var(--adm-deep);
+    background: var(--adm-deep);
+    color: var(--adm-on-deep);
+  }
+
+  .content-strip__tab[aria-selected='true'] > :global(.icon),
+  .content-strip__tab[aria-selected='true'] .content-strip__meaning {
+    color: var(--adm-on-deep);
+  }
+
+  .content-strip__tab[aria-selected='true'] .content-strip__dot {
+    background: currentColor;
+  }
+
+  /* A phone or a narrow window (Prompt 33): the two parts share the width and their words wrap, so neither runs off the screen. */
+  @media (max-width: 699px) {
+    :global(html:has(.content-spine)) {
+      --content-part: 6.5rem;
+    }
+
+    .content-strip__track {
+      width: 100%;
+    }
+
+    .content-strip__tab {
+      flex: 1 1 0;
+      min-width: 0;
+      padding: 0.5rem 0.75rem;
+      white-space: normal;
+    }
+
+    .content-strip__name {
+      flex-wrap: wrap;
+    }
+  }
+
+  .content-strip__words {
+    display: grid;
+    gap: 0.1rem;
+  }
+
+  .content-strip__name {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  .content-strip__meaning {
+    color: var(--adm-text-muted);
+    font-size: 1rem;
+  }
+
+  @media (forced-colors: active) {
+    .content-strip__tab {
+      border-color: ButtonText;
+    }
+
+    .content-strip__tab[aria-selected='true'] {
+      border-color: Highlight;
+      border-width: 4px;
+    }
   }
 
   .content-strip__label {
@@ -431,7 +531,7 @@
 
   @media (min-width: 1100px) and (min-height: 700px) {
     :global(html:has(.content-spine)) {
-      --adm-content-sticky: calc(var(--target-min) + 6px + 0.75rem + 1px);
+      --adm-content-sticky: calc(var(--content-part) + 0.75rem + 1px);
     }
 
     .content-spine {

@@ -123,18 +123,19 @@ test('an Admin gives Kroger an Industry and a Region on its page, suggested from
   await expect(page.locator('.client-row', { hasText: 'Domino' }).getByTestId('client-tag-industry')).toHaveText('Industry: Food service');
   await page.getByRole('button', { name: 'Sessions and team: Kroger' }).click();
   await expect(page.getByRole('heading', { name: 'Kroger', level: 2 })).toBeFocused();
-  const about = page.getByRole('region', { name: 'About this client' });
+  const about = page.getByRole('region', { name: 'Industry and region' });
   await expect(about.locator('#about-region-choices option')).toHaveCount(1);
   await expect(about.locator('#about-region-choices option')).toHaveAttribute('value', 'North America');
   await about.getByLabel('Industry').fill('  Retail  ');
   await about.getByLabel('Region').fill('North America');
-  await about.getByRole('button', { name: 'Save details' }).click();
+  await about.getByRole('button', { name: 'Save industry and region' }).click();
   await expect(page.getByText('Kroger: details saved')).toBeVisible();
-  await expect(page.getByTestId('client-tag-industry').first()).toHaveText('Industry: Retail');
+  // (On the client's page: from 1,100 px the list stays beside it, Prompt 32, and its first label is Domino's.)
+  await expect(page.locator('.workspace').getByTestId('client-tag-industry')).toHaveText('Industry: Retail');
   const item = fake.lists.get('clients')!.find((entry) => entry.AppId === 'c-kroger')!;
   expect([item.Industry, item.Region]).toEqual(['Retail', 'North America']);
   expect(auditOf(fake, 'client')).toEqual(['Industry: none to Retail; Region: none to North America']);
-  await axe(page, 'About this client');
+  await axe(page, 'Industry and region');
   await page.getByRole('button', { name: 'Back to clients' }).click();
   await expect(page.locator('.client-row', { hasText: 'Kroger' }).getByTestId('client-tag-region')).toHaveText('Region: North America');
 });
@@ -146,5 +147,5 @@ test('a Designer sees a client\'s Industry and Region in Content, to read, and h
   await expect(page.getByRole('heading', { name: 'Content', level: 2 })).toBeVisible();
   await expect(page.getByTestId('client-tag-industry')).toHaveText('Industry: Retail');
   await expect(page.getByTestId('client-tag-region')).toHaveText('Region: North America');
-  await expect(page.getByRole('region', { name: 'About this client' })).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Industry and region' })).toHaveCount(0);
 });

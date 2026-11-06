@@ -116,6 +116,9 @@ export const LIST_WRITES = Object.freeze({
   // (Prompt 21, Phase 5: a session's summary is written by whoever ends the session or rebuilds it, a Producer's or a Super admin's run of it, and deleted
   // with the session's data.)
   sessionsummary: ops(['events.run'], ['events.run'], ['results.delete']),
+  // (Prompt 27, Part 4: who is in PMS access managers, PMS staff and PMS leadership, and ensureuser before an add, a Super admin's alone; the guard also
+  // refuses any group but those three, whose ids lib/access/site-access.js learned. A group's settings and its making stay Setup's.)
+  sitegroup: ops(['roles.global'], [], ['roles.global']),
 });
 
 /**

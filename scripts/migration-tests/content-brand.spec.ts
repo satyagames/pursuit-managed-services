@@ -15,7 +15,7 @@ let local: Local;
 test.beforeEach(async () => { local = await startLocal(); await ds.activateClient('c-kroger', today); });
 test.afterEach(async () => { await stopLocal(local); });
 
-const strip = (page: Page) => page.getByRole('tablist', { name: /views/ });
+const strip = (page: Page) => page.getByRole('tablist', { name: 'Content has two parts' });
 const viewTab = (page: Page, id: string) => page.locator(`#content-tab-${id}`);
 const panel = (page: Page, id: string) => page.locator(`#content-view-${id}`);
 const brandHeading = (page: Page, name: string) => page.getByRole('heading', { level: 3, name: `Brand · ${name}` });
@@ -126,7 +126,7 @@ test('the Content tab comes back to the last view of the visit, kept in memory: 
 
 test("Clients' Brand opens Content's Brand view on that client, an archived client too", async ({ page }) => {
   await openAdmin(page, local, 'Clients');
-  await expect(page.getByRole('heading', { name: 'Clients', exact: true }).locator('xpath=..')).toContainText(`${label('brand')} opens the client's ${label('brand')} view in Content`);
+  await expect(page.getByRole('heading', { name: 'Clients', exact: true }).locator('xpath=..')).toContainText(`open its ${label('brand')} to set its look`); // (Prompt 33: one sentence)
   await page.locator('.row').filter({ hasText: "Domino's" }).getByRole('button', { name: "Brand: Domino's" }).click();
   await expect(page.getByRole('tab', { name: 'Content', exact: true })).toHaveAttribute('aria-selected', 'true');
   await expect(viewTab(page, 'brand')).toHaveAttribute('aria-selected', 'true');
@@ -208,7 +208,7 @@ test('Save clears the flag and reaches the badge, the Look line and the activity
   await viewTab(page, 'brand').click();
   await primary(page).fill('#8B2F6F');
   await expect(page.getByTestId('content-flag-brand')).toHaveText('Unsaved changes');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(status(page)).toHaveText('All changes saved');
   await expect(page.getByTestId('content-flag-brand')).toHaveCount(0);
   await expect(page.getByTestId('content-badge-brand')).toHaveText('Custom look');
@@ -300,7 +300,7 @@ test('the bridge: Open Brand switches view; "Preview an activity in this look...
   await expect(preview).toBeDisabled();
   await expect(page.getByTestId('content-bridge-why')).toHaveText('Save to preview your activities in this look.');
   const before = requests.length;
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(status(page)).toHaveText('All changes saved');
   await expect(preview).toBeEnabled();
   const chosen = await bridge.getByLabel('Activity').inputValue();
@@ -411,7 +411,7 @@ for (const size of [{ width: 1366, height: 768 }, { width: 1180, height: 820 }])
     // The question editor's Save bar, with the page scrolled to the editor: below the sticky block.
     await page.locator('.questions [data-edit-question]').last().click();
     await expect(question(page)).toBeVisible();
-    const save = page.locator('.questions .content-editor').getByRole('button', { name: 'Save', exact: true });
+    const save = page.locator('.questions .content-editor').getByRole('button', { name: /^Save (activity|brand|question|client)$/ });
     await save.scrollIntoViewIfNeeded();
     const saveBox = (await save.boundingBox())!;
     expect(saveBox.y, 'the Save bar is not under the sticky block').toBeGreaterThanOrEqual((await geometry()).spine.bottom - 0.5);

@@ -79,12 +79,15 @@
     min-height: 0;
   }
 
+  /* The activity and the place, as the wall's small upper-case label (Prompt 34). */
   .live__eyebrow {
     flex: 0 0 auto;
     margin: 0;
-    color: rgb(255 255 255 / 0.92);
-    font-size: calc(1.1rem * var(--chart-scale, 1));
+    color: var(--wall-ink);
+    font-size: calc(1rem * var(--chart-scale, 1));
     font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 
   .live__foot {
@@ -106,7 +109,7 @@
     position: sticky;
     bottom: calc(-1 * var(--live-pad));
     padding: 0.5rem 0;
-    background: #000102;
+    background: var(--wall-ground);
     border-radius: 0.6rem;
   }
 
@@ -115,12 +118,12 @@
     bottom: calc(100% + 0.5rem);
     margin: 0;
     padding: 0.25rem 0.9rem;
-    color: #fff;
+    color: var(--wall-ink);
     font-size: calc(1rem * var(--chart-scale, 1));
     font-weight: 700;
     white-space: nowrap;
-    background: #000102;
-    border: 1px solid rgb(255 255 255 / 0.7);
+    background: var(--wall-ground);
+    border: 1.5px solid var(--wall-line);
     border-radius: 999px;
     box-shadow: 0 2px 10px rgb(0 0 0 / 0.3);
     pointer-events: none;

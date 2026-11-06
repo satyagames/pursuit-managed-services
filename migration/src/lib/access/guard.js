@@ -10,6 +10,7 @@ import { can } from './can.js';
 import { fieldProblem, invalidValue } from './field-values.js';
 import { disableProblem, revokeProblem } from './grants.js';
 import { UNKNOWN_OWNER, mayRead, newOwners } from './owners.js';
+import { knownGroupIds } from './site-access.js';
 
 /** The local server's file names that are not a list's key. */
 const LOCAL_NAMES = Object.freeze({ participantresponses: 'responses', uploads: 'library' });
@@ -33,6 +34,11 @@ export function changeOf(method, resource, headers, keyOfTitle) {
   if (/clientPeoplePickerSearchUser$/.test(path)) return 'none'; // (a search of the directory: it changes nothing)
   if (/\/Files\/add\(/.test(path)) return { key: 'library', op: 'create', id: null };
   if (/\/recycle\(\)$/.test(path)) return { key: 'library', op: 'delete', id: null };
+  // (Prompt 27, Part 4: a person put on the site before an add, and an add to or removal from a site group, named by its id. A group's other calls
+  // are not named here, so they are refused.)
+  if (path === '/web/ensureuser') return { key: 'sitegroup', op: 'create', id: null, group: null };
+  const member = /^\/web\/sitegroups\/getbyid\((\d+)\)\/users(\/removebyid\(\d+\))?$/.exec(path);
+  if (member) return { key: 'sitegroup', op: member[2] ? 'delete' : 'create', id: null, group: Number(member[1]) };
   const title = titleIn(path);
   if (title !== null) {
     const key = keyOfTitle.get(title);
@@ -114,6 +120,8 @@ export function writeGuard(access, titles, { now = () => new Date() } = {}) {
     if (allowed === 'anyone' && access) return;
     const target = change ? targetOf(change, body, owners) : {};
     if (Array.isArray(allowed) && allowed.some((action) => can(access, action, target, { now: now() }))) {
+      // (Only the three managed groups whose ids the page read from Setup's row: never the owners, PMS super admins or PMS participants.)
+      if (change.key === 'sitegroup' && change.group !== null && !knownGroupIds().has(change.group)) throw new AccessDenied('roles.global', 'This group is not one the app may change.');
       checkFields(access, change, body, target, now());
       noteWrite(owners, change, body);
       return;

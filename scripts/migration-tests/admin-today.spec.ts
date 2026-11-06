@@ -125,11 +125,11 @@ test('create a client, find it in the Today picker, go live, and a second browse
   await openAdmin(page, 'Clients');
   await page.getByRole('button', { name: 'Add client' }).click();
   await page.getByLabel('Name', { exact: true }).fill('Acme Foods');
-  await expect(page.getByLabel('Slug', { exact: true })).toHaveValue('acme-foods');
+  await expect(page.getByLabel('Short name in session ids', { exact: true })).toHaveValue('acme-foods');
   await expect(page.getByLabel('Event title')).toHaveValue('ACME FOODS TRIVIA NIGHT');
   await page.getByLabel('Subtitle').fill('Fresh ideas since 1901.');
   await page.getByLabel('Welcome line').fill('Welcome to Acme night!');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   const row = page.locator('.row').filter({ hasText: 'Acme Foods' });
   await expect(row).toContainText('Active');
   await expect(row).toContainText('0 activities (0 live) · Last live never · acme-foods');
@@ -423,7 +423,7 @@ test('slugs: made from the name, a to z and hyphens only, unique, and locked onc
   await openAdmin(page, 'Clients');
   await page.getByRole('button', { name: 'Add client' }).click();
   const name = page.getByLabel('Name', { exact: true });
-  const slug = page.getByLabel('Slug', { exact: true });
+  const slug = page.getByLabel('Short name in session ids', { exact: true });
   await name.fill("Domino's Pizza!");
   await expect(slug).toHaveValue('dominos-pizza');
   // Typing in the slug stops it following the name.
@@ -433,7 +433,7 @@ test('slugs: made from the name, a to z and hyphens only, unique, and locked onc
   await expect(slug).toHaveValue('Bad Slug');
   await slug.fill('kroger');
   await expect(page.locator('#slug-help')).toContainText('Kroger already uses this slug.');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(page.getByRole('alert')).toContainText('Kroger already uses this slug.');
   expect((await ds.listClients()).map((client: { id: string }) => client.id)).not.toContain('c-kroger-2');
   for (const [typed, message] of [['-start', /Use a to z/], ['two--hyphens', /Use a to z/], ['under_score', /Use a to z/], ['x'.repeat(41), /40 characters/]] as const) {
@@ -442,7 +442,7 @@ test('slugs: made from the name, a to z and hyphens only, unique, and locked onc
   }
   await slug.fill('something-else');
   await expect(page.locator('#slug-help')).toContainText('Session ids are the slug, the date and the start time');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(page.locator('.row').filter({ hasText: 'Something Else' })).toContainText('something-else');
   // Two admins adding the same slug together: the second is refused by the unique id, not by luck.
   await expect(ds.createClient({ id: 'c-something-else', name: 'Again', slug: 'something-else' })).rejects.toMatchObject({ status: 409 });
@@ -453,7 +453,7 @@ test('slugs: made from the name, a to z and hyphens only, unique, and locked onc
   await expect(slug).toBeDisabled();
   await expect(page.locator('#slug-help')).toContainText('Locked: this client already has sessions');
   await page.getByLabel('Event title').fill('KROGER NIGHT');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(kroger).toBeVisible();
   const edited = await ds.getClient('c-kroger');
   expect(edited).toMatchObject({ slug: 'kroger', themeVersion: 2 });
@@ -464,7 +464,7 @@ test('slugs: made from the name, a to z and hyphens only, unique, and locked onc
   await fresh.getByRole('button', { name: 'Edit' }).click();
   await expect(slug).toBeEnabled();
   await slug.fill('something-new');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(page.locator('.row').filter({ hasText: 'something-new' })).toBeVisible();
   expect((await ds.getClient('c-something-else')).slug).toBe('something-new');
 });
@@ -540,7 +540,8 @@ test.describe('capabilities that moved', () => {
     expect((await ds.getQrToken(first.id)).used, 'the replaced code no longer works').toBe(true);
     await guest.getByRole('button', { name: 'Disable' }).click();
     await expect(guest).toContainText('Disabled');
-    await expect(page.getByRole('heading', { name: 'Recent app entries' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /^Recent app entries/ })).toBeVisible();
+    await page.getByRole('button', { name: /^Recent app entries/ }).click(); // (Prompt 33: folded, closed on every visit.)
     await expect(page.getByText('Earlier Guest')).toBeVisible();
     // With staff sign-in on, the roster steps aside and points to Today.
     await ds.setSessionParticipationMode(`kroger-${today}`, 'staff');
@@ -568,11 +569,12 @@ test.describe('capabilities that moved', () => {
     await card.getByRole('button', { name: 'Live display' }).click();
     await expect(page.getByRole('heading', { name: 'Live results' })).toBeVisible();
     await expect(page.locator('.live__meta')).toContainText('1 answer from 1 iPad');
-    await page.getByRole('button', { name: '← Results' }).click();
+    await page.getByRole('button', { name: 'Results', exact: true }).click();
     await expect(card).toContainText('1 of');
-    await card.locator('summary').click();
+    await expect(card.locator('details.tally')).toHaveAttribute('open', ''); // (Prompt 34: the charts are open unless folded.)
     await expect(card.getByText(/1 answer from 1 iPad\b/)).toBeVisible();
     await expect(card.getByRole('button', { name: 'End session' }), 'ending a session is on Today').toHaveCount(0);
+    await card.getByRole('button', { name: /^People/ }).click(); // (Prompt 33: the participants are folded under the charts.)
     await card.getByRole('button', { name: 'Restart...' }).click();
     await page.getByText('The very beginning').click();
     await page.getByRole('button', { name: 'Restart', exact: true }).click();
@@ -615,7 +617,7 @@ test.describe('capabilities that moved', () => {
     await dominos.getByRole('button', { name: 'Brand: Domino\'s' }).click();
     await page.locator('section.asset[data-slot="logo"] input[type="file"]').setInputFiles({ name: 'logo.png', mimeType: 'image/png', buffer: await makeImage(page, { width: 900, height: 450, type: 'image/png', paint: 'logo' }) });
     await page.getByRole('dialog', { name: /Crop and fit/ }).getByRole('button', { name: 'Use this picture' }).click();
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
     await expect.poll(async () => (await ds.getClient('c-dominos')).logoUrl).toMatch(/^\/assets\/images\/clients\/dominos-logo-[0-9a-f]{10}\.(webp|png)$/);
     await expect(page.getByTestId('brand-status')).toHaveText('All changes saved');
     await page.getByRole('tab', { name: 'Clients', exact: true }).click(); // (Phase 18: Brand is a view of Content; no Back button)
@@ -700,7 +702,8 @@ test('the admin fits 390, 820 and 1440 wide on every tab: no sideways scroll, 44
     await shoot(page, `today-blockers-${tag}`);
     for (const tab of ['Clients', 'Content', 'Guests and QR', 'Results']) {
       await page.getByRole('tab', { name: tab, exact: true }).click();
-      await expect(page.getByRole('heading', { name: tab, exact: true }).first()).toBeVisible();
+      // (Prompt 33: the Guests and QR tab's title is "Guests and QR codes".)
+      await expect(page.getByRole('heading', { name: tab === 'Guests and QR' ? 'Guests and QR codes' : tab, exact: true }).first()).toBeVisible();
       await page.waitForTimeout(150);
       await expectFits(page, `${tab} at ${tag}`);
       if (tab === 'Clients') {
