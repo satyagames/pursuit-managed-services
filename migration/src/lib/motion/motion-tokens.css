@@ -48,6 +48,18 @@
   --motion-aop-pulse: 600ms;
   --motion-aop-rise: 400ms;
   --motion-aop-count: 700ms;
+  /* The grand finale (Prompt 36; the acts are lib/motion/finale-motion-plan.js). */
+  --motion-finale-hush: 4200ms;
+  --motion-finale-medal: 600ms;
+  --motion-finale-rays: 1300ms;
+  --motion-finale-ring: 800ms;
+  --motion-finale-check: 450ms;
+  --motion-finale-letter: 300ms;
+  --motion-finale-card: 400ms;
+  --motion-finale-count: 800ms;
+  --motion-finale-sheen: 450ms;
+  --motion-finale-fade: 200ms;
+  --motion-finale-again: 320ms;
 }
 
 /* motion.ts sets data-motion (the shape) and --m-duration, --m-ease, --m-delay and --m-stretch (in steps of the stagger) and --m-distance, from

@@ -17,13 +17,15 @@
  *
  * Reads sessionStorage and the address's `?motion=off`; writes sessionStorage `pms.motion`. Never fetches, never plays a sound or
  * confetti (lib/effects/effects.ts asks `motionLevel()` whether confetti may show). The Art of Possibility's effects (Prompt 35, lib/motion/aop-motion-plan.js)
- * are played here too, with the Web Animations API: `playEffect`, `flyOff`, `playWave`.
+ * are played here too, with the Web Animations API: `playEffect`, `flyOff`, `playWave`; and the grand finale's acts (Prompt 36,
+ * lib/motion/finale-motion-plan.js): `playFinale`, whose cards count up with requestAnimationFrame for 800 ms and then stop.
  */
 import {
   LONG_LABEL, MAX_CONCURRENT, WATCH_WINDOW, diagnosticOff, governorStep, motionRecipe, readGovernor,
   resolveLevel, type Direction, type Governor, type Level, type Recipe, type Role, type Verdict,
 } from './motion-plan.js';
 import { aopEffect, flyCount, waveDelay, type Effect as AopEffect, type Where } from './aop-motion-plan.js';
+import { FINALE, countValue, finaleCount, finaleParts, type Part, type PartName } from './finale-motion-plan.js';
 
 export type { Direction, Level };
 
@@ -216,7 +218,7 @@ export function motion(node: HTMLElement, params: MotionParams | null) {
 const running = new Set<Animation>();
 const moving = (): number => active.size + running.size;
 
-function play(node: Element, effect: AopEffect): Animation {
+function play(node: Element, effect: Pick<AopEffect, 'keyframes' | 'duration' | 'easing' | 'delay'>): Animation {
   const animation = node.animate(effect.keyframes as Keyframe[], { duration: effect.duration, easing: effect.easing, delay: effect.delay ?? 0, fill: 'backwards' });
   running.add(animation);
   const done = () => { running.delete(animation); };
@@ -267,6 +269,73 @@ export function playWave(cells: { node: Element; r: number; c: number }[], rows:
     const effect = aopEffect('wave', 'full', { delay: waveDelay(r, c, rows, columns) });
     if (effect && typeof (node as HTMLElement).animate === 'function') play(node, effect);
   }
+}
+
+// ---- The grand finale (Prompt 36) ------------------------------------------------------------------------------------------------------
+// The thank-you page hands over its parts; the plan says what each does at the one resolved level. The plan's own spacing keeps it under the cap (as the
+// wave's does), so every part of it is played. The cards' numbers count up through `onCount` (the page owns the text), and `onAfterglow` says when
+// "Celebrate again" may show: at once below the full level. Every animation, frame and timer is let go by `cancel`, and by the end of the counts.
+
+export type FinaleNodes = Partial<Record<Exclude<PartName, 'ring' | 'letter' | 'card'>, Element | null | undefined>> & {
+  rings?: (Element | null | undefined)[];
+  letters?: (Element | null | undefined)[];
+  cards?: (Element | null | undefined)[];
+};
+
+export interface FinaleHandle { level: Level; cancel(): void }
+
+export function playFinale(
+  nodes: FinaleNodes,
+  { counts = [], width = 0, onCount, onAfterglow }: { counts?: number[]; width?: number; onCount?: (index: number, value: number) => void; onAfterglow?: () => void } = {},
+): FinaleHandle {
+  const level = typeof document === 'undefined' || document.hidden ? 'none' : motionLevel();
+  const animations: Animation[] = [];
+  let frame: number | null = null;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const node = (part: Part): Element | null | undefined => {
+    if (part.part === 'ring') return nodes.rings?.[part.index];
+    if (part.part === 'letter') return nodes.letters?.[part.index];
+    if (part.part === 'card') return nodes.cards?.[part.index];
+    return nodes[part.part];
+  };
+  const parts = finaleParts(level, { letters: nodes.letters?.length ?? 0, cards: nodes.cards?.length ?? 0, width });
+  for (const part of parts) {
+    const target = node(part);
+    if (!target || typeof (target as HTMLElement).animate !== 'function') continue;
+    animations.push(play(target, { keyframes: part.keyframes, duration: part.duration, easing: part.easing, delay: part.delay }));
+  }
+
+  const plans = counts.map((_, index) => finaleCount(level, index));
+  counts.forEach((value, index) => onCount?.(index, plans[index] ? 0 : value));
+  if (plans.some(Boolean) && typeof requestAnimationFrame === 'function') {
+    const start = performance.now();
+    const tick = (now: number) => {
+      frame = null;
+      let running = false;
+      counts.forEach((value, index) => {
+        const plan = plans[index];
+        if (!plan) return;
+        const progress = (now - start - plan.delay) / plan.duration;
+        if (progress < 1) running = true;
+        onCount?.(index, countValue(value, progress));
+      });
+      if (running) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+  }
+  if (level === 'full') timer = setTimeout(() => { timer = undefined; onAfterglow?.(); }, FINALE.afterglow);
+  else onAfterglow?.();
+
+  return {
+    level,
+    cancel() {
+      for (const animation of animations) animation.cancel();
+      if (frame !== null) cancelAnimationFrame(frame);
+      frame = null;
+      if (timer !== undefined) clearTimeout(timer);
+      timer = undefined;
+    },
+  };
 }
 
 // ---- For the tests -----------------------------------------------------------------------------------------------------------------
