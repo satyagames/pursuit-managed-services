@@ -11,6 +11,34 @@
 import { ID, LISTS, selectOf } from '../schema/pms-schema.js';
 import { columnsOf, retiredColumn } from '../schema/pms-schema-meta.js';
 import { PROBE_PERMISSIONS, permissionProbe } from './list-permissions.js';
+import { driftWords, readDrift } from '../access/site-access.js';
+
+/** The self-test step's name (Prompt 27). */
+export const PROBE_SITE_ACCESS = 'Probe (read-only): who is in the PMS groups';
+
+/** Compares the people and roles with the PMS groups' members: reads only, and it only reports. */
+async function siteAccessProbe(probe, titles) {
+  const read = async (resource) => {
+    const answer = await probe(null, resource);
+    if (answer.ok) return answer.data;
+    throw Object.assign(new Error(answer.message), { status: answer.status });
+  };
+  const rowsOf = async (key) => {
+    const rows = [];
+    for (let address = `/web/lists/getbytitle('${encodeURIComponent(String(titles[key]).replace(/'/g, "''"))}')/items?${selectOf(key)}&$top=5000`; address;) {
+      const data = await read(address);
+      rows.push(...(data?.results ?? data?.value ?? []));
+      address = data?.__next ?? data?.['odata.nextLink'] ?? null;
+    }
+    return rows.map((row) => Object.fromEntries(Object.entries(LISTS[key].fields).map(([field, { column }]) => [field, row[column]])));
+  };
+  try {
+    const found = await readDrift(read, titles, { users: await rowsOf('users'), assignments: await rowsOf('roleassignments') });
+    return found.ready ? driftWords(found.drift) : String(found.words);
+  } catch (cause) {
+    return `Could not read the people (${cause.status ?? 'no answer'}: ${cause.message}).`;
+  }
+}
 
 // ---- What the check expects of each column ---------------------------------------------------------------------------------------------
 
@@ -192,6 +220,7 @@ export const selfTestProbes = (probe, titles = null) => [
   { name: PROBE_YESNO, run: () => yesNoFilter(probe) },
   { name: PROBE_LENGTH, run: () => filterLength(probe) },
   ...(titles ? [{ name: PROBE_PERMISSIONS, run: () => permissionProbe(probe, titles) }] : []),
+  ...(titles ? [{ name: PROBE_SITE_ACCESS, run: () => siteAccessProbe(probe, titles) }] : []),
   ...(titles ? [{ name: PROBE_SIZES, run: () => listSizes(probe, titles) }] : []),
   ...(titles ? [{ name: PROBE_LEFT_OUT, run: () => columnsLeftOut(probe, titles) }, { name: PROBE_REFUSED, run: () => columnsRefused(probe, titles) }] : []),
 ];

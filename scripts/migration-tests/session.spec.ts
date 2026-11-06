@@ -58,7 +58,7 @@ test('a sign-in that stopped being accepted is renewed by the hidden frame: the 
   fake.reset();
   fake.expireSession();
   await tab(page, 'Guests and QR').click();
-  await expect(page.getByRole('heading', { name: 'Guests and QR', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Guests and QR codes', exact: true })).toBeVisible();
   await expect(page.getByText('Could not load Guests and QR.')).toHaveCount(0);
   await expect.poll(() => fake.sessionExpired).toBe(false);
   await page.waitForTimeout(500);
@@ -108,7 +108,7 @@ test('Reload reloads; the banner does not reload by itself', async ({ page }) =>
   await tab(page, 'Guests and QR').click();
   await expect(banner(page)).toBeVisible();
   await page.waitForTimeout(1500);
-  await expect(page.getByRole('heading', { name: 'Guests and QR', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Guests and QR codes', exact: true })).toBeVisible();
   fake.renewSession();
   await Promise.all([page.waitForEvent('load'), banner(page).getByRole('button', { name: 'Reload' }).click()]);
   await expect(page.getByRole('textbox', { name: 'PIN' })).toBeVisible();
@@ -122,7 +122,7 @@ test('unsaved Brand changes: the banner warns, offers to stay, and nothing is lo
   await page.getByLabel('Primary', { exact: true }).fill('#5B3A99');
   renewal.works = false;
   fake.expireSession();
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(banner(page)).toBeVisible();
   await expect(banner(page)).toContainText('Your unsaved changes here will be lost if you reload.');
   await expect(page.getByText('Could not save this look.')).toBeVisible();

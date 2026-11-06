@@ -6,7 +6,8 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, it } from 'node:test';
-import { ROW_ORDER, SESSION_ORDER, keepShownOrder, newestFirst, rowsInOrder } from '../migration/src/lib/admin/admin-results.js';
+import * as adminResults from '../migration/src/lib/admin/admin-results.js';
+const { ROW_ORDER, SESSION_ORDER, keepShownOrder, newestFirst, rowsInOrder } = adminResults;
 
 const ROOT = path.join(import.meta.dirname, '..');
 /** A session's results, as getSessionResults() gives them, with only what the order reads. */
@@ -141,5 +142,50 @@ describe('Results order stays on Results (Phase 16)', () => {
     assert.match(screen, /newestFirst\(/);
     assert.match(screen, /keepShownOrder\(/);
     assert.match(screen, /rowsInOrder\(/);
+  });
+});
+
+// Prompt 34, the session page: a list of sessions on the left, the one chosen on the right with four figures at the top, one Downloads box
+// (the leader report, the packs in Light or Dark, the two CSVs), the charts open, the people folded, and Delete at the foot of the session.
+describe('Results: the session page (Prompt 34)', () => {
+  const rows = [
+    { status: 'completed', answered: 10, total: 10 }, { status: 'completed', answered: 10, total: 10 },
+    { status: 'in-progress', answered: 4, total: 10 }, { status: 'not-started', answered: 0, total: 10 },
+  ];
+
+  it('glanceOf gives the four figures: joined, answered, answers, finished every activity', () => {
+    assert.equal(typeof adminResults.glanceOf, 'function', 'glanceOf is a rule of lib/admin/admin-results.js');
+    assert.deepEqual(adminResults.glanceOf(rows, { answers: 24, visits: 3 }), [
+      { key: 'joined', figure: '4', label: 'joined' },
+      { key: 'answered', figure: '3', label: 'answered' },
+      { key: 'answers', figure: '24', label: 'answers' },
+      { key: 'finished', figure: '2 of 4', label: 'finished every activity' },
+    ]);
+  });
+
+  it('glanceOf says one answer in the singular, and nobody yet as 0', () => {
+    assert.deepEqual(adminResults.glanceOf([], { answers: 0, visits: 0 }).map((each) => `${each.figure} ${each.label}`), ['0 joined', '0 answered', '0 answers', '0 of 0 finished every activity']);
+    assert.equal(adminResults.glanceOf([rows[2]], { answers: 1, visits: 1 })[2].label, 'answer');
+  });
+
+  it('the screen lists the sessions on the left and shows the one chosen, its figures first, then Downloads, the charts open, the people, and Delete last', async () => {
+    const screen = await readFile(path.join(ROOT, 'migration/src/admin/AdminResults.svelte'), 'utf8');
+    assert.match(screen, /<nav class="session-list"/, 'one list of the sessions');
+    assert.match(screen, /aria-current=\{row\.id === shownId/, 'the chosen session is marked in the list');
+    assert.doesNotMatch(screen, /data-shut/, 'no shut cards with their own buttons');
+    const opened = screen.indexOf('<article class="card" data-session={session.id}');
+    const card = screen.slice(opened, screen.indexOf('</article>', opened));
+    const at = (needle) => { const found = card.indexOf(needle); assert.ok(found > 0, `the session has ${needle}`); return found; };
+    const order = [at('class="glance"'), at('<ReportExports'), at('<details class="tally"'), at('<Fold title="People"'), at('class="card__foot"')];
+    assert.deepEqual([...order].sort((a, b) => a - b), order, 'figures, Downloads, charts, people, then the foot');
+    assert.ok(card.indexOf('data-delete-session') > at('class="card__foot"'), 'Delete is in the foot of the session, not beside Live display');
+    assert.match(card, /<summary>Charts · /, 'the charts are called Charts, not Live results');
+  });
+
+  it('Downloads holds every file in three groups, and the packs are made by the one maker the Live display uses', async () => {
+    const [exportsBox, live] = await Promise.all(['ReportExports.svelte', 'LiveDisplay.svelte'].map((file) => readFile(path.join(ROOT, 'migration/src/admin', file), 'utf8')));
+    for (const words of ['For leaders', 'For the room', 'Data', 'Leader report (PDF)', 'Download PDF pack', 'Download PowerPoint pack', 'Summary by activity (CSV)', 'All answers (CSV)']) assert.ok(exportsBox.includes(words), words);
+    assert.match(exportsBox, /<LookChoice /, 'the packs\' Light or Dark');
+    for (const source of [exportsBox, live]) assert.match(source, /from '\.\.\/lib\/exports\/pack-download\.js'/, 'one maker of the packs');
   });
 });

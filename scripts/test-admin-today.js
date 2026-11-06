@@ -397,6 +397,144 @@ describe('colours', () => {
     assert.ok(contrastRatio('#ffffff', action) >= 4.5, `white on ${action}`);
     assert.ok(contrastRatio('#ffffff', value('adm-bar')) >= 4.5);
   });
+
+  // Prompt 31: the Deloitte look's tokens. Text pairs are held to 4.5:1; an icon, check mark or underline that
+  // carries meaning to 3:1 against its surface. Lime and sky are never text, so they appear only as marks.
+  const DELOITTE_TEXT = [
+    ['adm-text', 'adm-wash'], ['adm-text', 'adm-card'], ['adm-text', 'adm-green-wash'], ['adm-text', 'adm-teal-wash'],
+    ['adm-text-muted', 'adm-wash'], ['adm-text-muted', 'adm-card'], ['adm-text-muted', 'adm-green-wash'],
+    ['adm-deep', 'adm-card'], ['adm-deep', 'adm-wash'], ['adm-deep', 'adm-green-wash'],
+    ['adm-teal', 'adm-card'], ['adm-teal', 'adm-teal-wash'], ['adm-link', 'adm-card'], ['adm-link', 'adm-wash'],
+    ['adm-on-deep', 'adm-green'], ['adm-on-deep', 'adm-teal'], ['adm-on-deep', 'adm-deep'], ['adm-on-deep', 'adm-bar-black'],
+    ['adm-text', 'adm-lime'],
+  ];
+  const DELOITTE_MARKS = [
+    ['adm-green', 'adm-card'], ['adm-green', 'adm-wash'], ['adm-green', 'adm-green-wash'], ['adm-teal', 'adm-teal-wash'],
+    ['adm-deep', 'adm-card'], ['adm-lime', 'adm-bar-black'],
+  ];
+  function lookFailures(css) {
+    const value = (name) => new RegExp(`--${name}:\\s*(#[0-9a-f]{6})`, 'i').exec(css)?.[1];
+    const failures = [];
+    for (const [pairs, least] of [[DELOITTE_TEXT, 4.5], [DELOITTE_MARKS, 3]]) {
+      for (const [ink, ground] of pairs) {
+        if (!value(ink) || !value(ground)) { failures.push(`${ink} or ${ground} is not defined`); continue; }
+        const ratio = contrastRatio(value(ink), value(ground));
+        if (ratio < least) failures.push(`${ink} on ${ground}: ${ratio.toFixed(2)} (needs ${least})`);
+      }
+    }
+    return failures;
+  }
+
+  it('the Deloitte look: every text pair is at least 4.5:1, every mark that carries meaning at least 3:1', async () => {
+    const css = await readFile(path.join(ROOT, 'migration/src/styles/admin-tokens.css'), 'utf8');
+    assert.deepEqual(lookFailures(css), []);
+  });
+
+  // Prompt 32: the role chip in the black bar, its initials badge, the "Ends" word, the popover and the welcome strip. Each pair is a token pair, and
+  // the two components write no colour of their own (no hex, rgb or named colour: only var(--adm-*) and currentColor).
+  const IDENTITY_TEXT = [
+    ['adm-on-deep', 'adm-bar-black'], // the chip's name and role line
+    ['adm-text', 'adm-lime'], // the initials
+    ['adm-text', 'adm-green-wash'], // the "Ends 12 Dec" word, and the strip's sentence
+    ['adm-ink', 'adm-card'], // the strip's buttons
+    ['adm-text', 'adm-card'], ['adm-text-muted', 'adm-card'], // the popover
+  ];
+  it('the chip, the "Ends" word and the strip\'s words and buttons are at least 4.5:1 on their surfaces', async () => {
+    const css = await readFile(path.join(ROOT, 'migration/src/styles/admin-tokens.css'), 'utf8');
+    const value = (name) => new RegExp(`--${name}:\\s*(#[0-9a-f]{6})`, 'i').exec(css)?.[1];
+    for (const [ink, ground] of IDENTITY_TEXT) {
+      assert.ok(value(ink) && value(ground), `${ink} and ${ground} are defined`);
+      assert.ok(contrastRatio(value(ink), value(ground)) >= 4.5, `${ink} on ${ground}: ${contrastRatio(value(ink), value(ground)).toFixed(2)}`);
+    }
+    for (const file of ['IdentityChip.svelte', 'WelcomeStrip.svelte']) {
+      const style = /<style>([\s\S]*)<\/style>/.exec(await readFile(path.join(ROOT, 'migration/src/admin', file), 'utf8'))?.[1] ?? '';
+      assert.ok(style, `${file} has its styles`);
+      assert.doesNotMatch(style, /#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(|:\s*(?:white|black)\b/i, `${file}: a colour of its own`);
+      const used = [...style.matchAll(/var\(--(adm-[a-z-]+)\)/g)].map((match) => match[1]);
+      for (const token of used) assert.ok(value(token), `${file}: --${token} is a colour of admin-tokens.css`);
+    }
+  });
+
+  // Prompt 33: the main action, the fold, the switches, the icon buttons, the breadcrumb, Guests and QR's steps and Content's two parts. Words are
+  // held to 4.5:1 and marks (an icon, a track, a segment's line) to 3:1, and the new components write no colour of their own: only the tokens,
+  // currentColor, and the system colours of forced-colors mode.
+  const EXPLAINS_TEXT = [
+    ['adm-on-deep', 'adm-green'], // the main action; a switch that is on
+    ['adm-on-deep', 'adm-deep'], // Content's chosen part; a done step's mark
+    ['adm-text', 'adm-card'], ['adm-text-muted', 'adm-card'], // a part not chosen, with its meaning
+    ['adm-link', 'adm-card'], ['adm-link', 'adm-bg'], // Show and Hide; the breadcrumb on a card and on the page
+    ['adm-muted', 'adm-card'], // a fold's count; a switch's reason
+    ['adm-text', 'adm-green-wash'], // "Do this now"
+    ['adm-on-deep', 'adm-bar-black'], // a tooltip
+  ];
+  const EXPLAINS_MARKS = [['adm-deep', 'adm-card'], ['adm-deep', 'adm-bg'], ['adm-green', 'adm-card'], ['adm-muted', 'adm-card']];
+  it('the fold, the switches, the icon buttons, the breadcrumb, the steps and the two parts pass on their surfaces, with no colour of their own', async () => {
+    const css = await readFile(path.join(ROOT, 'migration/src/styles/admin-tokens.css'), 'utf8');
+    const value = (name) => new RegExp(`--${name}:\\s*(#[0-9a-f]{6})`, 'i').exec(css)?.[1];
+    for (const [pairs, least] of [[EXPLAINS_TEXT, 4.5], [EXPLAINS_MARKS, 3]]) {
+      for (const [ink, ground] of pairs) {
+        assert.ok(value(ink) && value(ground), `${ink} and ${ground} are defined`);
+        assert.ok(contrastRatio(value(ink), value(ground)) >= least, `${ink} on ${ground}: ${contrastRatio(value(ink), value(ground)).toFixed(2)}`);
+      }
+    }
+    for (const file of ['Icon.svelte', 'Fold.svelte', 'IconButton.svelte', 'RoleSwitch.svelte', 'Breadcrumb.svelte']) {
+      const source = await readFile(path.join(ROOT, 'migration/src/admin', file), 'utf8');
+      const style = /<style>([\s\S]*)<\/style>/.exec(source)?.[1] ?? '';
+      assert.ok(style, `${file} has its styles`);
+      assert.doesNotMatch(style, /#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(|:\s*(?:white|black)\b/i, `${file}: a colour of its own`);
+      const used = [...style.matchAll(/var\(--(adm-[a-z-]+)\)/g)].map((match) => match[1]);
+      for (const token of used) assert.ok(value(token), `${file}: --${token} is a colour of admin-tokens.css`);
+    }
+  });
+
+  it('the Deloitte look fails when a text pair is set to 4.4:1', async () => {
+    const css = await readFile(path.join(ROOT, 'migration/src/styles/admin-tokens.css'), 'utf8');
+    // #787878 on white is 4.42:1.
+    const weakened = css.replace(/--adm-text-muted:\s*#[0-9a-f]{6}/i, '--adm-text-muted: #787878');
+    assert.notEqual(weakened, css);
+    assert.ok(lookFailures(weakened).some((failure) => failure.startsWith('adm-text-muted on adm-card: 4.4')));
+  });
+
+  // Prompt 34: the exported files (the pack and the leader report) and the projected wall take the same colours. The files' hex values are written
+  // once, in lib/exports/report-look.js, and must equal the tokens; the wall's words and figures are held to 7:1 on black (read from the back of a
+  // room), the files' words to 4.5:1 and their marks to 3:1, and the highlighter's black words to 7.9:1 on lime.
+  const tokensCss = () => readFile(path.join(ROOT, 'migration/src/styles/admin-tokens.css'), 'utf8');
+  const look = () => import('../migration/src/lib/exports/report-look.js');
+
+  it('the files\' colours equal the admin tokens they are named after', async () => {
+    const css = await tokensCss();
+    const { LOOK, LOOK_TOKENS } = await look();
+    const value = (name) => new RegExp(`--${name}:\\s*(#[0-9a-f]{6})`, 'i').exec(css)?.[1]?.toUpperCase();
+    assert.deepEqual(Object.keys(LOOK).sort(), Object.keys(LOOK_TOKENS).sort());
+    for (const [key, token] of Object.entries(LOOK_TOKENS)) assert.equal(LOOK[key], value(token), `${key} is --${token}`);
+  });
+
+  it('the wall\'s words and figures are 7:1 on black, the files\' words 4.5:1 and marks 3:1, the highlighter 7.9:1', async () => {
+    const { LOOK, lookFailures: fileFailures, WALL_PAIRS, HIGHLIGHT_PAIR } = await look();
+    assert.deepEqual(fileFailures(LOOK), []);
+    assert.ok(WALL_PAIRS.some(([ink, ground]) => ink === 'lime' && ground === 'black'), 'lime figures on black are held');
+    assert.ok(contrastRatio(LOOK[HIGHLIGHT_PAIR[0]], LOOK[HIGHLIGHT_PAIR[1]]) >= 7.9);
+  });
+
+  it('the light wall: its words 7:1 on white, its hero figures 4.5:1 (they are 96 px and more)', async () => {
+    const { LOOK, LIGHT_WALL_PAIRS } = await look();
+    for (const [ink, ground, least] of LIGHT_WALL_PAIRS) assert.ok(contrastRatio(LOOK[ink], LOOK[ground]) >= least, `${ink} on ${ground}`);
+    assert.deepEqual(LIGHT_WALL_PAIRS.map(([ink, ground]) => `${ink} on ${ground}`), ['text on page', 'deep on page', 'link on page']);
+  });
+
+  it('the checks fail when a file pair is set to 4.4:1 and when a wall pair is set under 7:1', async () => {
+    const { LOOK, lookFailures: fileFailures } = await look();
+    // #787878 on white is 4.42:1; #3c8f0f on black is 5.13:1 (a pass on white paper's rule, not on the wall's).
+    assert.ok(fileFailures({ ...LOOK, textMuted: '#787878' }).some((failure) => failure.startsWith('textMuted on page: 4.4')));
+    assert.ok(fileFailures({ ...LOOK, lime: '#3C8F0F' }).includes('lime on black: 5.13 (needs 7)'));
+  });
+
+  it('the wall is flat black: no gradient, no colour of its own beside the tokens', async () => {
+    for (const file of ['LiveDisplay.svelte', 'LiveStage.svelte', 'LiveHead.svelte']) {
+      const style = /<style>([\s\S]*)<\/style>/.exec(await readFile(path.join(ROOT, 'migration/src/admin', file), 'utf8'))?.[1] ?? '';
+      assert.doesNotMatch(style, /gradient\(|#000102/i, `${file}: the wall's old gradient or near-black`);
+    }
+  });
 });
 
 // ---- Requests: SharePoint (mocked) ----------------------------------------------------------------

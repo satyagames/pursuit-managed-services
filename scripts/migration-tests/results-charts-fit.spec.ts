@@ -206,8 +206,8 @@ test('a card beside one with its names open keeps its own height, on the Live di
   });
   for (const scope of ['section.live', `article[data-session="${sessions.vine}"]`]) {
     if (scope !== 'section.live') {
-      await page.getByRole('button', { name: '← Results' }).click();
-      await page.locator(`${scope} summary`).click();
+      await page.getByRole('button', { name: 'Results', exact: true }).click();
+      await expect(page.locator(`${scope} details.tally`)).toHaveAttribute('open', ''); // (Prompt 34: the charts are open unless folded.)
       await expect(page.locator(`${scope} .result-card`).first()).toBeVisible();
       await settle(page);
     }

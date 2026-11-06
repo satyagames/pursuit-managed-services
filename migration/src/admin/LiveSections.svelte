@@ -38,16 +38,20 @@
     gap: 2rem;
   }
 
+  /* Each activity's band (Prompt 34, as Prompt 33's group headers): its title in the deep green on the pale green wash. */
   .live-section__title {
-    margin: 0 0 0.75rem;
-    font-size: 1.3rem;
-    color: var(--adm-ink);
+    margin: 0 0 1rem;
+    padding: 0.5rem 1rem;
+    color: var(--adm-deep);
+    font-size: 1.2rem;
+    background: var(--adm-green-wash);
+    border-radius: 0.5rem;
   }
 
   /* Each card keeps its own height, at the top of its row (Phase 11a-2: a card stretched to the height of its neighbour whose names were open). */
   .live-section__grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 34rem), 1fr));
     align-items: start;
     gap: 1.25rem;
   }

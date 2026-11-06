@@ -16,12 +16,14 @@
  *   attribute is taken away; a hidden tab finishes everything at once; an element that leaves the page is forgotten.
  *
  * Reads sessionStorage and the address's `?motion=off`; writes sessionStorage `pms.motion`. Never fetches, never plays a sound or
- * confetti (lib/effects/effects.ts asks `motionLevel()` whether confetti may show).
+ * confetti (lib/effects/effects.ts asks `motionLevel()` whether confetti may show). The Art of Possibility's effects (Prompt 35, lib/motion/aop-motion-plan.js)
+ * are played here too, with the Web Animations API: `playEffect`, `flyOff`, `playWave`.
  */
 import {
   LONG_LABEL, MAX_CONCURRENT, WATCH_WINDOW, diagnosticOff, governorStep, motionRecipe, readGovernor,
   resolveLevel, type Direction, type Governor, type Level, type Recipe, type Role, type Verdict,
 } from './motion-plan.js';
+import { aopEffect, flyCount, waveDelay, type Effect as AopEffect, type Where } from './aop-motion-plan.js';
 
 export type { Direction, Level };
 
@@ -207,7 +209,67 @@ export function motion(node: HTMLElement, params: MotionParams | null) {
   };
 }
 
+// ---- The Art of Possibility's effects (Prompt 35) -----------------------------------------------------------------------------------
+// A screen names an effect of lib/motion/aop-motion-plan.js and where it happens; this plays it with the Web Animations API (no per-frame script), at the
+// one resolved level (the governor's too), counted with everything else that moves: past MAX_CONCURRENT an effect simply does not run.
+
+const running = new Set<Animation>();
+const moving = (): number => active.size + running.size;
+
+function play(node: Element, effect: AopEffect): Animation {
+  const animation = node.animate(effect.keyframes as Keyframe[], { duration: effect.duration, easing: effect.easing, delay: effect.delay ?? 0, fill: 'backwards' });
+  running.add(animation);
+  const done = () => { running.delete(animation); };
+  animation.addEventListener('finish', done);
+  animation.addEventListener('cancel', done);
+  return animation;
+}
+
+/** Plays one effect on `node`, or nothing (motion off, a hidden tab, the cap reached). */
+export function playEffect(node: Element | null | undefined, name: string, where: Where = {}): Animation | null {
+  if (!node || typeof document === 'undefined' || document.hidden || typeof (node as HTMLElement).animate !== 'function') return null;
+  const effect = aopEffect(name, motionLevel(), where);
+  if (!effect || moving() >= MAX_CONCURRENT) return null;
+  return play(node, effect);
+}
+
+/**
+ * Clear all: copies of the rated boxes fly a short way and fade, staggered; at most what the cap leaves room for (the rest simply clear). The copies sit over
+ * the page where the boxes were, take no input and are gone when they land. Reads every place first, then writes.
+ */
+export function flyOff(nodes: HTMLElement[]): void {
+  if (typeof document === 'undefined' || document.hidden) return;
+  const level = motionLevel();
+  if (level === 'none') return;
+  // (One place is kept for what the clearing itself moves: the progress bar draining.)
+  const chosen = nodes.slice(0, flyCount(nodes.length, moving() + 1));
+  const places = chosen.map((node) => node.getBoundingClientRect());
+  watchMoment();
+  chosen.forEach((node, index) => {
+    const effect = aopEffect('fly', level, { index });
+    if (!effect) return;
+    const copy = node.cloneNode(true) as HTMLElement;
+    copy.removeAttribute('data-cell');
+    copy.setAttribute('aria-hidden', 'true');
+    copy.inert = true;
+    copy.classList.add('motion-copy');
+    Object.assign(copy.style, { position: 'fixed', left: `${places[index].left}px`, top: `${places[index].top}px`, width: `${places[index].width}px`, height: `${places[index].height}px`, margin: '0', zIndex: '20', pointerEvents: 'none' });
+    document.body.append(copy);
+    play(copy, effect).finished.catch(() => undefined).finally(() => copy.remove());
+  });
+}
+
+/** Every box rated: the wave runs corner to corner. Its spacing (the plan's waveDelay) keeps it under the cap by itself, so each box of it is played. */
+export function playWave(cells: { node: Element; r: number; c: number }[], rows: number, columns: number): void {
+  if (typeof document === 'undefined' || document.hidden || motionLevel() !== 'full' || moving() > 0) return;
+  watchMoment();
+  for (const { node, r, c } of cells) {
+    const effect = aopEffect('wave', 'full', { delay: waveDelay(r, c, rows, columns) });
+    if (effect && typeof (node as HTMLElement).animate === 'function') play(node, effect);
+  }
+}
+
 // ---- For the tests -----------------------------------------------------------------------------------------------------------------
 
 /** How many elements are moving (or waiting for their turn) now. */
-export const movingCount = (): number => active.size;
+export const movingCount = (): number => moving();

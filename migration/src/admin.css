@@ -101,14 +101,15 @@ input[type='date']:focus-within {
   background: var(--adm-bg);
 }
 
+/* The one main action of a screen is the deep green (Prompt 33, rule 1): white on --adm-green is held to 4.5:1 by scripts/test-admin-today.js. */
 .btn--primary {
-  background: var(--action);
-  border-color: var(--action);
-  color: #fff;
+  background: var(--adm-green);
+  border-color: var(--adm-green);
+  color: var(--adm-on-deep);
 }
 
 .btn--primary:hover:not(:disabled) {
-  background: var(--action);
+  background: var(--adm-green);
   filter: brightness(0.93);
 }
 
@@ -200,13 +201,19 @@ input[type='date']:focus-within {
   min-width: 0;
 }
 
-/* Shell */
+/* Shell. Prompt 32: no container is capped (this sheet's 1,120 px and the legacy sheet's 1,000 px are gone); the page runs edge to edge
+   with the gutter at the sides, and only running text keeps a measure (72ch). The bar is Prompt 31's black. */
+/* (16 px to 32 px, in rem so that it grows with the text size, as the 1rem it replaced did.) */
+.shell {
+  --shell-gutter: clamp(1rem, 2vw, 2rem);
+}
+
 .shell__bar {
   position: static;
   flex-wrap: wrap;
   gap: 0.75rem 1rem;
-  padding: 0.6rem max(1rem, calc((100% - 1120px) / 2 + 1rem));
-  background: var(--adm-bar);
+  padding: 0.6rem var(--shell-gutter);
+  background: var(--adm-bar-black);
 }
 
 .shell__brand {
@@ -238,9 +245,17 @@ input[type='date']:focus-within {
   color: #fff;
 }
 
-.shell__user {
+/* The person and, for a PIN sign-in, Lock: at the end of the bar. */
+.shell__end {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
   margin-left: auto;
-  color: rgb(255 255 255 / 0.85);
+}
+
+.shell__user {
+  color: var(--adm-on-deep);
   overflow-wrap: anywhere;
 }
 
@@ -255,11 +270,10 @@ input[type='date']:focus-within {
 .tabs {
   display: flex;
   gap: 0.25rem;
-  max-width: 1120px;
-  margin: 0 auto;
+  margin: 0;
   /* Room for the focus ring: this row scrolls sideways on a phone, so it clips whatever goes past its edge, and a tab's ring (3px, 3px off the tab, with a 9px
-     band round it) was cut off at the top and bottom (Phase 8). The padding is the ring's room, top and bottom, and a little more at the sides. */
-  padding: 9px 0.75rem;
+     band round it) was cut off at the top and bottom (Phase 8). The padding is the ring's room, top and bottom; at the sides it is the gutter. */
+  padding: 9px var(--shell-gutter);
   overflow-x: auto;
   scrollbar-width: thin;
   -webkit-overflow-scrolling: touch;
@@ -289,13 +303,137 @@ input[type='date']:focus-within {
   font-weight: var(--fw-bold);
 }
 
+/* (max-width and margin: the legacy sheet's 1,000 px cap, centred, is overridden here; that sheet is never edited.) */
 .shell__body {
-  max-width: 1120px;
-  padding: 1.5rem 1rem 4rem;
+  max-width: none;
+  margin: 0;
+  padding: 1.5rem var(--shell-gutter) 4rem;
 }
 
 .shell__body:focus-visible {
   outline-offset: -3px;
+}
+
+/* (Not the Live display's: its type is sized to the screen it is on.) */
+.shell__body p:not(.live p) {
+  max-width: 72ch;
+}
+
+/* (Prompt 34: the Live display in the page runs edge to edge as every other tab does since Prompt 32; it is watched on a laptop.) */
+
+/* One bar on a laptop (Prompt 32): from 1,100 px the brand, the section tabs and the person share one sticky bar, 52 px high. The shell is a grid
+   of three columns and the bar a subgrid of it, so the brand and the person size the outer columns and the tab row, which stays its own <nav>,
+   sits sticky in the middle one. Below 1,100 px it is two rows as before: the brand row scrolls away and the white tab row sticks. */
+@media (min-width: 1100px) {
+  html {
+    --adm-sticky-room: 4.5rem; /* the 52 px bar and the 9 px ring, with a little air */
+  }
+
+  .shell {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    column-gap: 1.5rem;
+    align-items: start;
+  }
+
+  .shell > * {
+    grid-column: 1 / -1;
+  }
+
+  .shell__bar {
+    grid-row: 1;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: grid;
+    grid-template-columns: subgrid;
+    align-items: center;
+    box-sizing: border-box;
+    height: 52px;
+    padding-block: 0;
+  }
+
+  .shell__brand {
+    grid-column: 1;
+  }
+
+  .shell__end {
+    grid-column: 3;
+    margin-left: 0;
+  }
+
+  /* (Less room under the last card on a laptop: a 1366 x 650 window shows Today whole.) */
+  .shell__body {
+    padding-bottom: 1.5rem;
+  }
+
+  .shell__nav {
+    grid-row: 1;
+    grid-column: 2;
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    height: 52px;
+    background: transparent;
+    border-bottom: 0;
+  }
+
+  .shell__nav .tabs {
+    box-sizing: border-box;
+    height: 52px;
+    align-items: center;
+    padding: 0;
+  }
+
+  .shell__nav .tab {
+    padding: 0 0.75rem;
+    border-bottom-width: 3px;
+    color: var(--adm-on-deep);
+    font-weight: var(--fw-semibold);
+  }
+
+  .shell__nav .tab:hover {
+    color: var(--adm-on-deep);
+    text-decoration: underline;
+  }
+
+  .shell__nav .tab[aria-selected='true'] {
+    color: var(--adm-on-deep);
+    border-bottom-color: var(--adm-lime);
+    font-weight: var(--fw-bold);
+  }
+
+  /* The ring inside the tab, with its navy band inside too (as on a Results tally's summary): the row is no taller than the bar, so a ring
+     outside it would be cut off. */
+  .shell__nav .tab:focus-visible {
+    outline-offset: -6px;
+    box-shadow: inset 0 0 0 9px var(--adm-ink);
+  }
+
+  /* One title line: each tab's heading, its help and its buttons share a line; the help wraps under the heading when the line is short. */
+  .panel__head {
+    align-items: center;
+    gap: 0.5rem 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .panel__head > div:first-child {
+    display: flex;
+    flex: 1 1 32rem;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 1rem;
+    min-width: 0;
+  }
+
+  .panel__head > div:first-child > :is(h2, h3) {
+    margin: 0;
+  }
+
+  .panel__head > div:first-child > p {
+    flex: 1 1 20rem;
+    min-width: 0;
+  }
 }
 
 .toast {
@@ -1013,4 +1151,139 @@ input[type='date']:focus-within {
     background: none;
     box-shadow: none;
   }
+}
+
+/* Prompt 33, the admin page explains itself. A tab's title carries its icon, in the deep green, on the title's line. */
+.panel__head h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.panel__head h2 > .icon {
+  color: var(--adm-deep);
+}
+
+/* One line under a section's heading saying what the section is ("Sessions: each time you run the app for this client."). */
+.part__intro {
+  margin: 0;
+  color: var(--adm-muted);
+}
+
+/* A field's own line: "Required" in words, and one line on what a field changes. */
+.field__required {
+  margin-inline-start: 0.5rem;
+  color: var(--adm-muted);
+  font-weight: var(--fw-regular);
+}
+
+/* Numbered steps where a task has an order (rule 4): the current one has the deep green edge and the words "Do this now"; a done one a check. */
+.steps {
+  display: grid;
+  gap: 1.5rem;
+  margin: 1rem 0 1.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 1100px) {
+  .steps {
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr);
+    align-items: stretch;
+  }
+}
+
+.step {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--adm-line);
+  border-radius: 0.65rem;
+  background: var(--adm-card);
+}
+
+.step[aria-current='step'] {
+  border: 2px solid var(--adm-deep);
+  padding: calc(1rem - 1px);
+}
+
+.step__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.step__mark {
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid var(--adm-deep);
+  border-radius: 50%;
+  color: var(--adm-deep);
+  font-weight: var(--fw-semibold);
+}
+
+.step[data-done='true'] .step__mark {
+  background: var(--adm-deep);
+  color: var(--adm-on-deep);
+}
+
+.step__now {
+  margin-inline-start: auto;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--adm-green-wash);
+  color: var(--adm-text);
+  font-size: 1rem;
+  font-weight: var(--fw-semibold);
+}
+
+.step__summary {
+  margin: 0;
+}
+
+.step__why {
+  margin: 0;
+  color: var(--adm-muted);
+}
+
+.step__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+@media (forced-colors: active) {
+  .step,
+  .step__mark {
+    border-color: CanvasText;
+  }
+
+  .step[aria-current='step'] {
+    border-color: Highlight;
+  }
+}
+
+/* A button with an icon before its words: the two on one line, centred. */
+.btn--with-icon,
+.btn--back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* A field's label with the word "Required" beside it, outside the label so the field's name stays its label's words (the field carries required). */
+.field__line {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.field__line .field__required {
+  margin-inline-start: 0;
 }

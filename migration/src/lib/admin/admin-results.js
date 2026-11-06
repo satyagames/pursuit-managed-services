@@ -205,3 +205,19 @@ export const rowsToLookForAgain = (rows, lookedFor, now = Date.now()) => rows.fi
 export function forgetNameSources(sessionId) {
   heldSources.delete(String(sessionId));
 }
+
+/**
+ * The four figures at the top of a session on Results (Prompt 34): how many joined, how many answered anything, how many answers, and how many
+ * finished every activity. From the session's rows (resultRows) and its answer counts (answerCounts), which the screen already holds: nothing is read.
+ * @param {{ status: string, answered: number }[]} rows @param {{ answers: number }} counts
+ */
+export function glanceOf(rows, counts) {
+  const answered = rows.filter((row) => row.answered > 0).length;
+  const finished = rows.filter((row) => row.status === 'completed').length;
+  return [
+    { key: 'joined', figure: String(rows.length), label: 'joined' },
+    { key: 'answered', figure: String(answered), label: 'answered' },
+    { key: 'answers', figure: String(counts.answers), label: counts.answers === 1 ? 'answer' : 'answers' },
+    { key: 'finished', figure: `${finished} of ${rows.length}`, label: 'finished every activity' },
+  ];
+}

@@ -12,6 +12,7 @@ import JSZip from 'jszip';
 import PptxGenJS from 'pptxgenjs';
 import { createMeasure, loadReportFonts } from '../migration/src/lib/exports/report-fonts.js';
 import { buildResults } from '../migration/src/lib/results/results-tally.js';
+import { LOOK } from '../migration/src/lib/exports/report-look.js';
 import * as resultsExport from '../migration/src/lib/exports/resultsExport.js';
 import { inspectPdf } from './pdf-inspect.js';
 import { bigResults, krogerResults, oddResults, vineResults } from './results-export-fixtures.js';
@@ -130,7 +131,8 @@ describe('item B: the one-pager draws the same charts as the screen', () => {
   });
 
   describe('the layout', () => {
-    const palette = nodePalette();
+    // (Prompt 34: the pack draws its charts in the app's look, Light by default: packPalette is the Results palette with the brief's colours.)
+    const palette = resultsExport.packPalette('light', nodePalette());
     const pages = () => lay(vineResults(), brand);
     const items = () => pages().flatMap((page) => page.items);
     const textOf = (list) => list.filter((item) => item.kind === 'text').map((item) => item.text);
@@ -151,7 +153,7 @@ describe('item B: the one-pager draws the same charts as the screen', () => {
       assert.equal(all.filter((item) => item.kind === 'tick').length, 2, 'a tick beside each correct answer, never colour alone');
     });
 
-    it('fills every bar from results-tokens.css: the correct answer Dark Green, the top choice the blue, the rest the tint, a scale in its ramp', () => {
+    it('fills every bar from the pack\'s palette: the correct answer, the top choice and the rest each its own, a scale in its ramp', () => {
       const bars = items().filter((item) => item.role === 'bar');
       assert.ok(bars.length > 0);
       for (const bar of bars) {
@@ -170,15 +172,17 @@ describe('item B: the one-pager draws the same charts as the screen', () => {
       assert.deepEqual(textOf(all.filter((item) => item.role === 'rank')), ['1', '1', '3', '4', '5']);
     });
 
-    it('takes every colour of a card from the palette, and only the header wears the client\'s', () => {
+    it('takes every colour of a card from the palette, and nothing wears the client\'s colours (Prompt 34)', () => {
       const tokens = new Set([palette.primary, palette.tint, palette.correct, palette.marker, palette.brand, palette.text, palette.textSecondary, palette.textMuted, palette.grid, palette.surface, palette.bandShade, ...palette.ramps[3], ...palette.ramps[4], ...palette.ramps[5]].map(hex));
       const colours = (item) => [item.fill, item.stroke, item.color].filter(Boolean).map(hex);
       const all = items();
       assert.ok(all.some((item) => item.card), 'the cards\' items are marked');
-      assert.deepEqual(all.filter((item) => item.card).flatMap(colours).filter((colour) => !tokens.has(colour)), []);
-      // Outside the cards: the header band and the activity pages' strip in the client's colour, its words in white or near-black, and the rest in the palette.
-      const header = new Set(['7A1F5C', 'FFFFFF', '111827']);
-      assert.deepEqual(all.filter((item) => !item.card).flatMap(colours).filter((colour) => !tokens.has(colour) && !header.has(colour)), []);
+      // A card's frame and the band naming it are the page's own colours (report-look.js); outside the cards too. Never the client's (7A1F5C).
+      const look = new Set(Object.values(LOOK).map(hex));
+      assert.deepEqual(all.filter((item) => item.card && item.role !== 'card' && item.role !== 'card-band').flatMap(colours).filter((colour) => !tokens.has(colour)), []);
+      assert.deepEqual(all.filter((item) => item.card).flatMap(colours).filter((colour) => !tokens.has(colour) && !look.has(colour)), []);
+      assert.deepEqual(all.filter((item) => !item.card).flatMap(colours).filter((colour) => !tokens.has(colour) && !look.has(colour)), []);
+      assert.ok(!all.flatMap(colours).includes('7A1F5C'));
     });
   });
 });

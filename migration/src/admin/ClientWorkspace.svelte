@@ -5,7 +5,9 @@
   // whole, as People does). What may be done here is the role matrix's (can(), lib/access): an Admin plans and picks the team, a Producer starts a
   // session on Today. The data layer asks the same before every write. Prompt 22: About this client (ClientAbout.svelte), its Industry and Region,
   // shown as labels under its name.
-  import { onMount } from 'svelte';
+  import { onMount, type Snippet } from 'svelte';
+  import Icon from './Icon.svelte';
+  import Breadcrumb from './Breadcrumb.svelte';
   import * as dataService from '../lib/data/dataService.js';
   import { focusHeading } from '../lib/common/focus.js';
   import { errorText } from '../lib/admin/session-notice.js';
@@ -17,13 +19,16 @@
 
   type Client = { id: string; name: string; slug?: string; status?: string; industry?: string | null; region?: string | null };
 
-  let { client, clients = [], access = null, onBack, onToast }: {
+  let { client, clients = [], access = null, onBack, onEdit, editor, onToast }: {
     client: Client;
     /** Every client Clients read: the suggestions for Industry and Region. */
     clients?: Client[];
     /** The signed-in person's access (lib/access); null where nobody is signed in (the local server's PIN gives a legacy admin's). */
     access?: any;
     onBack: () => void;
+    /** (Prompt 33) Opens Clients' own editor of this client's details; `editor` is that form, drawn in Client details when it is open. */
+    onEdit?: () => void;
+    editor?: Snippet;
     onToast: (message: string, kind?: 'info' | 'success' | 'error') => void;
   } = $props();
 
@@ -36,6 +41,14 @@
   let heading = $state<HTMLElement>();
   /** A session just planned with its own team: the team panel opens on it. */
   let teamFor = $state<string | null>(null);
+  /** (Prompt 33) Whether Add session or Add team member is open: the breadcrumb names it, and the client's name in it closes both. */
+  let planning = $state(false);
+  let teaming = $state(false);
+  const crumbs = $derived([
+    { label: 'Clients', onclick: onBack },
+    { label: client.name, onclick: planning || teaming ? () => { planning = false; teaming = false; } : undefined },
+    ...(planning ? [{ label: 'New session' }] : teaming ? [{ label: 'New team member' }] : []),
+  ]);
   /** Its Industry and Region as saved here (Clients reads them again on the way back). */
   let tags = $state<{ industry: string; region: string } | null>(null);
   const shown = $derived({ ...client, ...(tags ?? {}) });
@@ -77,27 +90,71 @@
 </script>
 
 <section class="panel workspace" aria-labelledby="workspace-heading" aria-busy={loading}>
+  <Breadcrumb parts={crumbs} />
   <header class="panel__head">
     <div>
-      <h2 id="workspace-heading" bind:this={heading} tabindex="-1">{client.name}</h2>
+      <h2 id="workspace-heading" bind:this={heading} tabindex="-1"><Icon name="building" />{client.name}</h2>
+      <p class="muted">Plan this client's sessions and choose who runs them; a Producer starts a session on Today.</p>
       <ClientTagChips client={shown} />
-      <p class="muted">Plan this client's sessions, several in one day if needed, and choose who runs them. A Producer starts a session on Today.</p>
     </div>
-    <button class="btn" type="button" onclick={onBack}>Back to clients</button>
+    <button class="btn btn--back" type="button" onclick={onBack}><Icon name="arrow-left" /> Back to clients</button>
   </header>
   {#if loading}<p class="muted" role="status">Loading sessions and team...</p>
   {:else if error}<p class="error" role="alert">{error}</p>
   {:else}
-    <ClientAbout client={shown} {clients} {access} onSaved={(saved) => { tags = saved; }} {onToast} />
-    <p class="muted small" data-testid="one-live-limit">{ONE_LIVE_LIMIT}</p>
-    <ClientSessions {client} {access} {sessions} {settings} {users} {assignments} {fiscalStartMonth} onPlanned={(words, id, ownTeam) => void planned(words, id, ownTeam)} {onToast} />
-    <ClientTeam {client} {access} {sessions} {users} {assignments} preset={teamFor} onChanged={(words) => void changed(words)} {onToast} />
+    <div class="workspace__parts">
+      <section class="part" aria-labelledby="details-heading">
+        <div class="part__head">
+          <h3 id="details-heading">Client details</h3>
+          {#if onEdit}<button class="btn btn--with-icon" type="button" onclick={onEdit}><Icon name="pencil" /> Edit client details</button>{/if}
+        </div>
+        <p class="part__intro">Client details: its name, the words on its pages, its industry and region.</p>
+        {@render editor?.()}
+        <ClientAbout client={shown} {clients} {access} onSaved={(saved) => { tags = saved; }} {onToast} />
+      </section>
+      <p class="muted" data-testid="one-live-limit">{ONE_LIVE_LIMIT}</p>
+      <ClientSessions {client} {access} {sessions} {settings} {users} {assignments} {fiscalStartMonth} bind:open={planning} onPlanned={(words, id, ownTeam) => void planned(words, id, ownTeam)} {onToast} />
+      <ClientTeam {client} {access} {sessions} {users} {assignments} preset={teamFor} bind:open={teaming} onChanged={(words) => void changed(words)} {onToast} />
+    </div>
   {/if}
 </section>
 
 <style>
   .workspace {
     display: grid;
-    gap: 1.25rem;
+    gap: 1rem;
+  }
+
+  .workspace__parts {
+    display: grid;
+    gap: 1.5rem;
+  }
+
+  .workspace__parts > :global(*) {
+    margin: 0;
+  }
+
+  .part {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .part__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .part__head h3 {
+    margin: 0;
+  }
+
+  .btn--back,
+  .btn--with-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 </style>

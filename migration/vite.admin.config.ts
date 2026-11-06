@@ -8,6 +8,7 @@ import { builtSettings } from './vite-plugin-built-settings.ts';
 import { unsupportedPage } from './vite-plugin-unsupported.ts';
 
 const stubs = fileURLToPath(new URL('./src/lib/exports/export-stubs-unavailable.js', import.meta.url));
+const noMatrix = fileURLToPath(new URL('./src/pager/MatrixRating.admin.svelte', import.meta.url));
 const apiTarget = process.env.CEC_DEV_API_TARGET ?? 'http://localhost:3000';
 const devPort = Number(process.env.VITE_ADMIN_PORT) || 5175;
 
@@ -17,11 +18,13 @@ export default defineConfig({
   plugins: [appName(), builtSettings(), unsupportedPage(), svelte(), tailwindcss(), viteSingleFile()],
   resolve: {
     // jsPDF can load these three, for HTML and SVG to PDF, which no export here uses (see the file). They are about 80 kB gzip.
-    alias: {
-      html2canvas: stubs,
-      canvg: stubs,
-      dompurify: stubs,
-    },
+    // (Prompt 35) Brand Studio's preview has no Art of Possibility question: the rating grid is the participant page's alone (see that file).
+    alias: [
+      { find: 'html2canvas', replacement: stubs },
+      { find: 'canvg', replacement: stubs },
+      { find: 'dompurify', replacement: stubs },
+      { find: /^\.\/MatrixRating\.svelte$/, replacement: noMatrix },
+    ],
   },
   server: {
     host: '0.0.0.0',

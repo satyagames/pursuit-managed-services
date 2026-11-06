@@ -11,11 +11,16 @@
   import { RESULTS_PALETTE } from '../lib/results/results-palette-source.js';
   import { getSessionResults } from '../lib/admin/adminData.js';
   import { summaryCsvFile } from '../lib/exports/resultsExport.js';
+  import { downloadPack } from '../lib/exports/pack-download.js';
+  import Icon from './Icon.svelte';
+  import LookChoice, { type Look } from './LookChoice.svelte';
 
   // The exports for leaders, for one session of the Results screen (Phase 7b): the leader report, a PDF made here in the page
   // from the session's saved answers (nothing is stored anywhere: it is made again each time); the summary by activity (Phase 13), the
   // Live display's CSV, one row per answer option; and all answers, the participant CSV, one row for each person and question. The numbers
   // are lib/exports/leader-report.js's and the chart model's; this component only reads, shows progress and saves the file.
+  // Prompt 34: one Downloads box in three groups: For leaders (the leader report), For the room (the session pack, PDF or PowerPoint, Light
+  // or Dark: the Live display's files, made by lib/exports/pack-download.js) and Data (the two CSVs).
 
   let { sessionId, clientName = '', hideNames = false, onToast }: {
     sessionId: string;
@@ -25,7 +30,9 @@
     onToast: (message: string, kind?: 'info' | 'success' | 'error') => void;
   } = $props();
 
-  let busy = $state<'' | 'pdf' | 'summary' | 'csv'>('');
+  let busy = $state<'' | 'pdf' | 'summary' | 'csv' | 'pack-pdf' | 'pack-pptx'>('');
+  /** The packs' look, for this visit only (Light prints well). */
+  let look = $state<Look>('light');
   let status = $state('');
   let failed = $state(false);
   let took = $state(0);
@@ -83,7 +90,7 @@
 
   const cancelled = () => new DOMException('The report was cancelled.', 'AbortError');
 
-  async function run(kind: 'pdf' | 'summary' | 'csv') {
+  async function run(kind: 'pdf' | 'summary' | 'csv' | 'pack-pdf' | 'pack-pptx') {
     if (busy) return;
     busy = kind;
     failed = false;
@@ -93,6 +100,18 @@
     const { signal } = controller;
     const started = performance.now();
     try {
+      if (kind === 'pack-pdf' || kind === 'pack-pptx') {
+        // The session pack, as the Live display makes it: the room's charts, no names, in the look chosen.
+        const results = await getSessionResults(sessionId);
+        if (signal.aborted) throw cancelled();
+        if (!results) throw new Error('That session no longer exists.');
+        status = 'Getting the pack ready...';
+        const fileName = await downloadPack(kind === 'pack-pdf' ? 'pdf' : 'pptx', results, look);
+        took = Math.round(performance.now() - started);
+        status = `Saved ${fileName}`;
+        onToast(`Saved ${fileName}`, 'success');
+        return;
+      }
       if (kind === 'summary') {
         // The summary by activity: the same file as the Live display's Export CSV, read through the one reader of answers.
         const results = await getSessionResults(sessionId);
@@ -148,30 +167,82 @@
   }
 </script>
 
-<div class="report-exports" data-report-session={sessionId}>
-  <span class="report-exports__label">For leaders</span>
-  <button class="btn btn--small" type="button" onclick={() => void run('pdf')} disabled={!!busy}>{busy === 'pdf' ? 'Preparing...' : 'Leader report (PDF)'}</button>
-  <button class="btn btn--small" type="button" onclick={() => void run('summary')} disabled={!!busy}>{busy === 'summary' ? 'Preparing...' : 'Summary by activity (CSV)'}</button>
-  <button class="btn btn--small" type="button" onclick={() => void run('csv')} disabled={!!busy}>{busy === 'csv' ? 'Preparing...' : 'All answers (CSV)'}</button>
-  {#if busy === 'pdf'}<button class="btn btn--small" type="button" onclick={() => controller?.abort()}>Cancel</button>{/if}
+<section class="report-exports" data-report-session={sessionId} aria-labelledby="downloads-{sessionId}">
+  <h3 class="report-exports__title" id="downloads-{sessionId}"><Icon name="download" />Downloads</h3>
+  <div class="report-exports__groups">
+    <div class="report-exports__group" role="group" aria-labelledby="leaders-{sessionId}">
+      <span class="report-exports__label" id="leaders-{sessionId}">For leaders</span>
+      <div class="report-exports__buttons">
+        <button class="btn btn--small" type="button" onclick={() => void run('pdf')} disabled={!!busy}><Icon name="file" size={18} />{busy === 'pdf' ? 'Preparing...' : 'Leader report (PDF)'}</button>
+        {#if busy === 'pdf'}<button class="btn btn--small" type="button" onclick={() => controller?.abort()}>Cancel</button>{/if}
+      </div>
+    </div>
+    <div class="report-exports__group" role="group" aria-labelledby="room-{sessionId}">
+      <span class="report-exports__label" id="room-{sessionId}">For the room · no names</span>
+      <LookChoice label="Look" value={look} onChange={(next) => { look = next; }} />
+      <div class="report-exports__buttons">
+        <button class="btn btn--small" type="button" onclick={() => void run('pack-pdf')} disabled={!!busy}><Icon name="file" size={18} />{busy === 'pack-pdf' ? 'Preparing...' : 'Download PDF pack'}</button>
+        <button class="btn btn--small" type="button" onclick={() => void run('pack-pptx')} disabled={!!busy}><Icon name="slides" size={18} />{busy === 'pack-pptx' ? 'Preparing...' : 'Download PowerPoint pack'}</button>
+      </div>
+    </div>
+    <div class="report-exports__group" role="group" aria-labelledby="data-{sessionId}">
+      <span class="report-exports__label" id="data-{sessionId}">Data</span>
+      <div class="report-exports__buttons">
+        <button class="btn btn--small" type="button" onclick={() => void run('summary')} disabled={!!busy}><Icon name="sheet" size={18} />{busy === 'summary' ? 'Preparing...' : 'Summary by activity (CSV)'}</button>
+        <button class="btn btn--small" type="button" onclick={() => void run('csv')} disabled={!!busy}><Icon name="sheet" size={18} />{busy === 'csv' ? 'Preparing...' : 'All answers (CSV)'}</button>
+      </div>
+    </div>
+  </div>
   {#if status}<p class="report-exports__status" class:report-exports__status--failed={failed} role={failed ? 'alert' : 'status'} data-ms={took || undefined}>{status}</p>{/if}
-</div>
+</section>
 
 <style>
   .report-exports {
+    display: grid;
+    gap: 0.75rem;
+    padding: 1rem;
+    border: 1px solid var(--adm-line);
+    border-radius: 12px;
+    background: var(--adm-card);
+  }
+
+  .report-exports__title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    font-size: 1.1rem;
+  }
+
+  .report-exports__groups {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+    gap: 1rem 1.5rem;
+  }
+
+  .report-exports__group {
+    display: grid;
+    align-content: start;
+    gap: 0.5rem;
+  }
+
+  .report-exports__buttons {
     display: flex;
     flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .report-exports__buttons :global(.btn) {
+    display: inline-flex;
     align-items: center;
-    gap: 0.5rem 0.75rem;
-    padding: 0.5rem 1rem;
-    border-top: 1px solid var(--adm-line);
+    gap: 0.4rem;
   }
 
   .report-exports__label {
     color: var(--adm-muted);
-    font-size: 0.9rem;
+    font-size: 1rem;
+    font-weight: 600;
   }
-
   .report-exports__status {
     flex: 1 1 14rem;
     min-width: 0;

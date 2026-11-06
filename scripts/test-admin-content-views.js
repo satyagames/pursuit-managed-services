@@ -27,6 +27,13 @@ describe('Content views (Phase 18)', () => {
     assert.ok(Object.isFrozen(CONTENT_VIEWS));
   });
 
+  it('(Prompt 33) each view says what it is: an icon and a one-line meaning, shown on its large segment', () => {
+    assert.deepEqual(CONTENT_VIEWS.map((view) => [view.icon, view.meaning]), [
+      ['list', 'What people answer: activities and questions'],
+      ['palette', 'How it looks: logo, colours and fonts'],
+    ]);
+  });
+
   it('the address of every view round-trips; the default is plain #content', () => {
     for (const view of CONTENT_VIEWS) assert.equal(viewOfHash(hashOfView(view.id)), view.id, view.id);
     assert.equal(hashOfView('activities'), '#content');

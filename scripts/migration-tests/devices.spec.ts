@@ -95,7 +95,7 @@ test.describe('the admin page on every device profile', () => {
       await look('Today');
       for (const tab of ['Clients', 'Content', 'Guests and QR', 'Results']) {
         await page.getByRole('tab', { name: tab, exact: true }).click();
-        await expect(page.getByRole('heading', { name: tab, exact: true }).first()).toBeVisible();
+        await expect(page.getByRole('heading', { name: tab === 'Guests and QR' ? 'Guests and QR codes' : tab, exact: true }).first()).toBeVisible();
         await look(tab);
       }
       await page.getByRole('tab', { name: 'Today', exact: true }).click();

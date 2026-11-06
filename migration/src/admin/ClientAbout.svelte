@@ -44,7 +44,7 @@
 </script>
 
 <section class="card about" aria-labelledby="about-heading">
-  <h3 id="about-heading">About this client</h3>
+  <h4 id="about-heading">Industry and region</h4>
   {#if mayEdit}
     <form class="about__form" onsubmit={(event) => void save(event)} novalidate>
       {#each TAGS as tag (tag.key)}
@@ -59,7 +59,7 @@
       {/each}
       <p id="about-hint" class="muted about__hint">Optional. The Leadership dashboard filters by them. At most {TAG_MAX} characters each.</p>
       {#if problem}<p class="error" role="alert">{problem}</p>{/if}
-      <button class="btn" type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save details'}</button>
+      <button class="btn" type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save industry and region'}</button>
     </form>
   {:else}
     <dl class="about__list">
@@ -73,7 +73,7 @@
     padding: 1rem;
   }
 
-  .about h3 {
+  .about h4 {
     margin: 0 0 0.75rem;
   }
 

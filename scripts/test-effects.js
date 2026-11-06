@@ -10,7 +10,7 @@ import {
 } from '../migration/src/lib/effects/confetti-plan.js';
 import { MOMENT } from '../migration/src/lib/participant/hub-moment-plan.js';
 import { EFFECTS, SOUND_KEY, UNAVAILABLE_TITLE, answerEffect, readChoice, soundIsOn, writeChoice } from '../migration/src/lib/effects/effect-plan.js';
-import { CUES, CUE_NAMES, MAX_VOICES, RETRIGGER_MS, createVoiceGate, cueEnd, toneSignature } from '../migration/src/lib/effects/sound-cues.js';
+import { CUES, CUE_NAMES, MAX_VOICES, RATE_GAP_MS, RATING_CUES, RETRIGGER_MS, createVoiceGate, cueEnd, toneSignature } from '../migration/src/lib/effects/sound-cues.js';
 
 // Phase 3 (sound and confetti), the parts that need no browser: the cue table, the voice gate, which
 // moment makes which effect, the confetti plan and palette, the saved choice, the audio measurements
@@ -22,7 +22,9 @@ const root = path.join(import.meta.dirname, '..');
 // ---- The cue table -------------------------------------------------------------------------------------
 
 // The brief's table: the longest each cue may run, in seconds.
-const BRIEF_MAX = { soundOn: 0.3, pick: 0.06, correctFirst: 0.5, correctRetry: 0.3, incorrect: 0.4, revealed: 0.3, activityComplete: 1.0, finale: 2.2, stamp: 0.25, unlock: 0.6, locked: 0.25, allDone: 0.8 };
+const BRIEF_MAX = { soundOn: 0.3, pick: 0.06, correctFirst: 0.5, correctRetry: 0.3, incorrect: 0.4, revealed: 0.3, activityComplete: 1.0, finale: 2.2, stamp: 0.25, unlock: 0.6, locked: 0.25, allDone: 0.8,
+  // Prompt 35: the Art of Possibility.
+  rateLow: 0.12, rateMedium: 0.12, rateHigh: 0.14, rateClear: 0.06, holdOpen: 0.15, rowDone: 0.2, milestoneQuarter: 0.35, milestoneHalf: 0.35, milestoneNearly: 0.35, clearAll: 0.4, allRated: 1.0 };
 
 test('there is a cue for every moment in the brief, each within the brief\'s length', () => {
   assert.deepEqual([...CUE_NAMES].sort(), Object.keys(BRIEF_MAX).sort());
@@ -50,8 +52,8 @@ test('every note is soft and safe: sine or triangle, a real attack and release, 
       assert.ok(note.level > 0 && note.level <= 0.6, `${name}: level ${note.level}`);
       if (note.kind === 'tone') {
         assert.ok(['sine', 'triangle'].includes(note.wave), `${name}: ${note.wave} would be harsh`);
-        // (Only the brief's two low hub cues, G3 and F3 under 700 to 900 Hz, go below the old floor; every other cue keeps it.)
-        const low = ['stamp', 'locked'].includes(name);
+        // (Only the brief's two low hub cues and Prompt 35's Low rating, G3 and F3 under 700 to 900 Hz, go below the old floor; every other cue keeps it.)
+        const low = ['stamp', 'locked', 'rateLow'].includes(name);
         assert.ok(note.freq >= (low ? 170 : 200) && note.freq <= 3000, `${name}: ${note.freq} Hz is outside the soft range`);
         if (note.lowpass) assert.ok(note.lowpass >= (low ? 700 : 800) && note.lowpass <= 6000, `${name} lowpass`);
       } else {
@@ -137,6 +139,75 @@ test('every hub sound goes through the one door behind the switch, and sparks on
   assert.match(plan, /sparkPlan\(/, 'the level is the plan\'s to apply');
 });
 
+// ---- The Art of Possibility's cues (Prompt 35) -----------------------------------------------------------------
+
+// C major pentatonic: C D E G A, so a fast run of ratings sounds like a tune and not noise.
+const PENTATONIC = new Set(['C', 'D', 'E', 'G', 'A']);
+const AOP_CUES = ['rateLow', 'rateMedium', 'rateHigh', 'rateClear', 'holdOpen', 'rowDone', 'milestoneQuarter', 'milestoneHalf', 'milestoneNearly', 'clearAll', 'allRated'];
+
+test('the Art of Possibility cues are in C major pentatonic, and built as the brief says', () => {
+  const tones = (name) => CUES[name].notes.filter((note) => note.kind === 'tone').sort((a, b) => a.at - b.at);
+  const main = (name) => tones(name).filter((note, at, all) => !all.some((other) => other !== note && Math.abs(other.at - note.at) < 1e-9 && other.level > note.level));
+  const names = (name) => main(name).map((note) => `${letter(note.freq)}${Math.floor(Math.log2(note.freq / 261.63) + 0.01) + 4}`);
+  for (const name of AOP_CUES) for (const note of tones(name)) assert.ok(PENTATONIC.has(letter(note.freq)), `${name}: ${note.freq} Hz is not in C major pentatonic`);
+  assert.deepEqual(names('rateLow'), ['G3']);
+  assert.deepEqual(names('rateMedium'), ['E4']);
+  assert.deepEqual(names('rateHigh'), ['C5']);
+  assert.ok(tones('rateHigh').some((note) => Math.abs(note.freq - 2 * main('rateHigh')[0].freq) < 1 && note.level < main('rateHigh')[0].level / 2), 'a faint octave shimmer');
+  assert.deepEqual(tones('rateClear'), [], 'a noise tick, no note');
+  assert.ok(CUES.rateClear.notes[0].level < CUES.pick.notes[0].level, 'softer than the pick');
+  assert.deepEqual(names('holdOpen'), ['E5', 'G5']);
+  assert.deepEqual(names('rowDone'), ['E5', 'G5']);
+  assert.ok(Math.max(...tones('rowDone').map((note) => note.level)) < Math.max(...tones('rateMedium').map((note) => note.level)), 'a finished row is quieter than a rating');
+  assert.deepEqual([names('milestoneQuarter'), names('milestoneHalf'), names('milestoneNearly')], [['C5'], ['E5'], ['G5']], 'one note each, rising');
+  const sweep = main('clearAll').map((note) => note.freq);
+  assert.ok(sweep.length >= 3 && sweep.every((freq, at) => at === 0 || freq < sweep[at - 1]), `clear all descends: ${sweep}`);
+  assert.ok(tones('clearAll').every((note) => note.lowpass), 'low-passed');
+  assert.deepEqual(names('allRated').slice(0, 5), ['C5', 'E5', 'G5', 'C6', 'E6'], 'a five-note rising arpeggio');
+});
+
+test('no Art of Possibility cue repeats a note louder than it just played it', () => {
+  for (const name of AOP_CUES) {
+    const tones = CUES[name].notes.filter((note) => note.kind === 'tone').sort((a, b) => a.at - b.at);
+    for (let at = 1; at < tones.length; at += 1) {
+      if (Math.abs(tones[at].freq - tones[at - 1].freq) < 0.5) assert.ok(tones[at].level <= tones[at - 1].level, `${name}: ${tones[at].freq} Hz again, louder`);
+    }
+  }
+});
+
+test('the rating cues share one gate: at most one starts in any 60 ms, so a run of 20 fast taps never piles up', () => {
+  assert.equal(RATE_GAP_MS, 60);
+  assert.deepEqual([...RATING_CUES].sort(), ['clearAll', 'holdOpen', 'rateClear', 'rateHigh', 'rateLow', 'rateMedium'].sort());
+  const gate = createVoiceGate();
+  const order = ['rateLow', 'rateMedium', 'rateHigh', 'rateClear'];
+  const started = [];
+  for (let tap = 0; tap < 20; tap += 1) {
+    const now = 1000 + tap * 25;
+    if (gate.request(order[tap % order.length], now, 100).play) started.push(now);
+  }
+  assert.ok(started.length >= 2, 'some play');
+  for (let at = 1; at < started.length; at += 1) assert.ok(started[at] - started[at - 1] >= 60, `two rating cues ${started[at] - started[at - 1]} ms apart`);
+  assert.ok(gate.active(1600) <= MAX_VOICES);
+  // A cue outside the rating group (a finished row, a milestone) is not held back by a rating that just started.
+  const other = createVoiceGate();
+  assert.equal(other.request('rateHigh', 0, 140).play, true);
+  assert.equal(other.request('rowDone', 10, 200).play, true);
+  assert.equal(other.request('milestoneHalf', 20, 350).play, true);
+});
+
+test('the Art of Possibility\'s moments (Prompt 35): each its own cue, confetti only when every box is rated, through the one door', async () => {
+  for (const name of ['rateLow', 'rateMedium', 'rateHigh', 'rateClear', 'holdOpen', 'rowDone', 'milestoneQuarter', 'milestoneHalf', 'milestoneNearly', 'clearAll']) {
+    assert.deepEqual(EFFECTS[name], { cue: name, confetti: null }, name);
+  }
+  assert.deepEqual(EFFECTS.allRated, { cue: 'allRated', confetti: 'small' }, 'the small burst, from the bar');
+  const effects = await readFile(path.join(root, 'migration/src/lib/effects/effects.ts'), 'utf8');
+  for (const name of ['aopRate', 'aopHoldOpen', 'aopRowDone', 'aopMilestone', 'aopClearAll', 'aopAllRated']) assert.match(effects, new RegExp(`export function ${name}\\(`), name);
+  assert.match(effects, /export function aopRate\(level: number \| undefined\): void \{\s*run\(/, 'a rating goes through run(), behind the switch');
+  const grid = await readFile(path.join(root, 'migration/src/pager/MatrixRating.svelte'), 'utf8');
+  assert.match(grid, /from '\.\.\/lib\/effects\/effects\.js'/, 'the grid asks effects.ts for its moments');
+  assert.doesNotMatch(grid, /sound-engine|sound-cues|confetti/, 'and never names a sound or a burst itself');
+});
+
 // ---- The voice gate -------------------------------------------------------------------------------------
 
 test('the same cue within 80 ms is ignored, a different cue is not, and the same cue after 80 ms plays', () => {
@@ -204,7 +275,8 @@ test('the other moments: a tick on a pick, the activity and finale cues with the
 });
 
 test('Next, Back, Home and the Welcome tap have no effect to run', () => {
-  assert.deepEqual(Object.keys(EFFECTS).sort(), ['activityComplete', 'allDone', 'finale', 'locked', 'pick', 'soundOn', 'stamp', 'unlock']);
+  // (Prompt 35 adds the Art of Possibility's eleven moments, none of them a Next, a Back, a Home or the Welcome tap.)
+  assert.deepEqual(Object.keys(EFFECTS).sort(), ['activityComplete', 'allDone', 'allRated', 'clearAll', 'finale', 'holdOpen', 'locked', 'milestoneHalf', 'milestoneNearly', 'milestoneQuarter', 'pick', 'rateClear', 'rateHigh', 'rateLow', 'rateMedium', 'rowDone', 'soundOn', 'stamp', 'unlock']);
 });
 
 // ---- The saved choice ---------------------------------------------------------------------------------------

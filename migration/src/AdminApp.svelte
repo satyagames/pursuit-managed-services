@@ -27,6 +27,9 @@
   import { tabAllowed, tabsFor } from './lib/access/scope.js';
   import { writeGuard } from './lib/access/guard.js';
   import { OWNER_BANNER } from './lib/access/access-words.js';
+  import { identityOf } from './lib/access/identity-words.js';
+  import IdentityChip from './admin/IdentityChip.svelte';
+  import WelcomeStrip from './admin/WelcomeStrip.svelte';
 
   type Admin = { id: string; name?: string };
   type Tab = 'today' | 'clients' | 'content' | 'guests' | 'results' | 'users';
@@ -78,6 +81,9 @@
   let access = $state<any>(null);
   /** The tabs this person's role may open: the menu is the role matrix's (lib/access/scope.js, Phase 4), for a Producer, a Designer or Leadership as for a Super admin. Before there is an access, none but People is shown, as before. */
   const shownTabs = $derived(access ? tabsFor(access, tabs) : tabs.filter((tab) => tab.id !== 'users'));
+  /** Who is signed in, with what role, for the bar's chip and the welcome strip (lib/access/identity-words.js): from the access already read, nothing more. A PIN shows the name alone, as before. */
+  const identity = $derived(identityOf(access, { tabs, name: admin?.name ?? '' }));
+  let accessOpen = $state(false);
   let noAccessReason = $state<string | null>(null);
   let ownerBanner = $state(false);
   /** Whether the admin came in with a PIN: only then is there a Lock, back to the PIN. */
@@ -366,8 +372,14 @@
         <strong class="shell__title">{APP_NAME} Admin</strong>
         {#if label}<span class="shell__label" data-testid="copy-label">{label}</span>{/if}
       </div>
-      <span class="shell__user">{admin.name ?? ''}</span>
-      {#if viaPin}<button class="btn btn--bar" type="button" onclick={() => void lock()}>Lock</button>{/if}
+      <div class="shell__end">
+        {#if identity.chip}
+          <IdentityChip {identity} person={access?.person ?? null} bind:open={accessOpen} />
+        {:else}
+          <span class="shell__user">{admin.name ?? ''}</span>
+        {/if}
+        {#if viaPin}<button class="btn btn--bar" type="button" onclick={() => void lock()}>Lock</button>{/if}
+      </div>
     </header>
     <nav class="shell__nav" aria-label="Admin sections">
       <div class="tabs" role="tablist">
@@ -376,6 +388,7 @@
         {/each}
       </div>
     </nav>
+    <WelcomeStrip {identity} onWhat={() => { accessOpen = true; }} />
     <SessionBanner onBack={() => showToast('Reconnected.', 'success')} />
     {#if ownerBanner}<p class="notice owner-banner" role="status" data-testid="owner-banner">{OWNER_BANNER}</p>{/if}
 

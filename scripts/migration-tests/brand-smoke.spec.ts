@@ -86,7 +86,7 @@ test('smoke: choose, crop and save a hero and a logo; the preview shows them; a 
 
   // The preview shows them as the real screen would.
   await expect(page.frameLocator('iframe[data-device]').locator('.pms-badge')).toHaveClass(/pms-badge-ready/);
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(page.getByTestId('brand-status')).toHaveText('All changes saved').catch(async (error) => {
     throw new Error(`${error.message}\nBrand Studio says: ${JSON.stringify(await page.locator('.brand__actions').getByRole('alert').allTextContents())}`);
   });

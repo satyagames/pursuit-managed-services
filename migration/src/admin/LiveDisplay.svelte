@@ -1,12 +1,11 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
-  import { loadBrand } from '../lib/brand/branding.js';
-  import { downloadCsv, downloadPdf, downloadPptx, liveSections } from '../lib/exports/resultsExport.js';
+  import { downloadCsv, liveSections } from '../lib/exports/resultsExport.js';
+  import { downloadPack } from '../lib/exports/pack-download.js';
   import { APP_NAME } from '../lib/common/app-name.js';
   import { getSessionResults, type SessionResults } from '../lib/admin/adminData.js';
   import { loadLiveStructure, readLive, type LiveRead, type LiveStructure } from '../lib/admin/live-session.js';
-  import { withStoredColours } from '../lib/admin/master-brand.js';
   import { createPageWatcher, type PageWatcher } from '../lib/common/page-watch.js';
   import { adminDelay } from '../lib/common/poll-schedule.js';
   import { heldNameSources } from '../lib/admin/admin-results.js';
@@ -16,11 +15,12 @@
   } from '../lib/admin/live-view.js';
   import { nextFit, scaleOf } from '../lib/results/present-fit.js';
   import { answerCounts, answersFrom, answersOf, chartsOf, namesFor } from '../lib/results/results-chart-model.js';
-  import { RESULTS_PALETTE } from '../lib/results/results-palette-source.js';
   import LiveHead from './LiveHead.svelte';
   import LiveNotReady from './LiveNotReady.svelte';
   import LiveNotices from './LiveNotices.svelte';
-  import LiveCheckCard from './LiveCheckCard.svelte';
+  import LiveSteps from './LiveSteps.svelte';
+  import type { Look } from './LookChoice.svelte';
+  import Breadcrumb from './Breadcrumb.svelte';
   import LiveSections from './LiveSections.svelte';
   import LiveStage from './LiveStage.svelte';
 
@@ -87,9 +87,11 @@
   let watcher: PageWatcher | undefined;
   let active = false;
   let nativeFullscreen = false;
-  let exportLibraryPromise: Promise<void> | null = null;
   // A logo that cannot be loaded leaves no empty chip behind: the client's name is the heading anyway.
   let failedLogo = $state('');
+  /** Prompt 34: the wall's look (dark for a projector, light for a bright room) and the packs' (light prints well). In memory for this visit only. */
+  let wallLook = $state<Look>('dark');
+  let fileLook = $state<Look>('light');
   /** The admin view's switch: names on the charts, on until the facilitator hides them. */
   let namesShown = $state(true);
   /** Each question's open answer (its names) or chosen word, by question id: a refresh keeps them. In memory only. */
@@ -400,18 +402,6 @@
 
   // ---- Exports (as the Master screen had them) -------------------------------------------------------------------
 
-  async function loadLibraries() {
-    exportLibraryPromise ??= Promise.all([import('jspdf'), import('pptxgenjs')])
-      .then(([pdfModule, pptModule]) => {
-        const globals = window as unknown as { jspdf?: { jsPDF: unknown }; PptxGenJS?: unknown };
-        globals.jspdf = { jsPDF: pdfModule.jsPDF };
-        globals.PptxGenJS = pptModule.default;
-        Object.assign(globalThis, { CEC_EMBEDDED_EXPORTS: true });
-      })
-      .catch((cause) => { exportLibraryPromise = null; throw cause; });
-    await exportLibraryPromise;
-  }
-
   async function exportCurrent(kind: 'csv' | 'pdf' | 'pptx') {
     const id = structure?.session.id;
     if (!id || exporting) return;
@@ -425,16 +415,8 @@
       let fileName: string;
       // The summary by activity (Phase 13): the client's name is the one this display already holds, so the file costs no read of its own.
       if (kind === 'csv') fileName = downloadCsv(current, { name: (typeof structure?.client?.name === 'string' ? structure.client.name.trim() : '') });
-      else {
-        const [loaded] = await Promise.all([
-          loadBrand({ state: { clientId: current.session.clientId }, sessionId: current.session.id }),
-          loadLibraries(),
-        ]);
-        const exportBrand = { ...(await withStoredColours(loaded)), appName: APP_NAME, palette: RESULTS_PALETTE };
-        if (!active) return;
-        if (exportBrand.clientId !== current.session.clientId) throw new Error('Could not load the session client branding. Please try again.');
-        fileName = kind === 'pdf' ? await downloadPdf(current, exportBrand) : await downloadPptx(current, exportBrand);
-      }
+      // The pack (lib/exports/pack-download.js, the maker Results' Downloads uses too): the client's brand, the libraries, the look chosen.
+      else fileName = await downloadPack(kind, current, fileLook);
       exportMessage = `Saved ${fileName}`;
       onToast(`Saved ${fileName}`, 'success');
     } catch (cause) {
@@ -446,6 +428,10 @@
   }
 
   const newTabAddress = $derived(structure ? wallAddress(window.location.href, structure.session.id) : '#');
+  /** "48 answers from 6 iPads · updated 11:59:18", or what the page is doing. */
+  const metaLine = $derived(results ? `${answersFrom(answered)} · updated ${updated}` : message);
+  /** The breadcrumb's session: its client and its date (Prompt 34: "Results › Kroger · 2026-09-18 › Live"). */
+  const crumbLabel = $derived(structure ? [brand.name, structure.session.date].filter(Boolean).join(' · ') : 'Session');
 
   function select(questionId: string, id: string | null) {
     selected = { ...selected, [questionId]: id };
@@ -462,6 +448,7 @@
 <section
   class="live"
   class:live--present={presenting}
+  class:live--light={wallLook === 'light'}
   class:live--spill={presenting && spill}
   data-presenting={presenting}
   data-idle={presenting && idle}
@@ -474,17 +461,22 @@
   style:--brand-secondary={brand.secondary}
   style:--chart-scale={scale}
 >
+  {#if !presenting}<Breadcrumb parts={[{ label: 'Results', onclick: onBack }, { label: crumbLabel }, { label: 'Live' }]} />{/if}
   <header class="live__head">
     <LiveHead
-      {brand} {failedLogo} clientName={structure ? brand.name : APP_NAME} {wallPage} meta={results ? `${answersFrom(answered)} · updated ${updated}` : message}
-      {phase} {presenting} {exporting} {newTabAddress} onLogoFailed={() => { failedLogo = brand.logoUrl ?? ''; }} onExport={(kind) => void exportCurrent(kind)}
-      onRefresh={refreshStructure} onEnter={() => void enter()} onLeave={() => leave()} {onBack}
+      {wallLook} onWallLook={(look) => { wallLook = look; }} {brand} {failedLogo} clientName={structure ? brand.name : APP_NAME} {wallPage} meta={metaLine} {phase} {presenting}
+      onLogoFailed={() => { failedLogo = brand.logoUrl ?? ''; }} onEnter={() => void enter()} onLeave={() => leave()}
     />
   </header>
 
   {#if phase === 'display'}
+    {#if !wall}
+      <LiveSteps
+        meta={metaLine} answers={answered.answers} check={results?.confidenceCheck} {exporting} {newTabAddress} {wallLook} {fileLook}
+        onWallLook={(look) => { wallLook = look; }} onFileLook={(look) => { fileLook = look; }} onExport={(kind) => void exportCurrent(kind)} onRefresh={refreshStructure} onEnter={() => void enter()}
+      />
+    {/if}
     <LiveNotices {message} {unreadableText} {wall} {exportMessage} {presenting} {namesShown} onToggleNames={() => { namesShown = !namesShown; }} />
-    {#if !wall && results?.confidenceCheck}<LiveCheckCard check={results.confidenceCheck} />{/if}
     {#if presenting}
       <LiveStage
         bind:stage bind:footHeight {current} {currentChart} {currentTitle} {at} {count} {revealed} {selected} {scale} {spill} {atEnd} {autoAdvance}
@@ -515,7 +507,7 @@
     align-items: center;
     gap: 0.75rem 1.5rem;
     padding-bottom: 0.75rem;
-    border-bottom: 3px solid var(--brand-primary);
+    border-bottom: 1px solid var(--adm-line);
   }
 
   .live__status {
@@ -537,8 +529,78 @@
     box-sizing: border-box;
     padding: var(--live-pad);
     overflow: hidden; /* a projector has no scroll wheel: nothing scrolls, the card is sized to the room */
-    color: #fff;
-    background: linear-gradient(180deg, #000102 0%, color-mix(in srgb, var(--brand-primary) 72%, #000102) 100%);
+    /* Prompt 34: the wall in one of two looks, chosen before it opens (LiveSteps.svelte's Wall: Dark or Light). Each is flat (no gradient, no
+       client colour: the client's logo keeps its place in the heading). The wall's own names (--wall-*) are the ground, the words, the figures and
+       the hairlines; the charts' colour names (--viz-*) point at the admin tokens, so a chart draws on either with nothing of its own changed.
+       DARK, the data look: black, white words and lime figures (7:1 or better, scripts/test-admin-today.js); the top choice lime, the rest deep
+       green, the correct answer sky (with its tick and the word), a scale's steps one lime (each has its count written). */
+    --wall-ground: var(--adm-bar-black);
+    --wall-ink: var(--adm-on-deep);
+    --wall-figure: var(--adm-lime);
+    --wall-line: var(--adm-lime);
+    --wall-step: var(--adm-lime);
+    color: var(--wall-ink);
+    background: var(--wall-ground);
+    --viz-surface: var(--wall-ground);
+    --viz-text: var(--wall-ink);
+    --viz-text-secondary: var(--wall-ink);
+    --viz-text-muted: var(--wall-ink);
+    --viz-grid: var(--adm-text-muted);
+    --viz-band-shade: var(--adm-text);
+    --viz-primary: var(--adm-lime);
+    --viz-primary-tint: var(--adm-deep);
+    --viz-correct: var(--adm-sky);
+    --viz-marker: var(--wall-ink);
+    --viz-brand: var(--adm-lime);
+    --viz-band-high: var(--adm-lime);
+    --viz-band-medium: var(--wall-ink);
+    --viz-band-low: var(--adm-sky);
+  }
+
+  /* LIGHT, for a bright room: white, the dark text, figures in the deep green (6.7:1, at hero size), the top choice deep green and the rest
+     lime (each bar has its value written beside it), the correct answer link blue, lines in the card line, a scale's steps deep green. */
+  .live--present.live--light {
+    --wall-ground: var(--adm-card);
+    --wall-ink: var(--adm-text);
+    --wall-figure: var(--adm-deep);
+    --wall-line: var(--adm-card-line);
+    --wall-step: var(--adm-deep);
+    --viz-grid: var(--adm-card-line);
+    --viz-band-shade: var(--adm-wash);
+    --viz-primary: var(--adm-deep);
+    --viz-primary-tint: var(--adm-lime);
+    --viz-correct: var(--adm-link);
+    --viz-brand: var(--adm-deep);
+    --viz-band-high: var(--adm-deep);
+    --viz-band-low: var(--adm-link);
+  }
+
+  .live--present :global(.scale) {
+    --viz-ramp-3-1: var(--wall-step); --viz-ramp-3-2: var(--wall-step); --viz-ramp-3-3: var(--wall-step);
+    --viz-ramp-4-1: var(--wall-step); --viz-ramp-4-2: var(--wall-step); --viz-ramp-4-3: var(--wall-step); --viz-ramp-4-4: var(--wall-step);
+    --viz-ramp-5-1: var(--wall-step); --viz-ramp-5-2: var(--wall-step); --viz-ramp-5-3: var(--wall-step); --viz-ramp-5-4: var(--wall-step); --viz-ramp-5-5: var(--wall-step);
+  }
+
+  /* Words on a fill the dark wall recolours: a chosen word is black on lime (9.2:1); Art of the Possible's light heat steps black, its dark ones white. */
+  .live--present:not(.live--light) :global(.words__word[aria-pressed='true']) {
+    color: var(--adm-bar-black);
+  }
+
+  .live--present :global(.aop__heat:is([data-tone='0'], [data-tone='1'])) {
+    color: var(--adm-bar-black);
+  }
+
+  .live--present :global(.aop__heat:is([data-tone='2'], [data-tone='3'])) {
+    color: var(--adm-on-deep);
+  }
+
+  /* The wall's buttons: outlined, in the wall's words on its ground, with its hairline. */
+  .live--present :global(.btn) {
+    color: var(--wall-ink);
+    background: var(--wall-ground);
+    border: 1.5px solid var(--wall-line);
+    border-radius: 12px;
+    font-size: calc(0.95rem * var(--chart-scale, 1));
   }
 
   .live--present .live__head {
@@ -555,7 +617,7 @@
   }
 
   .live--present .live__head {
-    border-bottom-color: rgb(255 255 255 / 0.55);
+    border-bottom: 1.5px solid var(--wall-line);
   }
 
   .live--present .live__status {

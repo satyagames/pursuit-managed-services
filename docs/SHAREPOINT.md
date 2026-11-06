@@ -30,7 +30,7 @@ picture library. The titles below have no prefix (`"listPrefix": ""`); a copy of
 | `options` | PMSAnswerOptions | The answers a question offers, including which one is right. | participant, admin | admin, setup |
 | `tracks` | PMSParticipants | One item for each visit: one person on one device in one session. | participant, admin | participant, admin |
 | `qrtokens` | PMSGuestQRCodes | One item for each single-use QR code. | participant, admin, setup | admin, participant |
-| `appsettings` | PMSAppSettings | One item, `default`: which session and client are live, and the version of the lists. Every page reads it first. Setup writes it when it makes the lists; nobody makes it by hand. | participant, admin, setup | admin, setup |
+| `appsettings` | PMSAppSettings | One item, `default`: which session and client are live, and the version of the lists. Every page reads it first. Setup writes it when it makes the lists; nobody makes it by hand. A second item, `site-groups`, holds the ids of the PMS groups as JSON in its Title, written by Setup's Apply (Prompt 27); the participant page never reads it. | participant, admin, setup | admin, setup |
 | `visitorroster` | PMSGuestList | The guest list: one item for each named guest of a session. | participant, admin | admin |
 | `uservisitlogs` | PMSVisitLog | The visit log: one row for each browser tab that opened the participant page. Results read it for names, and Delete session removes a session's rows. | admin | participant, admin |
 | `adminusers` | PMSAdminUsers | The facilitators who may unlock the admin page: a name and a hash of a PIN each. | admin | setup |
@@ -80,7 +80,7 @@ The table, list by list, is in [SHAREPOINT-LISTS.md](../SHAREPOINT-LISTS.md#perm
 - **Delete session** (Results, Phase 16) deletes items in six lists, which needs Contribute (it includes deleting) on each: PMSParticipantAnswers,
   PMSVisitLog, PMSParticipants, PMSGuestList, PMSGuestQRCodes and PMSClientSessions. An account refused in one (403) is told which list, in words; what
   came before it in that order is gone, the rest and the session item stay, and the session stays on Results to be deleted again once the right is
-  given. The app changes no list's permissions.
+  given. The admin page changes no list's permissions.
 - **What a delete leaves on the site: nothing, as seen on PCOE (19 Oct 2026, Satyadev).** The app sends SharePoint's item DELETE
   (`X-HTTP-Method: DELETE`), not the `recycle()` call. After a Delete session on PCOE, neither the site's Recycle bin (Site contents, Recycle bin) nor
   its second-stage recycle bin held any item of the session: the delete is permanent, as the warning says. The app has nothing to restore an item.
@@ -89,13 +89,38 @@ The table, list by list, is in [SHAREPOINT-LISTS.md](../SHAREPOINT-LISTS.md#perm
   `PMSRoleAssignments` rows, two indexed reads). Turned off, they are stopped at that moment and the page refuses every write; until then the page
   carries on with what it read. Turning someone off in the app does not take them out of the site's groups: a person who must lose all access is also
   removed from the site by its owner (QA item 271).
-- **The access lists' own permissions** (Prompt 21, Phase 7, `lib/setup/list-permissions.js`; **ASSUMED** until tried on PCOE, QA item 263). The page's
-  check is a guardrail: SharePoint lets anyone who may write a list write any item of it by calling REST by hand. So a site owner, by hand, from the four
-  steps at the end of Setup's plan: makes a group "PMS access managers" (the Super admins and the Admins); gives `PMSUsers` and `PMSRoleAssignments` their
-  own permissions (that group Contribute, the members Read: everyone must read their own row and roles to sign in); makes a permission level "PMS add
-  only" (View Items, Add Items, Open; not Edit or Delete Items); and gives `PMSAuditLog` its own permissions (the members "PMS add only": every grant,
-  removal and person added writes a line as the person who did it). Setup changes no permission; its self-test ("Probe (read-only): who may change the
-  access lists") reads what is set and says what differs. **What stays the app's:** Producers and Designers need to write the content, session, guest and
+- **The PMS groups and the lists' own permissions** (Prompt 27, `lib/setup/list-permissions.js`; every call **ASSUMED** until tried on PCOE, QA items
+  302 to 310). The page's check is a guardrail: SharePoint lets anyone who may write a list write any item of it by calling REST by hand. The site holds
+  other content, so the app never touches the site's built-in groups' rights on anything but its own lists and folder. A site owner presses **Apply** on the
+  Setup page, once: a rehearsal on a scratch list and folder, then the groups PMS super admins, PMS access managers, PMS staff, PMS leadership and PMS
+  participants, the level "PMS add only" (View Items, Add Items, Open; not Edit or Delete Items), the owners (PMS super admins owns the three managed
+  groups; the site's owners own the other two; PCOE has no `SetUserAsOwner`, so there Apply names them and a site owner sets them on each group's settings page), and for each list and the pages' folder (never its library) stop inheriting with a copy, then grant:
+
+  | List | PMS participants | PMS staff | PMS access managers | PMS leadership |
+  |---|---|---|---|---|
+  | PMSClients, PMSActivities, PMSActivityQuestions, PMSAnswerOptions, PMSAppSettings, PMSGuestList, PMSClientImages | Read | Contribute | None | Read |
+  | PMSClientSessions, PMSParticipants, PMSGuestQRCodes, PMSVisitLog, PMSParticipantAnswers | Contribute | Contribute | None | Read |
+  | PMSAdminUsers | None | Read | None | None |
+  | PMSUsers, PMSRoleAssignments | None | Read | Contribute | Read |
+  | PMSAuditLog | None | PMS add only | None | None |
+  | PMSSessionSummary | None | Contribute | None | Read |
+  | The pages' folder | Read | Read | None | Read |
+  | The site itself | PMS site entry | PMS site entry | PMS site entry | PMS site entry |
+
+  **PMS site entry** (Open, View Pages, Browse User Information, Use Remote Interfaces, Use Client Integration Features; no List Permission at all: the
+  set a site owner made by hand on PCOE, with which every read answered 200) is the one grant Apply makes on the site itself. Seen on PCOE (4 Nov 2026, QA item 303): an account with rights on the lists and folder
+  alone was refused every REST call, the site itself included, because a grant made through REST adds no Limited Access on the site; with this level
+  granted on the site every read answered 200 and the admin page opened. A level of that name made by hand is used when it holds Open, Browse User Information
+  and Use Remote Interfaces and no List Permission. Remove the site's groups never touches the site.
+
+  **Each copy of the app has its own groups:** a copy with a list prefix names them with it ("Test PMS staff"; the copy with no prefix keeps "PMS
+  staff"), because a site's groups are shared by every copy on it: on PCOE (4 Nov 2026) a test copy's People took a person out of the live copy's PMS
+  access managers. The two permission levels are shared. Apply removes nothing, so the site's Members and Visitors keep what they had: **until a site owner presses Remove the site's groups**, a separate button,
+  the secret lists stay readable by anyone in them. A list that already has its own permissions (on PCOE the four access lists, set by hand) is added to: only the grants the PMS groups lack, with nothing removed and no grant already there changed, and its undo takes back just those (the owner, 3 Nov 2026). It is reported as Differs and left alone only when a PMS group already holds another level there; a folder that is a
+  library's root likewise. Apply prints each changed list's undo (`resetroleinheritance`). The ids of the three managed groups are kept in a second
+  `PMSAppSettings` item (`AppId` `site-groups`, JSON in its `Title`), which needs no new column or version. PMS add only includes View, so all staff can
+  read `PMSAuditLog` by calling REST; the review screen is a Super admin's by the page's check alone. **Part 4:** with Setup's switch on (kept in that item), a Super admin's changes on the admin page call `/web/siteusers/getbyemail`, `/web/ensureuser` and `/web/sitegroups/getbyid(<id>)/users` (an add, verbose `SP.User` body) or `.../users/removebyid(<id>)`, for the three managed groups only, after `CanCurrentUserEditMembership`; each change is an audit line (`site-add`, `site-remove`). PCOE answered these on 3 Nov 2026 (QA item 302). Setup's self-test reads what is set ("Probe
+  (read-only): who may change the access lists", and "who is in the PMS groups"). **What stays the app's:** Producers and Designers need to write the content, session, guest and
   answer lists to do their work, and a list's permission is the same for every item in it, so the separation between clients there is the app's alone
   (`can()`, the write guard and the read check). Holding it against someone who goes around the page would need a server component between the page
   and the lists, which this app does not have (no server, by design).

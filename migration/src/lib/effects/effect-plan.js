@@ -19,6 +19,19 @@ export const EFFECTS = /** @type {const} */ ({
   unlock: { cue: 'unlock', confetti: null },
   locked: { cue: 'locked', confetti: null },
   allDone: { cue: 'allDone', confetti: 'medium' },
+  // The Art of Possibility (Prompt 35): a note for each level a box takes, the clear's tick, the hold's blip, a finished row, the three milestones,
+  // Clear all, and every box rated with the small burst from the bar (the activity's own medium burst still comes when it is sent).
+  rateLow: { cue: 'rateLow', confetti: null },
+  rateMedium: { cue: 'rateMedium', confetti: null },
+  rateHigh: { cue: 'rateHigh', confetti: null },
+  rateClear: { cue: 'rateClear', confetti: null },
+  holdOpen: { cue: 'holdOpen', confetti: null },
+  rowDone: { cue: 'rowDone', confetti: null },
+  milestoneQuarter: { cue: 'milestoneQuarter', confetti: null },
+  milestoneHalf: { cue: 'milestoneHalf', confetti: null },
+  milestoneNearly: { cue: 'milestoneNearly', confetti: null },
+  clearAll: { cue: 'clearAll', confetti: null },
+  allRated: { cue: 'allRated', confetti: 'small' },
 });
 
 /**

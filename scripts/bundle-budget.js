@@ -14,9 +14,11 @@ export const BUDGET = Object.freeze({
    * stays at about 153.5 kB against its 400 kB target. Phase 7b left the admin page 1.1 kB under 600,000 B, which is inside the noise of
    * measuring gzip (the same file is about 599.6 kB with the system gzip and about 601.6 kB with another machine's zlib, so the old
    * budget could fail on a teammate's machine with no code change), and Phase 8 (accessibility fixes) needs room. Raised to 700,000 B in
-   * Phase 7c. PowerPoint, both report faces and the jsPDF stubs are exactly as they were, and so is the way size is measured.
+   * Phase 7c. PowerPoint, both report faces and the jsPDF stubs are exactly as they were, and so is the way size is measured. Raised to
+   * 710,000 B by the site owner for Prompt 34 (5 Nov 2026: the Live display, the PDF and the PowerPoint in one look, dark and light), when
+   * the admin page stood at 698,147 B; the way size is measured is unchanged.
    */
-  admin: 700_000,
+  admin: 710_000,
 });
 
 /**
@@ -499,5 +501,50 @@ export const PHASE_24 = Object.freeze({
 export const PHASE_26 = Object.freeze({
   participantBefore: 181_605, adminBefore: 675_595, participantAllowance: 0, adminAllowance: 8_000,
   participantAfter: 180_279, adminAfter: 673_935,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
+
+/**
+ * Prompt 32 (your role beside your name, the admin page on the whole laptop screen), measured from where Prompt 31 left the pages (b79bf85, built
+ * on 5 Nov 2026). The participant page may not change at all. The admin page gains lib/access/identity-words.js, the chip, the welcome strip and
+ * the tabs' columns: at most 8,000 B gzip (ASSUMED: the brief names only the 700,000 B budget). Measured when the prompt ended: the after figures.
+ */
+export const PHASE_32 = Object.freeze({
+  participantBefore: 180_179, adminBefore: 679_564, participantAllowance: 0, adminAllowance: 8_000,
+  participantAfter: 180_179, adminAfter: 685_989,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
+
+/**
+ * Prompt 33 (the admin page explains itself: icons, folds, switches, breadcrumbs, steps), measured from where Prompt 32 left the pages (e53eb60,
+ * built on 5 Nov 2026). The participant page may not change at all. The admin page gains admin/Icon.svelte, Fold, IconButton, RoleSwitch and
+ * Breadcrumb and the tabs' new markup: at most 10,000 B gzip (ASSUMED: the brief names only the 700,000 B budget).
+ */
+export const PHASE_33 = Object.freeze({
+  participantBefore: 180_179, adminBefore: 685_989, participantAllowance: 0, adminAllowance: 10_000,
+  participantAfter: 180_179, adminAfter: 694_288,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
+
+/**
+ * Prompt 34 (Live results, the PDF and the PowerPoint in one look), measured from where Prompt 33 left the pages (f903716, built on 5 Nov 2026).
+ * The participant page may not change at all (a word such as the one for a line under text, in any file under migration/, would add a Tailwind
+ * rule to it). The admin page gains admin/LiveSteps.svelte, the wall's dark look, the headline's parts and hero figures, and the files' new look:
+ * at most what is left under the budget, which the site owner raised to 710,000 B for it.
+ */
+export const PHASE_34 = Object.freeze({
+  participantBefore: 180_179, adminBefore: 694_288, participantAllowance: 0, adminAllowance: 710_000 - 694_288,
+  participantAfter: 180_179, adminAfter: 700_114,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
+
+/**
+ * Prompt 35 (the Art of Possibility rebuilt: one calm screen, three level colours with a shape and a letter, press and hold, motion, sound and
+ * "Your ratings at a glance"), measured from where Prompt 34 left the pages (dc7a6f8, built on 5 Nov 2026). This one is the participant page's: it
+ * may grow by at most 12 KB gzip in all (the brief's allowance) and stays under its ceiling. The admin page carries the participant's pager for
+ * Brand Studio's preview, so it grows by what the pager grows; it stays under its budget.
+ */
+export const PHASE_35 = Object.freeze({
+  participantBefore: 180_179, adminBefore: 700_114, participantAllowance: 12_288,
   participantUtilities: PHASE_11A.participantUtilities,
 });

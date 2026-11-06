@@ -70,7 +70,7 @@ test('a colour saved in Brand Studio and the switch flipped on Today by another 
   await theSwitch(second).click();
   await expect(theSwitch(second)).toHaveAttribute('aria-checked', 'false');
   await expect.poll(() => stored()).toBe(false);
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(page.getByTestId('brand-status')).toHaveText('All changes saved');
   const client = (await ds.getClient('c-kroger')) as { theme: { primary: string; motion?: { enabled: boolean } } };
   expect(client.theme.primary.toUpperCase(), 'the colour').toBe('#0A6B6B');

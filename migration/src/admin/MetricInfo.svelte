@@ -25,6 +25,11 @@
   let at = $state<{ left: number; top: number } | null>(null);
   const open = $derived(shown || pinned);
   const close = () => { shown = false; pinned = false; };
+  // (Prompt 32: Tab to a button below the fold scrolls it into view, and that scroll arrived after the focus had opened the words, so it closed them
+  // at once, or a moment after Enter kept them open. A scroll within FOCUS_SCROLL_MS of the focus is the focus's own and leaves them open.)
+  const FOCUS_SCROLL_MS = 300;
+  let focusedAt = 0;
+  const onScroll = () => { if (performance.now() - focusedAt > FOCUS_SCROLL_MS) close(); };
 
   $effect(() => {
     if (!open) { at = null; return undefined; }
@@ -38,11 +43,11 @@
       at = { left: placed.left, top: placed.top };
     });
     const elsewhere = (event: Event) => { if (!button?.contains(event.target as Node) && !tip?.contains(event.target as Node)) close(); };
-    window.addEventListener('scroll', close, { capture: true, passive: true });
+    window.addEventListener('scroll', onScroll, { capture: true, passive: true });
     window.addEventListener('resize', close);
     document.addEventListener('pointerdown', elsewhere);
     return () => {
-      window.removeEventListener('scroll', close, { capture: true });
+      window.removeEventListener('scroll', onScroll, { capture: true });
       window.removeEventListener('resize', close);
       document.removeEventListener('pointerdown', elsewhere);
       if (closeOpen === close) closeOpen = null;
@@ -53,7 +58,7 @@
 {#if words}
   <span class="metric-info">
     <button class="metric-info__button" bind:this={button} type="button" aria-label="About {words.label}" aria-describedby={tipId} aria-expanded={open}
-      onmouseenter={() => { shown = true; }} onmouseleave={() => { shown = false; }} onfocus={() => { shown = true; }} onblur={() => { shown = false; pinned = false; }}
+      onmouseenter={() => { shown = true; }} onmouseleave={() => { shown = false; }} onfocus={() => { focusedAt = performance.now(); shown = true; }} onblur={() => { shown = false; pinned = false; }}
       onclick={() => { pinned = !pinned; }} onkeydown={(event) => { if (event.key === 'Escape') close(); }}>i</button>
     <span class="metric-info__tip" bind:this={tip} id={tipId} role="tooltip" data-open={open} style={at ? `left: ${at.left}px; top: ${at.top}px;` : 'visibility: hidden; left: 0; top: 0;'}>
       <strong>{words.label}</strong>

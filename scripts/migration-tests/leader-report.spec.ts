@@ -183,11 +183,14 @@ test('Summary by activity (CSV): the Live display summary file, from the Results
   expect(text).toContain(',Harbour History,1,Which year did the harbour open?,Single choice,1887,3,50,,Yes,Yes,6,The top choice (50%) was 1887.');
   for (const name of ['José Álvarez', 'Zoë Brontë']) expect(text, 'no name in the summary').not.toContain(name);
   await expect(line(page, session.id)).toContainText('Saved summary-by-activity-');
-  // The keyboard reaches the three in the order they are read. (WebKit is Safari on a Mac, which skips buttons with Tab: Alt+Tab there, as keyboard.spec.ts does.)
+  // The keyboard reaches the Downloads in the order they are read (Prompt 34: For leaders, For the room, then Data). (WebKit is Safari on a Mac,
+  // which skips buttons with Tab: Alt+Tab there, as keyboard.spec.ts does.)
   const tab = browserName === 'webkit' ? 'Alt+Tab' : 'Tab';
   await card(page, session.id).getByRole('button', { name: 'Leader report (PDF)' }).focus();
-  await page.keyboard.press(tab);
-  await expect(card(page, session.id).getByRole('button', { name: 'Summary by activity (CSV)' })).toBeFocused();
+  for (const name of ['Dark', 'Light', 'Download PDF pack', 'Download PowerPoint pack', 'Summary by activity (CSV)']) {
+    await page.keyboard.press(tab);
+    await expect(card(page, session.id).getByRole('button', { name, exact: true })).toBeFocused();
+  }
   await page.keyboard.press(tab);
   await expect(card(page, session.id).getByRole('button', { name: 'All answers (CSV)' })).toBeFocused();
 });

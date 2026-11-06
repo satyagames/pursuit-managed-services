@@ -129,7 +129,7 @@ test('Results\' own cards: the same charts, aligned and readable, at a phone and
   await page.setViewportSize({ width: 1280, height: 800 });
   await openAdmin(page, local, 'Results');
   const card = page.locator(`article[data-session="${vineId}"]`);
-  await card.locator('summary').click();
+  await expect(card.locator('details.tally')).toHaveAttribute('open', ''); // (Prompt 34: the charts are open unless folded.)
   await expect(card.locator('.result-card').first()).toBeVisible();
   await card.locator('.result-card[data-question="v1"] [data-mark="v1b"]').click();
   await expect(card.getByTestId('names-panel')).toBeVisible();

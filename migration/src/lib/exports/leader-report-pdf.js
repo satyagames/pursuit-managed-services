@@ -8,6 +8,7 @@
 
 import { PAGE } from './leader-report-layout.js';
 import { binaryString } from './report-fonts.js';
+import { markShape } from '../results/results-chart-figure.js';
 
 /** @typedef {{ viewBox: number[], shapes: ({ d: string, fill: string } | { rect: number[], fill: string })[] }} Wordmark */
 
@@ -123,6 +124,12 @@ export async function writeLeaderReportPdf({ jsPDF, pages, fonts, wordmark = nul
         doc.setLineWidth(size * 0.17);
         if (item.kind === 'tick') doc.lines([[size * 0.3, size * 0.3], [size * 0.55, size * 0.68 * -1]], x + size * 0.08, y + size * 0.55, [1, 1], 'S', false);
         else { doc.line(x + size * 0.16, y + size * 0.16, x + size * 0.84, y + size * 0.84); doc.line(x + size * 0.84, y + size * 0.16, x + size * 0.16, y + size * 0.84); }
+      } else if (item.kind === 'mark') {
+        // (Prompt 34) An Art of the Possible band's mark, as a shape: the faces have no ▲, ● or ▼.
+        const { circle, triangle } = markShape(item);
+        doc.setFillColor(...rgb(item.color));
+        if (circle) doc.circle(circle.cx, circle.cy, circle.r, 'F');
+        else doc.triangle(...triangle.flat(), 'F');
       } else if (item.kind === 'image') {
         doc.addImage(item.data, 'PNG', item.x, item.y, item.w, item.h, 'client-logo', 'FAST');
       } else if (item.kind === 'wordmark' && wordmark) {

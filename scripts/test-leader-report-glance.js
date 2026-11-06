@@ -9,6 +9,8 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { before, describe, it } from 'node:test';
 import { PAGE, WORDMARK_RATIO, layoutLeaderReport } from '../migration/src/lib/exports/leader-report-layout.js';
+import { LOOK } from '../migration/src/lib/exports/report-look.js';
+import { packPalette } from '../migration/src/lib/exports/resultsExport.js';
 import { bigRecords, harbourRecords } from './leader-report-fixtures.js';
 import { makeReport } from './leader-report-node.js';
 import { inspectPdf, squash } from './pdf-inspect.js';
@@ -116,7 +118,7 @@ describe('each activity has its own pages', () => {
       assert.ok(joined(page).includes(squash(takeaway)), `${title}: its takeaway`);
       assert.ok(page.items.some((item) => item.kind === 'text' && item.y < PAGE.top + 4 && item.text === title), `${title}: the running head names it`);
       const band = page.items.find((item) => item.role === 'activity-band');
-      assert.equal(hex(band.fill), hex(nodePalette().bandShade), 'the band is the palette\'s shade');
+      assert.equal(hex(band.fill), hex(LOOK.greenWash), 'the band is the pale green (Prompt 34)');
     }
   });
 
@@ -153,14 +155,21 @@ describe('each activity has its own pages', () => {
   });
 });
 
-describe('the client\'s colour is on the cover band only, and the words are the guide\'s', () => {
-  it('no item but the title band wears Harbour\'s #1F5FA8, on any page', () => {
+// Prompt 34: the report wears the app's look (lib/exports/report-look.js), as the pack does: the cover's title band is the deep green with white
+// words, each activity's band the pale green, and no item wears the client's colour (the client's name and logo stay).
+describe('the report in the app\'s look: no client colour, the words are the palette\'s', () => {
+  it('no item wears Harbour\'s #1F5FA8; the title band is the deep green with white words, an activity\'s band the pale green', () => {
     const worn = small.pages.flatMap((page, index) => page.items.filter((item) => [item.fill, item.stroke, item.color].some((colour) => hex(colour) === '1F5FA8')).map((item) => ({ index, item })));
-    assert.deepEqual(worn.map(({ index, item }) => `${index}:${item.kind}:${item.role ?? ''}`), ['0:rect:title-band']);
+    assert.deepEqual(worn.map(({ index, item }) => `${index}:${item.kind}:${item.role ?? ''}`), []);
+    const band = small.pages[0].items.filter((item) => item.role === 'title-band');
+    assert.equal(hex(band.find((item) => item.kind === 'rect').fill), hex(LOOK.deep));
+    for (const words of band.filter((item) => item.kind === 'text')) assert.equal(hex(words.color), hex(LOOK.onDeep));
+    const activityBands = small.pages.flatMap((page) => page.items.filter((item) => item.role === 'activity-band'));
+    assert.ok(activityBands.length > 0 && activityBands.every((item) => hex(item.fill) === hex(LOOK.greenWash)));
   });
 
-  it('writes words in black or the secondary grey of the palette (brand guide p. 37), white or near-black only on the band', () => {
-    const palette = nodePalette();
+  it('writes words in the dark text or the muted grey of the pack\'s Light palette, white only on the band', () => {
+    const palette = packPalette('light', nodePalette());
     const allowed = new Set([palette.text, palette.textSecondary].map(hex));
     for (const [name, made] of [['Harbour', small], ['sixty people', big]]) {
       const odd = made.pages.flatMap((page) => page.items.filter((item) => item.kind === 'text' && item.role !== 'title-band' && !allowed.has(hex(item.color))));

@@ -72,15 +72,17 @@ async function pictures(name, bytes) {
   return shots.length;
 }
 
-for (const [name, make, brand] of PACKS) {
+// (Prompt 34) Each pack in both looks: Light as "pack-<name>", Dark as "pack-<name>-dark".
+for (const [name, make, brand] of PACKS) for (const look of ['light', 'dark']) {
   const results = make();
-  const report = resultsExport.buildReport(results, brand);
+  const file = look === 'dark' ? `pack-${name}-dark` : `pack-${name}`;
+  const report = resultsExport.buildReport(results, { ...brand, look });
   const pages = resultsExport.layoutReport(report, null, nodePalette(), createMeasure(fonts));
   const bytes = new Uint8Array(resultsExport.pdfBytes(pages, report, { jsPDF, fonts }));
-  await writeFile(path.join(out, `pack-${name}.pdf`), bytes);
-  await writeFile(path.join(out, `pack-${name}.pptx`), await resultsExport.pptxFile(pages, report, { PptxGenJS, outputType: 'nodebuffer' }));
-  await writeFile(path.join(out, `summary-${name}.csv`), resultsExport.summaryCsvFile(results, brand));
-  lines.push(`pack-${name}: ${await pictures(`pack-${name}`, bytes)} pages (cards a page: ${pages.map((page) => page.items.filter((item) => item.role === 'card').length).join(', ')})`);
+  await writeFile(path.join(out, `${file}.pdf`), bytes);
+  await writeFile(path.join(out, `${file}.pptx`), await resultsExport.pptxFile(pages, report, { PptxGenJS, outputType: 'nodebuffer' }));
+  if (look === 'light') await writeFile(path.join(out, `summary-${name}.csv`), resultsExport.summaryCsvFile(results, brand));
+  lines.push(`${file}: ${await pictures(file, bytes)} pages, ${bytes.length.toLocaleString('en-US')} B (cards a page: ${pages.map((page) => page.items.filter((item) => item.role === 'card').length).join(', ')})`);
 }
 for (const [name, make] of REPORTS) {
   const made = await makeReport(make());

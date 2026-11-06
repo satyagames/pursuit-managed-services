@@ -427,6 +427,11 @@ describe('grants, their guards and the audit list', () => {
     await assert.rejects(grantRole(ds, admin, { userKey: 'z@deloitte.com', role: 'Super admin', scopeType: 'global' }, { now: NOW }), AccessDenied);
   });
 
+  it('(Prompt 28) access-email is an action, with the schema\'s words', () => {
+    assert.ok(AUDIT_ACTIONS.includes('access-email'), 'an email prepared about an access change is a line of its own');
+    assert.deepEqual(AUDIT_ACTIONS, META.auditlog.columns.Action.values);
+  });
+
   it('an audit line is short and holds no answers', async () => {
     assert.deepEqual(AUDIT_ACTIONS, META.auditlog.columns.Action.values, 'the writer and the schema say the same words');
     const { fake, ds } = await siteWith();

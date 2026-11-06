@@ -74,7 +74,9 @@ test('the shared export code still defaults to the old product name, and the Liv
   assert.match(source, /export async function pptxFile\(pages, report, \{ PptxGenJS, producer = 'Pursuits CEC', outputType = 'blob' \}\)/);
   assert.match(source, /creator: producer/);
   assert.match(source, /pptx\.company = producer;/);
-  assert.match(await read('migration/src/admin/LiveDisplay.svelte'), /appName: APP_NAME/);
+  // (Prompt 34: the Live display and Results' Downloads make the pack through lib/exports/pack-download.js, which passes the name.)
+  assert.match(await read('migration/src/lib/exports/pack-download.js'), /appName: APP_NAME/);
+  assert.match(await read('migration/src/admin/LiveDisplay.svelte'), /downloadPack\(kind, current, fileLook\)/);
 });
 
 test('the HTML shells no longer block zoom', async () => {
@@ -149,7 +151,7 @@ test('a heading is focused by script only through lib/common/focus.ts, and only 
     }
   }
   assert.deepEqual(offenders, []);
-  assert.equal(focused, 20, '(Prompt 26: Clients, and the Guests roster, for a change of page) NotLive, ThankYou, ActivityComplete, ActivityPager, (Phase 8) Welcome, the hub (Agenda) and the admin shell, (Phase 10b) the stop screen of lib/settings/start.ts, (Phase 16) Results, after the last session is deleted (session-delete.spec.ts), (Phase 20) the confidence check, (Prompt 21) the No access screen, (Phase 2) the People list and the page of one person, whose focus users.spec.ts checks, (Phase 3) a client\'s page and its Client team (when a session is planned with its own team), whose focus client-sessions.spec.ts checks, and (Phase 5) the Leadership dashboard, when it opens and after Reset, whose focus leader-dashboard.spec.ts checks, and (Phase 7) History of changes, whose focus users.spec.ts checks, and (Prompt 22) Reporting settings, whose focus reporting-settings.spec.ts checks; add a new one to scripts/migration-tests/focus.spec.ts and keyboard.spec.ts');
+  assert.equal(focused, 23, '(Prompt 35: the One at a time card\'s sub-process, when the card moves on, whose focus aop-calm-screen.spec.ts checks) (Prompt 34: the Live display heading, when full screen opens, whose focus live-display.spec.ts checks) (Prompt 32: Your access, when it opens from the welcome strip, whose focus identity-chip.spec.ts checks) (Prompt 26: Clients, and the Guests roster, for a change of page) NotLive, ThankYou, ActivityComplete, ActivityPager, (Phase 8) Welcome, the hub (Agenda) and the admin shell, (Phase 10b) the stop screen of lib/settings/start.ts, (Phase 16) Results, after the last session is deleted (session-delete.spec.ts), (Phase 20) the confidence check, (Prompt 21) the No access screen, (Phase 2) the People list and the page of one person, whose focus users.spec.ts checks, (Phase 3) a client\'s page and its Client team (when a session is planned with its own team), whose focus client-sessions.spec.ts checks, and (Phase 5) the Leadership dashboard, when it opens and after Reset, whose focus leader-dashboard.spec.ts checks, and (Phase 7) History of changes, whose focus users.spec.ts checks, and (Prompt 22) Reporting settings, whose focus reporting-settings.spec.ts checks; add a new one to scripts/migration-tests/focus.spec.ts and keyboard.spec.ts');
   const base = await read('migration/src/styles/base.css');
   assert.match(base, /:where\(h1, h2, h3, h4, h5, h6\)\[tabindex='-1'\]:focus \{\s*outline: none;\s*box-shadow: none;\s*\}/);
   assert.match(base, /\[tabindex='-1'\]\[data-keyboard-focus\]:focus \{\s*outline: 3px solid var\(--focus\);/);

@@ -271,7 +271,187 @@ const fieldAsRead = (select) => (field) => {
  *   finds, as { name, email, jobTitle }; `pickerStatus` makes the picker answer with that status instead (a site that refuses the call).
  *   `keepColumns` may also name a whole list (by key) that a later version added, for a site of an earlier version that has it all the same.
  */
-export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Casey Example' }, ownerGroupId = 3, siteUrl = SITE_URL, prefix = SUITE_PREFIX, lists: named = {}, logoLibrary, addresses = {}, listsVersion = VERSION, schemaVersion = listsVersion, keepColumns = [], traps = {}, strict = true, leavesOut = TENANT_LEAVES_OUT, refusesByName = TENANT_REFUSES_BY_NAME, duplicateStatus = 500, duplicateCode = false, realShape = null, directory = [], pickerStatus = null } = {}) {
+/**
+ * Prompt 27: the site's groups, permission levels and the permissions of lists and folders, as the brief describes the calls. AN APPROXIMATION, written from
+ * that description alone: no real site has answered any of these (QA-TESTING.md). A body with `__metadata` that is not sent as verbose is refused, as the
+ * data layer's own rule says. Options: `handmade` list titles that start with unique permissions of their own (matched as a part of the title), `rootFolders`
+ * folders that are a library's root, `levels` more permission levels, `levelLow` the bits a made level really gets, `ownerNotSet` an owner that does not land,
+ * `runningIsOwner` false when the signed-in account is not in the owners' group, `memberPage` the page size of a group's members.
+ */
+function sitePermissionsFake({ handmade = [], rootFolders = [], levels: moreLevels = [], levelLow = null, ownerNotSet = false, noOwnerCall = false, runningIsOwner = true, memberPage = 0, cannotEdit = [], missingUserStatus = 404, claimsRefused = false }, { ownerGroupId, currentUser }) {
+  const VERBOSE = /odata=verbose/;
+  let nextId = 100;
+  // (Part 4. As Part 0 showed on PCOE: ensureuser 200, an add 201 with the verbose SP.User body, removebyid 200, the owners' group 403, and a group's maker
+  // made a member of it. `cannotEdit` names groups whose CanCurrentUserEditMembership is false, and which refuse an add or removal with 403.)
+  const siteUsers = new Map();
+  const userOf = (login, email = login.split('|').at(-1)) => {
+    // (A claim ends in the alias, as on PCOE; the directory's email is taken to be the alias at x.com.)
+    if (!siteUsers.has(login.toLowerCase())) siteUsers.set(login.toLowerCase(), { Id: nextId++, Title: email, Email: email.includes('@') ? email : `${email}@x.com`, LoginName: login });
+    return siteUsers.get(login.toLowerCase());
+  };
+  const maySet = (group) => group.Id !== ownerGroupId && !cannotEdit.includes(group.Title);
+  const groups = new Map([[ownerGroupId, 'Site Owners'], [4, 'Site Members'], [5, 'Site Visitors']].map(([Id, Title]) => [Id, { Id, Title, OwnerTitle: 'Site Owners', AllowMembersEditMembership: false, users: [] }]));
+  const levels = [
+    { Id: 1073741829, Name: 'Full Control', RoleTypeKind: 5, BasePermissions: { High: '2147483647', Low: '4294967295' } },
+    { Id: 1073741826, Name: 'Read', RoleTypeKind: 2, BasePermissions: { High: '176', Low: '138612833' } },
+    { Id: 1073741827, Name: 'Contribute', RoleTypeKind: 3, BasePermissions: { High: '432', Low: '1011030767' } },
+    ...moreLevels,
+  ];
+  const site = () => new Map([[ownerGroupId, new Set([1073741829])], [4, new Set([1073741827])], [5, new Set([1073741826])]]);
+  const scopes = new Map();
+  const made = new Set();
+  const folders = new Set();
+  const norm = (name) => name.toLowerCase();
+  const scopeOf = (name) => {
+    if (!scopes.has(norm(name))) scopes.set(norm(name), { unique: handmade.some((part) => name.includes(part)), bindings: site() });
+    return scopes.get(norm(name));
+  };
+  const isScratch = (name) => name === 'PMSPermissionProbe' || name.endsWith('/_pms-probe');
+  const bindingRow = ([id, held]) => ({
+    PrincipalId: id, Member: { Id: id, Title: groups.get(id)?.Title, LoginName: groups.get(id)?.Title },
+    RoleDefinitionBindings: { results: [...held].map((levelId) => levels.find((level) => level.Id === levelId)) },
+  });
+  const look = {
+    scope(name) {
+      if (isScratch(name) && !made.has(norm(name))) return undefined;
+      const scope = scopeOf(name);
+      const named = [...scope.bindings].map(([id, held]) => [groups.get(id)?.Title, [...held].map((levelId) => levels.find((level) => level.Id === levelId).Name)]);
+      return { unique: scope.unique, holders: named.map(([title]) => title), levels: Object.fromEntries(named) };
+    },
+    group: (title) => [...groups.values()].find((group) => group.Title === title),
+    level: (name) => levels.find((level) => level.Name === name),
+    folders: () => [...folders],
+    addMembers(title, emails) { look.group(title).users.push(...emails.map((email) => userOf(`i:0e.t|adfs|${email.split('@')[0]}`, email))); },
+    /** A rehearsal that stopped before it cleaned up: the scratch list and folder are left on the site. */
+    leaveScratch(folder) { made.add(norm('PMSPermissionProbe')); folders.add(`${folder}/_pms-probe`); made.add(norm(`${folder}/_pms-probe`)); },
+    dropOwners(name) { scopeOf(name).bindings.delete(ownerGroupId); },
+    /** From now on SharePoint says this account may not change the group's members (CanCurrentUserEditMembership false, and 403). */
+    refuseEdits(title) { cannotEdit.push(title); },
+  };
+  const route = (request, headers, entry, { ok, error }) => {
+    const { method, path } = entry;
+    const url = new URL(request.url);
+    let body = null;
+    try { body = JSON.parse(request.body ?? ''); } catch { /* no body */ }
+    if (body?.__metadata && !VERBOSE.test(headers['content-type'] ?? '')) return error(400, 'A type named in __metadata could not be resolved.');
+
+    if (/\/web\/AssociatedOwnerGroup\/users$/.test(path)) {
+      const me = typeof currentUser === 'function' ? currentUser() : currentUser;
+      return ok({ results: runningIsOwner ? [{ Id: me.Id }] : [] });
+    }
+    if (/\/web\/AssociatedOwnerGroup$/.test(path)) return ok({ Id: ownerGroupId, Title: 'Site Owners' });
+    if (/\/web\/roledefinitions$/.test(path)) {
+      if (method === 'GET') return ok({ results: levels });
+      const level = { Id: nextId++, Name: body.Name, RoleTypeKind: 0, BasePermissions: { High: body.BasePermissions.High, Low: (body.Name === 'PMS add only' && levelLow) || body.BasePermissions.Low } };
+      levels.push(level);
+      return ok(level, 201);
+    }
+    if (/\/web\/sitegroups$/.test(path)) {
+      if (method === 'GET') return ok({ results: [...groups.values()].map(({ users, ...group }) => ({ ...group, CanCurrentUserEditMembership: maySet(group) })) });
+      const me = typeof currentUser === 'function' ? currentUser() : currentUser;
+      const maker = userOf(me.LoginName ?? `i:0e.t|adfs|${me.Title}`, me.Email ?? me.Title);
+      if (maker.Id !== me.Id) { siteUsers.delete(maker.LoginName.toLowerCase()); maker.Id = me.Id; siteUsers.set(maker.LoginName.toLowerCase(), maker); }
+      const group = { Id: nextId++, Title: body.Title, OwnerTitle: me.Title, AllowMembersEditMembership: Boolean(body.AllowMembersEditMembership), users: [maker] };
+      groups.set(group.Id, group);
+      return ok((({ users, ...rest }) => rest)(group), 201);
+    }
+    // (`claimsRefused`: a farm that cannot resolve a stored claim for a person not yet on the site, and resolves the email.)
+    if (/\/web\/ensureuser$/.test(path) && method === 'POST' && claimsRefused && String(body.logonName).includes('|') && !siteUsers.has(String(body.logonName).toLowerCase())) return error(500, 'User cannot be found.');
+    if (/\/web\/ensureuser$/.test(path) && method === 'POST' && !String(body.logonName).includes('|')) {
+      return ok((({ Id, LoginName, Email }) => ({ Id, LoginName, Email }))(userOf(`i:0e.t|adfs|${String(body.logonName).split('@')[0]}`, body.logonName)));
+    }
+    if (/\/web\/ensureuser$/.test(path) && method === 'POST') return ok((({ Id, LoginName, Email }) => ({ Id, LoginName, Email }))(userOf(body.logonName)));
+    const byEmail = /\/web\/siteusers\/getbyemail\('(.+?)'\)$/.exec(path);
+    if (byEmail) {
+      const found = [...siteUsers.values()].find((each) => each.Email.toLowerCase() === byEmail[1].replace(/''/g, "'").toLowerCase());
+      // (`missingUserStatus`: how a person not on the site is answered; PCOE said "User cannot be found.", 4 Nov 2026.)
+      if (!found) return error(missingUserStatus, 'User cannot be found.');
+      return ok({ Id: found.Id, LoginName: found.LoginName, Groups: { results: [...groups.values()].filter((group) => group.users.includes(found)).map((group) => ({ Id: group.Id })) } });
+    }
+    const inGroup = /\/web\/sitegroups\/getbyid\((\d+)\)(.*)$/.exec(path);
+    if (inGroup) {
+      const group = groups.get(Number(inGroup[1]));
+      if (!group) return error(404, 'Group cannot be found.');
+      const owner = /^\/SetUserAsOwner\((\d+)\)$/.exec(inGroup[2]);
+      if (owner && noOwnerCall) return error(404, 'Cannot find resource for the request SetUserAsOwner.');
+      if (owner) { if (!ownerNotSet) group.OwnerTitle = groups.get(Number(owner[1])).Title; return ok(null); }
+      const gone = /^\/users\/removebyid\((\d+)\)$/.exec(inGroup[2]);
+      if (gone || (inGroup[2] === '/users' && method === 'POST')) {
+        if (!maySet(group)) return error(403, 'Access denied. You do not have permission to perform this action or access this resource.', undefined, '-2147024891, System.UnauthorizedAccessException');
+        if (gone) { group.users = group.users.filter((user) => user.Id !== Number(gone[1])); return ok({ RemoveById: null }); }
+        const user = userOf(body.LoginName);
+        if (!group.users.includes(user)) group.users.push(user);
+        return ok(user, 201);
+      }
+      if (inGroup[2] === '/users') {
+        const from = Number(url.searchParams.get('p') ?? 0);
+        const size = memberPage || group.users.length || 1;
+        const there = new URL(request.url);
+        there.searchParams.set('p', String(from + size));
+        return ok({ results: group.users.slice(from, from + size), ...(from + size < group.users.length ? { __next: there.href } : {}) });
+      }
+      if (method === 'MERGE') { group.AllowMembersEditMembership = Boolean(body.AllowMembersEditMembership); return ok(null, 204); }
+      return ok({ OwnerTitle: group.OwnerTitle, CanCurrentUserEditMembership: maySet(group) });
+    }
+    if (/\/web\/folders$/.test(path) && method === 'POST') { folders.add(body.ServerRelativeUrl); made.add(norm(body.ServerRelativeUrl)); return ok({ ServerRelativeUrl: body.ServerRelativeUrl }, 201); }
+    if (/\/web\/lists$/.test(path) && method === 'POST' && body?.Title === 'PMSPermissionProbe') { made.add(norm(body.Title)); return ok({ Id: 'scratch', Title: body.Title }, 201); }
+
+    // (The site's own role assignments, which Apply only adds the PMS site entry level to.)
+    if (/\/_api\/web\/roleassignments$/.test(path) && method === 'GET') return ok({ results: [...scopeOf('/web').bindings].map(bindingRow) });
+    const onWeb = /\/_api\/web\/roleassignments\/(add|remove)roleassignment\(principalid=(\d+),roledefid=(\d+)\)$/.exec(path);
+    if (onWeb) {
+      const web = scopeOf('/web');
+      const held = web.bindings.get(Number(onWeb[2])) ?? new Set();
+      if (onWeb[1] === 'add') { held.add(Number(onWeb[3])); web.bindings.set(Number(onWeb[2]), held); } else { held.delete(Number(onWeb[3])); if (!held.size) web.bindings.delete(Number(onWeb[2])); }
+      return ok(null);
+    }
+    const folder = /\/web\/GetFolderByServerRelativeUrl\('(.+?)'\)(\/ListItemAllFields)?(.*)$/i.exec(path);
+    const list = /\/web\/lists\/getbytitle\('(.+?)'\)(.*)$/.exec(path);
+    // (PCOE, 3 Nov 2026: a list or folder DELETE with no IF-MATCH is refused, "The request ETag value '' does not match the object's ETag value '"1"'".)
+    const noMatch = () => error(412, "The request ETag value '' does not match the object's ETag value '\"1\"'.");
+    if (folder && !folder[2]) {
+      if (folder[3] !== '' || method !== 'DELETE') return null;
+      if (!headers['if-match']) return noMatch();
+      folders.delete(folder[1]);
+      made.delete(norm(folder[1]));
+      scopes.delete(norm(folder[1]));
+      return ok(null);
+    }
+    const name = folder?.[1] ?? list?.[1];
+    const rest = folder?.[3] ?? list?.[2];
+    if (!name) return null;
+    if (list && rest === '' && method === 'DELETE' && isScratch(name)) {
+      if (!headers['if-match']) return noMatch();
+      made.delete(norm(name)); scopes.delete(norm(name)); return ok(null);
+    }
+    // (The scratch list, asked for by its title: there only while a rehearsal has it, or after one that stopped.)
+    if (list && rest === '' && method === 'GET' && isScratch(name) && !/HasUniqueRoleAssignments/.test(url.search)) return made.has(norm(name)) ? ok({ Id: 'scratch', Title: name }) : error(404, 'List does not exist.');
+    if (rest === '' && method === 'GET' && /HasUniqueRoleAssignments/.test(url.search)) {
+      if (rootFolders.includes(name)) return ok({});
+      return ok({ Id: 1, HasUniqueRoleAssignments: scopeOf(name).unique });
+    }
+    if (rest === '/roleassignments' && method === 'GET') return ok({ results: [...scopeOf(name).bindings].map(bindingRow) });
+    if (/^\/breakroleinheritance\(/.test(rest)) { scopeOf(name).unique = true; return ok(null); }
+    if (rest === '/resetroleinheritance') { Object.assign(scopeOf(name), { unique: false, bindings: site() }); return ok(null); }
+    const change = /^\/roleassignments\/(add|remove)roleassignment\(principalid=(\d+),roledefid=(\d+)\)$/.exec(rest);
+    if (change) {
+      const here = scopeOf(name);
+      if (!here.unique) return error(400, 'This list inherits its permissions.');
+      const id = Number(change[2]);
+      const held = here.bindings.get(id) ?? new Set();
+      if (change[1] === 'add') { held.add(Number(change[3])); here.bindings.set(id, held); } else { held.delete(Number(change[3])); if (!held.size) here.bindings.delete(id); }
+      return ok(null);
+    }
+    const whole = /^\/roleassignments\/getbyprincipalid\((\d+)\)$/.exec(rest);
+    if (whole && method === 'DELETE') { scopeOf(name).bindings.delete(Number(whole[1])); return ok(null); }
+    return null;
+  };
+  return { route, look };
+}
+
+export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Casey Example' }, ownerGroupId = 3, siteUrl = SITE_URL, prefix = SUITE_PREFIX, lists: named = {}, logoLibrary, addresses = {}, listsVersion = VERSION, schemaVersion = listsVersion, keepColumns = [], traps = {}, strict = true, leavesOut = TENANT_LEAVES_OUT, refusesByName = TENANT_REFUSES_BY_NAME, duplicateStatus = 500, duplicateCode = false, realShape = null, directory = [], pickerStatus = null, sitePermissions = null } = {}) {
+  /** (Prompt 27: `sitePermissions` turns on the site's groups and permissions; see sitePermissionsFake.) */
+  const groupsAndRoles = sitePermissions ? sitePermissionsFake(sitePermissions, { ownerGroupId, currentUser: user }) : null;
   const fields = new Map();
   const lists = new Map();
   /** The other set's rows, by the title a request names: empty unless something went to the wrong lists. */
@@ -427,7 +607,7 @@ export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Ca
       ?? (typeof body?.parameters?.SchemaXml === 'string' ? /\bName="([^"]*)"/.exec(body.parameters.SchemaXml)?.[1] : undefined);
     // `list` is the key of the list a request is for, whichever set it reached; `title` is what the request named.
     const known = title === null ? null : titles.get(title) ?? (title === libraryTitle ? { key: LIBRARY_KEY, own: true } : otherLibraries.includes(title) ? { key: LIBRARY_KEY, own: false } : null);
-    const entry = { method, list: known?.key ?? title, title, url: request.url, path, query: decodeURIComponent(url.search), ifMatch: headers['if-match'] ?? null, at: Date.now(), ...(field === undefined ? {} : { field }), ...extra };
+    const entry = { method, list: known?.key ?? title, title, url: request.url, path, query: decodeURIComponent(url.search), ifMatch: headers['if-match'] ?? null, contentType: headers['content-type'] ?? null, at: Date.now(), ...(field === undefined ? {} : { field }), ...extra };
     if (known && !known.own) {
       entry.stray = true;
       strays.push(entry);
@@ -522,6 +702,10 @@ export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Ca
       return error(fault.status, fault.message ?? `Injected ${fault.status}`, fault.retryAfter === undefined ? {} : { 'Retry-After': String(fault.retryAfter) });
     }
 
+    if (groupsAndRoles) {
+      const said = groupsAndRoles.route(request, headers, entry, { ok, error });
+      if (said) return said;
+    }
     if (path.endsWith('/_api/$batch') && !entry.batched) return method === 'POST' ? batch(request, headers, entry) : error(405, 'The batch endpoint only accepts POST.');
     if (path.endsWith('/contextinfo')) return ok({ GetContextWebInformation: { FormDigestValue: 'digest-token', FormDigestTimeoutSeconds: 1800 } });
     // (`user` may be a function, asked on every request: the local site's personas, Phase 12.)
@@ -871,6 +1055,8 @@ export function createSharePointFake({ without = [], user = { Id: 42, Title: 'Ca
     field: (key, name) => fields.get(knownKey(key))?.find((column) => column.InternalName === name),
     /** Whether the test's own picture library exists. */
     get libraryPresent() { return libraryPresent; },
+    /** The site's groups and permissions, to look at (Prompt 27), with `sitePermissions` on. */
+    permissions: groupsAndRoles?.look,
     /** Node only: routes globalThis.fetch to the fake. Returns the function that puts the real one back. */
     install() {
       const original = globalThis.fetch;

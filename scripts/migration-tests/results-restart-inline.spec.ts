@@ -29,6 +29,7 @@ async function openResults(page: Page, fake: Fake, sessionId: string) {
   await page.getByRole('textbox', { name: 'PIN' }).fill(PIN);
   await page.getByRole('button', { name: 'Unlock' }).click();
   await expect(page.locator(`article[data-session="${sessionId}"] .row`)).toHaveCount(3);
+  await page.locator(`article[data-session="${sessionId}"]`).getByRole('button', { name: /^People/ }).click(); // (Prompt 33: the participants are folded under the charts.)
 }
 const rowNamed = (page: Page, name: string) => page.locator('article[data-session] li.row').filter({ has: page.locator('.row__title', { hasText: name }) });
 

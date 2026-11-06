@@ -12,7 +12,8 @@ const PIN = '2468';
 /** A question of Domino's live activities, answered by both visits. */
 let QUESTION = '';
 const card = (page: Page, sessionId: string) => page.locator(`article[data-session="${sessionId}"]`);
-const cardIds = (page: Page) => page.locator('article[data-session]').evaluateAll((cards) => cards.map((element) => element.getAttribute('data-session')));
+/** The sessions of the page, in the list's order (Prompt 34: one list, and the session chosen shown beside it). */
+const cardIds = (page: Page) => page.locator('[data-open-session]').evaluateAll((rows) => rows.map((element) => element.getAttribute('data-open-session')));
 
 /** Three sessions on three days, made oldest last so the list order is not the date order: Kroger 10-01, Domino's 10-15 (live), Kroger 10-09. */
 async function threeDays() {
@@ -53,8 +54,7 @@ test('Results shows the newest session first, the newest joiner first, and Refre
   await expect.poll(() => cardIds(page)).toEqual(['dominos-2026-10-15', 'kroger-2026-10-09', 'kroger-2026-10-01']);
   await expect(card(page, live).locator('.row .row__title')).toHaveText(['Just Arrived', 'Early Arrival']);
 
-  // Open the live card's results, then Refresh: the order, the open panel and the scroll stay.
-  await card(page, live).locator('summary').click();
+  // The live card's charts are open (Prompt 34), then Refresh: the order, the open panel and the scroll stay.
   await expect(card(page, live).locator('details.tally')).toHaveAttribute('open', '');
   await page.getByRole('button', { name: 'Refresh' }).click();
   await expect(page.getByText(/^Updated /)).toBeVisible();

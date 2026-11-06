@@ -64,7 +64,7 @@ test('Live results, the Results cards and the wall: axe finds nothing, in every 
   // Results: the session's card opened, its charts, a names panel and the numbers.
   await page.getByRole('tab', { name: 'Results', exact: true }).click();
   const sessionCard = page.locator(`article[data-session="${session.id}"]`);
-  await sessionCard.locator('summary').click();
+  await expect(sessionCard.locator('details.tally')).toHaveAttribute('open', ''); // (Prompt 34: the charts are open unless folded.)
   await expect(sessionCard.locator('.result-card').first()).toBeVisible();
   await check(page, 'Results, a session\'s live results open', findings);
   await sessionCard.locator('.result-card[data-question="v1"] [data-mark="v1b"]').click();

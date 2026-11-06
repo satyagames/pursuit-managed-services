@@ -107,7 +107,9 @@ describe('on paper', () => {
     const chart = chartOf(tree().sections[0].questions[0]);
     const figure = chartFigure(chart, { x: 0, width: 180, palette, measure });
     const texts = figure.items.filter((item) => item.kind === 'text').map((item) => item.text);
-    for (const word of ['Row A', '2.7', '83', '▲ High', '▼ Low', '20', 'Volume', 'Opportunity', 'Band', 'People']) assert.ok(texts.includes(word), word);
+    for (const word of ['Row A', '2.7', '83', 'High', 'Low', '20', 'Volume', 'Opportunity', 'Band', 'People']) assert.ok(texts.includes(word), word);
+    // (Prompt 34) The band's shape is drawn beside its word, ▲ for High and ▼ for Low: the files' font has none of them, and printed "�".
+    assert.deepEqual(figure.items.filter((item) => item.role === 'band-mark').map((item) => [item.kind, item.shape]), [['mark', 'up'], ['mark', 'down']]);
     assert.equal(figure.items.filter((item) => item.role === 'heat').length, 6);
     assert.ok(figure.h > 0);
     for (const item of figure.items.filter((each) => each.role === 'heat')) assert.ok(palette.ramps[4].includes(item.fill), item.fill);

@@ -155,6 +155,10 @@ test.describe('admin', () => {
       // Today: nothing live, a client picked, then live.
       findings.push(...await check(page, `admin ${at}: Today, nothing live`));
       await page.getByLabel('Client', { exact: true }).selectOption({ label: 'Kroger' });
+      // (Prompt 32: on a laptop the ready checks fold into one line. It is opened, so that axe reads the fold's control and every ready row too.)
+      await expect(page.locator('[data-check="lists"]')).toBeAttached();
+      const fold = page.getByRole('button', { name: /^Show \d+ ready checks?$/ });
+      if (await fold.isVisible()) await fold.click();
       await expect(page.locator('[data-check="lists"]')).toBeVisible();
       findings.push(...await check(page, `admin ${at}: Today, a client picked, with readiness`));
       // (The second pass finds Kroger already live from the first.)
@@ -194,7 +198,7 @@ test.describe('admin', () => {
 
       // Guests and QR (a few guests, a code each), and the print sheet.
       await page.getByRole('tab', { name: 'Guests and QR', exact: true }).click();
-      await expect(page.getByRole('heading', { name: 'Guests and QR', exact: true }).first()).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Guests and QR codes', exact: true }).first()).toBeVisible();
       findings.push(...await check(page, `admin ${at}: Guests and QR`));
 
       // Results.

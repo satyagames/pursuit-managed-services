@@ -14,18 +14,19 @@ const person = { key: 'a@deloitte.com' };
 
 describe('the line under Give access', () => {
   for (const role of ['Producer', 'Designer', 'Admin']) {
-    it(`${role}: needs Edit access to the site, and says roles do not give it`, () => {
+    // (Prompt 27 changed these words: they now say which group and who adds the person.)
+    it(`${role}: a Super admin adds them to the group, and says roles do not give it`, () => {
       const note = siteAccessNote(role, { person, me: { key: 'boss@deloitte.com' } });
-      assert.match(note, /Edit access to this SharePoint site/);
+      assert.match(note, /A Super admin adds them to PMS staff/);
       assert.match(note, /Roles here do not give that\./);
       assert.match(note, /How to add them/);
       assert.match(note, new RegExp(ONBOARDING_DOC.replace('.', '\.')));
     });
   }
-  it('Leadership: read access is enough', () => {
+  it('Leadership: PMS leadership, not staff', () => {
     const note = siteAccessNote('Leadership', { person, me: { key: 'boss@deloitte.com' } });
-    assert.match(note, /Read access is enough\./);
-    assert.doesNotMatch(note, /Edit access/);
+    assert.match(note, /A Super admin adds them to PMS leadership/);
+    assert.doesNotMatch(note, /PMS staff/);
   });
   it('nothing when a person gives themselves a role', () => {
     assert.equal(siteAccessNote('Producer', { person, me: { key: 'a@deloitte.com' } }), '');
@@ -40,7 +41,7 @@ describe('the three screens use the words', () => {
     assert.match(source, /onDone\(`\$\{person\.name\} now has \$\{role\} access\.\$\{/);
   });
   it('Add user says adding gives no access to the site', () => {
-    assert.equal(SITE_ACCESS_ADD_USER, 'Adding a person here does not give them access to the SharePoint site.');
+    assert.equal(SITE_ACCESS_ADD_USER, 'Adding a person here does not give them access to the SharePoint site. A Super admin does that once they have a role.');
     assert.match(read('migration/src/admin/UserAdd.svelte'), /SITE_ACCESS_ADD_USER/);
   });
   it('No access keeps "ask an Admin" first, then names the site owner', () => {

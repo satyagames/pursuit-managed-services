@@ -31,6 +31,23 @@
   --motion-hub-stamp: 400ms;
   --motion-hub-sweep: 500ms;
   --motion-hub-pulse: 1200ms;
+  --motion-aop-hold: 650ms;
+  --motion-aop-advance: 600ms;
+  --motion-aop-pop: 160ms;
+  --motion-aop-bump: 120ms;
+  --motion-aop-ripple: 400ms;
+  --motion-aop-sheen: 450ms;
+  --motion-aop-check: 250ms;
+  --motion-aop-glow: 600ms;
+  --motion-aop-milestone: 1600ms;
+  --motion-aop-fly: 420ms;
+  --motion-aop-fly-stagger: 30ms;
+  --motion-aop-wave: 120ms;
+  --motion-aop-wave-step: 40ms;
+  --motion-aop-spring: 160ms;
+  --motion-aop-pulse: 600ms;
+  --motion-aop-rise: 400ms;
+  --motion-aop-count: 700ms;
 }
 
 /* motion.ts sets data-motion (the shape) and --m-duration, --m-ease, --m-delay and --m-stretch (in steps of the stagger) and --m-distance, from

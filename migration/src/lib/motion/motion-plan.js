@@ -58,6 +58,12 @@ export const TOKENS = Object.freeze({
   nudge: '0.375rem',
   /** The hub's moment (Prompt 24; the beats themselves are lib/participant/hub-moment-plan.js), ms. Each is a --motion-hub-* in the CSS. */
   hub: Object.freeze({ fade: 150, wave: 60, journey: 180, shackle: 220, crossfade: 260, shake: 280, stamp: 400, sweep: 500, pulse: 1200 }),
+  /** The Art of Possibility (Prompt 35), ms: how long a press is held before the choices open (the ring fills over it), and how long One at a time shows
+   * a finished sub-process before it moves on; then each effect of lib/motion/aop-motion-plan.js. Each is a --motion-aop-* in the CSS. */
+  aop: Object.freeze({
+    hold: 650, advance: 600, pop: 160, bump: 120, ripple: 400, sheen: 450, check: 250, glow: 600, milestone: 1600, fly: 420, flyStagger: 30,
+    wave: 120, waveStep: 40, spring: 160, pulse: 600, rise: 400, count: 700,
+  }),
 });
 
 /** Shapes the CSS defines, and nothing else (a recipe naming another is a test failure). */

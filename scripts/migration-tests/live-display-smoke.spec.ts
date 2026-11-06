@@ -53,15 +53,15 @@ test('smoke: the Live display shows the tally, goes full screen and leaves it, a
 
   // The three exports.
   const csv = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Export CSV' }).click();
+  await page.getByRole('button', { name: 'Download CSV' }).click();
   expect((await readFile((await (await csv).path())!, 'utf8'))).toContain('Lovely day');
   const pdf = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Export PDF' }).click();
+  await page.getByRole('button', { name: 'Download PDF pack' }).click();
   const pdfBytes = await readFile((await (await pdf).path())!);
   expect(pdfBytes.subarray(0, 5).toString()).toBe('%PDF-');
   expect(pdfBytes.toString('latin1')).toContain('Kroger');
   const ppt = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Export PPT' }).click();
+  await page.getByRole('button', { name: 'Download PowerPoint pack' }).click();
   const archive = await JSZip.loadAsync(await readFile((await (await ppt).path())!));
   expect(await archive.file('ppt/slides/slide1.xml')!.async('string')).toContain('Kroger');
   await expect(page.locator('.live__status[role="alert"]')).toHaveCount(0);

@@ -198,7 +198,7 @@ test('colours: hex, picker, presets and accent drive the preview and the contras
   await expect(page.locator('[data-warning="accent-near-red"]')).toContainText('never on a button');
   await expect(page.locator('.brand__contrast tbody tr')).toHaveCount(5);
   await expect(page.locator('.brand__contrast tbody tr').nth(3)).toContainText('✕ Not drawn');
-  await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ })).toBeEnabled();
   await page.getByRole('button', { name: 'No accent' }).click();
   await expect(page.getByLabel('Accent (optional)')).toHaveValue('');
   await expect(page.locator('[data-warning="accent-near-red"]')).toHaveCount(0);
@@ -520,7 +520,7 @@ const uploads = async () => (await readdir(path.join(local.dir, 'uploads')).catc
 const samplesLeft = async () => (await readdir(path.join(local.dir, 'uploads')).catch(() => [] as string[])).filter((name) => SAMPLE_PICTURE_NAMES.includes(name));
 const hashOf = (bytes: Buffer) => createHash('sha256').update(bytes).digest('hex').slice(0, 10);
 const NAME = (slug: string, slot: string) => new RegExp(`^/assets/images/clients/${slug}-${slot}-[0-9a-f]{10}\\.(webp|png|jpg)$`);
-const save = (page: Page) => page.getByRole('button', { name: 'Save', exact: true });
+const save = (page: Page) => page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ });
 
 async function participantOn(browser: Parameters<typeof another>[0], clientId: string) {
   await ds.activateClient(clientId, today);
@@ -1105,7 +1105,7 @@ test('an answer tile\'s picture can be uploaded in Content: cropped to 480 x 320
   await expect.poll(uploads).toEqual([path.basename(secondUrl)]);
   // A pasted link is still allowed.
   await page.getByLabel('Option 2 picture address').fill('https://img.test/bravo.svg');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(page.locator('.toast')).toContainText('Saved');
   const section = (await ds.listClientSections('c-dominos')).find((entry: { title: string }) => entry.title === 'Which logo?');
   const question = await ds.getQuestion(section.questionIds[0]);
@@ -1126,7 +1126,7 @@ test('an answer tile\'s picture can be uploaded in Content: cropped to 480 x 320
   await pick(1, await makeImage(page, { width: 900, height: 600, type: 'image/png', paint: 'marker' }), 'tile-3.png');
   await expect(first).not.toHaveValue(secondUrl);
   const fourthUrl = await first.inputValue();
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(page.locator('.toast')).toContainText('Saved');
   await expect.poll(uploads).toEqual([path.basename(fourthUrl)]);
   expect(await ds.getOption(question.optionIds[0])).toMatchObject({ imageUrl: fourthUrl });
@@ -1136,7 +1136,7 @@ test('an answer tile\'s picture can be uploaded in Content: cropped to 480 x 320
   await pick(1, await makeImage(page, { width: 900, height: 600, type: 'image/png', paint: 'logo' }), 'tile-5.png');
   await expect(first).not.toHaveValue(fourthUrl);
   const fifthUrl = await first.inputValue();
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(page.locator('.toast')).toContainText('Saved');
   expect(await ds.getOption(question.optionIds[0])).toMatchObject({ imageUrl: fifthUrl });
   // Give the tidy-up time to have removed it, had it been going to: it reads, and only then removes.
