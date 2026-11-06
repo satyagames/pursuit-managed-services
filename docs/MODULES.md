@@ -75,7 +75,7 @@ flowchart LR
 | `migration/src/lib/data/` | The data layer: dataService.js, the door every page imports, over its parts (core.js holds the state and alone talks to SharePoint REST or, on the local server, its JSON API), and grouping of long id lists into short reads. Every page carries it. | 25 |
 | `migration/src/lib/effects/` | Sounds and confetti, behind one door (`effects.ts`): which moment makes which effect, the cues as data, Web Audio, canvas-confetti. | 6 |
 | `migration/src/lib/exports/` | The files a leader gets: the leader report (data, counting, layout, PDF writer, fonts) and the Live display's summary pack (PDF, PowerPoint) and summary CSV. | 9 |
-| `migration/src/lib/motion/` | The participant screens' motion, behind one door (`motion.ts`): the plan by kind of question and part of a screen, the tokens and shapes (CSS), the level and the governor. | 3 |
+| `migration/src/lib/motion/` | The participant screens' motion, behind one door (`motion.ts`): the plan by kind of question and part of a screen, the tokens and shapes (CSS), the level and the governor. | 4 |
 | `migration/src/lib/participant/` | The participant page: the boot sequence, the visit, the activities held for the page's life, the pager's rules, saving answers, screen moves. | 20 |
 | `migration/src/lib/results/` | Results counted and shown: the tally, the chart model (every number a chart shows), the palette, the figure on paper, names, the takeaways, where a tooltip goes. | 17 |
 | `migration/src/lib/schema/` | The lists and columns: `pms-schema.js`, the names every page carries, and `pms-schema-meta.js`, everything else about them (Setup, the tests and the generators only). | 3 |
@@ -85,9 +85,9 @@ flowchart LR
 | `migration/src/routes/` | The participant page's screens: Welcome, the Activities hub, the quiz route, the finale, "not live", the preview, and the old addresses that redirect. | 10 |
 | `migration/src/setup/` | Setup's pieces (Svelte): the copy panel, where the lists are, the plan view, and the sample pictures as data. | 6 |
 | `migration/src/unsupported/` | The "needs a recent browser" notice: a page and an ES5 check, put into each HTML shell at build time. | 1 |
-| `scripts/` | Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager. | 166 |
+| `scripts/` | Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager. | 167 |
 | `scripts/local-site/` | The local PCOE stand-in (`npm run local:site`), its scenarios and VJR's dummy dataset, the screenshot harness and the measurements. | 11 |
-| `scripts/migration-tests/` | The Playwright specs of `npm run test:migration`, and their harnesses (`admin-local.ts`, `polling-support.ts`, `fixtures.ts`). | 90 |
+| `scripts/migration-tests/` | The Playwright specs of `npm run test:migration`, and their harnesses (`admin-local.ts`, `polling-support.ts`, `fixtures.ts`). | 94 |
 | `scripts/rehearsal-tests/` | The rehearsal of RUNBOOK.md on the mock with a package's own pages (`npm run test:rehearsal`). | 1 |
 | `scripts/schema-baseline/` | The schema as it was before Phase 10c-2b, and the scripts that translated the request baselines (each baseline names the one that touched it). | 12 |
 | `scripts/styleguide-tests/` | The styleguide's audit (`npm run test:styleguide`). | 1 |
@@ -292,11 +292,12 @@ The participant screens' motion, behind one door (`motion.ts`): the plan by kind
 
 - **Imports from:** nothing of the app
 - **Imported by:** `lib/effects`, `lib/participant`, `src/admin`, `src/components`, `src/pager`, `src/routes`
-- **Node suites that import it:** `test-aop-motion.js`, `test-aop-view.js`, `test-hub-moment.js`, `test-motion-engine.js`, `test-motion-plan.js`
+- **Node suites that import it:** `test-aop-motion.js`, `test-aop-view.js`, `test-finale-motion.js`, `test-hub-moment.js`, `test-motion-engine.js`, `test-motion-plan.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
 | `aop-motion-plan.js` | The Art of Possibility's motion (Prompt 35) as a plan: for each effect, at each level, the keyframes, length, curve and delay, or null for nothing. | `FLY_REACH`, `AOP_EFFECTS`, `aopEffect`, `flyPath`, `flyCount`, `waveDelay`, `waveLength`, `MILESTONES`, `milestonePoints`, `milestonesCrossed` |
+| `finale-motion-plan.js` | The grand finale's acts (Prompt 36) as a plan: for each part of the thank-you page, at each level, its keyframes, length, curve and delay from the start of the finale. | `FINALE`, `letterGap`, `finaleParts`, `finaleCount`, `countValue` |
 | `motion-plan.js` | The motion plan of the participant screens (Phase 15): which shape each thing on a screen moves with, for how long, after how much delay and over what distance, as a TABLE keyed by the moment, the kind of question and the part of the screen, never as numbers in a component. | 27 exports |
 | `motion.ts` | The one door to motion on the participant screens (Phase 15). | `motionLevel`, `setMotionEnabled`, `setMotionDirection`, `watchMoment`, `motion`, `playEffect`, `flyOff`, `playWave`, `playFinale`, `movingCount` |
 
