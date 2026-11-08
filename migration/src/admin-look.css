@@ -10,9 +10,9 @@ body.admin {
   color: var(--adm-ink);
 }
 
+/* (Headings take the colour of where they are: ink on the page, white on the dark wall.) */
 body.admin :is(h1, h2, h3, h4) {
   font-weight: var(--fw-semibold);
-  color: var(--adm-ink);
 }
 
 /* The page title (Display). */
