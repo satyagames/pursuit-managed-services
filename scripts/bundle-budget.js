@@ -561,3 +561,16 @@ export const PHASE_36 = Object.freeze({
   participantBefore: 189_903, adminBefore: 700_077, participantAllowance: 4_096,
   participantUtilities: PHASE_11A.participantUtilities,
 });
+
+/**
+ * Prompt 38 (the admin redesign, calm and premium), measured from where Prompt 36 left the pages (0478393, built on 8 Nov 2026: participant
+ * 193,978 B, admin 703,193 B). The participant page may not change at all, and its Tailwind rules stay its own. The brief asked the admin page to
+ * stay under 700,000 B; it already stood at 703,193 B, and the redesign adds the light shell, the sticky bar, the more menus, the folds, the QR sheet's
+ * choices and the lead figures. `adminAfter` is the page when the work stopped: over the 710,000 B budget, which is the site owner's to raise
+ * (RELEASE-38.md), never this file's.
+ */
+export const PHASE_38 = Object.freeze({
+  participantBefore: 193_978, adminBefore: 703_193, participantAllowance: 0,
+  participantAfter: 193_978, adminAfter: 714_365,
+  participantUtilities: PHASE_11A.participantUtilities,
+});

@@ -43,6 +43,7 @@
 22. Items **350 to 359** (Prompt 34: the wall from the back row, Dark and Light, the packs in PowerPoint with and without Open Sans, a black-and-white print, a screen reader, held names and no data, quotes never highlighted). At the end of this file.
 23. Items **360 to 365** (Prompt 34, the session page on Results: the list and one session, the four figures, Downloads with the packs, Delete at the foot, a Leadership role; and an Art of the Possible heat map in the packs). At the end of this file.
 24. Items **366 to 377** (Prompt 35: the Art of Possibility on a real iPad and a phone, a first-time guest, press and hold, whole headings, milestones, Undo, the finish, sound and the silent switch, reduce motion, a colour-blind colleague, the network panel). At the end of this file.
+25. Items **389 to 397** (Prompt 38: the calm admin page on a laptop and an iPad, the sticky bar above the keyboard, the QR sheet on A4 and US Letter, a new client and session, the folds, a Pursuit leader's first five seconds). At the end of this file.
 16. Item **293** (Prompt 25: the line about SharePoint access in Give access, Add user and No access; the document ONBOARDING.md). Below item 292.
 17. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
    160, 161, 164, 165, 166, 167, 168, 169, 170.
@@ -1912,3 +1913,18 @@ On the real SharePoint site, on an iPad held sideways and upright and on a phone
 386. **Load time.** *(Still to see.)* Compare how long the thank-you page takes to show with `pms-35`. **Expect** no difference you can feel (no new request).
 387. **Three guests.** *(Still to see.)* Ask three guests for one word for how it felt, and note them.
 388. **The thinner shower.** *(Still to see.)* To fit the page's budget the petals are drawn by the confetti library and the name rises as one line. **Expect** it still to feel like an occasion; if it feels thin, say so (a bigger budget would bring back the hand-drawn petals and letter by letter).
+
+### Prompt 38: the admin page, calm and premium
+
+On the real SharePoint site, on a laptop (1366 and 1920 wide) and an iPad held sideways and upright. See docs/history/RELEASE-38.md for what changed
+and what was deferred.
+
+389. **The first five seconds.** *(Still to see.)* Open Today as a Pursuit leader would. **Expect** "Ready to go live" or "N things to fix" before anything else, and the one next step in the bar at the foot.
+390. **Go live from the bar.** *(Still to see.)* Pick a client and a date, then Go live in the bar. **Expect** the confirmation as before, then "(client) is live" and Show the wall in the bar; End session in Session settings, never in the bar.
+391. **The bar and the keyboard.** *(Still to see.)* On the iPad, open Add session on a client's page and tap the title. **Expect** the bar to sit above the keyboard and the field never under it.
+392. **A new client.** *(Still to see.)* Add a client by its name only. **Expect** its page to open, with Sessions, the team and QR check-in as the next steps; More details shows the short name the name made.
+393. **A new session.** *(Still to see.)* Add session. **Expect** "(client) · (date)" on the next free day, at the start time you used last; change any of it, then Create session in the bar.
+394. **The QR sheet.** *(Still to see.)* Print the sheet on A4 and on US Letter, 6 and 12 to a page, at 100 percent. **Expect** every card whole on the page and every code scanning from an iPad.
+395. **The folds.** *(Still to see.)* On Today, Content's question editor, Guests, the Leadership dashboard and History of changes, open and close each fold. **Expect** a line beside each that says what it holds, open or shut.
+396. **The more menus.** *(Still to see.)* On Clients and Content, open a row's more menu with the keyboard, move with the arrows, press Esc, and delete a scratch activity from it. **Expect** focus back on the menu's button, and the delete still asks first.
+397. **Colour and contrast.** *(Still to see.)* Look at every tab on the projector and in Windows high contrast. **Expect** calm colours, every state told by its icon and word as well as its colour, and nothing missing in high contrast.

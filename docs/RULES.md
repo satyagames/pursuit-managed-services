@@ -1801,7 +1801,7 @@ against them at 1366 by 650, 1920 by 950 and 683 by 700, and `admin-explains.spe
 5. **Fold what is not the main job** (`admin/Fold.svelte`): a header button with aria-expanded and aria-controls (chevron, icon, title, a count or
    one-line summary, Show or Hide in words), the panel `hidden` while closed so Tab skips it. It starts closed on every visit: open or closed is held
    in the component alone, never stored. Folding reads nothing new; what is inside is read as it was.
-6. **Icons** (`admin/Icon.svelte`, one 24 px grid, a 2 px stroke in the text's colour, round caps, one of each): plus adds, the pencil edits, the round
+6. **Icons** (`admin/Icon.svelte`, one 24 px grid, round caps, one of each; since Prompt 38 a 1.75 stroke and the table in `admin/icons.js`, see "Rules from Prompt 38"): plus adds, the pencil edits, the round
    minus (`minus-circle`) removes one grant, the bin (`trash`) is only for deleting a whole record, the chevrons fold, the eye shows or hides, the
    clock is history, the arrow goes back, the printer prints, the download arrow downloads, copy copies, the check is done. An icon beside words is
    aria-hidden; an icon alone is an `IconButton` with an aria-label naming what it acts on and a tooltip on hover and focus, 44 px.
@@ -1914,6 +1914,49 @@ against them at 1366 by 650, 1920 by 950 and 683 by 700, and `admin-explains.spe
   (the brief's -24 left the cue 10 dB under every other), each 0.55 s long; nothing in the afterglow.
 - **The budget.** The participant page may grow by 4,096 B gzip for this prompt (`PHASE_36`); it ended 21 B under it, so the next change to that
   page will need room found first. The medal's ink on its lime and the cards' words on white are held to 4.5:1 (`scripts/test-participant-contrast.js`).
+
+## Rules from Prompt 38 (the admin page, calm and premium; keep them holding)
+
+- **Every screen answers "are we ready, and what next" first**, shows the one next action, and folds the rest with a line of what it holds now
+  (`.adm-fold` and its `.adm-fold__summary`): advanced settings, history, filters, bulk tools, passed checks and danger actions. Nothing is folded
+  blind.
+- **The palette** is `migration/src/styles/admin-tokens.css` by the brief's names: `--adm-bg` #F6F7F3, `--adm-surface` #FFFFFF, `--adm-surface-2`
+  #FAFBF8, `--adm-line` #E7EBE3, `--adm-line-strong` #D6DDD2, `--adm-ink` #1F2A24, `--adm-ink-2` #4B574F, `--adm-subtle` (the brief's muted)
+  #7B867F, `--adm-primary` #2F6B4F, `--adm-primary-deep` #22513B, `--adm-primary-wash` #EBF3EE, `--adm-accent` (lime) #A9CB6B, info, warn, danger
+  and ok (#3B7F8C, #B7791F, #B4443A, #3F8F5A) with their washes, and `--adm-dark1` #16231C for the live wall. The names the screens used before
+  (`--adm-card`, `--adm-muted`, `--adm-deep`, ...) point at the same palette. Muted, warn and ok are under 4.5:1 on white, so they are marks only;
+  words on a wash take its `*-ink` (`--adm-ok-ink` #2B6A40, `--adm-warn-ink` #7A4E12, `--adm-danger-ink` #9A3A31, `--adm-info-ink` #2C6370).
+  `scripts/test-admin-look.js` holds every value, every pair (words 4.5:1, marks 3:1) and that `admin-look.css` writes no colour of its own. No
+  black bar: the header is the surface with a line under it, and the Deloitte wordmark's letters are ink there.
+- **The files keep their own look.** The PDF, the PowerPoint and the leader report draw with `migration/src/styles/look-tokens.css` (`--look-*`),
+  which no page loads; `lib/exports/report-look.js` is held equal to it.
+- **Type: Open Sans only**, embedded (400, 600, 700). Display 28/36, Title 20/28, H2 18/26, H3 16/24, Body 16/24, Label 13/16 upper case (column
+  heads and eyebrows only, never a sentence), Figure 32/40. Running text keeps the 16 px floor of CLAUDE.md rule 9, so Body and Small are 16 px, not
+  the brief's 14 and 13. A paragraph is at most 68 characters wide.
+- **The grid**: content at most 1,280 px, centred, 32 px page margin, a 24 px gutter (16 under 900 px); Today is 8 + 4. Spacing only on the scale
+  4, 8, 12, 16, 24, 32, 48 (and 6 between a label and its field): `scripts/test-admin-look.js` lints `admin-look.css`. Cards: radius 14, a 1 px
+  line, the soft shadow; status goes in a chip, never in a border.
+- **Icons**: `migration/src/admin/icons.js`, drawn by `admin/Icon.svelte` (its API as before): one 24 grid, a 1.75 stroke in `currentColor`, round
+  caps, no fill, 20 px in the UI and 16 px in a chip. Each icon has one meaning (`admin/icon-meanings.js`, which the page does not carry): Today
+  `calendar-check`, Clients `building`, Content `layers`, Guests and QR `qr`, Results `bar-chart`, People `users`, the person `user`, Go live
+  `broadcast`, End `stop`, Reopen `refresh`, the participant link `link`, Copy `copy`, Open `external`, the wall `screen`, the confidence check
+  `gauge`, Give access `key`, Turn off `power`, History `clock`, Add `plus`, Edit `pencil`, Delete `trash`, Hide and Show `eye-off` and `eye`, Print
+  `printer`, Download `download`, Upload `upload`, Restart a guest `rotate-left`, Filters `sliders`, Brand `palette`, Pictures `image`, the question
+  types (`radio`, `checks`, `toggle`, `slider`, `podium`, `message`, `matrix`), Move `arrow-up` and `arrow-down` (no more ▲ ▼), and readiness: a
+  blocker `alert-octagon`, a warning `alert-triangle`, ready `check-circle`, information `info`, each a different shape. `scripts/test-admin-icons.js`
+  holds the table, the meanings and the stroke. An icon beside a word is `aria-hidden`; an icon alone is a button named in words.
+- **The sticky bar** (`admin/StickyBar.svelte`): 64 px at the foot of the window, where the screen stands on the left ("Ready to go live", "Changes
+  not saved") and exactly one primary action and at most one secondary on the right. A destructive action is never in it. The page leaves room
+  under its content; a focused field stops above it (`scroll-padding-bottom`); on an iPad it rides above the keyboard (`lib/admin/sticky-bar.ts`
+  follows the visual viewport). Today (Go live, or Show the wall once live), Add session (Create session), Brand (Save brand) and the QR sheet
+  (Print) have one.
+- **Smart defaults** (`lib/admin/admin-defaults.js`, always editable): a new session is "{Client} · {date}" on the next day the client has no
+  session, at the start time the person used last (else 09:00); a new question is Single choice, a list of answers, four rows; a new user's role is
+  Producer; the QR sheet is A4 (US Letter where the browser's language says so), 6 to a page. A person's last choices are kept in this browser under
+  `pms.prefs.` and a hash of who they are, every read and write guarded (`scripts/test-participant-storage.js` lists it). A new session's
+  identification, flow and confidence check are still written by the data layer as before: changing them would change the participant page.
+- **Messages**: an error says what happened and what to do, in ink on the danger wash with the warning triangle; an empty list shows a muted icon,
+  one sentence and one action; a list that is loading shows skeleton lines in the line colour, not a spinner.
 
 ## Before finishing a change
 

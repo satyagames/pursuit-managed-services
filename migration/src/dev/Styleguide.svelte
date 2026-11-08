@@ -19,6 +19,7 @@
   import { listTitles } from '../lib/setup/setupData.js';
   import CopyPanel from '../setup/CopyPanel.svelte';
   import ListAddresses from '../setup/ListAddresses.svelte';
+  import AdminStyleguide from './AdminStyleguide.svelte';
 
   const answerStates: AnswerState[] = ['default', 'selected', 'correct', 'incorrect', 'disabled'];
   const activityStates: { state: ActivityState; label: string }[] = [
@@ -276,6 +277,8 @@
     <h3>Where the lists are: found, renamed, missing, not read yet</h3>
     <div class="setup-card"><ListAddresses rows={whereRows} probe={whereProbe} status="Read 2 of 3: 1 could not be found or read. Nothing on the site was changed." onread={() => {}} /></div>
   </section>
+
+  <AdminStyleguide />
 
   <section aria-labelledby="sg-shell">
     <h2 id="sg-shell">AppShell</h2>

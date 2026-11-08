@@ -162,13 +162,12 @@ body.admin :is(h1, h2, h3, h4) {
   width: 100%;
   max-width: calc(var(--adm-content-max) + 2 * var(--adm-s6));
   margin: 0 auto;
-  padding: var(--adm-s6) var(--adm-s6) calc(var(--adm-bar-height) + var(--adm-s7));
+  padding: var(--adm-s5) var(--adm-s6);
 }
 
-@media (min-width: 1100px) {
-  .shell__body {
-    padding-bottom: calc(var(--adm-bar-height) + var(--adm-s7));
-  }
+/* Room under the content for the sticky bar, on a screen that has one. */
+.shell__body:has(.adm-bar) {
+  padding-bottom: calc(var(--adm-bar-height) + var(--adm-s5));
 }
 
 @media (max-width: 899px) {
@@ -339,6 +338,12 @@ body.admin a:not(.btn) {
   font-weight: var(--fw-semibold);
   line-height: 1;
   white-space: nowrap;
+}
+
+/* In a row (a question's type), a chip is as tall as its words. */
+.row__main .chip {
+  min-height: 0;
+  padding-block: var(--adm-s1);
 }
 
 .chip .icon {

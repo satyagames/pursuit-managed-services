@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
 import { PAGES, ROOT, analyzePage } from './analyze-bundle.js';
-import { BUDGET, FORBIDDEN, PHASE_8, PHASE_9A, PHASE_9B, PHASE_10B, PHASE_10C1, PHASE_10C2A, PHASE_10C2B, PHASE_10C3, PHASE_10F, PHASE_10G, PHASE_10H, PHASE_10I, PHASE_10J, PHASE_11A, PHASE_11A3, PHASE_11B, PHASE_12, PHASE_13, PHASE_14, PHASE_15, PHASE_16, PHASE_17, PHASE_18, PHASE_19, PHASE_20, PHASE_21A, PHASE_21B, PHASE_21C, PHASE_21D, PHASE_21E, PHASE_21F, PHASE_21G, PHASE_22, PHASE_23, PHASE_24, PHASE_26, PHASE_32, PHASE_33, PHASE_34, PHASE_35, PHASE_36, checkBudgets, utilityClasses } from './bundle-budget.js';
+import { BUDGET, FORBIDDEN, PHASE_8, PHASE_9A, PHASE_9B, PHASE_10B, PHASE_10C1, PHASE_10C2A, PHASE_10C2B, PHASE_10C3, PHASE_10F, PHASE_10G, PHASE_10H, PHASE_10I, PHASE_10J, PHASE_11A, PHASE_11A3, PHASE_11B, PHASE_12, PHASE_13, PHASE_14, PHASE_15, PHASE_16, PHASE_17, PHASE_18, PHASE_19, PHASE_20, PHASE_21A, PHASE_21B, PHASE_21C, PHASE_21D, PHASE_21E, PHASE_21F, PHASE_21G, PHASE_22, PHASE_23, PHASE_24, PHASE_26, PHASE_32, PHASE_33, PHASE_34, PHASE_35, PHASE_36, PHASE_38, checkBudgets, utilityClasses } from './bundle-budget.js';
 import { SAMPLE_PICTURE_NAMES } from '../migration/src/lib/setup/sample-pictures.js';
 import { pageProblems } from './release-proofs.js';
 
@@ -497,6 +497,13 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
     assert.ok(built.admin.htmlGzip < BUDGET.admin, `the admin page is under its ${bytes(BUDGET.admin)} budget`);
   });
 
+
+  it('Prompt 38 (the admin redesign) left the participant page exactly as it was, with its Tailwind rules, and kept the admin page under its budget', () => {
+    console.log(`  Prompt 38: the participant page ${bytes(PHASE_38.participantBefore)} -> ${bytes(built.participant.htmlGzip)} gzip; the admin page ${bytes(PHASE_38.adminBefore)} -> ${bytes(built.admin.htmlGzip)} (the brief asked 700,000 B; the budget is ${bytes(BUDGET.admin)})`);
+    assert.equal(built.participant.htmlGzip - PHASE_38.participantBefore, PHASE_38.participantAllowance, 'the participant page is the same size');
+    assert.deepEqual(utilityClasses(built.participant.html), [...PHASE_38.participantUtilities], "the participant page's Tailwind rules are the ones it had");
+    assert.ok(built.admin.htmlGzip < BUDGET.admin, `the admin page is under its ${bytes(BUDGET.admin)} budget`);
+  });
 
   it('the Tailwind rules check can fail: a rule added to the participant page, or one taken away, is found', () => {
     const html = built.participant.html;

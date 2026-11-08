@@ -67,8 +67,10 @@ test('on a laptop the content runs edge to edge and the brand, tabs and person s
       const g = await geometry(page);
       expect(g.scrollWidth, `${at}: no sideways scroll`).toBeLessThanOrEqual(g.innerWidth);
       expect(g.head, `${at}: the tab has a heading`).not.toBeNull();
-      expect(g.head!.left, `${at}: the gap at the left`).toBeLessThanOrEqual(40);
-      expect(g.width - g.head!.right, `${at}: the gap at the right`).toBeLessThanOrEqual(40);
+      // (Prompt 38: the content is at most 1,280 px, centred, with the 32 px page margin.)
+      const margin = Math.max(32, (g.width - 1280) / 2);
+      expect(Math.abs(g.head!.left - margin), `${at}: the gap at the left`).toBeLessThanOrEqual(2);
+      expect(Math.abs(g.width - g.head!.right - margin), `${at}: the gap at the right`).toBeLessThanOrEqual(2);
       expect(g.bar!.height, `${at}: the bar's height`).toBeLessThanOrEqual(53);
       for (const [part, where] of [['the brand', g.brand], ['the tabs', g.tabs], ['the person', g.user]] as const) {
         expect(where, `${at}: ${part} is shown`).not.toBeNull();
@@ -107,7 +109,7 @@ test('at 683 px (a 1366 px laptop at 200 percent) the bar is two rows as before,
 // Step 3, Today: column A (the live card, Go live, the sessions), B (Readiness, with only warnings and failures open), C (Controls, sticky under the
 // bar). Three columns from 1,100 px: A over B is taller than a 1366 x 650 window, and C under B would push End session out of it. On Domino's,
 // ready with one warning.
-const columnsOf = (page: Page) => page.evaluate(() => Object.fromEntries(['a', 'b', 'c'].map((zone) => {
+const columnsOf = (page: Page) => page.evaluate(() => Object.fromEntries(['main', 'side'].map((zone) => {
   const box = document.querySelector(`.today__${zone}`)?.getBoundingClientRect();
   return [zone, box ? { left: Math.round(box.left), right: Math.round(box.right), top: Math.round(box.top), bottom: Math.round(box.bottom) } : null];
 })));
@@ -116,7 +118,9 @@ const inView = (page: Page, name: string) => page.getByRole('button', { name, ex
   return box.top >= 52 && box.bottom <= window.innerHeight && box.left >= 0 && box.right <= document.documentElement.clientWidth;
 });
 
-test('Today on a laptop: three zones from 1,100 px; the ready checks fold; nothing to scroll; Go live and End session in view', async ({ page }) => {
+// Prompt 38: two columns, 8 + 4 (the live session, Readiness and the session picked; the settings and Share), the readiness line first, the passed
+// checks folded at every width, and Go live in the sticky bar, always in view.
+test('Today on a laptop: 8 + 4; the readiness line first; the passed checks fold; Go live in the sticky bar, in view', async ({ page }) => {
   await mkdir(pictures, { recursive: true });
   for (const size of LAPTOPS) {
     await page.setViewportSize(size);
@@ -125,24 +129,24 @@ test('Today on a laptop: three zones from 1,100 px; the ready checks fold; nothi
     await expect(page.getByTestId('readiness-summary')).toHaveText(/Ready to go live, with 1 warning/);
     const at = `Today at ${size.width} x ${size.height}`;
     const zones = await columnsOf(page);
-    expect(zones.a && zones.b && zones.c, `${at}: the three zones`).toBeTruthy();
-    expect(zones.b!.left, `${at}: B beside A`).toBeGreaterThanOrEqual(zones.a!.right);
-    expect(zones.c!.left, `${at}: C beside B`).toBeGreaterThanOrEqual(zones.b!.right);
-    // Only the warning is open; the ready checks are one line with a Show control that says how many.
-    const fold = page.getByRole('button', { name: /^Show \d+ ready checks?$/ });
+    expect(zones.main && zones.side, `${at}: the two columns`).toBeTruthy();
+    expect(zones.side!.left, `${at}: the side beside the main column`).toBeGreaterThanOrEqual(zones.main!.right);
+    expect((zones.side!.right - zones.side!.left) / (zones.main!.right - zones.main!.left), `${at}: 4 to 8`).toBeCloseTo(0.5, 1);
+    // Only the warning is open; the passed checks are one line that says how many.
+    const fold = page.getByRole('button', { name: /^\d+ checks? passed/ });
     await expect(fold, `${at}: the fold`).toHaveAttribute('aria-expanded', 'false');
     await expect(page.locator('[data-check][data-level="pass"]').first()).toBeHidden();
     await expect(page.locator('[data-check][data-level="warning"]')).toBeVisible();
-    expect(await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight), `${at}: nothing to scroll`).toBeLessThanOrEqual(0);
-    expect(await inView(page, 'Go live'), `${at}: Go live in view`).toBe(true);
+    expect(await inView(page, 'Go live'), `${at}: Go live in view, in the bar`).toBe(true);
+    await expect(page.getByTestId('sticky-bar').getByRole('button', { name: 'Go live', exact: true })).toBeVisible();
     await page.screenshot({ path: `${pictures}today-ready-${size.width}x${size.height}.png` });
     await fold.click();
-    await expect(page.getByRole('button', { name: /^Hide \d+ ready checks?$/ })).toHaveAttribute('aria-expanded', 'true');
+    await expect(fold).toHaveAttribute('aria-expanded', 'true');
     await expect(page.locator('[data-check][data-level="pass"]').first()).toBeVisible();
   }
 });
 
-test('Today live at 1366 x 650: End session in view, Controls stay in view as the page scrolls, the segmented controls are radios that set the session', async ({ page }) => {
+test('Today live at 1366 x 650: End session in view, the settings stay in view as the page scrolls; Change opens the radios that set the session', async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 650 });
   await openAdmin(page, local!);
   await page.getByLabel('Client', { exact: true }).selectOption({ label: "Domino's" });
@@ -151,8 +155,10 @@ test('Today live at 1366 x 650: End session in view, Controls stay in view as th
   expect(await inView(page, 'End session'), 'End session in view').toBe(true);
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   expect(await inView(page, 'End session'), 'End session in view at the foot of the page').toBe(true);
-  const controls = await page.locator('.today__c').boundingBox();
-  expect(controls!.y, 'Controls stay under the bar').toBeGreaterThanOrEqual(52);
+  const controls = await page.locator('.today__side').boundingBox();
+  expect(controls!.y, 'the settings stay under the bar').toBeGreaterThanOrEqual(52);
+  await expect(page.getByTestId('controls-summary')).toContainText('Sequential');
+  await page.getByRole('button', { name: 'Change' }).click();
   for (const group of ['How people are identified', 'Activity flow', 'Confidence check']) {
     await expect(page.getByRole('group', { name: group }).getByRole('radio'), `${group}: radios`).toHaveCount(2);
   }
@@ -215,7 +221,9 @@ test('Content on a laptop: activities beside their questions, and Brand\'s contr
     await page.getByRole('tab', { name: /^Brand/ }).click();
     const controls = await page.locator('.brand__controls').boundingBox();
     const preview = page.locator('.brand__preview');
-    expect((await preview.boundingBox())!.x, `${at}: the preview beside the controls`).toBeGreaterThanOrEqual(controls!.x + controls!.width);
+    // (Prompt 38: the preview first, the controls beside it.)
+    const shown = (await preview.boundingBox())!;
+    expect(controls!.x, `${at}: the controls beside the preview`).toBeGreaterThanOrEqual(shown.x + shown.width);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `${at}: no sideways scroll`).toBe(true);
     if (size.width === 1366 || size.width === 1920) await page.screenshot({ path: `${pictures}content-brand-${size.width}x${size.height}.png` });
     // (Part of the way down the controls: the preview is held until the controls end, and an iPhone's preview is taller than a 650 px window.)

@@ -492,6 +492,15 @@
       <div class="today__main">
         <section class="card-panel status" class:status--live={status.live} aria-labelledby="status-heading" data-live={status.live}>
           <TodayStatus {status} {participants} since={sinceText(status.since, today)} {pollError} />
+          <!-- (The session picked, in the same card: what is live, then what Go live would start.) -->
+          <section class="golive" aria-labelledby="golive-heading">
+            <h3 id="golive-heading" class="adm-label">Session to go live</h3>
+            <TodayGoLive
+              {pickable} {clientId} bind:date {busy} {why} {verified} {problem}
+              onPickClient={pickClient} onPickDate={() => void pickDate()} {onNavigate}
+              {sessionChoices} sessionId={target?.id ?? ''} onPickSession={(event) => void pickSession(event)} {oneLive}
+            />
+          </section>
         </section>
 
         <section class="card-panel" aria-labelledby="ready-heading">
@@ -502,24 +511,6 @@
           <TodayReadiness {rows} summary={readinessSummary({ inputsBusy, blockers, warnings })} {busy} onRowAction={rowAction} />
         </section>
 
-        <section class="card-panel" aria-labelledby="golive-heading">
-          <h3 id="golive-heading">Session</h3>
-          <TodayGoLive
-            {pickable} {clientId} bind:date {busy} {why} {verified} {problem}
-            onPickClient={pickClient} onPickDate={() => void pickDate()} {onNavigate}
-            {sessionChoices} sessionId={target?.id ?? ''} onPickSession={(event) => void pickSession(event)} {oneLive}
-          />
-        </section>
-
-        {#if otherSessions.length > 0}
-          <details class="card-panel others adm-fold">
-            <summary><Icon name="chevron-right" />All sessions <span class="adm-fold__summary">{otherSessions.length} more</span></summary>
-            <TodaySessions
-              sessions={otherSessions} all={allSessions} {busy} {nameOf} canMakeLive={(session) => sessionWanted(session as Session) !== null}
-              onReopen={(session) => void reopenIt(session as Session)} onMakeLive={(session) => void attempt(sessionWanted(session as Session))} onShowAll={() => { allSessions = true; }}
-            />
-          </details>
-        {/if}
       </div>
 
       <div class="today__side">
@@ -537,6 +528,16 @@
             <h3 id="share-heading">Share</h3>
             <TodayShare {shareUrl} {shareQr} {wallUrl} onLive={() => onLiveDisplay(status.session!.id)} {onToast} />
           </section>
+        {/if}
+
+        {#if otherSessions.length > 0}
+          <details class="card-panel others adm-fold">
+            <summary><Icon name="chevron-right" />All sessions <span class="adm-fold__summary">{otherSessions.length} more</span></summary>
+            <TodaySessions
+              sessions={otherSessions} all={allSessions} {busy} {nameOf} canMakeLive={(session) => sessionWanted(session as Session) !== null}
+              onReopen={(session) => void reopenIt(session as Session)} onMakeLive={(session) => void attempt(sessionWanted(session as Session))} onShowAll={() => { allSessions = true; }}
+            />
+          </details>
         {/if}
       </div>
     </div>
@@ -573,10 +574,33 @@
     min-width: 0;
   }
 
+  /* The side column stays under the bar as the page scrolls, so End session is in view. */
   @media (min-width: 1000px) {
     .today__grid {
       grid-template-columns: minmax(0, 8fr) minmax(0, 4fr);
     }
+
+    .today__side {
+      position: sticky;
+      top: calc(52px + var(--adm-s5));
+      max-height: calc(100vh - 52px - var(--adm-bar-height) - var(--adm-s7));
+      overflow-y: auto;
+      /* (Room inside the scroll for a control's 9 px focus ring.) */
+      margin: calc(-1 * var(--adm-s3));
+      padding: var(--adm-s3);
+    }
+  }
+
+  .golive {
+    display: grid;
+    gap: var(--adm-s3);
+    padding-top: var(--adm-s4);
+    border-top: 1px solid var(--adm-line);
+  }
+
+  .golive h3 {
+    font-size: var(--adm-fs-label);
+    line-height: var(--adm-lh-label);
   }
 
   .card-panel {
