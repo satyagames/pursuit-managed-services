@@ -1,11 +1,10 @@
 /* Colours, type, spacing and surfaces for the admin page (Prompt 38: calm and premium). The participant page never loads this file, so
  * nothing here reaches it. The Phase 1 tokens (tokens.css) still give the font stack, the targets and the green focus ring.
  *
- * Three groups:
+ * Two groups:
  *   1. The palette (Prompt 38's table), by its own names: --adm-surface, --adm-ink-2, --adm-primary-wash and the rest.
  *   2. The names the screens already use (--adm-card, --adm-muted, --adm-deep, ...), each pointed at the palette, so every screen changed at once.
- *   3. The files' look (--look-*): the colours the PDF, the PowerPoint and the leader report draw with (lib/exports/report-look.js mirrors them).
- *      They are not the page's colours and no screen reads them.
+ * The files' look (the colours the PDF, the PowerPoint and the leader report draw with) is styles/look-tokens.css, which no page loads.
  *
  * Three of the brief's colours are under 4.5:1 on white (muted 3.8, warn 3.6, ok 4.0): they are marks (an icon, a dot, a bar), never words. Words
  * in a status chip take the darker *-ink beside their wash. scripts/test-admin-today.js holds every pair. */
@@ -121,21 +120,4 @@
   --accent: var(--adm-primary);
   --ok: #2b6a40;
   --warn: #7a4e12;
-
-  /* ---- 3. The files' look (lib/exports/report-look.js): not the page's ---------------------- */
-  --look-page: #ffffff;
-  --look-black: #000000;
-  --look-wash: #f5f7f4;
-  --look-card-line: #bfd6a8;
-  --look-text: #1a1a1a;
-  --look-text-muted: #4d5651;
-  --look-on-deep: #ffffff;
-  --look-deep: #046a38;
-  --look-green: #237f0c;
-  --look-lime: #86bc25;
-  --look-green-wash: #e9f3df;
-  --look-teal: #0b7684;
-  --look-teal-wash: #e3f3f5;
-  --look-link: #0076a8;
-  --look-sky: #00a3e0;
 }

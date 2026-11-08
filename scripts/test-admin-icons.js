@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ADMIN = path.join(ROOT, 'migration/src/admin');
-const icons = () => import('../migration/src/admin/icons.js');
+const icons = async () => ({ ...(await import('../migration/src/admin/icons.js')), ...(await import('../migration/src/admin/icon-meanings.js')) });
 
 /** The brief's meaning map: each word, the icon it is drawn with. */
 const BRIEF = {

@@ -1287,3 +1287,62 @@ input[type='date']:focus-within {
 .field__line .field__required {
   margin-inline-start: 0;
 }
+
+/* Prompt 38: six to a page, 2 columns by 3 rows of 90 by 82 mm cards with 4 mm between (184 by 254 mm), which sits inside the 8 mm margins of
+   both A4 (194 by 281) and US Letter (200 by 263); the code is 52 mm, larger than on the twelve. The paper and the count are chosen above the sheet. */
+.print-page--6 {
+  grid-template-columns: repeat(2, 90mm);
+  grid-auto-rows: 82mm;
+  width: 184mm;
+}
+
+.print-page--6 .print-card {
+  grid-template-rows: 16mm 52mm auto auto;
+  width: 90mm;
+  height: 82mm;
+  padding: 3mm 4mm;
+}
+
+.print-page--6 .print-card__qr {
+  width: 52mm;
+  height: 52mm;
+}
+
+.print-page--6 .print-card__name {
+  max-height: 16mm;
+  font-size: 20pt;
+}
+
+.print-page--6 .print-card__client {
+  font-size: 11pt;
+}
+
+.print-page--6 .print-card__cta {
+  font-size: 13pt;
+}
+
+.print-view {
+  padding-bottom: 6rem;
+}
+
+.print-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+}
+
+.print-choice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 1rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+@media print {
+  .print-view {
+    padding-bottom: 0;
+  }
+}

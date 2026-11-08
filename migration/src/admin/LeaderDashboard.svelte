@@ -13,6 +13,7 @@
   import { can, canView } from '../lib/access/can.js';
   import { readDashboard, rebuildSummaries } from '../lib/admin/session-summaries.js';
   import { BASELINES } from '../lib/results/index-math.js';
+  import Icon from './Icon.svelte';
   import { SPANS, dashboardFileName, dashboardOf, defaultFilters, emptyStateOf, filterOptions, rebuildQuestion, reportCsv, shiftWords } from '../lib/results/dashboard-model.js';
   import { METRICS } from '../lib/results/metric-words.js';
   import { readQueries, reachOf, sessionsFor } from '../lib/access/scope.js';
@@ -58,6 +59,12 @@
   const clientById = $derived(new Map(clients.map((client) => [client.id, client])));
   const board = $derived(dashboardOf({ summaries, clients, filters: { ...filters, hideNames }, startMonth, minSample, mayName }));
   const options = $derived(filterOptions(summaries, clients));
+  /** The folded filters' one line: the period, the clients, the comparison and any other filter set. */
+  const filterLine = $derived([
+    filters.span === 'fy' ? `FY ${filters.year}` : filters.span.startsWith('q') ? `${filters.span.toUpperCase()} ${filters.year}` : filters.span === 'month' ? filters.month : `${filters.from || '...'} to ${filters.to || '...'}`,
+    filters.clientIds.length ? `${filters.clientIds.length} ${filters.clientIds.length === 1 ? 'client' : 'clients'}` : 'all clients',
+    filters.industry || filters.region || filters.facilitator || filters.kind || filters.group ? 'more filters set' : 'all guests',
+  ].join(' · '));
   /** No client, session or period given (nothing is read), or no summary yet: said instead of the filters and figures (Prompt 21, Phase 6). */
   const reach = $derived(access ? reachOf(access) : null);
   const empty = $derived(emptyStateOf({ reach, summaries, waiting: mayRebuild ? missing.length : 0 }));
@@ -194,6 +201,9 @@
       <div class="dash__empty" role="status"><h3>{empty.title}</h3><p>{empty.line}</p></div>
     {:else}
 
+    <!-- (Prompt 38: the filters fold behind one Filters button, with a line of what they are now.) -->
+    <details class="adm-fold dash__fold" data-testid="dash-filters">
+      <summary><Icon name="sliders" />Filters <span class="adm-fold__summary">{filterLine}</span></summary>
     <form class="dash__filters" aria-label="Filters" onsubmit={(event) => event.preventDefault()}>
       <fieldset class="dash__group">
         <legend>Period</legend>
@@ -277,6 +287,7 @@
         </div>
       </details>
     </form>
+    </details>
 
     <p class="dash__headline" aria-live="polite">{board.headline}</p>
 

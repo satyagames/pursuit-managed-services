@@ -9,11 +9,13 @@
   import { emailProblem } from '../lib/access/people-ops.js';
 
   type Found = { key: string; name: string; email: string; loginName: string; jobTitle: string };
-  let { onChoose, onTyped, disabled = false }: {
+  let { onChoose, onTyped, disabled = false, domain = '' }: {
     onChoose: (person: Found) => void;
     /** A full email typed by hand (a person the directory did not show). */
     onTyped: (email: string) => void;
     disabled?: boolean;
+    /** (Prompt 38) The signed-in person's email domain ("deloitte.com"): a name typed without one is offered at it. */
+    domain?: string;
   } = $props();
 
   const picker = createPicker({ search: (text, { signal }) => dataService.searchDirectory(text, { signal }) });
@@ -25,6 +27,8 @@
   const optionId = (index: number) => `user-picker-option-${index}`;
   const typed = $derived(view.text.trim());
   const typedOk = $derived(typed.length > 0 && emailProblem(typed) === null);
+  /** A name typed as the first part of an address ("jordan.lee"), completed with the signed-in person's domain. */
+  const atDomain = $derived(domain && !typed.includes('@') && /^[a-z0-9._'-]+$/i.test(typed) && emailProblem(`${typed}@${domain}`) === null ? `${typed}@${domain}` : '');
 
   function onKeydown(event: KeyboardEvent) {
     if (!['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(event.key)) return;
@@ -61,6 +65,8 @@
   {/if}
   {#if typedOk && !view.open}
     <button class="btn" type="button" onclick={() => onTyped(typed)} {disabled}>Use {typed}</button>
+  {:else if atDomain && !view.open}
+    <button class="btn" type="button" onclick={() => onTyped(atDomain)} {disabled}>Use {atDomain}</button>
   {/if}
 </div>
 

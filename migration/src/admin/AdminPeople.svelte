@@ -40,6 +40,9 @@
   let page = $state(pageOfHash(window.location.hash));
   let openKey = $state<string | null>(null);
   let adding = $state(false);
+  /** (Prompt 38) Add user was opened from Give access: the person's page opens with Give access open. */
+  let giveNext = $state(false);
+  let givingKey = $state<string | null>(null);
   let reviewing = $state(false);
   /** (Prompt 28) Who Check site access last found waiting for their groups; null until it was pressed on this page. */
   let waitingKeys = $state<string[] | null>(null);
@@ -94,11 +97,12 @@
       </div>
       <div class="panel__actions">
         {#if mayReview}<button class="btn" type="button" onclick={() => { reviewing = true; }}><Icon name="clock" /> History of changes</button>{/if}
-        {#if mayAdd}<button class="btn btn--primary" type="button" onclick={() => { adding = true; }}><Icon name="plus" /> Add user</button>{/if}
+        {#if mayAdd}<button class="btn btn--with-icon" type="button" onclick={() => { adding = true; giveNext = false; }}><Icon name="plus" /> Add user</button>
+          <button class="btn btn--primary btn--with-icon" type="button" onclick={() => { adding = true; giveNext = true; }}><Icon name="key" /> Give access</button>{/if}
       </div>
     </header>
 
-    {#if loading}<p class="muted" role="status">Loading people...</p>
+    {#if loading}<div class="adm-card adm-skeleton" aria-hidden="true"><span></span><span></span><span></span><span></span></div><p class="sr-only" role="status">Loading people...</p>
     {:else if error}<p class="error" role="alert">{error}</p>
     {:else}
       {#if can(access, 'roles.global', {})}<SiteAccessDrift {users} {assignments} onRead={(keys) => { waitingKeys = keys; }} />{/if}
@@ -155,7 +159,7 @@
   {#if open}
     <div class="people__detail">
       {#key open.key}
-        <UserDetail {access} person={open} {users} {assignments} {clients} {sessions} waiting={waitingKeys ? waitingKeys.includes(open.key) : null}
+        <UserDetail {access} person={open} {users} {assignments} {clients} {sessions} startGiving={givingKey === open.key} waiting={waitingKeys ? waitingKeys.includes(open.key) : null}
           onBack={() => { openKey = null; void tick().then(() => focusHeading(heading)); }} onChanged={changed} />
       {/key}
     </div>
@@ -175,8 +179,8 @@
 {/if}
 
 {#if adding}
-  <UserAdd {access} onCancel={() => { adding = false; }}
-    onDone={(key, already) => { adding = false; void load().then(() => { openKey = key; onToast(already ? 'That person is in the list already.' : 'Added. Now give them access.', 'success'); }); }} />
+  <UserAdd {access} giving={giveNext} onCancel={() => { adding = false; }}
+    onDone={(key, already) => { adding = false; givingKey = giveNext ? key : null; void load().then(() => { openKey = key; onToast(already ? 'That person is in the list already.' : 'Added. Now give them access.', 'success'); }); }} />
 {/if}
 
 <style>

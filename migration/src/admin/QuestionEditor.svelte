@@ -30,6 +30,7 @@
   import { questionLayout } from '../lib/participant/pager-logic.js';
   import AssetUploader from './AssetUploader.svelte';
   import MatrixEditor, { type RowDraft } from './MatrixEditor.svelte';
+  import Icon from './Icon.svelte';
   import { answersToQuestions } from '../lib/admin/adminData.js';
   import { copiedFrom, defaultCriteria, instructionFor } from '../lib/admin/aop-editor.js';
   import { criteriaProblem, rowsProblem } from '../lib/schema/aop-rules.js';
@@ -145,7 +146,8 @@
       optionDrafts = optionDrafts.map((option) => ({ ...option, correct: false }));
     }
     if (specs[type].options === 'free' && (!optionDrafts.length || seeded)) {
-      const labels = type === 'confidence-continuum' ? ['Not confident', 'Moderately confident', 'Very confident'] : ['', ''];
+      // (Prompt 38: a new question starts with four answer rows; blank ones are left out when it is saved.)
+      const labels = type === 'confidence-continuum' ? ['Not confident', 'Moderately confident', 'Very confident'] : ['', '', '', ''];
       optionDrafts = labels.map((label, index) => optionDrafts[index] ?? newOption(label));
     }
   }
@@ -369,17 +371,9 @@
 <section bind:this={editor} class="content-editor content-editor--inline" {id} aria-labelledby={labelledBy} onkeydown={onKeydown}>
   <h4 id={`${id}-heading`} class="content-editor__title">{editing ? 'Edit question' : 'Add question'}{#if dirty}<span class="pill pill--in-progress" data-testid="question-status">Unsaved changes</span>{/if}</h4>
   <form class="editor-form" onsubmit={saveQuestion}>
-    <label class="field"><span class="field__label">Type</span><select class="select" value={type} onchange={changeType} disabled={busy}>{#each types as questionType}<option value={questionType}>{specs[questionType].label}</option>{/each}</select></label>
+    <!-- (Prompt 38: the basics first, the question, its type and its answers; the layout is folded under them, with a line of what it is now.) -->
     <label class="field"><span class="field__label">Question</span><textarea bind:this={field} class="input" rows="2" bind:value={prompt} oninput={() => { promptIsDefault = false; }} disabled={busy}></textarea></label>
-    {#if showsLayout}
-      <label class="field">
-        <span class="field__label">Layout</span>
-        <select class="select" bind:value={layout} disabled={busy} aria-describedby={`${id}-layout-help`}>
-          {#each LAYOUTS as entry}<option value={entry.value}>{entry.label}</option>{/each}
-        </select>
-        <span id={`${id}-layout-help`} class="muted small">{tiles ? 'Each option is a tile with its picture. An option with no picture is shown as a text tile.' : 'Each option is a row of text.'}</span>
-      </label>
-    {/if}
+    <label class="field"><span class="field__label">Type</span><select class="select" value={type} onchange={changeType} disabled={busy}>{#each types as questionType}<option value={questionType}>{specs[questionType].label}</option>{/each}</select></label>
     {#if currentSpec.options === 'matrix'}
       <MatrixEditor bind:criteria bind:rows={optionDrafts as unknown as RowDraft[]} usedIds={usedCriterionIds} {busy} {answered} copiedFrom={copiedFrom(editing)} mixed={siblings > 0} newRow={(label = '', people = '') => newOption(label, people)} {id} />
     {:else if currentSpec.options !== 'none'}
@@ -393,9 +387,9 @@
                 <input class="input" aria-label={`Option ${index + 1} text`} placeholder="Option text" bind:value={option.label} maxlength={MAX_OPTION_TEXT} readonly={currentSpec.options === 'fixed'} disabled={busy} />
                 {#if currentSpec.correct}<button class:btn--on={option.correct} class="btn btn--small" type="button" aria-pressed={option.correct} onclick={() => markCorrect(option.key)} disabled={busy}>✓ Correct</button>{/if}
                 {#if currentSpec.options === 'free'}
-                  <button class="btn btn--small" type="button" aria-label="Move up" onclick={() => moveOption(index, -1)} disabled={busy || index === 0}>▲</button>
-                  <button class="btn btn--small" type="button" aria-label="Move down" onclick={() => moveOption(index, 1)} disabled={busy || index === optionDrafts.length - 1}>▼</button>
-                  <button class="btn btn--small btn--danger" type="button" aria-label="Remove option" onclick={() => { optionDrafts = optionDrafts.filter((item) => item.key !== option.key); }} disabled={busy}>✕</button>
+                  <button class="btn btn--small btn--icon" type="button" aria-label="Move up" title="Move up" onclick={() => moveOption(index, -1)} disabled={busy || index === 0}><Icon name="arrow-up" /></button>
+                  <button class="btn btn--small btn--icon" type="button" aria-label="Move down" title="Move down" onclick={() => moveOption(index, 1)} disabled={busy || index === optionDrafts.length - 1}><Icon name="arrow-down" /></button>
+                  <button class="btn btn--small btn--icon btn--danger" type="button" aria-label="Remove option" title="Remove option" onclick={() => { optionDrafts = optionDrafts.filter((item) => item.key !== option.key); }} disabled={busy}><Icon name="close" /></button>
                 {/if}
               </div>
               {#if option.label.length >= MAX_OPTION_TEXT}<p class="muted small" data-testid="option-limit">{MAX_OPTION_TEXT} characters: the most an answer's text can hold.</p>{/if}
@@ -418,9 +412,21 @@
             </li>
           {/each}
         </ul>
-        {#if currentSpec.options === 'free'}<button class="btn btn--small" type="button" onclick={() => { optionDrafts = [...optionDrafts, newOption()]; }} disabled={busy}>+ Add option</button>{/if}
+        {#if currentSpec.options === 'free'}<button class="btn btn--small btn--with-icon" type="button" onclick={() => { optionDrafts = [...optionDrafts, newOption()]; }} disabled={busy}><Icon name="plus" />Add option</button>{/if}
         {#if tiles}<p class="muted small" data-testid="tile-hint">A text tile will be used for any option with no picture{pictured === 0 ? ' (none has one yet, so every tile shows text)' : ''}. Upload a picture (it is cropped to 480 × 320 px here) or paste a link.</p>{/if}
       </fieldset>
+    {/if}
+    {#if showsLayout}
+      <details class="adm-fold">
+        <summary><Icon name="chevron-right" />Layout <span class="adm-fold__summary">{LAYOUTS.find((entry) => entry.value === layout)?.label ?? layout}</span></summary>
+        <label class="field">
+          <span class="field__label">Layout</span>
+          <select class="select" bind:value={layout} disabled={busy} aria-describedby={`${id}-layout-help`}>
+            {#each LAYOUTS as entry}<option value={entry.value}>{entry.label}</option>{/each}
+          </select>
+          <span id={`${id}-layout-help`} class="muted small">{tiles ? 'Each option is a tile with its picture. An option with no picture is shown as a text tile.' : 'Each option is a row of text.'}</span>
+        </label>
+      </details>
     {/if}
     {#if error}<p class="error" role="alert">{error}</p>{/if}
     <!-- (Phase 16: the buttons stay in reach at the foot of a tall editor, a question of eight picture tiles, above the iPad's safe area.) -->
@@ -450,8 +456,9 @@
     z-index: 1;
     margin: 0 -1.5rem -1.5rem;
     padding: 0.75rem 1.5rem max(0.75rem, env(safe-area-inset-bottom));
-    background: var(--card);
-    border-top: 1px solid var(--line);
-    border-radius: 0 0 12px 12px;
+    background: var(--adm-surface);
+    border-top: 1px solid var(--adm-line);
+    border-radius: 0 0 var(--adm-radius) var(--adm-radius);
+    box-shadow: var(--adm-shadow-up);
   }
 </style>

@@ -48,9 +48,11 @@
     margin-bottom: 0.75rem;
   }
 
+  /* (Prompt 38: the chosen view in the primary wash, not a black fill; it is also aria-pressed.) */
   .results-views__choice[aria-pressed='true'] {
-    border-color: var(--ink);
-    background: var(--ink);
-    color: var(--adm-on-deep);
+    border-color: var(--adm-green);
+    background: var(--adm-green-wash);
+    color: var(--adm-text);
+    box-shadow: inset 0 0 0 1px var(--adm-green);
   }
 </style>

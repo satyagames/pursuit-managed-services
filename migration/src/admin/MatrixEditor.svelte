@@ -2,6 +2,7 @@
   import { AOP_LIMITS, DIRECTIONS } from '../lib/schema/aop-rules.js';
   import { editingNotice, newCriterion, parsePastedRows, rowsLine } from '../lib/admin/aop-editor.js';
   import ConfirmDialog from './ConfirmDialog.svelte';
+  import Icon from './Icon.svelte';
 
   // The part of a question's editor that an Art of the Possible question has instead of options (Prompt 23, board 16): its criteria and its sub-processes. The rows are the
   // question's options, kept in the editor's own draft. What may be saved is lib/schema/aop-rules.js, asked by QuestionEditor when it saves; the rules here are
@@ -77,9 +78,9 @@
           <select class="select" aria-label={`Criterion ${index + 1} direction`} bind:value={criterion.direction} disabled={busy}>
             {#each DIRECTIONS as direction}<option value={direction}>{DIRECTION_WORDS[direction]}</option>{/each}
           </select>
-          <button class="btn btn--small" type="button" aria-label={`Move criterion ${index + 1} up`} onclick={() => { criteria = move(criteria, index, -1); }} disabled={busy || index === 0}>▲</button>
-          <button class="btn btn--small" type="button" aria-label={`Move criterion ${index + 1} down`} onclick={() => { criteria = move(criteria, index, 1); }} disabled={busy || index === criteria.length - 1}>▼</button>
-          <button class="btn btn--small btn--danger" type="button" aria-label={`Remove criterion ${index + 1}`} onclick={() => askRemove('criterion', criterion.id, criterion.label)} disabled={busy}>✕</button>
+          <button class="btn btn--small btn--icon" type="button" aria-label={`Move criterion ${index + 1} up`} title="Move up" onclick={() => { criteria = move(criteria, index, -1); }} disabled={busy || index === 0}><Icon name="arrow-up" /></button>
+          <button class="btn btn--small btn--icon" type="button" aria-label={`Move criterion ${index + 1} down`} title="Move down" onclick={() => { criteria = move(criteria, index, 1); }} disabled={busy || index === criteria.length - 1}><Icon name="arrow-down" /></button>
+          <button class="btn btn--small btn--icon btn--danger" type="button" aria-label={`Remove criterion ${index + 1}`} title="Remove" onclick={() => askRemove('criterion', criterion.id, criterion.label)} disabled={busy}><Icon name="close" /></button>
         </div>
         <input class="input" aria-label={`Criterion ${index + 1}: what High means`} placeholder="What High means" bind:value={criterion.hint} maxlength={AOP_LIMITS.maxHint} disabled={busy} />
       </li>
@@ -97,9 +98,9 @@
         <div class="opt__line">
           <input class="input" aria-label={`Sub-process ${index + 1} name`} placeholder="Sub-process" bind:value={row.label} maxlength={AOP_LIMITS.maxRowName} disabled={busy} />
           <input class="input matrix-people" aria-label={`Sub-process ${index + 1}: people (FTE)`} placeholder="People (FTE)" inputmode="decimal" bind:value={row.people} disabled={busy} />
-          <button class="btn btn--small" type="button" aria-label={`Move sub-process ${index + 1} up`} onclick={() => { rows = move(rows, index, -1); }} disabled={busy || index === 0}>▲</button>
-          <button class="btn btn--small" type="button" aria-label={`Move sub-process ${index + 1} down`} onclick={() => { rows = move(rows, index, 1); }} disabled={busy || index === rows.length - 1}>▼</button>
-          <button class="btn btn--small btn--danger" type="button" aria-label={`Remove sub-process ${index + 1}`} onclick={() => askRemove('row', row.key, row.label)} disabled={busy}>✕</button>
+          <button class="btn btn--small btn--icon" type="button" aria-label={`Move sub-process ${index + 1} up`} title="Move up" onclick={() => { rows = move(rows, index, -1); }} disabled={busy || index === 0}><Icon name="arrow-up" /></button>
+          <button class="btn btn--small btn--icon" type="button" aria-label={`Move sub-process ${index + 1} down`} title="Move down" onclick={() => { rows = move(rows, index, 1); }} disabled={busy || index === rows.length - 1}><Icon name="arrow-down" /></button>
+          <button class="btn btn--small btn--icon btn--danger" type="button" aria-label={`Remove sub-process ${index + 1}`} title="Remove" onclick={() => askRemove('row', row.key, row.label)} disabled={busy}><Icon name="close" /></button>
         </div>
       </li>
     {/each}

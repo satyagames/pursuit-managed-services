@@ -205,7 +205,7 @@
   </header>
 
   {#if loading}
-    <p role="status">Loading content...</p>
+    <div class="adm-card adm-skeleton" aria-hidden="true"><span></span><span></span><span></span><span></span></div><p class="sr-only" role="status">Loading content...</p>
   {:else if loadError}
     <div class="panel-error" role="alert"><h2>Could not load content</h2><p class="muted">{loadError}</p></div>
   {:else if clients.length === 0 || !client}
@@ -414,15 +414,20 @@
     color: var(--adm-deep);
   }
 
+  /* (Prompt 38: the chosen part is the primary wash with the primary line, not a heavy fill.) */
   .content-strip__tab[aria-selected='true'] {
-    border-color: var(--adm-deep);
-    background: var(--adm-deep);
-    color: var(--adm-on-deep);
+    border-color: var(--adm-green);
+    background: var(--adm-green-wash);
+    color: var(--adm-text);
+    box-shadow: inset 0 0 0 1px var(--adm-green);
   }
 
-  .content-strip__tab[aria-selected='true'] > :global(.icon),
+  .content-strip__tab[aria-selected='true'] > :global(.icon) {
+    color: var(--adm-green);
+  }
+
   .content-strip__tab[aria-selected='true'] .content-strip__meaning {
-    color: var(--adm-on-deep);
+    color: var(--adm-text-muted);
   }
 
   .content-strip__tab[aria-selected='true'] .content-strip__dot {

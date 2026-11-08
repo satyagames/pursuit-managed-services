@@ -12,7 +12,7 @@
   import { namesByVisit, unreadableNotice } from '../lib/results/unreadable.js';
   import { createPageWatcher, type PageWatcher } from '../lib/common/page-watch.js';
   import { adminDelay } from '../lib/common/poll-schedule.js';
-  import { REMOVE_VISIT_CONFIRM, canRemoveVisit, forgetNameSources, glanceOf, holdNameSources, keepShownOrder, newestFirst, readNameSources, resultRows, rowsInOrder, rowsToLookForAgain, sessionsNeedingNames, type NameSources } from '../lib/admin/admin-results.js';
+  import { REMOVE_VISIT_CONFIRM, canRemoveVisit, forgetNameSources, glanceOf, leadFigures, holdNameSources, keepShownOrder, newestFirst, readNameSources, resultRows, rowsInOrder, rowsToLookForAgain, sessionsNeedingNames, type NameSources } from '../lib/admin/admin-results.js';
   import { answerCounts, answersFrom, answersOf, chartsOf, namesFor, picturesFor } from '../lib/results/results-chart-model.js';
   import GuestAvatar from '../components/GuestAvatar.svelte';
   import { DELETE_SESSION, cardCounts, deleteSessionData, deleteSessionWarning, deletedText, progressText, refusedText, stoppedText } from '../lib/admin/session-delete.js';
@@ -465,10 +465,21 @@
 
 <section class="panel sessions-panel" aria-busy={loading || busy}>
   <header class="panel__head"><div><h2 bind:this={pageHeading} tabindex="-1"><Icon name="bar-chart" />Results</h2><p class="muted">How each session went: open one for its charts, the people who took part and the reports for leaders.</p></div><span class="muted">{updated}{updated ? ' · ' : ''}the live session refreshes every {local ? 'few seconds' : '15 seconds'}</span><div class="results-actions">{#if mayName}<label class="choice"><input type="checkbox" checked={hideNames} onchange={(event) => onHideNames((event.currentTarget as HTMLInputElement).checked)} /><span>Hide names</span></label>{/if}<button class="btn btn--small" type="button" onclick={() => refreshAll()} disabled={busy}>Refresh</button></div></header>
-  {#if loading}<p role="status">Loading results...</p>
+  {#if loading}<div class="adm-card adm-skeleton" aria-hidden="true"><span></span><span></span><span></span><span></span></div><p class="sr-only" role="status">Loading results...</p>
   {:else if error}<p class="error" role="alert">{error}</p>
-  {:else if sessionRows.length === 0}<p class="muted">No sessions yet.</p>
+  {:else if sessionRows.length === 0}<div class="adm-empty"><Icon name="bar-chart" /><p>No sessions yet. Results appear here once a session has gone live on Today.</p></div>
   {:else}
+    <!-- (Prompt 38: three figures first, for the session shown, the newest unless another is chosen; then the sessions.) -->
+    {#if shownCard}
+      <section class="lead" aria-labelledby="lead-heading" data-testid="results-lead">
+        <h3 id="lead-heading" class="adm-label">{shownCard.owner}{shownCard.results.session.date ? ` · ${shownCard.results.session.date}` : ''}</h3>
+        <ul class="lead__figures">
+          {#each leadFigures(shownCard.tracks, shownCard.results.confidenceCheck ?? null) as each (each.key)}
+            <li class="adm-card lead__figure" data-lead={each.key}><span class="adm-figure">{each.figure}</span><span class="muted">{each.label}</span></li>
+          {/each}
+        </ul>
+      </section>
+    {/if}
     <div class="results-layout">
       <nav class="session-list" aria-label="Sessions">
         <ul class="session-list__items">
@@ -486,7 +497,7 @@
       </nav>
       <div class="results-layout__session">
         {#if shownCard}{@render sessionCard(shownCard)}
-        {:else if shownId || opening.length}<p class="muted" role="status">Loading this session...</p>{/if}
+        {:else if shownId || opening.length}<div class="adm-card adm-skeleton" aria-hidden="true"><span></span><span></span><span></span><span></span></div><p class="sr-only" role="status">Loading this session...</p>{/if}
       </div>
     </div>
   {/if}
@@ -555,7 +566,8 @@
           {/if}
         </Fold>
         <!-- (Phase 16: Delete opens a warning; only its "Delete permanently" deletes. Prompt 34: at the foot of the session, away from Live display and the files.) -->
-        {#if may('results.delete', session)}<footer class="card__foot"><button class="btn btn--small btn--danger" type="button" data-delete-session onclick={() => openDelete(card)} disabled={busy}>{DELETE_SESSION.button}</button></footer>{/if}
+        <!-- (Prompt 38: the Danger area, last in the card and set apart; Delete opens its two-step warning.) -->
+        {#if may('results.delete', session)}<section class="card__foot" data-danger aria-labelledby={`danger-${session.id}`}><h4 id={`danger-${session.id}`}><Icon name="alert-octagon" />Danger</h4><p>Deleting removes this session's answers, iPads and codes for good. Download what you need first.</p><div><button class="btn btn--small btn--danger btn--with-icon" type="button" data-delete-session onclick={() => openDelete(card)} disabled={busy}><Icon name="trash" />{DELETE_SESSION.button}</button></div></section>{/if}
       </article>
 {/snippet}
 
@@ -577,6 +589,37 @@
 {/snippet}
 
 <style>
+  /* (Prompt 38) The three figures Results leads with: one row of cards. */
+  .lead {
+    display: grid;
+    gap: var(--adm-s2);
+    margin-bottom: var(--adm-s5);
+  }
+
+  .lead h3 {
+    margin: 0;
+  }
+
+  .lead__figures {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--adm-gutter);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .lead__figure {
+    display: grid;
+    gap: var(--adm-s1);
+  }
+
+  @media (max-width: 640px) {
+    .lead__figures {
+      grid-template-columns: 1fr;
+    }
+  }
+
   /* (Phase 6) Hide names and Refresh as one group, so the time beside them, which changes as the live session refreshes, never moves them. */
   .results-actions {
     display: flex;
@@ -740,11 +783,13 @@
     font-size: 1rem;
   }
 
+  /* (Prompt 38: the Danger area, set apart at the foot of the card, inside its edges.) */
   .card__foot {
-    display: flex;
-    justify-content: flex-end;
-    padding-top: 0.75rem;
-    border-top: 1px solid var(--adm-line);
+    margin: var(--adm-s5) var(--adm-s4) var(--adm-s4);
+  }
+
+  .card__foot p {
+    margin: 0;
   }
 
   @media (min-width: 1100px) {

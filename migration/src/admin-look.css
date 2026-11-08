@@ -181,25 +181,6 @@ body.admin :is(h1, h2, h3, h4) {
   }
 }
 
-.adm-grid {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: var(--adm-gutter);
-}
-
-.adm-span-3 { grid-column: span 3; }
-.adm-span-4 { grid-column: span 4; }
-.adm-span-8 { grid-column: span 8; }
-.adm-span-12 { grid-column: 1 / -1; }
-
-@media (max-width: 899px) {
-  .adm-span-3,
-  .adm-span-4,
-  .adm-span-8 {
-    grid-column: 1 / -1;
-  }
-}
-
 /* ---- Cards: radius 14, a 1 px line, a soft shadow; status goes in a chip, never in the border ---- */
 .card,
 .content-editor,
@@ -483,7 +464,7 @@ body.admin .error {
 }
 
 .adm-fold > summary .icon:first-child {
-  transition: transform var(--motion-fast, 120ms) ease;
+  transition: transform var(--motion-duration-cell) var(--motion-ease-standard);
 }
 
 .adm-fold[open] > summary .icon:first-child {
@@ -616,7 +597,8 @@ html {
 }
 
 /* ---- The Danger area: last in its card, set apart ----------------------------------------- */
-.adm-danger {
+.adm-danger,
+.card__foot[data-danger] {
   display: grid;
   gap: var(--adm-s3);
   margin-top: var(--adm-s5);
@@ -625,13 +607,33 @@ html {
   background: var(--adm-danger-wash);
 }
 
-.adm-danger h4 {
+.adm-danger h4,
+.card__foot[data-danger] h4 {
   display: flex;
   align-items: center;
   gap: var(--adm-s2);
   margin: 0;
   font-size: var(--adm-fs-h3);
   color: var(--adm-danger-ink);
+}
+
+/* ---- Content's activities: the grip and the place ---------------------------------------- */
+.activity__grip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--adm-s1);
+  color: var(--adm-ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.activity__grip .icon {
+  color: var(--adm-subtle);
+}
+
+.activity--selected {
+  border-color: var(--adm-primary);
+  background: var(--adm-primary-wash);
+  box-shadow: none;
 }
 
 /* ---- A "more" menu ------------------------------------------------------------------------ */
@@ -686,4 +688,72 @@ html {
   .chip {
     border: 1px solid CanvasText;
   }
+}
+
+/* ---- Guests: one guest by name; the rest folded ------------------------------------------- */
+.guest-one {
+  display: grid;
+  gap: var(--adm-s3);
+  max-width: 40rem;
+}
+
+.guest-one__line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--adm-s3);
+}
+
+/* ---- History of changes: a day's heading between its changes ------------------------------ */
+.audit__day {
+  padding: var(--adm-s4) 0 var(--adm-s2);
+  list-style: none;
+}
+
+/* ---- Errors (Prompt 38): what happened and what to do, in ink on the danger wash, with the warning triangle; never red words alone. The triangle
+   is admin/icons.js's alert-triangle, drawn as a mask in the danger colour. ---- */
+body.admin .error {
+  color: var(--adm-danger-ink);
+}
+
+body.admin .error::before {
+  content: '';
+  display: inline-block;
+  width: 1.1em;
+  height: 1.1em;
+  margin-inline-end: var(--adm-s1);
+  vertical-align: -0.2em;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3l10 18H2zM12 10v4M12 17.5h.01' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3l10 18H2zM12 10v4M12 17.5h.01' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+body.admin p.error[role='alert'],
+body.admin div.error[role='alert'] {
+  padding: var(--adm-s3) var(--adm-s4);
+  border-radius: var(--adm-radius-sm);
+  background: var(--adm-danger-wash);
+  color: var(--adm-ink);
+}
+
+body.admin p.error[role='alert']::before,
+body.admin div.error[role='alert']::before {
+  background: var(--adm-danger);
+}
+
+/* ---- Dialogs keep their actions in reach: a bar at the dialog's foot ------------------------ */
+.dialog .dialog__actions,
+.adm-dialog .dialog__actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  margin-top: var(--adm-s2);
+  padding-block: var(--adm-s3);
+  border-top: 1px solid var(--adm-line);
+  background: var(--adm-surface);
+}
+
+.dialog {
+  border-radius: var(--adm-radius);
+  box-shadow: var(--adm-shadow-dialog);
 }

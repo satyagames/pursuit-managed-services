@@ -12,6 +12,8 @@
   import ContentQuestions from './ContentQuestions.svelte';
   import SampleNotice from './SampleNotice.svelte';
   import CopyActivitiesDialog from './CopyActivitiesDialog.svelte';
+  import Icon from './Icon.svelte';
+  import MoreMenu from './MoreMenu.svelte';
 
   type Client = { id: string; name: string; status?: string; theme?: unknown; themeVersion?: number | null; logoUrl?: string | null };
   type Section = { id: string; title: string; enabled: boolean; order?: number; questionIds?: string[]; clientId?: string | null; description?: string | null; kind?: string | null };
@@ -297,6 +299,8 @@
 {#snippet activityRow(section: Section)}
   {@const ownedIndex = owned.findIndex((entry) => entry.id === section.id)}
   <li class="row activity" class:activity--selected={section.id === selectedId} data-activity={section.id}>
+    <!-- (Prompt 38: the order shows as a grip and the place; the arrows move it; pressing the row opens its questions; the rest is in its more menu.) -->
+    {#if ownedIndex >= 0}<span class="activity__grip" aria-hidden="true"><Icon name="grip" /><span>{ownedIndex + 1}</span></span>{/if}
     <button class="activity__select" type="button" aria-current={section.id === selectedId ? 'true' : undefined} onclick={() => { selectedId = section.id; }}>
       <span class="row__title">{section.title}</span>
       <span class="muted small">{plural(questionCount(section), 'question', 'questions')}{section.description ? ` · ${section.description}` : ''}</span>
@@ -308,11 +312,13 @@
     </label>
     <div class="row__actions activity__actions">
       <button class="btn" type="button" aria-label={`Preview ${section.title}`} onclick={() => { preview = { section, client: clients.find((entry) => entry.id === section.clientId) ?? null }; }}>Preview</button>
-      <button class="btn" type="button" aria-label={`Rename or describe ${section.title}`} onclick={() => { form = { mode: 'edit', section }; }} disabled={busy}>Rename</button>
-      <button class="btn" type="button" aria-label={`Duplicate ${section.title}`} onclick={() => void duplicate(section)} disabled={busy}>Duplicate</button>
-      <button class="btn btn--icon" id={`move--1-${section.id}`} type="button" aria-label={`Move ${section.title} up`} onclick={() => void move(section, -1)} disabled={busy || ownedIndex <= 0}>▲</button>
-      <button class="btn btn--icon" id={`move-1-${section.id}`} type="button" aria-label={`Move ${section.title} down`} onclick={() => void move(section, 1)} disabled={busy || ownedIndex < 0 || ownedIndex >= owned.length - 1}>▼</button>
-      <button class="btn btn--danger" type="button" aria-label={`Delete ${section.title}`} onclick={() => void remove(section)} disabled={busy}>Delete</button>
+      <button class="btn btn--icon" id={`move--1-${section.id}`} type="button" aria-label={`Move ${section.title} up`} title="Move up" onclick={() => void move(section, -1)} disabled={busy || ownedIndex <= 0}><Icon name="arrow-up" /></button>
+      <button class="btn btn--icon" id={`move-1-${section.id}`} type="button" aria-label={`Move ${section.title} down`} title="Move down" onclick={() => void move(section, 1)} disabled={busy || ownedIndex < 0 || ownedIndex >= owned.length - 1}><Icon name="arrow-down" /></button>
+      <MoreMenu label={`More actions for ${section.title}`} items={[
+        { label: 'Rename or describe', icon: 'pencil', onclick: () => { form = { mode: 'edit', section }; }, disabled: busy },
+        { label: 'Duplicate', icon: 'copy', onclick: () => void duplicate(section), disabled: busy },
+        { label: 'Delete', icon: 'trash', danger: true, onclick: () => void remove(section), disabled: busy },
+      ]} />
     </div>
   </li>
 {/snippet}
@@ -341,7 +347,7 @@
             </button>
             <div class="row__actions activity__actions">
               <button class="btn" type="button" aria-label="Preview the confidence check" onclick={() => { preview = { section: check!, client: clients.find((entry) => entry.id === clientId) ?? null }; }}>Preview</button>
-              <button class="btn btn--danger" type="button" aria-label="Delete the confidence check" onclick={() => void removeCheck(check!)} disabled={busy}>Delete</button>
+              <MoreMenu label="More actions for the confidence check" items={[{ label: 'Delete', icon: 'trash', danger: true, onclick: () => void removeCheck(check!), disabled: busy }]} />
             </div>
           </li>
         </ul>

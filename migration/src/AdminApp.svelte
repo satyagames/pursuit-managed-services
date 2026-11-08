@@ -365,7 +365,7 @@
     </form>
   </main>
 {:else if printing}
-  <PrintSheet onClose={closePrintSheet} />
+  <PrintSheet onClose={closePrintSheet} person={access?.person ?? null} />
 {:else}
   <div class="shell">
     <header class="shell__bar">
