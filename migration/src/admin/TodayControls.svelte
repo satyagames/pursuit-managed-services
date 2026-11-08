@@ -3,15 +3,17 @@
   // the Animations switch, and End or Reopen, for the live session (Phase 17: moved out of AdminToday.svelte unchanged, its markup and its
   // styles). Every write is AdminToday's: this draws the controls and hands each change back. Prompt 32: each setting is a segmented control (real
   // radios, styled), with the chosen option's one line under it; what AdminToday passes in (the participant link) comes before End session, which
-  // stays in view while the rest scrolls inside the card on a laptop.
-  import type { Snippet } from 'svelte';
+  // stays in view while the rest scrolls inside the card on a laptop. Prompt 38: the three settings are one line of what they are now ("Guests scan a
+  // personal QR · Sequential · Confidence check off") with Change, which opens the controls; Share is its own card; End stays here, never in the bar.
   import { STAFF_MODE_WARNING, isStaffMode } from '../lib/admin/admin-today.js';
+  import { controlsSummary } from '../lib/admin/today-view.js';
+  import Icon from './Icon.svelte';
   import MotionSwitch from './MotionSwitch.svelte';
 
   type Session = { id: string; clientId: string; date?: string; status?: string; participationMode?: string; activityFlow?: string; confidenceCheck?: boolean | null };
   type Client = { id: string; name: string; theme?: unknown };
 
-  let { controlSession, controlClient, owner, live, controlsBusy, onSetMode, onSetFlow, onSetCheck, onEnd, onReopen, onMotionSaved, onToast, children }: {
+  let { controlSession, controlClient, owner, live, controlsBusy, onSetMode, onSetFlow, onSetCheck, onEnd, onReopen, onMotionSaved, onToast }: {
     controlSession: Session | null;
     /** The live session's client, for the Animations switch. */
     controlClient: Client | null;
@@ -27,9 +29,9 @@
     onReopen: (session: Session) => void;
     onMotionSaved: (written: { id: string; theme?: unknown }) => void;
     onToast: (message: string, kind?: 'info' | 'success' | 'error') => void;
-    /** What goes under the controls, before End session (the participant link). */
-    children?: Snippet;
   } = $props();
+
+  let changing = $state(false);
 
   const flowChoices = [
     { id: 'sequential', title: 'Sequential', hint: 'Each activity unlocks when the one before it is finished.' },
@@ -54,6 +56,16 @@
 {:else}
   <div class="controls__body">
   <p class="muted small">For {owner}, {controlSession.date ?? 'undated'}{live ? '' : ' (not live)'}.</p>
+  <div class="controls__summary">
+    <p data-testid="controls-summary">{controlsSummary(controlSession)}</p>
+    <button class="btn btn--small btn--with-icon" type="button" aria-expanded={changing} aria-controls="today-settings" onclick={() => { changing = !changing; }}>
+      <Icon name={changing ? 'chevron-down' : 'sliders'} />{changing ? 'Done' : 'Change'}
+    </button>
+  </div>
+  {#if isStaffMode(controlSession) && controlSession.status !== 'completed'}
+    <p class="notice" role="note" data-testid="staff-mode-warning">{STAFF_MODE_WARNING}</p>
+  {/if}
+  <div id="today-settings" class="controls__change" class:controls__change--folded={!changing}>
   <fieldset class="field" disabled={controlsBusy || controlSession.status === 'completed'}>
     <legend class="field__label">How people are identified</legend>
     <div class="seg">
@@ -63,9 +75,6 @@
     </div>
     <p class="muted small seg__meaning" data-testid="mode-meaning">{hintOf(modeChoices, mode)}</p>
   </fieldset>
-  {#if isStaffMode(controlSession) && controlSession.status !== 'completed'}
-    <p class="notice" role="note" data-testid="staff-mode-warning">{STAFF_MODE_WARNING}</p>
-  {/if}
   <fieldset class="field" disabled={controlsBusy || controlSession.status === 'completed'}>
     <legend class="field__label">Activity flow</legend>
     <div class="seg">
@@ -84,16 +93,16 @@
     </div>
     <p class="muted small seg__meaning" data-testid="check-meaning">{hintOf(checkChoices, check)}</p>
   </fieldset>
+  </div>
   {#if controlClient}
     <MotionSwitch client={controlClient} compact onSaved={onMotionSaved} {onToast} />
   {/if}
-  {@render children?.()}
   </div>
   <div class="controls__end">
     {#if controlSession.status === 'completed'}
-      <button class="btn" type="button" onclick={() => onReopen(controlSession)} disabled={controlsBusy}>Reopen session</button>
+      <button class="btn btn--with-icon" type="button" onclick={() => onReopen(controlSession)} disabled={controlsBusy}><Icon name="refresh" />Reopen session</button>
     {:else}
-      <button class="btn btn--danger" type="button" onclick={() => onEnd(controlSession)} disabled={controlsBusy}>End session</button>
+      <button class="btn btn--danger btn--with-icon" type="button" onclick={() => onEnd(controlSession)} disabled={controlsBusy}><Icon name="stop" />End session</button>
     {/if}
   </div>
 {/if}
@@ -101,7 +110,35 @@
 <style>
   .controls__end {
     display: flex;
-    gap: 0.6rem;
+    gap: var(--adm-s2);
+    padding-top: var(--adm-s4);
+    border-top: 1px solid var(--adm-line);
+  }
+
+  .controls__summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--adm-s3);
+    padding: var(--adm-s3) var(--adm-s4);
+    border-radius: var(--adm-radius-sm);
+    background: var(--adm-surface-2);
+  }
+
+  .controls__summary p {
+    flex: 1 1 12rem;
+    margin: 0;
+    font-weight: var(--fw-semibold);
+  }
+
+  .controls__change {
+    display: grid;
+    gap: var(--adm-s4);
+  }
+
+  .controls__change--folded {
+    display: none;
   }
 
   fieldset.field {
@@ -120,8 +157,8 @@
   .seg {
     display: flex;
     flex-wrap: wrap;
-    border: 1px solid var(--adm-green);
-    border-radius: 0.6rem;
+    border: 1px solid var(--adm-line-strong);
+    border-radius: var(--adm-radius-sm);
     overflow: hidden;
   }
 
@@ -141,7 +178,7 @@
   }
 
   .seg__option + .seg__option {
-    border-left: 1px solid var(--adm-green);
+    border-left: 1px solid var(--adm-line-strong);
   }
 
   .seg__option input {
@@ -155,8 +192,9 @@
   }
 
   .seg__option:has(input:checked) {
-    background: var(--adm-deep);
-    color: var(--adm-on-deep);
+    background: var(--adm-primary-wash);
+    color: var(--adm-primary-deep);
+    box-shadow: inset 0 0 0 1px var(--adm-primary);
   }
 
   /* The chosen option is also marked by a tick, so it is never told by colour alone. */
@@ -180,23 +218,6 @@
     }
   }
 
-  /* On a laptop the card's body scrolls inside the sticky column; End session stays under it, in view. */
-  @media (min-width: 1100px) {
-    .controls__body {
-      flex: 1 1 auto;
-      min-height: 0;
-      overflow-y: auto;
-      margin: -0.25rem;
-      padding: 0.25rem;
-    }
-
-    .controls__end {
-      flex: none;
-      padding-top: 0.75rem;
-      border-top: 1px solid var(--adm-line);
-    }
-  }
-
   fieldset.field:disabled {
     opacity: 0.6;
   }
@@ -205,9 +226,10 @@
     display: grid;
     justify-items: start;
     gap: 0.4rem;
-    padding: 1rem 1.25rem;
-    color: var(--adm-warn-ink);
-    background: var(--adm-warn-bg);
-    border-radius: 0.9rem;
+    margin: 0;
+    padding: var(--adm-s3) var(--adm-s4);
+    color: var(--adm-ink);
+    background: var(--adm-warn-wash);
+    border-radius: var(--adm-radius-sm);
   }
 </style>

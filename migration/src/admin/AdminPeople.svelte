@@ -89,7 +89,7 @@
   <section class="panel people__list" aria-labelledby="users-heading" aria-busy={loading}>
     <header class="panel__head">
       <div>
-        <h2 id="users-heading" bind:this={heading} tabindex="-1"><Icon name="people" />People</h2>
+        <h2 id="users-heading" bind:this={heading} tabindex="-1"><Icon name="users" />People</h2>
         <p class="muted">Who can use the admin page, and what each person may do for all clients, one client or one session.</p>
       </div>
       <div class="panel__actions">

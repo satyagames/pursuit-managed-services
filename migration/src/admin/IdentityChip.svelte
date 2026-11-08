@@ -64,6 +64,7 @@
     <span class="who__text" aria-hidden="true">
       <span class="who__name">{identity.name}</span>
       <span class="who__role" data-testid="identity-role">{identity.roleLine}{#if identity.endsSoon}<span class="who__ends" data-testid="identity-ends">Ends {identity.endsSoon.day}</span>{/if}</span>
+      {#if identity.does}<span class="who__does" data-testid="identity-does">{identity.does}</span>{/if}
     </span>
     <span class="who__arrow" aria-hidden="true"><Icon name="chevron-down" size={16} /></span>
   </button>
@@ -72,6 +73,7 @@
     <section bind:this={panel} id={panelId} class="who__panel" aria-labelledby="your-access-title" data-testid="access-popover">
       <h2 id="your-access-title" tabindex="-1">Your access</h2>
       <p class="who__person"><strong>{identity.name}</strong><br /><span class="who__muted">Signed in with your Deloitte account</span></p>
+      {#if identity.does}<p class="who__muted">{identity.does}.</p>{/if}
 
       {#if identity.roles.length}
         <table class="who__roles">
@@ -114,18 +116,17 @@
     min-height: var(--target-min);
     max-width: 100%;
     padding: 0.15rem 0.6rem 0.15rem 0.25rem;
-    border: 1px solid var(--adm-lime);
+    border: 1px solid var(--adm-line);
     border-radius: 999px;
-    background: var(--adm-bar-black);
-    color: var(--adm-on-deep);
+    background: var(--adm-card);
+    color: var(--adm-ink);
     font: inherit;
     text-align: left;
     cursor: pointer;
   }
 
   .who__chip:hover {
-    border-width: 2px;
-    padding: calc(0.15rem - 1px) calc(0.6rem - 1px) calc(0.15rem - 1px) calc(0.25rem - 1px);
+    background: var(--adm-wash);
   }
 
   .who__chip:focus-visible {
@@ -140,9 +141,9 @@
     width: 2.25rem;
     height: 2.25rem;
     border-radius: 50%;
-    background: var(--adm-lime);
-    color: var(--adm-text);
-    font-weight: var(--fw-bold);
+    background: var(--adm-green-wash);
+    color: var(--adm-deep);
+    font-weight: var(--fw-semibold);
   }
 
   .who__text {
@@ -151,7 +152,9 @@
     line-height: 1.2;
   }
 
+  /* (Prompt 38: the chip says the role and what it can do; the name is in its spoken label and the popover.) */
   .who__name {
+    display: none;
     overflow: hidden;
     font-weight: var(--fw-semibold);
     text-overflow: ellipsis;
@@ -162,7 +165,22 @@
     display: flex;
     align-items: center;
     gap: 0.4rem;
+    font-weight: var(--fw-semibold);
     white-space: nowrap;
+  }
+
+  .who__does {
+    overflow: hidden;
+    max-width: 22rem;
+    color: var(--adm-text-muted);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 1279px) {
+    .who__does {
+      display: none;
+    }
   }
 
   /* "Ends 12 Dec": a word on a light fill, readable on the black bar and in the popover; never colour alone. */

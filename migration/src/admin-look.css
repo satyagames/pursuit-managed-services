@@ -1,0 +1,689 @@
+/* Prompt 38: the admin page, calm and premium. Loaded by admin-main.ts only, after admin.css, so it wins over it and over the legacy sheet; the
+ * participant page and Setup never load it. It reads the tokens of styles/admin-tokens.css and nothing else: no colour of its own, spacing from the
+ * scale (4, 8, 12, 16, 24, 32, 48) only. scripts/test-admin-look.js holds both. */
+
+/* ---- Type: Open Sans; running text 16 px ---------------------------------------------------- */
+body.admin {
+  font-size: var(--adm-fs-body);
+  line-height: var(--adm-lh-body);
+  background: var(--adm-bg);
+  color: var(--adm-ink);
+}
+
+body.admin :is(h1, h2, h3, h4) {
+  font-weight: var(--fw-semibold);
+  color: var(--adm-ink);
+}
+
+/* The page title (Display). */
+.panel__head h2,
+.adm-page-title {
+  font-size: var(--adm-fs-display);
+  line-height: var(--adm-lh-display);
+  letter-spacing: -0.005em;
+}
+
+/* A section title (Title), a card heading (H2), a group heading (H3). */
+.shell__body h3,
+.adm-title {
+  font-size: var(--adm-fs-title);
+  line-height: var(--adm-lh-title);
+}
+
+.card h3,
+.card h4,
+.adm-h2 {
+  font-size: var(--adm-fs-h2);
+  line-height: var(--adm-lh-h2);
+}
+
+.adm-h3 {
+  font-size: var(--adm-fs-h3);
+  line-height: var(--adm-lh-h3);
+}
+
+/* Column heads and eyebrows (Label): never a sentence. */
+.adm-label,
+.shell__body th {
+  font-size: var(--adm-fs-label);
+  line-height: var(--adm-lh-label);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--adm-ink-2);
+}
+
+.adm-figure {
+  font-size: var(--adm-fs-figure);
+  line-height: var(--adm-lh-figure);
+  font-weight: var(--fw-semibold);
+  letter-spacing: -0.01em;
+  color: var(--adm-primary-deep);
+  font-variant-numeric: tabular-nums;
+}
+
+.shell__body p:not(.live p) {
+  max-width: var(--adm-measure);
+}
+
+.muted,
+.hint,
+.part__intro {
+  color: var(--adm-ink-2);
+}
+
+/* ---- The header: light, no black bar ------------------------------------------------------- */
+.shell__bar {
+  background: var(--adm-surface);
+  border-bottom: 1px solid var(--adm-line);
+  color: var(--adm-ink);
+}
+
+/* The wordmark's white letters turn ink on the light bar (the green dot stays). */
+.shell__wordmark :is(path, rect)[fill='#fff'],
+.login__wordmark :is(path, rect)[fill='#fff'] {
+  fill: var(--adm-ink);
+}
+
+.shell__title {
+  color: var(--adm-ink);
+}
+
+.shell__label {
+  border-color: var(--adm-line-strong);
+  color: var(--adm-ink-2);
+}
+
+.shell__user {
+  color: var(--adm-ink-2);
+}
+
+.btn--bar {
+  border-color: var(--adm-line-strong);
+  color: var(--adm-ink);
+}
+
+.btn--bar:hover:not(:disabled) {
+  background: var(--adm-surface-2);
+}
+
+.login__brand {
+  background: var(--adm-surface);
+  border: 1px solid var(--adm-line);
+}
+
+/* ---- The six tabs: the active one ink with the lime underline and its icon in primary; the rest ink-2 ---- */
+.shell__nav {
+  background: var(--adm-surface);
+  border-bottom: 1px solid var(--adm-line);
+}
+
+.tab,
+.shell__nav .tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--adm-s2);
+  color: var(--adm-ink-2);
+  font-weight: var(--fw-semibold);
+  border-bottom: 3px solid transparent;
+}
+
+.tab .icon {
+  color: var(--adm-ink-2);
+}
+
+.tab:hover,
+.shell__nav .tab:hover {
+  color: var(--adm-ink);
+  text-decoration: none;
+}
+
+.tab[aria-selected='true'],
+.shell__nav .tab[aria-selected='true'] {
+  color: var(--adm-ink);
+  border-bottom-color: var(--adm-accent);
+  font-weight: var(--fw-semibold);
+}
+
+.tab[aria-selected='true'] .icon {
+  color: var(--adm-primary);
+}
+
+@media (min-width: 1100px) {
+  .shell__nav {
+    background: transparent;
+    border-bottom: 0;
+  }
+}
+
+/* ---- The grid: content at most 1280 px, 32 px page margin, 24 px gutter (16 under 900 px) ---- */
+.shell__body {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: calc(var(--adm-content-max) + 2 * var(--adm-s6));
+  margin: 0 auto;
+  padding: var(--adm-s6) var(--adm-s6) calc(var(--adm-bar-height) + var(--adm-s7));
+}
+
+@media (min-width: 1100px) {
+  .shell__body {
+    padding-bottom: calc(var(--adm-bar-height) + var(--adm-s7));
+  }
+}
+
+@media (max-width: 899px) {
+  :root {
+    --adm-gutter: 16px;
+  }
+
+  .shell__body {
+    padding-inline: var(--adm-s4);
+  }
+}
+
+.adm-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--adm-gutter);
+}
+
+.adm-span-3 { grid-column: span 3; }
+.adm-span-4 { grid-column: span 4; }
+.adm-span-8 { grid-column: span 8; }
+.adm-span-12 { grid-column: 1 / -1; }
+
+@media (max-width: 899px) {
+  .adm-span-3,
+  .adm-span-4,
+  .adm-span-8 {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ---- Cards: radius 14, a 1 px line, a soft shadow; status goes in a chip, never in the border ---- */
+.card,
+.content-editor,
+.step,
+.adm-card {
+  border: 1px solid var(--adm-line);
+  border-radius: var(--adm-radius);
+  background: var(--adm-surface);
+  box-shadow: var(--adm-shadow);
+}
+
+.card {
+  margin-bottom: var(--adm-s5);
+}
+
+.adm-card {
+  padding: var(--adm-s5);
+}
+
+.content-editor {
+  padding: var(--adm-s5);
+  gap: var(--adm-s4);
+}
+
+.step {
+  padding: var(--adm-s5);
+}
+
+.step[aria-current='step'] {
+  border: 1px solid var(--adm-line);
+  padding: var(--adm-s5);
+}
+
+.step__mark {
+  border-width: 1.5px;
+  border-color: var(--adm-primary);
+  color: var(--adm-primary);
+}
+
+.step[data-done='true'] .step__mark {
+  background: var(--adm-primary);
+}
+
+.step__now {
+  background: var(--adm-primary-wash);
+  color: var(--adm-primary-deep);
+}
+
+.row {
+  border-color: var(--adm-line);
+  border-radius: var(--adm-radius-sm);
+  background: var(--adm-surface);
+}
+
+/* Dividers: 1 px line, inset 24 inside a card. */
+.adm-divider {
+  height: 1px;
+  margin: var(--adm-s4) var(--adm-s5);
+  border: 0;
+  background: var(--adm-line);
+}
+
+/* A long list scrolls inside its card with a soft fade at its foot; the header and the bar stay. */
+.adm-scroll {
+  max-height: min(60vh, 560px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  mask-image: linear-gradient(to bottom, var(--adm-ink) calc(100% - var(--adm-s5)), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, var(--adm-ink) calc(100% - var(--adm-s5)), transparent);
+  padding-bottom: var(--adm-s5);
+}
+
+/* ---- Controls ------------------------------------------------------------------------------ */
+.btn {
+  border-color: var(--adm-line-strong);
+  border-radius: var(--adm-radius-sm);
+  background: var(--adm-surface);
+  color: var(--adm-ink);
+  font-weight: var(--fw-semibold);
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--adm-surface-2);
+  border-color: var(--adm-ink-2);
+}
+
+.btn--primary {
+  background: var(--adm-primary);
+  border-color: var(--adm-primary);
+  color: var(--adm-on-deep);
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: var(--adm-primary-deep);
+  border-color: var(--adm-primary-deep);
+  filter: none;
+}
+
+.btn--danger {
+  color: var(--adm-danger-ink);
+  border-color: var(--adm-bad-line);
+}
+
+.btn--danger:hover:not(:disabled) {
+  background: var(--adm-danger-wash);
+  border-color: var(--adm-danger);
+}
+
+.btn--quiet {
+  border-color: transparent;
+  background: transparent;
+  color: var(--adm-primary);
+}
+
+.input,
+.select,
+.color,
+.login__pin,
+body.admin textarea {
+  border-color: var(--adm-line-strong);
+  border-radius: var(--adm-radius-sm);
+  background-color: var(--adm-surface);
+  color: var(--adm-ink);
+}
+
+.input:hover,
+.select:hover {
+  border-color: var(--adm-ink-2);
+}
+
+.field {
+  gap: 6px;
+}
+
+.field__label {
+  font-size: var(--adm-fs-body);
+  font-weight: var(--fw-semibold);
+  color: var(--adm-ink);
+}
+
+body.admin a:not(.btn) {
+  color: var(--adm-primary);
+}
+
+/* ---- Chips: an icon and a word, never a dot alone ------------------------------------------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--adm-s1);
+  min-height: 28px;
+  padding: 0 var(--adm-s3) 0 var(--adm-s2);
+  border-radius: 999px;
+  background: var(--adm-idle-bg);
+  color: var(--adm-idle-ink);
+  font-size: var(--adm-fs-body);
+  font-weight: var(--fw-semibold);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.chip .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.chip--ok { background: var(--adm-ok-wash); color: var(--adm-ok-ink); }
+.chip--warn { background: var(--adm-warn-wash); color: var(--adm-warn-ink); }
+.chip--danger { background: var(--adm-danger-wash); color: var(--adm-danger-ink); }
+.chip--info { background: var(--adm-info-wash); color: var(--adm-info-ink); }
+.chip--primary { background: var(--adm-primary-wash); color: var(--adm-primary-deep); }
+
+.pill {
+  background: var(--adm-idle-bg);
+  color: var(--adm-idle-ink);
+}
+
+.pill--unused { background: var(--adm-info-wash); color: var(--adm-info-ink); }
+.pill--used,
+.pill--completed,
+.pill--live { background: var(--adm-ok-wash); color: var(--adm-ok-ink); }
+.pill--expired,
+.pill--unreadable { background: var(--adm-danger-wash); color: var(--adm-danger-ink); }
+.pill--in-progress,
+.pill--archived { background: var(--adm-warn-wash); color: var(--adm-warn-ink); }
+
+/* ---- Messages: what happened and what to do, in ink on a wash, with its icon ----------------- */
+.notice {
+  border-radius: var(--adm-radius-sm);
+  background: var(--adm-warn-wash);
+  color: var(--adm-ink);
+}
+
+.adm-message {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--adm-s3);
+  padding: var(--adm-s3) var(--adm-s4);
+  border-radius: var(--adm-radius-sm);
+  background: var(--adm-info-wash);
+  color: var(--adm-ink);
+}
+
+.adm-message > .icon {
+  color: var(--adm-info);
+}
+
+.adm-message--error { background: var(--adm-danger-wash); }
+.adm-message--error > .icon { color: var(--adm-danger); }
+.adm-message--warn { background: var(--adm-warn-wash); }
+.adm-message--warn > .icon { color: var(--adm-warn); }
+.adm-message--ok { background: var(--adm-ok-wash); }
+.adm-message--ok > .icon { color: var(--adm-ok); }
+
+body.admin .error {
+  color: var(--adm-danger-ink);
+}
+
+.toast {
+  border-radius: var(--adm-radius-sm);
+  background: var(--adm-ink);
+}
+
+.toast--error {
+  background: var(--adm-danger-ink);
+}
+
+/* ---- Empty states: a muted icon, one sentence, one action ------------------------------------ */
+.adm-empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--adm-s3);
+  padding: var(--adm-s7) var(--adm-s5);
+  text-align: center;
+  color: var(--adm-ink-2);
+}
+
+.adm-empty > .icon {
+  width: 32px;
+  height: 32px;
+  color: var(--adm-subtle);
+}
+
+.adm-empty p {
+  margin: 0;
+}
+
+/* ---- Loading: skeleton lines in the line colour, not spinners --------------------------------- */
+.adm-skeleton {
+  display: grid;
+  gap: var(--adm-s3);
+}
+
+.adm-skeleton > span {
+  display: block;
+  height: var(--adm-s4);
+  border-radius: var(--adm-radius-bar);
+  background: var(--adm-line);
+}
+
+.adm-skeleton > span:nth-child(2n) {
+  width: 72%;
+}
+
+.adm-skeleton > span:nth-child(3n) {
+  width: 48%;
+}
+
+/* ---- Folded sections ---------------------------------------------------------------------- */
+.adm-fold > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--adm-s2);
+  min-height: var(--target-min);
+  cursor: pointer;
+  list-style: none;
+  font-weight: var(--fw-semibold);
+}
+
+.adm-fold > summary::-webkit-details-marker {
+  display: none;
+}
+
+.adm-fold > summary .icon:first-child {
+  transition: transform var(--motion-fast, 120ms) ease;
+}
+
+.adm-fold[open] > summary .icon:first-child {
+  transform: rotate(90deg);
+}
+
+.adm-fold__summary {
+  color: var(--adm-ink-2);
+  font-weight: var(--fw-regular);
+}
+
+/* ---- Dialogs: title, one sentence, fields, then actions right-aligned (primary last) --------- */
+.adm-dialog {
+  border-radius: var(--adm-radius);
+  background: var(--adm-surface);
+  color: var(--adm-ink);
+  box-shadow: var(--adm-shadow-dialog);
+}
+
+.adm-dialog::backdrop,
+.preview-dialog::backdrop,
+.dialog::backdrop {
+  background: var(--adm-scrim);
+}
+
+.adm-dialog__body {
+  gap: var(--adm-s4);
+  padding: var(--adm-s5);
+}
+
+.adm-dialog__body h2 {
+  font-size: var(--adm-fs-title);
+  line-height: var(--adm-lh-title);
+}
+
+.dialog__actions,
+.adm-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--adm-s2);
+}
+
+/* ---- Bars and progress: left-to-right gradients, radius 6, on a line track -------------------- */
+.adm-meter {
+  display: block;
+  height: 12px;
+  overflow: hidden;
+  border-radius: var(--adm-radius-bar);
+  background: var(--adm-line);
+}
+
+.adm-meter > span {
+  display: block;
+  height: 100%;
+  border-radius: var(--adm-radius-bar);
+  background: var(--adm-grad-green);
+}
+
+.adm-meter--teal > span { background: var(--adm-grad-teal); }
+.adm-meter--amber > span { background: var(--adm-grad-amber); }
+.adm-meter--rose > span { background: var(--adm-grad-rose); }
+.adm-meter--slate > span { background: var(--adm-grad-slate); }
+
+/* ---- The sticky bottom bar: 64 px, context on the left, one primary and one secondary on the right ---- */
+.adm-bar {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 8;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--adm-s4);
+  min-height: calc(var(--adm-bar-height) + env(safe-area-inset-bottom, 0px));
+  padding: var(--adm-s2) max(var(--adm-s6), env(safe-area-inset-right, 0px)) calc(var(--adm-s2) + env(safe-area-inset-bottom, 0px)) max(var(--adm-s6), env(safe-area-inset-left, 0px));
+  border-top: 1px solid var(--adm-line);
+  background: var(--adm-surface);
+  box-shadow: var(--adm-shadow-up);
+}
+
+/* A field the keyboard moves to stops above the bar, never under it. */
+html {
+  scroll-padding-bottom: calc(var(--adm-bar-height) + var(--adm-s4));
+}
+
+/* An iPad's keyboard: the bar rides above it (lib/admin/sticky-bar.ts writes how much the keyboard covers). */
+.adm-bar {
+  bottom: var(--adm-keyboard, 0px);
+}
+
+.adm-bar__context,
+.shell__body .adm-bar p.adm-bar__context {
+  max-width: none;
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--adm-s2);
+  min-width: 0;
+  margin: 0;
+  color: var(--adm-ink);
+  font-weight: var(--fw-semibold);
+}
+
+.adm-bar__context > .icon {
+  color: var(--adm-primary);
+}
+
+.adm-bar__context[data-tone='warn'] > .icon { color: var(--adm-warn); }
+.adm-bar__context[data-tone='danger'] > .icon { color: var(--adm-danger); }
+
+.adm-bar__actions {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--adm-s2);
+}
+
+@media (max-width: 899px) {
+  .adm-bar {
+    padding-inline: var(--adm-s4);
+  }
+}
+
+@media print {
+  .adm-bar {
+    display: none;
+  }
+}
+
+/* ---- The Danger area: last in its card, set apart ----------------------------------------- */
+.adm-danger {
+  display: grid;
+  gap: var(--adm-s3);
+  margin-top: var(--adm-s5);
+  padding: var(--adm-s4);
+  border-radius: var(--adm-radius-sm);
+  background: var(--adm-danger-wash);
+}
+
+.adm-danger h4 {
+  display: flex;
+  align-items: center;
+  gap: var(--adm-s2);
+  margin: 0;
+  font-size: var(--adm-fs-h3);
+  color: var(--adm-danger-ink);
+}
+
+/* ---- A "more" menu ------------------------------------------------------------------------ */
+.adm-menu {
+  position: relative;
+}
+
+.adm-menu__list {
+  position: absolute;
+  inset-inline-end: 0;
+  top: calc(100% + var(--adm-s1));
+  z-index: 12;
+  display: grid;
+  min-width: 12rem;
+  margin: 0;
+  padding: var(--adm-s1);
+  border: 1px solid var(--adm-line);
+  border-radius: var(--adm-radius-sm);
+  background: var(--adm-surface);
+  box-shadow: var(--adm-shadow);
+  list-style: none;
+}
+
+.adm-menu__list button {
+  display: flex;
+  align-items: center;
+  gap: var(--adm-s2);
+  width: 100%;
+  min-height: var(--target-min);
+  padding: 0 var(--adm-s3);
+  border: 0;
+  border-radius: var(--adm-radius-bar);
+  background: transparent;
+  color: var(--adm-ink);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.adm-menu__list button:hover {
+  background: var(--adm-surface-2);
+}
+
+.adm-menu__list button.is-danger {
+  color: var(--adm-danger-ink);
+}
+
+@media (forced-colors: active) {
+  .adm-bar,
+  .card,
+  .adm-card,
+  .chip {
+    border: 1px solid CanvasText;
+  }
+}

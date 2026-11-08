@@ -14,21 +14,21 @@ import { contrastRatio } from '../brand/theme.js';
 
 /** Each colour of the files, by the admin token it equals. */
 export const LOOK_TOKENS = Object.freeze({
-  page: 'adm-card',
-  black: 'adm-bar-black',
-  wash: 'adm-wash',
-  cardLine: 'adm-card-line',
-  text: 'adm-text',
-  textMuted: 'adm-text-muted',
-  onDeep: 'adm-on-deep',
-  deep: 'adm-deep',
-  green: 'adm-green',
-  lime: 'adm-lime',
-  greenWash: 'adm-green-wash',
-  teal: 'adm-teal',
-  tealWash: 'adm-teal-wash',
-  link: 'adm-link',
-  sky: 'adm-sky',
+  page: 'look-page',
+  black: 'look-black',
+  wash: 'look-wash',
+  cardLine: 'look-card-line',
+  text: 'look-text',
+  textMuted: 'look-text-muted',
+  onDeep: 'look-on-deep',
+  deep: 'look-deep',
+  green: 'look-green',
+  lime: 'look-lime',
+  greenWash: 'look-green-wash',
+  teal: 'look-teal',
+  tealWash: 'look-teal-wash',
+  link: 'look-link',
+  sky: 'look-sky',
 });
 
 /** The colours, as "#RRGGBB". */

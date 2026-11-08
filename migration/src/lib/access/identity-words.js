@@ -3,7 +3,7 @@
 // ROLES' order, what a role may do is ACTIONS' own words, which tabs it opens is scope.js's. Nothing here reads or writes, and no description is new.
 // A role's row names its client by id only, so a client's name is used when the caller has it (`clients`) and the count when it has not.
 // Plain JS with no DOM, so `node --test` holds the words (scripts/test-identity-words.js); the admin page's alone.
-import { ACTIONS, MATRIX, ROLES } from './access-matrix.js';
+import { ACTIONS, MATRIX, ROLE_SUMMARY, ROLES } from './access-matrix.js';
 import { allowsIn, grantsOf } from './can.js';
 import { firstName } from './access-message.js';
 import { dayWords } from './people.js';
@@ -123,7 +123,7 @@ export function identityOf(access, { now = new Date(), tabs = [], clients = [], 
   const name = spoken(person?.name) || person?.email || spoken(fallback) || String(fallback ?? '');
   const base = { initials: initialsOf(person?.name || fallback, person?.email), name, first: firstName(person?.name || fallback) };
   if (!person || access?.legacy) {
-    return { ...base, chip: false, roleLine: '', roles: [], endsSoon: null, ariaLabel: '', canDo: [], notAvailable: '', rolesKey: '', welcome: '', seenKey: '' };
+    return { ...base, chip: false, roleLine: '', does: '', roles: [], endsSoon: null, ariaLabel: '', canDo: [], notAvailable: '', rolesKey: '', welcome: '', seenKey: '' };
   }
   const names = new Map(clients.map((client) => [client.id, client.name]));
   const grants = grantsOf(access, { now });
@@ -138,6 +138,8 @@ export function identityOf(access, { now = new Date(), tabs = [], clients = [], 
   const endsSoon = soonest ? { day: dayWords(soonest.grant.validUntil).replace(/ \d{4}$/, ''), days: soonest.days } : null;
 
   let roleLine = 'Site owner';
+  // (Prompt 38: the chip's one line of what the top role can do.)
+  let does = ROLE_SUMMARY['Super admin'];
   let spokenRole = 'Site owner';
   let reach = 'All clients';
   if (own.length) {
@@ -146,6 +148,7 @@ export function identityOf(access, { now = new Date(), tabs = [], clients = [], 
     const role = others ? `${top} +${others}` : top;
     reach = top === 'Leadership' ? 'Results' : reachOfRole(own.filter((grant) => grant.role === top), names, role.length);
     roleLine = `${role} · ${reach}`;
+    does = ROLE_SUMMARY[top] ?? '';
     spokenRole = others ? `${top} and ${plural(others, 'more role')}` : top;
   }
   const ariaLabel = `Signed in as ${name}, ${spokenRole}${own.length ? `, ${reach}` : ''}${endsSoon ? `, ends ${endsSoon.day}` : ''}. Opens your access.`;
@@ -157,7 +160,7 @@ export function identityOf(access, { now = new Date(), tabs = [], clients = [], 
   const reachSaid = ['All clients', 'Results'].includes(reach) || /^\d+ clients?$/.test(reach) ? reach.toLowerCase() : reach;
   const welcome = `Welcome${base.first ? `, ${base.first}` : ''}. You are signed in as ${own.length ? `${spokenRole} for ${reachSaid}` : 'the site owner'}.`;
   return {
-    ...base, chip: true, roleLine, roles, endsSoon, ariaLabel, canDo: canDoOf(grants), notAvailable: notAvailableOf(access, tabs, grants, now), rolesKey, welcome,
+    ...base, chip: true, roleLine, does, roles, endsSoon, ariaLabel, canDo: canDoOf(grants), notAvailable: notAvailableOf(access, tabs, grants, now), rolesKey, welcome,
     // The welcome strip's "seen" mark, in this browser only: the person by a hash of their key, never their email or name.
     seenKey: `pms.welcome.${hashOf(String(person.key ?? person.email ?? ''))}`,
   };

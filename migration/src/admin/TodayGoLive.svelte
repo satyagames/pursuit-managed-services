@@ -1,24 +1,20 @@
 <script lang="ts">
   // The body of Today's Go live card, inside AdminToday.svelte's section and under its heading: the client and the date, the button, and what it
   // says about them (Phase 17: moved out of AdminToday.svelte unchanged, its markup and its styles). The picking and the going live are
-  // AdminToday's; this draws them and hands each press back. Prompt 21, Phase 3: the session, when the client has sessions planned that day (several
+  // AdminToday's; this draws them and hands each press back. (Prompt 38: Go live itself is the sticky bar's primary action, StickyBar.svelte.) Prompt 21, Phase 3: the session, when the client has sessions planned that day (several
   // may be), and the known limit in words when going live would take the place of another live session.
   type Pickable = { id: string; name: string; status?: string };
 
-  let { pickable, clientId, date = $bindable(), busy, canGo, label, why, verified, problem, onPickClient, onPickDate, onGo, onNavigate, sessionChoices = [], sessionId = '', onPickSession = () => {}, oneLive = '' }: {
+  let { pickable, clientId, date = $bindable(), busy, why, verified, problem, onPickClient, onPickDate, onNavigate, sessionChoices = [], sessionId = '', onPickSession = () => {}, oneLive = '' }: {
     pickable: Pickable[];
     clientId: string;
     date: string;
     busy: boolean;
-    canGo: boolean;
-    /** The button's words (lib/admin/today-view.js goLiveLabel). */
-    label: string;
     why: string;
     verified: string;
     problem: string;
     onPickClient: (event: Event) => void;
     onPickDate: () => void;
-    onGo: () => void;
     onNavigate: (tab: string) => void;
     /** The client's sessions that day, as the picker says them (lib/admin/session-plan.js sessionChoiceWords); none when nothing is planned. */
     sessionChoices?: { id: string; label: string }[];
@@ -48,11 +44,8 @@
         </select>
       </div>
     {/if}
-    <button class="btn btn--primary btn--go" type="button" onclick={onGo} disabled={!canGo}>
-      {label}
-    </button>
   </div>
-  {#if why}<p class="why" role="status" data-testid="go-live-why">{why}</p>{/if}
+  {#if why}<p class="why" id="go-live-why" role="status" data-testid="go-live-why">{why}</p>{/if}
   {#if oneLive}<p class="why" data-testid="one-live">{oneLive}</p>{/if}
   {#if verified}<p class="verified" role="status">{verified}</p>{/if}
   {#if problem}<p class="error" role="alert">{problem}</p>{/if}
@@ -61,13 +54,13 @@
 <style>
   .picker {
     display: grid;
-    grid-template-columns: minmax(0, 2fr) minmax(10.5rem, 1fr) auto;
+    grid-template-columns: minmax(0, 2fr) minmax(10.5rem, 1fr);
     gap: 0.9rem;
     align-items: end;
   }
 
   .picker--sessions {
-    grid-template-columns: minmax(0, 2fr) minmax(10.5rem, 1fr) minmax(0, 2fr) auto;
+    grid-template-columns: minmax(0, 2fr) minmax(10.5rem, 1fr) minmax(0, 2fr);
   }
 
   .picker .select,
@@ -77,31 +70,9 @@
     max-width: none;
   }
 
-  .btn--go {
-    min-width: 8rem;
-    min-height: 3rem;
-    font-weight: var(--fw-bold);
-  }
-
-  /* (Prompt 32: Today's first column of three, on a laptop under 1,300 px, is too narrow for all of it on one line: the client takes a line.) */
-  @media (min-width: 1100px) and (max-width: 1299px) {
-    .picker,
-    .picker--sessions {
-      grid-template-columns: minmax(0, 1fr) auto;
-    }
-
-    .picker > :first-child {
-      grid-column: 1 / -1;
-    }
-  }
-
   @media (max-width: 640px) {
     .picker {
       grid-template-columns: 1fr;
-    }
-
-    .btn--go {
-      width: 100%;
     }
   }
 

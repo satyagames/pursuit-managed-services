@@ -10,6 +10,18 @@
 export const ROLES = Object.freeze(['Super admin', 'Admin', 'Producer', 'Designer', 'Leadership']);
 
 /**
+ * What each role can do, in one line (Prompt 38): beside each role where one is picked (Give access, Add user) and in the bar's identity chip. Said from
+ * MATRIX's cells below; scripts/test-admin-defaults.js holds each line to them.
+ */
+export const ROLE_SUMMARY = Object.freeze({
+  'Super admin': 'Everything, including access, settings and deleting results',
+  Admin: 'Clients, sessions and their teams; may also add people',
+  Producer: 'Runs the day: sessions, guests, QR codes, content and results',
+  Designer: 'The brand; may also edit activities',
+  Leadership: 'Results and their exports, to read',
+});
+
+/**
  * The places each role may be given for (decision D: Admin is global; decision F: Leadership "all clients for a period"). Producer and Designer
  * may be global only through Setup's copy of the old admins list (lib/access/migrate-admins.js): ASSUMED, so that a migrated admin keeps working.
  */

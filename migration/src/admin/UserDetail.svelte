@@ -145,7 +145,7 @@
   <button class="btn btn--back" type="button" onclick={onBack}><Icon name="arrow-left" /> Back to people</button>
   <header class="panel__head detail__head">
     <div>
-      <h2 id="user-heading" bind:this={heading} tabindex="-1"><Icon name="people" />{person.name}</h2>
+      <h2 id="user-heading" bind:this={heading} tabindex="-1"><Icon name="users" />{person.name}</h2>
       <p class="muted">{person.email}: what they may do, for all clients and for each client.</p>
     </div>
     <div class="panel__actions">

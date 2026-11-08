@@ -37,7 +37,7 @@
 </script>
 
 <div class="live__title">
-  <h2 bind:this={heading} tabindex="-1">{#if !presenting}<Icon name="chart" />{/if}Live results{wallPage ? ' · Wall display' : ''}</h2>
+  <h2 bind:this={heading} tabindex="-1">{#if !presenting}<Icon name="bar-chart" />{/if}Live results{wallPage ? ' · Wall display' : ''}</h2>
   {#if !presenting}<p class="live__lead">{wallPage ? 'What the room sees, live. Nobody\'s name is on this page.' : 'What the room sees, live.'}</p>{/if}
   {#if presenting || wallPage}<p class="live__meta" aria-live="off">{meta}</p>{/if}
 </div>

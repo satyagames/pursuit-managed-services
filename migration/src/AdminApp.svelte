@@ -11,6 +11,7 @@
   import { mayLeave } from './lib/admin/unsaved.js';
   import { DEFAULT_VIEW, hashOfView, lastView, rememberView, viewOfHash } from './lib/admin/admin-content-views.js';
   import DeloitteWordmark from './components/DeloitteWordmark.svelte';
+  import Icon, { type IconName } from './admin/Icon.svelte';
   import AdminClients from './admin/AdminClients.svelte';
   import AdminContent from './admin/AdminContent.svelte';
   import AdminGuests from './admin/AdminGuests.svelte';
@@ -36,13 +37,14 @@
   type ContentRows = { settings: unknown[]; clients: unknown[]; sections: unknown[] };
 
   // The day's work first. Content is the old Activities and Content tabs in one, scoped by client (Phase 5b).
-  const tabs: { id: Tab; title: string }[] = [
-    { id: 'today', title: 'Today' },
-    { id: 'clients', title: 'Clients' },
-    { id: 'content', title: 'Content' },
-    { id: 'guests', title: 'Guests and QR' },
-    { id: 'results', title: 'Results' },
-    { id: 'users', title: 'People' },
+  // (Prompt 38: each tab's icon, admin/icons.js; beside the word, so aria-hidden.)
+  const tabs: { id: Tab; title: string; icon: IconName }[] = [
+    { id: 'today', title: 'Today', icon: 'calendar-check' },
+    { id: 'clients', title: 'Clients', icon: 'building' },
+    { id: 'content', title: 'Content', icon: 'layers' },
+    { id: 'guests', title: 'Guests and QR', icon: 'qr' },
+    { id: 'results', title: 'Results', icon: 'bar-chart' },
+    { id: 'users', title: 'People', icon: 'users' },
   ];
   /** The address of the guest QR sheet. It is a view of this page, not a tab: Back returns to Guests and QR. */
   const PRINT_HASH = '#print-guests';
@@ -384,7 +386,7 @@
     <nav class="shell__nav" aria-label="Admin sections">
       <div class="tabs" role="tablist">
         {#each shownTabs as tab, index (tab.id)}
-          <button id={`admin-tab-${tab.id}`} class="tab" type="button" role="tab" aria-controls="admin-panel" aria-selected={activeTab === tab.id} tabindex={activeTab === tab.id ? 0 : -1} onkeydown={(event) => onTabKeydown(event, index)} onclick={() => void open(tab.id)}>{tab.title}</button>
+          <button id={`admin-tab-${tab.id}`} class="tab" type="button" role="tab" aria-controls="admin-panel" aria-selected={activeTab === tab.id} tabindex={activeTab === tab.id ? 0 : -1} onkeydown={(event) => onTabKeydown(event, index)} onclick={() => void open(tab.id)}><Icon name={tab.icon} />{tab.title}</button>
         {/each}
       </div>
     </nav>

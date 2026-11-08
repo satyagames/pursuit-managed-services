@@ -4,7 +4,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  failureText, goLiveLabel, goLiveWhy, levelCounts, otherSessionsOf, pickableClients, readinessSummary, sinceText, upsertSession,
+  controlsSummary, failureText, goLiveLabel, goLiveWhy, levelCounts, otherSessionsOf, pickableClients, readinessSummary, sinceText, upsertSession,
 } from '../migration/src/lib/admin/today-view.js';
 import { localDate } from '../migration/src/lib/admin/admin-today.js';
 
@@ -19,11 +19,18 @@ describe("the admin's Today screen, worked out before it draws (Phase 17)", () =
     assert.equal(sinceText('not a date', today), 'not recorded');
   });
 
+  it('Prompt 38: the three settings in one line; an unset mode is staff sign-in, as the data layer reads it', () => {
+    assert.equal(controlsSummary(null), '');
+    assert.equal(controlsSummary({}), 'Staff sign in · Sequential · Confidence check off');
+    assert.equal(controlsSummary({ participationMode: 'staff', activityFlow: 'open', confidenceCheck: true }), 'Staff sign in · Open · Confidence check on');
+    assert.equal(controlsSummary({ participationMode: 'client-visit', activityFlow: 'sequential', confidenceCheck: false }), 'Guests scan a personal QR · Sequential · Confidence check off');
+  });
+
   it('the readiness line: checking, blockers (and warnings), ready with warnings, ready', () => {
     assert.equal(readinessSummary({ inputsBusy: true, blockers: 2, warnings: 1 }), 'Checking...');
-    assert.equal(readinessSummary({ inputsBusy: false, blockers: 1, warnings: 0 }), '1 blocker');
-    assert.equal(readinessSummary({ inputsBusy: false, blockers: 2, warnings: 1 }), '2 blockers, 1 warning');
-    assert.equal(readinessSummary({ inputsBusy: false, blockers: 3, warnings: 2 }), '3 blockers, 2 warnings');
+    assert.equal(readinessSummary({ inputsBusy: false, blockers: 1, warnings: 0 }), '1 thing to fix');
+    assert.equal(readinessSummary({ inputsBusy: false, blockers: 2, warnings: 1 }), '2 things to fix, 1 warning');
+    assert.equal(readinessSummary({ inputsBusy: false, blockers: 3, warnings: 2 }), '3 things to fix, 2 warnings');
     assert.equal(readinessSummary({ inputsBusy: false, blockers: 0, warnings: 1 }), 'Ready to go live, with 1 warning');
     assert.equal(readinessSummary({ inputsBusy: false, blockers: 0, warnings: 4 }), 'Ready to go live, with 4 warnings');
     assert.equal(readinessSummary({ inputsBusy: false, blockers: 0, warnings: 0 }), 'Ready to go live');

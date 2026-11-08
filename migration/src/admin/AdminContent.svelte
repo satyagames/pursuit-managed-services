@@ -199,7 +199,7 @@
 <section class="panel content-panel" aria-busy={loading || busy}>
   <header class="panel__head">
     <div>
-      <h2><Icon name="file" />Content</h2>
+      <h2><Icon name="layers" />Content</h2>
       <p class="muted">Choose a client, then change what its people answer or how its pages look.</p>
     </div>
   </header>

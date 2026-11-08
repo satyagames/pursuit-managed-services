@@ -464,7 +464,7 @@
 </script>
 
 <section class="panel sessions-panel" aria-busy={loading || busy}>
-  <header class="panel__head"><div><h2 bind:this={pageHeading} tabindex="-1"><Icon name="chart" />Results</h2><p class="muted">How each session went: open one for its charts, the people who took part and the reports for leaders.</p></div><span class="muted">{updated}{updated ? ' · ' : ''}the live session refreshes every {local ? 'few seconds' : '15 seconds'}</span><div class="results-actions">{#if mayName}<label class="choice"><input type="checkbox" checked={hideNames} onchange={(event) => onHideNames((event.currentTarget as HTMLInputElement).checked)} /><span>Hide names</span></label>{/if}<button class="btn btn--small" type="button" onclick={() => refreshAll()} disabled={busy}>Refresh</button></div></header>
+  <header class="panel__head"><div><h2 bind:this={pageHeading} tabindex="-1"><Icon name="bar-chart" />Results</h2><p class="muted">How each session went: open one for its charts, the people who took part and the reports for leaders.</p></div><span class="muted">{updated}{updated ? ' · ' : ''}the live session refreshes every {local ? 'few seconds' : '15 seconds'}</span><div class="results-actions">{#if mayName}<label class="choice"><input type="checkbox" checked={hideNames} onchange={(event) => onHideNames((event.currentTarget as HTMLInputElement).checked)} /><span>Hide names</span></label>{/if}<button class="btn btn--small" type="button" onclick={() => refreshAll()} disabled={busy}>Refresh</button></div></header>
   {#if loading}<p role="status">Loading results...</p>
   {:else if error}<p class="error" role="alert">{error}</p>
   {:else if sessionRows.length === 0}<p class="muted">No sessions yet.</p>
@@ -536,7 +536,7 @@
           {/if}
         </details>
         <!-- (Prompt 33: the people who took part are folded under the charts, closed on every visit; Prompt 34: the QR codes' count beside them.) -->
-        <Fold title="People" icon="people" summary={[card.tracks.length === 1 ? '1 person' : `${card.tracks.length} people`, card.codes.length ? `QR codes: ${counts(card.codes)}` : ''].filter(Boolean).join(' · ')} testid="participant-details">
+        <Fold title="People" icon="users" summary={[card.tracks.length === 1 ? '1 person' : `${card.tracks.length} people`, card.codes.length ? `QR codes: ${counts(card.codes)}` : ''].filter(Boolean).join(' · ')} testid="participant-details">
           {#if card.tracks.length === 0}<p class="card__note muted">No one has joined yet: people appear here as their iPads open the session.</p>
           {:else}
             <ul class="rows rows--flat">

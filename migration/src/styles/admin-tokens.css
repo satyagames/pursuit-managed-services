@@ -1,51 +1,141 @@
-/* Colours for the admin page: light, calm and operational. The Phase 1 tokens (tokens.css) stay the
- * source for type, targets, the green focus ring, --action and --danger; this file adds the light
- * surfaces and the status tints the dark participant palette has no use for, and points the legacy
- * admin sheet's own names (migration/src/styles/legacy/admin.css, which the old admin still uses) at them. Every text
- * pair here is held to 4.5:1 by scripts/test-admin-today.js. */
+/* Colours, type, spacing and surfaces for the admin page (Prompt 38: calm and premium). The participant page never loads this file, so
+ * nothing here reaches it. The Phase 1 tokens (tokens.css) still give the font stack, the targets and the green focus ring.
+ *
+ * Three groups:
+ *   1. The palette (Prompt 38's table), by its own names: --adm-surface, --adm-ink-2, --adm-primary-wash and the rest.
+ *   2. The names the screens already use (--adm-card, --adm-muted, --adm-deep, ...), each pointed at the palette, so every screen changed at once.
+ *   3. The files' look (--look-*): the colours the PDF, the PowerPoint and the leader report draw with (lib/exports/report-look.js mirrors them).
+ *      They are not the page's colours and no screen reads them.
+ *
+ * Three of the brief's colours are under 4.5:1 on white (muted 3.8, warn 3.6, ok 4.0): they are marks (an icon, a dot, a bar), never words. Words
+ * in a status chip take the darker *-ink beside their wash. scripts/test-admin-today.js holds every pair. */
 
 :root {
-  --adm-bg: #f3f6fb;
-  --adm-card: #ffffff;
-  --adm-line: #d3dce8;
-  --adm-ink: #0b1f3a; /* the same navy as --on-plate */
-  --adm-muted: #4a5b72;
-  --adm-primary: var(--action);
-  --adm-bar: #0b1f3a;
-  --adm-ok-bg: #e4f3e8;
-  --adm-ok-ink: #0b5a28;
-  --adm-warn-bg: #fff2d1;
-  --adm-warn-ink: #6a4200;
-  --adm-bad-bg: #fde7e4;
-  --adm-bad-ink: #8c1a10;
-  --adm-bad-line: #f1b9b2;
-  --adm-idle-bg: #e7ebf2;
-  --adm-idle-ink: #3a495e;
+  /* ---- 1. The palette ------------------------------------------------------------------- */
+  --adm-bg: #f6f7f3; /* the page */
+  --adm-surface: #ffffff; /* cards */
+  --adm-surface-2: #fafbf8; /* table stripes, inset areas */
+  --adm-line: #e7ebe3; /* card strokes, dividers */
+  --adm-line-strong: #d6ddd2; /* inputs */
+  --adm-ink: #1f2a24; /* text */
+  --adm-ink-2: #4b574f; /* secondary text */
+  --adm-subtle: #7b867f; /* the brief's "muted": hints drawn as marks (icons, empty-state art), 3.8:1, never words */
+  --adm-primary: #2f6b4f; /* buttons, links, the active tab's icon */
+  --adm-primary-deep: #22513b; /* hover, figures */
+  --adm-primary-wash: #ebf3ee; /* selected rows, chips */
+  --adm-accent: #a9cb6b; /* lime, the one accent: the active tab's underline, a progress bar's end. Never words. */
+  --adm-info: #3b7f8c;
+  --adm-warn: #b7791f;
+  --adm-danger: #b4443a;
+  --adm-ok: #3f8f5a;
+  --adm-info-wash: #e8f2f4;
+  --adm-warn-wash: #fbf3e2;
+  --adm-danger-wash: #fbedeb;
+  --adm-ok-wash: #e9f4ec;
+  /* Words on each wash (4.5:1 or better). */
+  --adm-info-ink: #2c6370;
+  --adm-warn-ink: #7a4e12;
+  --adm-danger-ink: #9a3a31;
+  --adm-ok-ink: #2b6a40;
+  --adm-dark1: #16231c; /* the live wall's header only */
 
-  /* Prompt 31: Deloitte's own application style (the site owner's one exception to "no new colour token",
-   * for this file only). Lime is an accent: never text on white, never white text on it. Sky is for chart
-   * marks with a label, never text. The amber and red washes above, the focus ring and --action stay. */
-  --adm-bar-black: #000000;
-  --adm-wash: #f5f7f4;
-  --adm-card-line: #bfd6a8;
-  --adm-text: #1a1a1a;
-  --adm-text-muted: #4d5651;
+  /* Bars and progress: left to right, light to deep (Prompt 38). The dark wall's pairs run deep to light. */
+  --adm-grad-green: linear-gradient(90deg, #9ccdac, #2f6b4f);
+  --adm-grad-teal: linear-gradient(90deg, #9ccad2, #3b7f8c);
+  --adm-grad-amber: linear-gradient(90deg, #f4d79b, #c98e2e);
+  --adm-grad-rose: linear-gradient(90deg, #f3b3ab, #d2594c);
+  --adm-grad-slate: linear-gradient(90deg, #d3dad5, #7b867f);
+  --adm-grad-green-dark: linear-gradient(90deg, #2f8f63, #9be3b8);
+  --adm-grad-teal-dark: linear-gradient(90deg, #2e8797, #8fdce8);
+  --adm-grad-amber-dark: linear-gradient(90deg, #b98a30, #f6d58d);
+
+  /* Type (Open Sans only). Running text keeps the repo's 16 px floor (CLAUDE.md rule 9), so Body and Small are 16 px, not the brief's 14 and 13. */
+  --adm-fs-display: 1.75rem; /* 28 / 36, 600 */
+  --adm-lh-display: 2.25rem;
+  --adm-fs-title: 1.25rem; /* 20 / 28, 600 */
+  --adm-lh-title: 1.75rem;
+  --adm-fs-h2: 1.125rem; /* 18 / 26, 600 */
+  --adm-lh-h2: 1.625rem;
+  --adm-fs-h3: 1rem; /* 16 / 24, 600 */
+  --adm-lh-h3: 1.5rem;
+  --adm-fs-body: 1rem; /* 16 / 24, 400 */
+  --adm-lh-body: 1.5rem;
+  --adm-fs-label: 0.8125rem; /* 13 / 16, 600, +2%, upper case: column heads and eyebrows only, never a sentence */
+  --adm-lh-label: 1rem;
+  --adm-fs-figure: 2rem; /* 32 / 40, 600, -1% */
+  --adm-lh-figure: 2.5rem;
+  --adm-measure: 68ch;
+
+  /* Spacing: 4, 8, 12, 16, 24, 32, 48 only. */
+  --adm-s1: 4px;
+  --adm-s2: 8px;
+  --adm-s3: 12px;
+  --adm-s4: 16px;
+  --adm-s5: 24px;
+  --adm-s6: 32px;
+  --adm-s7: 48px;
+  --adm-content-max: 1280px;
+  --adm-gutter: 24px;
+
+  /* Surfaces. */
+  --adm-radius: 14px;
+  --adm-radius-sm: 10px;
+  --adm-radius-bar: 6px;
+  --adm-shadow: 0 1px 2px rgb(31 42 36 / 0.04), 0 8px 24px rgb(31 42 36 / 0.05);
+  --adm-shadow-up: 0 -6px 20px rgb(31 42 36 / 0.07);
+  --adm-shadow-dialog: 0 24px 64px rgb(31 42 36 / 0.18);
+  --adm-scrim: rgb(31 42 36 / 0.4);
+  --adm-bar-height: 64px;
+
+  /* ---- 2. The names the screens use, on the palette --------------------------------------- */
+  --adm-card: #ffffff;
+  --adm-muted: #4b574f; /* = ink-2: every use of it is words */
+  --adm-bar: #16231c;
+  --adm-ok-bg: #e9f4ec;
+  --adm-warn-bg: #fbf3e2;
+  --adm-bad-bg: #fbedeb;
+  --adm-bad-ink: #9a3a31;
+  --adm-bad-line: #e9bdb7;
+  --adm-idle-bg: #eef1ec;
+  --adm-idle-ink: #4b574f;
+  --adm-bar-black: #16231c; /* tooltips and the wall: dark1, no pure black */
+  --adm-wash: #fafbf8;
+  --adm-card-line: #e7ebe3;
+  --adm-text: #1f2a24;
+  --adm-text-muted: #4b574f;
   --adm-on-deep: #ffffff;
-  --adm-deep: #046a38;
-  --adm-green: #237f0c;
-  --adm-lime: #86bc25;
-  --adm-green-wash: #e9f3df;
-  --adm-teal: #0b7684;
-  --adm-teal-wash: #e3f3f5;
-  --adm-link: #0076a8;
-  --adm-sky: #00a3e0;
+  --adm-deep: #22513b;
+  --adm-green: #2f6b4f;
+  --adm-lime: #a9cb6b;
+  --adm-green-wash: #ebf3ee;
+  --adm-teal: #2c6370;
+  --adm-teal-wash: #e8f2f4;
+  --adm-link: #2f6b4f;
+  --adm-sky: #3b7f8c;
 
   --ink: var(--adm-ink);
   --muted: var(--adm-muted);
   --line: var(--adm-line);
   --bg: var(--adm-bg);
   --card: var(--adm-card);
-  --accent: var(--action);
-  --ok: #1c7a3d;
-  --warn: #b45309;
+  --accent: var(--adm-primary);
+  --ok: #2b6a40;
+  --warn: #7a4e12;
+
+  /* ---- 3. The files' look (lib/exports/report-look.js): not the page's ---------------------- */
+  --look-page: #ffffff;
+  --look-black: #000000;
+  --look-wash: #f5f7f4;
+  --look-card-line: #bfd6a8;
+  --look-text: #1a1a1a;
+  --look-text-muted: #4d5651;
+  --look-on-deep: #ffffff;
+  --look-deep: #046a38;
+  --look-green: #237f0c;
+  --look-lime: #86bc25;
+  --look-green-wash: #e9f3df;
+  --look-teal: #0b7684;
+  --look-teal-wash: #e3f3f5;
+  --look-link: #0076a8;
+  --look-sky: #00a3e0;
 }
