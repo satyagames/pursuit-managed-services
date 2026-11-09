@@ -1,0 +1,16 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "pms-admin",
+      "url": "http://localhost:5175",
+      "port": 5175
+    },
+    {
+      "name": "pms-dev-admin",
+      "runtimeExecutable": ".local/node22/node.exe",
+      "runtimeArgs": ["scripts/dev.js", "--only", "admin"],
+      "port": 5175
+    }
+  ]
+}

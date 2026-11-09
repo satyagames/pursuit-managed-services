@@ -4,7 +4,7 @@
 </script>
 
 <script lang="ts">
-  import { onMount, tick } from 'svelte';
+  import { onMount, tick, type Snippet } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
   import { errorText } from '../lib/admin/session-notice.js';
   import { focusHeading } from '../lib/common/focus.js';
@@ -13,6 +13,7 @@
   import { can, canView } from '../lib/access/can.js';
   import { readDashboard, rebuildSummaries } from '../lib/admin/session-summaries.js';
   import { BASELINES } from '../lib/results/index-math.js';
+  import Icon from './Icon.svelte';
   import { SPANS, dashboardFileName, dashboardOf, defaultFilters, emptyStateOf, filterOptions, rebuildQuestion, reportCsv, shiftWords } from '../lib/results/dashboard-model.js';
   import { METRICS } from '../lib/results/metric-words.js';
   import { readQueries, reachOf, sessionsFor } from '../lib/access/scope.js';
@@ -28,11 +29,13 @@
   // visits needs a place of its own, docs/history/RELEASE-21E.md).
   // Hide names is Results' one switch (ResultsTab), shared with Sessions and every export; it rides in the saved view.
   // Prompt 22: a Super admin opens Reporting settings from here (the fiscal-year start month and the minimum sample); the figures are read again after.
-  let { access = null, onToast, hideNames = false, onHideNames = () => {} }: {
+  let { access = null, onToast, hideNames = false, onHideNames = () => {}, viewSwitch }: {
     access?: any;
     onToast: (message: string, kind?: 'info' | 'success' | 'error') => void;
     hideNames?: boolean;
     onHideNames?: (on: boolean) => void;
+    /** ResultsTab's Dashboard and Sessions switch, drawn in this title row (Prompt 39). */
+    viewSwitch?: Snippet;
   } = $props();
 
   type Filters = ReturnType<typeof defaultFilters>;
@@ -58,6 +61,12 @@
   const clientById = $derived(new Map(clients.map((client) => [client.id, client])));
   const board = $derived(dashboardOf({ summaries, clients, filters: { ...filters, hideNames }, startMonth, minSample, mayName }));
   const options = $derived(filterOptions(summaries, clients));
+  /** The folded filters' one line: the period, the clients, the comparison and any other filter set. */
+  const filterLine = $derived([
+    filters.span === 'fy' ? `FY ${filters.year}` : filters.span.startsWith('q') ? `${filters.span.toUpperCase()} ${filters.year}` : filters.span === 'month' ? filters.month : `${filters.from || '...'} to ${filters.to || '...'}`,
+    filters.clientIds.length ? `${filters.clientIds.length} ${filters.clientIds.length === 1 ? 'client' : 'clients'}` : 'all clients',
+    filters.industry || filters.region || filters.facilitator || filters.kind || filters.group ? 'more filters set' : 'all guests',
+  ].join(' · '));
   /** No client, session or period given (nothing is read), or no summary yet: said instead of the filters and figures (Prompt 21, Phase 6). */
   const reach = $derived(access ? reachOf(access) : null);
   const empty = $derived(emptyStateOf({ reach, summaries, waiting: mayRebuild ? missing.length : 0 }));
@@ -174,6 +183,7 @@
       <p class="muted">Each figure comes from the sessions' summaries, written when a session ends. Press i beside a figure to see how it is worked out.</p>
     </div>
     <div class="dash__actions">
+      {@render viewSwitch?.()}
       <button class="btn btn--small" type="button" onclick={saveView}>Save this view</button>
       <button class="btn btn--small" type="button" onclick={reset}>Reset</button>
       <button class="btn btn--small btn--primary" type="button" onclick={exportReport} disabled={board.empty}>Export report</button>
@@ -194,6 +204,9 @@
       <div class="dash__empty" role="status"><h3>{empty.title}</h3><p>{empty.line}</p></div>
     {:else}
 
+    <!-- (Prompt 38: the filters fold behind one Filters button, with a line of what they are now.) -->
+    <details class="adm-fold dash__fold" data-testid="dash-filters">
+      <summary><Icon name="sliders" />Filters <span class="adm-fold__summary">{filterLine}</span></summary>
     <form class="dash__filters" aria-label="Filters" onsubmit={(event) => event.preventDefault()}>
       <fieldset class="dash__group">
         <legend>Period</legend>
@@ -277,6 +290,7 @@
         </div>
       </details>
     </form>
+    </details>
 
     <p class="dash__headline" aria-live="polite">{board.headline}</p>
 
@@ -285,7 +299,7 @@
         {#each board.tiles as each (each.id)}
           <li class="dash__tile">
             <span class="dash__tile-name">{METRICS[each.id].label}<MetricInfo id={each.id} /></span>
-            <span class="dash__tile-value">{each.text}</span>
+            <span class="dash__tile-value" class:dash__tile-value--none={'value' in each && each.value === null}>{each.text}</span>
             {#if each.low}<span class="tag">Low sample (n = {each.n})</span>{/if}
           </li>
         {/each}
@@ -553,7 +567,7 @@
   .dash__tiles {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
-    gap: 0.75rem;
+    gap: var(--adm-gutter);
     margin: 0 0 1rem;
     padding: 0;
     list-style: none;
@@ -580,6 +594,22 @@
     font-weight: 700;
   }
 
+  /* Prompt 39: "Not measured" or "None yet" where a figure would be: muted words at the running size, so they do not shout (16 px, not the brief's
+     14: CLAUDE.md rule 9). */
+  .dash__tile-value--none {
+    align-self: end;
+    color: var(--adm-ink-2);
+    font-size: var(--adm-fs-body);
+    font-weight: var(--fw-regular);
+  }
+
+  /* The six key figures on one row from 1,280 px, each a sixth. */
+  @media (min-width: 1280px) {
+    .dash__tiles[aria-label='Key figures'] {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+  }
+
   .dash__grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
@@ -592,7 +622,7 @@
     .dash__pair {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: 1rem;
+      gap: var(--adm-gutter);
       align-items: start;
     }
 

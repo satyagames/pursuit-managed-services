@@ -57,14 +57,15 @@ test.describe('Email them about this', () => {
     const fake = await site(me('vsatyadev', 'Satyadev, Vedala Venkata'));
     const served = await open(page, fake);
     await person(page, 'Milder, Brian');
-    await page.getByRole('button', { name: 'Give access' }).click();
+    // (Prompt 38: the list's header has a Give access of its own; these are the person's page's.)
+    await page.getByRole('region', { name: 'Milder, Brian' }).getByRole('button', { name: 'Give access' }).click();
     let dialog = page.getByRole('dialog');
     const box = dialog.getByRole('checkbox', { name: 'Email them about this' });
     await expect(box).not.toBeChecked();
     await expect(dialog.getByTestId('email-box')).toContainText('To: bmilder@deloitte.com. A copy comes to you.');
     await box.check();
     await dialog.getByRole('button', { name: 'Cancel' }).click();
-    await page.getByRole('button', { name: 'Give access' }).click();
+    await page.getByRole('region', { name: 'Milder, Brian' }).getByRole('button', { name: 'Give access' }).click();
     dialog = page.getByRole('dialog');
     await expect(dialog.getByRole('checkbox', { name: 'Email them about this' })).not.toBeChecked(); // (nothing remembered)
     // Unticked: the change, and nothing more.
@@ -76,7 +77,7 @@ test.describe('Email them about this', () => {
     await page.waitForLoadState('networkidle');
     const unticked = { writes: writes(fake, before).length, kinds: kinds(fake, before) };
     // Ticked: the same requests, and the message only once the change has saved.
-    await page.getByRole('button', { name: 'Give access' }).click();
+    await page.getByRole('region', { name: 'Milder, Brian' }).getByRole('button', { name: 'Give access' }).click();
     dialog = page.getByRole('dialog');
     await dialog.getByRole('combobox', { name: /^Role/ }).selectOption('Leadership');
     await dialog.getByRole('combobox', { name: /^Client/ }).selectOption({ label: 'Kroger' });

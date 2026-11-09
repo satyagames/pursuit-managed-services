@@ -1,6 +1,6 @@
 // The look of the exported files (Prompt 34): the colours the session pack (PDF and PowerPoint, lib/exports/resultsExport.js) and the leader
 // report (lib/exports/leader-report*.js) draw with, and the pairs they are held to. The values are the admin page's own tokens
-// (migration/src/styles/admin-tokens.css, Prompt 31), written here once as hex because jsPDF and PptxGenJS cannot read CSS; each one is named
+// (migration/src/styles/look-tokens.css, Prompt 31; apart from the page's own since Prompt 38), written here once as hex because jsPDF and PptxGenJS cannot read CSS; each one is named
 // after its token in LOOK_TOKENS, and scripts/test-admin-today.js fails when a value here and its token differ, so the page and the files cannot
 // drift. No colour is added: a file draws with these and nothing else. Plain JS, no DOM.
 //
@@ -14,21 +14,21 @@ import { contrastRatio } from '../brand/theme.js';
 
 /** Each colour of the files, by the admin token it equals. */
 export const LOOK_TOKENS = Object.freeze({
-  page: 'adm-card',
-  black: 'adm-bar-black',
-  wash: 'adm-wash',
-  cardLine: 'adm-card-line',
-  text: 'adm-text',
-  textMuted: 'adm-text-muted',
-  onDeep: 'adm-on-deep',
-  deep: 'adm-deep',
-  green: 'adm-green',
-  lime: 'adm-lime',
-  greenWash: 'adm-green-wash',
-  teal: 'adm-teal',
-  tealWash: 'adm-teal-wash',
-  link: 'adm-link',
-  sky: 'adm-sky',
+  page: 'look-page',
+  black: 'look-black',
+  wash: 'look-wash',
+  cardLine: 'look-card-line',
+  text: 'look-text',
+  textMuted: 'look-text-muted',
+  onDeep: 'look-on-deep',
+  deep: 'look-deep',
+  green: 'look-green',
+  lime: 'look-lime',
+  greenWash: 'look-green-wash',
+  teal: 'look-teal',
+  tealWash: 'look-teal-wash',
+  link: 'look-link',
+  sky: 'look-sky',
 });
 
 /** The colours, as "#RRGGBB". */

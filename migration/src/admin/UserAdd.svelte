@@ -9,8 +9,10 @@
   import UserPicker from './UserPicker.svelte';
 
   type Chosen = { email: string; name: string; loginName: string; jobTitle: string; source: 'Directory' | 'Typed' };
-  let { access, onDone, onCancel }: {
+  let { access, onDone, onCancel, giving = false }: {
     access: unknown;
+    /** (Prompt 38) Opened from Give access: the next step is the person's access, said in the title and the button. */
+    giving?: boolean;
     /** The key of the person added, or of the one who was there already. */
     onDone: (key: string, already: boolean) => void;
     onCancel: () => void;
@@ -46,7 +48,7 @@
 
 <dialog bind:this={dialog} class="dialog" aria-labelledby="user-add-title" oncancel={(event) => { event.preventDefault(); if (!busy) onCancel(); }}>
   <div class="add">
-    <h2 id="user-add-title">Add user</h2>
+    <h2 id="user-add-title">{giving ? 'Give access' : 'Add user'}</h2>
     <p class="muted">Search for a colleague by name or email. Adding someone gives them no access to any client: you choose that on their page afterwards.</p>
     {#if chosen}
       <div class="add__chosen" data-testid="user-chosen">
@@ -60,13 +62,14 @@
         onChoose={(person) => { chosen = { email: person.email, name: person.name, loginName: person.loginName, jobTitle: person.jobTitle, source: 'Directory' }; error = ''; }}
         onTyped={(email) => { chosen = { email, name: '', loginName: '', jobTitle: '', source: 'Typed' }; error = ''; }}
         disabled={busy}
+        domain={String((access as { person?: { email?: string } } | null)?.person?.email ?? '').split('@')[1] ?? ''}
       />
     {/if}
     <p class="muted small" data-testid="site-access-add">{SITE_ACCESS_ADD_USER}</p>
     {#if error}<p class="error" role="alert">{error}</p>{/if}
     <div class="dialog__actions">
       <button class="btn" type="button" onclick={onCancel} disabled={busy}>Cancel</button>
-      <button class="btn btn--primary" type="button" onclick={() => void add()} disabled={busy || !chosen}>{busy ? 'Adding...' : 'Add user'}</button>
+      <button class="btn btn--primary" type="button" onclick={() => void add()} disabled={busy || !chosen}>{busy ? 'Adding...' : giving ? 'Next: choose the role' : 'Add user'}</button>
     </div>
   </div>
 </dialog>

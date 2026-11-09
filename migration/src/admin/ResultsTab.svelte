@@ -31,26 +31,31 @@
   }
 </script>
 
-<div class="results-views" role="group" aria-label="Results view">
-  <button class="btn btn--small results-views__choice" type="button" aria-pressed={view === 'dashboard'} onclick={() => { chosen = 'dashboard'; }}>Dashboard</button>
-  <button class="btn btn--small results-views__choice" type="button" aria-pressed={view === 'sessions'} onclick={() => { chosen = 'sessions'; }}>Sessions</button>
-</div>
+<!-- (Prompt 39: the switch sits in each view's title row, beside its controls, not above it.) -->
+{#snippet viewSwitch()}
+  <div class="results-views" role="group" aria-label="Results view">
+    <button class="btn btn--small results-views__choice" type="button" aria-pressed={view === 'dashboard'} onclick={() => { chosen = 'dashboard'; }}>Dashboard</button>
+    <button class="btn btn--small results-views__choice" type="button" aria-pressed={view === 'sessions'} onclick={() => { chosen = 'sessions'; }}>Sessions</button>
+  </div>
+{/snippet}
 {#if view === 'dashboard'}
-  <LeaderDashboard {access} {onToast} {hideNames} onHideNames={setHideNames} />
+  <LeaderDashboard {access} {onToast} {hideNames} onHideNames={setHideNames} {viewSwitch} />
 {:else}
-  <AdminResults {access} {onToast} {onLiveDisplay} {hideNames} {mayName} onHideNames={setHideNames} />
+  <AdminResults {access} {onToast} {onLiveDisplay} {hideNames} {mayName} onHideNames={setHideNames} {viewSwitch} />
 {/if}
 
 <style>
   .results-views {
     display: flex;
-    gap: 0.35rem;
-    margin-bottom: 0.75rem;
+    flex: none;
+    gap: var(--adm-s1);
   }
 
+  /* (Prompt 38: the chosen view in the primary wash, not a black fill; it is also aria-pressed.) */
   .results-views__choice[aria-pressed='true'] {
-    border-color: var(--ink);
-    background: var(--ink);
-    color: var(--adm-on-deep);
+    border-color: var(--adm-green);
+    background: var(--adm-green-wash);
+    color: var(--adm-text);
+    box-shadow: inset 0 0 0 1px var(--adm-green);
   }
 </style>

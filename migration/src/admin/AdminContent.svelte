@@ -199,13 +199,13 @@
 <section class="panel content-panel" aria-busy={loading || busy}>
   <header class="panel__head">
     <div>
-      <h2><Icon name="file" />Content</h2>
+      <h2><Icon name="layers" />Content</h2>
       <p class="muted">Choose a client, then change what its people answer or how its pages look.</p>
     </div>
   </header>
 
   {#if loading}
-    <p role="status">Loading content...</p>
+    <div class="adm-card adm-skeleton" aria-hidden="true"><span></span><span></span><span></span><span></span></div><p class="sr-only" role="status">Loading content...</p>
   {:else if loadError}
     <div class="panel-error" role="alert"><h2>Could not load content</h2><p class="muted">{loadError}</p></div>
   {:else if clients.length === 0 || !client}
@@ -293,47 +293,18 @@
 
 <style>
   :global(html:has(.content-spine)) {
-    --content-part: 4rem;
-    --adm-nav-height: calc(var(--target-min) + 18px + 1px);
+    /* (Prompt 39: room for the words and a flag such as "Unsaved changes" without the strip growing, which would move the page under the reader.) */
+    --content-part: 4.5rem;
+    /* (Prompt 39: the one 56 px bar at every width.) */
+    --adm-nav-height: var(--adm-bar-h);
     --adm-content-sticky: calc(var(--content-part) + 18px);
     --adm-sticky-top: calc(var(--adm-nav-height) + var(--adm-content-sticky));
-    --adm-sticky-room: calc(5.5rem + var(--adm-content-sticky));
+    --adm-sticky-room: calc(var(--adm-bar-h) + var(--adm-s4) + var(--adm-content-sticky));
   }
 
-  /* From 1,100 px the tab row is the one 52 px bar (admin.css, Prompt 32). */
-  @media (min-width: 1100px) {
-    :global(html:has(.content-spine)) {
-      --adm-nav-height: 52px;
-      --adm-sticky-room: calc(4.5rem + var(--adm-content-sticky));
-    }
-  }
 
   .content-spine {
     display: contents;
-  }
-
-  /* A laptop under 700 px high (Prompt 32): the client and the strip of views share one line, the strip still sticky on its own. */
-  @media (min-width: 1100px) and (max-height: 699px) {
-    .content-panel:has(.content-spine) {
-      display: grid;
-      grid-template-columns: auto minmax(0, 1fr);
-      column-gap: 1rem;
-      align-items: center;
-    }
-
-    .content-panel:has(.content-spine) > :global(*) {
-      grid-column: 1 / -1;
-    }
-
-    .content-client {
-      grid-column: 1;
-      margin-bottom: 1rem;
-    }
-
-    .content-strip {
-      grid-column: 2;
-      justify-self: end;
-    }
   }
 
   .content-client {
@@ -380,24 +351,25 @@
     position: sticky;
     top: var(--adm-nav-height);
     z-index: 4;
-    margin: 0 -0.75rem 1rem;
-    padding: 9px 0.75rem;
-    overflow-x: auto;
-    scrollbar-width: thin;
+    /* (Prompt 39: on the page's edges, no sideways scroll; the 9 px above and below are the focus ring's room.) */
+    margin: 0 0 var(--adm-s4);
+    padding: 9px 0;
     background: var(--adm-bg);
   }
 
+  /* The two parts, Activities and Brand: equal halves of the content's width. */
   .content-strip__track {
-    display: flex;
-    gap: 0.5rem;
-    width: max-content;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--adm-gutter);
+    width: 100%;
   }
 
   .content-strip__tab {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    flex: none;
+    min-width: 0;
     min-height: var(--content-part);
     padding: 0.5rem 1rem;
     border: 2px solid var(--adm-green);
@@ -406,7 +378,8 @@
     color: var(--adm-text);
     font: inherit;
     text-align: start;
-    white-space: nowrap;
+    /* (Prompt 39: each part is half the width; its words wrap rather than run past it at a large text size.) */
+    white-space: normal;
     cursor: pointer;
   }
 
@@ -414,15 +387,20 @@
     color: var(--adm-deep);
   }
 
+  /* (Prompt 38: the chosen part is the primary wash with the primary line, not a heavy fill.) */
   .content-strip__tab[aria-selected='true'] {
-    border-color: var(--adm-deep);
-    background: var(--adm-deep);
-    color: var(--adm-on-deep);
+    border-color: var(--adm-green);
+    background: var(--adm-green-wash);
+    color: var(--adm-text);
+    box-shadow: inset 0 0 0 1px var(--adm-green);
   }
 
-  .content-strip__tab[aria-selected='true'] > :global(.icon),
+  .content-strip__tab[aria-selected='true'] > :global(.icon) {
+    color: var(--adm-green);
+  }
+
   .content-strip__tab[aria-selected='true'] .content-strip__meaning {
-    color: var(--adm-on-deep);
+    color: var(--adm-text-muted);
   }
 
   .content-strip__tab[aria-selected='true'] .content-strip__dot {
@@ -454,10 +432,12 @@
   .content-strip__words {
     display: grid;
     gap: 0.1rem;
+    min-width: 0;
   }
 
   .content-strip__name {
     display: flex;
+    flex-wrap: wrap;
     align-items: baseline;
     gap: 0.5rem;
   }
@@ -529,37 +509,4 @@
     max-width: 100%;
   }
 
-  @media (min-width: 1100px) and (min-height: 700px) {
-    :global(html:has(.content-spine)) {
-      --adm-content-sticky: calc(var(--content-part) + 0.75rem + 1px);
-    }
-
-    .content-spine {
-      position: sticky;
-      top: var(--adm-nav-height);
-      z-index: 4;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      height: var(--adm-content-sticky);
-      margin-bottom: 1rem;
-      padding: 0.375rem 0;
-      border-bottom: 1px solid var(--adm-line);
-      background: var(--adm-bg);
-    }
-
-    .content-client {
-      flex-wrap: nowrap;
-      margin-bottom: 0;
-    }
-
-    .content-strip {
-      position: static;
-      flex: none;
-      margin: 0;
-      padding: 0;
-      overflow: visible;
-    }
-  }
 </style>

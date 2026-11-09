@@ -10,6 +10,8 @@
   import { errorText } from '../lib/admin/session-notice.js';
   import { localDate } from '../lib/admin/admin-today.js';
   import { planProblems, planSessionFor, sessionRows } from '../lib/admin/session-plan.js';
+  import { nextFreeDate, pageStorage, prefsKeyOf, recall, remember, sessionNameFor } from '../lib/admin/admin-defaults.js';
+  import StickyBar from './StickyBar.svelte';
 
   let { open = $bindable(false), client, access = null, sessions, settings, users, assignments, fiscalStartMonth, onPlanned, onToast }: {
     client: { id: string; name: string; slug?: string };
@@ -28,6 +30,7 @@
   } = $props();
   /** (Prompt 33) The session just added, marked in the list for this visit. */
   let fresh = $state<string | null>(null);
+  let planForm = $state<HTMLFormElement>();
 
   const mayPlan = $derived(!access || can(access, 'clients.manage', { clientId: client.id }));
   const rows = $derived(sessionRows(sessions, { clientId: client.id, settings, fiscalStartMonth }));
@@ -41,11 +44,17 @@
   let formError = $state('');
   const problems = $derived(planProblems({ date, startTime, title }, { sessions, clientId: client.id }));
 
+  // (Prompt 38: the form starts filled in: the next day the client has no session, the start time this person used last, and the name
+  // "{Client} · {date}", which follows the date until it is typed in. All of it can be changed.)
+  const prefsKey = $derived(prefsKeyOf(access?.person ?? null));
+  let titleTouched = false;
+
   function openForm() {
     open = true;
-    date = localDate();
-    startTime = '';
-    title = '';
+    date = nextFreeDate(sessions, client.id, localDate());
+    startTime = String(recall(pageStorage(), prefsKey, 'startTime'));
+    title = sessionNameFor(client.name, date);
+    titleTouched = false;
     clientTeam = true;
     submitted = false;
     formError = '';
@@ -62,6 +71,7 @@
     try {
       const fields = planSessionFor(dataService, client, { date, startTime, title }, { sessions, fiscalStartMonth });
       const made = await dataService.planSession(fields) as { id: string };
+      remember(pageStorage(), prefsKey, 'startTime', startTime);
       open = false;
       fresh = made.id;
       onPlanned(`Session added to ${client.name}: ${date} at ${startTime}`, made.id, !clientTeam);
@@ -83,11 +93,11 @@
   {#if !mayPlan}<p class="muted small">Sessions are planned by an Admin. A Producer starts them on Today.</p>{/if}
 
   {#if open}
-    <form class="editor-form plan" onsubmit={plan} novalidate aria-labelledby="plan-heading">
+    <form bind:this={planForm} class="editor-form plan" onsubmit={plan} novalidate aria-labelledby="plan-heading">
       <h4 id="plan-heading">Add a session to {client.name}</h4>
       <div class="plan__fields">
         <div class="field"><span class="field__line"><label class="field__label" for="plan-date">Date</label><span class="field__required">Required</span></span>
-          <input id="plan-date" class="input" type="date" bind:value={date} disabled={busy} required aria-invalid={submitted && Boolean(problems.date)} aria-describedby={submitted && problems.date ? 'plan-date-problem' : undefined} />
+          <input id="plan-date" class="input" type="date" bind:value={date} oninput={() => { if (!titleTouched) title = sessionNameFor(client.name, date); }} disabled={busy} required aria-invalid={submitted && Boolean(problems.date)} aria-describedby={submitted && problems.date ? 'plan-date-problem' : undefined} />
           {#if submitted && problems.date}<span id="plan-date-problem" class="error small">{problems.date}</span>{/if}
         </div>
         <div class="field"><span class="field__line"><label class="field__label" for="plan-time">Start time</label><span class="field__required">Required</span></span>
@@ -95,22 +105,21 @@
           {#if submitted && problems.startTime}<span id="plan-time-problem" class="error small">{problems.startTime}</span>{/if}
         </div>
         <div class="field plan__title"><label class="field__label" for="plan-title">Title</label>
-          <input id="plan-title" class="input" bind:value={title} maxlength={255} disabled={busy} placeholder="Morning workshop" aria-invalid={submitted && Boolean(problems.title)} aria-describedby="plan-title-help" />
-          <span id="plan-title-help" class="small" class:muted={!(submitted && problems.title)} class:error={submitted && Boolean(problems.title)}>{submitted && problems.title ? problems.title : 'Needed when the client has another session that day.'}</span>
+          <input id="plan-title" class="input" bind:value={title} oninput={() => { titleTouched = true; }} maxlength={255} disabled={busy} placeholder="Morning workshop" aria-invalid={submitted && Boolean(problems.title)} aria-describedby="plan-title-help" />
+          <span id="plan-title-help" class="small" class:muted={!(submitted && problems.title)} class:error={submitted && Boolean(problems.title)}>{submitted && problems.title ? problems.title : 'Filled in from the client and the date; change it as you like.'}</span>
         </div>
       </div>
       <label class="check"><input type="checkbox" bind:checked={clientTeam} disabled={busy} /> Use the client team</label>
       <p class="muted small">{clientTeam ? 'Everyone on the client\'s team can work on this session.' : 'Once it is planned, choose who works on this session below.'}</p>
       {#if formError}<p class="error" role="alert">{formError}</p>{/if}
-      <div class="dialog__actions">
-        <button class="btn" type="button" onclick={() => { open = false; }} disabled={busy}>Cancel</button>
-        <button class="btn btn--primary" type="submit" disabled={busy}>{busy ? 'Adding...' : 'Add session'}</button>
-      </div>
     </form>
+    <StickyBar label="New session" icon="calendar-check" context={`New session for ${client.name}${date ? ` on ${date}` : ''}`}
+      primary={{ label: busy ? 'Creating...' : 'Create session', icon: 'plus', onclick: () => planForm?.requestSubmit(), disabled: busy, testid: 'create-session' }}
+      secondary={{ label: 'Cancel', icon: 'close', onclick: () => { open = false; }, disabled: busy }} />
   {/if}
 
   {#if rows.length === 0}
-    <p class="muted">No sessions yet. {mayPlan ? `Add the first one for ${client.name} with Add session.` : 'An Admin adds them.'}</p>
+    <div class="adm-empty"><Icon name="calendar-check" /><p>No sessions yet. {mayPlan ? `Add the first one for ${client.name}.` : 'An Admin adds them.'}</p>{#if mayPlan && !open}<button class="btn btn--with-icon" type="button" onclick={openForm}><Icon name="plus" />Add session</button>{/if}</div>
   {:else}
     <div class="sessions__scroll">
       <table class="sessions" data-testid="client-sessions">

@@ -7,6 +7,8 @@
   import { revealer, setLeaveGuard } from '../lib/admin/unsaved.js';
   import { questionLayout } from '../lib/participant/pager-logic.js';
   import ConfirmDialog from './ConfirmDialog.svelte';
+  import Icon, { type IconName } from './Icon.svelte';
+  import { TYPE_ICON } from './icons.js';
   import QuestionEditor, { QUESTION_SPECS, type Draft, type Option, type Question, type QuestionType } from './QuestionEditor.svelte';
 
   type Section = { id: string; title: string; clientId?: string | null; questionIds?: string[] };
@@ -183,7 +185,7 @@
       <h3 id="questions-heading">Questions</h3>
       <p class="muted small">{section.title}. Changes to a live activity are live for participants.</p>
     </div>
-    <button class="btn btn--primary" type="button" data-add-question aria-expanded={editingId === NEW} aria-controls={editingId === NEW ? editorId(NEW) : undefined} onclick={() => request(NEW)} disabled={busy || loading || editorBusy}>Add question</button>
+    <button class="btn btn--with-icon" type="button" data-add-question aria-expanded={editingId === NEW} aria-controls={editingId === NEW ? editorId(NEW) : undefined} onclick={() => request(NEW)} disabled={busy || loading || editorBusy}><Icon name="plus" />Add question</button>
   </div>
 
   {#if gone}
@@ -202,7 +204,7 @@
         {@const questionOptions = optionsByQuestion[question.id] ?? []}
         {@const open = editingId === question.id}
         <li class="row" class:row--open={open} data-question={question.id}>
-          <div class="row__main"><span class="row__title" id={`question-title-${question.id}`}>{question.prompt}</span><span class="muted"><span class="tag">{questionKind(question)}</span> {specs[question.type as QuestionType]?.options === 'none' || question.type === 'art-of-the-possible' ? '' : `${questionOptions.length} options`}{questionLayout({ ...question, options: questionOptions } as never) === 'image-grid' && layoutApplies(question.type) ? ' · picture tiles' : ''}</span></div>
+          <div class="row__main"><span class="row__title" id={`question-title-${question.id}`}>{question.prompt}</span><span class="muted"><span class="tag chip chip--primary"><Icon name={(TYPE_ICON[question.type as keyof typeof TYPE_ICON] ?? 'info') as IconName} size={16} />{questionKind(question)}</span> {specs[question.type as QuestionType]?.options === 'none' || question.type === 'art-of-the-possible' ? '' : `${questionOptions.length} options`}{questionLayout({ ...question, options: questionOptions } as never) === 'image-grid' && layoutApplies(question.type) ? ' · picture tiles' : ''}</span></div>
           <button class="btn" type="button" data-edit-question={question.id} aria-expanded={open} aria-controls={open ? editorId(question.id) : undefined} onclick={() => request(question.id)} disabled={busy || editorBusy}>Edit</button>
           <button class="btn btn--danger" type="button" onclick={() => void deleteQuestion(question)} disabled={busy || editorBusy || open}>Delete</button>
           {#if open}{@render editorFor(question)}{/if}

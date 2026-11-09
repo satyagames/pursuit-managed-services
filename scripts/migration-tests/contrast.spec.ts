@@ -169,7 +169,9 @@ async function ringContrast(page: Page, decoder: Page, state: string): Promise<{
     // The colours on each side of the ring: one pixel beyond its outer edge, and one pixel inside its inner edge, at the middle of each of the four
     // sides (a pill's corners are curved, so anywhere else a straight sample would land on the ring itself).
     // (The inside neighbour is read 1 px from the control, in the band that fills the gap; the outside one 1.5 px past the ring, in the outer band.)
-    const outer = ring.offset + ring.width + 1.5, inner = 1;
+    // (A ring drawn inside its control, at a negative offset, as the edge-to-edge panel's is: its inner side is 1 px further in than the ring, in the
+    // band inside it; a negative distance reads inward.)
+    const outer = ring.offset + ring.width + 1.5, inner = ring.offset < 0 ? ring.offset - 1 : 1;
     const at = (distance: number) => {
       const out: number[][] = [];
       const midX = ring.x + ring.w / 2, midY = ring.y + ring.h / 2;

@@ -24,7 +24,7 @@
   import RoleSwitch from './RoleSwitch.svelte';
 
   type Row = { key: string; name: string; email: string; status: string; assignments: any[] };
-  let { access, person, users, assignments, clients, sessions, waiting = null, onBack, onChanged }: {
+  let { access, person, users, assignments, clients, sessions, waiting = null, onBack, onChanged, startGiving = false }: {
     access: any;
     person: Row;
     users: any[];
@@ -36,6 +36,8 @@
     onBack: () => void;
     /** Something changed: the screen above reads the lists again and says `words`. */
     onChanged: (words: string) => void;
+    /** (Prompt 38) Opened from the list's Give access: Give access opens at once. */
+    startGiving?: boolean;
   } = $props();
 
   let heading = $state<HTMLElement>();
@@ -43,6 +45,7 @@
   let error = $state('');
   let confirm = $state<{ kind: 'remove'; assignment: any } | { kind: 'disable' } | null>(null);
   let giving = $state(false);
+  $effect(() => { if (startGiving) giving = true; });
   let history = $state<{ id: string; day: string; words: string }[] | null>(null);
   let historyError = $state('');
   /** (Prompt 28) "Email them about this": the page's box, for the changes made with one press, and the confirmation's; both unticked every time. */
@@ -145,7 +148,7 @@
   <button class="btn btn--back" type="button" onclick={onBack}><Icon name="arrow-left" /> Back to people</button>
   <header class="panel__head detail__head">
     <div>
-      <h2 id="user-heading" bind:this={heading} tabindex="-1"><Icon name="people" />{person.name}</h2>
+      <h2 id="user-heading" bind:this={heading} tabindex="-1"><Icon name="users" />{person.name}</h2>
       <p class="muted">{person.email}: what they may do, for all clients and for each client.</p>
     </div>
     <div class="panel__actions">
@@ -192,7 +195,7 @@
   <section class="detail__block" aria-labelledby="access-heading">
     <div class="detail__line">
       <h3 id="access-heading">Access to clients and sessions</h3>
-      {#if mayGive && !own}<button class="btn btn--primary" type="button" onclick={() => { giving = true; }} disabled={busy}><Icon name="plus" /> Give access</button>{/if}
+      {#if mayGive && !own}<button class="btn btn--primary" type="button" onclick={() => { giving = true; }} disabled={busy}><Icon name="key" /> Give access</button>{/if}
     </div>
     {#if team.length === 0}
       <p class="muted" data-testid="no-access-rows">{person.name} has no access to any client or session yet.</p>

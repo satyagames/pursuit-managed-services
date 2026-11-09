@@ -43,6 +43,7 @@
 22. Items **350 to 359** (Prompt 34: the wall from the back row, Dark and Light, the packs in PowerPoint with and without Open Sans, a black-and-white print, a screen reader, held names and no data, quotes never highlighted). At the end of this file.
 23. Items **360 to 365** (Prompt 34, the session page on Results: the list and one session, the four figures, Downloads with the packs, Delete at the foot, a Leadership role; and an Art of the Possible heat map in the packs). At the end of this file.
 24. Items **366 to 377** (Prompt 35: the Art of Possibility on a real iPad and a phone, a first-time guest, press and hold, whole headings, milestones, Undo, the finish, sound and the silent switch, reduce motion, a colour-blind colleague, the network panel). At the end of this file.
+25. Items **389 to 397** (Prompt 38: the calm admin page on a laptop and an iPad, the sticky bar above the keyboard, the QR sheet on A4 and US Letter, a new client and session, the folds, a Pursuit leader's first five seconds). At the end of this file.
 16. Item **293** (Prompt 25: the line about SharePoint access in Give access, Add user and No access; the document ONBOARDING.md). Below item 292.
 17. Every other item marked *(Still to see.)*: 138, 139, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
    160, 161, 164, 165, 166, 167, 168, 169, 170.
@@ -139,16 +140,16 @@ per cue and per confetti size (they play whatever the header switch says).
       on. Confirm that is acceptable and that it resumes when the switch goes off.
 - [ ] **Each cue, by ear.** Listen to all eight: Sound on (two-note chime), Option picked (soft tick), Correct first
       try (bright rising two notes), Correct after a retry (one gentler note), Incorrect (soft, low, falling),
-      Answer revealed (one neutral note), Activity complete (rising three notes), Finale (major-chord fanfare).
+      Answer revealed (one neutral note), Activity complete (rising three notes), Finale (a rising swell, a chord and a rain of bells, Prompt 36).
       Are they pleasant, never harsh, never startling? Are they about equally loud? Can you tell a first-try win
       from a retry win, and a wrong answer from a reveal, without looking?
 - [ ] **The tick** follows the tap with no noticeable delay and does not machine-gun when you tap options quickly.
 - [ ] **Next, Back and Home are silent.**
 - [ ] **A real flow.** Answer a graded activity wrong, retry, right; then a first-try right; then a double wrong
       (reveal). Each gives exactly one sound, and confetti only on the first-try right. Finish the activity (rising
-      three notes and a medium burst), then the last activity (fanfare and the big finale).
-- [ ] **Confetti.** Small is near the green "Correct" pill, medium comes from both lower corners, large fills the
-      screen over about 2.5 seconds. It is smooth on the oldest iPad in use, never blocks a tap (tap Next while it
+      three notes and a medium burst), then the last activity (the grand finale: see Prompt 36 below).
+- [ ] **Confetti.** Small is near the green "Correct" pill, medium comes from both lower corners, and the finale's
+      petals fall from above over about four seconds. It is smooth on the oldest iPad in use, never blocks a tap (tap Next while it
       is falling), leaves nothing behind, and never makes the page scroll sideways. It is not red on any client.
 - [ ] **Reduce Motion** (Settings, Accessibility, Motion): no confetti anywhere, but with sound on the cues still play.
 - [ ] **Interruptions.** With sound on, take a call or ask Siri, lock and unlock the iPad, switch to another app
@@ -1837,7 +1838,7 @@ items 15, 26 to 28, 35, 40 to 44, 46 and 53 to 56 above, is `DEVICE-TEST-SHEET.m
 330. **The bar on your laptop.** *(Still to see.)* Open the admin page in Edge on a 1366 or 1920 px laptop at 100 percent, then at 125 and 150 percent (Windows display scale). **Expect** at 1,100 px of page and wider one black bar, 52 px high, with Deloitte, the tabs and your name; under it the content to both edges, a little gap at each side; at 150 percent on a 1366 px laptop (under 1,100 px of page) the two rows of before.
 331. **The projector.** *(Still to see.)* Mirror the laptop to the room's projector (often 1280 by 720 or 1920 by 1080) and open Today and Results. **Expect** nothing cut off at the sides, the bar's words readable from the back, Live display as before.
 332. **Your role beside your name, per role.** *(Still to see.)* Sign in as a Super admin, an Admin, a Producer on one client, a Designer and Leadership (a test copy's people). **Expect** the chip's initials, name and role with its reach ("Producer · Kroger", "Admin · All clients", "Leadership · Results"); "+1" when someone has two roles; "Ends 12 Dec" only when a role ends within 14 days; no chip with the PIN.
-333. **Your access.** *(Still to see.)* Press the chip, read it with the keyboard and with a screen reader (Narrator in Edge, VoiceOver on a Mac), Escape, press again, click elsewhere. **Expect** your name (not your email), the roles table, What you can do and Not available to you in the words of the role, "Need a different role? Ask a Super admin." and Copy my details, which pastes your name, email and roles in Teams.
+333. **Your access.** *(Still to see.)* Press the chip, read it with the keyboard and with a screen reader (Narrator in Edge, VoiceOver on a Mac), Escape, press again, click elsewhere. **Expect** your name (not your email), the roles table and What you can do in the words of the role (Prompt 39 took out "Not available to you"), "Need a different role? Ask a Super admin." and Copy my details, which pastes your name, email and roles in Teams.
 334. **The welcome strip.** *(Still to see.)* Sign in for the first time on a browser, reload, then have a Super admin change your role and reload. **Expect** the strip on the first visit, gone after Got it or a reload, back once after the change of role. In an InPrivate window with site data blocked, the strip shows once in each tab and the page works.
 335. **Today on a laptop.** *(Still to see.)* On a 1366 by 768 laptop at 100 percent, ready a client and go live. **Expect** three columns, nothing to scroll before Go live, the ready checks folded to "N checks ready" with Show; live, End session in view while the page scrolls; the segmented controls set the session as the radios did.
 336. **People and Clients on a laptop.** *(Still to see.)* Open a person in People and a client's Sessions and team in Clients. **Expect** each to open beside its list, the open row marked, Back to clients returning the focus to its button; at 150 percent, in place of the list as before. A Super admin who pressed Check site access on a 1920 px screen sees Waiting for site access as a third column.
@@ -1896,3 +1897,47 @@ On the real SharePoint site, on an iPad held sideways and upright and on a phone
 375. **A colour-blind colleague.** *(Still to see.)* Ask one to tell Low from High across the grid. **Expect** them to do it by the shape and the letter.
 376. **The network panel.** *(Still to see.)* Open the page on a slow connection with the network panel open and rate every box. **Expect** the one page file and no new request for the ratings, the card, the mosaic or the sounds; compare the load time with Prompt 34's.
 377. **The other questions.** *(Still to see.)* Run an activity with single-choice, ranking and open text questions. **Expect** them exactly as before.
+
+### Prompt 36: the grand finale
+
+On the real SharePoint site, on an iPad held sideways and upright and on a phone. Finish the last activity each time (or use `?debug=1` and Start over).
+
+378. **Sound on and off.** *(Still to see.)* Finish with Sound off, then on. **Expect** the same finale both times; with Sound on, a soft swell, a chord as the medal lands and a rain of bells that thins out, nothing after about four and a half seconds, and not louder than is comfortable in a meeting room.
+379. **The silent switch.** *(Still to see.)* With Sound on, set the iPad's silent switch. **Expect** what the other cues do on this site (the playback session keeps them), and the finale looks the same.
+380. **Reduce Motion.** *(Still to see.)* Turn on the iPad's Reduce Motion. **Expect** no petals and nothing moving: the medal, the name and the cards shown at once, and the cue if Sound is on.
+381. **A button during the shower.** *(Still to see.)* Press Home while the petals fall. **Expect** Home to work at once, and the petals gone on the next screen.
+382. **Leave and come back.** *(Still to see.)* Switch to another app during the shower and back. **Expect** no burst of piled-up petals and no error; the page at rest or finishing.
+383. **The oldest iPad.** *(Still to see.)* Run it on the oldest iPad in use. **Expect** it smooth; note any stutter, and whether the petals stop early (the governor stepping down).
+384. **Each client's colours.** *(Still to see.)* Finish for each client. **Expect** petals in that client's tints with nothing red, and the white cards readable.
+385. **Celebrate again.** *(Still to see.)* Press it after the afterglow. **Expect** the whole finale again, the button still where it was.
+386. **Load time.** *(Still to see.)* Compare how long the thank-you page takes to show with `pms-35`. **Expect** no difference you can feel (no new request).
+387. **Three guests.** *(Still to see.)* Ask three guests for one word for how it felt, and note them.
+388. **The thinner shower.** *(Still to see.)* To fit the page's budget the petals are drawn by the confetti library and the name rises as one line. **Expect** it still to feel like an occasion; if it feels thin, say so (a bigger budget would bring back the hand-drawn petals and letter by letter).
+
+### Prompt 38: the admin page, calm and premium
+
+On the real SharePoint site, on a laptop (1366 and 1920 wide) and an iPad held sideways and upright. See docs/history/RELEASE-38.md for what changed
+and what was deferred.
+
+389. **The first five seconds.** *(Still to see.)* Open Today as a Pursuit leader would. **Expect** "Ready to go live" or "N things to fix" before anything else, and the one next step in the bar at the foot.
+390. **Go live from the bar.** *(Still to see.)* Pick a client and a date, then Go live in the bar. **Expect** the confirmation as before, then "(client) is live" and Show the wall in the bar; End session in Session settings, never in the bar.
+391. **The bar and the keyboard.** *(Still to see.)* On the iPad, open Add session on a client's page and tap the title. **Expect** the bar to sit above the keyboard and the field never under it.
+392. **A new client.** *(Still to see.)* Add a client by its name only. **Expect** its page to open, with Sessions, the team and QR check-in as the next steps; More details shows the short name the name made.
+393. **A new session.** *(Still to see.)* Add session. **Expect** "(client) · (date)" on the next free day, at the start time you used last; change any of it, then Create session in the bar.
+394. **The QR sheet.** *(Still to see.)* Print the sheet on A4 and on US Letter, 6 and 12 to a page, at 100 percent. **Expect** every card whole on the page and every code scanning from an iPad.
+395. **The folds.** *(Still to see.)* On Today, Content's question editor, Guests, the Leadership dashboard and History of changes, open and close each fold. **Expect** a line beside each that says what it holds, open or shut.
+396. **The more menus.** *(Still to see.)* On Clients and Content, open a row's more menu with the keyboard, move with the arrows, press Esc, and delete a scratch activity from it. **Expect** focus back on the menu's button, and the delete still asks first.
+397. **Colour and contrast.** *(Still to see.)* Look at every tab on the projector and in Windows high contrast. **Expect** calm colours, every state told by its icon and word as well as its colour, and nothing missing in high contrast.
+
+### Prompt 39: the admin page on the whole width
+
+On the real SharePoint site, signed in with your role, on a PC and a Mac browser at 1280, 1440 and 1920 wide (and a window narrowed below 1024).
+See docs/history/RELEASE-39.md for what changed and the decisions to confirm.
+
+398. **The bar.** *(Still to see.)* Open each tab at 1280 and at 1920. **Expect** "PMS Admin" beside the Deloitte wordmark and no "PMS" pill, the six tabs in one row with no scrollbar and none cut, the lime line under the open tab on the bar's bottom edge, and your chip at the right: "Super admin" alone at 1280 and under, "Super admin · All clients" above. A screen reader still says "Pursuit Managed Services Admin". Point at the wordmark: the folder's label (if it has one) is its tooltip.
+399. **Menu.** *(Still to see.)* Narrow the window below 1024. **Expect** one Menu button instead of the tabs; it opens the six tabs as a list, a tab closes it, and so do Esc and a click elsewhere.
+400. **Your access.** *(Still to see.)* Press the chip as each role. **Expect** your name, the line of what the role does, the Role / Covers / Until table, What you can do, "Need a different role? Ask a Super admin." and Copy my details; no "Signed in with your Deloitte account", no "Not available to you"; the box under the chip, not cut by the window's edge.
+401. **The whole width.** *(Still to see.)* At 1920, look at Today, Clients with a client open, Content (Activities and Brand), Guests and QR, Results and People. **Expect** no empty bands at the sides, the first card's left edge under the wordmark, and the two columns of each split starting on one line.
+402. **Results' charts.** *(Still to see.)* Open a session with answers. **Expect** the cards of a row one width and one height, "View as table" on its own row under the meta line, each value in a column at the right, 0%, 50% and 100% apart under the bars, and Previous, Page 1 of 2 and Next on one line.
+403. **Art of the Possible on Results.** *(Still to see.)* Open a session where guests rated sub-processes, beside an iPad showing the same question. **Expect** the card across the whole row, the sub-processes in the order the iPad shows them, the criteria's names as on the iPad and written across, each average on a teal tile you can read, and, on a narrow window, the grid scrolling inside the card only.
+404. **Downloads and the dashboard.** *(Still to see.)* At 1280 and wider. **Expect** For leaders, For the room and Data side by side with buttons of one height; on the dashboard the six figures on one row and "Not measured" in quiet words.

@@ -120,6 +120,9 @@ test('the i button: focus shows the formula, Escape hides it, and every figure h
 
 test('the keyboard: the period chips, Compare with and Hide names, and the headline follows', async ({ page }) => {
   await open(page, await site(me('bmilder', 'Milder, Brian'), 'Leadership', 'period', { PeriodFrom: '2026-09-01T00:00:00Z', PeriodTo: '2026-11-30T00:00:00Z' }));
+  // (Prompt 38: the filters are folded behind one Filters line; the keyboard opens it.)
+  await page.locator('[data-testid="dash-filters"] > summary').focus();
+  await page.keyboard.press('Enter');
   await page.getByRole('button', { name: 'Q1', exact: true }).focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('.dash__headline')).toHaveText('No session in FY27 Q1 has a summary yet.');

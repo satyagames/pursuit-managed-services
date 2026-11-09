@@ -5,12 +5,12 @@
   import { MANAGED_GROUPS, readDrift } from '../lib/access/site-access.js';
 
   /** `onRead` (Prompt 28): who the check found waiting, by key, so that an email to one of them can say so. Nothing more is read for it. */
-  let { users, assignments, onRead }: { users: any[]; assignments: any[]; onRead?: (waiting: string[]) => void } = $props();
+  // Prompt 39: the page's title row draws Check site access (`button` false) and calls check(); `busy` is bound so it can say Checking...
+  let { users, assignments, onRead, button = true, busy = $bindable(false) }: { users: any[]; assignments: any[]; onRead?: (waiting: string[]) => void; button?: boolean; busy?: boolean } = $props();
 
   type Drift = { waiting: any[]; more: any[]; strangers: any[] };
   let drift = $state<Drift | null>(null);
   let said = $state('');
-  let busy = $state(false);
   /** This copy's titles of the groups (its row says: a copy with a list prefix has its own). */
   let titles = $state<Record<string, string>>({ ...MANAGED_GROUPS });
   const names = (keys: (keyof typeof MANAGED_GROUPS)[]) => keys.map((key) => titles[key]).join(', ');
@@ -21,7 +21,7 @@
     throw Object.assign(new Error(answer.message), { status: answer.status });
   };
 
-  async function check() {
+  export async function check() {
     busy = true;
     said = '';
     drift = null;
@@ -42,7 +42,7 @@
 </script>
 
 <div class="drift" data-testid="site-drift">
-  <button class="btn" type="button" onclick={() => void check()} disabled={busy}>{busy ? 'Checking...' : 'Check site access'}</button>
+  {#if button}<button class="btn" type="button" onclick={() => void check()} disabled={busy}>{busy ? 'Checking...' : 'Check site access'}</button>{/if}
   {#if said}<p class="muted small" role="status">{said}</p>{/if}
   {#if drift}
     <h3>Waiting for site access</h3>

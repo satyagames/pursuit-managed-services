@@ -12,7 +12,9 @@ declare module 'canvas-confetti' {
     scalar?: number;
     origin?: { x?: number; y?: number };
     colors?: string[];
-    shapes?: string[];
+    shapes?: Shape[];
+    /** Sideways movement a frame (the finale's shower, Prompt 36). */
+    drift?: number;
     zIndex?: number;
     disableForReducedMotion?: boolean;
   }
@@ -23,6 +25,8 @@ declare module 'canvas-confetti' {
     useWorker?: boolean;
     disableForReducedMotion?: boolean;
   }
+  /** A built-in shape, or (Prompt 36) a path with its matrix, as the library's shapeFromPath makes one. */
+  export type Shape = string | { type: 'path'; path: string; matrix: number[] };
   export type Fire = ((options?: Options) => Promise<null> | null) & { reset: () => void };
   const confetti: { create(canvas: HTMLCanvasElement, options?: GlobalOptions): Fire };
   export default confetti;

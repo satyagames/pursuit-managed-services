@@ -42,6 +42,11 @@ const PAIRS = [
   // Phase 11b: on paper (the leader report, the one-page PDF and PowerPoint) the same pairs, and these that only paper draws.
   ['--viz-marker', '--viz-band-shade', 3, 'the scale\'s average line across a shaded band, on paper'],
   ['--viz-correct', '--viz-band-shade', 3, 'a tick in Dark Green beside "Correct", should it sit on a shaded band'],
+  // Prompt 39: an Art of the Possible tile on the admin page, light to deep teal, its average printed on it in the words stated beside each step.
+  ['--viz-text', '--viz-heat-1', 4.5, 'black words on the lightest teal tile'],
+  ['--viz-text', '--viz-heat-2', 4.5, 'black words on the second teal tile'],
+  ['--viz-text', '--viz-heat-3', 4.5, 'black words on the third teal tile'],
+  [WHITE, '--viz-heat-4', 4.5, 'white words on the deepest teal tile'],
 ];
 
 const RAMPS = { 3: [1, 2, 3], 4: [1, 2, 3, 4], 5: [1, 2, 3, 4, 5] };

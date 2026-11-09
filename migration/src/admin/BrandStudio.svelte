@@ -24,6 +24,7 @@
   import AssetUploader from './AssetUploader.svelte';
   import BrandColours from './BrandColours.svelte';
   import BrandPreviewPanel from './BrandPreviewPanel.svelte';
+  import StickyBar from './StickyBar.svelte';
   import ConfirmDialog from './ConfirmDialog.svelte';
   import CopyBrandDialog from './CopyBrandDialog.svelte';
   import MotionSwitch from './MotionSwitch.svelte';
@@ -293,7 +294,14 @@
     <span class="pill" class:pill--in-progress={dirty} class:pill--completed={!dirty} data-testid="brand-status">{dirty ? 'Unsaved changes' : 'All changes saved'}</span>
   </header>
 
+  <!-- (Prompt 38: the preview first, the controls second; Save and Revert are the sticky bar's.) -->
   <div class="brand__grid">
+    <aside class="brand__preview" aria-label="Preview">
+      <BrandPreviewPanel
+        {look} tokens={report.theme.tokens} {device} {scene} {deviceId} {sceneId} clientName={record.name} {deviceUrl} {deviceQr}
+        onDevice={(id) => { deviceId = id; }} onScene={(id) => { sceneId = id; }} onShowQr={() => void showDeviceQr()} {onToast}
+      />
+    </aside>
     <div class="brand__controls">
       <!-- Colours -->
       <section class="card brand__card" aria-labelledby="brand-colours">
@@ -331,8 +339,6 @@
 
       <div class="brand__actions card" role="group" aria-label="Save">
         <div class="brand__buttons">
-          <button class="btn btn--primary" type="button" onclick={() => void save()} disabled={busy || !dirty}>{busy ? 'Saving...' : 'Save brand'}</button>
-          <button class="btn" type="button" onclick={revert} disabled={busy || !dirty}>Revert to saved</button>
           <button class="btn" type="button" onclick={resetToStandard} disabled={busy}>Reset to standard blue</button>
           <button class="btn" type="button" onclick={() => { copying = true; }} disabled={busy}>Copy brand from another client...</button>
         </div>
@@ -342,13 +348,10 @@
       </div>
     </div>
 
-    <aside class="brand__preview" aria-label="Preview">
-      <BrandPreviewPanel
-        {look} tokens={report.theme.tokens} {device} {scene} {deviceId} {sceneId} clientName={record.name} {deviceUrl} {deviceQr}
-        onDevice={(id) => { deviceId = id; }} onScene={(id) => { sceneId = id; }} onShowQr={() => void showDeviceQr()} {onToast}
-      />
-    </aside>
   </div>
+  <StickyBar label="Brand" icon={dirty ? 'alert-triangle' : 'check-circle'} tone={dirty ? 'warn' : 'ok'} context={busy ? 'Saving...' : dirty ? 'Changes not saved' : 'All changes saved'}
+    primary={{ label: busy ? 'Saving...' : 'Save brand', icon: 'check', onclick: () => void save(), disabled: busy || !dirty }}
+    secondary={{ label: 'Revert to saved', icon: 'rotate-left', onclick: revert, disabled: busy || !dirty }} />
 </section>
 
 {#if leaving}
@@ -403,11 +406,20 @@
     margin: 0;
   }
 
+  /* Prompt 39: the preview 7 of the page's 12 columns, the controls 5, on one top line. */
   .brand__grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 1.5rem;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: var(--adm-gutter);
     align-items: start;
+  }
+
+  .brand__grid > .brand__preview {
+    grid-column: span 7;
+  }
+
+  .brand__grid > .brand__controls {
+    grid-column: span 5;
   }
 
   .brand__controls,
@@ -461,10 +473,15 @@
     color: var(--adm-bad-ink);
   }
 
-  /* The preview moves below the controls on a narrow window. */
+  /* On a narrow window the preview stays first, above the controls. */
   @media (max-width: 820px) {
     .brand__grid {
       grid-template-columns: minmax(0, 1fr);
+    }
+
+    .brand__grid > .brand__preview,
+    .brand__grid > .brand__controls {
+      grid-column: 1 / -1;
     }
 
     .brand__preview {

@@ -21,6 +21,15 @@ const confirmWith = (page: Page, accept = true) => {
   return seen;
 };
 const dialogOf = (page: Page) => page.getByRole('dialog');
+// (Prompt 38) An activity's Rename or describe, Duplicate and Delete are in its more menu; a question's layout is folded.
+async function activityAction(page: Page, id: string, title: string, item: 'Rename or describe' | 'Duplicate' | 'Delete') {
+  await activityRow(page, id).getByRole('button', { name: `More actions for ${title}` }).click();
+  await activityRow(page, id).getByRole('menuitem', { name: item }).click();
+}
+async function openLayout(page: Page) {
+  const fold = page.locator('details').filter({ has: page.locator('summary', { hasText: /^Layout/ }) });
+  if ((await fold.getAttribute('open')) === null) await fold.locator('summary').click();
+}
 
 async function participantHub(browser: Parameters<typeof another>[0]) {
   const guest = await another(browser, local);
@@ -105,7 +114,7 @@ test('an activity can be renamed and described, switched, duplicated, moved and 
   await pickClient(page, 'Kroger');
 
   // Rename: a name the client already has is refused, and nothing is written.
-  await activityRow(page, 'sec-straight-talk').getByRole('button', { name: /Rename or describe/ }).click();
+  await activityAction(page, 'sec-straight-talk', 'Straight Talk', 'Rename or describe');
   const form = dialogOf(page);
   await expect(form.getByLabel('Name', { exact: true })).toBeFocused();
   await form.getByLabel('Name', { exact: true }).fill('  guess  the BRAND ');
@@ -128,7 +137,7 @@ test('an activity can be renamed and described, switched, duplicated, moved and 
 
   // Duplicate: a whole copy beside the original, not live, with ids of its own.
   const original = await ds.getSection('sec-confidence');
-  await activityRow(page, 'sec-confidence').getByRole('button', { name: 'Duplicate Confidence Continuum' }).click();
+  await activityAction(page, 'sec-confidence', 'Confidence Continuum', 'Duplicate');
   await expect(activityTitles(page).last()).toHaveText('Confidence Continuum (copy)');
   const copy = (await ds.listClientSections('c-kroger')).find((section: { title: string }) => section.title === 'Confidence Continuum (copy)');
   expect(copy).toMatchObject({ enabled: false, clientId: 'c-kroger', order: 6 });
@@ -155,7 +164,7 @@ test('an activity can be renamed and described, switched, duplicated, moved and 
 
   // Delete: cancelling keeps everything.
   const keep = confirmWith(page, false);
-  await activityRow(page, 'sec-guess-the-brand').getByRole('button', { name: 'Delete Guess the Brand' }).click();
+  await activityAction(page, 'sec-guess-the-brand', 'Guess the Brand', 'Delete');
   await expect.poll(() => keep.length).toBe(1);
   expect(await ds.getSection('sec-guess-the-brand')).toBeTruthy();
 });
@@ -188,7 +197,7 @@ test('deleting an activity or a question that has recorded answers says how many
 
   // Then the whole activity, which is live.
   const asked = confirmWith(page);
-  await activityRow(page, 'sec-trivia').getByRole('button', { name: "Delete Kroger's History" }).click();
+  await activityAction(page, 'sec-trivia', "Kroger's History", 'Delete');
   await expect(activityRow(page, 'sec-trivia')).toHaveCount(0);
   expect(asked[0]).toContain('Delete "Kroger\'s History", its 5 questions and 20 options?');
   expect(asked[0]).toContain(`This also orphans ${answersTo(history.questionIds)} recorded answers.`);
@@ -220,9 +229,12 @@ test('Layout and option pictures round-trip through the editor, and the particip
   await page.getByLabel('Question', { exact: true }).fill('Which of these is the pizza logo?');
   await page.getByLabel('Option 1 text').fill('Alpha');
   await page.getByLabel('Option 2 text').fill('Bravo');
-  await page.getByRole('button', { name: '+ Add option' }).click();
   await page.getByLabel('Option 3 text').fill('Charlie');
+  await expect(page.getByLabel('Option 4 text'), 'a new question starts with four answer rows').toHaveValue('');
+  await page.getByRole('button', { name: 'Remove option' }).nth(3).click();
+  await expect(page.getByLabel('Option 4 text')).toHaveCount(0);
   await expect(page.getByLabel(/picture address/), 'a list has no picture fields').toHaveCount(0);
+  await openLayout(page);
   await page.getByLabel('Layout').selectOption('image-grid');
   await expect(page.getByLabel(/picture address/)).toHaveCount(3);
   await expect(page.getByTestId('tile-hint')).toContainText('A text tile will be used for any option with no picture (none has one yet, so every tile shows text)');
@@ -262,6 +274,7 @@ test('Layout and option pictures round-trip through the editor, and the particip
   await page.locator('.content-detail .row').filter({ hasText: 'pizza logo' }).getByRole('button', { name: 'Edit' }).click();
   await expect(page.getByLabel('Layout')).toHaveValue('image-grid');
   await expect(page.getByLabel('Option 1 picture address')).toHaveValue('https://img.test/alpha.svg');
+  await openLayout(page);
   await page.getByLabel('Layout').selectOption('text-list');
   await expect(page.getByLabel(/picture address/)).toHaveCount(0);
   await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
@@ -274,6 +287,7 @@ test('Layout and option pictures round-trip through the editor, and the particip
 
   // Tiles again, and one picture is cleared: it is stored as none, and that tile is text.
   await page.locator('.content-detail .row').filter({ hasText: 'pizza logo' }).getByRole('button', { name: 'Edit' }).click();
+  await openLayout(page);
   await page.getByLabel('Layout').selectOption('image-grid');
   await page.getByLabel('Option 1 picture address').fill('');
   await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
@@ -582,7 +596,8 @@ test('keyboard: the controls come in reading order and show the green ring, dial
     // (Phase 9b, SAM-2: Domino's is a sample client, so "Mark as confirmed" is the next stop after the two buttons, before the activities.)
     // (Prompt 20: a client without a confidence check offers to add one, above its activities: one stop more, so the list ends a stop earlier.)
     'content-client', expect.stringContaining('Activities'), 'Open Brand', 'Add activity', 'Copy from another client...', 'Mark as confirmed', 'Add a confidence check', expect.stringContaining("Domino's History"), "Set Domino's History live", "Preview Domino's History",
-    "Rename or describe Domino's History", "Duplicate Domino's History", "Move Domino's History down", "Delete Domino's History", expect.stringContaining('Guess the Innovation'),
+    // (Prompt 38: Rename or describe, Duplicate and Delete are one stop, the row's more menu, after the arrows; so the next row's switch and preview come in.)
+    "Move Domino's History down", "More actions for Domino's History", expect.stringContaining('Guess the Innovation'), 'Set Guess the Innovation live', 'Preview Guess the Innovation',
   ]);
 
   // Dialogs: focus goes in, Escape comes out, and the button that opened it has the focus again.
@@ -597,10 +612,14 @@ test('keyboard: the controls come in reading order and show the green ring, dial
   await expect(dialogOf(page).getByLabel('Copy from')).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('button', { name: 'Copy from another client...' })).toBeFocused();
-  await page.getByRole('button', { name: "Rename or describe Domino's History" }).focus();
+  // Rename from the more menu by the keyboard: Enter opens it on its first item, Enter takes it, Escape gives the focus back to the menu's button.
+  const more = page.getByRole('button', { name: "More actions for Domino's History" });
+  await more.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('menuitem', { name: 'Rename or describe' })).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(dialogOf(page).getByLabel('Name', { exact: true })).toBeFocused();
   await expect(dialogOf(page).getByLabel('Name', { exact: true })).toHaveValue("Domino's History");
   await page.keyboard.press('Escape');
-  await expect(page.getByRole('button', { name: "Rename or describe Domino's History" })).toBeFocused();
+  await expect(more).toBeFocused();
 });

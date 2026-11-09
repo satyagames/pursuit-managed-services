@@ -5,6 +5,7 @@
   // them and hands each change back.
   import { PRESETS, parseColour, type Draft, type brandReport } from '../lib/brand/brand-studio.js';
   import { colourInvalid, contrastResult } from '../lib/admin/brand-studio-view.js';
+  import Icon from './Icon.svelte';
 
   let {
     draft, primaryTyped, accentTyped, report, gradient,
@@ -85,7 +86,7 @@
         <th scope="row"><span class="brand__sample" style:background={row.background} aria-hidden="true"><span class="brand__sample-ink" style:background={row.foreground}></span></span>{row.label}</th>
         <td>{row.ratio.toFixed(1)}:1</td>
         <td>{row.need}:1</td>
-        <td>{contrastResult(row)}</td>
+        <td><span class="chip" class:chip--ok={row.pass} class:chip--danger={!row.pass}><Icon name={row.pass ? 'check-circle' : 'alert-triangle'} size={16} />{contrastResult(row).replace(/^[✓✕] /, '')}</span></td>
       </tr>
     {/each}
   </tbody>
@@ -264,7 +265,6 @@
   }
 
   .brand__contrast tr[data-pass='false'] td:last-child {
-    color: var(--adm-bad-ink);
     font-weight: var(--fw-semibold);
   }
 

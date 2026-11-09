@@ -31,6 +31,7 @@ const LIMITS = {
   centroidMaxHz: 3500,
   highShareMax: 0.02,
   levelSpreadDb: 2, // A-weighted level while sounding, loudest cue to quietest
+  finaleAboveDb: 3, // (Prompt 36) the finale is the visit's peak: it may sit up to this much above the loudest other cue, and never under the quietest
 };
 
 let bundle: Promise<string> | null = null;
@@ -149,7 +150,7 @@ for (const name of CUE_NAMES) {
 
 // ---- Similar loudness across cues ----------------------------------------------------------------------
 
-test('every cue sounds about equally loud (A-weighted level while sounding within 2 dB), and the report is written', async ({ page, browserName }) => {
+test('every cue sounds about equally loud (A-weighted level while sounding within 2 dB; the finale at most 3 dB above), and the report is written', async ({ page, browserName }) => {
   await engineInPage(page);
   const measurements: Measurement[] = [];
   for (const name of CUE_NAMES) measurements.push(measure(name, await render(page, name)));
@@ -162,6 +163,9 @@ test('every cue sounds about equally loud (A-weighted level while sounding withi
     seconds: +m.audibleSeconds.toFixed(3), max: CUES[m.cue as CueName].max, centroidHz: Math.round(m.centroidHz), above6k: `${(m.highShare * 100).toFixed(2)}%`,
   })));
 
-  const levels = measurements.map((m) => m.levelDbA);
+  const levels = measurements.filter((m) => m.cue !== 'finale').map((m) => m.levelDbA);
   expect(Math.max(...levels) - Math.min(...levels), `levels ${levels.map((level) => level.toFixed(1)).join(', ')}`).toBeLessThanOrEqual(LIMITS.levelSpreadDb);
+  const finale = measurements.find((m) => m.cue === 'finale')!.levelDbA;
+  expect(finale - Math.max(...levels), `the finale at ${finale.toFixed(1)} dB(A)`).toBeLessThanOrEqual(LIMITS.finaleAboveDb);
+  expect(finale, 'the finale is not quieter than the quietest cue').toBeGreaterThanOrEqual(Math.min(...levels));
 });

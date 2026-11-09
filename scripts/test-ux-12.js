@@ -164,7 +164,9 @@ describe('F-15: Content: an activity\'s buttons fit one line on a laptop, Delete
   it('admin.css: the activities column is the wider one, and Delete is pushed to the row end', async () => {
     const { readFileSync } = await import('node:fs');
     const css = readFileSync(new URL('../migration/src/admin.css', import.meta.url), 'utf8');
-    assert.match(css, /\.content-layout\s*\{\s*grid-template-columns:\s*minmax\(0, 6fr\) minmax\(0, 5fr\);/);
+    // (Prompt 39: the activities 5 of the 12 columns and the questions 7; an activity's buttons still fit their own line at 1,280 px.)
+    assert.match(css, /\.content-layout\s*\{\s*grid-template-columns:\s*repeat\(12, minmax\(0, 1fr\)\);/);
+    assert.match(css, /\.content-layout > \.content-activities\s*\{\s*grid-column:\s*span 5;/);
     assert.match(css, /\.activity__actions \.btn--danger\s*\{\s*margin-left:\s*auto;/);
   });
 });

@@ -1,4 +1,4 @@
-import { test, expect, type Browser, type BrowserContext, type Page } from '@playwright/test';
+import { test, expect, type Browser, type BrowserContext, type Locator, type Page } from '@playwright/test';
 import { freePort } from '../free-port.js';
 import { makeImage } from './brand-images.js';
 import { spawn, type ChildProcess } from 'node:child_process';
@@ -9,6 +9,14 @@ import { fileURLToPath } from 'node:url';
 import * as ds from '../../migration/src/lib/data/dataService.js';
 import { localDate } from '../../migration/src/lib/admin/admin-today.js';
 import { sharePointFolderPath } from '../deployment-config.js';
+
+/** Opens a tab, through Menu below 1,024 px (Prompt 39; as admin-local.ts's chooseTab, which this file does not import). */
+async function chooseTab(page: Page, name: string) {
+  const menu = page.getByTestId('tabs-menu');
+  if (await menu.isVisible() && (await menu.getAttribute('aria-expanded')) !== 'true') await menu.click();
+  await page.getByRole('tab', { name, exact: true }).click();
+}
+const tabNamed = (page: Page, id: string) => page.locator(`#admin-tab-${id}`);
 
 // The facilitator's Today and Clients screens, end to end: the BUILT admin and participant pages
 // against the REAL local server (server/index.js) on a scratch copy of server/data, one server per
@@ -66,8 +74,8 @@ async function openAdmin(page: Page, tab?: string) {
   await page.goto(adminUrl);
   await page.getByRole('textbox', { name: 'PIN' }).fill(PIN);
   await page.getByRole('button', { name: 'Unlock' }).click();
-  await expect(page.getByRole('tab', { name: 'Today' })).toHaveAttribute('aria-selected', 'true');
-  if (tab) await page.getByRole('tab', { name: tab, exact: true }).click();
+  await expect(tabNamed(page, 'today')).toHaveAttribute('aria-selected', 'true');
+  if (tab) await chooseTab(page, tab);
 }
 
 /** A second admin, or a participant, in a browser of its own. */
@@ -82,6 +90,31 @@ const goLiveButton = (page: Page) => page.getByRole('button', { name: /^(Go live
 const check = (page: Page, id: string) => page.locator(`[data-check="${id}"]`);
 const pickClient = (page: Page, name: string) => page.getByLabel('Client', { exact: true }).selectOption({ label: name });
 const status = (page: Page) => page.locator('section[data-live]');
+// (Prompt 38) Re-check is the sticky bar's secondary; the session's three settings are one line with Change; a client row's Archive, Restore and
+// Delete are in its more menu; a new client's short name and words are folded under More details, and its button says Add client.
+const recheck = (page: Page) => page.getByTestId('sticky-bar').getByRole('button', { name: 'Re-check' });
+async function openSettings(page: Page) {
+  const toggle = page.getByRole('button', { name: /^(Change|Done)$/ });
+  await expect(toggle).toBeVisible();
+  if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
+}
+const moreButton = (row: Locator) => row.getByRole('button', { name: /^More actions for / });
+async function rowAction(row: Locator, item: string | RegExp) {
+  await moreButton(row).click();
+  await row.getByRole('menuitem', { name: item }).click();
+}
+async function menuItem(row: Locator, item: string | RegExp, state: 'enabled' | 'disabled') {
+  await moreButton(row).click();
+  const entry = row.getByRole('menuitem', { name: item });
+  if (state === 'disabled') await expect(entry).toBeDisabled(); else await expect(entry).toBeEnabled();
+  await row.page().keyboard.press('Escape');
+}
+const clientForm = (page: Page) => page.getByRole('region', { name: /^(Add a client|Edit client details)/ });
+const saveClient = (page: Page) => clientForm(page).getByRole('button', { name: /^(Add|Save) client$/ });
+async function moreDetails(page: Page) {
+  const fold = page.locator('details.client-more');
+  if ((await fold.getAttribute('open')) === null) await fold.locator('summary').click();
+}
 
 let sequence = 0;
 /** Content as the Content screen makes it: an activity that carries its client, with graded questions. */
@@ -125,11 +158,12 @@ test('create a client, find it in the Today picker, go live, and a second browse
   await openAdmin(page, 'Clients');
   await page.getByRole('button', { name: 'Add client' }).click();
   await page.getByLabel('Name', { exact: true }).fill('Acme Foods');
+  await moreDetails(page);
   await expect(page.getByLabel('Short name in session ids', { exact: true })).toHaveValue('acme-foods');
   await expect(page.getByLabel('Event title')).toHaveValue('ACME FOODS TRIVIA NIGHT');
   await page.getByLabel('Subtitle').fill('Fresh ideas since 1901.');
   await page.getByLabel('Welcome line').fill('Welcome to Acme night!');
-  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
+  await saveClient(page).click();
   const row = page.locator('.row').filter({ hasText: 'Acme Foods' });
   await expect(row).toContainText('Active');
   await expect(row).toContainText('0 activities (0 live) · Last live never · acme-foods');
@@ -139,13 +173,13 @@ test('create a client, find it in the Today picker, go live, and a second browse
   expect(stored.theme.tokens['--bg-mid']).toBe('#045BCC');
 
   // It is in the picker, but it has no activity yet: that is a blocker, and Go live says why.
-  await page.getByRole('tab', { name: 'Today' }).click();
+  await chooseTab(page, 'Today');
   await pickClient(page, 'Acme Foods');
   await expect(goLiveButton(page)).toBeDisabled();
   await expect(check(page, 'activities')).toHaveAttribute('data-level', 'blocker');
   await expect(page.getByTestId('go-live-why')).toContainText('Fix this first: Live activities.');
   await addActivity('c-acme-foods', { title: 'Acme Basics' });
-  await page.getByRole('button', { name: 'Re-check' }).click();
+  await recheck(page).click();
   await expect(goLiveButton(page)).toBeEnabled();
   await expect(check(page, 'logo')).toHaveAttribute('data-level', 'warning');
   await expect(check(page, 'one-activity')).toHaveAttribute('data-level', 'warning');
@@ -179,7 +213,7 @@ test('create a client, find it in the Today picker, go live, and a second browse
 
   // The new participant is counted on the next refresh, and the client's row says it is live.
   await expect(page.getByTestId('participants')).toHaveText('1', { timeout: 15_000 });
-  await page.getByRole('tab', { name: 'Clients' }).click();
+  await chooseTab(page, 'Clients');
   await expect(page.locator('.row').filter({ hasText: 'Acme Foods' })).toContainText('LIVE NOW');
   await expect(page.locator('.row').filter({ hasText: 'Acme Foods' })).toContainText(`Last live ${today}`);
 });
@@ -296,7 +330,7 @@ test('each readiness blocker disables Go live and says why; each warning shows a
   await expect(check(page, 'activities')).toHaveAttribute('data-level', 'blocker');
   await expect(check(page, 'activities')).toContainText('Bare Co has no activities.');
   await expect(check(page, 'activities')).toContainText('Add activities under Content');
-  await expect(page.getByTestId('readiness-summary')).toContainText('1 blocker');
+  await expect(page.getByTestId('readiness-summary')).toContainText('1 thing to fix');
 
   await pickClient(page, 'No Options Co');
   await expect(go).toBeDisabled();
@@ -326,7 +360,7 @@ test('each readiness blocker disables Go live and says why; each warning shows a
   await expect(check(page, 'date')).toHaveAttribute('data-level', 'warning');
   await expect(check(page, 'date')).toContainText(`${tomorrow} is not today (${today})`);
   await ds.createSession({ id: `kroger-${tomorrow}`, clientId: 'c-kroger', date: tomorrow, sectionIds: [], status: 'not-started', activityFlow: 'sequential', participationMode: 'staff' });
-  await page.getByRole('button', { name: 'Re-check' }).click();
+  await recheck(page).click();
   await expect(check(page, 'same-date')).toContainText(`Kroger already has a session on ${tomorrow}.`);
   await expect(go).toBeEnabled();
   await go.click();
@@ -336,9 +370,10 @@ test('each readiness blocker disables Go live and says why; each warning shows a
   const staffWarning = page.getByTestId('staff-mode-warning');
   await expect(staffWarning).toHaveText("Staff mode: every person needs their own sign-in. iPads that share one sign-in must use Guests scan a personal QR, or two people's answers will be mixed.");
   await expect(check(page, 'staff-signin')).toHaveAttribute('data-level', 'warning');
-  await expect(go, 'a warning never blocks').toHaveText('Already live');
+  await expect(page.getByTestId('bar-wall'), 'a warning never blocks: it is live, and the bar offers the wall').toBeVisible();
 
   // Guests on, nobody added: a warning, after the client is live.
+  await openSettings(page);
   await page.getByRole('radio', { name: /Guests scan a personal QR/ }).check();
   await expect(page.locator('.toast')).toContainText('Guests now scan a personal QR');
   await expect(check(page, 'guests')).toHaveAttribute('data-level', 'warning');
@@ -356,18 +391,18 @@ test('each readiness blocker disables Go live and says why; each warning shows a
   // A client archived by someone else after this page loaded: a blocker, and Go live refuses.
   await pickClient(page, 'Bare Co');
   await ds.updateClient(bare, { status: 'archived' });
-  await page.getByRole('button', { name: 'Re-check' }).click();
+  await recheck(page).click();
   await expect(check(page, 'client')).toHaveAttribute('data-level', 'blocker');
   await expect(check(page, 'client')).toContainText('Bare Co is archived.');
   await expect(go).toBeDisabled();
 
   // A session that has ended for that day: a blocker with Reopen beside it.
   await pickClient(page, 'Warn Co');
-  await page.getByRole('button', { name: 'Re-check' }).click();
+  await recheck(page).click();
   page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: 'End session' }).click();
   await expect(status(page)).toContainText('NOT LIVE');
-  await page.getByRole('button', { name: 'Re-check' }).click();
+  await recheck(page).click();
   await expect(check(page, 'session-ended')).toHaveAttribute('data-level', 'blocker');
   await expect(go).toBeDisabled();
   await check(page, 'session-ended').getByRole('button', { name: 'Reopen session' }).click();
@@ -381,39 +416,39 @@ test('an archived client is not selectable on Today, a live client cannot be arc
   await openAdmin(page, 'Clients');
   const dominos = page.locator('.row').filter({ hasText: "Domino's" });
   page.once('dialog', (dialog) => dialog.accept());
-  await dominos.getByRole('button', { name: 'Archive' }).click();
+  await rowAction(dominos, 'Archive');
   await expect(dominos).toContainText('Archived');
   expect((await ds.getClient('c-dominos')).status).toBe('archived');
   await expect(dominos.getByRole('button', { name: 'Generate QR' })).toBeDisabled();
-  await page.getByRole('tab', { name: 'Today' }).click();
+  await chooseTab(page, 'Today');
   await expect(page.getByLabel('Client', { exact: true }).locator('option')).toHaveText(['Kroger']);
   // The server refuses it as well, whatever the page says.
   await expect(ds.activateClient('c-dominos', today)).rejects.toMatchObject({ code: 'client-archived' });
-  await page.getByRole('tab', { name: 'Clients' }).click();
-  await dominos.getByRole('button', { name: 'Restore' }).click();
+  await chooseTab(page, 'Clients');
+  await rowAction(dominos, 'Restore');
   await expect(dominos).toContainText('Active');
-  await page.getByRole('tab', { name: 'Today' }).click();
+  await chooseTab(page, 'Today');
   await expect(page.getByLabel('Client', { exact: true }).locator('option')).toHaveText(["Domino's", 'Kroger']);
 
   // A live client has no Archive button to press, and if it goes live after the page loaded, the click is refused.
   await pickClient(page, 'Kroger');
   await goLiveButton(page).click();
   await expect(page.getByText('Verified: participants now see Kroger')).toBeVisible();
-  await page.getByRole('tab', { name: 'Clients' }).click();
+  await chooseTab(page, 'Clients');
   const kroger = page.locator('.row').filter({ hasText: 'Kroger' });
   await expect(kroger).toContainText('LIVE NOW');
-  await expect(kroger.getByRole('button', { name: 'Archive' })).toBeDisabled();
-  await page.getByRole('tab', { name: 'Today' }).click();
+  await menuItem(kroger, /^Archive/, 'disabled');
+  await chooseTab(page, 'Today');
   await pickClient(page, "Domino's");
   await goLiveButton(page).click();
   await expect(page.getByText("Verified: participants now see Domino's")).toBeVisible();
-  await page.getByRole('tab', { name: 'Clients' }).click();
-  await expect(dominos.getByRole('button', { name: 'Archive' })).toBeDisabled();
+  await chooseTab(page, 'Clients');
+  await menuItem(dominos, /^Archive/, 'disabled');
   // Another admin makes Kroger live behind this page's back: the page still thinks it is not.
   await ds.activateClient('c-kroger', today);
-  await expect(kroger.getByRole('button', { name: 'Archive' })).toBeEnabled();
+  await menuItem(kroger, 'Archive', 'enabled');
   page.once('dialog', (dialog) => dialog.accept());
-  await kroger.getByRole('button', { name: 'Archive' }).click();
+  await rowAction(kroger, 'Archive');
   await expect(page.locator('.toast')).toContainText('Kroger is live now.');
   expect((await ds.getClient('c-kroger')).status).toBe('active');
 });
@@ -425,6 +460,7 @@ test('slugs: made from the name, a to z and hyphens only, unique, and locked onc
   const name = page.getByLabel('Name', { exact: true });
   const slug = page.getByLabel('Short name in session ids', { exact: true });
   await name.fill("Domino's Pizza!");
+  await moreDetails(page);
   await expect(slug).toHaveValue('dominos-pizza');
   // Typing in the slug stops it following the name.
   await slug.fill('Bad Slug');
@@ -433,7 +469,7 @@ test('slugs: made from the name, a to z and hyphens only, unique, and locked onc
   await expect(slug).toHaveValue('Bad Slug');
   await slug.fill('kroger');
   await expect(page.locator('#slug-help')).toContainText('Kroger already uses this slug.');
-  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
+  await saveClient(page).click();
   await expect(page.getByRole('alert')).toContainText('Kroger already uses this slug.');
   expect((await ds.listClients()).map((client: { id: string }) => client.id)).not.toContain('c-kroger-2');
   for (const [typed, message] of [['-start', /Use a to z/], ['two--hyphens', /Use a to z/], ['under_score', /Use a to z/], ['x'.repeat(41), /40 characters/]] as const) {
@@ -442,7 +478,7 @@ test('slugs: made from the name, a to z and hyphens only, unique, and locked onc
   }
   await slug.fill('something-else');
   await expect(page.locator('#slug-help')).toContainText('Session ids are the slug, the date and the start time');
-  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
+  await saveClient(page).click();
   await expect(page.locator('.row').filter({ hasText: 'Something Else' })).toContainText('something-else');
   // Two admins adding the same slug together: the second is refused by the unique id, not by luck.
   await expect(ds.createClient({ id: 'c-something-else', name: 'Again', slug: 'something-else' })).rejects.toMatchObject({ status: 409 });
@@ -453,7 +489,8 @@ test('slugs: made from the name, a to z and hyphens only, unique, and locked onc
   await expect(slug).toBeDisabled();
   await expect(page.locator('#slug-help')).toContainText('Locked: this client already has sessions');
   await page.getByLabel('Event title').fill('KROGER NIGHT');
-  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
+  await saveClient(page).click();
+  await expect(clientForm(page)).toHaveCount(0);
   await expect(kroger).toBeVisible();
   const edited = await ds.getClient('c-kroger');
   expect(edited).toMatchObject({ slug: 'kroger', themeVersion: 2 });
@@ -464,7 +501,7 @@ test('slugs: made from the name, a to z and hyphens only, unique, and locked onc
   await fresh.getByRole('button', { name: 'Edit' }).click();
   await expect(slug).toBeEnabled();
   await slug.fill('something-new');
-  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
+  await saveClient(page).click();
   await expect(page.locator('.row').filter({ hasText: 'something-new' })).toBeVisible();
   expect((await ds.getClient('c-something-else')).slug).toBe('something-new');
 });
@@ -487,6 +524,7 @@ test.describe('capabilities that moved', () => {
   test('visit mode, activity flow, end and reopen are controls on Today', async ({ page, browser }) => {
     await ds.activateClient('c-kroger', today);
     await openAdmin(page);
+    await openSettings(page);
     await page.getByRole('radio', { name: /Guests scan a personal QR/ }).check();
     await expect.poll(async () => (await ds.getSession(`kroger-${today}`)).participationMode).toBe('client-visit');
     await page.getByRole('radio', { name: /^Open/ }).check();
@@ -511,7 +549,7 @@ test.describe('capabilities that moved', () => {
     await expect(guest.page.getByText('Thank you. Your answers are saved.')).toBeVisible();
     await guest.page.reload();
     await expect(ended).toBeVisible();
-    await page.getByRole('region', { name: 'Controls' }).getByRole('button', { name: 'Reopen session' }).click();
+    await page.getByRole('region', { name: 'Session settings' }) /* (Prompt 38: it was Controls) */.getByRole('button', { name: 'Reopen session' }).click();
     await expect(status(page)).toContainText('LIVE');
     // And Reopen brings the page back to Welcome, again by itself.
     await expect(guest.page.getByText('Welcome to the Kroger experience.', { exact: true })).toBeVisible({ timeout: 12_000 });
@@ -528,7 +566,8 @@ test.describe('capabilities that moved', () => {
     await expect(page.getByText(/Live session: Kroger/)).toBeVisible();
     await page.getByRole('textbox', { name: 'Visitor name' }).fill('Jordan Lee');
     await page.getByRole('button', { name: 'Add visitor' }).click();
-    const guest = page.getByRole('listitem').filter({ hasText: 'Jordan Lee' });
+    // (Prompt 39: the guest list is a table: a guest is a row.)
+    const guest = page.getByRole('row').filter({ hasText: 'Jordan Lee' });
     await expect(guest).toContainText('No code');
     await guest.getByRole('button', { name: 'Generate QR' }).click();
     await expect(page.getByRole('img', { name: /Single-use check-in QR code for Jordan Lee/ })).toBeVisible();
@@ -545,11 +584,11 @@ test.describe('capabilities that moved', () => {
     await expect(page.getByText('Earlier Guest')).toBeVisible();
     // With staff sign-in on, the roster steps aside and points to Today.
     await ds.setSessionParticipationMode(`kroger-${today}`, 'staff');
-    await page.getByRole('tab', { name: 'Today' }).click();
-    await page.getByRole('tab', { name: 'Guests and QR' }).click();
+    await chooseTab(page, 'Today');
+    await chooseTab(page, 'Guests and QR');
     await expect(page.getByText(/Staff sign in is on/)).toBeVisible();
     await page.getByRole('button', { name: 'Open Today' }).click();
-    await expect(page.getByRole('tab', { name: 'Today' })).toHaveAttribute('aria-selected', 'true');
+    await expect(tabNamed(page, 'today')).toHaveAttribute('aria-selected', 'true');
   });
 
   test('Results: each iPad, the live tally, the Live display, and restarting one track', async ({ page, browser }) => {
@@ -607,7 +646,7 @@ test.describe('capabilities that moved', () => {
     // what is live (AppSettings); the legacy look's one item ("the active theme") is not asked for.
     const themeAsked: string[] = [];
     page.on('request', (request) => { if (/\/api\/theme\b/.test(request.url())) themeAsked.push(request.url()); });
-    await kroger.getByRole('button', { name: 'Delete' }).click();
+    await rowAction(kroger, 'Delete');
     await expect(page.locator('.toast')).toContainText("Can't delete Kroger: it's used by a session, a client track, a QR token, today's live session");
     await expect(page.locator('.toast')).not.toContainText('the active theme');
     expect(themeAsked).toEqual([]);
@@ -620,13 +659,13 @@ test.describe('capabilities that moved', () => {
     await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
     await expect.poll(async () => (await ds.getClient('c-dominos')).logoUrl).toMatch(/^\/assets\/images\/clients\/dominos-logo-[0-9a-f]{10}\.(webp|png)$/);
     await expect(page.getByTestId('brand-status')).toHaveText('All changes saved');
-    await page.getByRole('tab', { name: 'Clients', exact: true }).click(); // (Phase 18: Brand is a view of Content; no Back button)
+    await chooseTab(page, 'Clients'); // (Phase 18: Brand is a view of Content; no Back button)
     // A client nothing refers to is deleted after a confirmation.
     const spare = await addClient('Spare Co');
-    await page.getByRole('tab', { name: 'Today' }).click();
-    await page.getByRole('tab', { name: 'Clients' }).click();
+    await chooseTab(page, 'Today');
+    await chooseTab(page, 'Clients');
     page.once('dialog', (dialog) => dialog.accept());
-    await page.locator('.row').filter({ hasText: 'Spare Co' }).getByRole('button', { name: 'Delete' }).click();
+    await rowAction(page.locator('.row').filter({ hasText: 'Spare Co' }), 'Delete');
     await expect(page.locator('.row').filter({ hasText: 'Spare Co' })).toHaveCount(0);
     expect(await ds.getClient(spare)).toBeNull();
     expect(wholeLists, 'no whole list of visits or codes was read').toEqual([]);
@@ -642,7 +681,7 @@ test.describe('capabilities that moved', () => {
     await page.getByRole('textbox', { name: 'PIN' }).fill(PIN);
     await page.getByRole('button', { name: 'Unlock' }).click();
     await expect(page.getByRole('tab')).toHaveText(['Today', 'Clients', 'Content', 'Guests and QR', 'Results']);
-    await page.getByRole('tab', { name: 'Content' }).click();
+    await chooseTab(page, 'Content');
     await expect(page.getByRole('heading', { name: 'Content', exact: true })).toBeVisible();
     await page.getByLabel('Client', { exact: true }).selectOption({ label: 'Kroger' });
     await expect(page.getByRole('checkbox', { name: "Set Kroger's History live" })).toBeChecked();
@@ -701,7 +740,7 @@ test('the admin fits 390, 820 and 1440 wide on every tab: no sideways scroll, 44
     await expectFits(page, `Today (blockers) at ${tag}`);
     await shoot(page, `today-blockers-${tag}`);
     for (const tab of ['Clients', 'Content', 'Guests and QR', 'Results']) {
-      await page.getByRole('tab', { name: tab, exact: true }).click();
+      await chooseTab(page, tab);
       // (Prompt 33: the Guests and QR tab's title is "Guests and QR codes".)
       await expect(page.getByRole('heading', { name: tab === 'Guests and QR' ? 'Guests and QR codes' : tab, exact: true }).first()).toBeVisible();
       await page.waitForTimeout(150);
@@ -715,8 +754,9 @@ test('the admin fits 390, 820 and 1440 wide on every tab: no sideways scroll, 44
       }
       if (tab === 'Guests and QR') await shoot(page, `guests-${tag}`);
     }
-    // The tab the page is on is visible in the row, however far it scrolled.
-    expect(await page.getByRole('tab', { name: 'Results' }).evaluate((tab) => { const box = tab.getBoundingClientRect(); return box.left >= 0 && box.right <= window.innerWidth; })).toBe(true);
+    // The tab the page is on is visible in the bar (from 1,024 px), or Menu is (below it: Prompt 39).
+    const shown = (await page.getByTestId('tabs-menu').isVisible()) ? page.getByTestId('tabs-menu') : tabNamed(page, 'results');
+    expect(await shown.evaluate((tab) => { const box = tab.getBoundingClientRect(); return box.left >= 0 && box.right <= window.innerWidth; })).toBe(true);
   }
 
   // Not live, at each width.
@@ -769,7 +809,8 @@ test('keyboard: the tab row is one stop with arrows, every control shows the gre
     if (focused.outline !== 'solid 3px' || !focused.halo) rings.push(`${focused.role}:${focused.name} ${focused.outline}`);
   }
   expect(rings, 'every stop draws the 3px green ring with its halo').toEqual([]);
-  expect(order.slice(0, 5)).toEqual(['button:Lock', 'tab:admin-panel', expect.stringMatching(/^tabpanel:/), expect.stringMatching(/^select:/), expect.stringMatching(/^input:/)]);
+  // (Prompt 39: the bar is read left to right: the tabs, then the person and Lock.)
+  expect(order.slice(0, 5)).toEqual(['tab:admin-panel', 'button:Lock', expect.stringMatching(/^tabpanel:/), expect.stringMatching(/^select:/), expect.stringMatching(/^input:/)]);
   expect(order.filter((entry) => entry.startsWith('tab:')), 'the six tabs are one tab stop').toHaveLength(1);
 
   // Arrow keys move along the row and open the tab; Home and End jump.
@@ -792,7 +833,7 @@ test('keyboard: the tab row is one stop with arrows, every control shows the gre
 
   // With a participant in it, the confirmation takes focus, Escape cancels, and focus starts on Cancel.
   await ds.beginVisit(crypto.randomUUID(), `dominos-${today}`, 'c-dominos');
-  await page.getByRole('button', { name: 'Re-check' }).click();
+  await recheck(page).click();
   await ds.activateClient('c-kroger', today);
   await ds.activateClient('c-dominos', today);
   await page.getByLabel('Client', { exact: true }).selectOption({ label: 'Kroger' });

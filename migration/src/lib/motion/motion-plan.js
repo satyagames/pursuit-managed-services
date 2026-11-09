@@ -64,6 +64,8 @@ export const TOKENS = Object.freeze({
     hold: 650, advance: 600, pop: 160, bump: 120, ripple: 400, sheen: 450, check: 250, glow: 600, milestone: 1600, fly: 420, flyStagger: 30,
     wave: 120, waveStep: 40, spring: 160, pulse: 600, rise: 400, count: 700,
   }),
+  /** The grand finale (Prompt 36), ms: the whole hush (the veil's life), then each part of lib/motion/finale-motion-plan.js. Each is a --motion-finale-* in the CSS. */
+  finale: Object.freeze({ hush: 4200, medal: 600, rays: 1300, ring: 800, check: 450, name: 500, card: 400, count: 800, sheen: 450, fade: 200, again: 320, garland: 6500 }),
 });
 
 /** Shapes the CSS defines, and nothing else (a recipe naming another is a test failure). */

@@ -1,16 +1,20 @@
 <script lang="ts">
   import GuestAvatar from '../../components/GuestAvatar.svelte';
   import MetricInfo from '../MetricInfo.svelte';
+  import type { Snippet } from 'svelte';
   import { timeOf, type Chart, type Who } from './chart-ui.js';
 
   // An Art of the Possible question's results (Prompt 23, board 17): a real grid of rows, with each criterion's average shaded in the blue ramp and written out, then its opportunity,
   // band, agreement and people. No chart library and no second page: every row is in the same grid. Every number is lib/results/results-chart-model.js's (and so aop-math.js's). A row
   // opens in place: the counts of each criterion and, for someone who may see names, who said High. The wall draws the same grid, with no names and nothing to open.
   type Row = Chart['rows'][number];
-  let { chart, withNames = false, fit = false, level = 5 }: { chart: Chart; withNames?: boolean; fit?: boolean; level?: number } = $props();
+  // Prompt 39, on the admin page: the card's summary line (`head`) on the left and Sort by, Show and its numbers button (`tools`) on the right of one
+  // row; the rows in the order the guests rated them on their iPads (Original order, as the participant's screen has them), the sub-process
+  // column sticky, the criteria of one width with their names across, and each average on a teal tile.
+  let { chart, withNames = false, fit = false, level = 5, head, tools }: { chart: Chart; withNames?: boolean; fit?: boolean; level?: number; head?: Snippet; tools?: Snippet } = $props();
 
   type Sort = 'opportunity' | 'people' | 'name' | 'order';
-  let sort = $state<Sort>('opportunity');
+  let sort = $state<Sort>('order');
   let group = $state('');
   let open = $state<string | null>(null);
 
@@ -29,25 +33,29 @@
 
 <div class="aop" class:aop--fit={fit}>
   {#if !fit}
+    <div class="aop__head">
+    {@render head?.()}
     <div class="aop__tools">
       <label class="aop__tool"><span>Sort by</span>
-        <select bind:value={sort}><option value="opportunity">Opportunity</option><option value="people">People</option><option value="name">Name</option><option value="order">Original order</option></select>
+        <select bind:value={sort}><option value="order">Original order</option><option value="opportunity">Opportunity</option><option value="people">People</option><option value="name">Name</option></select>
       </label>
       {#if chart.views.length > 0}
         <label class="aop__tool"><span>Show</span>
           <select bind:value={group}><option value="">All guests</option>{#each chart.views as each (each.group)}<option value={each.group}>{each.group} ({each.respondents})</option>{/each}</select>
         </label>
       {/if}
+      {@render tools?.()}
+    </div>
     </div>
   {/if}
 
   <div class="aop__scroll">
-    <table class="aop__grid">
+    <table class="aop__grid" style:--aop-criteria={chart.criteria?.length ?? 0}>
       <caption class="sr-only">{chart.prompt}</caption>
       <thead>
         <tr>
           <th scope="col">Sub-process</th>
-          {#each chart.criteria as criterion (criterion.id)}<th scope="col" class="aop__n">{criterion.label}{#if criterion.direction === 'against'}{' '}<span class="aop__direction">(counts against)</span>{:else if criterion.direction === 'none'}{' '}<span class="aop__direction">(not in the score)</span>{/if}</th>{/each}
+          {#each chart.criteria as criterion (criterion.id)}<th scope="col" class="aop__n aop__crit"><span class="aop__crit-words">{criterion.label}{#if criterion.direction === 'against'}{' '}<span class="aop__direction">(counts against)</span>{:else if criterion.direction === 'none'}{' '}<span class="aop__direction">(not in the score)</span>{/if}</span></th>{/each}
           <th scope="col" class="aop__n">Opportunity{#if !fit}<MetricInfo id="aop-opportunity" />{/if}</th>
           <th scope="col">Band{#if !fit}<MetricInfo id="aop-band" />{/if}</th>
           <th scope="col" class="aop__n">Agreement{#if !fit}<MetricInfo id="aop-agreement" />{/if}</th>
@@ -64,7 +72,7 @@
               {#if row.single}<span class="aop__flag">1 guest</span>{/if}
             </th>
             {#each row.criteria as cell (cell.id)}
-              <td class="aop__heat" data-tone={cell.tone}>{cell.meanText}</td>
+              <td class="aop__heat" data-tone={cell.tone}>{#if fit}{cell.meanText}{:else}<span class="aop__tile">{cell.meanText}</span>{/if}</td>
             {/each}
             <td class="aop__n"><span class="aop__score">{row.opportunityText}</span>{#if row.opportunity !== null}<span class="aop__track" aria-hidden="true"><span style:width="{row.opportunity}%"></span></span>{/if}</td>
             <td class="aop__band" data-band={row.band}>{row.mark} {row.bandText}</td>
@@ -143,8 +151,92 @@
   }
 
   .aop__scroll {
+    position: relative;
     overflow-x: auto;
   }
+
+  /* ---- Prompt 39, on the admin page (not the wall) ---- */
+  .aop__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 16px;
+  }
+
+  .aop__head .aop__tools {
+    align-items: center;
+    justify-content: flex-end;
+    margin-left: auto;
+  }
+
+  /* Under 1,100 px the grid scrolls inside the card, never the page, with a shadow at the edge that has more. */
+  .aop:not(.aop--fit) .aop__scroll {
+    background:
+      linear-gradient(to right, var(--viz-surface) 30%, transparent) left / 24px 100% no-repeat local,
+      linear-gradient(to left, var(--viz-surface) 30%, transparent) right / 24px 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%, color-mix(in srgb, var(--viz-text) 18%, transparent), transparent) left / 12px 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, color-mix(in srgb, var(--viz-text) 18%, transparent), transparent) right / 12px 100% no-repeat scroll;
+  }
+
+  .aop:not(.aop--fit) .aop__grid {
+    min-width: calc(320px + var(--aop-criteria) * 120px + 4 * 96px);
+    table-layout: fixed;
+  }
+
+  .aop:not(.aop--fit) .aop__grid :is(th, td) {
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: auto;
+  }
+
+  /* The sub-process: a sticky first column, 320 px (in the brief's 280 to 360; a fixed layout takes no clamp() of a percentage), its name across. */
+  .aop:not(.aop--fit) .aop__grid :is(thead th:first-child, tbody th[scope='row']) {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    width: 320px;
+    background: var(--viz-surface);
+  }
+
+  .aop:not(.aop--fit) .aop__grid tbody th[scope='row'] {
+    box-shadow: inset -1px 0 0 var(--viz-grid);
+  }
+
+  /* The criteria's names: across, wrapped, in the label's size. */
+  .aop:not(.aop--fit) .aop__grid thead th {
+    font-size: var(--adm-fs-label, 0.75rem);
+    line-height: 1.3;
+    text-transform: none;
+  }
+
+  .aop:not(.aop--fit) .aop__grid thead th.aop__crit {
+    text-align: center;
+  }
+
+  /* (A word longer than its column breaks across lines, never cut off; no clamp, which would cut words at a large text size.) */
+  .aop:not(.aop--fit) .aop__crit-words {
+    display: block;
+    overflow-wrap: break-word;
+  }
+
+  /* Each average on a tile: light to deep teal, the figure in the middle, always printed (results-tokens.css: 4.5:1 or better). */
+  .aop:not(.aop--fit) .aop__grid .aop__heat {
+    padding: 4px;
+    background: var(--viz-surface);
+  }
+
+  .aop:not(.aop--fit) .aop__tile {
+    display: grid;
+    place-items: center;
+    min-height: 40px;
+    border-radius: 6px;
+  }
+
+  .aop:not(.aop--fit) .aop__heat[data-tone='0'] .aop__tile { color: var(--viz-text); background: var(--viz-heat-1); }
+  .aop:not(.aop--fit) .aop__heat[data-tone='1'] .aop__tile { color: var(--viz-text); background: var(--viz-heat-2); }
+  .aop:not(.aop--fit) .aop__heat[data-tone='2'] .aop__tile { color: var(--viz-text); background: var(--viz-heat-3); }
+  .aop:not(.aop--fit) .aop__heat[data-tone='3'] .aop__tile { color: var(--viz-surface); background: var(--viz-heat-4); }
 
   .aop__grid {
     width: 100%;

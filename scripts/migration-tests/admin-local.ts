@@ -103,14 +103,27 @@ export async function servePictures(page: Page, local: Local) {
   });
 }
 
+/**
+ * Opens one of the admin page's tabs. Below 1,024 px the tabs are inside Menu (Prompt 39), so Menu is opened first; a tab hidden in a shut
+ * Menu has no role a test can find.
+ */
+export async function chooseTab(page: Page, name: string) {
+  const menu = page.getByTestId('tabs-menu');
+  if (await menu.isVisible() && (await menu.getAttribute('aria-expanded')) !== 'true') await menu.click();
+  await page.getByRole('tab', { name, exact: true }).click();
+}
+
+/** Whether a tab is the open one, wherever it is (in the bar, or inside a shut Menu). */
+export const tabNamed = (page: Page, id: string) => page.locator(`#admin-tab-${id}`);
+
 export async function openAdmin(page: Page, local: Local, tab?: string) {
   const requests = await useServer(page, local);
   await servePictures(page, local);
   await page.goto(adminUrl);
   await page.getByRole('textbox', { name: 'PIN' }).fill(PIN);
   await page.getByRole('button', { name: 'Unlock' }).click();
-  await expect(page.getByRole('tab', { name: 'Today' })).toHaveAttribute('aria-selected', 'true');
-  if (tab) await page.getByRole('tab', { name: tab, exact: true }).click();
+  await expect(tabNamed(page, 'today')).toHaveAttribute('aria-selected', 'true');
+  if (tab) await chooseTab(page, tab);
   return requests;
 }
 

@@ -179,7 +179,8 @@ describe('Results: the session page (Prompt 34)', () => {
     const order = [at('class="glance"'), at('<ReportExports'), at('<details class="tally"'), at('<Fold title="People"'), at('class="card__foot"')];
     assert.deepEqual([...order].sort((a, b) => a - b), order, 'figures, Downloads, charts, people, then the foot');
     assert.ok(card.indexOf('data-delete-session') > at('class="card__foot"'), 'Delete is in the foot of the session, not beside Live display');
-    assert.match(card, /<summary>Charts · /, 'the charts are called Charts, not Live results');
+    // (Prompt 39: a chevron, the word Charts and the answers in the summary.)
+    assert.match(card, /<summary class="tally__summary"><Icon name="chevron-right" size=\{18\} \/><span>Charts<\/span>/, 'the charts are called Charts, not Live results');
   });
 
   it('Downloads holds every file in three groups, and the packs are made by the one maker the Live display uses', async () => {
@@ -187,5 +188,20 @@ describe('Results: the session page (Prompt 34)', () => {
     for (const words of ['For leaders', 'For the room', 'Data', 'Leader report (PDF)', 'Download PDF pack', 'Download PowerPoint pack', 'Summary by activity (CSV)', 'All answers (CSV)']) assert.ok(exportsBox.includes(words), words);
     assert.match(exportsBox, /<LookChoice /, 'the packs\' Light or Dark');
     for (const source of [exportsBox, live]) assert.match(source, /from '\.\.\/lib\/exports\/pack-download\.js'/, 'one maker of the packs');
+  });
+});
+
+describe('Prompt 38: Results leads with three figures', () => {
+  it('guests, completion and the confidence shift of the session shown', () => {
+    const rows = [{ status: 'completed' }, { status: 'completed' }, { status: 'in-progress' }];
+    assert.deepEqual(adminResults.leadFigures(rows, null), [
+      { key: 'guests', figure: '3', label: 'guests' },
+      { key: 'completion', figure: '67%', label: 'finished every activity' },
+      { key: 'shift', figure: '–', label: 'confidence shift · not measured' },
+    ]);
+    assert.equal(adminResults.leadFigures([], null)[1].figure, '0%', 'no guests: nothing finished, never NaN');
+    const check = { measured: true, answeredBoth: 4, guests: 5, shift: { percent: 12.4, beforeMean: 2.1, afterMean: 2.6 }, moved: null, lowSample: false };
+    assert.deepEqual(adminResults.leadFigures(rows, check)[2], { key: 'shift', figure: '+12%', label: 'confidence shift' });
+    assert.deepEqual(adminResults.leadFigures(rows, { ...check, shift: null })[2], { key: 'shift', figure: '–', label: 'confidence shift · no guest answered both' });
   });
 });

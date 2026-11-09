@@ -6,11 +6,11 @@ import {
   aWeighted, activeLevelDbA, audibleSeconds, brightness, dominantOf, edgeLevel, goertzelPower, peakDb, rmsDb, wavBytes,
 } from './audio-analysis.js';
 import {
-  DELOITTE_GREEN, NARROW_SCALE, NARROW_WIDTH, buildPalette, confettiPlan, defaultOrigin, isRedish, originFromRect, parseColor, planDuration, tint, toHex, toHsl,
+  CONFETTI_SIZES, DELOITTE_GREEN, NARROW_SCALE, NARROW_WIDTH, buildPalette, confettiPlan, defaultOrigin, isRedish, originFromRect, parseColor, planDuration, tint, toHex, toHsl,
 } from '../migration/src/lib/effects/confetti-plan.js';
 import { MOMENT } from '../migration/src/lib/participant/hub-moment-plan.js';
 import { EFFECTS, SOUND_KEY, UNAVAILABLE_TITLE, answerEffect, readChoice, soundIsOn, writeChoice } from '../migration/src/lib/effects/effect-plan.js';
-import { CUES, CUE_NAMES, MAX_VOICES, RATE_GAP_MS, RATING_CUES, RETRIGGER_MS, createVoiceGate, cueEnd, toneSignature } from '../migration/src/lib/effects/sound-cues.js';
+import { CUES, CUE_NAMES, MAX_VOICES, noteEnd, RATE_GAP_MS, RATING_CUES, RETRIGGER_MS, createVoiceGate, cueEnd, toneSignature } from '../migration/src/lib/effects/sound-cues.js';
 
 // Phase 3 (sound and confetti), the parts that need no browser: the cue table, the voice gate, which
 // moment makes which effect, the confetti plan and palette, the saved choice, the audio measurements
@@ -22,7 +22,7 @@ const root = path.join(import.meta.dirname, '..');
 // ---- The cue table -------------------------------------------------------------------------------------
 
 // The brief's table: the longest each cue may run, in seconds.
-const BRIEF_MAX = { soundOn: 0.3, pick: 0.06, correctFirst: 0.5, correctRetry: 0.3, incorrect: 0.4, revealed: 0.3, activityComplete: 1.0, finale: 2.2, stamp: 0.25, unlock: 0.6, locked: 0.25, allDone: 0.8,
+const BRIEF_MAX = { soundOn: 0.3, pick: 0.06, correctFirst: 0.5, correctRetry: 0.3, incorrect: 0.4, revealed: 0.3, activityComplete: 1.0, finale: 4.6, stamp: 0.25, unlock: 0.6, locked: 0.25, allDone: 0.8,
   // Prompt 35: the Art of Possibility.
   rateLow: 0.12, rateMedium: 0.12, rateHigh: 0.14, rateClear: 0.06, holdOpen: 0.15, rowDone: 0.2, milestoneQuarter: 0.35, milestoneHalf: 0.35, milestoneNearly: 0.35, clearAll: 0.4, allRated: 1.0 };
 
@@ -58,7 +58,7 @@ test('every note is soft and safe: sine or triangle, a real attack and release, 
         if (note.lowpass) assert.ok(note.lowpass >= (low ? 700 : 800) && note.lowpass <= 6000, `${name} lowpass`);
       } else {
         assert.equal(note.kind, 'noise');
-        assert.ok(note.filter.freq <= 4000, `${name}: the noise must be filtered low`);
+        assert.ok(note.filter.freq <= 4000 && (note.filter.to ?? 0) <= 4000, `${name}: the noise must be filtered low`);
       }
     }
     // If every note sounding at an instant were at its crest in phase, would the sum still fit under full scale?
@@ -144,6 +144,39 @@ test('every hub sound goes through the one door behind the switch, and sparks on
 // C major pentatonic: C D E G A, so a fast run of ratings sounds like a tune and not noise.
 const PENTATONIC = new Set(['C', 'D', 'E', 'G', 'A']);
 const AOP_CUES = ['rateLow', 'rateMedium', 'rateHigh', 'rateClear', 'holdOpen', 'rowDone', 'milestoneQuarter', 'milestoneHalf', 'milestoneNearly', 'clearAll', 'allRated'];
+
+test('the finale (Prompt 36): a rising swell, a four-note chord bloom as the medal lands, then a bell rain that thins out, under 4.6 s', () => {
+  const cue = CUES.finale;
+  const noise = cue.notes.filter((note) => note.kind === 'noise');
+  assert.equal(noise.length, 1, 'one swell');
+  const [swell] = noise;
+  assert.equal(swell.filter.type, 'bandpass');
+  assert.deepEqual([swell.filter.freq, swell.filter.to], [500, 3600], 'the band rises from 500 to 3,600 Hz');
+  assert.ok(swell.at === 0 && swell.attack >= 0.3 && cueEnd({ notes: [swell] }) <= 1.1 + 1e-9, 'fades in, then out, by 1.1 s');
+  const tones = cue.notes.filter((note) => note.kind === 'tone').sort((a, b) => a.at - b.at);
+  const chord = tones.filter((note) => note.wave === 'triangle');
+  assert.deepEqual(chord.map((note) => letter(note.freq) + (Math.floor(Math.log2(note.freq / 261.63) + 0.01) + 4)), ['C5', 'E5', 'G5', 'C6']);
+  chord.forEach((note, index) => assert.ok(Math.abs(note.at - (1.0 + 0.06 * index)) < 1e-9, `chord note ${index + 1} at ${note.at} s`));
+  assert.ok(chord.every((note) => note.lowpass === 3800), 'through a 3.8 kHz low-pass');
+  assert.ok(chord.every((note) => Math.abs(noteEnd(note) - note.at - 1.6) <= 0.05), 'each about 1.6 s long');
+  const bells = tones.filter((note) => note.wave === 'sine');
+  assert.equal(bells.length, 14, 'fourteen bells');
+  const PENTA_RANGE = [523.25, 587.33, 659.25, 783.99, 880.0, 1046.5, 1174.66, 1318.51, 1567.98];
+  for (const bell of bells) assert.ok(PENTA_RANGE.some((freq) => Math.abs(freq - bell.freq) < 0.01), `${bell.freq} Hz is not C major pentatonic, C5 to G6`);
+  assert.ok(bells[0].at >= 1.4 - 1e-9 && bells[bells.length - 1].at <= 4.0 + 0.03, 'from 1.4 s');
+  for (let index = 1; index < bells.length; index += 1) {
+    const gap = bells[index].at - bells[index - 1].at;
+    assert.ok(gap >= 0.15 && gap <= 0.25, `about one every 200 ms (${gap.toFixed(3)})`);
+    assert.ok(bells[index].level <= bells[index - 1].level, 'the bells only get quieter');
+  }
+  assert.ok(bells.every((bell) => Math.abs(noteEnd(bell) - bell.at - 0.55) <= 0.01), 'each 0.55 s long');
+  const db = (level) => 20 * Math.log10(level * cue.gain);
+  // The brief's -24 to -34 dBFS would leave the finale 10 dB under every other cue (effects-audio.spec.ts measured -32.5 dB(A) against -22),
+  // so the rain keeps its 10 dB fade from a -14 dBFS first bell, and a short hold makes each bell ring rather than click.
+  assert.ok(Math.abs(db(bells[0].level) - db(bells[13].level) - 10) <= 0.5, `the rain fades by 10 dB (${db(bells[0].level).toFixed(1)} to ${db(bells[13].level).toFixed(1)} dBFS)`);
+  assert.ok(db(bells[0].level) <= -12, 'the loudest bell stays well under full scale');
+  assert.ok(cueEnd(cue) <= 4.6 && cue.max === 4.6, `ends at ${cueEnd(cue).toFixed(2)} s`);
+});
 
 test('the Art of Possibility cues are in C major pentatonic, and built as the brief says', () => {
   const tones = (name) => CUES[name].notes.filter((note) => note.kind === 'tone').sort((a, b) => a.at - b.at);
@@ -269,7 +302,7 @@ test('a graded answer makes exactly one cue, and confetti only for a right answe
 test('the other moments: a tick on a pick, the activity and finale cues with their confetti, a chime when sound goes on', () => {
   assert.deepEqual(EFFECTS.pick, { cue: 'pick', confetti: null });
   assert.deepEqual(EFFECTS.activityComplete, { cue: 'activityComplete', confetti: 'medium' });
-  assert.deepEqual(EFFECTS.finale, { cue: 'finale', confetti: 'large' });
+  assert.deepEqual(EFFECTS.finale, { cue: 'finale', confetti: 'shower' }, 'the finale is the petal shower (Prompt 36), not the old bottom bursts');
   assert.deepEqual(EFFECTS.soundOn, { cue: 'soundOn', confetti: null });
   for (const effect of Object.values(EFFECTS)) assert.ok(CUE_NAMES.includes(effect.cue));
 });
@@ -316,7 +349,7 @@ const total = (plan) => plan.reduce((sum, burst) => sum + burst.count, 0);
 test('confetti counts follow the brief and shrink to 0.6 below 500 px', () => {
   assert.equal(NARROW_WIDTH, 500);
   assert.equal(NARROW_SCALE, 0.6);
-  for (const [size, wide, narrow] of [['small', 40, 24], ['medium', 120, 72], ['large', 250, 150]]) {
+  for (const [size, wide, narrow] of [['small', 40, 24], ['medium', 120, 72]]) {
     assert.equal(total(confettiPlan(size, { width: 820 })), wide, `${size} on an iPad`);
     assert.equal(total(confettiPlan(size, { width: 500 })), wide, `${size} at exactly 500 px`);
     assert.equal(total(confettiPlan(size, { width: 499 })), narrow, `${size} on a phone`);
@@ -324,7 +357,7 @@ test('confetti counts follow the brief and shrink to 0.6 below 500 px', () => {
   }
 });
 
-test('confetti shapes: small near the pill, medium from both lower corners, large three bursts', () => {
+test('confetti shapes: small near the pill, medium from both lower corners; the old large bursts are retired (Prompt 36)', () => {
   const pill = { x: 0.7, y: 0.4 };
   const small = confettiPlan('small', { width: 820, origin: pill });
   assert.equal(small.length, 1);
@@ -336,20 +369,17 @@ test('confetti shapes: small near the pill, medium from both lower corners, larg
   assert.ok(medium[0].angle < 90 && medium[1].angle > 90, 'each throws towards the middle');
   assert.equal(medium[0].count, medium[1].count);
 
-  const large = confettiPlan('large', { width: 820 });
-  assert.equal(large.length, 3);
-  assert.deepEqual(large.map((burst) => burst.at), [0, 500, 1000]);
+  assert.deepEqual(CONFETTI_SIZES, ['small', 'medium'], 'one finale, not two: the shower replaced the large bursts');
 });
 
-test('confetti lasts about 0.8 s, 1.5 s and 2.5 s', () => {
+test('confetti lasts about 0.8 s and 1.5 s', () => {
   const seconds = (size) => planDuration(confettiPlan(size, { width: 820 })) / 1000;
   assert.ok(Math.abs(seconds('small') - 0.8) <= 0.1, `small ${seconds('small')}`);
   assert.ok(Math.abs(seconds('medium') - 1.5) <= 0.1, `medium ${seconds('medium')}`);
-  assert.ok(Math.abs(seconds('large') - 2.5) <= 0.15, `large ${seconds('large')}`);
 });
 
 test('under reduced motion there is no confetti at all', () => {
-  for (const size of ['small', 'medium', 'large']) {
+  for (const size of ['small', 'medium']) {
     assert.equal(confettiPlan(size, { width: 820, reducedMotion: true }), null, size);
     assert.ok(confettiPlan(size, { width: 820, reducedMotion: false }), size);
   }

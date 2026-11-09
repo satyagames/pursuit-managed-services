@@ -1,28 +1,38 @@
 <script lang="ts">
-  // The body of Today's Readiness card, inside AdminToday.svelte's section and under its heading: the line that sums it up and one row per check,
-  // each with its fix and where to go (Phase 17: moved out of AdminToday.svelte unchanged, its markup and its styles). The checks are
-  // lib/admin/admin-today.js's evaluateReadiness; what a row's button does is AdminToday's. Prompt 32: on a laptop only the blockers and warnings
-  // are open; the ready checks fold into one line, "5 checks ready", with a Show control that says the count. Below 1,100 px every row shows, as before.
+  // The body of Today's Readiness card, inside AdminToday.svelte's section and under its heading. Prompt 38: one summary line first ("Ready to go
+  // live", "2 things to fix"), then the blockers, then the warnings, each with its fix and where to go; the checks that passed fold into one line
+  // ("6 checks passed") that opens on a press, at every width. Each level has its own icon shape and word as well as its wash, never colour alone.
+  // The checks are lib/admin/admin-today.js's evaluateReadiness; what a row's button does is AdminToday's.
+  import Icon, { type IconName } from './Icon.svelte';
+
   type Row = { id: string; level: string; title: string; detail: string; fix?: string; go?: { href?: string; label?: string; tab?: string; action?: string } };
 
   let { rows, summary, busy, onRowAction }: {
     rows: Row[];
-    /** The line under the heading (lib/admin/today-view.js readinessSummary). */
+    /** The line that sums it up (lib/admin/today-view.js readinessSummary). */
     summary: string;
     busy: boolean;
     onRowAction: (row: Row) => void;
   } = $props();
 
-  const open = $derived(rows.filter((row) => row.level !== 'pass'));
+  const blockers = $derived(rows.filter((row) => row.level === 'blocker'));
+  const warnings = $derived(rows.filter((row) => row.level === 'warning'));
+  const open = $derived([...blockers, ...warnings]);
   const ready = $derived(rows.filter((row) => row.level === 'pass'));
   let showReady = $state(false);
-  const readyWord = $derived(`${ready.length} ready ${ready.length === 1 ? 'check' : 'checks'}`);
+  const readyWord = $derived(`${ready.length} ${ready.length === 1 ? 'check' : 'checks'} passed`);
+  const LEVEL: Record<string, { icon: IconName; word: string }> = {
+    blocker: { icon: 'alert-octagon', word: 'Blocker' }, warning: { icon: 'alert-triangle', word: 'Warning' }, pass: { icon: 'check-circle', word: 'Ready' },
+  };
+  const summaryIcon = $derived<IconName>(blockers.length ? 'alert-octagon' : warnings.length ? 'alert-triangle' : 'check-circle');
+  const summaryTone = $derived(blockers.length ? 'blocker' : warnings.length ? 'warning' : 'pass');
 </script>
 
 {#snippet check(row: Row)}
   <li class="check check--{row.level}" data-level={row.level} data-check={row.id}>
-    <span class="check__word">{row.level === 'blocker' ? 'Blocker' : row.level === 'warning' ? 'Warning' : 'Ready'}</span>
+    <span class="check__mark"><Icon name={LEVEL[row.level]?.icon ?? 'info'} /></span>
     <div class="check__body">
+      <span class="check__word">{LEVEL[row.level]?.word ?? row.level}</span>
       <strong>{row.title}</strong>
       <p>{row.detail}</p>
       {#if row.fix}<p class="check__fix">{row.fix}</p>{/if}
@@ -34,19 +44,16 @@
   </li>
 {/snippet}
 
-<p class="muted ready__summary" data-testid="readiness-summary">
-  {summary}
-</p>
+<p class="ready__summary ready__summary--{summaryTone}" data-testid="readiness-summary"><Icon name={summaryIcon} />{summary}</p>
 {#if open.length}
   <ul class="checks">
     {#each open as row (row.id)}{@render check(row)}{/each}
   </ul>
 {/if}
 {#if ready.length}
-  <div class="checks__fold">
-    <span>{ready.length} {ready.length === 1 ? 'check' : 'checks'} ready</span>
-    <button class="btn btn--small" type="button" aria-expanded={showReady} aria-controls="ready-checks" aria-label={`${showReady ? 'Hide' : 'Show'} ${readyWord}`} onclick={() => { showReady = !showReady; }}>{showReady ? 'Hide' : 'Show'}</button>
-  </div>
+  <button class="checks__fold" type="button" aria-expanded={showReady} aria-controls="ready-checks" onclick={() => { showReady = !showReady; }}>
+    <Icon name={showReady ? 'chevron-down' : 'chevron-right'} /><span>{readyWord}</span><span class="checks__show">{showReady ? 'Hide' : 'Show'}</span>
+  </button>
   <ul class="checks checks--ready" class:checks--folded={!showReady} id="ready-checks">
     {#each ready as row (row.id)}{@render check(row)}{/each}
   </ul>
@@ -54,39 +61,49 @@
 
 <style>
   .ready__summary {
+    display: flex;
+    align-items: center;
+    gap: var(--adm-s2);
     margin: 0;
+    font-size: var(--adm-fs-h2);
+    line-height: var(--adm-lh-h2);
+    font-weight: var(--fw-semibold);
+    color: var(--adm-ink);
   }
+
+  .ready__summary--pass :global(.icon) { color: var(--adm-ok); }
+  .ready__summary--warning :global(.icon) { color: var(--adm-warn); }
+  .ready__summary--blocker :global(.icon) { color: var(--adm-danger); }
 
   .checks__fold {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem 1rem;
-    padding: 0.25rem 0.85rem;
-    border-radius: 0.7rem;
-    color: var(--adm-ok-ink);
-    background: var(--adm-ok-bg);
+    gap: var(--adm-s2);
+    width: 100%;
+    min-height: var(--target-min);
+    padding: 0 var(--adm-s3);
+    border: 1px solid var(--adm-line);
+    border-radius: var(--adm-radius-sm);
+    background: var(--adm-surface-2);
+    color: var(--adm-ink);
+    font: inherit;
     font-weight: var(--fw-semibold);
+    text-align: start;
+    cursor: pointer;
   }
 
-  /* Below 1,100 px nothing folds: every row shows, and the fold's line is not drawn. (A class, not the hidden attribute: the legacy sheet makes
-     [hidden] win over everything.) */
-  @media (max-width: 1099px) {
-    .checks__fold {
-      display: none;
-    }
+  .checks__show {
+    margin-inline-start: auto;
+    color: var(--adm-primary);
   }
 
-  @media (min-width: 1100px) {
-    .checks.checks--folded {
-      display: none;
-    }
+  .checks.checks--folded {
+    display: none;
   }
 
   .checks {
     display: grid;
-    gap: 0.6rem;
+    gap: var(--adm-s2);
     margin: 0;
     padding: 0;
     list-style: none;
@@ -94,15 +111,15 @@
 
   .check {
     display: grid;
-    grid-template-columns: 5.2rem minmax(0, 1fr);
-    gap: 0.75rem;
-    padding: 0.75rem 0.85rem;
-    border-radius: 0.7rem;
-    border: 1px solid transparent;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--adm-s3);
+    padding: var(--adm-s3) var(--adm-s4);
+    border-radius: var(--adm-radius-sm);
+    color: var(--adm-ink);
   }
 
   .check p {
-    margin: 0.15rem 0 0;
+    margin: var(--adm-s1) 0 0;
     overflow-wrap: anywhere;
   }
 
@@ -114,50 +131,48 @@
     display: grid;
     justify-items: start;
     min-width: 0;
-    gap: 0.1rem;
   }
 
   .check__body .btn {
-    margin-top: 0.5rem;
+    margin-top: var(--adm-s2);
+  }
+
+  .check__mark {
+    padding-top: 2px;
   }
 
   .check__word {
-    align-self: start;
-    padding: 0.15rem 0.5rem;
-    border-radius: var(--radius-full);
-    background: var(--adm-card);
-    font-size: 0.8rem;
-    font-weight: var(--fw-bold);
-    text-align: center;
-    letter-spacing: 0.03em;
+    font-size: var(--adm-fs-label);
+    line-height: var(--adm-lh-label);
+    font-weight: var(--fw-semibold);
+    letter-spacing: 0.02em;
     text-transform: uppercase;
   }
 
   .check--pass {
-    padding-block: 0.55rem;
+    background: var(--adm-ok-wash);
+  }
+
+  .check--pass .check__mark,
+  .check--pass .check__word {
     color: var(--adm-ok-ink);
-    background: var(--adm-ok-bg);
   }
 
   .check--warning {
+    background: var(--adm-warn-wash);
+  }
+
+  .check--warning .check__mark,
+  .check--warning .check__word {
     color: var(--adm-warn-ink);
-    background: var(--adm-warn-bg);
   }
 
   .check--blocker {
-    color: var(--adm-bad-ink);
-    background: var(--adm-bad-bg);
-    border-color: var(--adm-bad-line);
+    background: var(--adm-danger-wash);
   }
 
-  @media (max-width: 480px) {
-    .check {
-      grid-template-columns: 1fr;
-      gap: 0.4rem;
-    }
-
-    .check__word {
-      justify-self: start;
-    }
+  .check--blocker .check__mark,
+  .check--blocker .check__word {
+    color: var(--adm-danger-ink);
   }
 </style>

@@ -9,8 +9,8 @@ import { open, settled, site, type Site } from './explain-support.js';
 
 const out = fileURLToPath(new URL('../../test-results/admin/review/', import.meta.url));
 const SIZES = [{ width: 1366, height: 650 }, { width: 1920, height: 950 }, { width: 683, height: 700 }] as const;
-/** What the deep green of the main action paints (--adm-green). */
-const GREEN = 'rgb(35, 127, 12)';
+/** What the primary green of the main action paints (--adm-primary; the browser code at the line that checks it spells the same colour). */
+const GREEN = 'rgb(47, 107, 79)'; // --adm-primary, #2F6B4F (Prompt 38; it was #237F0C)
 /** Problems left on purpose, by the start of their words: each one is in the report with its reason. */
 const LEFT: string[] = [];
 
@@ -50,7 +50,7 @@ function readPage() {
     if (/^(Save|OK|Submit)$/i.test(name)) problems.push(`a button only says "${name}"`);
     if (box.height < 43.5 || box.width < 43.5) problems.push(`"${name}" is ${Math.round(box.width)} x ${Math.round(box.height)} px, under 44`);
     if ((button as HTMLElement).scrollWidth > (button as HTMLElement).clientWidth + 1) problems.push(`"${name}" is clipped`);
-    if (button.classList.contains('btn--primary') && getComputedStyle(button).backgroundColor !== 'rgb(35, 127, 12)') problems.push(`main action "${name}" is not the deep green`);
+    if (button.classList.contains('btn--primary') && getComputedStyle(button).backgroundColor !== 'rgb(47, 107, 79)') problems.push(`main action "${name}" is not the primary green`);
   }
   for (const foot of [...body.querySelectorAll('.dialog__actions, .form__foot')].filter(shown)) {
     const buttons = [...foot.querySelectorAll('button')].filter(shown);

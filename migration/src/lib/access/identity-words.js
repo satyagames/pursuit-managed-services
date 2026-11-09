@@ -1,13 +1,12 @@
 // Who is signed in, and with what role, in words (Prompt 32, step 2; board 19): the bar's chip, its "Your access" popover and the welcome strip.
 // Everything comes from the access the page already read at sign-in (lib/access/resolve.js) and from the role matrix: the roles and their rank are
-// ROLES' order, what a role may do is ACTIONS' own words, which tabs it opens is scope.js's. Nothing here reads or writes, and no description is new.
+// ROLES' order, what a role may do is ACTIONS' own words. Nothing here reads or writes, and no description is new.
 // A role's row names its client by id only, so a client's name is used when the caller has it (`clients`) and the count when it has not.
 // Plain JS with no DOM, so `node --test` holds the words (scripts/test-identity-words.js); the admin page's alone.
-import { ACTIONS, MATRIX, ROLES } from './access-matrix.js';
+import { ACTIONS, ROLE_SUMMARY, ROLES } from './access-matrix.js';
 import { allowsIn, grantsOf } from './can.js';
 import { firstName } from './access-message.js';
 import { dayWords } from './people.js';
-import { TAB_ACTIONS, tabsFor } from './scope.js';
 
 /** How many days ahead an end date shows as "Ends" (the site owner, 4 Nov 2026). */
 export const ENDS_SOON_DAYS = 14;
@@ -17,13 +16,9 @@ const ROLE_LINE_MAX = 39;
 const CAN_DO_MAX = 4;
 /** The order "What you can do" takes the matrix's modules in: the day's work first, as the tabs are. */
 const MODULES = ['events', 'clients', 'content', 'results', 'users', 'settings'];
-/** What is not a tab but a person may still be without (the matrix's actions, named as their screens are). */
-const SCREENS = [{ title: 'Reporting settings', actions: ['settings.manage'] }];
 
 const DAY_MS = 86_400_000;
-const ARTICLE = { 'Super admin': 'a', Admin: 'an', Producer: 'a', Designer: 'a', Leadership: '' };
 const capital = (words) => words.charAt(0).toUpperCase() + words.slice(1);
-const and = (items) => (items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`);
 const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
 const dayOf = (value) => String(value ?? '').slice(0, 10);
 
@@ -51,15 +46,6 @@ const hashOf = (text) => {
   for (let index = 0; index < text.length; index += 1) hash = Math.imul(hash ^ text.charCodeAt(index), 0x01000193) >>> 0;
   return hash.toString(36);
 };
-
-/** "a Super admin or an Admin": the roles that may, as a refusal would name them. */
-const whoWords = (roles) => {
-  const named = roles.map((role) => (ARTICLE[role] ? `${ARTICLE[role]} ${role}` : role));
-  return named.length < 2 ? named.join('') : `${named.slice(0, -1).join(', ')} or ${named.at(-1)}`;
-};
-
-/** The roles whose cell for one of the actions opens it (a View cell opens a tab, as it does in scope.js). */
-const rolesFor = (actions) => ROLES.filter((role) => actions.some((action) => ['yes', 'view'].includes(MATRIX[action]?.[role])));
 
 /** Where one role row reaches, for the popover's table. */
 function coversOf(grant, names) {
@@ -94,36 +80,19 @@ function canDoOf(grants) {
   return lines;
 }
 
-/** One sentence of what is not open to the person and who does it, grouped by who: "Clients and People: a Super admin or an Admin does these; ...". */
-function notAvailableOf(access, tabs, grants, now) {
-  const shown = new Set(tabsFor(access, tabs, { now }).map((tab) => tab.id));
-  const missing = [
-    ...tabs.filter((tab) => !shown.has(tab.id)).map((tab) => ({ title: tab.title, who: rolesFor(TAB_ACTIONS[tab.id] ?? []) })),
-    ...SCREENS.filter((screen) => !screen.actions.some((action) => grants.some((grant) => allowsIn(grant, action, ['yes']))))
-      .map((screen) => ({ title: screen.title, who: ROLES.filter((role) => screen.actions.some((action) => MATRIX[action]?.[role] === 'yes')) })),
-  ];
-  if (!missing.length) return 'Nothing hidden: you have every tab';
-  const groups = new Map();
-  for (const { title, who } of missing) {
-    const words = whoWords(who);
-    groups.set(words, [...(groups.get(words) ?? []), title]);
-  }
-  return `${[...groups].map(([who, titles]) => `${and(titles)}: ${who} ${titles.length > 1 ? 'does these' : 'does this'}`).join('; ')}.`;
-}
-
 /**
  * The chip's, the popover's and the welcome strip's words for an access.
- * `chip` is false for a PIN sign-in and for nobody signed in (the name alone is shown, as before). `roleLine` is "Producer +1 · 3 clients";
+ * `chip` is false for a PIN sign-in and for nobody signed in (the name alone is shown, as before). `roleLine` is "Producer +1 · 3 clients", `role` and `reach` its two parts;
  * `endsSoon` the soonest end date within ENDS_SOON_DAYS ({ day: '12 Dec', days }), or null; `roles` one row per current role, highest first;
  * `rolesKey` a short hash that changes when, and only when, a role, its place or its end date changes.
- * @param {any} access @param {{ now?: Date, tabs?: { id: string, title: string }[], clients?: { id: string, name: string }[], name?: string }} [options]
+ * @param {any} access @param {{ now?: Date, tabs?: unknown, clients?: { id: string, name: string }[], name?: string }} [options]
  */
-export function identityOf(access, { now = new Date(), tabs = [], clients = [], name: fallback = '' } = {}) {
+export function identityOf(access, { now = new Date(), clients = [], name: fallback = '' } = {}) {
   const person = access?.person ?? null;
   const name = spoken(person?.name) || person?.email || spoken(fallback) || String(fallback ?? '');
   const base = { initials: initialsOf(person?.name || fallback, person?.email), name, first: firstName(person?.name || fallback) };
   if (!person || access?.legacy) {
-    return { ...base, chip: false, roleLine: '', roles: [], endsSoon: null, ariaLabel: '', canDo: [], notAvailable: '', rolesKey: '', welcome: '', seenKey: '' };
+    return { ...base, chip: false, roleLine: '', does: '', roles: [], endsSoon: null, ariaLabel: '', canDo: [], role: '', reach: '', rolesKey: '', welcome: '', seenKey: '' };
   }
   const names = new Map(clients.map((client) => [client.id, client.name]));
   const grants = grantsOf(access, { now });
@@ -138,7 +107,11 @@ export function identityOf(access, { now = new Date(), tabs = [], clients = [], 
   const endsSoon = soonest ? { day: dayWords(soonest.grant.validUntil).replace(/ \d{4}$/, ''), days: soonest.days } : null;
 
   let roleLine = 'Site owner';
+  // (Prompt 38: the chip's one line of what the top role can do.)
+  let does = ROLE_SUMMARY['Super admin'];
   let spokenRole = 'Site owner';
+  // (Prompt 39: the chip's two parts, the role and where it reaches; below 1,280 px it shows the role alone. "What is not available" is gone.)
+  let spokenTop = 'Site owner';
   let reach = 'All clients';
   if (own.length) {
     const top = own[0].role;
@@ -146,6 +119,8 @@ export function identityOf(access, { now = new Date(), tabs = [], clients = [], 
     const role = others ? `${top} +${others}` : top;
     reach = top === 'Leadership' ? 'Results' : reachOfRole(own.filter((grant) => grant.role === top), names, role.length);
     roleLine = `${role} · ${reach}`;
+    spokenTop = role;
+    does = ROLE_SUMMARY[top] ?? '';
     spokenRole = others ? `${top} and ${plural(others, 'more role')}` : top;
   }
   const ariaLabel = `Signed in as ${name}, ${spokenRole}${own.length ? `, ${reach}` : ''}${endsSoon ? `, ends ${endsSoon.day}` : ''}. Opens your access.`;
@@ -157,7 +132,7 @@ export function identityOf(access, { now = new Date(), tabs = [], clients = [], 
   const reachSaid = ['All clients', 'Results'].includes(reach) || /^\d+ clients?$/.test(reach) ? reach.toLowerCase() : reach;
   const welcome = `Welcome${base.first ? `, ${base.first}` : ''}. You are signed in as ${own.length ? `${spokenRole} for ${reachSaid}` : 'the site owner'}.`;
   return {
-    ...base, chip: true, roleLine, roles, endsSoon, ariaLabel, canDo: canDoOf(grants), notAvailable: notAvailableOf(access, tabs, grants, now), rolesKey, welcome,
+    ...base, chip: true, roleLine, does, roles, endsSoon, ariaLabel, canDo: canDoOf(grants), role: own.length ? spokenTop : 'Site owner', reach: own.length ? reach : '', rolesKey, welcome,
     // The welcome strip's "seen" mark, in this browser only: the person by a hash of their key, never their email or name.
     seenKey: `pms.welcome.${hashOf(String(person.key ?? person.email ?? ''))}`,
   };

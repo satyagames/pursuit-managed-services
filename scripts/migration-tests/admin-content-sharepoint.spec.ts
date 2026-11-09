@@ -262,6 +262,7 @@ test('Generate all codes on SharePoint: one write per code, three at a time, not
 test('adding a pasted list on SharePoint writes one item per new name and counts the requests', async ({ page }) => {
   const fake = await site('c-kroger', 0);
   await openOn(page, fake, 'guests');
+  await page.locator('summary', { hasText: 'Add many at once' }).click(); // (Prompt 38: the folded bulk tool)
   await expect(page.getByLabel('Paste names')).toBeVisible();
   await page.waitForTimeout(400);
   await page.getByLabel('Paste names').fill(Array.from({ length: 10 }, (_, index) => `Pasted ${index + 1}`).join('\n') + '\nPasted 1');
@@ -312,7 +313,9 @@ test('smoke: Content, a new activity, the copy dialog, and Guests with its print
   await expect(page.getByTestId('guest-report')).toHaveText('Made 14 codes. Everyone who can scan has one.', { timeout: 30_000 });
   await page.getByRole('button', { name: /^Print QR sheet/ }).click();
   await expect(page.locator('[data-card]')).toHaveCount(14);
-  await expect(page.getByTestId('print-summary')).toContainText('14 cards on 2 pages');
+  await expect(page.getByTestId('print-summary')).toContainText('14 cards on 3 pages, 6 to a page'); // (Prompt 38: 6 to a page unless 12 is chosen)
+  await page.getByRole('radio', { name: '12', exact: true }).check();
+  await expect(page.getByTestId('print-summary')).toContainText('14 cards on 2 pages, 12 to a page');
   // Printed layout, in the engine of an iPad: 12 on the first page in 3 columns and 4 rows, 2 on the second.
   await page.emulateMedia({ media: 'print' });
   await page.setViewportSize({ width: 794, height: 1123 });

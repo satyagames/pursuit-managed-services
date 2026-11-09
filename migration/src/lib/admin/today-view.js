@@ -28,7 +28,8 @@ export const levelCounts = (rows) => ({
 /** The line under Readiness. @param {{ inputsBusy: boolean, blockers: number, warnings: number }} state */
 export function readinessSummary({ inputsBusy, blockers, warnings }) {
   if (inputsBusy) return 'Checking...';
-  if (blockers > 0) return `${blockers} blocker${blockers === 1 ? '' : 's'}${warnings ? `, ${warnings} warning${warnings === 1 ? '' : 's'}` : ''}`;
+  // (Prompt 38: a blocker is said as what the leader does about it, "2 things to fix".)
+  if (blockers > 0) return `${blockers} ${blockers === 1 ? 'thing' : 'things'} to fix${warnings ? `, ${warnings} warning${warnings === 1 ? '' : 's'}` : ''}`;
   if (warnings > 0) return `Ready to go live, with ${warnings} warning${warnings === 1 ? '' : 's'}`;
   return 'Ready to go live';
 }
@@ -71,3 +72,15 @@ export const upsertSession = (list, next) => list.some((item) => item.id === nex
  * @param {unknown} cause @param {string} fallback
  */
 export const failureText = (cause, fallback) => errorText(cause, fallback);
+
+/**
+ * Today's three session settings in one line, folded until Change is pressed (Prompt 38): "Guests scan a personal QR · Sequential · Confidence
+ * check off". The words are the controls' own, and an unset mode is staff sign-in, as the data layer reads it.
+ * @param {{ participationMode?: string, activityFlow?: string, confidenceCheck?: boolean | null } | null} session
+ */
+export function controlsSummary(session) {
+  if (!session) return '';
+  const mode = session.participationMode === 'client-visit' ? 'Guests scan a personal QR' : 'Staff sign in';
+  const flow = session.activityFlow === 'open' ? 'Open' : 'Sequential';
+  return `${mode} · ${flow} · Confidence check ${session.confidenceCheck === true ? 'on' : 'off'}`;
+}

@@ -204,114 +204,20 @@ input[type='date']:focus-within {
 /* Shell. Prompt 32: no container is capped (this sheet's 1,120 px and the legacy sheet's 1,000 px are gone); the page runs edge to edge
    with the gutter at the sides, and only running text keeps a measure (72ch). The bar is Prompt 31's black. */
 /* (16 px to 32 px, in rem so that it grows with the text size, as the 1rem it replaced did.) */
-.shell {
-  --shell-gutter: clamp(1rem, 2vw, 2rem);
-}
-
-.shell__bar {
-  position: static;
-  flex-wrap: wrap;
-  gap: 0.75rem 1rem;
-  padding: 0.6rem var(--shell-gutter);
-  background: var(--adm-bar-black);
-}
-
-.shell__brand {
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-  min-width: 0;
-}
-
-.shell__wordmark {
-  flex: none;
-  width: 6.5rem;
-}
-
-.shell__title {
-  font-size: 1rem;
-  font-weight: var(--fw-semibold);
-  overflow-wrap: anywhere;
-  color: #fff;
-}
-
-/* This copy's label (Phase 10b), beside the product name: white on the navy bar, with a white rule so that it reads as a tag. */
-.shell__label {
-  padding: 0.1rem 0.6rem;
-  border: 1px solid rgb(255 255 255 / 0.7);
-  border-radius: 999px;
-  font-size: 1rem;
-  overflow-wrap: anywhere;
-  color: #fff;
-}
-
-/* The person and, for a PIN sign-in, Lock: at the end of the bar. */
-.shell__end {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  min-width: 0;
-  margin-left: auto;
-}
-
-.shell__user {
-  color: var(--adm-on-deep);
-  overflow-wrap: anywhere;
-}
-
-.shell__nav {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  background: var(--adm-card);
-  border-bottom: 1px solid var(--adm-line);
-}
-
-.tabs {
-  display: flex;
-  gap: 0.25rem;
-  margin: 0;
-  /* Room for the focus ring: this row scrolls sideways on a phone, so it clips whatever goes past its edge, and a tab's ring (3px, 3px off the tab, with a 9px
-     band round it) was cut off at the top and bottom (Phase 8). The padding is the ring's room, top and bottom; at the sides it is the gutter. */
-  padding: 9px var(--shell-gutter);
-  overflow-x: auto;
-  scrollbar-width: thin;
-  -webkit-overflow-scrolling: touch;
-}
-
-.tab {
-  flex: none;
-  min-height: var(--target-min);
-  padding: 0 1rem;
-  border: 0;
-  border-bottom: 3px solid transparent;
-  border-radius: 0;
-  background: transparent;
-  color: var(--adm-muted);
-  font-weight: var(--fw-semibold);
-  white-space: nowrap;
-}
-
-.tab:hover {
-  color: var(--adm-ink);
-}
-
-.tab[aria-selected='true'] {
-  background: transparent;
-  color: var(--adm-ink);
-  border-bottom-color: var(--action);
-  font-weight: var(--fw-bold);
-}
+/* (Prompt 39: the bar, the brand, the tabs and the person are admin-look.css's "The page and its bar".) */
 
 /* (max-width and margin: the legacy sheet's 1,000 px cap, centred, is overridden here; that sheet is never edited.) */
 .shell__body {
   max-width: none;
   margin: 0;
-  padding: 1.5rem var(--shell-gutter) 4rem;
+  padding: 1.5rem clamp(1rem, 2vw, 2rem) 4rem;
 }
 
+/* The panel runs edge to edge, so its ring is drawn just inside it, green between two bands of ink, as Results' "Live results" summary's (Prompt 38:
+   on the calmer page ground the green alone is 1.88:1). */
 .shell__body:focus-visible {
-  outline-offset: -3px;
+  outline-offset: -6px;
+  box-shadow: inset 0 0 0 9px var(--adm-ink);
 }
 
 /* (Not the Live display's: its type is sized to the screen it is on.) */
@@ -321,105 +227,20 @@ input[type='date']:focus-within {
 
 /* (Prompt 34: the Live display in the page runs edge to edge as every other tab does since Prompt 32; it is watched on a laptop.) */
 
-/* One bar on a laptop (Prompt 32): from 1,100 px the brand, the section tabs and the person share one sticky bar, 52 px high. The shell is a grid
-   of three columns and the bar a subgrid of it, so the brand and the person size the outer columns and the tab row, which stays its own <nav>,
-   sits sticky in the middle one. Below 1,100 px it is two rows as before: the brand row scrolls away and the white tab row sticks. */
-@media (min-width: 1100px) {
-  html {
-    --adm-sticky-room: 4.5rem; /* the 52 px bar and the 9 px ring, with a little air */
-  }
-
-  .shell {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    column-gap: 1.5rem;
-    align-items: start;
-  }
-
-  .shell > * {
-    grid-column: 1 / -1;
-  }
-
-  .shell__bar {
-    grid-row: 1;
-    position: sticky;
-    top: 0;
-    z-index: 5;
-    display: grid;
-    grid-template-columns: subgrid;
-    align-items: center;
-    box-sizing: border-box;
-    height: 52px;
-    padding-block: 0;
-  }
-
-  .shell__brand {
-    grid-column: 1;
-  }
-
-  .shell__end {
-    grid-column: 3;
-    margin-left: 0;
-  }
-
-  /* (Less room under the last card on a laptop: a 1366 x 650 window shows Today whole.) */
-  .shell__body {
-    padding-bottom: 1.5rem;
-  }
-
-  .shell__nav {
-    grid-row: 1;
-    grid-column: 2;
-    position: sticky;
-    top: 0;
-    z-index: 6;
-    height: 52px;
-    background: transparent;
-    border-bottom: 0;
-  }
-
-  .shell__nav .tabs {
-    box-sizing: border-box;
-    height: 52px;
-    align-items: center;
-    padding: 0;
-  }
-
-  .shell__nav .tab {
-    padding: 0 0.75rem;
-    border-bottom-width: 3px;
-    color: var(--adm-on-deep);
-    font-weight: var(--fw-semibold);
-  }
-
-  .shell__nav .tab:hover {
-    color: var(--adm-on-deep);
-    text-decoration: underline;
-  }
-
-  .shell__nav .tab[aria-selected='true'] {
-    color: var(--adm-on-deep);
-    border-bottom-color: var(--adm-lime);
-    font-weight: var(--fw-bold);
-  }
-
-  /* The ring inside the tab, with its navy band inside too (as on a Results tally's summary): the row is no taller than the bar, so a ring
-     outside it would be cut off. */
-  .shell__nav .tab:focus-visible {
-    outline-offset: -6px;
-    box-shadow: inset 0 0 0 9px var(--adm-ink);
-  }
-
+/* (Prompt 39: the one bar at every width is admin-look.css's.) */
+@media (min-width: 1024px) {
   /* One title line: each tab's heading, its help and its buttons share a line; the help wraps under the heading when the line is short. */
   .panel__head {
-    align-items: center;
+    /* (Prompt 39: the title and the actions on one baseline; a description under the title runs below the buttons, never squeezed beside them.) */
+    align-items: baseline;
     gap: 0.5rem 1rem;
     margin-bottom: 0.75rem;
   }
 
   .panel__head > div:first-child {
     display: flex;
-    flex: 1 1 32rem;
+    /* (Prompt 39: small enough a basis that a row of actions stays beside the title; the description then goes under it.) */
+    flex: 1 1 16rem;
     flex-wrap: wrap;
     align-items: baseline;
     gap: 0.25rem 1rem;
@@ -430,9 +251,19 @@ input[type='date']:focus-within {
     margin: 0;
   }
 
-  .panel__head > div:first-child > p {
-    flex: 1 1 20rem;
+  /* Prompt 39 (RULES, the alignment rules, 2): the description beside the title only when it fits there on one line; longer, it goes under the
+     title whole, and never wraps beside a button. (A flex item's own width decides its line: up to the box's whole width, then it wraps.) */
+  .shell__body .panel__head > div:first-child > p {
+    flex: 0 1 auto;
+    max-width: 100%;
     min-width: 0;
+  }
+
+  /* The title row: the title on the left, the page's actions on the right, on one line. */
+  .panel__head > :is(.panel__actions, .results-actions, .dash__actions) {
+    flex: none;
+    justify-content: flex-end;
+    margin-left: auto;
   }
 }
 
@@ -466,6 +297,10 @@ input[type='date']:focus-within {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 12px;
+}
+
+.user-setup__roster {
+  min-width: 0;
 }
 
 .user-setup__roster,
@@ -638,18 +473,6 @@ input[type='date']:focus-within {
 }
 
 @media (max-width: 760px) {
-  .shell__bar {
-    padding: 0.5rem 1rem;
-  }
-
-  .shell__wordmark {
-    width: 5.5rem;
-  }
-
-  .shell__title {
-    display: none;
-  }
-
   .field-row {
     grid-template-columns: 1fr;
   }
@@ -737,10 +560,22 @@ input[type='date']:focus-within {
   gap: 1.5rem;
 }
 
+/* Prompt 39: the activities 5 of the page's 12 columns, the questions 7, on one top line. */
 @media (min-width: 960px) {
   .content-layout {
-    grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: var(--adm-gutter);
     align-items: start;
+  }
+
+  .content-layout > .content-activities {
+    grid-column: span 5;
+    min-width: 0;
+  }
+
+  .content-layout > .content-detail {
+    grid-column: span 7;
+    min-width: 0;
   }
 }
 
@@ -1186,11 +1021,58 @@ input[type='date']:focus-within {
   list-style: none;
 }
 
+/* Prompt 39: the three steps equal in width and in height. */
 @media (min-width: 1100px) {
   .steps {
-    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     align-items: stretch;
   }
+}
+
+/* The guest list: rows the width of the page in columns; it scrolls inside its box, never the page, when the window is narrow. */
+.guests__scroll {
+  /* (Its own containing block, so the hidden "Actions" header stays inside it.) */
+  position: relative;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.guests__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.guests__table th,
+.guests__table td {
+  padding: var(--adm-s2) var(--adm-s3);
+  border-bottom: 1px solid var(--adm-line);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.guests__table thead th {
+  white-space: nowrap;
+}
+
+.guests__table tbody th {
+  font-weight: var(--fw-regular);
+}
+
+.guests__who {
+  display: flex;
+  align-items: center;
+  gap: var(--adm-s3);
+  min-width: 12rem;
+}
+
+.guests__code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: nowrap;
+}
+
+.guests__table .row__actions {
+  justify-content: flex-end;
 }
 
 .step {
@@ -1286,4 +1168,72 @@ input[type='date']:focus-within {
 
 .field__line .field__required {
   margin-inline-start: 0;
+}
+
+/* Prompt 38: six to a page, 2 columns by 3 rows of 90 by 82 mm cards with 4 mm between (184 by 254 mm), which sits inside the 8 mm margins of
+   both A4 (194 by 281) and US Letter (200 by 263); the code is 52 mm, larger than on the twelve. The paper and the count are chosen above the sheet. */
+.print-page--6 {
+  grid-template-columns: repeat(2, 90mm);
+  grid-auto-rows: 82mm;
+  width: 184mm;
+}
+
+.print-page--6 .print-card {
+  grid-template-rows: 16mm 52mm auto auto;
+  width: 90mm;
+  height: 82mm;
+  padding: 3mm 4mm;
+}
+
+.print-page--6 .print-card__qr {
+  width: 52mm;
+  height: 52mm;
+}
+
+.print-page--6 .print-card__name {
+  max-height: 16mm;
+  font-size: 20pt;
+}
+
+/* A long name steps down here too: the 20 pt above outranks the card's own long sizes, and cut the longest names off at two lines. */
+.print-page--6 .print-card__name--long {
+  font-size: 15pt;
+}
+
+.print-page--6 .print-card__name--longest {
+  font-size: 12pt;
+}
+
+.print-page--6 .print-card__client {
+  font-size: 11pt;
+}
+
+.print-page--6 .print-card__cta {
+  font-size: 13pt;
+}
+
+.print-view {
+  padding-bottom: 6rem;
+}
+
+.print-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+}
+
+.print-choice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 1rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+@media print {
+  .print-view {
+    padding-bottom: 0;
+  }
 }

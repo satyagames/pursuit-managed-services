@@ -498,7 +498,7 @@ describe('colours', () => {
   // Prompt 34: the exported files (the pack and the leader report) and the projected wall take the same colours. The files' hex values are written
   // once, in lib/exports/report-look.js, and must equal the tokens; the wall's words and figures are held to 7:1 on black (read from the back of a
   // room), the files' words to 4.5:1 and their marks to 3:1, and the highlighter's black words to 7.9:1 on lime.
-  const tokensCss = () => readFile(path.join(ROOT, 'migration/src/styles/admin-tokens.css'), 'utf8');
+  const tokensCss = () => readFile(path.join(ROOT, 'migration/src/styles/look-tokens.css'), 'utf8');
   const look = () => import('../migration/src/lib/exports/report-look.js');
 
   it('the files\' colours equal the admin tokens they are named after', async () => {

@@ -32,12 +32,20 @@ const livePage = (page: Page) => page.getByRole('button', { name: 'Refresh' }).c
 const rosterOf = async (sessionId: string): Promise<Visitor[]> => (await ds.readLists([{ list: 'visitorroster', where: { sessionId } }]))[0];
 /** What a guest's device does with its code: the scan, then the claim. Rejects when the code cannot be used. */
 const scan = async (tokenId: string) => (await ds.openQrScan(tokenId)).claim();
+/** (Prompt 38) Pasting a list is the folded bulk tool, Add many at once. */
+async function openPaste(page: Page) {
+  const fold = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Add many at once' }) });
+  if ((await fold.getAttribute('open')) === null) await fold.locator('summary').click();
+}
+/** (Prompt 38) The QR sheet is 6 to a page unless 12 is chosen. */
+const perPage = (page: Page, count: 6 | 12) => page.getByRole('radio', { name: String(count), exact: true }).check();
 
 // ---- Pasting names ------------------------------------------------------------------------------------------
 
 test('a pasted list is read before anything is saved: blank lines, commas, repeats, long names; and adding it twice adds nobody', async ({ page }) => {
   const { session } = await guestSession();
   await openAdmin(page, local, 'Guests and QR');
+  await openPaste(page);
   const paste = page.getByLabel('Paste names');
   const summary = page.getByTestId('paste-summary');
   const add = page.getByRole('button', { name: /^Add (\d+ guests?|guests)$/ });
@@ -50,10 +58,11 @@ test('a pasted list is read before anything is saved: blank lines, commas, repea
   await add.click();
   await expect(page.getByTestId('guest-report')).toHaveText('Added 6 guests.');
   await expect(paste).toHaveValue('');
+  await expect(paste, 'the fold the person opened stays open once its box is emptied').toBeVisible();
   const roster = await rosterOf(session.id);
   expect(roster.map((visitor: Visitor) => visitor.displayName).sort()).toEqual(['A'.repeat(60), 'Casey Park', 'Jordan Lee', 'Morgan Day', 'Riley Fox', 'Someone']);
   expect(roster.every((visitor: Visitor & { enabled: boolean }) => visitor.enabled === true)).toBe(true);
-  await expect(page.locator('li.row[data-guest]')).toHaveCount(6);
+  await expect(page.locator('tr[data-guest]')).toHaveCount(6);
   await expect(page.getByTestId('guest-summary')).toContainText('6 guests: 6 no code, 0 not scanned, 0 joined, 0 completed.');
 
   // The same list again, and a name that differs only in case and spacing: nothing new.
@@ -229,7 +238,7 @@ async function expectedBase() {
   return new URL(`${participantUrl}`, lan[0] ?? 'http://127.0.0.1:5188').href;
 }
 
-async function sheetOf(page: Page, count: number, { extra = true } = {}) {
+async function sheetOf(page: Page, count: number, { extra = true, cards = 12 as 6 | 12 } = {}) {
   const { session, visitors } = await guestSession(names(count + (extra ? 3 : 0)));
   const withCodes = visitors.slice(0, count);
   for (const visitor of withCodes) await ds.provisionQrToken('c-kroger', session.id, { visitorId: visitor.id });
@@ -242,12 +251,17 @@ async function sheetOf(page: Page, count: number, { extra = true } = {}) {
   await openAdmin(page, local, 'Guests and QR');
   await page.getByRole('button', { name: /^Print QR sheet/ }).click();
   await expect(page.getByTestId('print-view')).toBeVisible();
+  await perPage(page, cards);
   await expect(page.locator('[data-card]')).toHaveCount(count);
   return { session, visitors: withCodes };
 }
 
 test('the print sheet has a card for each guest with a code waiting: name, QR, client and "Scan to begin", the QR carrying the participant page and the live session\'s code', async ({ page }) => {
-  const { session, visitors } = await sheetOf(page, 25);
+  const { session, visitors } = await sheetOf(page, 25, { cards: 6 });
+  // Six to a page unless 12 is chosen (Prompt 38): 2 by 3, larger codes.
+  await expect(page.getByTestId('print-summary')).toContainText('25 cards on 5 pages, 6 to a page, for Kroger');
+  expect(await page.locator('.print-page').evaluateAll((pages) => pages.map((entry) => entry.querySelectorAll('[data-card]').length))).toEqual([6, 6, 6, 6, 1]);
+  await perPage(page, 12);
   await expect(page.getByTestId('print-summary')).toContainText('25 cards on 3 pages, 12 to a page, for Kroger');
   await expect(page.getByTestId('print-summary')).toContainText('Not on the sheet: 1 with no code, 1 who already joined, 1 disabled.');
   expect(await page.locator('.print-page').evaluateAll((pages) => pages.map((entry) => entry.querySelectorAll('[data-card]').length))).toEqual([12, 12, 1]);
@@ -356,11 +370,14 @@ test('long names fit their card and the sheet says when there is nothing to prin
   await openAdmin(page, local, 'Guests and QR');
   await page.getByRole('button', { name: /^Print QR sheet/ }).click();
   await expect(page.locator('[data-card]')).toHaveCount(3);
-  await page.emulateMedia({ media: 'print' });
-  const fit = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.print-card__name')].map((name) => ({ text: name.textContent, clipped: name.scrollHeight > name.clientHeight + 1, within: name.getBoundingClientRect().height <= (12 / 25.4) * 96 + 1 })));
-  expect(fit.map((entry) => [entry.text, entry.within])).toEqual([['Al', true], ['Ünal Çelik-Ødegård', true], ['Wolfgang Amadeus Chrysostomus Wolfgangus Theophilus Mozartiano', true]]);
-  await shoot(page, 'guests-print-long-names', { full: false });
-  await page.emulateMedia({ media: 'screen' });
+  for (const [cards, lineMm] of [[6, 16], [12, 12]] as const) {
+    await perPage(page, cards);
+    await page.emulateMedia({ media: 'print' });
+    const fit = await page.evaluate((mm) => [...document.querySelectorAll<HTMLElement>('.print-card__name')].map((name) => ({ text: name.textContent, whole: name.scrollHeight <= name.clientHeight + parseFloat(getComputedStyle(name).lineHeight) / 2, /* (a hidden line is a whole line height; letters overhang a 1.1 line by a few px) */ within: name.getBoundingClientRect().height <= (mm / 25.4) * 96 + 1 })), lineMm);
+    expect(fit.map((entry) => [entry.text, entry.within, entry.whole]), `${cards} to a page: every name whole, within ${lineMm} mm`).toEqual([['Al', true, true], ['Ünal Çelik-Ødegård', true, true], ['Wolfgang Amadeus Chrysostomus Wolfgangus Theophilus Mozartiano', true, true]]);
+    await shoot(page, `guests-print-long-names-${cards}`, { full: false });
+    await page.emulateMedia({ media: 'screen' });
+  }
   // With every code scanned there is nothing to print: the button says so, and the sheet says why.
   for (const token of await tokensOf(session.id)) await scan(token.id);
   await page.getByRole('button', { name: 'Back to Guests and QR' }).click();
@@ -428,14 +445,14 @@ test('Guests and QR and the print view fit 390, 820 and 1440 wide: no sideways s
 test('keyboard: the guest controls come in reading order and show the green ring', async ({ page }) => {
   await guestSession(names(2));
   await openAdmin(page, local, 'Guests and QR');
-  await expect(page.locator('li.row[data-guest]')).toHaveCount(2);
+  await expect(page.locator('tr[data-guest]')).toHaveCount(2);
   await page.getByRole('button', { name: 'Refresh' }).focus();
   // Focus given by a script draws no ring until a key has been used: move off and back with the keyboard.
   await page.keyboard.press('Shift+Tab');
   await page.keyboard.press('Tab');
   const order: string[] = [];
   const rings: string[] = [];
-  for (let step = 0; step < 15; step += 1) { // (11 until Prompt 23: the form's Picture, and each row's Add picture; 15 from Prompt 33: the fold)
+  for (let step = 0; step < 13; step += 1) { // (11 until Prompt 23: the form's Picture, and each row's Add picture; 15 from Prompt 33: the fold; 13 from Prompt 38: two folds)
     const focused = await page.evaluate(() => {
       const element = document.activeElement as HTMLElement;
       const style = getComputedStyle(element);
@@ -449,7 +466,8 @@ test('keyboard: the guest controls come in reading order and show the green ring
   // Print is off while no code is waiting, and Add guests and Add visitor while nothing is typed, so the order skips them.
   // (Prompt 21, Phase 4: a guest's group adds a field after the pasted names, one for lines with none, and one after the visitor's name.)
   // (Prompt 33: the three steps come first, left to right, then the guest list, then the folded Recent app entries.)
-  expect(order).toEqual(['Refresh', 'paste-names', 'group-for-lines', 'visitor-name-field', 'visitor-group-field', 'Picture, optional', 'Make 2 QR codes', 'Export CSV', 'Add picture', 'Disable', 'Generate QR', 'Add picture', 'Disable', 'Generate QR', 'Recent app entries'].map((name) => (name.endsWith('-field') || name === 'group-for-lines' ? expect.stringMatching(/./) : name === 'Recent app entries' ? expect.stringMatching(/^Recent app entries/) : name)));
+  // (Prompt 38: the guest's name first; then two folds, Group and picture and Add many at once; then the list.)
+  expect(order).toEqual(['Refresh', 'visitor-name-field', 'Group and picture', 'Add many at once', 'Make 2 QR codes', 'Export CSV', 'Add picture', 'Disable', 'Generate QR', 'Add picture', 'Disable', 'Generate QR', 'Recent app entries'].map((name) => (name.endsWith('-field') ? expect.stringMatching(/./) : /^(Group and picture|Add many at once|Recent app entries)$/.test(name) ? expect.stringMatching(new RegExp(`^${name}`)) : name)));
 });
 
 // ---- The participant, for completeness ----------------------------------------------------------------------------------

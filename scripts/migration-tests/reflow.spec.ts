@@ -3,7 +3,7 @@ import { mkdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { sharePointFolderPath } from '../deployment-config.js';
-import { PIN, adminUrl, startLocal, stopLocal, useServer, type Local } from './admin-local.js';
+import { PIN, adminUrl, chooseTab, startLocal, stopLocal, tabNamed, useServer, type Local } from './admin-local.js';
 import { notLivePage, openParticipant, settle, themedSite, THEMES, walkParticipant } from './a11y-support.js';
 import { layoutProblems } from './layout-support.js';
 
@@ -148,10 +148,10 @@ test.describe('admin', () => {
       await page.getByRole('textbox', { name: 'PIN' }).fill(PIN);
       await look('the PIN gate');
       await page.getByRole('button', { name: 'Unlock' }).click();
-      await expect(page.getByRole('tab', { name: 'Today' })).toHaveAttribute('aria-selected', 'true');
+      await expect(tabNamed(page, 'today')).toHaveAttribute('aria-selected', 'true');
       await look('Today');
       for (const tab of ['Clients', 'Content', 'Guests and QR', 'Results']) {
-        await page.getByRole('tab', { name: tab, exact: true }).click();
+        await chooseTab(page, tab);
         await expect(page.getByRole('heading', { name: tab === 'Guests and QR' ? 'Guests and QR codes' : tab, exact: true }).first()).toBeVisible();
         await look(tab);
       }

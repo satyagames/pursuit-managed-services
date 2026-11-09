@@ -323,13 +323,13 @@ in `migration/src/`, not by editing them, so that what the tests measure stays w
   - **Confetti** is one fixed, full-viewport canvas with `pointer-events: none` and `aria-hidden`, removed when
     the burst ends, drawn by canvas-confetti (ISC, no Web Worker) loaded by a dynamic `import()`. Small
     (first-try correct only) is about 40 pieces, medium (activity complete) about 120 from both lower corners,
-    large (finale) about 250 in three bursts; all scale by 0.6 below 500 px wide. The palette is Deloitte green,
+    and the finale's petal shower (Prompt 36, below); the bursts scale by 0.6 below 500 px wide. The palette is Deloitte green,
     white, `--success` and light tints of `--action` and the client primary, and never red. Under
     `prefers-reduced-motion` there is no overlay at all (the cue still plays). No confetti on a wrong answer, a
     right answer after a Retry, or a reveal.
   - **Changing a cue.** Edit its notes in `sound-cues.js`, then run `npm run test:effects` and read the table it
-    prints: peak must stay at or below -5 dBFS (the brief asks -6; the finale sits near -7), duration within the
-    brief, and A-weighted level within 2 dB of the other cues. Adjust that cue's `gain` from the report. The
+    prints: peak must stay at or below -5 dBFS (the brief asks -6; the finale sits near -6.5), duration within the
+    brief, and A-weighted level within 2 dB of the other cues (the finale, the visit's peak, may sit up to 3 dB above them, never under the quietest). Adjust that cue's `gain` from the report. The
     tests measure level, length, pitch order, clicks and brightness; they cannot say whether it sounds good, so
     listen to the WAVs and then on a real iPad (`QA-TESTING.md`, "Sound and confetti on a real iPad").
   - **Auditioning.** `#/styleguide` (dev server only) has a "Sound and confetti" section with a button per cue and
@@ -575,7 +575,8 @@ in `migration/src/`, not by editing them, so that what the tests measure stays w
     400 kB target) is the one that matters, and Phase 8 needs room for accessibility fixes. Nothing was dropped to make the room: PowerPoint,
     both faces and the jsPDF stubs are as they were, and size is measured as it always was. `npm run test:bundle` prints each page's size and
     its headroom. Past 700,000 B, make room first (MIGRATION-PLAN.md, "Phase 7b", has what each way is worth); do not raise it again to fit.
-    (The site owner raised it once more, to 710,000 B, for Prompt 34, when the page stood at 698,147 B: `BUDGET.admin` in `scripts/bundle-budget.js`.)
+    (The site owner raised it once more, to 710,000 B, for Prompt 34, when the page stood at 698,147 B, and again, to 720,000 B, for Prompt 38, when
+    it stood at 714,365 B: `BUDGET.admin` in `scripts/bundle-budget.js`.)
   - **Tailwind reads every file under `migration/` for class names, comments included.** The words `table`, `absolute` and `invisible`
     in the new files each added a utility rule to BOTH pages (22 bytes on the participant page) until they were reworded. After adding
     a file there, check that the participant page is still the size it was (`npm run test:bundle` prints it).
@@ -1778,7 +1779,7 @@ Results is a leader's view as well (boards 9 and 12): `admin/LeaderDashboard.sve
 
 - **The words of who you are come from `identityOf`** (`lib/access/identity-words.js`, held by `scripts/test-identity-words.js`), made from the access the page already read: no request for the chip, the Your access popover or the welcome strip. A PIN sign-in has no chip. "Ends" shows within `ENDS_SOON_DAYS` (14); the popover names the person, never their email.
 - **The welcome strip's one memory** is `localStorage` under `pms.welcome.<hash>`, read and written in try/catch; when storage is blocked it shows once in each tab. Nothing else of a person is stored.
-- **No container is capped.** The admin page runs edge to edge with the gutter `clamp(1rem, 2vw, 2rem)`; running text is at most 72ch. From 1,100 px the brand, the tabs and the person are one sticky 52 px bar (`admin.css`); below it, the two rows of before, and only the tab row sticks. `scroll-padding-top` clears whichever sticks, with room for the 9 px ring.
+- **No container is capped.** The admin page runs edge to edge with the gutter `clamp(1rem, 2vw, 2rem)`; running text is at most 72ch. (Prompt 39: the bar is one 56 px bar at every width, in `admin-look.css`; see its rules.) `scroll-padding-top` clears the bar, with room for the 9 px ring.
 - **Each tab's columns start at 1,100 px**, by CSS grid, and below it the tab is as it was: Today's three zones (Controls sticky, End session always in view), People's person and Clients' client beside the list, Guests and QR's names and codes, Results' open sessions and the narrow list of the others, the dashboard's charts beside the By client rows. Content's two views were side by side already.
 - **A column moves nothing's order.** What a test or a screen reader reads first stays first: Results keeps the open (newest) session on the left, and the card after a delete is found by its session, not its place in the page.
 - **Colours only from `admin-tokens.css`**, each pair with its contrast test (`scripts/test-admin-today.js`). The participant page's bytes do not change (`npm run test:bundle`): a comment's word such as "table" in a new admin file can add a Tailwind rule to it.
@@ -1801,7 +1802,7 @@ against them at 1366 by 650, 1920 by 950 and 683 by 700, and `admin-explains.spe
 5. **Fold what is not the main job** (`admin/Fold.svelte`): a header button with aria-expanded and aria-controls (chevron, icon, title, a count or
    one-line summary, Show or Hide in words), the panel `hidden` while closed so Tab skips it. It starts closed on every visit: open or closed is held
    in the component alone, never stored. Folding reads nothing new; what is inside is read as it was.
-6. **Icons** (`admin/Icon.svelte`, one 24 px grid, a 2 px stroke in the text's colour, round caps, one of each): plus adds, the pencil edits, the round
+6. **Icons** (`admin/Icon.svelte`, one 24 px grid, round caps, one of each; since Prompt 38 a 1.75 stroke and the table in `admin/icons.js`, see "Rules from Prompt 38"): plus adds, the pencil edits, the round
    minus (`minus-circle`) removes one grant, the bin (`trash`) is only for deleting a whole record, the chevrons fold, the eye shows or hides, the
    clock is history, the arrow goes back, the printer prints, the download arrow downloads, copy copies, the check is done. An icon beside words is
    aria-hidden; an icon alone is an `IconButton` with an aria-label naming what it acts on and a tooltip on hover and focus, 44 px.
@@ -1875,6 +1876,148 @@ against them at 1366 by 650, 1920 by 950 and 683 by 700, and `admin-explains.spe
   `lib/participant/aop-glance.svelte.ts` holds this visit's, in memory): nothing new is stored or sent and no one else sees them.
 - **The admin page does not carry the rating grid**: `migration/vite.admin.config.ts` puts `MatrixRating.admin.svelte` in its place (Brand Studio's
   sample has no such question). The participant page may grow by 12,288 B gzip for this prompt (`PHASE_35`).
+
+## Rules from Prompt 36 (the grand finale; keep them holding)
+
+- **One finale, in five acts, over by 4.2 s.** When the thank-you page has checked that every activity is done, `finale()` (`lib/effects/effects.ts`)
+  plays the `finale` cue and, at the full motion level only, the petal shower; the page plays its acts through `playFinale` (`lib/motion/motion.ts`)
+  from `lib/motion/finale-motion-plan.js`: the hush (a 35 percent veil behind the content, in by 0.35 s, lifted from 3.6 s), the medal (lands at
+  1.1 s with a spring, its rays turn once, three rings spread, the check draws itself), the name (rises in from 1.9 s, in by 3 s) and the cards
+  (one after another from 2.3 s, each counting up from 0 over 800 ms, final by 3.6 s), the sheen at 3 s, and **Celebrate again** in the afterglow
+  from 3.6 s, which replays all of it (sound included) and keeps its place and its focus. Every length is a `TOKENS.finale` token
+  (`--motion-finale-*`); every part moves transform and opacity only (the check its stroke); no more than `MAX_CONCURRENT` move at once
+  (`scripts/test-finale-motion.js`). Nothing else changed: the per-question, per-activity and hub celebrations are as they were.
+- **Replace, not stack.** `EFFECTS.finale` is `{ cue: 'finale', confetti: 'shower' }`; the old `large` bottom bursts and their tests are gone,
+  and `CONFETTI_SIZES` is small and medium. The shower is `showerPlan` (`lib/effects/confetti-plan.js`): small bursts from just above the top
+  edge, aimed down, in three waves (a curtain sweeping left to right from 0.35 to 1.5 s, a full-width fall from 1.2 to 3.6 s, a fall over the
+  middle from 2.4 to 4.2 s) and an afterglow of about six slow petals a second until 7.5 s; everything is gone by 11 s (at 60 frames a second, and
+  in WebKit here at about 40). It is fired on the one
+  overlay through canvas-confetti, which the page already carries (no new library), in petal and ribbon paths (each with its own matrix, so
+  nothing is measured at run time) and discs, in `showerPalette` (the confetti palette, a pale lime and a warm pale yellow; never red).
+- **The caps.** Never more than 160 pieces alive (90 below 560 px). The library ages its pieces by the frames it draws (60 a second at most), so
+  the cap is kept in those frames: `showerGate` counts the overlay's frames as the library clears it for each, and lets a burst in only if what is
+  still alive and the burst fit. A slower device, whose pieces live longer in seconds, gets fewer new ones; a hidden tab draws no frames and gets
+  none. A piece crosses the screen in about its life, so what the cap counts is on the screen. A burst is fired only while the motion level is still
+  full, so the governor stepping down mid-way stops the shower; the overlay goes when its last piece has fallen.
+- **Each motion level.** Full: all of the above. Reduced (the governor has stepped down): no shower, veil, rings, turning rays, rise or count-up;
+  the medal (its check drawn), the name and the cards fade in together in 200 ms, **Celebrate again** shows at once, and a still garland of petals
+  (one CSS element along the top of the card, in pale lime and pale yellow) shows at once and is gone after 6 s. The medal keeps 1.5 rem
+  above and below it, so its rays never reach behind the headline's words. None (the device's reduced motion, the client's switch,
+  `?motion=off`): the final state at once, no garland. Sound, if the guest turned it on, is the same at every level. Brand Studio's preview shows
+  the final state with the garland held still, no motion and no sound.
+- **Never in the way.** The overlay is `pointer-events: none` and `aria-hidden`; the veil is behind the content, never over a button; nothing
+  moves the layout (layout shift 0) and no long task starts it. The page says once, in a status line, "All activities done. Thank you, <name>!";
+  the heading keeps its name and focus (`focusHeading`), and each card's sentence is one line of real text ("5 of 5 right on the first try").
+- **No flashing** (WCAG 2.3.1): the page's average luminance, sampled about every 100 ms, changes by 0.1 or more at most twice in any second
+  (`scripts/migration-tests/finale-perf.spec.ts`, which also writes the frame strip and the frame rate at 4x slowdown to `test-results/finale/`).
+- **The cue.** `finale` (`sound-cues.js`, `max: 4.6`): a swell of noise whose band rises from 500 to 3,600 Hz (a noise note may have a `filter.to`),
+  a C5 E5 G5 C6 bloom 60 ms apart at 1 s, then 14 bells from C major pentatonic about every 200 ms from 1.4 s, fading by 10 dB from -14 dBFS
+  (the brief's -24 left the cue 10 dB under every other), each 0.55 s long; nothing in the afterglow.
+- **The budget.** The participant page may grow by 4,096 B gzip for this prompt (`PHASE_36`); it ended 21 B under it, so the next change to that
+  page will need room found first. The medal's ink on its lime and the cards' words on white are held to 4.5:1 (`scripts/test-participant-contrast.js`).
+
+## Rules from Prompt 38 (the admin page, calm and premium; keep them holding)
+
+- **Every screen answers "are we ready, and what next" first**, shows the one next action, and folds the rest with a line of what it holds now
+  (`.adm-fold` and its `.adm-fold__summary`): advanced settings, history, filters, bulk tools, passed checks and danger actions. Nothing is folded
+  blind.
+- **The palette** is `migration/src/styles/admin-tokens.css` by the brief's names: `--adm-bg` #F6F7F3, `--adm-surface` #FFFFFF, `--adm-surface-2`
+  #FAFBF8, `--adm-line` #E7EBE3, `--adm-line-strong` #D6DDD2, `--adm-ink` #1F2A24, `--adm-ink-2` #4B574F, `--adm-subtle` (the brief's muted)
+  #7B867F, `--adm-primary` #2F6B4F, `--adm-primary-deep` #22513B, `--adm-primary-wash` #EBF3EE, `--adm-accent` (lime) #A9CB6B, info, warn, danger
+  and ok (#3B7F8C, #B7791F, #B4443A, #3F8F5A) with their washes, and `--adm-dark1` #16231C for the live wall. The names the screens used before
+  (`--adm-card`, `--adm-muted`, `--adm-deep`, ...) point at the same palette. Muted, warn and ok are under 4.5:1 on white, so they are marks only;
+  words on a wash take its `*-ink` (`--adm-ok-ink` #2B6A40, `--adm-warn-ink` #7A4E12, `--adm-danger-ink` #9A3A31, `--adm-info-ink` #2C6370).
+  `scripts/test-admin-look.js` holds every value, every pair (words 4.5:1, marks 3:1) and that `admin-look.css` writes no colour of its own. No
+  black bar: the header is the surface with a line under it, and the Deloitte wordmark's letters are ink there.
+- **The files keep their own look.** The PDF, the PowerPoint and the leader report draw with `migration/src/styles/look-tokens.css` (`--look-*`),
+  which no page loads; `lib/exports/report-look.js` is held equal to it.
+- **Type: Open Sans only**, embedded (400, 600, 700). Display 28/36, Title 20/28, H2 18/26, H3 16/24, Body 16/24, Label 13/16 upper case (column
+  heads and eyebrows only, never a sentence), Figure 32/40. Running text keeps the 16 px floor of CLAUDE.md rule 9, so Body and Small are 16 px, not
+  the brief's 14 and 13. A paragraph is at most 68 characters wide.
+- **The grid** (Prompt 39 replaced the 1,280 px cap: see its rules): a 24 px gutter (16 under 900 px); Today is 8 + 4. Spacing only on the scale
+  4, 8, 12, 16, 24, 32, 48 (and 6 between a label and its field): `scripts/test-admin-look.js` lints `admin-look.css`. Cards: radius 14, a 1 px
+  line, the soft shadow; status goes in a chip, never in a border.
+- **Icons**: `migration/src/admin/icons.js`, drawn by `admin/Icon.svelte` (its API as before): one 24 grid, a 1.75 stroke in `currentColor`, round
+  caps, no fill, 20 px in the UI and 16 px in a chip. Each icon has one meaning (`admin/icon-meanings.js`, which the page does not carry): Today
+  `calendar-check`, Clients `building`, Content `layers`, Guests and QR `qr`, Results `bar-chart`, People `users`, the person `user`, Go live
+  `broadcast`, End `stop`, Reopen `refresh`, the participant link `link`, Copy `copy`, Open `external`, the wall `screen`, the confidence check
+  `gauge`, Give access `key`, Turn off `power`, History `clock`, Add `plus`, Edit `pencil`, Delete `trash`, Hide and Show `eye-off` and `eye`, Print
+  `printer`, Download `download`, Upload `upload`, Restart a guest `rotate-left`, Filters `sliders`, Brand `palette`, Pictures `image`, the question
+  types (`radio`, `checks`, `toggle`, `slider`, `podium`, `message`, `matrix`), Move `arrow-up` and `arrow-down` (no more ▲ ▼), and readiness: a
+  blocker `alert-octagon`, a warning `alert-triangle`, ready `check-circle`, information `info`, each a different shape. `scripts/test-admin-icons.js`
+  holds the table, the meanings and the stroke. An icon beside a word is `aria-hidden`; an icon alone is a button named in words.
+- **The sticky bar** (`admin/StickyBar.svelte`): 64 px at the foot of the window, where the screen stands on the left ("Ready to go live", "Changes
+  not saved") and exactly one primary action and at most one secondary on the right. A destructive action is never in it. The page leaves room
+  under its content; a focused field stops above it (`scroll-padding-bottom`); on an iPad it rides above the keyboard (`lib/admin/sticky-bar.ts`
+  follows the visual viewport). Today (Go live, or Show the wall once live), Add session (Create session), Brand (Save brand) and the QR sheet
+  (Print) have one.
+- **Smart defaults** (`lib/admin/admin-defaults.js`, always editable): a new session is "{Client} · {date}" on the next day the client has no
+  session, at the start time the person used last (else 09:00); a new question is Single choice, a list of answers, four rows; a new user's role is
+  Producer; the QR sheet is A4 (US Letter where the browser's language says so), 6 to a page. A person's last choices are kept in this browser under
+  `pms.prefs.` and a hash of who they are, every read and write guarded (`scripts/test-participant-storage.js` lists it). A new session's
+  identification, flow and confidence check are still written by the data layer as before: changing them would change the participant page.
+- **Messages**: an error says what happened and what to do, in ink on the danger wash with the warning triangle; an empty list shows a muted icon,
+  one sentence and one action; a list that is loading shows skeleton lines in the line colour, not a spinner.
+
+## Rules from Prompt 39 (the admin page on the whole width, the bar, the popover, Results' charts; keep them holding)
+
+The general alignment rules, for every admin screen:
+
+1. **One page container, one 12-column grid, 24 px gutters, page padding `clamp(16px, 2vw, 32px)`.** The container is the window's width
+   (`--adm-page-max` 1,920 px, centred only past it; `--adm-page-pad`; `admin-tokens.css`). The bar and every page share it: the bar's inner
+   edges are `--adm-inset`, so the wordmark and the first card's edge line up, and the person's chip ends on the content's right edge. No other
+   side margin, wrapper or gutter element. `.adm-grid` and `.adm-span-N` in `admin-look.css` are the grid; a screen's own split uses
+   `repeat(12, minmax(0, 1fr))` and spans.
+2. **The title row**: icon, title and a one-line description on the left, the page's actions on the right, on one baseline (`.panel__head`,
+   `admin.css`, from 1,024 px). The description sits beside the title only when it fits there on one line; longer, it goes under the title and
+   never wraps beside a button.
+3. **A split view's columns start on one top line** and use the same card padding: Today 8 + 4, Clients 4 (at least 340 px) + 8 with the title
+   and Add client above both, Content's activities 5 + questions 7, Brand's preview 7 + controls 5, Results' sessions 3 (at least 280 px) + the
+   session 9, People 4 + 8 with the title row above both. A side column sticks under the bar only while all of it fits above the bottom bar
+   (`lib/admin/sticky-fit.js`, `data-sticky`); a taller one scrolls with the page.
+4. **Cards in a row are one height**, and buttons in a row one height and one radius. The brief's 36 px buttons are 44 px here: the target size of
+   CLAUDE.md rule 9 wins.
+5. **Spacing only from the scale** 4, 8, 12, 16, 24, 32, 48 (`scripts/test-admin-look.js` lints `admin-look.css`; the page's padding and width
+   and the bars' heights are tokens).
+6. **No sideways scrolling** except inside a table or matrix card (the guest list, Art of the Possible), which scrolls inside its box.
+7. **The sticky bottom bar** spans the page container's width: its buttons end on the content's right edge.
+
+And for the parts:
+
+- **The bar**: 56 px; the Deloitte wordmark and "PMS Admin" (`APP_SHORT_NAME`, `lib/common/app-name.ts`; a screen reader still hears
+  "{APP_NAME} Admin", and the page's title is unchanged); no pill: a copy's label (Phase 10b) is the brand's tooltip and `data-label`. The six tabs
+  in the middle, each an 18 px icon and its word, never wrapped, never cut, never a scrollbar from 1,024 px; the active one has the lime underline
+  on the bar's bottom edge. Below 1,024 px the tabs are one **Menu** button and its list (Esc, a click outside or a tab chosen closes it). The
+  chip: the initials and the role below 1,280 px ("Super admin"), the role and its reach from 1,280 px ("Super admin · All clients");
+  `identityOf` gives `role` and `reach`. The long description is not in the chip.
+- **Your access** (the popover): the name, the role's one line, the Role / Covers / Until table, What you can do, "Need a different role? Ask a
+  Super admin." and Copy my details; 360 px wide, 20 px inside, one left edge, under the chip and never past the window. It no longer says how the
+  person signed in or what is not available to them, for any role (`identityOf` has no `notAvailable`).
+- **Results**: the Dashboard and Sessions switch, Hide names, Refresh and "Updated ..." in the title row, right-aligned. A session row is two
+  lines (the client and its answers; the date and the status's chip), the chosen one a 3 px primary edge on the primary wash. The pager keeps
+  Previous, "Page 1 of 2" and Next on one line; "Showing 1 to 5 of 8" shares it when there is room. The charts sit in
+  `repeat(auto-fill, minmax(340px, 1fr))`, 24 px apart, each row's cards one width and one height; each activity's title is a full-width heading
+  over a thin line. On the admin page (not the wall) a card is the headline, the question, the meta line, the numbers button on its own row, then
+  the chart; a bar's row is the label (38%, wrapped whole: a two-line clamp cut words at 200% text, Correct and Top choice under it), the track, and the value right-aligned in a 72 px
+  column of its own. The scale under the bars is 0, 50 and 100 on their gridlines.
+- **Art of the Possible on Results** takes the whole row. Its rows are in the order the guests rated them (Original order first in Sort by, as the
+  participant's screen has them), its criteria in their order with their own names, read across (wrapped, the label size); the
+  sub-process column is sticky and 320 px; each average is printed on a teal tile, light to deep (`--viz-heat-1` to `--viz-heat-4` in
+  `results-tokens.css`, each held to 4.5:1 by `scripts/test-results-palette.js`); the summary line on the left and Sort by, Show and the numbers
+  button on the right of one row. When the card is narrower than the grid, the grid scrolls inside it with a shadow at the edge that has more. The
+  data has no groups of sub-processes, so there is nothing to fold by group. The wall and the files keep the blue ramp.
+- **Downloads** in the session shown: For leaders, For the room and Data in three equal columns from 1,280 px, each its label over buttons of one
+  height; the Dark or Light look inside For the room.
+- **The dashboard**: the six key figures on one row from 1,280 px; "Not measured" or "None yet" where a figure would be is muted words at the
+  running size (16 px, not the brief's 14: rule 9); the two panels below 6 + 6.
+- **People**: Check site access in the title row beside History of changes, Add user and Give access; Search wide, then Client, Session and Status
+  on one line from 1,280 px; the role chips on their own row.
+- **Guests and QR**: the three steps one width and one height; the guest list is a table of the guest, the group, the status, the code and what
+  can be done.
+- **Tailwind reads every file under `migration/`**: no bare word "table" and no "@container" in a new file (each added a rule to the participant
+  page); `PHASE_39` in `scripts/bundle-budget.js` holds the participant page as it was.
+- `scripts/migration-tests/admin-full-width.spec.ts` holds all of this at 1024, 1280, 1366, 1440, 1536 and 1920 px and writes the pictures of
+  1440 and 1920 to `test-results/admin/full-width/`.
 
 ## Before finishing a change
 

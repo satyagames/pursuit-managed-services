@@ -4,8 +4,8 @@
 
 /**
  * @typedef {import('./sound-cues.js').CueName} CueName
- * @typedef {'small' | 'medium' | 'large'} ConfettiSize
- * @typedef {{ cue: CueName | null, confetti: ConfettiSize | null }} Effect
+ * @typedef {'small' | 'medium'} ConfettiSize
+ * @typedef {{ cue: CueName | null, confetti: ConfettiSize | 'shower' | null }} Effect `shower` is the finale's petal shower (Prompt 36), not a burst
  */
 
 /** Next, Back, Home and "Click here to begin" make no sound of their own, so they are not here. */
@@ -13,7 +13,8 @@ export const EFFECTS = /** @type {const} */ ({
   soundOn: { cue: 'soundOn', confetti: null },
   pick: { cue: 'pick', confetti: null },
   activityComplete: { cue: 'activityComplete', confetti: 'medium' },
-  finale: { cue: 'finale', confetti: 'large' },
+  // The finale (Prompt 36): the petal shower from above, which replaced the three bursts from the bottom.
+  finale: { cue: 'finale', confetti: 'shower' },
   // The hub (Prompt 24). Its small sprays are not confetti: they are the plan's sparkPlan, asked for by effects.ts.
   stamp: { cue: 'stamp', confetti: null },
   unlock: { cue: 'unlock', confetti: null },

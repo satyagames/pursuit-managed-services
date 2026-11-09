@@ -17,13 +17,15 @@
  *
  * Reads sessionStorage and the address's `?motion=off`; writes sessionStorage `pms.motion`. Never fetches, never plays a sound or
  * confetti (lib/effects/effects.ts asks `motionLevel()` whether confetti may show). The Art of Possibility's effects (Prompt 35, lib/motion/aop-motion-plan.js)
- * are played here too, with the Web Animations API: `playEffect`, `flyOff`, `playWave`.
+ * are played here too, with the Web Animations API: `playEffect`, `flyOff`, `playWave`; and the grand finale's acts (Prompt 36,
+ * lib/motion/finale-motion-plan.js): `playFinale`, whose cards count up with requestAnimationFrame for 800 ms and then stop.
  */
 import {
   LONG_LABEL, MAX_CONCURRENT, WATCH_WINDOW, diagnosticOff, governorStep, motionRecipe, readGovernor,
   resolveLevel, type Direction, type Governor, type Level, type Recipe, type Role, type Verdict,
 } from './motion-plan.js';
 import { aopEffect, flyCount, waveDelay, type Effect as AopEffect, type Where } from './aop-motion-plan.js';
+import { FINALE, countValue, finaleCount, finaleParts, type PartName } from './finale-motion-plan.js';
 
 export type { Direction, Level };
 
@@ -216,7 +218,7 @@ export function motion(node: HTMLElement, params: MotionParams | null) {
 const running = new Set<Animation>();
 const moving = (): number => active.size + running.size;
 
-function play(node: Element, effect: AopEffect): Animation {
+function play(node: Element, effect: Pick<AopEffect, 'keyframes' | 'duration' | 'easing' | 'delay'>): Animation {
   const animation = node.animate(effect.keyframes as Keyframe[], { duration: effect.duration, easing: effect.easing, delay: effect.delay ?? 0, fill: 'backwards' });
   running.add(animation);
   const done = () => { running.delete(animation); };
@@ -267,6 +269,51 @@ export function playWave(cells: { node: Element; r: number; c: number }[], rows:
     const effect = aopEffect('wave', 'full', { delay: waveDelay(r, c, rows, columns) });
     if (effect && typeof (node as HTMLElement).animate === 'function') play(node, effect);
   }
+}
+
+// ---- The grand finale (Prompt 36) ------------------------------------------------------------------------------------------------------
+// The thank-you page hands over its parts; the plan says what each does at the one resolved level. The plan's own spacing keeps it under the cap (as the
+// wave's does), so every part of it is played. The cards' numbers count up through `onCount` (the page owns the text), and `onAfterglow` says when
+// "Celebrate again" may show: at once below the full level. Every animation, frame and timer is let go by `cancel`, and by the end of the counts.
+
+type Node = Element | null | undefined;
+/** Each part's element, by the plan's part name; the ring, letter and card parts are lists, by index. */
+export type FinaleNodes = Partial<Record<PartName, Node | Node[]>>;
+
+/**
+ * Plays the finale's acts; `onCount` gets each card's number as it counts up, `onAfterglow` says "Celebrate again" may show. Returns the cancel
+ * that lets go of every animation, frame and timer.
+ */
+export function playFinale(
+  nodes: FinaleNodes,
+  { counts = [], width = 0, onCount, onAfterglow }: { counts?: number[]; width?: number; onCount?: (index: number, value: number) => void; onAfterglow?: () => void } = {},
+): () => void {
+  const level = document.hidden ? 'none' : motionLevel();
+  const many = (name: PartName) => (nodes[name] as Node[] | undefined)?.length ?? 0;
+  const animations = finaleParts(level, { cards: many('card'), width }).flatMap((part) => {
+    const at = nodes[part.part];
+    const target = Array.isArray(at) ? at[part.index] : at;
+    return target ? [play(target, part)] : [];
+  });
+  const start = performance.now();
+  let frame = 0;
+  const tick = (now: number) => {
+    let running = false;
+    counts.forEach((value, index) => {
+      const plan = finaleCount(level, index);
+      const progress = plan ? (now - start - plan.delay) / plan.duration : 1;
+      if (progress < 1) running = true;
+      onCount?.(index, countValue(value, progress));
+    });
+    if (running) frame = requestAnimationFrame(tick);
+  };
+  tick(start);
+  const timer = setTimeout(() => onAfterglow?.(), level === 'full' ? FINALE.afterglow : 0);
+  return () => {
+    for (const animation of animations) animation.cancel();
+    cancelAnimationFrame(frame);
+    clearTimeout(timer);
+  };
 }
 
 // ---- For the tests -----------------------------------------------------------------------------------------------------------------

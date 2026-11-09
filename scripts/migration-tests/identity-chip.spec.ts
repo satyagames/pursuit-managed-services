@@ -60,27 +60,45 @@ test.describe('the chip says the role and its reach, without a click', () => {
       await expect(popover(page).getByRole('heading', { name: 'Your access' })).toBeVisible();
       await expect(popover(page)).toContainText(name);
       await expect(popover(page)).not.toContainText(persona.who.Email);
-      await expect(popover(page)).toContainText('Signed in with your Deloitte account');
+      // (Prompt 39: the popover no longer says how the person signed in, nor what is not available to them.)
+      await expect(popover(page)).not.toContainText('Signed in with your Deloitte account');
+      await expect(popover(page)).not.toContainText('Not available to you');
+      await expect(popover(page)).not.toContainText('Nothing hidden');
+      await expect(popover(page).getByText('Need a different role? Ask a Super admin.')).toBeVisible();
       await expect(popover(page).getByRole('row')).toHaveCount(2);
       await expect(popover(page).getByRole('row').nth(1)).toContainText(persona.role);
       await expect(popover(page).getByRole('row').nth(1)).toContainText('No end date');
       await expect(popover(page).getByRole('button', { name: 'Copy my details' })).toBeVisible();
       await mkdir(pictures, { recursive: true });
       await page.screenshot({ path: `${pictures}chip-${persona.role.replace(' ', '-').toLowerCase()}.png`, clip: { x: 0, y: 0, width: 1440, height: 640 } });
-      const words = { line: persona.line, canDo: await page.getByTestId('access-can-do').locator('li').allTextContents(), notAvailable: await page.getByTestId('access-not-available').textContent() };
+      const words = { line: persona.line, canDo: await page.getByTestId('access-can-do').locator('li').allTextContents() };
       test.info().annotations.push({ type: 'words', description: JSON.stringify(words) });
     });
   }
 
-  test('a Producer is told who does Clients, People and Reporting settings; a Super admin that nothing is hidden', async ({ page }) => {
-    await open(page, await site(PERSONAS[2].who, 'Producer', 'client', { ClientId: 'c-kroger' }));
-    await chip(page).click();
-    await expect(page.getByTestId('access-not-available')).toHaveText('Clients and People: a Super admin or an Admin does these; Reporting settings: a Super admin does this.');
-    const other = await page.context().browser()!.newPage();
-    await open(other, await site(PERSONAS[0].who, 'Super admin', 'global'));
-    await chip(other).click();
-    await expect(other.getByTestId('access-not-available')).toHaveText('Nothing hidden: you have every tab');
-    await other.close();
+  test('Prompt 39: the popover says what a role can do and nothing of what it cannot, for a Producer as for a Super admin; 360 wide, 20 inside', async ({ page }) => {
+    for (const persona of [PERSONAS[2], PERSONAS[0]]) {
+      const shown = persona === PERSONAS[2] ? page : await page.context().browser()!.newPage();
+      await shown.setViewportSize({ width: 1440, height: 780 });
+      await open(shown, await site(persona.who, persona.role, persona.scope, persona.place));
+      await chip(shown).click();
+      await expect(shown.getByTestId('access-not-available')).toHaveCount(0);
+      await expect(popover(shown)).not.toContainText(/Not available to you|Nothing hidden|Signed in with your Deloitte account/);
+      await expect(shown.getByTestId('access-can-do').locator('li').first()).toBeVisible();
+      const box = await popover(shown).evaluate((element) => {
+        const style = getComputedStyle(element);
+        const rect = element.getBoundingClientRect();
+        const heading = element.querySelector('h2')!.getBoundingClientRect();
+        const list = element.querySelector('[data-testid="access-can-do"] li')!.getBoundingClientRect();
+        return { width: rect.width, padding: style.paddingLeft, left: rect.left, right: rect.right, heading: heading.left, list: list.left, inner: window.innerWidth };
+      });
+      expect(box.width).toBe(360);
+      expect(box.padding).toBe('20px');
+      expect(Math.abs(box.heading - box.list), 'the heading and the list on one left edge').toBeLessThanOrEqual(1);
+      expect(box.left).toBeGreaterThanOrEqual(0);
+      expect(box.right).toBeLessThanOrEqual(box.inner);
+      if (shown !== page) await shown.close();
+    }
   });
 
   test('several roles: the highest first and "+1"; an end date nine days ahead is a word in the chip and in the popover', async ({ page }) => {
@@ -181,7 +199,7 @@ test.describe('the chip at every width', () => {
       await open(page, await site(PERSONAS[2].who, 'Producer', 'client', { ClientId: 'c-kroger' }));
       await expect(page.getByTestId('identity-role')).toBeVisible();
       await expect(page.getByTestId('identity-role')).toHaveText('Producer · 1 client');
-      const boxes = await page.evaluate(() => ['.shell__brand', '[data-testid="identity-chip"]', '[data-testid="copy-label"]'].map((selector) => {
+      const boxes = await page.evaluate(() => ['.shell__brand', '[data-testid="identity-chip"]'].map((selector) => {
         const box = document.querySelector(selector)?.getBoundingClientRect();
         return box ? { left: box.left, right: box.right, top: box.top, bottom: box.bottom } : null;
       }));
@@ -190,6 +208,9 @@ test.describe('the chip at every width', () => {
       expect(apart(brand, chipBox), 'the brand and the chip').toBe(true);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'no sideways scroll').toBe(true);
       if (width < 900) await expect(page.locator('.who__name')).toBeHidden();
+      // (Prompt 39: below 1,280 px the chip says the role alone; from 1,280 px the role and its reach.)
+      if (width < 1280) await expect(page.locator('.who__reach')).toBeHidden(); else await expect(page.locator('.who__reach')).toBeVisible();
+      await expect(page.getByTestId('identity-does')).toHaveCount(0);
       await mkdir(pictures, { recursive: true });
       await page.screenshot({ path: `${pictures}chip-${width}.png`, clip: { x: 0, y: 0, width, height: 140 } });
     });

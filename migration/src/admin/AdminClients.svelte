@@ -7,6 +7,7 @@
   import { heldRead, holdRead } from '../lib/admin/list-cache.js';
   import Pager from './Pager.svelte';
   import Icon from './Icon.svelte';
+  import MoreMenu from './MoreMenu.svelte';
   import { embeddedAssetUrl } from '../lib/brand/assets.js';
   import { viewById } from '../lib/admin/admin-content-views.js';
   import SampleNotice from './SampleNotice.svelte';
@@ -64,6 +65,8 @@
   let welcomeLine = $state('');
   let slugTouched = $state(false);
   let titleTouched = $state(false);
+  /** More details: open when editing, shut for a new client; after that the person decides (an expression here was re-applied on each key). */
+  let moreOpen = $state(false);
   let submitted = $state(false);
   let formError = $state('');
   let qrClient = $state<Client | null>(null);
@@ -150,6 +153,7 @@
     welcomeLine = form.welcomeLine;
     slugTouched = Boolean(client);
     titleTouched = Boolean(client);
+    moreOpen = Boolean(client);
     submitted = false;
     formError = '';
     editorOpen = true;
@@ -174,12 +178,15 @@
     formError = '';
     const form = { name, slug, eventTitle, eventSubtitle, welcomeLine };
     try {
+      const added = !editing;
       if (editing) await updateClientRecord(dataService, editing, form, { slugLocked });
       else await createClientRecord(dataService, form);
       editorOpen = false;
       onToast(`Saved ${form.name}`, 'success');
       await refresh();
       if (workspace) workspace = clients.find((each) => each.id === workspace?.id) ?? workspace;
+      // (Prompt 38: a new client opens on its own page, where its sessions, team and QR check-in are the next steps.)
+      else if (added) workspace = clients.find((each) => each.slug === form.slug) ?? null;
     } catch (cause) {
       formError = cause instanceof Error ? cause.message : 'Could not save this client.';
     } finally {
@@ -313,7 +320,11 @@
           {#if submitted && problems.name}<span id="name-problem" class="error small">{problems.name}</span>
           {:else if name.length >= MAX_CLIENT_NAME}<span id="name-limit" class="muted small">{MAX_CLIENT_NAME} characters: the most a client's name can hold.</span>{/if}
         </div>
-        <span class="muted small" id="name-seen">Participants see this name on their screens.</span>
+        <span class="muted small" id="name-seen">Participants see this name on their screens.{editing ? '' : ' Sessions, the team and QR check-in come next, on the client\'s page.'}</span>
+        <!-- (Prompt 38: a new client needs its name only; the rest is folded, with a line of what it holds now. Editing shows it open.) -->
+        <details class="adm-fold client-more" bind:open={moreOpen}>
+          <summary><Icon name="chevron-right" />More details <span class="adm-fold__summary">Short name {slug || 'from the name'} · title {eventTitle || defaultEventTitle(name) || 'from the name'}</span></summary>
+          <div class="editor-form">
         <div class="field"><label class="field__label" for="client-slug">Short name in session ids</label>
           <input id="client-slug" class="input mono" bind:value={slug} oninput={() => { slugTouched = true; }} disabled={busy || slugLocked} autocapitalize="off" autocorrect="off" spellcheck="false" aria-invalid={Boolean(slug) && Boolean(slugText)} aria-describedby="slug-help" />
           <span id="slug-help" class="small" class:muted={!slugText || !slug} class:error={Boolean(slug) && Boolean(slugText)}>
@@ -325,25 +336,29 @@
         <label class="field"><span class="field__label">Event title</span><input class="input" bind:value={eventTitle} oninput={() => { titleTouched = true; }} disabled={busy} placeholder={defaultEventTitle(name) || 'KROGER TRIVIA NIGHT'} /></label>
         <label class="field"><span class="field__label">Subtitle</span><input class="input" bind:value={eventSubtitle} disabled={busy} placeholder="One line under the title on the activities screen" /></label>
         <label class="field"><span class="field__label">Welcome line</span><input class="input" bind:value={welcomeLine} disabled={busy} placeholder={`Welcome to the ${name.trim() || 'Kroger'} experience.`} /></label>
+          </div>
+        </details>
         <p class="muted small">Colours, the logo, hero art and the background are set in Brand Studio{editing ? '' : ' once the client is added'}.</p>
         {#if formError}<p class="error" role="alert">{formError}</p>{/if}
-        <div class="dialog__actions"><button class="btn" type="button" onclick={() => { editorOpen = false; }} disabled={busy}>Cancel</button><button class="btn btn--primary" type="submit" disabled={busy}>{busy ? 'Saving...' : 'Save client'}</button></div>
+        <div class="dialog__actions"><button class="btn" type="button" onclick={() => { editorOpen = false; }} disabled={busy}>Cancel</button><button class="btn btn--primary" type="submit" disabled={busy}>{busy ? 'Saving...' : editing ? 'Save client' : 'Add client'}</button></div>
       </form>
     </section>
 {/snippet}
 
+<!-- Prompt 39: the title and Add client on one row above both columns; with a client open, the list is 4 of the 12 columns (at least 340 px)
+     and its sessions and team 8, both on one top line. -->
 <div class="clients" class:clients--open={workspace !== null}>
-<section class="panel clients-panel clients__list" aria-busy={loading || busy}>
-  <header class="panel__head">
+  <header class="panel__head clients__head">
     <div>
       <h2 bind:this={clientsHeading} tabindex="-1"><Icon name="building" />Clients</h2>
       <p class="muted">The clients you visit: open one to plan its sessions and choose its team, or open its Brand to set its look.</p>
     </div>
     <button class="btn btn--primary btn--with-icon" type="button" onclick={() => openEditor(null)} disabled={busy}><Icon name="plus" /> Add client</button>
   </header>
-  {#if loading}<p role="status">Loading clients...</p>
+<section class="panel clients-panel clients__list" aria-busy={loading || busy} aria-label="Clients">
+  {#if loading}<div class="adm-card adm-skeleton" aria-hidden="true"><span></span><span></span><span></span><span></span></div><p class="sr-only" role="status">Loading clients...</p>
   {:else if error}<p class="error" role="alert">{error}</p>
-  {:else if clients.length === 0}<p class="muted">No clients yet.</p>
+  {:else if clients.length === 0}<div class="adm-empty"><Icon name="building" /><p>No clients yet. Add the first one you are visiting.</p><button class="btn btn--with-icon" type="button" onclick={() => openEditor(null)} disabled={busy}><Icon name="plus" />Add client</button></div>
   {:else}
     <ul class="rows">
       {#each shownRows as row (row.client.id)}
@@ -364,12 +379,13 @@
             <button class="btn" type="button" onclick={() => onNavigate('content', { view: brand.id, clientId: client.id, rows: { settings: settingsRows, clients, sections } })} disabled={busy} aria-label="{brand.label}: {client.name}">{brand.label}</button>
             <button class="btn" type="button" onclick={() => void generateQr(client)} disabled={busy || row.archived}>Generate QR</button>
             <button class="btn" type="button" onclick={() => openEditor(client)} disabled={busy}>Edit</button>
-            {#if row.archived}
-              <button class="btn" type="button" onclick={() => void changeStatus(client, 'active')} disabled={busy}>Restore</button>
-            {:else}
-              <button class="btn" type="button" onclick={() => void changeStatus(client, 'archived')} disabled={busy || row.liveNow} title={row.liveNow ? 'A live client cannot be archived' : undefined}>Archive</button>
-            {/if}
-            <button class="btn btn--danger" type="button" onclick={() => void removeClient(client)} disabled={busy}>Delete</button>
+            <!-- (Prompt 38: Archive, Restore and Delete, needed now and then, are in the row's more menu; each still asks first.) -->
+            <MoreMenu label="More actions for {client.name}" items={[
+              row.archived
+                ? { label: 'Restore', icon: 'refresh', onclick: () => void changeStatus(client, 'active'), disabled: busy }
+                : { label: row.liveNow ? 'Archive (not while live)' : 'Archive', icon: 'eye-off', onclick: () => void changeStatus(client, 'archived'), disabled: busy || row.liveNow },
+              { label: 'Delete', icon: 'trash', danger: true, onclick: () => void removeClient(client), disabled: busy },
+            ]} />
           </div>
         </li>
       {/each}
@@ -408,8 +424,14 @@
 <style>
   .clients {
     display: grid;
-    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0 var(--adm-gutter);
     align-items: start;
+  }
+
+  .clients > * {
+    grid-column: 1 / -1;
+    min-width: 0;
   }
 
   /* Below 1,100 px a client's page replaces the list, as before. */
@@ -419,14 +441,20 @@
     }
   }
 
-  /* On a laptop the list stays on the left and the client's sessions and team open on the right (Prompt 32). */
+  /* On a laptop the list stays on the left (4 of 12, at least 340 px) and the client's sessions and team open on the right (8 of 12). */
   @media (min-width: 1100px) {
     .clients--open {
-      grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+      grid-template-columns: minmax(340px, 4fr) minmax(0, 8fr);
     }
 
-    .clients__detail {
-      min-width: 0;
+    .clients--open .clients__list {
+      grid-column: 1;
+      grid-row: 2;
+    }
+
+    .clients--open .clients__detail {
+      grid-column: 2;
+      grid-row: 2;
     }
 
     .row--open {
@@ -435,8 +463,25 @@
     }
   }
 
+  /* The actions right-aligned; in the full list, from 1,280 px, on one line. */
   .client-row {
     flex-wrap: wrap;
+  }
+
+  .client-row .row__actions {
+    justify-content: flex-end;
+    margin-left: auto;
+  }
+
+  @media (min-width: 1280px) {
+    .clients:not(.clients--open) .client-row {
+      flex-wrap: nowrap;
+    }
+
+    .clients:not(.clients--open) .client-row .row__actions {
+      flex: none;
+      flex-wrap: nowrap;
+    }
   }
 
   .client-row--archived .row__title {
@@ -446,7 +491,7 @@
   .row__actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: var(--adm-s2);
   }
 
   .row__title {

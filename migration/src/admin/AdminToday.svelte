@@ -19,6 +19,9 @@
   import TodaySessions from './TodaySessions.svelte';
   import TodayShare from './TodayShare.svelte';
   import TodayStatus from './TodayStatus.svelte';
+  import StickyBar from './StickyBar.svelte';
+  import { stickyIfFits } from '../lib/admin/sticky-fit.js';
+  import type { IconName } from './Icon.svelte';
   import { writeSummary } from '../lib/admin/session-summaries.js';
 
   type Client = { id: string; name: string; status?: string; logoUrl?: string | null; theme?: { assets?: { logo?: string | null; hero?: string | null } } | null };
@@ -118,6 +121,29 @@
   const otherSessions = $derived(otherSessionsOf(sessions, settings?.activeSessionId, status.live));
 
   const nameOf = (id: string) => clients.find((entry) => entry.id === id)?.name ?? id;
+
+  /** The wall's address in a new tab (Results' Live display as the wall), while something is live. */
+  const wallUrl = $derived(status.live && status.session ? `${window.location.pathname}#live-display/${status.session.id}/wall` : '');
+
+  type BarAction = { label: string; icon: IconName; onclick: () => void; disabled?: boolean; describedBy?: string; testid?: string };
+  /**
+   * The sticky bar (Prompt 38): where the day stands and its one next step. Not live yet: the readiness line and Go live. The picked session is live:
+   * "<client> is live" and the wall. Re-check is the one secondary. End is never here: it is destructive, and stays in Session settings.
+   */
+  const bar = $derived.by((): { context: string; icon: IconName; tone: 'neutral' | 'ok' | 'warn' | 'danger'; primary: BarAction; secondary: BarAction } => {
+    const secondary: BarAction = { label: 'Re-check', icon: 'refresh', onclick: () => void recheckInputs({ everything: true }), disabled: busy || inputsBusy };
+    if (alreadyLive && status.session) {
+      const sessionId = status.session.id;
+      return { context: `${client?.name ?? 'The session'} is live`, icon: 'broadcast', tone: 'ok', primary: { label: 'Show the wall', icon: 'screen', onclick: () => onLiveDisplay(sessionId), testid: 'bar-wall' }, secondary };
+    }
+    return {
+      context: readinessSummary({ inputsBusy, blockers, warnings }),
+      icon: inputsBusy ? 'clock' : blockers > 0 ? 'alert-octagon' : warnings > 0 ? 'alert-triangle' : 'check-circle',
+      tone: blockers > 0 ? 'danger' : warnings > 0 ? 'warn' : 'ok',
+      primary: { label: goLiveLabel({ goingLive, checking, alreadyLive }), icon: 'broadcast', onclick: () => void attempt(goLiveWanted()), disabled: !canGo, describedBy: why ? 'go-live-why' : undefined, testid: 'go-live' },
+      secondary,
+    };
+  });
   onMount(() => {
     void reload();
     const tick = () => { if (!document.hidden) void poll(); };
@@ -442,39 +468,72 @@
 
 <section class="today" aria-busy={!loaded || busy}>
   <header class="panel__head">
-    <div><h2><Icon name="calendar" />Today</h2><p class="muted">Pick the client and the date, press Go live, and check what participants will see.</p></div>
+    <div><h2><Icon name="calendar-check" />Today</h2><p class="muted">Pick the client and the date, check it is ready, then Go live from the bar below.</p></div>
   </header>
 
   {#if !loaded}
-    <p role="status">Loading Today...</p>
+    <div class="today__grid" aria-hidden="true">
+      <div class="today__main"><div class="adm-card adm-skeleton"><span></span><span></span><span></span></div><div class="adm-card adm-skeleton"><span></span><span></span><span></span><span></span></div></div>
+      <div class="today__side"><div class="adm-card adm-skeleton"><span></span><span></span><span></span></div></div>
+    </div>
+    <p class="sr-only" role="status">Loading Today...</p>
   {:else if loadError}
-    <div class="panel-error" role="alert">
-      <h2>Could not load Today</h2>
-      <p class="muted">{loadError}</p>
-      <button class="btn" type="button" onclick={() => { loaded = false; void reload({ keepPicker: true }); }}>Try again</button>
+    <div class="panel-error adm-message adm-message--error" role="alert">
+      <Icon name="alert-triangle" />
+      <div>
+        <h2>Could not load Today</h2>
+        <p>{loadError}</p>
+        <button class="btn" type="button" onclick={() => { loaded = false; void reload({ keepPicker: true }); }}>Try again</button>
+      </div>
     </div>
   {:else}
-    <!-- Prompt 32: three zones, in reading order. A: the live card, Go live, the sessions. B: Readiness. C: Controls, with the participant link. -->
+    <!-- Prompt 38: is it ready, and what next. The main column: the live session, Readiness (its summary first) and the session picked; the side:
+         the session's settings in one line and Share. Go live (or, once live, the wall) is the bar's one primary action; End stays in its card. -->
     <div class="today__grid">
-      <div class="today__a">
-        <!-- Status -->
+      <div class="today__main">
         <section class="card-panel status" class:status--live={status.live} aria-labelledby="status-heading" data-live={status.live}>
           <TodayStatus {status} {participants} since={sinceText(status.since, today)} {pollError} />
+          <!-- (The session picked, in the same card: what is live, then what Go live would start.) -->
+          <section class="golive" aria-labelledby="golive-heading">
+            <h3 id="golive-heading" class="adm-label">Session to go live</h3>
+            <TodayGoLive
+              {pickable} {clientId} bind:date {busy} {why} {verified} {problem}
+              onPickClient={pickClient} onPickDate={() => void pickDate()} {onNavigate}
+              {sessionChoices} sessionId={target?.id ?? ''} onPickSession={(event) => void pickSession(event)} {oneLive}
+            />
+          </section>
         </section>
 
-        <!-- Go live -->
-        <section class="card-panel" aria-labelledby="golive-heading">
-          <h3 id="golive-heading">Go live</h3>
-          <TodayGoLive
-            {pickable} {clientId} bind:date {busy} {canGo} label={goLiveLabel({ goingLive, checking, alreadyLive })} {why} {verified} {problem}
-            onPickClient={pickClient} onPickDate={() => void pickDate()} onGo={() => void attempt(goLiveWanted())} {onNavigate}
-            {sessionChoices} sessionId={target?.id ?? ''} onPickSession={(event) => void pickSession(event)} {oneLive}
+        <section class="card-panel" aria-labelledby="ready-heading">
+          <div class="ready__head">
+            <h3 id="ready-heading">Readiness{client ? ` for ${client.name}` : ''}</h3>
+            <button class="btn btn--small btn--with-icon btn--quiet" type="button" onclick={() => void recheckInputs({ everything: true })} disabled={busy || inputsBusy}><Icon name="refresh" />Re-check</button>
+          </div>
+          <TodayReadiness {rows} summary={readinessSummary({ inputsBusy, blockers, warnings })} {busy} onRowAction={rowAction} />
+        </section>
+
+      </div>
+
+      <div class="today__side" use:stickyIfFits>
+        <section class="card-panel controls" aria-labelledby="controls-heading">
+          <h3 id="controls-heading">Session settings</h3>
+          <TodayControls
+            {controlSession} {controlClient} owner={controlSession ? nameOf(controlSession.clientId) : ''} live={status.live} {controlsBusy}
+            onSetMode={(mode) => void setMode(mode)} onSetFlow={(flow) => void setFlow(flow)} onSetCheck={(on) => void setCheck(on)} onEnd={(session) => void endIt(session)} onReopen={(session) => void reopenIt(session)}
+            onMotionSaved={(written) => { clients = clients.map((entry) => (entry.id === written.id ? { ...entry, theme: written.theme as Client['theme'] } : entry)); }} {onToast}
           />
         </section>
 
+        {#if status.live && status.session}
+          <section class="card-panel share" aria-labelledby="share-heading">
+            <h3 id="share-heading">Share</h3>
+            <TodayShare {shareUrl} {shareQr} {wallUrl} onLive={() => onLiveDisplay(status.session!.id)} {onToast} />
+          </section>
+        {/if}
+
         {#if otherSessions.length > 0}
-          <details class="card-panel others">
-            <summary>All sessions ({otherSessions.length})</summary>
+          <details class="card-panel others adm-fold">
+            <summary><Icon name="chevron-right" />All sessions <span class="adm-fold__summary">{otherSessions.length} more</span></summary>
             <TodaySessions
               sessions={otherSessions} all={allSessions} {busy} {nameOf} canMakeLive={(session) => sessionWanted(session as Session) !== null}
               onReopen={(session) => void reopenIt(session as Session)} onMakeLive={(session) => void attempt(sessionWanted(session as Session))} onShowAll={() => { allSessions = true; }}
@@ -482,37 +541,9 @@
           </details>
         {/if}
       </div>
-
-      <div class="today__b">
-        <!-- Readiness -->
-        <section class="card-panel" aria-labelledby="ready-heading">
-          <div class="ready__head">
-            <h3 id="ready-heading">Readiness{client ? ` for ${client.name}` : ''}</h3>
-            <button class="btn btn--small" type="button" onclick={() => void recheckInputs({ everything: true })} disabled={busy || inputsBusy}>Re-check</button>
-          </div>
-          <TodayReadiness {rows} summary={readinessSummary({ inputsBusy, blockers, warnings })} {busy} onRowAction={rowAction} />
-        </section>
-      </div>
-
-      <div class="today__c">
-        <!-- Controls, and the participant link once live -->
-        <section class="card-panel controls" aria-labelledby="controls-heading">
-          <h3 id="controls-heading">Controls</h3>
-          <TodayControls
-            {controlSession} {controlClient} owner={controlSession ? nameOf(controlSession.clientId) : ''} live={status.live} {controlsBusy}
-            onSetMode={(mode) => void setMode(mode)} onSetFlow={(flow) => void setFlow(flow)} onSetCheck={(on) => void setCheck(on)} onEnd={(session) => void endIt(session)} onReopen={(session) => void reopenIt(session)}
-            onMotionSaved={(written) => { clients = clients.map((entry) => (entry.id === written.id ? { ...entry, theme: written.theme as Client['theme'] } : entry)); }} {onToast}
-          >
-            {#if status.live && status.session}
-              <section class="share" aria-labelledby="share-heading">
-                <h3 id="share-heading">Participant link</h3>
-                <TodayShare {shareUrl} {shareQr} onLive={() => onLiveDisplay(status.session!.id)} {onToast} />
-              </section>
-            {/if}
-          </TodayControls>
-        </section>
-      </div>
     </div>
+
+    <StickyBar label="Today's next step" {...bar} />
   {/if}
 </section>
 
@@ -529,128 +560,84 @@
 {/if}
 
 <style>
+  /* Prompt 39: 8 + 4 of the page's 12 columns from 1,000 px, both columns on one top line; one column under it. */
   .today__grid {
     display: grid;
-    gap: 1.25rem;
+    gap: var(--adm-gutter);
     align-items: start;
   }
 
-  .today__a,
-  .today__b,
-  .today__c {
+  .today__main,
+  .today__side {
     display: grid;
-    gap: 1.25rem;
+    gap: var(--adm-s5);
     align-content: start;
     min-width: 0;
   }
 
-  /* From 1,000 px: A over B in the first column, C beside them, as before. */
   @media (min-width: 1000px) {
     .today__grid {
-      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      grid-template-columns: repeat(12, minmax(0, 1fr));
     }
 
-    .today__a,
-    .today__b {
-      grid-column: 1;
+    .today__main {
+      grid-column: span 8;
     }
 
-    .today__c {
-      grid-column: 2;
-      grid-row: 1 / span 2;
-    }
-  }
-
-  /* From 1,100 px (Prompt 32): three columns, a step tighter, and C sticks under the bar, no taller than the window below where it starts (the bar,
-     the title line), its body scrolling inside it so that End session is always in view. (Three, not two, below 1,600 px: A over B is taller than a
-     1366 x 650 window, and C under B would push End session out of it.) */
-  @media (min-width: 1100px) {
-    .today__grid {
-      grid-template-columns: minmax(0, 5fr) minmax(0, 4fr) minmax(0, 3fr);
+    .today__side {
+      grid-column: span 4;
     }
 
-    .today__grid,
-    .today__a,
-    .today__b,
-    .today__c {
-      gap: 1rem;
-    }
-
-    .today__b {
-      grid-column: 2;
-      grid-row: 1;
-    }
-
-    .today__c {
-      display: flex;
-      flex-direction: column;
-      grid-column: 3;
-      grid-row: 1;
+    /* The side column stays under the bar as the page scrolls, only while all of it fits above the bottom bar (lib/admin/sticky-fit.js). */
+    .today__side:global([data-sticky='true']) {
       position: sticky;
-      top: calc(52px + 1rem);
-      max-height: calc(100vh - 8.5rem);
-    }
-
-    .card-panel {
-      padding: 1rem;
-      gap: 0.75rem;
-    }
-
-    .controls {
-      display: flex;
-      flex: 0 1 auto;
-      flex-direction: column;
-      min-height: 0;
+      top: calc(var(--adm-bar-h) + var(--adm-s4));
     }
   }
 
-  .share {
+  .golive {
     display: grid;
-    gap: 0.75rem;
-    padding-top: 0.75rem;
+    gap: var(--adm-s3);
+    padding-top: var(--adm-s4);
     border-top: 1px solid var(--adm-line);
+  }
+
+  .golive h3 {
+    font-size: var(--adm-fs-label);
+    line-height: var(--adm-lh-label);
   }
 
   .card-panel {
     display: grid;
-    gap: 0.9rem;
-    padding: 1.25rem;
-    background: var(--adm-card);
+    gap: var(--adm-s4);
+    padding: var(--adm-s5);
+    background: var(--adm-surface);
     border: 1px solid var(--adm-line);
-    border-radius: 0.9rem;
+    border-radius: var(--adm-radius);
+    box-shadow: var(--adm-shadow);
   }
 
   h3 {
     margin: 0;
-    font-size: 1.1rem;
-    font-weight: var(--fw-bold);
+    font-size: var(--adm-fs-h2);
+    line-height: var(--adm-lh-h2);
+    font-weight: var(--fw-semibold);
   }
 
-  /* Status */
-  .status {
-    border-left: 0.4rem solid var(--adm-line);
-  }
-
-  .status--live {
-    border-left-color: var(--focus);
-  }
-
-  /* Readiness */
   .ready__head {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 0.75rem;
+    gap: var(--adm-s3);
   }
 
   .others {
     display: block;
   }
 
-  .others summary {
-    min-height: 2.75rem;
-    font-weight: var(--fw-semibold);
-    cursor: pointer;
+  .panel-error h2 {
+    margin: 0 0 var(--adm-s1);
+    font-size: var(--adm-fs-h2);
   }
 </style>

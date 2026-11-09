@@ -9,3 +9,6 @@
  * `vite-plugin-app-name.ts` fills from here at build and dev time.
  */
 export const APP_NAME = 'Pursuit Managed Services';
+
+/** The short name, where the full one would crowd the admin page's bar (Prompt 39: "PMS Admin"); a screen reader still hears APP_NAME. */
+export const APP_SHORT_NAME = 'PMS';

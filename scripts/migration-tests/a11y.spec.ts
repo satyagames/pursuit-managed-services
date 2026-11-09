@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { seedPack } from '../../migration/src/lib/setup/seed.js';
-import { PIN, activityRow, adminUrl, ds, openAdmin, startLocal, stopLocal, today, useServer, type Local } from './admin-local.js';
+import { PIN, activityRow, adminUrl, chooseTab, ds, openAdmin, startLocal, stopLocal, tabNamed, today, useServer, type Local } from './admin-local.js';
 import { a11yPack, axeCheck, describeFindings, notLivePage, openParticipant, themedSite, THEMES, THEME_KEYS, walkParticipant, type Finding } from './a11y-support.js';
 import { newFake, pageUrl, serveSharePoint } from './sharepoint.js';
 import { sharePointFolderPath } from '../deployment-config.js';
@@ -150,41 +150,42 @@ test.describe('admin', () => {
       findings.push(...await check(page, `admin ${at}: PIN gate, wrong PIN`));
       await page.getByRole('textbox', { name: 'PIN' }).fill(PIN);
       await page.getByRole('button', { name: 'Unlock' }).click();
-      await expect(page.getByRole('tab', { name: 'Today' })).toHaveAttribute('aria-selected', 'true');
+      await expect(tabNamed(page, 'today')).toHaveAttribute('aria-selected', 'true');
 
       // Today: nothing live, a client picked, then live.
       findings.push(...await check(page, `admin ${at}: Today, nothing live`));
       await page.getByLabel('Client', { exact: true }).selectOption({ label: 'Kroger' });
-      // (Prompt 32: on a laptop the ready checks fold into one line. It is opened, so that axe reads the fold's control and every ready row too.)
+      // (Prompt 32: on a laptop the ready checks fold into one line; Prompt 38: "N checks passed", at every width. It is opened, so that axe reads
+      // the fold's control and every ready row too.)
       await expect(page.locator('[data-check="lists"]')).toBeAttached();
-      const fold = page.getByRole('button', { name: /^Show \d+ ready checks?$/ });
-      if (await fold.isVisible()) await fold.click();
+      const fold = page.getByRole('button', { name: /^\d+ checks? passed/ });
+      if ((await fold.getAttribute('aria-expanded')) === 'false') await fold.click();
       await expect(page.locator('[data-check="lists"]')).toBeVisible();
       findings.push(...await check(page, `admin ${at}: Today, a client picked, with readiness`));
       // (The second pass finds Kroger already live from the first.)
       if (await page.getByRole('button', { name: 'Go live', exact: true }).count()) {
         await page.getByRole('button', { name: 'Go live', exact: true }).click();
         await expect(page.getByText('Verified: participants now see Kroger')).toBeVisible();
-      } else await expect(page.getByRole('button', { name: 'Already live' })).toBeVisible();
+      } else await expect(page.getByTestId('bar-wall'), 'live: the bar offers the wall (Prompt 38; it said Already live)').toBeVisible();
       findings.push(...await check(page, `admin ${at}: Today, live`));
 
       // Clients, its form, and Brand Studio for each look.
-      await page.getByRole('tab', { name: 'Clients', exact: true }).click();
+      await chooseTab(page, 'Clients');
       await expect(page.getByRole('heading', { name: 'Clients', exact: true }).first()).toBeVisible();
       findings.push(...await check(page, `admin ${at}: Clients`));
       await page.getByRole('button', { name: /Add client/ }).click();
       findings.push(...await check(page, `admin ${at}: Clients, the Add client form`));
       await page.keyboard.press('Escape');
       for (const [theme, name] of [['kroger', 'Kroger'], ['dominos', "Domino's"], ['light', 'Lemon Co'], ['default', 'Plain Co']] as const) {
-        await page.getByRole('tab', { name: 'Clients', exact: true }).click();
+        await chooseTab(page, 'Clients');
         await page.getByRole('button', { name: `Brand: ${name}` }).click();
         await expect(page.getByRole('heading', { name: /Brand/ }).first()).toBeVisible();
         findings.push(...await check(page, `admin ${at}: Brand Studio, ${theme} look`));
-        await page.getByRole('tab', { name: 'Clients', exact: true }).click(); // (Phase 18: Brand is a view of Content; no Back button)
+        await chooseTab(page, 'Clients'); // (Phase 18: Brand is a view of Content; no Back button)
       }
 
       // Content with its dialogs.
-      await page.getByRole('tab', { name: 'Content', exact: true }).click();
+      await chooseTab(page, 'Content');
       await expect(page.getByRole('heading', { name: 'Content', exact: true }).first()).toBeVisible();
       findings.push(...await check(page, `admin ${at}: Content`));
       for (const [button, label] of [[/Add activity/, 'the Add activity form'], [/Copy from another client/, 'the Copy dialog']] as const) {
@@ -197,12 +198,12 @@ test.describe('admin', () => {
       }
 
       // Guests and QR (a few guests, a code each), and the print sheet.
-      await page.getByRole('tab', { name: 'Guests and QR', exact: true }).click();
+      await chooseTab(page, 'Guests and QR');
       await expect(page.getByRole('heading', { name: 'Guests and QR codes', exact: true }).first()).toBeVisible();
       findings.push(...await check(page, `admin ${at}: Guests and QR`));
 
       // Results.
-      await page.getByRole('tab', { name: 'Results', exact: true }).click();
+      await chooseTab(page, 'Results');
       await expect(page.getByRole('heading', { name: 'Results', exact: true }).first()).toBeVisible();
       findings.push(...await check(page, `admin ${at}: Results`));
       await page.getByRole('button', { name: 'Lock' }).click();
@@ -247,8 +248,8 @@ test.describe('admin', () => {
       await ds.provisionQrToken(THEMES.light.clientId, live.id, { visitorId: guest.id });
     }
     await page.evaluate(() => { location.hash = '#guests'; });
-    await page.getByRole('tab', { name: 'Guests and QR', exact: true }).click();
-    await expect(page.locator('li.row[data-guest]').first()).toBeVisible();
+    await chooseTab(page, 'Guests and QR');
+    await expect(page.locator('tr[data-guest]').first()).toBeVisible();
     findings.push(...await check(page, 'Guests and QR, with three guests and their codes'));
     await page.getByRole('button', { name: /^Print QR sheet/ }).click();
     await expect(page.locator('[data-card]').first()).toBeVisible();

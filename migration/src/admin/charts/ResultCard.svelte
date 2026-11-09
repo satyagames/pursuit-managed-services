@@ -142,21 +142,26 @@
     <svelte:element this={`h${level}`} class="result-card__prompt" id={promptId} data-tip-avoid>{chart.prompt}</svelte:element>
   {/if}
   <!-- (The two buttons say what they will do, so they carry no aria-pressed: a toggle changes its words or its pressed state, never both.) -->
+  <!-- (Prompt 39: an Art of the Possibility card on the admin page draws this row above its grid, Sort by beside it.) -->
+  {#snippet metaLine()}<p class="result-card__meta" data-tip-avoid>{#if chart.kind === 'matrix'}{wall ? chart.wallLine : chart.metaLine}{:else}{chart.answered} answered{marked && chart.gradedLine ? ` · ${chart.gradedLine}` : ''}{/if}</p>{/snippet}
+  {#snippet numbersTool()}<button type="button" class="result-card__tool" data-tip-avoid onclick={() => { numbers = !numbers; }}>{numbers ? 'View as chart' : VIEW_NUMBERS}</button>{/snippet}
+  {#if !(chart.kind === 'matrix' && !fit && !numbers)}
   <div class="result-card__bar">
     <p class="result-card__meta" data-tip-avoid>{#if chart.kind === 'matrix'}{wall ? chart.wallLine : chart.metaLine}{:else}{chart.answered} answered{marked && chart.gradedLine ? ` · ${chart.gradedLine}` : ''}{/if}</p>
     <div class="result-card__tools">
       {#if wall && chart.graded}
         <button type="button" class="result-card__tool" data-tip-avoid onclick={() => onToggleAnswer?.()}>{marked ? 'Hide answer' : 'Show answer'}</button>
       {/if}
-      <button type="button" class="result-card__tool" data-tip-avoid onclick={() => { numbers = !numbers; }}>{numbers ? 'View as chart' : VIEW_NUMBERS}</button>
+      {@render numbersTool()}
     </div>
   </div>
+  {/if}
 
   <div class="result-card__body">
     {#if numbers}
       <ChartTable {chart} {marked} />
     {:else if chart.kind === 'matrix'}
-      <MatrixChart {chart} withNames={withNames && !wall} fit={wall} level={level + 1} />
+      <MatrixChart {chart} withNames={withNames && !wall} fit={wall} level={level + 1} head={fit ? undefined : metaLine} tools={fit ? undefined : numbersTool} />
     {:else if chart.kind === 'text'}
       <WordsChart {chart} chosen={selected} onChoose={(word) => onSelect?.(word)} fit={fit && !spill} headingLevel={level + 1} />
     {:else if chart.kind === 'truefalse' && sides}
@@ -234,6 +239,18 @@
     justify-content: flex-end;
     gap: 0.5rem;
     margin-left: auto;
+  }
+
+  /* Prompt 39, a card on the admin page: the headline, the question, the meta line, then the numbers button on a row of its own, then the chart, in
+     every card in that order (the wall keeps its own row). */
+  .result-card:not(.result-card--fit) .result-card__bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .result-card:not(.result-card--fit) .result-card__tools {
+    justify-content: flex-start;
+    margin-left: 0;
   }
 
   .result-card__tool {

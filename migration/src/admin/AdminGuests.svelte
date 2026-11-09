@@ -9,7 +9,7 @@
   import { PER_PAGE, pageRows, pagerState } from '../lib/common/paging.js';
   import { focusHeading } from '../lib/common/focus.js';
   import Pager from './Pager.svelte';
-  import Icon from './Icon.svelte';
+  import Icon, { type IconName } from './Icon.svelte';
   import Fold from './Fold.svelte';
   import { loadGuestState, refreshGuestState, type GuestState, type GuestToken, type GuestVisitor } from '../lib/admin/adminData.js';
   import { copyText, participantPageUrl, qrImage } from '../lib/admin/admin-links.js';
@@ -36,6 +36,8 @@
   let guestState = $state<GuestState | null>(null);
   let visitorName = $state('');
   let pasted = $state('');
+  /** Add many at once: the person opens and shuts it; it opens by itself only to hand back names that were not added. */
+  let pasteOpen = $state(false);
   /** A guest's group (Prompt 21, Phase 4): for the one added, and for each pasted line that names none; and the group the list is narrowed to. */
   let visitorGroup = $state('');
   let pasteGroup = $state('');
@@ -169,7 +171,8 @@
         ? { level: result.added.length ? 'warning' : 'error', text: `Added ${result.added.length} of ${parsed.names.length}. ${plural(problem, 'name was', 'names were')} not added (${result.failed[0]?.error.message ?? 'stopped'}). Press Add again: names already on the list are skipped.` }
         : { level: 'success', text: `Added ${plural(result.added.length, 'guest', 'guests')}.${result.skipped.length ? ` ${plural(result.skipped.length, 'name was', 'names were')} already on the list.` : ''}` };
       if (!problem) pasted = '';
-      else pasted = [...result.failed.map((entry) => entry.name), ...result.notAttempted].map((name) => { const group = parsedList.guests.find((guest) => guest.name === name)?.group; return group ? `${name} | ${group}` : name; }).join('\n');
+      else pasteOpen = true;
+      if (problem) pasted = [...result.failed.map((entry) => entry.name), ...result.notAttempted].map((name) => { const group = parsedList.guests.find((guest) => guest.name === name)?.group; return group ? `${name} | ${group}` : name; }).join('\n');
       await refresh();
     } catch (cause) {
       error = explain(cause, 'Could not add these guests.');
@@ -313,6 +316,12 @@
   }
 
   const pillClass: Record<string, string> = { none: '', waiting: 'pill--unused', joined: 'pill--in-progress', completed: 'pill--completed', disabled: '' };
+  // (Prompt 38: each state is a chip with its own shape and word, never a colour alone: no code a warning, not scanned information, joined a tick,
+  // completed a ringed tick, disabled the power mark.)
+  const chipOf: Record<string, { tone: string; icon: IconName }> = {
+    none: { tone: 'chip--warn', icon: 'alert-triangle' }, waiting: { tone: 'chip--info', icon: 'info' }, joined: { tone: 'chip--primary', icon: 'check' },
+    completed: { tone: 'chip--ok', icon: 'check-circle' }, disabled: { tone: '', icon: 'power' },
+  };
 </script>
 
 <section class="panel guests-panel" aria-busy={loading || busy}>
@@ -320,12 +329,11 @@
     <div><h2><Icon name="qr" />Guests and QR codes</h2><p class="muted">Add the people you expect, make a QR code for each, then print or share them.</p></div>
     {#if session && guestMode}<div class="panel__actions"><button class="btn" type="button" onclick={() => void refresh()} disabled={busy}>Refresh</button></div>{/if}
   </header>
-  {#if loading}<p role="status">Loading Guests and QR...</p>
+  {#if loading}<div class="adm-card adm-skeleton" aria-hidden="true"><span></span><span></span><span></span><span></span></div><p class="sr-only" role="status">Loading Guests and QR...</p>
   {:else if elsewhere}<p class="notice" role="status" data-testid="guests-elsewhere">A session you have not been given is live. Guests and QR works on the live session of the clients and sessions you hold.</p>
   {:else if error && !session}<p class="error" role="alert">{error}</p>
   {:else if !session}
-    <p class="muted">Nothing is live, so there is no session to add guests to. Go live on Today first; codes can only be made for the live session.</p>
-    <button class="btn btn--primary" type="button" onclick={() => onNavigate('today')}>Open Today</button>
+    <div class="adm-empty"><Icon name="broadcast" /><p>Nothing is live, so there is no session to add guests to. Go live on Today first.</p><button class="btn btn--primary btn--with-icon" type="button" onclick={() => onNavigate('today')}><Icon name="calendar-check" />Open Today</button></div>
   {:else}
     <p class="muted">Live session: <strong>{client?.name ?? session.clientId}</strong>, {session.date ?? 'undated'}{ended ? ' (ended)' : ''}. Only this session is offered on participant devices; how guests are identified is chosen on Today.</p>
     {#if error}<p class="error" role="alert">{error}</p>{/if}
@@ -334,6 +342,22 @@
         <li class="step" aria-current={step === 1 ? 'step' : undefined} data-done={addedDone}>
           <h3 class="step__title"><span class="step__mark" aria-hidden="true">{#if addedDone}<Icon name="check" size={18} />{:else}1{/if}</span><span class="sr-only">Step 1{addedDone ? ', done' : ''}:</span>Add guests{#if step === 1}<span class="step__now">Do this now</span>{/if}</h3>
           <p class="muted step__summary">{addedDone ? `${plural(rows.length, 'guest', 'guests')} added.` : 'Paste the names you expect, one per line.'}</p>
+          <!-- (Prompt 38: a guest needs a name only; the group and the picture are folded, and pasting a list is the folded bulk tool.) -->
+          <form class="guest-one" onsubmit={addVisitor}>
+            <div class="guest-one__line">
+              <label class="field"><span class="field__label">Visitor name</span><input class="input" bind:value={visitorName} maxlength={MAX_GUEST_NAME} autocomplete="off" disabled={busy || ended} /></label>
+              <button class="btn btn--with-icon" class:btn--primary={step === 1} type="submit" disabled={busy || ended || !visitorName.trim()}><Icon name="plus" />Add visitor</button>
+            </div>
+            <details class="adm-fold">
+              <summary><Icon name="chevron-right" />Group and picture <span class="adm-fold__summary">{[visitorGroup.trim() ? `Group ${visitorGroup.trim()}` : 'No group', newPicture ? 'picture chosen' : 'no picture'].join(' · ')}</span></summary>
+              <div class="field-row">
+                <label class="field"><span class="field__label">Group (optional)</span><input class="input" bind:value={visitorGroup} maxlength={MAX_GUEST_GROUP} autocomplete="off" disabled={busy || ended} /></label>
+                <button class="btn guest-picture-pick" type="button" aria-label={newPicture ? 'Picture chosen. Change it' : 'Picture, optional'} onclick={() => { picturing = 'new'; }} disabled={busy || ended}><GuestAvatar src={newPicture?.url ?? null} size={32} /> Picture</button>
+              </div>
+            </details>
+          </form>
+          <details class="adm-fold" bind:open={pasteOpen}>
+            <summary><Icon name="chevron-right" />Add many at once <span class="adm-fold__summary">{pasted.trim() ? pasteSummary(parsed) : 'Paste a list of names'}</span></summary>
           <div class="guests-add">
             <div class="field">
               <label class="field__label" for="paste-names">Paste names</label>
@@ -341,14 +365,9 @@
               <span id="paste-summary" class="muted small" data-testid="paste-summary">{pasted.trim() ? `${pasteSummary(parsed)} Commas separate names, so write "Jordan Lee", not "Lee, Jordan". A name is kept to ${MAX_GUEST_NAME} characters.` : `One name per line, or separated by commas. Names already on the list are skipped. A name is kept to ${MAX_GUEST_NAME} characters.`}</span>
             </div>
             <label class="field"><span class="field__label">Group for lines with none (optional)</span><input class="input" bind:value={pasteGroup} maxlength={MAX_GUEST_GROUP} autocomplete="off" disabled={busy || ended} /></label>
-            <button class="btn" class:btn--primary={step === 1} type="button" onclick={() => void addPasted()} disabled={busy || ended || parsed.names.length === 0}>{parsed.names.length > 0 ? `Add ${plural(parsed.names.length, 'guest', 'guests')}` : 'Add guests'}</button>
+            <button class="btn" type="button" onclick={() => void addPasted()} disabled={busy || ended || parsed.names.length === 0}>{parsed.names.length > 0 ? `Add ${plural(parsed.names.length, 'guest', 'guests')}` : 'Add guests'}</button>
           </div>
-          <form class="field-row" onsubmit={addVisitor}>
-            <label class="field"><span class="field__label">Visitor name</span><input class="input" bind:value={visitorName} maxlength={MAX_GUEST_NAME} autocomplete="off" disabled={busy || ended} /></label>
-            <label class="field"><span class="field__label">Group (optional)</span><input class="input" bind:value={visitorGroup} maxlength={MAX_GUEST_GROUP} autocomplete="off" disabled={busy || ended} /></label>
-            <button class="btn guest-picture-pick" type="button" aria-label={newPicture ? 'Picture chosen. Change it' : 'Picture, optional'} onclick={() => { picturing = 'new'; }} disabled={busy || ended}><GuestAvatar src={newPicture?.url ?? null} size={32} /> Picture</button>
-            <button class="btn" type="submit" disabled={busy || ended || !visitorName.trim()}>Add visitor</button>
-          </form>
+          </details>
         </li>
         <li class="step" aria-current={step === 2 ? 'step' : undefined} data-done={codesDone}>
           <h3 class="step__title"><span class="step__mark" aria-hidden="true">{#if codesDone}<Icon name="check" size={18} />{:else}2{/if}</span><span class="sr-only">Step 2{codesDone ? ', done' : ''}:</span>Make codes{#if step === 2}<span class="step__now">Do this now</span>{/if}</h3>
@@ -399,18 +418,25 @@
             </select>
           </div>
         {/if}
-        {#if rows.length === 0}<p class="muted">No visitors added for this session.</p>
+        {#if rows.length === 0}<div class="adm-empty"><Icon name="users" /><p>No visitors added for this session. Add the first by name above.</p></div>
         {:else}
           {#if rows.length > PER_PAGE.guests}
             <div class="field"><label class="field__label" for="guest-search">Search guests</label>
               <input id="guest-search" class="input" type="search" autocomplete="off" bind:value={guestSearch} oninput={() => { guestPage = 1; }} /></div>
           {/if}
-          <ul class="rows rows--flat">
+          <!-- Prompt 39: rows the width of the page, in columns: the guest, their group, their status, their code, what can be done. -->
+          <div class="guests__scroll">
+          <table class="guests__table">
+            <thead><tr><th scope="col">Guest</th><th scope="col">Group</th><th scope="col">Status</th><th scope="col">Code</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
+            <tbody>
             {#each shownRows as row (row.visitor.id)}
               {@const visitor = row.visitor}
-              <li class="row" data-guest={guestKey(visitor.displayName)} data-status={row.key}>
-                <GuestAvatar src={visitor.pictureUrl} size={40} /><div class="row__main"><span class="row__title">{visitor.displayName}</span><span class="muted"><span class="pill {pillClass[row.key]}">{row.label}</span>{#if visitor.guestGroup} <span class="tag" data-testid="guest-group">{visitor.guestGroup}</span>{/if}</span></div>
-                <div class="row__actions">
+              <tr data-guest={guestKey(visitor.displayName)} data-status={row.key}>
+                <th scope="row"><span class="guests__who"><GuestAvatar src={visitor.pictureUrl} size={40} /><span class="row__title">{visitor.displayName}</span></span></th>
+                <td>{#if visitor.guestGroup}<span class="tag" data-testid="guest-group">{visitor.guestGroup}</span>{:else}<span class="muted">None</span>{/if}</td>
+                <td><span class="chip pill {pillClass[row.key]} {chipOf[row.key]?.tone ?? ''}"><Icon name={chipOf[row.key]?.icon ?? 'info'} size={16} />{row.label}</span></td>
+                <td class="guests__code">{#if row.code}...{row.code.id.slice(-8)}{:else}<span class="muted">None</span>{/if}</td>
+                <td><div class="row__actions">
                   <button class="btn btn--small" type="button" onclick={() => { picturing = visitor; }} disabled={busy || ended}>{visitor.pictureUrl ? 'Replace picture' : 'Add picture'}</button>
                   <button class="btn btn--small" type="button" onclick={() => void setVisitorEnabled(visitor)} disabled={busy || ended}>{visitor.enabled === false ? 'Enable' : 'Disable'}</button>
                   {#if row.key === 'disabled'}
@@ -423,10 +449,12 @@
                   {:else}
                     <button class="btn btn--small" type="button" onclick={() => void showQr(visitor)} disabled={busy || ended}>{row.code ? 'Show QR' : 'Generate QR'}</button>{#if row.code}<button class="btn btn--small" type="button" onclick={() => void showQr(visitor, true)} disabled={busy || ended}>Replace code</button>{/if}
                   {/if}
-                </div>
-              </li>
+                </div></td>
+              </tr>
             {/each}
-          </ul>
+            </tbody>
+          </table>
+          </div>
           <Pager state={guestPager} label="Pages of guests" onPage={(next) => { guestPage = next; void tick().then(() => { if (rosterHeading) focusHeading(rosterHeading); }); }} />
         {/if}
         {#if qrDisplay}

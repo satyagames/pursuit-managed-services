@@ -1,0 +1,21 @@
+/* The files' look (Prompt 34; moved here in Prompt 38): the colours the session pack (PDF and PowerPoint) and the leader report draw with, written
+ * once as hex in lib/exports/report-look.js, which scripts/test-admin-today.js holds equal to these. No page loads this file: the admin page's own
+ * colours are styles/admin-tokens.css. */
+
+:root {
+  --look-page: #ffffff;
+  --look-black: #000000;
+  --look-wash: #f5f7f4;
+  --look-card-line: #bfd6a8;
+  --look-text: #1a1a1a;
+  --look-text-muted: #4d5651;
+  --look-on-deep: #ffffff;
+  --look-deep: #046a38;
+  --look-green: #237f0c;
+  --look-lime: #86bc25;
+  --look-green-wash: #e9f3df;
+  --look-teal: #0b7684;
+  --look-teal-wash: #e3f3f5;
+  --look-link: #0076a8;
+  --look-sky: #00a3e0;
+}

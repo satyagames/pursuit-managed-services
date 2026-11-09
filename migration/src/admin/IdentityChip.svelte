@@ -63,7 +63,8 @@
     <span class="who__badge" aria-hidden="true">{identity.initials}</span>
     <span class="who__text" aria-hidden="true">
       <span class="who__name">{identity.name}</span>
-      <span class="who__role" data-testid="identity-role">{identity.roleLine}{#if identity.endsSoon}<span class="who__ends" data-testid="identity-ends">Ends {identity.endsSoon.day}</span>{/if}</span>
+      <!-- (Prompt 39: the role alone below 1,280 px, "Super admin · All clients" from there; the long description is in the popover only.) -->
+      <span class="who__role" data-testid="identity-role">{identity.role}{#if identity.reach}<span class="who__reach">{` · ${identity.reach}`}</span>{/if}{#if identity.endsSoon}<span class="who__ends" data-testid="identity-ends">Ends {identity.endsSoon.day}</span>{/if}</span>
     </span>
     <span class="who__arrow" aria-hidden="true"><Icon name="chevron-down" size={16} /></span>
   </button>
@@ -71,7 +72,8 @@
   {#if open}
     <section bind:this={panel} id={panelId} class="who__panel" aria-labelledby="your-access-title" data-testid="access-popover">
       <h2 id="your-access-title" tabindex="-1">Your access</h2>
-      <p class="who__person"><strong>{identity.name}</strong><br /><span class="who__muted">Signed in with your Deloitte account</span></p>
+      <p class="who__person"><strong>{identity.name}</strong></p>
+      {#if identity.does}<p class="who__muted" data-testid="identity-does">{identity.does}.</p>{/if}
 
       {#if identity.roles.length}
         <table class="who__roles">
@@ -90,9 +92,6 @@
       <ul class="who__can" data-testid="access-can-do">
         {#each identity.canDo as line (line)}<li>{line}</li>{/each}
       </ul>
-
-      <h3>Not available to you</h3>
-      <p data-testid="access-not-available">{identity.notAvailable}</p>
 
       <p class="who__ask">Need a different role? Ask a Super admin.</p>
       <button class="btn" type="button" onclick={() => void copy()}>Copy my details</button>
@@ -114,18 +113,17 @@
     min-height: var(--target-min);
     max-width: 100%;
     padding: 0.15rem 0.6rem 0.15rem 0.25rem;
-    border: 1px solid var(--adm-lime);
+    border: 1px solid var(--adm-line);
     border-radius: 999px;
-    background: var(--adm-bar-black);
-    color: var(--adm-on-deep);
+    background: var(--adm-card);
+    color: var(--adm-ink);
     font: inherit;
     text-align: left;
     cursor: pointer;
   }
 
   .who__chip:hover {
-    border-width: 2px;
-    padding: calc(0.15rem - 1px) calc(0.6rem - 1px) calc(0.15rem - 1px) calc(0.25rem - 1px);
+    background: var(--adm-wash);
   }
 
   .who__chip:focus-visible {
@@ -140,9 +138,9 @@
     width: 2.25rem;
     height: 2.25rem;
     border-radius: 50%;
-    background: var(--adm-lime);
-    color: var(--adm-text);
-    font-weight: var(--fw-bold);
+    background: var(--adm-green-wash);
+    color: var(--adm-deep);
+    font-weight: var(--fw-semibold);
   }
 
   .who__text {
@@ -151,7 +149,9 @@
     line-height: 1.2;
   }
 
+  /* (Prompt 38: the chip says the role and what it can do; the name is in its spoken label and the popover.) */
   .who__name {
+    display: none;
     overflow: hidden;
     font-weight: var(--fw-semibold);
     text-overflow: ellipsis;
@@ -162,7 +162,14 @@
     display: flex;
     align-items: center;
     gap: 0.4rem;
+    font-weight: var(--fw-semibold);
     white-space: nowrap;
+  }
+
+  @media (max-width: 1279px) {
+    .who__reach {
+      display: none;
+    }
   }
 
   /* "Ends 12 Dec": a word on a light fill, readable on the black bar and in the popover; never colour alone. */
@@ -192,11 +199,11 @@
     top: calc(100% + 0.5rem);
     right: 0;
     z-index: 20;
-    width: min(26rem, calc(100vw - 2rem));
+    width: min(360px, calc(100vw - 32px));
     max-height: calc(100vh - 5rem);
     overflow-y: auto;
     box-sizing: border-box;
-    padding: 1rem 1.25rem 1.25rem;
+    padding: 20px;
     border: 1px solid var(--adm-card-line);
     border-radius: 0.75rem;
     background: var(--adm-card);
@@ -205,7 +212,7 @@
   }
 
   .who__panel h2 {
-    margin: 0 0 0.5rem;
+    margin: 0 0 8px;
     font-size: 1.25rem;
   }
 
@@ -237,7 +244,8 @@
 
   .who__can {
     margin: 0;
-    padding-left: 1.25rem;
+    padding-left: 0;
+    list-style-position: inside;
   }
 
   .who__ask {

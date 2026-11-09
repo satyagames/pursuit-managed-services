@@ -5,6 +5,7 @@
   import { onMount } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
   import { can } from '../lib/access/can.js';
+  import { ROLE_SUMMARY } from '../lib/access/access-matrix.js';
   import { grantProblem, grantRole } from '../lib/access/grants.js';
   import { reachWords, sessionsOfClient } from '../lib/access/people.js';
   import { siteAccessNote } from '../lib/access/access-words.js';
@@ -86,7 +87,8 @@
   <form class="give" onsubmit={give} novalidate>
     <h2 id="give-title">Give access to {person.name}</h2>
     <label class="field"><span class="field__label">Role</span>
-      <select class="input" bind:value={role} disabled={busy}>{#each ROLE_CHOICES as choice}<option value={choice}>{choice}</option>{/each}</select>
+      <select class="input" bind:value={role} disabled={busy} aria-describedby="give-role-does">{#each ROLE_CHOICES as choice}<option value={choice}>{choice}</option>{/each}</select>
+      <span id="give-role-does" class="muted small" data-testid="role-does">{ROLE_SUMMARY[role as keyof typeof ROLE_SUMMARY] ?? ''}</span>
     </label>
     <label class="field"><span class="field__label">Where</span>
       <select class="input" bind:value={place} disabled={busy}>

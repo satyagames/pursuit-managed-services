@@ -40,7 +40,13 @@
   let page = $state(pageOfHash(window.location.hash));
   let openKey = $state<string | null>(null);
   let adding = $state(false);
+  /** (Prompt 38) Add user was opened from Give access: the person's page opens with Give access open. */
+  let giveNext = $state(false);
+  let givingKey = $state<string | null>(null);
   let reviewing = $state(false);
+  /** The drift report (Prompt 27) and whether it is checking: its button is in the title row (Prompt 39). */
+  let drift = $state<{ check: () => Promise<void> }>();
+  let driftBusy = $state(false);
   /** (Prompt 28) Who Check site access last found waiting for their groups; null until it was pressed on this page. */
   let waitingKeys = $state<string[] | null>(null);
 
@@ -85,23 +91,26 @@
 {#if reviewing}
   <AuditReview {users} onBack={() => { reviewing = false; }} />
 {:else}
+<!-- Prompt 39: the title row above both columns, Check site access in it; with a person open, the list is 4 of the 12 columns and the person
+     8, both on one top line. -->
 <div class="people" class:people--open={open} class:people--waiting={waitingRows !== null && can(access, 'roles.global', {})}>
-  <section class="panel people__list" aria-labelledby="users-heading" aria-busy={loading}>
-    <header class="panel__head">
+    <header class="panel__head people__head">
       <div>
-        <h2 id="users-heading" bind:this={heading} tabindex="-1"><Icon name="people" />People</h2>
+        <h2 id="users-heading" bind:this={heading} tabindex="-1"><Icon name="users" />People</h2>
         <p class="muted">Who can use the admin page, and what each person may do for all clients, one client or one session.</p>
       </div>
       <div class="panel__actions">
+        {#if can(access, 'roles.global', {}) && !loading && !error}<button class="btn" type="button" onclick={() => void drift?.check()} disabled={driftBusy}>{driftBusy ? 'Checking...' : 'Check site access'}</button>{/if}
         {#if mayReview}<button class="btn" type="button" onclick={() => { reviewing = true; }}><Icon name="clock" /> History of changes</button>{/if}
-        {#if mayAdd}<button class="btn btn--primary" type="button" onclick={() => { adding = true; }}><Icon name="plus" /> Add user</button>{/if}
+        {#if mayAdd}<button class="btn btn--with-icon" type="button" onclick={() => { adding = true; giveNext = false; }}><Icon name="plus" /> Add user</button>
+          <button class="btn btn--primary btn--with-icon" type="button" onclick={() => { adding = true; giveNext = true; }}><Icon name="key" /> Give access</button>{/if}
       </div>
     </header>
-
-    {#if loading}<p class="muted" role="status">Loading people...</p>
+  <section class="panel people__list" aria-labelledby="users-heading" aria-busy={loading}>
+    {#if loading}<div class="adm-card adm-skeleton" aria-hidden="true"><span></span><span></span><span></span><span></span></div><p class="sr-only" role="status">Loading people...</p>
     {:else if error}<p class="error" role="alert">{error}</p>
     {:else}
-      {#if can(access, 'roles.global', {})}<SiteAccessDrift {users} {assignments} onRead={(keys) => { waitingKeys = keys; }} />{/if}
+      {#if can(access, 'roles.global', {})}<SiteAccessDrift bind:this={drift} bind:busy={driftBusy} button={false} {users} {assignments} onRead={(keys) => { waitingKeys = keys; }} />{/if}
       <div class="users__bar">
         <div class="field"><label class="field__label" for="users-search">Search people</label>
           <input id="users-search" class="input" type="search" autocomplete="off" bind:value={search} oninput={() => { page = 1; }} placeholder="Name or email" /></div>
@@ -155,7 +164,7 @@
   {#if open}
     <div class="people__detail">
       {#key open.key}
-        <UserDetail {access} person={open} {users} {assignments} {clients} {sessions} waiting={waitingKeys ? waitingKeys.includes(open.key) : null}
+        <UserDetail {access} person={open} {users} {assignments} {clients} {sessions} startGiving={givingKey === open.key} waiting={waitingKeys ? waitingKeys.includes(open.key) : null}
           onBack={() => { openKey = null; void tick().then(() => focusHeading(heading)); }} onChanged={changed} />
       {/key}
     </div>
@@ -175,15 +184,31 @@
 {/if}
 
 {#if adding}
-  <UserAdd {access} onCancel={() => { adding = false; }}
-    onDone={(key, already) => { adding = false; void load().then(() => { openKey = key; onToast(already ? 'That person is in the list already.' : 'Added. Now give them access.', 'success'); }); }} />
+  <UserAdd {access} giving={giveNext} onCancel={() => { adding = false; }}
+    onDone={(key, already) => { adding = false; givingKey = giveNext ? key : null; void load().then(() => { openKey = key; onToast(already ? 'That person is in the list already.' : 'Added. Now give them access.', 'success'); }); }} />
 {/if}
 
 <style>
   .people {
     display: grid;
-    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0 var(--adm-gutter);
     align-items: start;
+  }
+
+  .people > * {
+    min-width: 0;
+  }
+
+  .people__head {
+    grid-column: 1 / -1;
+  }
+
+  /* One filter row from 1,280 px: Search wide, then Client, Session and Status. */
+  @media (min-width: 1280px) {
+    .people:not(.people--open) .users__bar {
+      grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr));
+    }
   }
 
   /* Below 1,100 px the person replaces the list, as before; the third column is a laptop's only. */
@@ -196,7 +221,12 @@
 
   @media (min-width: 1100px) {
     .people--open {
-      grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+      grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+    }
+
+    .people--open > .people__list,
+    .people--open > .people__detail {
+      grid-row: 2;
     }
 
     .people__waiting {
@@ -232,11 +262,16 @@
 
   @media (min-width: 1600px) {
     .people--waiting {
-      grid-template-columns: minmax(0, 5fr) minmax(0, 3fr);
+      grid-template-columns: minmax(0, 9fr) minmax(0, 3fr);
     }
 
     .people--open.people--waiting {
-      grid-template-columns: minmax(0, 5fr) minmax(0, 6fr) minmax(0, 3fr);
+      grid-template-columns: minmax(0, 4fr) minmax(0, 5fr) minmax(0, 3fr);
+    }
+
+    .people--waiting > .people__list,
+    .people--waiting > .people__waiting {
+      grid-row: 2;
     }
 
     .people--waiting .people__waiting {

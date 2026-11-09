@@ -5,7 +5,10 @@ import {
   confettiCanvas, installAudioStub, installConfettiSpy, readAudio, readConfetti, resetConfetti, type StubOptions,
 } from './effects-support.js';
 import { CUES, toneSignature, type CueName } from '../../migration/src/lib/effects/sound-cues.js';
-import { buildPalette, confettiPlan, isRedish, parseColor, type ConfettiSize } from '../../migration/src/lib/effects/confetti-plan.js';
+import { buildPalette, confettiPlan, isRedish, parseColor, showerCap, type ConfettiSize } from '../../migration/src/lib/effects/confetti-plan.js';
+
+/** A burst, or the finale's petal shower (Prompt 36). */
+type Confetti = ConfettiSize | 'shower';
 
 // Phase 3: sound and confetti against the built release page with a synthetic API.
 //
@@ -49,14 +52,14 @@ function answered(fixture: Fixture, right: (id: string) => string, ids: string[]
 
 const planTotal = (size: ConfettiSize, width: number) => confettiPlan(size, { width })!.reduce((sum, burst) => sum + burst.count, 0);
 
-// How long each size of confetti may live: the brief says about 0.8 s, 1.5 s and 2.5 s.
-const LIFETIME_MS: Record<ConfettiSize, [number, number]> = { small: [500, 1600], medium: [1000, 2600], large: [2000, 3800] };
+// How long each size of confetti may live: the brief says about 0.8 s and 1.5 s; the shower (Prompt 36) about 4 s and the afterglow, gone by 11 s.
+const LIFETIME_MS: Record<Confetti, [number, number]> = { small: [500, 1600], medium: [1000, 2600], shower: [8000, 11_500] };
 
 /**
  * Does one thing in the app and checks everything it should (and should not) cause: exactly the
  * expected cue (by fingerprint) and nothing else, and the expected confetti, which must come and go.
  */
-async function step(page: Page, expected: { cue: CueName | null; confetti: ConfettiSize | null }, action: () => Promise<unknown>, { soundOn = true } = {}) {
+async function step(page: Page, expected: { cue: CueName | null; confetti: Confetti | null }, action: () => Promise<unknown>, { soundOn = true } = {}) {
   const before = await readAudio(page);
   await resetConfetti(page);
   await action();
@@ -75,11 +78,12 @@ async function step(page: Page, expected: { cue: CueName | null; confetti: Confe
 
   const after = await readAudio(page);
   expect(after.oscillators.slice(before.oscillators.length), wantedCue ? `exactly one "${wantedCue}"` : 'no sound').toEqual(signature);
-  expect(after.noise - before.noise, 'only the tick uses noise').toBe(wantedCue === 'pick' ? 1 : 0);
+  // Exactly the noise notes the cue's table has: the tick's click, and (Prompt 36) the finale's swell; none for any other moment.
+  expect(after.noise - before.noise, 'noise only where the table has it').toBe(wantedCue ? CUES[wantedCue].notes.filter((note) => note.kind === 'noise').length : 0);
 
   if (expected.confetti) {
     await expect(confettiCanvas(page), `${expected.confetti} confetti is showing`).toHaveCount(1);
-    await page.waitForFunction(() => !document.querySelector('canvas[data-pms-confetti]'), null, { polling: 'raf', timeout: 8000 });
+    await page.waitForFunction(() => !document.querySelector('canvas[data-pms-confetti]'), null, { polling: 'raf', timeout: expected.confetti === 'shower' ? 13_000 : 8000 });
     const lifetime = Date.now() - appeared;
     const [shortest, longest] = LIFETIME_MS[expected.confetti];
     expect(lifetime, `${expected.confetti} confetti lived ${lifetime} ms and was then removed`).toBeGreaterThanOrEqual(shortest);
@@ -87,7 +91,12 @@ async function step(page: Page, expected: { cue: CueName | null; confetti: Confe
     const width = await page.evaluate(() => window.innerWidth);
     const drawn = await readConfetti(page);
     expect(drawn.added, 'one overlay for the whole celebration').toBe(1);
-    expect(drawn.maxPerFrame, `${expected.confetti} pieces at ${width}px wide`).toBe(planTotal(expected.confetti, width));
+    if (expected.confetti === 'shower') {
+      expect(drawn.maxPerFrame, `the shower stays under its cap at ${width}px wide`).toBeLessThanOrEqual(showerCap(width));
+      expect(drawn.maxPerFrame, 'and is a real shower').toBeGreaterThanOrEqual(showerCap(width) * 0.5);
+    } else {
+      expect(drawn.maxPerFrame, `${expected.confetti} pieces at ${width}px wide`).toBe(planTotal(expected.confetti, width));
+    }
   } else {
     // Not "eventually zero" (a canvas that comes and goes would pass that): none was ever added.
     expect((await readConfetti(page)).added, 'no confetti overlay appeared, not even briefly').toBe(0);
@@ -139,7 +148,7 @@ async function playThrough(page: Page, soundOn: boolean) {
   await s('pick', null, () => choice(page, 0).click());
   await s('pick', null, () => choice(page, 1).click());
   await s('activityComplete', 'medium', () => submit(page).click());
-  await s('finale', 'large', () => page.getByRole('button', { name: 'Finish', exact: true }).click());
+  await s('finale', 'shower', () => page.getByRole('button', { name: 'Finish', exact: true }).click());
   await expect(page.getByRole('heading', { name: 'Thank you, Jordan Lee!' })).toBeVisible();
   // Home is as quiet as Next and Back.
   await s(null, null, () => page.getByRole('button', { name: 'Home', exact: true }).click());
@@ -423,18 +432,18 @@ test('prefers-reduced-motion: no confetti at all, but the sound cues still play'
 const VIEWPORTS = [{ width: 390, height: 844 }, { width: 820, height: 1180 }, { width: 1440, height: 900 }];
 
 for (const viewport of VIEWPORTS) {
-  test(`confetti at ${viewport.width}px: small, medium and large, scaled for the screen, no console errors, no sideways scroll`, async ({ page }) => {
+  test(`confetti at ${viewport.width}px: small, medium and the shower, scaled for the screen, no console errors, no sideways scroll`, async ({ page }) => {
     test.setTimeout(90_000);
     await page.setViewportSize(viewport);
     // Only question 3 of the first activity is left, and every other activity is done, so finishing it offers the finale.
     const { problems } = await open(page, { hash: '#/quiz/section-history?t=track-a', seed: ['q-h1', 'q-h2', 'q-b1', 'q-b2', 'q-p1'] });
     await expect(page.getByRole('progressbar', { name: 'Question 3 of 3' })).toBeVisible();
 
-    const noOverflowWhile = async (size: ConfettiSize) => {
+    const noOverflowWhile = async (size: Confetti) => {
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth || document.body.scrollWidth > window.innerWidth);
       expect(overflow, `${size} confetti on a ${viewport.width}px screen causes no horizontal scroll`).toBe(false);
     };
-    const sized = (size: ConfettiSize, action: () => Promise<unknown>) => step(page, { cue: null, confetti: size }, async () => {
+    const sized = (size: Confetti, action: () => Promise<unknown>) => step(page, { cue: null, confetti: size }, async () => {
       await action();
       await page.waitForSelector('canvas[data-pms-confetti]', { state: 'attached' });
       await noOverflowWhile(size);
@@ -442,7 +451,7 @@ for (const viewport of VIEWPORTS) {
 
     await sized('small', () => choice(page, 0).click());
     await sized('medium', () => submit(page).click());
-    await sized('large', () => page.getByRole('button', { name: 'Finish', exact: true }).click());
+    await sized('shower', () => page.getByRole('button', { name: 'Finish', exact: true }).click());
     expect(problems, 'console and page errors').toEqual([]);
   });
 }

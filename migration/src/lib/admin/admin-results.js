@@ -1,6 +1,7 @@
 import * as dataService from '../data/dataService.js';
 import { MAX_WRONG_TRIES, isRecordSettled } from '../participant/pager-logic.js';
 import { nameParticipants, withNamesHidden } from '../results/participant-names.js';
+import { checkSummary } from '../results/confidence-shift.js';
 
 // What Admin → Results works out for each iPad of a session: the name it shows, and where it has got to. Plain JS with JSDoc and no
 // DOM, so scripts/test-participant-names.js can hold the screen's names equal to the leader report's, on both adapters.
@@ -220,4 +221,26 @@ export function glanceOf(rows, counts) {
     { key: 'answers', figure: String(counts.answers), label: counts.answers === 1 ? 'answer' : 'answers' },
     { key: 'finished', figure: `${finished} of ${rows.length}`, label: 'finished every activity' },
   ];
+}
+
+/**
+ * The three figures Results leads with (Prompt 38), for the session shown: how many guests joined, the share who finished every activity, and the
+ * confidence shift (lib/results/confidence-shift.js's words: "+12%", or a dash with the reason).
+ * @param {{ status: string }[]} rows the session's iPads (trackRows) @param {any} check the session's confidence check, or null
+ */
+export function leadFigures(rows, check) {
+  const finished = rows.filter((row) => row.status === 'completed').length;
+  return [
+    { key: 'guests', figure: String(rows.length), label: rows.length === 1 ? 'guest' : 'guests' },
+    { key: 'completion', figure: `${rows.length ? Math.round((finished / rows.length) * 100) : 0}%`, label: 'finished every activity' },
+    // (A shift is a figure, "+12%"; anything else is said beside a dash: "not measured", "no guest answered both".)
+    shiftFigure(checkSummary(check).shift),
+  ];
+}
+
+/** The confidence shift as a lead figure: the percentage, or a dash with lib/results/confidence-shift.js's reason beside the label. @param {string} words */
+function shiftFigure(words) {
+  return /^[+-]?\d+%$/.test(words)
+    ? { key: 'shift', figure: words, label: 'confidence shift' }
+    : { key: 'shift', figure: '–', label: `confidence shift · ${words.charAt(0).toLowerCase()}${words.slice(1)}` };
 }

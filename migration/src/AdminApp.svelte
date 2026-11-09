@@ -6,11 +6,12 @@
   import { unlockFailureText } from './lib/admin/admin-unlock.js';
   import { liveDisplayHash, liveDisplayOfHash } from './lib/common/admin-address.js';
   import { wallHash, wallOfHash } from './lib/admin/live-wall.js';
-  import { APP_NAME } from './lib/common/app-name.js';
+  import { APP_NAME, APP_SHORT_NAME } from './lib/common/app-name.js';
   import { deployment } from './lib/settings/start.js';
   import { mayLeave } from './lib/admin/unsaved.js';
   import { DEFAULT_VIEW, hashOfView, lastView, rememberView, viewOfHash } from './lib/admin/admin-content-views.js';
   import DeloitteWordmark from './components/DeloitteWordmark.svelte';
+  import Icon, { type IconName } from './admin/Icon.svelte';
   import AdminClients from './admin/AdminClients.svelte';
   import AdminContent from './admin/AdminContent.svelte';
   import AdminGuests from './admin/AdminGuests.svelte';
@@ -36,13 +37,14 @@
   type ContentRows = { settings: unknown[]; clients: unknown[]; sections: unknown[] };
 
   // The day's work first. Content is the old Activities and Content tabs in one, scoped by client (Phase 5b).
-  const tabs: { id: Tab; title: string }[] = [
-    { id: 'today', title: 'Today' },
-    { id: 'clients', title: 'Clients' },
-    { id: 'content', title: 'Content' },
-    { id: 'guests', title: 'Guests and QR' },
-    { id: 'results', title: 'Results' },
-    { id: 'users', title: 'People' },
+  // (Prompt 38: each tab's icon, admin/icons.js; beside the word, so aria-hidden.)
+  const tabs: { id: Tab; title: string; icon: IconName }[] = [
+    { id: 'today', title: 'Today', icon: 'calendar-check' },
+    { id: 'clients', title: 'Clients', icon: 'building' },
+    { id: 'content', title: 'Content', icon: 'layers' },
+    { id: 'guests', title: 'Guests and QR', icon: 'qr' },
+    { id: 'results', title: 'Results', icon: 'bar-chart' },
+    { id: 'users', title: 'People', icon: 'users' },
   ];
   /** The address of the guest QR sheet. It is a view of this page, not a tab: Back returns to Guests and QR. */
   const PRINT_HASH = '#print-guests';
@@ -84,6 +86,17 @@
   /** Who is signed in, with what role, for the bar's chip and the welcome strip (lib/access/identity-words.js): from the access already read, nothing more. A PIN shows the name alone, as before. */
   const identity = $derived(identityOf(access, { tabs, name: admin?.name ?? '' }));
   let accessOpen = $state(false);
+  /** Below 1,024 px the tabs are a Menu (Prompt 39): whether its list is open. Esc, a click outside or a tab chosen closes it. */
+  let menuOpen = $state(false);
+  let navBox = $state<HTMLElement>();
+  function onMenuKey(event: KeyboardEvent) {
+    if (!menuOpen || event.key !== 'Escape') return;
+    menuOpen = false;
+    navBox?.querySelector<HTMLElement>('.shell__menu')?.focus();
+  }
+  function onMenuPointer(event: PointerEvent) {
+    if (menuOpen && navBox && !navBox.contains(event.target as Node)) menuOpen = false;
+  }
   let noAccessReason = $state<string | null>(null);
   let ownerBanner = $state(false);
   /** Whether the admin came in with a PIN: only then is there a Lock, back to the PIN. */
@@ -338,7 +351,7 @@
 </svelte:head>
 
 <svelte:window onhashchange={onHashChange} />
-<svelte:document onvisibilitychange={() => { if (document.visibilityState === 'visible') void recheckAccess(); }} />
+<svelte:document onvisibilitychange={() => { if (document.visibilityState === 'visible') void recheckAccess(); }} onkeydown={onMenuKey} onpointerdown={onMenuPointer} />
 
 {#if !admin && signIn === 'no-access'}
   <NoAccess person={access?.person ?? null} reason={noAccessReason} support={supportWords} />
@@ -363,15 +376,25 @@
     </form>
   </main>
 {:else if printing}
-  <PrintSheet onClose={closePrintSheet} />
+  <PrintSheet onClose={closePrintSheet} person={access?.person ?? null} />
 {:else}
   <div class="shell">
+    <!-- Prompt 39: one 56 px bar, its edges the page's: the brand left, the six tabs in the middle (never a scrollbar), the person right. Below
+         1,024 px the tabs fold into Menu. The copy's label (Phase 10b) is the brand's tooltip and data-label, no longer a pill. -->
     <header class="shell__bar">
-      <div class="shell__brand">
+      <div class="shell__brand" title={label || undefined} data-label={label || undefined}>
         <div class="shell__wordmark"><DeloitteWordmark /></div>
-        <strong class="shell__title">{APP_NAME} Admin</strong>
-        {#if label}<span class="shell__label" data-testid="copy-label">{label}</span>{/if}
+        <strong class="shell__title" data-testid="shell-title"><span aria-hidden="true">{APP_SHORT_NAME} Admin</span><span class="sr-only">{APP_NAME} Admin</span></strong>
       </div>
+      <nav class="shell__nav" aria-label="Admin sections" bind:this={navBox}>
+        <button class="shell__menu" type="button" aria-expanded={menuOpen} aria-controls="admin-tabs" data-testid="tabs-menu"
+          onclick={() => (menuOpen = !menuOpen)}><Icon name="menu" />Menu</button>
+        <div id="admin-tabs" class="tabs" class:tabs--open={menuOpen} role="tablist">
+          {#each shownTabs as tab, index (tab.id)}
+            <button id={`admin-tab-${tab.id}`} class="tab" type="button" role="tab" aria-controls="admin-panel" aria-selected={activeTab === tab.id} tabindex={activeTab === tab.id ? 0 : -1} onkeydown={(event) => onTabKeydown(event, index)} onclick={() => { menuOpen = false; void open(tab.id); }}><Icon name={tab.icon} size={18} />{tab.title}</button>
+          {/each}
+        </div>
+      </nav>
       <div class="shell__end">
         {#if identity.chip}
           <IdentityChip {identity} person={access?.person ?? null} bind:open={accessOpen} />
@@ -381,13 +404,6 @@
         {#if viaPin}<button class="btn btn--bar" type="button" onclick={() => void lock()}>Lock</button>{/if}
       </div>
     </header>
-    <nav class="shell__nav" aria-label="Admin sections">
-      <div class="tabs" role="tablist">
-        {#each shownTabs as tab, index (tab.id)}
-          <button id={`admin-tab-${tab.id}`} class="tab" type="button" role="tab" aria-controls="admin-panel" aria-selected={activeTab === tab.id} tabindex={activeTab === tab.id ? 0 : -1} onkeydown={(event) => onTabKeydown(event, index)} onclick={() => void open(tab.id)}>{tab.title}</button>
-        {/each}
-      </div>
-    </nav>
     <WelcomeStrip {identity} onWhat={() => { accessOpen = true; }} />
     <SessionBanner onBack={() => showToast('Reconnected.', 'success')} />
     {#if ownerBanner}<p class="notice owner-banner" role="status" data-testid="owner-banner">{OWNER_BANNER}</p>{/if}

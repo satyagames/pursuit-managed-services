@@ -462,7 +462,8 @@ test('Admin Clients blocks deleting a referenced client, and Brand Studio surfac
   const client = page.locator('.row').filter({ hasText: 'Synthetic Alpha' });
   let confirmationOpened = false;
   page.on('dialog', (dialog) => { confirmationOpened = true; void dialog.dismiss(); });
-  await client.getByRole('button', { name: 'Delete' }).click();
+  await client.getByRole('button', { name: 'More actions for Synthetic Alpha' }).click(); // (Prompt 38: Delete is in the row's more menu)
+  await client.getByRole('menuitem', { name: 'Delete' }).click();
   await expect(page.locator('.toast')).toContainText("Can't delete Synthetic Alpha");
   expect(fixture.clientDeletes).toEqual([]);
   expect(confirmationOpened).toBe(false);
@@ -529,13 +530,13 @@ test('Admin Clients creates and edits a client record', async ({ page }) => {
   await page.getByRole('tab', { name: 'Clients' }).click();
   await page.getByRole('button', { name: 'Add client' }).click();
   await page.getByLabel('Name', { exact: true }).fill('Synthetic New Client');
-  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
+  await page.getByRole('region', { name: 'Add a client' }).getByRole('button', { name: 'Add client' }).click(); // (Prompt 38: the form's button says Add client)
   const client = page.locator('.row').filter({ hasText: 'Synthetic New Client' });
   await expect(client).toBeVisible();
   await client.getByRole('button', { name: 'Edit' }).click();
   await page.getByLabel('Name', { exact: true }).fill('Synthetic Edited Client');
   await expect(page.getByLabel('Primary color'), 'colours are not on the Clients form any more').toHaveCount(0);
-  await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
+  await page.getByRole('button', { name: 'Save client' }).click();
   await expect(page.locator('.row').filter({ hasText: 'Synthetic Edited Client' })).toBeVisible();
   // A new client's older colour fields come from the default palette, and the name edit left them alone.
   expect(fixture.records.clients.find((entry) => entry.id === 'client-created')).toMatchObject({ name: 'Synthetic Edited Client', primaryColor: '#045BCC', secondaryColor: '#296CD4' });
@@ -556,6 +557,7 @@ test('Admin Today and Guests and QR: live session, visit mode, roster, QR codes,
   // The session that is live, and the identification switch, are on Today.
   await expect(page.getByTestId('participants')).toHaveText('1');
   await expect(page.getByText('session-a', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Change', exact: true }).click(); // (Prompt 38: the settings are one line, with Change)
   await page.getByRole('radio', { name: /Guests scan a personal QR/ }).check();
   await expect(page.locator('.toast')).toContainText('Guests now scan a personal QR');
   expect(fixture.records.sessions[0].participationMode).toBe('client-visit');

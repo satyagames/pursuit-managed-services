@@ -16,9 +16,10 @@ export const BUDGET = Object.freeze({
    * budget could fail on a teammate's machine with no code change), and Phase 8 (accessibility fixes) needs room. Raised to 700,000 B in
    * Phase 7c. PowerPoint, both report faces and the jsPDF stubs are exactly as they were, and so is the way size is measured. Raised to
    * 710,000 B by the site owner for Prompt 34 (5 Nov 2026: the Live display, the PDF and the PowerPoint in one look, dark and light), when
-   * the admin page stood at 698,147 B; the way size is measured is unchanged.
+   * the admin page stood at 698,147 B; the way size is measured is unchanged. Raised to 720,000 B by the site owner for Prompt 38 (9 Nov 2026:
+   * the admin redesign), when the admin page stood at 714,365 B; the way size is measured is unchanged.
    */
-  admin: 710_000,
+  admin: 720_000,
 });
 
 /**
@@ -546,5 +547,44 @@ export const PHASE_34 = Object.freeze({
  */
 export const PHASE_35 = Object.freeze({
   participantBefore: 180_179, adminBefore: 700_114, participantAllowance: 12_288,
+  participantAfter: 189_903, adminAfter: 700_077,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
+
+/**
+ * Prompt 36 (the grand finale: a petal shower from above, the medal, the name and the numbers, the afterglow), measured from where Prompt 35 left
+ * the pages (ffff3b7, built on 6 Nov 2026). The participant page may grow by at most 4 KB gzip (the brief's allowance) and stays under its
+ * ceiling; to fit, the shower is fired through the confetti library the page already carries, and the name rises in as one line rather than
+ * letter by letter. The admin page carries the thank-you page for Brand Studio's preview, so it grows by what that page grows; it stays under
+ * its budget.
+ */
+export const PHASE_36 = Object.freeze({
+  participantBefore: 189_903, adminBefore: 700_077, participantAllowance: 4_096,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
+
+/**
+ * Prompt 38 (the admin redesign, calm and premium), measured from where Prompt 36 left the pages (0478393, built on 8 Nov 2026: participant
+ * 193,978 B, admin 703,193 B). The participant page may not change at all, and its Tailwind rules stay its own. The brief asked the admin page to
+ * stay under 700,000 B; it already stood at 703,193 B, and the redesign adds the light shell, the sticky bar, the more menus, the folds, the QR sheet's
+ * choices and the lead figures. `adminAfter` is the page when the work stopped: over the 710,000 B budget, which the site owner then raised to
+ * 720,000 B (9 Nov 2026, RELEASE-38.md).
+ */
+export const PHASE_38 = Object.freeze({
+  participantBefore: 193_978, adminBefore: 703_193, participantAllowance: 0,
+  participantAfter: 193_978, adminAfter: 714_365,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
+
+/**
+ * Prompt 39 (the admin page on the whole width: the 56 px bar, the 12 columns, the popover, Results' charts and Art of the Possibility),
+ * measured from where Prompt 38 left the pages (cb08557: participant 193,978 B, admin 714,653 B). The participant page may not change at all, and
+ * its Tailwind rules stay its own (no bare "table" or "@container" in a new file: Tailwind reads every file under migration/). The brief asked the
+ * admin page to stay under 700,000 B; it already stood at 714,653 B, so it is held to its 720,000 B budget. `adminAfter` is the page when the
+ * work stopped.
+ */
+export const PHASE_39 = Object.freeze({
+  participantBefore: 193_978, adminBefore: 714_653, participantAllowance: 0,
+  participantAfter: 193_978, adminAfter: 717_609,
   participantUtilities: PHASE_11A.participantUtilities,
 });

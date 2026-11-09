@@ -229,7 +229,8 @@ export async function mockApi(page: Page) {
       fixture.failNextSession = false;
       return send({ error: 'Synthetic progress failure' }, 503);
     }
-    const lists: Record<string, { id: string }[]> = { clients, sessions, sections, questions, options, tracks, qrtokens: tokens, visitorroster: visitors, appsettings, uservisitlogs: visitLogs };
+    // (Prompt 38: a new client's page opens as soon as it is added, and reads who may run it: no one here, so the two access lists are empty.)
+    const lists: Record<string, { id: string }[]> = { clients, sessions, sections, questions, options, tracks, qrtokens: tokens, visitorroster: visitors, appsettings, uservisitlogs: visitLogs, users: [], roleassignments: [] };
     const rows = lists[list];
     if (!rows) return send({ error: 'Unexpected fixture request' }, 404);
     if (list === 'clients' && id && method === 'DELETE') {
