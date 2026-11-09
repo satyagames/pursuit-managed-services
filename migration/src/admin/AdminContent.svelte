@@ -348,8 +348,6 @@
   }
 
   .content-strip {
-    /* (Prompt 39: never the anchor the browser keeps in place as the page lays out again: it is sticky, so it would move the page by a pixel or two.) */
-    overflow-anchor: none;
     position: sticky;
     top: var(--adm-nav-height);
     z-index: 4;
@@ -368,8 +366,6 @@
   }
 
   .content-strip__tab {
-    /* (Prompt 39: the strip sticks under the bar, inside the room the page keeps clear above a focused field, so a tab taking focus never moves the page.) */
-    scroll-margin-top: calc(-1 * var(--adm-sticky-room, 0px));
     display: flex;
     align-items: center;
     gap: 0.75rem;

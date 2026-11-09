@@ -53,4 +53,7 @@ about 290 px of empty band on each side. Prompt 39 keeps Prompt 38's look and Pr
   `test-admin-look.js` (tokens, spacing, `sticky-fit.js`), `test-results-palette.js` (the heat tiles), `test-bundle-budget.js` (`PHASE_39`).
 - Changed to the new layout: `identity-chip`, `setup-deployment`, `admin-calm`, `admin-wide`, `content-brand`, `results-charts-fit`,
   `admin-guests`, `a11y`, `reflow` specs (a Menu-aware `chooseTab` in `admin-local.ts`), `test-admin-results.js`, `test-ux-12.js`.
+- `content-brand.spec.ts`, "a switch keeps everything", came back 2 px off (302 for 300). The cause: at 1366 x 768 the question editor now
+  glides itself into view when it opens (Content's wider question column), and the test's own jump to 300 landed while it glided, which carried
+  it 2 px on. The page keeps the scroll exactly; the test now waits for the editor to come to rest before it sets its place (passed 5 of 5).
 - Not yet run: WebKit; `npm run test:migration` in full; the oracle; the packager.

@@ -156,6 +156,13 @@ test('a switch keeps everything: the draft colour, device, screen and picture in
   await second.locator('.activity__select').click();
   await page.locator('.questions [data-edit-question]').first().click();
   await question(page).fill('A question typed and not saved');
+  // (Prompt 39: the editor glides itself into view when it opens; a jump made while it glides is carried on by it, so the page is put at 300
+  // only once it has come to rest: two readings 100 ms apart that agree.)
+  await expect.poll(async () => {
+    const first = await page.evaluate(() => window.scrollY);
+    await page.waitForTimeout(100);
+    return first === await page.evaluate(() => window.scrollY);
+  }, { message: 'the editor has come to rest' }).toBe(true);
   await page.evaluate(() => window.scrollTo({ top: 300 }));
   const scrolledTo = await page.evaluate(() => window.scrollY);
 
