@@ -424,7 +424,7 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
     assert.ok(participant <= PHASE_24.participantAllowance, `the participant page is ${participant} B larger than where Prompt 23 left it`);
     assert.ok(built.participant.htmlGzip <= BUDGET.participantCeiling, 'and under its ceiling, which is not raised');
     assert.equal(BUDGET.participantCeiling, 450_000, 'the ceiling is not raised');
-    assert.equal(BUDGET.admin, 710_000, 'the admin budget is not raised (beyond the 710,000 B the site owner set for Prompt 34)');
+    assert.equal(BUDGET.admin, 720_000, 'the admin budget is not raised (beyond the 720,000 B the site owner set for Prompt 38)');
     assert.deepEqual(utilityClasses(built.participant.html), [...PHASE_24.participantUtilities], "the participant page's Tailwind rules are the ones it had");
     assert.ok(!/aop-math|whereToStart|criterionProfile|poolAop|MatrixChart|aop-editor|parsePastedRows|defaultCriteria|DEFAULT_CRITERIA|Take photo|Only add a picture|Paste from a spreadsheet/.test(built.participant.html), 'the participant page carries none of the numbers, the editor or the picture dialog');
     assert.ok(admin <= PHASE_24.adminAllowance, `the admin page is ${admin} B larger than where Prompt 23 left it`);
@@ -438,7 +438,7 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
     assert.ok(PHASE_26.participantAfter - PHASE_26.participantBefore <= PHASE_26.participantAllowance, 'the participant page, as measured when Prompt 26 ended');
     assert.ok(PHASE_26.adminAfter - PHASE_26.adminBefore <= PHASE_26.adminAllowance, 'the admin page, as measured when Prompt 26 ended');
     assert.equal(BUDGET.participantCeiling, 450_000);
-    assert.equal(BUDGET.admin, 710_000); // (700,000 B until the site owner raised it for Prompt 34)
+    assert.equal(BUDGET.admin, 720_000); // (700,000 B until Prompt 34, 710,000 B until the site owner raised it for Prompt 38)
     assert.deepEqual(utilityClasses(built.participant.html), [...PHASE_26.participantUtilities], "the participant page's Tailwind rules are the ones it had");
     assert.ok(!/Pager|pager__button/.test(built.participant.html), 'the Pager is the admin page\'s');
     assert.ok(PHASE_26.participantAfter <= PHASE_26.participantBefore);
@@ -452,7 +452,7 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
     assert.ok(PHASE_32.adminAfter - PHASE_32.adminBefore <= PHASE_32.adminAllowance, 'the admin page, as measured when Prompt 32 ended');
     assert.ok(built.admin.htmlGzip < BUDGET.admin, `the admin page is under its ${bytes(BUDGET.admin)} budget`);
     assert.ok(!/identityOf|welcome-strip|your-access/.test(built.participant.html), "the chip and the welcome strip are the admin page's");
-    assert.equal(BUDGET.admin, 710_000); // (700,000 B until the site owner raised it for Prompt 34)
+    assert.equal(BUDGET.admin, 720_000); // (700,000 B until Prompt 34, 710,000 B until the site owner raised it for Prompt 38)
   });
 
   it('Prompt 33 (the admin page explains itself) left the participant page exactly as it was and kept the admin page within its allowance and its budget', () => {
@@ -463,7 +463,7 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
     assert.ok(PHASE_33.adminAfter - PHASE_33.adminBefore <= PHASE_33.adminAllowance, 'the admin page, as measured when Prompt 33 ended');
     assert.ok(built.admin.htmlGzip < BUDGET.admin, `the admin page is under its ${bytes(BUDGET.admin)} budget`);
     assert.ok(!/fold__button|role-switch|icon-btn__tip|crumbs__link|Participant details|Recent app entries/.test(built.participant.html), "the fold, the switches, the icon buttons and the breadcrumb are the admin page's");
-    assert.equal(BUDGET.admin, 710_000); // (700,000 B until the site owner raised it for Prompt 34)
+    assert.equal(BUDGET.admin, 720_000); // (700,000 B until Prompt 34, 710,000 B until the site owner raised it for Prompt 38)
   });
 
   it('Prompt 34 (Live results and the files in one look) left the participant page exactly as it was and kept the admin page under its budget', () => {

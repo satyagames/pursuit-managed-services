@@ -73,9 +73,8 @@ under 4.5:1 on white, so they are marks only and words take a darker ink beside 
 | Admin | 703,193 B | 714,514 B |
 
 The brief asked for the admin page under 700,000 B; it was 3,193 B over that before this work began. The budget in `scripts/bundle-budget.js`
-is 710,000 B, and the page is 4,514 B over it, so `npm run test:bundle` fails (the Prompt 24 to 38 records and the negative control with it).
-Open Sans was already embedded (400, 600, 700, Latin), and is not counted again. Raising the budget is the site owner's call; trimming further
-means taking a feature out (the obvious candidates are in "Open").
+was 710,000 B, and the page was about 4.5 KB over it. The site owner raised the budget to 720,000 B (9 Nov 2026), which leaves about 5.5 KB of
+room; nothing was dropped to make it fit. Open Sans was already embedded (400, 600, 700, Latin), and is not counted again.
 
 ## Tests
 
@@ -86,11 +85,10 @@ means taking a feature out (the obvious candidates are in "Open").
 - Changed on purpose: `admin-wide.spec.ts` (the 1,280 px content, Today's 8 + 4, the folded checks and settings, the Brand preview first);
   `scripts/brand-studio-markup.html` re-recorded with `PMS_RECORD_MARKUP=1`; the storage list (`pms.prefs`); the files' colours read from
   `look-tokens.css`.
-- Run here: `npm run check:svelte`, `npm test` (only the budget fails), `admin-calm` and `admin-wide` in Chromium. Still to run: the rest of
+- Run here: `npm run check:svelte`, `npm test`, `npm run test:bundle` (after the budget was raised), `admin-calm` and `admin-wide` in Chromium. Still to run: the rest of
   `test:migration` in Chromium and WebKit, `test:a11y`, forced colours, `perf`, `console:errors`, the package.
 
 ## Open
 
-1. The admin budget (above).
-2. The deferred items above.
-3. On a real iPad: the sticky bar above the keyboard, and the QR sheet printed on A4 and on US Letter.
+1. The deferred items above.
+2. On a real iPad: the sticky bar above the keyboard, and the QR sheet printed on A4 and on US Letter.

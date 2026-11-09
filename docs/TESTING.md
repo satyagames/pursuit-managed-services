@@ -267,7 +267,7 @@ seven sizes.
   estimates scaled to add up to the page's exact gzip; the page totals are exact.
 - `npm run test:bundle` — [scripts/test-bundle-budget.js](../scripts/test-bundle-budget.js) (also part of `npm test`): builds the real pages and holds
   them to the budgets in [scripts/bundle-budget.js](../scripts/bundle-budget.js) (participant gzip ceiling 450,000 B with a 400,000 B target,
-  admin 700,000 B since Phase 7c and 710,000 B since Prompt 34, and prints each page's size and its headroom), checks that no export library (jsPDF, PptxGenJS, html2canvas, Chart.js, `resultsExport.js`,
+  admin 700,000 B since Phase 7c, 710,000 B since Prompt 34 and 720,000 B since Prompt 38, and prints each page's size and its headroom), checks that no export library (jsPDF, PptxGenJS, html2canvas, Chart.js, `resultsExport.js`,
   the Results charts of Phase 11a) is anywhere in the participant page (by the modules the bundler reports and by text), and has negative controls: the
   check is run against the admin page standing in for the participant page, at one byte over each limit, and against a real participant
   build into which the libraries are imported. Run it after touching `migration/src/main.ts`, `App.svelte`, an import in a participant

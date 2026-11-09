@@ -575,7 +575,8 @@ in `migration/src/`, not by editing them, so that what the tests measure stays w
     400 kB target) is the one that matters, and Phase 8 needs room for accessibility fixes. Nothing was dropped to make the room: PowerPoint,
     both faces and the jsPDF stubs are as they were, and size is measured as it always was. `npm run test:bundle` prints each page's size and
     its headroom. Past 700,000 B, make room first (MIGRATION-PLAN.md, "Phase 7b", has what each way is worth); do not raise it again to fit.
-    (The site owner raised it once more, to 710,000 B, for Prompt 34, when the page stood at 698,147 B: `BUDGET.admin` in `scripts/bundle-budget.js`.)
+    (The site owner raised it once more, to 710,000 B, for Prompt 34, when the page stood at 698,147 B, and again, to 720,000 B, for Prompt 38, when
+    it stood at 714,365 B: `BUDGET.admin` in `scripts/bundle-budget.js`.)
   - **Tailwind reads every file under `migration/` for class names, comments included.** The words `table`, `absolute` and `invisible`
     in the new files each added a utility rule to BOTH pages (22 bytes on the participant page) until they were reworded. After adding
     a file there, check that the participant page is still the size it was (`npm run test:bundle` prints it).
