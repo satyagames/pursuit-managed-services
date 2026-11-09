@@ -60,15 +60,17 @@ test.describe('a client\'s page: sessions and team', () => {
     await page.getByLabel('Start time').fill('09:00');
     await page.getByLabel('Title').fill('Morning');
     await axe(page, 'Add a session');
-    await page.locator('form').getByRole('button', { name: 'Add session' }).click();
+    await page.getByTestId('create-session').click(); // (Prompt 38: the sticky bar's Create session)
     await expect(page.getByTestId('client-sessions').locator('tbody tr')).toHaveCount(1);
     await page.locator('.part__head').getByRole('button', { name: 'Add session' }).click();
     await page.getByLabel('Date').fill(DAY);
     await page.getByLabel('Start time').fill('14:00');
-    await page.locator('form').getByRole('button', { name: 'Add session' }).click();
+    await expect(page.getByLabel('Title'), 'a new session starts with a title').not.toHaveValue('');
+    await page.getByLabel('Title').fill(''); // (to see the rule for a second session that day)
+    await page.getByTestId('create-session').click();
     await expect(page.getByRole('alert')).toHaveText('Give this session a title: the client has another session that day.');
     await page.getByLabel('Title').fill('Afternoon');
-    await page.locator('form').getByRole('button', { name: 'Add session' }).click();
+    await page.getByTestId('create-session').click();
     const rows = page.getByTestId('client-sessions').locator('tbody tr');
     await expect(rows).toHaveCount(2);
     await expect(rows.nth(0)).toContainText('4 Nov 2026, 09:00');
@@ -84,7 +86,7 @@ test.describe('a client\'s page: sessions and team', () => {
     await page.getByLabel('Date').fill('2026-11-05');
     await page.getByLabel('Start time').fill('10:30');
     await page.getByLabel('Use the client team').uncheck();
-    await page.locator('form').getByRole('button', { name: 'Add session' }).click();
+    await page.getByTestId('create-session').click();
     await expect(page.getByRole('heading', { name: 'Team', exact: true })).toBeFocused();
     await expect(page.getByLabel('Selected sessions')).toBeChecked();
     await expect(page.getByLabel('5 Nov 2026, 10:30')).toBeChecked();
@@ -144,7 +146,7 @@ test.describe('Today: the Admin plans, the Producer starts', () => {
     const session = page.getByLabel('Session', { exact: true });
     await expect(session.locator('option')).toHaveText(['09:00, Morning, 1 of 2 today, Planned', '14:00, Afternoon, 2 of 2 today, Planned']);
     await axe(page, 'Today with the day\'s sessions');
-    const ready = page.getByText(/^Ready to go live/); // (readiness is checked again after each pick: Go live waits for it)
+    const ready = page.getByTestId('readiness-summary').filter({ hasText: /^Ready to go live/ }); // (readiness is checked again after each pick: Go live waits for it; the bar says it too)
     await expect(ready).toBeVisible();
     await page.getByRole('button', { name: 'Go live' }).click();
     await expect(page.getByText('Verified: participants now see Kroger')).toBeVisible();

@@ -65,6 +65,8 @@
   let welcomeLine = $state('');
   let slugTouched = $state(false);
   let titleTouched = $state(false);
+  /** More details: open when editing, shut for a new client; after that the person decides (an expression here was re-applied on each key). */
+  let moreOpen = $state(false);
   let submitted = $state(false);
   let formError = $state('');
   let qrClient = $state<Client | null>(null);
@@ -151,6 +153,7 @@
     welcomeLine = form.welcomeLine;
     slugTouched = Boolean(client);
     titleTouched = Boolean(client);
+    moreOpen = Boolean(client);
     submitted = false;
     formError = '';
     editorOpen = true;
@@ -319,7 +322,7 @@
         </div>
         <span class="muted small" id="name-seen">Participants see this name on their screens.{editing ? '' : ' Sessions, the team and QR check-in come next, on the client\'s page.'}</span>
         <!-- (Prompt 38: a new client needs its name only; the rest is folded, with a line of what it holds now. Editing shows it open.) -->
-        <details class="adm-fold client-more" open={Boolean(editing)}>
+        <details class="adm-fold client-more" bind:open={moreOpen}>
           <summary><Icon name="chevron-right" />More details <span class="adm-fold__summary">Short name {slug || 'from the name'} · title {eventTitle || defaultEventTitle(name) || 'from the name'}</span></summary>
           <div class="editor-form">
         <div class="field"><label class="field__label" for="client-slug">Short name in session ids</label>

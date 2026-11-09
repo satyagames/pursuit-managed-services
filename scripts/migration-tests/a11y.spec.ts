@@ -155,17 +155,18 @@ test.describe('admin', () => {
       // Today: nothing live, a client picked, then live.
       findings.push(...await check(page, `admin ${at}: Today, nothing live`));
       await page.getByLabel('Client', { exact: true }).selectOption({ label: 'Kroger' });
-      // (Prompt 32: on a laptop the ready checks fold into one line. It is opened, so that axe reads the fold's control and every ready row too.)
+      // (Prompt 32: on a laptop the ready checks fold into one line; Prompt 38: "N checks passed", at every width. It is opened, so that axe reads
+      // the fold's control and every ready row too.)
       await expect(page.locator('[data-check="lists"]')).toBeAttached();
-      const fold = page.getByRole('button', { name: /^Show \d+ ready checks?$/ });
-      if (await fold.isVisible()) await fold.click();
+      const fold = page.getByRole('button', { name: /^\d+ checks? passed/ });
+      if ((await fold.getAttribute('aria-expanded')) === 'false') await fold.click();
       await expect(page.locator('[data-check="lists"]')).toBeVisible();
       findings.push(...await check(page, `admin ${at}: Today, a client picked, with readiness`));
       // (The second pass finds Kroger already live from the first.)
       if (await page.getByRole('button', { name: 'Go live', exact: true }).count()) {
         await page.getByRole('button', { name: 'Go live', exact: true }).click();
         await expect(page.getByText('Verified: participants now see Kroger')).toBeVisible();
-      } else await expect(page.getByRole('button', { name: 'Already live' })).toBeVisible();
+      } else await expect(page.getByTestId('bar-wall'), 'live: the bar offers the wall (Prompt 38; it said Already live)').toBeVisible();
       findings.push(...await check(page, `admin ${at}: Today, live`));
 
       // Clients, its form, and Brand Studio for each look.

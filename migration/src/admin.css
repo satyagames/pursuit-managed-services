@@ -1313,6 +1313,15 @@ input[type='date']:focus-within {
   font-size: 20pt;
 }
 
+/* A long name steps down here too: the 20 pt above outranks the card's own long sizes, and cut the longest names off at two lines. */
+.print-page--6 .print-card__name--long {
+  font-size: 15pt;
+}
+
+.print-page--6 .print-card__name--longest {
+  font-size: 12pt;
+}
+
 .print-page--6 .print-card__client {
   font-size: 11pt;
 }

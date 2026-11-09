@@ -9,7 +9,7 @@ import { ME, PEOPLE, open, settled, site } from './explain-support.js';
 
 const pictures = fileURLToPath(new URL('../../test-results/admin/explain/', import.meta.url));
 const SIZES = [{ width: 1366, height: 650 }, { width: 1920, height: 950 }] as const;
-const GREEN = 'rgb(35, 127, 12)';
+const GREEN = 'rgb(47, 107, 79)'; // --adm-primary, #2F6B4F (Prompt 38; it was #237F0C)
 const shoot = async (page: Page, name: string) => {
   await mkdir(pictures, { recursive: true });
   const { width, height } = page.viewportSize()!;
@@ -92,7 +92,7 @@ test('Results: the session\'s People are folded under its charts, with a count',
   const button = card.getByRole('button', { name: /^People/ });
   const charts = await card.locator('details.tally').boundingBox();
   expect((await button.boundingBox())!.y, 'below the charts').toBeGreaterThan(charts!.y);
-  await expect(button.locator('svg[data-icon="people"]')).toHaveCount(1);
+  await expect(button.locator('svg[data-icon="users"]')).toHaveCount(1); // (Prompt 38's icon set: users)
   await checkFold(page, button, /Person 1/, /^People · 3 people( · QR codes: .*)? Show$/);
 });
 
@@ -205,11 +205,11 @@ test('Clients: a client\'s three sections, and panels that name the verb and the
     await page.getByRole('button', { name: 'Add session' }).click();
     const form = page.locator('form').filter({ has: page.getByRole('heading', { name: 'Add a session to Kroger' }) });
     await expect(form).toContainText('Required');
-    expect(await form.locator('.dialog__actions button').allTextContents()).toEqual(['Cancel', 'Add session']);
+    expect(await page.getByTestId('sticky-bar').getByRole('button').allTextContents(), 'Cancel, then the one main action, in the bar').toEqual(['Cancel', 'Create session']);
     await shoot(page, 'clients-add-session');
     await form.getByLabel('Start time').fill('14:30');
     await form.getByLabel(/^Title/).fill('Afternoon');
-    await form.getByRole('button', { name: 'Add session' }).click();
+    await page.getByTestId('create-session').click();
     await expect(page.getByText(/^Session added to Kroger/)).toBeVisible();
 
     await page.getByRole('button', { name: 'Add team member' }).click();
@@ -241,7 +241,7 @@ test('Content: two large parts with an icon, a name and a meaning, a labelled ta
       expect((await parts.nth(index).boundingBox())!.height).toBeGreaterThanOrEqual(56);
     }
     await expect(parts.first()).toHaveAttribute('aria-selected', 'true');
-    expect(await parts.first().evaluate((el) => getComputedStyle(el).backgroundColor), 'the chosen part is deep green').toBe('rgb(4, 106, 56)');
+    expect(await parts.first().evaluate((el) => getComputedStyle(el).backgroundColor), 'the chosen part is on the primary wash (Prompt 38; it was deep green)').toBe('rgb(235, 243, 238)');
     await shoot(page, 'content-activities');
     await parts.first().focus();
     await page.keyboard.press('ArrowRight');
@@ -303,9 +303,11 @@ test('alignment: no sideways scroll, footers right-aligned with the main action 
     await open(page, await site(), 'clients');
     await page.locator('#sessions-c-kroger').click();
     await page.getByRole('button', { name: 'Add session' }).click();
-    const foot = page.locator('form .dialog__actions').first();
+    // (Prompt 38: a new session's actions are the sticky bar's; the bar's right edge, inside its padding, is the footer's.)
+    const foot = page.getByTestId('sticky-bar');
     const [footBox, lastBox] = [await foot.boundingBox(), await foot.locator('button').last().boundingBox()];
-    expect(footBox!.x + footBox!.width - (lastBox!.x + lastBox!.width), 'the footer is right-aligned').toBeLessThanOrEqual(2);
+    const inset = await foot.evaluate((el) => parseFloat(getComputedStyle(el).paddingRight));
+    expect(footBox!.x + footBox!.width - inset - (lastBox!.x + lastBox!.width), 'the footer is right-aligned').toBeLessThanOrEqual(2);
     await expect(foot.locator('button').last()).toHaveClass(/btn--primary/);
     // Gaps between the sections of a client are multiples of 8 px.
     const gaps = await page.locator('.workspace__parts > *').evaluateAll((parts) => parts.slice(1).map((part, index) => Math.round(part.getBoundingClientRect().top - parts[index].getBoundingClientRect().bottom)));

@@ -32,6 +32,8 @@ test('admin smoke: unlock, go live, switch tabs, no errors and no stray requests
   await expect(page.getByText('Verified: participants now see Kroger')).toBeVisible();
   await expect(page.locator('section[data-live]')).toContainText('LIVE');
   await expect(page.getByRole('img', { name: 'QR code for the participant link' })).toBeVisible();
+  await expect(page.getByTestId('controls-summary')).toContainText('Staff sign in'); // (Prompt 38: the settings are one line, with Change)
+  await page.getByRole('button', { name: 'Change', exact: true }).click();
   await expect(page.getByRole('radio', { name: /Staff sign in/ })).toBeChecked();
   await page.getByRole('radio', { name: /^Open/ }).check();
   await expect.poll(() => fake.item('sessions', `kroger-${today}`)?.ActivityFlow).toBe('open');
@@ -42,7 +44,7 @@ test('admin smoke: unlock, go live, switch tabs, no errors and no stray requests
   await expect(page.getByRole('tab', { name: 'Clients' })).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('.row').filter({ hasText: 'Kroger' })).toContainText('LIVE NOW');
   await expect(page.locator('.row').filter({ hasText: "Domino's" })).toContainText('Last live never');
-  for (const [tab, heading] of [['Content', 'Content'], ['Guests and QR', 'Guests and QR'], ['Results', 'Results']]) {
+  for (const [tab, heading] of [['Content', 'Content'], ['Guests and QR', 'Guests and QR codes'], ['Results', 'Results']]) {
     await page.getByRole('tab', { name: tab, exact: true }).click();
     await expect(page.getByRole('heading', { name: heading, exact: true }).first()).toBeVisible();
   }

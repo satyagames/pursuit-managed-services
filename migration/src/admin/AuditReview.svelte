@@ -24,6 +24,8 @@
   const names = $derived(Object.fromEntries(users.map((user) => [String(user.id).toLowerCase(), user.fullName || user.email || user.id])));
   const view = $derived(auditView(lines, { names, action, person, from, to, page }));
   const filtering = $derived(Boolean(action || person.trim() || from || to));
+  /** The filters fold: the person opens and shuts it (clearing the last filter used to shut it under the cursor). */
+  let filtersOpen = $state(false);
   const clear = () => { action = ''; person = ''; from = ''; to = ''; page = 1; };
 
   onMount(() => {
@@ -47,7 +49,7 @@
   {:else if error}<p class="error" role="alert">{error}</p>
   {:else}
     <!-- (Prompt 38: newest first, grouped by day; the filters folded, with a line of what they are now.) -->
-    <details class="adm-fold" open={filtering}>
+    <details class="adm-fold" bind:open={filtersOpen}>
       <summary><Icon name="sliders" />Filters <span class="adm-fold__summary">{filtering ? 'Some changes are hidden' : 'Showing every change'}</span></summary>
     <div class="audit__bar">
       <div class="field"><label class="field__label" for="audit-action">What was done</label>

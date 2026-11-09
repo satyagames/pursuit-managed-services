@@ -36,6 +36,8 @@
   let guestState = $state<GuestState | null>(null);
   let visitorName = $state('');
   let pasted = $state('');
+  /** Add many at once: the person opens and shuts it; it opens by itself only to hand back names that were not added. */
+  let pasteOpen = $state(false);
   /** A guest's group (Prompt 21, Phase 4): for the one added, and for each pasted line that names none; and the group the list is narrowed to. */
   let visitorGroup = $state('');
   let pasteGroup = $state('');
@@ -169,7 +171,8 @@
         ? { level: result.added.length ? 'warning' : 'error', text: `Added ${result.added.length} of ${parsed.names.length}. ${plural(problem, 'name was', 'names were')} not added (${result.failed[0]?.error.message ?? 'stopped'}). Press Add again: names already on the list are skipped.` }
         : { level: 'success', text: `Added ${plural(result.added.length, 'guest', 'guests')}.${result.skipped.length ? ` ${plural(result.skipped.length, 'name was', 'names were')} already on the list.` : ''}` };
       if (!problem) pasted = '';
-      else pasted = [...result.failed.map((entry) => entry.name), ...result.notAttempted].map((name) => { const group = parsedList.guests.find((guest) => guest.name === name)?.group; return group ? `${name} | ${group}` : name; }).join('\n');
+      else pasteOpen = true;
+      if (problem) pasted = [...result.failed.map((entry) => entry.name), ...result.notAttempted].map((name) => { const group = parsedList.guests.find((guest) => guest.name === name)?.group; return group ? `${name} | ${group}` : name; }).join('\n');
       await refresh();
     } catch (cause) {
       error = explain(cause, 'Could not add these guests.');
@@ -353,7 +356,7 @@
               </div>
             </details>
           </form>
-          <details class="adm-fold" open={pasted.trim().length > 0}>
+          <details class="adm-fold" bind:open={pasteOpen}>
             <summary><Icon name="chevron-right" />Add many at once <span class="adm-fold__summary">{pasted.trim() ? pasteSummary(parsed) : 'Paste a list of names'}</span></summary>
           <div class="guests-add">
             <div class="field">

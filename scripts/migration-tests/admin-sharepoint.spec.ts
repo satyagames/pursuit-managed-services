@@ -143,10 +143,10 @@ test('Go live costs only what it needs: the session, AppSettings, and one read t
   expect(fake.requests.filter((entry) => entry.method !== 'GET' && !/contextinfo|\$batch/.test(entry.path)).map(shape)).toEqual(['POST sessions', 'MERGE appsettings']);
   measured.goLive_switchingClient = { requests: switched.length, breakdown: switched };
 
-  // Pressing it again for the client that is live: the button says so and sends nothing.
+  // The client that is live has no Go live to press again (Prompt 38: the bar offers the wall instead), and nothing is sent.
   fake.reset();
-  await expect(goLiveButton(page)).toHaveText('Already live');
-  await expect(goLiveButton(page)).toBeDisabled();
+  await expect(page.getByTestId('bar-wall')).toBeVisible();
+  await expect(goLiveButton(page)).toHaveCount(0);
   await quiet(page);
   expect(fake.requests.filter((entry) => entry.method !== 'GET' && !/\$batch|contextinfo/.test(entry.path))).toEqual([]);
   expect(fake.lists.get('sessions')!.map((row) => row.AppId).sort()).toEqual([`dominos-${today}`, `kroger-${today}`]);

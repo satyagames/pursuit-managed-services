@@ -119,7 +119,8 @@ test.describe('the People screens', () => {
     await expect(page.getByRole('heading', { name: 'Milder, Brian' })).toBeVisible();
     await expect(page.getByTestId('no-access-rows')).toContainText('no access to any client or session yet');
     expect(fake.item('users', mail('bmilder'))).toBeTruthy();
-    await page.getByRole('button', { name: 'Give access' }).click();
+    // (Prompt 38: the list's header has a Give access of its own; this is the one on the person's page.)
+    await page.getByRole('region', { name: 'Milder, Brian' }).getByRole('button', { name: 'Give access' }).click();
     const give = page.getByRole('dialog');
     await give.getByRole('combobox', { name: /^Role/ }).selectOption('Leadership');
     await give.getByRole('combobox', { name: /^Client/ }).selectOption({ label: 'Kroger' });
@@ -206,9 +207,11 @@ test.describe('the People screens', () => {
     await expect(page.getByTestId('audit-lines').getByRole('listitem')).toHaveCount(3);
     await expect(page.getByTestId('audit-lines').getByRole('listitem').first()).toContainText('Turned off: Gone, Leaver');
     await axe(page, 'History of changes');
+    await page.locator('summary', { hasText: /^Filters/ }).click(); // (Prompt 38: the filters are folded, with a line of what they are)
     await page.getByLabel('What was done').selectOption({ label: 'Access given' });
     await expect(page.getByTestId('audit-lines').getByRole('listitem')).toHaveCount(1);
     await page.getByRole('button', { name: 'Clear filters' }).click();
+    await expect(page.getByLabel('Person'), 'clearing the filters leaves their fold open').toBeVisible();
     await page.getByLabel('Person').fill('aedla');
     await expect(page.getByTestId('audit-lines').getByRole('listitem')).toHaveCount(2);
     await page.getByRole('button', { name: 'Back to people' }).click();

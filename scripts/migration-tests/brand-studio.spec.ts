@@ -67,29 +67,30 @@ const status = (page: Page) => page.getByTestId('brand-status');
 
 // ---- Where it lives and how it is laid out ---------------------------------------------------------------
 
-test('Brand Studio opens from a client row, with the controls and the real preview side by side', async ({ page }) => {
+test('Brand Studio opens from a client row, with the real preview and the controls side by side, the preview first', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await openBrand(page);
   await expect(page.getByRole('group', { name: 'Device' }).getByRole('button')).toHaveText(devices.map((device) => device.label));
   await expect(page.getByRole('group', { name: 'Screen' }).getByRole('button')).toHaveText([...scenes]);
   await expect(previewFrame(page).getByRole('heading', { name: 'Hi Jane Doe!' })).toBeVisible();
   await expect(status(page)).toHaveText('All changes saved');
-  // Two columns: the preview is to the right of the controls, and stays in view as the controls scroll.
+  // Two columns: the preview first, on the left (Prompt 38; it was on the right), and the controls to its right.
   const [controls, preview] = await Promise.all([page.locator('.brand__controls').boundingBox(), page.locator('.brand__preview').boundingBox()]);
-  expect(preview!.x).toBeGreaterThan(controls!.x + controls!.width - 1);
+  expect(controls!.x).toBeGreaterThan(preview!.x + preview!.width - 1);
   // Back to the list.
   await page.getByRole('tab', { name: 'Clients', exact: true }).click(); // (Phase 18: Brand is a view of Content; no Back button)
   await expect(page.getByRole('heading', { name: 'Clients', exact: true })).toBeVisible();
 });
 
-test('at 820 wide and below the preview moves below the controls; nothing scrolls sideways and every target is 44px', async ({ page }) => {
+test('at 820 wide and below the preview sits above the controls; nothing scrolls sideways and every target is 44px', async ({ page }) => {
   await openBrand(page);
   for (const viewport of viewports) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await expect(previewFrame(page).getByRole('heading', { name: 'Hi Jane Doe!' })).toBeVisible();
     const [controls, preview] = await Promise.all([page.locator('.brand__controls').boundingBox(), page.locator('.brand__preview').boundingBox()]);
-    if (viewport.width <= 820) expect(preview!.y, `${viewport.width}: below`).toBeGreaterThanOrEqual(controls!.y + controls!.height - 1);
-    else expect(preview!.x, `${viewport.width}: beside`).toBeGreaterThan(controls!.x + controls!.width - 1);
+    // (Prompt 38: the preview first, so on a narrow screen it is above the controls, and beside them on the left when there is room.)
+    if (viewport.width <= 820) expect(controls!.y, `${viewport.width}: the controls below the preview`).toBeGreaterThanOrEqual(preview!.y + preview!.height - 1);
+    else expect(controls!.x, `${viewport.width}: beside`).toBeGreaterThan(preview!.x + preview!.width - 1);
     await expectFits(page, `Brand Studio at ${viewport.width}`);
     await shoot(page, `brand-studio-${viewport.width}`);
   }
@@ -185,7 +186,8 @@ test('colours: hex, picker, presets and accent drive the preview and the contras
   const rows = page.locator('.brand__contrast tbody tr');
   await expect(rows).toHaveCount(3);
   for (const row of await rows.all()) {
-    await expect(row.locator('td').last()).toHaveText('✓ Pass');
+    await expect(row.locator('td').last()).toHaveText('Pass');
+    await expect(row.locator('td').last().locator('svg[data-icon="check-circle"]'), 'the word with its mark').toHaveCount(1);
     expect(parseFloat((await row.locator('td').first().textContent()) ?? '0')).toBeGreaterThanOrEqual(4.5);
   }
 
@@ -197,7 +199,7 @@ test('colours: hex, picker, presets and accent drive the preview and the contras
   const to = (await adjusted.locator('.mono').first().textContent())!.trim();
   expect(to).toMatch(/^#[0-9A-F]{6}$/);
   await expect(page.locator('[data-warning="primary-light"]')).toBeVisible();
-  await expect(rows.first().locator('td').last()).toHaveText('✓ Pass');
+  await expect(rows.first().locator('td').last()).toHaveText('Pass');
   await adjusted.getByRole('button', { name: /Auto-fix/ }).click();
   await expect(primary).toHaveValue(to);
   await expect(page.getByTestId('adjusted')).toHaveCount(0);
@@ -208,7 +210,8 @@ test('colours: hex, picker, presets and accent drive the preview and the contras
   await expect(page.locator('[data-warning="accent-near-red"]')).toContainText('within 30°');
   await expect(page.locator('[data-warning="accent-near-red"]')).toContainText('never on a button');
   await expect(page.locator('.brand__contrast tbody tr')).toHaveCount(5);
-  await expect(page.locator('.brand__contrast tbody tr').nth(3)).toContainText('✕ Not drawn');
+  await expect(page.locator('.brand__contrast tbody tr').nth(3).locator('td').last()).toHaveText('Not drawn');
+  await expect(page.locator('.brand__contrast tbody tr').nth(3).locator('svg[data-icon="alert-triangle"]')).toHaveCount(1);
   await expect(page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ })).toBeEnabled();
   await page.getByRole('button', { name: 'No accent' }).click();
   await expect(page.getByLabel('Accent (optional)')).toHaveValue('');
@@ -1088,6 +1091,7 @@ test('an answer tile\'s picture can be uploaded in Content: cropped to 480 x 320
   await page.getByLabel('Question', { exact: true }).fill('Which of these is the pizza logo?');
   await page.getByLabel('Option 1 text').fill('Alpha');
   await page.getByLabel('Option 2 text').fill('Bravo');
+  await page.locator('summary', { hasText: /^Layout/ }).click(); // (Prompt 38: the layout is folded)
   await page.getByLabel('Layout').selectOption('image-grid');
   const option = (n: number) => page.locator(`.opt__upload[data-option="${n}"]`);
   await expect(option(1)).toContainText('480 × 320 px');
@@ -1149,7 +1153,8 @@ test('an answer tile\'s picture can be uploaded in Content: cropped to 480 x 320
   const fifthUrl = await first.inputValue();
   await page.getByRole('button', { name: /^Save (activity|brand|question|client)$/ }).click();
   await expect(page.locator('.toast')).toContainText('Saved');
-  expect(await ds.getOption(question.optionIds[0])).toMatchObject({ imageUrl: fifthUrl });
+  // (The first save's toast can still be showing: wait for this save's write itself.)
+  await expect.poll(async () => (await ds.getOption(question.optionIds[0])).imageUrl).toBe(fifthUrl);
   // Give the tidy-up time to have removed it, had it been going to: it reads, and only then removes.
   await page.waitForTimeout(600);
   expect((await uploads()).sort(), 'the file the duplicate shows is still there').toEqual([path.basename(fourthUrl), path.basename(fifthUrl)].sort());

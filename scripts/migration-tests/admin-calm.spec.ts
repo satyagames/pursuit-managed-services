@@ -104,3 +104,21 @@ test('a new client needs its name only; the rest is folded with a line of what i
   await expect(page.locator('.client-more .adm-fold__summary')).toContainText('acme-foods');
   await page.screenshot({ path: `${pictures}clients-add-1280.png` });
 });
+
+test('a fold the person opened stays open while they type in it, and shuts only when they press it', async ({ page }) => {
+  // (Found while bringing the older specs up to date: a fold whose open state was an expression was set again whenever its summary line changed,
+  // so typing a short name, or clearing a pasted list, shut the fold under the cursor.)
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await openAdmin(page, local!);
+  await openTab(page, 'Clients');
+  await page.getByRole('button', { name: 'Add client', exact: true }).first().click();
+  await page.getByRole('textbox', { name: 'Name', exact: true }).fill('Acme Foods');
+  await page.locator('.client-more summary').click();
+  const slug = page.getByLabel('Short name in session ids');
+  await slug.fill('acme');
+  await page.getByRole('textbox', { name: 'Name', exact: true }).fill('Acme Foods Group');
+  await expect(slug, 'More details is still open after typing in it and in the name').toBeVisible();
+  await page.locator('.client-more summary').click();
+  await expect(slug).toBeHidden();
+  // (Guests' Add many at once is held to the same in admin-guests.spec.ts, which has a live session to add guests to.)
+});

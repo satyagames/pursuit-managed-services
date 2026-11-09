@@ -70,7 +70,7 @@ under 4.5:1 on white, so they are marks only and words take a darker ink beside 
 | Page | Before (pms-36) | After |
 |---|---:|---:|
 | Participant | 193,978 B | 193,978 B |
-| Admin | 703,193 B | 714,514 B |
+| Admin | 703,193 B | 714,629 B |
 
 The brief asked for the admin page under 700,000 B; it was 3,193 B over that before this work began. The budget in `scripts/bundle-budget.js`
 was 710,000 B, and the page was about 4.5 KB over it. The site owner raised the budget to 720,000 B (9 Nov 2026), which leaves about 5.5 KB of
@@ -85,8 +85,20 @@ room; nothing was dropped to make it fit. Open Sans was already embedded (400, 6
 - Changed on purpose: `admin-wide.spec.ts` (the 1,280 px content, Today's 8 + 4, the folded checks and settings, the Brand preview first);
   `scripts/brand-studio-markup.html` re-recorded with `PMS_RECORD_MARKUP=1`; the storage list (`pms.prefs`); the files' colours read from
   `look-tokens.css`.
-- Run here: `npm run check:svelte`, `npm test`, `npm run test:bundle` (after the budget was raised), `admin-calm` and `admin-wide` in Chromium. Still to run: the rest of
-  `test:migration` in Chromium and WebKit, `test:a11y`, forced colours, `perf`, `console:errors`, the package.
+- The older browser specs, brought to the new layout (in Chromium, the 17 files that touch the admin page: 207 tests pass): Today's settings behind
+  Change and Re-check in the bar, "N things to fix", Show the wall once live (not Already live), a client's Archive, Restore and Delete and an
+  activity's Rename, Duplicate and Delete in the more menus, a new client's More details and Add client, a new session's Create session in the bar and
+  its title filled in, the folded Layout, paste list, Leadership and History filters, the QR sheet 6 to a page unless 12 is chosen, the Brand preview
+  first, Pass and Not drawn with their marks, the primary green #2F6B4F and its wash, the wall on dark1 (#16231C, no pure black), the `users` icon.
+  The local mock (`fixtures.ts`) answers the two access lists a new client's page reads. `admin-smoke.spec.ts` looked for a Guests heading of
+  "Guests and QR", which has been "Guests and QR codes" since Prompt 33; it had never got that far.
+- Three faults found doing it, each with a test that failed first: a fold whose open state was an expression shut itself whenever its summary line
+  changed (typing a client's short name or name in More details, clearing the pasted list, clearing History's last filter), so each fold now keeps its
+  own open state (`bind:open`; `admin-calm.spec.ts`, `admin-today.spec.ts`, `admin-guests.spec.ts`, `users.spec.ts`); and on the 6-to-a-page
+  QR sheet a long name was cut off at two lines, because the sheet's 20 pt outranked the card's long-name sizes (`admin.css`; `admin-guests.spec.ts`
+  now measures every name on both sheets).
+- Run here: `npm run check:svelte`, `npm test`, `npm run test:bundle` (after the budget was raised), the 17 admin spec files in Chromium. Still
+  to run: the rest of `test:migration` in Chromium, WebKit, `test:a11y`, forced colours, `perf`, `console:errors`, the package.
 
 ## Open
 
