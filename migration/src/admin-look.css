@@ -5,7 +5,8 @@
 /* ---- Type: Open Sans; running text 16 px ---------------------------------------------------- */
 body.admin {
   font-size: var(--adm-fs-body);
-  line-height: var(--adm-lh-body);
+  /* A ratio, not --adm-lh-body (24 px): a length is inherited as it is, so the wall's 28 px and larger type would get 24 px lines. 1.5 of 16 px is 24 px. */
+  line-height: 1.5;
   background: var(--adm-bg);
   color: var(--adm-ink);
 }
@@ -551,8 +552,9 @@ body.admin .error {
   box-shadow: var(--adm-shadow-up);
 }
 
-/* A field the keyboard moves to stops above the bar, never under it. */
-html {
+/* A field the keyboard moves to stops above the bar, never under it (only where there is a bar: elsewhere a control near the foot of the window
+   would scroll the page for nothing). */
+html:has(.adm-bar) {
   scroll-padding-bottom: calc(var(--adm-bar-height) + var(--adm-s4));
 }
 
@@ -591,7 +593,8 @@ html {
 
 @media (max-width: 899px) {
   .adm-bar {
-    padding-inline: var(--adm-s4);
+    /* Narrower, but never into a phone's notch or rounded corner. */
+    padding-inline: max(var(--adm-s4), env(safe-area-inset-left, 0px)) max(var(--adm-s4), env(safe-area-inset-right, 0px));
   }
 }
 
@@ -692,6 +695,12 @@ html {
   .adm-card,
   .chip {
     border: 1px solid CanvasText;
+  }
+
+  /* The wordmark's letters (ink on the light bar) in the system's text colour, so they show on whatever ground forced colours gives the bar. */
+  .shell__wordmark :is(path, rect)[fill='#fff'],
+  .login__wordmark :is(path, rect)[fill='#fff'] {
+    fill: CanvasText;
   }
 }
 

@@ -75,10 +75,16 @@
     color: var(--adm-primary);
   }
 
+  /* The link, then Copy and Open; in a narrow column the link takes a row of its own rather than shrinking under a finger's width. */
   .share__link {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    display: flex;
+    flex-wrap: wrap;
     gap: var(--adm-s2);
+  }
+
+  .share__link .input {
+    flex: 1 1 12rem;
+    min-width: 0;
   }
 
   .share__qr {

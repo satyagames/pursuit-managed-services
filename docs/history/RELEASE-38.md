@@ -70,7 +70,7 @@ under 4.5:1 on white, so they are marks only and words take a darker ink beside 
 | Page | Before (pms-36) | After |
 |---|---:|---:|
 | Participant | 193,978 B | 193,978 B |
-| Admin | 703,193 B | 714,629 B |
+| Admin | 703,193 B | 714,653 B |
 
 The brief asked for the admin page under 700,000 B; it was 3,193 B over that before this work began. The budget in `scripts/bundle-budget.js`
 was 710,000 B, and the page was about 4.5 KB over it. The site owner raised the budget to 720,000 B (9 Nov 2026), which leaves about 5.5 KB of
@@ -97,8 +97,30 @@ room; nothing was dropped to make it fit. Open Sans was already embedded (400, 6
   own open state (`bind:open`; `admin-calm.spec.ts`, `admin-today.spec.ts`, `admin-guests.spec.ts`, `users.spec.ts`); and on the 6-to-a-page
   QR sheet a long name was cut off at two lines, because the sheet's 20 pt outranked the card's long-name sizes (`admin.css`; `admin-guests.spec.ts`
   now measures every name on both sheets).
-- Run here: `npm run check:svelte`, `npm test`, `npm run test:bundle` (after the budget was raised), the 17 admin spec files in Chromium. Still
-  to run: the rest of `test:migration` in Chromium, WebKit, `test:a11y`, forced colours, `perf`, `console:errors`, the package.
+- Run here: `npm run check:svelte`, `npm test`, `npm run test:bundle` (after the budget was raised), the 17 admin spec files in Chromium.
+- The final round (9 Nov 2026): every browser spec in Chromium and WebKit, 1,210 passed and 72 failed. Each failure was run again alone and, where it
+  still failed, on a build of pms-36 (0478393). Five came from this branch and are fixed, each shown failing first:
+  - the page's line height was the 24 px token, a length, which every element inherits as it is, so the wall's large type had 24 px lines and its
+    charts' words ran into each other (`results-charts-fit`, `results-charts-layout`); it is the ratio 1.5 again, 24 px at 16 px (`admin-look.css`);
+  - the panel's own focus ring (it is a tab panel, so the keyboard reaches it) was the green alone on the calmer ground, 1.88:1; it is drawn inside the
+    panel between two bands of ink, as Results' summary's (`admin.css`). `contrast.spec.ts` now reads the inside of a ring drawn inside its control
+    in the band within it, as it reads one drawn outside (the 3:1 is unchanged; the old ring still fails it);
+  - Today's link fields were squeezed to 36 px in the narrow column on an iPad Pro in portrait; the link takes a row of its own there (`TodayShare.svelte`);
+  - the sticky bar under 900 px lost the phone's safe area (`admin-look.css`);
+  - the room kept for the sticky bar at the foot of the window applied to every page, so a control near the foot scrolled the page for nothing, under
+    the header (Leadership's axe found the welcome strip covered); it is kept only where there is a bar.
+  The specs that still knew the old page: `admin-review.spec.ts` (the old green, twice), `access-email.spec.ts` (the person's Give access), and
+  `review-9b.spec.ts`, whose click shut the Charts fold that has been open since Prompt 34 (only Chromium read the cards before they went); it now
+  checks the fold is open.
+- Known and not from this branch (each fails on pms-36 too, or did in Prompt 35's and 36's rounds): the 47 WebKit sound tests (no
+  OfflineAudioContext in WebKit on Windows), iPhone landscape's Brand tab inside the 47 px safe area (the admin page keeps no side safe area), the
+  admin at 200% text at 820 px, the setup self-test's step count, the participant's first-visit request counts, WebKit's keyboard walk of Today,
+  WebKit's heat-map picture, `flow` header and `brand-smoke` in WebKit; and Firefox, which does not start here. Flaky, passing alone: `finale` in
+  WebKit (11.08 s for 11 s), two Art of the Possible guest tests in WebKit, Leadership's tiles in WebKit.
+- `test:a11y` in Chromium and WebKit: passing but for the known ones above. Forced colours, looked at on every tab in Chromium (no spec holds it):
+  every control keeps its edge and the ring is the system's; the wordmark's letters, ink on the light bar, were lost on black, and are CanvasText now.
+  `console:errors`: clean on all three pages. `perf --check`: every journey costs what `docs/perf/AFTER.md` records, byte for byte; its red lines
+  are the ones that file already misses (the participant's, the admin sign-in, the Dashboard and the Live display), none from this branch.
 
 ## Open
 

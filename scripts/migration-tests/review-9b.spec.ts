@@ -93,7 +93,8 @@ test('Results, the Live display, the exports and the leader report show the rest
   await expect(here.locator('summary')).toContainText('answers from 2 iPads');
   // The two readable iPads (and nobody else) are counted: trivia question 1 has two answers, not three. (Since Phase 11a the card's live results are the
   // charts, whose cards say "N answered"; they said "N of M answered" before.)
-  await here.locator('summary').click();
+  // (The charts are open unless folded, since Prompt 34: a click here shut them, and only Chromium read the cards before they went; WebKit did not.)
+  await expect(here.locator('details.tally')).toHaveAttribute('open', '');
   await expect(here.locator('.result-card[data-question="q-trivia-1"] .result-card__meta')).toContainText('2 answered');
 
   // The leader report (PDF): the cover says it, in bold, with the session-status line; the person's block says why it is empty.
