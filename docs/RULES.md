@@ -1779,7 +1779,7 @@ Results is a leader's view as well (boards 9 and 12): `admin/LeaderDashboard.sve
 
 - **The words of who you are come from `identityOf`** (`lib/access/identity-words.js`, held by `scripts/test-identity-words.js`), made from the access the page already read: no request for the chip, the Your access popover or the welcome strip. A PIN sign-in has no chip. "Ends" shows within `ENDS_SOON_DAYS` (14); the popover names the person, never their email.
 - **The welcome strip's one memory** is `localStorage` under `pms.welcome.<hash>`, read and written in try/catch; when storage is blocked it shows once in each tab. Nothing else of a person is stored.
-- **No container is capped.** The admin page runs edge to edge with the gutter `clamp(1rem, 2vw, 2rem)`; running text is at most 72ch. From 1,100 px the brand, the tabs and the person are one sticky 52 px bar (`admin.css`); below it, the two rows of before, and only the tab row sticks. `scroll-padding-top` clears whichever sticks, with room for the 9 px ring.
+- **No container is capped.** The admin page runs edge to edge with the gutter `clamp(1rem, 2vw, 2rem)`; running text is at most 72ch. (Prompt 39: the bar is one 56 px bar at every width, in `admin-look.css`; see its rules.) `scroll-padding-top` clears the bar, with room for the 9 px ring.
 - **Each tab's columns start at 1,100 px**, by CSS grid, and below it the tab is as it was: Today's three zones (Controls sticky, End session always in view), People's person and Clients' client beside the list, Guests and QR's names and codes, Results' open sessions and the narrow list of the others, the dashboard's charts beside the By client rows. Content's two views were side by side already.
 - **A column moves nothing's order.** What a test or a screen reader reads first stays first: Results keeps the open (newest) session on the left, and the card after a delete is found by its session, not its place in the page.
 - **Colours only from `admin-tokens.css`**, each pair with its contrast test (`scripts/test-admin-today.js`). The participant page's bytes do not change (`npm run test:bundle`): a comment's word such as "table" in a new admin file can add a Tailwind rule to it.
@@ -1934,7 +1934,7 @@ against them at 1366 by 650, 1920 by 950 and 683 by 700, and `admin-explains.spe
 - **Type: Open Sans only**, embedded (400, 600, 700). Display 28/36, Title 20/28, H2 18/26, H3 16/24, Body 16/24, Label 13/16 upper case (column
   heads and eyebrows only, never a sentence), Figure 32/40. Running text keeps the 16 px floor of CLAUDE.md rule 9, so Body and Small are 16 px, not
   the brief's 14 and 13. A paragraph is at most 68 characters wide.
-- **The grid**: content at most 1,280 px, centred, 32 px page margin, a 24 px gutter (16 under 900 px); Today is 8 + 4. Spacing only on the scale
+- **The grid** (Prompt 39 replaced the 1,280 px cap: see its rules): a 24 px gutter (16 under 900 px); Today is 8 + 4. Spacing only on the scale
   4, 8, 12, 16, 24, 32, 48 (and 6 between a label and its field): `scripts/test-admin-look.js` lints `admin-look.css`. Cards: radius 14, a 1 px
   line, the soft shadow; status goes in a chip, never in a border.
 - **Icons**: `migration/src/admin/icons.js`, drawn by `admin/Icon.svelte` (its API as before): one 24 grid, a 1.75 stroke in `currentColor`, round
@@ -1958,6 +1958,66 @@ against them at 1366 by 650, 1920 by 950 and 683 by 700, and `admin-explains.spe
   identification, flow and confidence check are still written by the data layer as before: changing them would change the participant page.
 - **Messages**: an error says what happened and what to do, in ink on the danger wash with the warning triangle; an empty list shows a muted icon,
   one sentence and one action; a list that is loading shows skeleton lines in the line colour, not a spinner.
+
+## Rules from Prompt 39 (the admin page on the whole width, the bar, the popover, Results' charts; keep them holding)
+
+The general alignment rules, for every admin screen:
+
+1. **One page container, one 12-column grid, 24 px gutters, page padding `clamp(16px, 2vw, 32px)`.** The container is the window's width
+   (`--adm-page-max` 1,920 px, centred only past it; `--adm-page-pad`; `admin-tokens.css`). The bar and every page share it: the bar's inner
+   edges are `--adm-inset`, so the wordmark and the first card's edge line up, and the person's chip ends on the content's right edge. No other
+   side margin, wrapper or gutter element. `.adm-grid` and `.adm-span-N` in `admin-look.css` are the grid; a screen's own split uses
+   `repeat(12, minmax(0, 1fr))` and spans.
+2. **The title row**: icon, title and a one-line description on the left, the page's actions on the right, on one baseline (`.panel__head`,
+   `admin.css`, from 1,024 px). The description sits beside the title only when it fits there on one line; longer, it goes under the title and
+   never wraps beside a button.
+3. **A split view's columns start on one top line** and use the same card padding: Today 8 + 4, Clients 4 (at least 340 px) + 8 with the title
+   and Add client above both, Content's activities 5 + questions 7, Brand's preview 7 + controls 5, Results' sessions 3 (at least 280 px) + the
+   session 9, People 4 + 8 with the title row above both. A side column sticks under the bar only while all of it fits above the bottom bar
+   (`lib/admin/sticky-fit.js`, `data-sticky`); a taller one scrolls with the page.
+4. **Cards in a row are one height**, and buttons in a row one height and one radius. The brief's 36 px buttons are 44 px here: the target size of
+   CLAUDE.md rule 9 wins.
+5. **Spacing only from the scale** 4, 8, 12, 16, 24, 32, 48 (`scripts/test-admin-look.js` lints `admin-look.css`; the page's padding and width
+   and the bars' heights are tokens).
+6. **No sideways scrolling** except inside a table or matrix card (the guest list, Art of the Possible), which scrolls inside its box.
+7. **The sticky bottom bar** spans the page container's width: its buttons end on the content's right edge.
+
+And for the parts:
+
+- **The bar**: 56 px; the Deloitte wordmark and "PMS Admin" (`APP_SHORT_NAME`, `lib/common/app-name.ts`; a screen reader still hears
+  "{APP_NAME} Admin", and the page's title is unchanged); no pill: a copy's label (Phase 10b) is the brand's tooltip and `data-label`. The six tabs
+  in the middle, each an 18 px icon and its word, never wrapped, never cut, never a scrollbar from 1,024 px; the active one has the lime underline
+  on the bar's bottom edge. Below 1,024 px the tabs are one **Menu** button and its list (Esc, a click outside or a tab chosen closes it). The
+  chip: the initials and the role below 1,280 px ("Super admin"), the role and its reach from 1,280 px ("Super admin · All clients");
+  `identityOf` gives `role` and `reach`. The long description is not in the chip.
+- **Your access** (the popover): the name, the role's one line, the Role / Covers / Until table, What you can do, "Need a different role? Ask a
+  Super admin." and Copy my details; 360 px wide, 20 px inside, one left edge, under the chip and never past the window. It no longer says how the
+  person signed in or what is not available to them, for any role (`identityOf` has no `notAvailable`).
+- **Results**: the Dashboard and Sessions switch, Hide names, Refresh and "Updated ..." in the title row, right-aligned. A session row is two
+  lines (the client and its answers; the date and the status's chip), the chosen one a 3 px primary edge on the primary wash. The pager keeps
+  Previous, "Page 1 of 2" and Next on one line; "Showing 1 to 5 of 8" shares it when there is room. The charts sit in
+  `repeat(auto-fill, minmax(340px, 1fr))`, 24 px apart, each row's cards one width and one height; each activity's title is a full-width heading
+  over a thin line. On the admin page (not the wall) a card is the headline, the question, the meta line, the numbers button on its own row, then
+  the chart; a bar's row is the label (38%, wrapped whole: a two-line clamp cut words at 200% text, Correct and Top choice under it), the track, and the value right-aligned in a 72 px
+  column of its own. The scale under the bars is 0, 50 and 100 on their gridlines.
+- **Art of the Possible on Results** takes the whole row. Its rows are in the order the guests rated them (Original order first in Sort by, as the
+  participant's screen has them), its criteria in their order with their own names, read across (wrapped, the label size); the
+  sub-process column is sticky and 320 px; each average is printed on a teal tile, light to deep (`--viz-heat-1` to `--viz-heat-4` in
+  `results-tokens.css`, each held to 4.5:1 by `scripts/test-results-palette.js`); the summary line on the left and Sort by, Show and the numbers
+  button on the right of one row. When the card is narrower than the grid, the grid scrolls inside it with a shadow at the edge that has more. The
+  data has no groups of sub-processes, so there is nothing to fold by group. The wall and the files keep the blue ramp.
+- **Downloads** in the session shown: For leaders, For the room and Data in three equal columns from 1,280 px, each its label over buttons of one
+  height; the Dark or Light look inside For the room.
+- **The dashboard**: the six key figures on one row from 1,280 px; "Not measured" or "None yet" where a figure would be is muted words at the
+  running size (16 px, not the brief's 14: rule 9); the two panels below 6 + 6.
+- **People**: Check site access in the title row beside History of changes, Add user and Give access; Search wide, then Client, Session and Status
+  on one line from 1,280 px; the role chips on their own row.
+- **Guests and QR**: the three steps one width and one height; the guest list is a table of the guest, the group, the status, the code and what
+  can be done.
+- **Tailwind reads every file under `migration/`**: no bare word "table" and no "@container" in a new file (each added a rule to the participant
+  page); `PHASE_39` in `scripts/bundle-budget.js` holds the participant page as it was.
+- `scripts/migration-tests/admin-full-width.spec.ts` holds all of this at 1024, 1280, 1366, 1440, 1536 and 1920 px and writes the pictures of
+  1440 and 1920 to `test-results/admin/full-width/`.
 
 ## Before finishing a change
 

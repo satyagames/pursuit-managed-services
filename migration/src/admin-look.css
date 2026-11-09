@@ -73,10 +73,33 @@ body.admin :is(h1, h2, h3, h4) {
   color: var(--adm-ink-2);
 }
 
-/* ---- The header: light, no black bar ------------------------------------------------------- */
+/* ---- The page and its bar (Prompt 39) -------------------------------------------------------------------------------------------------------
+ * One container for the bar and every page: the whole window wide, clamp(16px, 2vw, 32px) at each side, centred only past 1,920 px. The bar's
+ * inner edges are the page's (--adm-inset), so the wordmark and the first card's edge line up. One 56 px bar: the brand left, the six tabs in the
+ * middle (never a scrollbar from 1,024 px), the person right; below 1,024 px the tabs fold into Menu. */
+.shell {
+  /* (A percentage of the bar's or the page's own box, both the window's width: the side room past 1,920 px plus the page padding.) */
+  --adm-inset: max(var(--adm-page-pad), calc((100% - var(--adm-page-max)) / 2 + var(--adm-page-pad)));
+  --shell-gutter: var(--adm-inset);
+}
+
+html {
+  --adm-sticky-room: calc(var(--adm-bar-h) + var(--adm-s4));
+}
+
 .shell__bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: var(--adm-s4);
+  box-sizing: border-box;
+  height: var(--adm-bar-h);
+  padding: 0 var(--adm-inset);
+  /* (The bar's line is drawn inside it, so the active tab's underline covers it, flush with the bottom edge.) */
   background: var(--adm-surface);
-  border-bottom: 1px solid var(--adm-line);
+  box-shadow: inset 0 -1px 0 var(--adm-line);
   color: var(--adm-ink);
 }
 
@@ -86,17 +109,43 @@ body.admin :is(h1, h2, h3, h4) {
   fill: var(--adm-ink);
 }
 
-.shell__title {
-  color: var(--adm-ink);
+.shell__brand {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--adm-s3);
+  min-width: 0;
 }
 
-.shell__label {
-  border-color: var(--adm-line-strong);
-  color: var(--adm-ink-2);
+.shell__wordmark {
+  flex: none;
+  width: 88px;
+}
+
+.shell__wordmark svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.shell__title {
+  color: var(--adm-ink);
+  font-size: var(--adm-fs-body);
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
 }
 
 .shell__user {
   color: var(--adm-ink-2);
+  white-space: nowrap;
+}
+
+.shell__end {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--adm-s3);
+  margin-left: 0;
 }
 
 .btn--bar {
@@ -113,57 +162,182 @@ body.admin :is(h1, h2, h3, h4) {
   border: 1px solid var(--adm-line);
 }
 
-/* ---- The six tabs: the active one ink with the lime underline and its icon in primary; the rest ink-2 ---- */
+/* The six tabs: the active one ink with the lime underline on the bar's bottom edge and its icon in primary; the rest ink-2. */
 .shell__nav {
-  background: var(--adm-surface);
-  border-bottom: 1px solid var(--adm-line);
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  align-self: stretch;
+  justify-content: center;
+  min-width: 0;
+  background: transparent;
+  border: 0;
 }
 
-.tab,
+.shell__nav .tabs {
+  display: flex;
+  align-items: stretch;
+  gap: var(--adm-s1);
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+}
+
 .shell__nav .tab {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
-  gap: var(--adm-s2);
+  gap: 6px;
+  box-sizing: border-box;
+  height: 100%;
+  min-height: var(--target-min);
+  padding: 0 var(--adm-s2);
+  border: 0;
+  border-block: 3px solid transparent;
+  border-radius: 0;
+  background: transparent;
   color: var(--adm-ink-2);
   font-weight: var(--fw-semibold);
-  border-bottom: 3px solid transparent;
+  white-space: nowrap;
 }
 
-.tab .icon {
+.shell__nav .tab .icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
   color: var(--adm-ink-2);
 }
 
-.tab:hover,
 .shell__nav .tab:hover {
   color: var(--adm-ink);
   text-decoration: none;
 }
 
-.tab[aria-selected='true'],
 .shell__nav .tab[aria-selected='true'] {
-  color: var(--adm-ink);
   border-bottom-color: var(--adm-accent);
+  color: var(--adm-ink);
   font-weight: var(--fw-semibold);
 }
 
-.tab[aria-selected='true'] .icon {
+.shell__nav .tab[aria-selected='true'] .icon {
   color: var(--adm-primary);
 }
 
-@media (min-width: 1100px) {
-  .shell__nav {
-    background: transparent;
-    border-bottom: 0;
+/* The ring inside the tab, with its ink band inside too: the tab is as tall as the bar, so a ring outside it would be cut off. */
+.shell__nav .tab:focus-visible {
+  outline-offset: -6px;
+  box-shadow: inset 0 0 0 9px var(--adm-ink);
+}
+
+/* Menu: below 1,024 px only. */
+.shell__menu {
+  display: none;
+}
+
+/* 1,024 to 1,279 px: the six tabs, the brand and the role still on one line; less air, never a scrollbar. */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .shell__bar {
+    gap: var(--adm-s3);
+  }
+
+  .shell__wordmark {
+    width: 72px;
+  }
+
+  .shell__nav .tabs {
+    gap: 0;
+  }
+
+  .shell__nav .tab {
+    gap: var(--adm-s1);
+    padding: 0 var(--adm-s1);
   }
 }
 
-/* ---- The grid: content at most 1280 px, 32 px page margin, 24 px gutter (16 under 900 px) ---- */
+/* A PIN sign-in's name: one line, cut short rather than pushing the tabs. */
+.shell__user {
+  overflow: hidden;
+  max-width: 12rem;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 1023px) {
+  .shell__nav {
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  .shell__menu {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--adm-s2);
+    min-height: var(--target-min);
+    padding: 0 var(--adm-s3);
+    border: 1px solid var(--adm-line-strong);
+    border-radius: var(--adm-radius-sm);
+    background: var(--adm-surface);
+    color: var(--adm-ink);
+    font: inherit;
+    font-weight: var(--fw-semibold);
+    cursor: pointer;
+  }
+
+  .shell__nav .tabs {
+    position: absolute;
+    top: calc(100% + var(--adm-s1));
+    left: 0;
+    z-index: 20;
+    display: none;
+    flex-direction: column;
+    height: auto;
+    min-width: 16rem;
+    padding: var(--adm-s1);
+    border: 1px solid var(--adm-line);
+    border-radius: var(--adm-radius-sm);
+    background: var(--adm-surface);
+    box-shadow: var(--adm-shadow);
+  }
+
+  .shell__nav .tabs.tabs--open {
+    display: flex;
+  }
+
+  .shell__nav .tab {
+    justify-content: flex-start;
+    height: var(--target-min);
+    padding: 0 var(--adm-s3);
+    border-block: 0;
+    border-inline-start: 3px solid transparent;
+  }
+
+  .shell__nav .tab[aria-selected='true'] {
+    border-inline-start-color: var(--adm-accent);
+    background: var(--adm-primary-wash);
+  }
+}
+
+/* A phone: the bar may take two lines; the product's words go (the wordmark and the spoken name stay). */
+@media (max-width: 599px) {
+  .shell__bar {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: var(--adm-bar-h);
+    padding-block: var(--adm-s1);
+  }
+
+  .shell__title {
+    display: none;
+  }
+}
+
+/* ---- The page: one container, one 12-column grid with 24 px gutters ---------------------------------------------------------------------- */
 .shell__body {
   box-sizing: border-box;
   width: 100%;
-  max-width: calc(var(--adm-content-max) + 2 * var(--adm-s6));
+  max-width: var(--adm-page-max);
   margin: 0 auto;
-  padding: var(--adm-s5) var(--adm-s6);
+  padding: var(--adm-s5) var(--adm-page-pad);
 }
 
 /* Room under the content for the sticky bar, on a screen that has one. */
@@ -171,13 +345,32 @@ body.admin :is(h1, h2, h3, h4) {
   padding-bottom: calc(var(--adm-bar-height) + var(--adm-s5));
 }
 
+/* The grid: .adm-grid holds 12 columns; .adm-span-N takes N of them (all 12 under 1,100 px, where a split view stacks). */
+.adm-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--adm-gutter);
+  align-items: start;
+}
+
+.adm-grid > * {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+@media (min-width: 1100px) {
+  .adm-span-3 { grid-column: span 3; }
+  .adm-span-4 { grid-column: span 4; }
+  .adm-span-5 { grid-column: span 5; }
+  .adm-span-6 { grid-column: span 6; }
+  .adm-span-7 { grid-column: span 7; }
+  .adm-span-8 { grid-column: span 8; }
+  .adm-span-9 { grid-column: span 9; }
+}
+
 @media (max-width: 899px) {
   :root {
     --adm-gutter: 16px;
-  }
-
-  .shell__body {
-    padding-inline: var(--adm-s4);
   }
 }
 
@@ -546,7 +739,8 @@ body.admin .error {
   align-items: center;
   gap: var(--adm-s4);
   min-height: calc(var(--adm-bar-height) + env(safe-area-inset-bottom, 0px));
-  padding: var(--adm-s2) max(var(--adm-s6), env(safe-area-inset-right, 0px)) calc(var(--adm-s2) + env(safe-area-inset-bottom, 0px)) max(var(--adm-s6), env(safe-area-inset-left, 0px));
+  /* (Prompt 39: the page container's edges, so its buttons end on the content's right edge.) */
+  padding: var(--adm-s2) max(var(--adm-page-pad), calc((100% - var(--adm-page-max)) / 2 + var(--adm-page-pad)), env(safe-area-inset-right, 0px)) calc(var(--adm-s2) + env(safe-area-inset-bottom, 0px)) max(var(--adm-page-pad), calc((100% - var(--adm-page-max)) / 2 + var(--adm-page-pad)), env(safe-area-inset-left, 0px));
   border-top: 1px solid var(--adm-line);
   background: var(--adm-surface);
   box-shadow: var(--adm-shadow-up);

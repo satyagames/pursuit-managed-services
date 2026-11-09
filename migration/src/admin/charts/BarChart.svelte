@@ -70,10 +70,10 @@
 
 <svelte:document onpointerdown={onDocumentPointer} />
 
-<div class="bars" class:bars--ranked={ranked} class:bars--fit={fit} data-drawn={drawn || undefined} bind:this={frame}>
+<div class="bars" class:bars--ranked={ranked} class:bars--fit={fit} class:bars--cols={!fit} data-drawn={drawn || undefined} bind:this={frame}>
   <div class="bars__body">
     <div class="bars__grid" aria-hidden="true">
-      {#if ranked}<span></span>{/if}<span></span><span class="bars__scale">{#each GRIDLINES as at (at)}<span class="bars__gridline" data-at={at} style:--at={at}></span>{/each}</span>
+      {#if ranked}<span></span>{/if}<span></span><span class="bars__scale">{#each GRIDLINES as at (at)}<span class="bars__gridline" data-at={at} style:--at={at}></span>{/each}</span>{#if !fit}<span></span>{/if}
     </div>
     <ul class="bars__rows">
       {#each rows as row (row.id)}
@@ -103,8 +103,9 @@
             </span>
             <span class="bars__track">
               <span class="bars__bar bars__bar--{row.tone}"></span>
-              <span class="bars__value" data-tip-soft>{row.value}</span>
+              {#if fit}<span class="bars__value" data-tip-soft>{row.value}</span>{/if}
             </span>
+            {#if !fit}<span class="bars__value" data-tip-soft>{row.value}</span>{/if}
           </button>
         </li>
       {/each}
@@ -114,7 +115,7 @@
     {#if ranked}<span></span>{/if}<span></span>
     <span class="bars__ticks">
       {#each ticks as label, index (index)}<span class="bars__tick-label" data-at={ticks.length > 1 ? index / (ticks.length - 1) : 0} style:--at={ticks.length > 1 ? index / (ticks.length - 1) : 0}>{label}</span>{/each}
-    </span>
+    </span>{#if !fit}<span></span>{/if}
   </div>
   <ChartTip {tip} />
 </div>
@@ -343,6 +344,34 @@
     transform: translateX(-50%);
   }
 
+  /* Prompt 39, a card on the admin page (not the wall): the label (38%, wrapped, its Correct and Top choice under it), the track, and the
+     value right-aligned in a column of its own, 72 px. The bars start at the track's left edge and a full bar reaches its right edge. */
+  .bars--cols {
+    --bars-columns: minmax(0, 38%) minmax(0, 1fr) 72px;
+    --value-room: 0px;
+  }
+
+  .bars--cols.bars--ranked {
+    --bars-columns: calc(2.6rem * var(--chart-scale, 1)) minmax(0, 34%) minmax(0, 1fr) 72px;
+  }
+
+  /* (The brief's "two lines at most" gave way to reflow: at 200% text a clamp cut the words, so a long label wraps whole.) */
+  .bars--cols .bars__text {
+    flex: 1 0 100%;
+  }
+
+  .bars--cols .bars__tag + .bars__tag::before {
+    content: none;
+  }
+
+  .bars--cols .bars__value {
+    position: static;
+    justify-self: end;
+    text-align: right;
+    transform: none;
+    transition: none;
+  }
+
   /* A phone: the label above its bar, so the bar has the card's whole width (beside it, a 100% bar would be a few dozen pixels). Every bar still
      starts at the same left edge and has its value written at its end; the shared gridlines and the scale are left out, because they would run
      through the labels. */
@@ -361,6 +390,27 @@
 
     .bars__track {
       grid-column: -2 / -1;
+    }
+
+    /* (On a phone the value goes back to the end of its bar's row, under the label.) */
+    .bars--cols {
+      --bars-columns: minmax(0, 1fr) 72px;
+    }
+
+    .bars--cols.bars--ranked {
+      --bars-columns: calc(2.2rem * var(--chart-scale, 1)) minmax(0, 1fr) 72px;
+    }
+
+    .bars--cols .bars__label {
+      grid-column: 1 / -1;
+    }
+
+    .bars--cols.bars--ranked .bars__label {
+      grid-column: 2 / -1;
+    }
+
+    .bars--cols .bars__track {
+      grid-column: -3 / -2;
     }
 
     .bars__grid,

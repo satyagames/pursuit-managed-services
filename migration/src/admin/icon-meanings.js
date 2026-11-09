@@ -34,6 +34,7 @@ export const MEANING = Object.freeze({
   'arrow-left': 'Back',
   grip: 'Drag to reorder',
   more: 'More actions',
+  menu: 'The tabs, on a narrow window',
   close: 'Close',
   'chevron-down': 'Fold open',
   'chevron-right': 'Folded',

@@ -25,7 +25,10 @@ describe('each role alone: the role, where it reaches, what it may do and what i
   it('Super admin: all clients, nothing hidden', () => {
     const me = id([row('Super admin')]);
     assert.equal(me.roleLine, 'Super admin · All clients');
-    assert.equal(me.notAvailable, 'Nothing hidden: you have every tab');
+    assert.equal(me.notAvailable, undefined, 'Prompt 39: the popover no longer says what is not available');
+    // (Prompt 39: the chip shows the role alone below 1,280 px, the role and its reach from there; roleLine is the two joined.)
+    assert.equal(me.role, 'Super admin');
+    assert.equal(me.reach, 'All clients');
     assert.deepEqual(me.canDo, ['Start or end a session', 'Create or edit clients and sessions', 'Edit activities and questions', 'See results']);
   });
 
@@ -33,15 +36,12 @@ describe('each role alone: the role, where it reaches, what it may do and what i
     const me = id([row('Admin')]);
     assert.equal(me.roleLine, 'Admin · All clients');
     assert.deepEqual(me.canDo, ['Create or edit clients and sessions', 'See the list of people', 'Pick the team of a client or session']);
-    assert.match(me.notAvailable, /Reporting settings: a Super admin does this\.$/);
-    assert.doesNotMatch(me.notAvailable, /Clients|People/);
   });
 
   it('Producer on three clients: People and Reporting settings are named with who does them', () => {
     const me = id([client('Producer', 'kroger'), client('Producer', 'dominos'), client('Producer', 'acme')]);
     assert.equal(me.roleLine, 'Producer · 3 clients');
     assert.deepEqual(me.canDo, ['Start or end a session', 'Edit activities and questions', 'See results', 'Add or remove guests']);
-    assert.equal(me.notAvailable, 'Clients and People: a Super admin or an Admin does these; Reporting settings: a Super admin does this.');
   });
 
   it('Designer on one client: the brand; with the extra, the activities too', () => {
@@ -55,7 +55,6 @@ describe('each role alone: the role, where it reaches, what it may do and what i
     assert.equal(me.roleLine, 'Leadership · Results');
     assert.deepEqual(me.canDo, ['See results', 'Export results', 'See guests\' names']);
     assert.equal(me.roles[0].covers, 'All clients, 1 Sep 2026 to 31 Aug 2027');
-    assert.match(me.notAvailable, /^Today/);
   });
 
   it('a client\'s name is used when the page has it, the count when it has not', () => {
@@ -132,8 +131,10 @@ describe('the site owner, a PIN and nobody', () => {
   it('a site owner with no role of their own: "Site owner", and every tab', () => {
     const me = id([], { owner: true });
     assert.equal(me.roleLine, 'Site owner');
+    assert.equal(me.role, 'Site owner');
+    assert.equal(me.reach, '');
     assert.deepEqual(me.roles, []);
-    assert.equal(me.notAvailable, 'Nothing hidden: you have every tab');
+    assert.equal(me.notAvailable, undefined, 'Prompt 39: the popover no longer says what is not available');
     assert.ok(me.chip);
   });
 

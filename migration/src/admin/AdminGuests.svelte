@@ -424,12 +424,19 @@
             <div class="field"><label class="field__label" for="guest-search">Search guests</label>
               <input id="guest-search" class="input" type="search" autocomplete="off" bind:value={guestSearch} oninput={() => { guestPage = 1; }} /></div>
           {/if}
-          <ul class="rows rows--flat">
+          <!-- Prompt 39: rows the width of the page, in columns: the guest, their group, their status, their code, what can be done. -->
+          <div class="guests__scroll">
+          <table class="guests__table">
+            <thead><tr><th scope="col">Guest</th><th scope="col">Group</th><th scope="col">Status</th><th scope="col">Code</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
+            <tbody>
             {#each shownRows as row (row.visitor.id)}
               {@const visitor = row.visitor}
-              <li class="row" data-guest={guestKey(visitor.displayName)} data-status={row.key}>
-                <GuestAvatar src={visitor.pictureUrl} size={40} /><div class="row__main"><span class="row__title">{visitor.displayName}</span><span class="muted"><span class="chip pill {pillClass[row.key]} {chipOf[row.key]?.tone ?? ''}"><Icon name={chipOf[row.key]?.icon ?? 'info'} size={16} />{row.label}</span>{#if visitor.guestGroup} <span class="tag" data-testid="guest-group">{visitor.guestGroup}</span>{/if}</span></div>
-                <div class="row__actions">
+              <tr data-guest={guestKey(visitor.displayName)} data-status={row.key}>
+                <th scope="row"><span class="guests__who"><GuestAvatar src={visitor.pictureUrl} size={40} /><span class="row__title">{visitor.displayName}</span></span></th>
+                <td>{#if visitor.guestGroup}<span class="tag" data-testid="guest-group">{visitor.guestGroup}</span>{:else}<span class="muted">None</span>{/if}</td>
+                <td><span class="chip pill {pillClass[row.key]} {chipOf[row.key]?.tone ?? ''}"><Icon name={chipOf[row.key]?.icon ?? 'info'} size={16} />{row.label}</span></td>
+                <td class="guests__code">{#if row.code}...{row.code.id.slice(-8)}{:else}<span class="muted">None</span>{/if}</td>
+                <td><div class="row__actions">
                   <button class="btn btn--small" type="button" onclick={() => { picturing = visitor; }} disabled={busy || ended}>{visitor.pictureUrl ? 'Replace picture' : 'Add picture'}</button>
                   <button class="btn btn--small" type="button" onclick={() => void setVisitorEnabled(visitor)} disabled={busy || ended}>{visitor.enabled === false ? 'Enable' : 'Disable'}</button>
                   {#if row.key === 'disabled'}
@@ -442,10 +449,12 @@
                   {:else}
                     <button class="btn btn--small" type="button" onclick={() => void showQr(visitor)} disabled={busy || ended}>{row.code ? 'Show QR' : 'Generate QR'}</button>{#if row.code}<button class="btn btn--small" type="button" onclick={() => void showQr(visitor, true)} disabled={busy || ended}>Replace code</button>{/if}
                   {/if}
-                </div>
-              </li>
+                </div></td>
+              </tr>
             {/each}
-          </ul>
+            </tbody>
+          </table>
+          </div>
           <Pager state={guestPager} label="Pages of guests" onPage={(next) => { guestPage = next; void tick().then(() => { if (rosterHeading) focusHeading(rosterHeading); }); }} />
         {/if}
         {#if qrDisplay}

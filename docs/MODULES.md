@@ -69,7 +69,7 @@ flowchart LR
 | `migration/src/components/` | The participant page's building blocks (Svelte): the shell, pills, buttons, the hero plate, tiles, the progress bar, the sound switch. | 18 |
 | `migration/src/dev/` | The styleguide, `#/styleguide` on the dev server only (absent from builds). | 2 |
 | `migration/src/lib/access/` | Roles and access (Prompt 21): the role matrix (board 10), the one check can(), AccessDenied, the data layer's write guard, who is signed in, grants and their guards, the audit writer, the copy of the old admins list. | 20 |
-| `migration/src/lib/admin/` | The admin page's rules and data: Today, Clients, Content, Guests and QR, Results, the Live display's session, the PIN check. | 30 |
+| `migration/src/lib/admin/` | The admin page's rules and data: Today, Clients, Content, Guests and QR, Results, the Live display's session, the PIN check. | 31 |
 | `migration/src/lib/brand/` | A client's look: deriving a readable theme from a colour, the stored theme, Brand Studio's rules, picture slots, cropping, compressing and naming. | 18 |
 | `migration/src/lib/common/` | Shared by the pages: the product name, the heading focus rule, kiosk lock-down, the polling schedule and its one timer, the admin page's address. | 10 |
 | `migration/src/lib/data/` | The data layer: dataService.js, the door every page imports, over its parts (core.js holds the state and alone talks to SharePoint REST or, on the local server, its JSON API), and grouping of long id lists into short reads. Every page carries it. | 25 |
@@ -87,7 +87,7 @@ flowchart LR
 | `migration/src/unsupported/` | The "needs a recent browser" notice: a page and an ES5 check, put into each HTML shell at build time. | 1 |
 | `scripts/` | Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager. | 170 |
 | `scripts/local-site/` | The local PCOE stand-in (`npm run local:site`), its scenarios and VJR's dummy dataset, the screenshot harness and the measurements. | 11 |
-| `scripts/migration-tests/` | The Playwright specs of `npm run test:migration`, and their harnesses (`admin-local.ts`, `polling-support.ts`, `fixtures.ts`). | 95 |
+| `scripts/migration-tests/` | The Playwright specs of `npm run test:migration`, and their harnesses (`admin-local.ts`, `polling-support.ts`, `fixtures.ts`). | 96 |
 | `scripts/rehearsal-tests/` | The rehearsal of RUNBOOK.md on the mock with a package's own pages (`npm run test:rehearsal`). | 1 |
 | `scripts/schema-baseline/` | The schema as it was before Phase 10c-2b, and the scripts that translated the request baselines (each baseline names the one that touched it). | 12 |
 | `scripts/styleguide-tests/` | The styleguide's audit (`npm run test:styleguide`). | 1 |
@@ -130,7 +130,7 @@ The admin page's rules and data: Today, Clients, Content, Guests and QR, Results
 
 - **Imports from:** `lib/access`, `lib/brand`, `lib/common`, `lib/data`, `lib/exports`, `lib/participant`, `lib/results`, `lib/schema`
 - **Imported by:** `lib/exports`, `lib/results`, `lib/setup`, `src`, `src/admin`
-- **Node suites that import it:** `test-admin-content-views.js`, `test-admin-content.js`, `test-admin-defaults.js`, `test-admin-results.js`, `test-admin-today.js`, `test-aop-editor.js`, `test-brand-studio-view.js`, `test-column-names.js`, `test-confidence-check.js`, `test-duplicates.js`, `test-fewer-calls.js`, `test-guest-group.js`, `test-guest-picture.js`, `test-hide-names.js`, `test-leader-dashboard.js`, `test-live-display.js`, `test-live-view.js`, `test-local-site.js`, `test-motion-switch.js`, `test-named-reads.js`, `test-paging.js`, `test-participant-names.js`, `test-reporting-settings.js`, `test-results-chart-model.js`, `test-results-wall.js`, `test-review-9a.js`, `test-review-9b.js`, `test-sample-pictures.js`, `test-schema-upgrade.js`, `test-scope.js`, `test-session-delete.js`, `test-session.js`, `test-sessions-plan.js`, `test-setup-admins.js`, `test-sharepoint.js`, `test-text-limits.js`, `test-today-view.js`, `test-ux-12.js`
+- **Node suites that import it:** `test-admin-content-views.js`, `test-admin-content.js`, `test-admin-defaults.js`, `test-admin-look.js`, `test-admin-results.js`, `test-admin-today.js`, `test-aop-editor.js`, `test-brand-studio-view.js`, `test-column-names.js`, `test-confidence-check.js`, `test-duplicates.js`, `test-fewer-calls.js`, `test-guest-group.js`, `test-guest-picture.js`, `test-hide-names.js`, `test-leader-dashboard.js`, `test-live-display.js`, `test-live-view.js`, `test-local-site.js`, `test-motion-switch.js`, `test-named-reads.js`, `test-paging.js`, `test-participant-names.js`, `test-reporting-settings.js`, `test-results-chart-model.js`, `test-results-wall.js`, `test-review-9a.js`, `test-review-9b.js`, `test-sample-pictures.js`, `test-schema-upgrade.js`, `test-scope.js`, `test-session-delete.js`, `test-session.js`, `test-sessions-plan.js`, `test-setup-admins.js`, `test-sharepoint.js`, `test-text-limits.js`, `test-today-view.js`, `test-ux-12.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|
@@ -162,6 +162,7 @@ The admin page's rules and data: Today, Clients, Content, Guests and QR, Results
 | `session-summaries.js` | The sessions' summaries on the admin page (Prompt 21, Phase 5): which a person may read (placesOf: every one for a role on every client, else those of the clients, sessions and fiscal quarters they hold), the Leadership dashboard's read (the summaries and the clients' names and tags, side by side: never an answer), and a summary written (when a session ends, and by the dashboard's Rebuild for older sessions). | `placesOf`, `readSummaries`, `readDashboard`, `writeSummary`, `rebuildSummaries` |
 | `sha256.js` | SHA-256 for the mock PIN check. crypto.subtle only exists in secure contexts (HTTPS or localhost), and the admin iPad reaches this dev server over plain http://<lan-ip>:3000, so a small pure-JS fallback is needed there. | `sha256Hex` |
 | `sticky-bar.ts` | The admin's sticky bottom bar and an iPad's keyboard (Prompt 38). | `coveredBelow`, `followKeyboard` |
+| `sticky-fit.js` | A side column that sticks under the bar only while it fits the window (Prompt 39): | `STICKY_ROOM`, `fitsWindow`, `stickyIfFits` |
 | `today-view.js` | What the admin's Today screen works out for itself before it draws: the words of its status ("Live since"), of its Go live button and of the reason it is off, of its readiness line, which clients it offers, the order of the other sessions, and how a changed session joins the list. | `sinceText`, `levelCounts`, `readinessSummary`, `goLiveWhy`, `goLiveLabel`, `pickableClients`, `otherSessionsOf`, `upsertSession`, `failureText`, `controlsSummary` |
 | `unsaved.ts` | "You have unsaved changes": a screen that holds some (Brand Studio, a question being edited) registers a guard here, and the shell asks before it switches tab or locks the page; Content asks before it changes client. | `setLeaveGuard`, `hasUnsaved`, `mayLeave`, `provideReveal`, `revealer` |
 
@@ -205,7 +206,7 @@ Shared by the pages: the product name, the heading focus rule, kiosk lock-down, 
 | Module | What it is (its header) | Exports |
 |---|---|---|
 | `admin-address.js` | Where the facilitator's Live display is, as an address. | `liveDisplayHash`, `liveDisplayOfHash`, `adminAddress` |
-| `app-name.ts` | The product name shown to people: page titles, headers, export metadata. | `APP_NAME` |
+| `app-name.ts` | The product name shown to people: page titles, headers, export metadata. | `APP_NAME`, `APP_SHORT_NAME` |
 | `focus.ts` | Moving focus to a heading by script: a new screen, or the next question. | `KEYBOARD_FOCUS`, `focusHeading` |
 | `kiosk.ts` | Kiosk lock-down for the pages. | `isKioskMode`, `installKiosk` |
 | `page-watch.ts` | The timer of a page that stays open (the participant page's look at what the facilitator did). | `createPageWatcher` |

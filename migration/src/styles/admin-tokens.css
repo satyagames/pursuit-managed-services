@@ -73,7 +73,10 @@
   --adm-s5: 24px;
   --adm-s6: 32px;
   --adm-s7: 48px;
-  --adm-content-max: 1280px;
+  /* Prompt 39: the page is the window's width, centred only past 1,920 px, with clamp(16px, 2vw, 32px) at each side; the bar is 56 px. */
+  --adm-page-max: 1920px;
+  --adm-page-pad: clamp(16px, 2vw, 32px);
+  --adm-bar-h: 56px;
   --adm-gutter: 24px;
 
   /* Surfaces. */

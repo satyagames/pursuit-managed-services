@@ -1,6 +1,6 @@
 <script lang="ts">
   import { errorText } from '../lib/admin/session-notice.js';
-  import { onMount, tick, untrack } from 'svelte';
+  import { onMount, tick, untrack, type Snippet } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
   import Icon from './Icon.svelte';
   import Fold from './Fold.svelte';
@@ -33,7 +33,7 @@
   type TrackRow = { track: SessionTrack; name: string; unnamed: boolean; status: string; answered: number; total: number; pictureUrl?: string };
   type SessionCard = { results: SessionResults; owner: string; clientName: string; codes: string[]; tracks: TrackRow[]; unreadable: string; charts: ReturnType<typeof chartsOf> };
 
-  let { access = null, onToast, onLiveDisplay, hideNames = false, mayName = true, onHideNames = () => {} }: {
+  let { access = null, onToast, onLiveDisplay, hideNames = false, mayName = true, onHideNames = () => {}, viewSwitch }: {
     /** The signed-in person's access (Phase 4): the sessions listed are those they hold, and a button shows only for an action their role has on that session. */
     access?: any;
     onToast: (message: string, kind?: 'info' | 'success' | 'error') => void;
@@ -44,6 +44,8 @@
     /** Whether the role may see names at all (results.names): without it the switch is not offered and names stay hidden. */
     mayName?: boolean;
     onHideNames?: (on: boolean) => void;
+    /** ResultsTab's Dashboard and Sessions switch, drawn in this title row (Prompt 39). */
+    viewSwitch?: Snippet;
   } = $props();
   /** The cards opened so far, in memory: a card keeps its numbers when the person pages away and back. */
   let cards = $state<SessionCard[]>([]);
@@ -464,7 +466,8 @@
 </script>
 
 <section class="panel sessions-panel" aria-busy={loading || busy}>
-  <header class="panel__head"><div><h2 bind:this={pageHeading} tabindex="-1"><Icon name="bar-chart" />Results</h2><p class="muted">How each session went: open one for its charts, the people who took part and the reports for leaders.</p></div><span class="muted">{updated}{updated ? ' · ' : ''}the live session refreshes every {local ? 'few seconds' : '15 seconds'}</span><div class="results-actions">{#if mayName}<label class="choice"><input type="checkbox" checked={hideNames} onchange={(event) => onHideNames((event.currentTarget as HTMLInputElement).checked)} /><span>Hide names</span></label>{/if}<button class="btn btn--small" type="button" onclick={() => refreshAll()} disabled={busy}>Refresh</button></div></header>
+  <!-- (Prompt 39: one title row: the title and its line on the left; the view switch, Hide names, Refresh and the time on the right.) -->
+  <header class="panel__head results-head"><div><h2 bind:this={pageHeading} tabindex="-1"><Icon name="bar-chart" />Results</h2><p class="muted">How each session went: open one for its charts, the people who took part and the reports for leaders; the live session refreshes every {local ? 'few seconds' : '15 seconds'}.</p></div><div class="results-actions">{@render viewSwitch?.()}{#if mayName}<label class="choice"><input type="checkbox" checked={hideNames} onchange={(event) => onHideNames((event.currentTarget as HTMLInputElement).checked)} /><span>Hide names</span></label>{/if}<button class="btn btn--small" type="button" onclick={() => refreshAll()} disabled={busy}>Refresh</button><span class="muted results-updated" data-testid="results-updated">{updated}</span></div></header>
   {#if loading}<div class="adm-card adm-skeleton" aria-hidden="true"><span></span><span></span><span></span><span></span></div><p class="sr-only" role="status">Loading results...</p>
   {:else if error}<p class="error" role="alert">{error}</p>
   {:else if sessionRows.length === 0}<div class="adm-empty"><Icon name="bar-chart" /><p>No sessions yet. Results appear here once a session has gone live on Today.</p></div>
@@ -487,8 +490,10 @@
             {@const held = cards.find((card) => card.results.session.id === row.id)}
             <li>
               <button class="session-list__item" type="button" data-open-session={row.id} aria-current={row.id === shownId ? 'true' : undefined} onclick={() => void choose(row.id)}>
+                <!-- (Prompt 39: two lines in every row: the client and its answers; then the date and the status's chip.) -->
                 <span class="session-list__name">{namesHeld.get(row.clientId) ?? row.clientId}</span>
-                <span class="session-list__meta">{[row.date ?? '', sessionWord(row.status), held ? answersOnly(held) : ''].filter(Boolean).join(' · ')}</span>
+                <span class="session-list__answers">{held ? answersOnly(held) : ''}</span>
+                <span class="session-list__meta"><span>{row.date ?? ''}</span><span class="chip session-list__status">{sessionWord(row.status)}</span></span>
               </button>
             </li>
           {/each}
@@ -531,15 +536,18 @@
         {#if may('results.export', session)}<ReportExports sessionId={session.id} clientName={card.clientName} {hideNames} {onToast} />{/if}
         <!-- (Phase 12, F-08: the charts before the people. Prompt 34: open unless folded, the confidence check first.) -->
         <details class="tally" open={!shutResults.includes(session.id)} ontoggle={(event) => { const isOpen = (event.currentTarget as HTMLDetailsElement).open; if (isOpen) void readRosterForFaces(session.id); shutResults = isOpen ? shutResults.filter((id) => id !== session.id) : [...new Set([...shutResults, session.id])]; }}>
-          <summary>Charts · {answersFrom(answered)}</summary>
+          <summary class="tally__summary"><Icon name="chevron-right" size={18} /><span>Charts</span><span class="muted">{answersFrom(answered)}</span></summary>
           {#if !shutResults.includes(session.id)}
             <div class="tally__charts">
               {#if card.results.confidenceCheck}<ConfidenceShift check={card.results.confidenceCheck} />{/if}
               {#each card.charts as section (section.id)}
                 <h3 class="tally__section">{section.title}</h3>
+                <!-- (Prompt 39: cards of one width and one height in a row; Art of the Possibility the whole row.) -->
                 <div class="tally__grid">
                   {#each section.charts as chart (chart.id)}
-                    <ResultCard {chart} withNames marked selected={chosen[`${session.id}/${chart.id}`] ?? null} onSelect={(id) => { chosen = { ...chosen, [`${session.id}/${chart.id}`]: id }; }} level={4} />
+                    <div class="tally__cell" class:tally__cell--wide={chart.kind === 'matrix'}>
+                      <ResultCard {chart} withNames marked selected={chosen[`${session.id}/${chart.id}`] ?? null} onSelect={(id) => { chosen = { ...chosen, [`${session.id}/${chart.id}`]: id }; }} level={4} />
+                    </div>
                   {/each}
                 </div>
               {/each}
@@ -625,7 +633,14 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.75rem;
+    justify-content: flex-end;
+    gap: var(--adm-s3);
+  }
+
+  /* (The time last: its width changes as it refreshes, and nothing after it moves.) */
+  .results-updated {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
   }
 
   /* Each session card's "Live results" (Phase 11a): the charts of admin/charts/ResultCard.svelte, a grid of cards under each activity. Here and not in
@@ -649,24 +664,74 @@
     margin: 0;
   }
 
+  /* "Charts · 11 answers from 1 iPad": a section header with a chevron, on the session's edges. */
+  .tally > .tally__summary {
+    display: flex;
+    align-items: center;
+    gap: var(--adm-s2);
+    min-height: var(--target-min);
+    padding: 0;
+    font-size: var(--adm-fs-h2);
+    font-weight: var(--fw-semibold);
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .tally > .tally__summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .tally > .tally__summary :global(.icon) {
+    flex: none;
+    color: var(--adm-ink-2);
+    transition: transform var(--motion-duration-cell) var(--motion-ease-standard);
+  }
+
+  .tally[open] > .tally__summary :global(.icon) {
+    transform: rotate(90deg);
+  }
+
+  .tally > .tally__summary .muted {
+    font-size: var(--adm-fs-body);
+    font-weight: var(--fw-regular);
+  }
+
   .tally__charts {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-    padding: 0.5rem 1rem 1.25rem;
+    gap: var(--adm-s4);
+    padding: var(--adm-s2) 0 var(--adm-s5);
   }
 
+  /* Each activity's title: a full-width heading over a thin line, on the first card's left edge. */
   .tally__section {
-    margin: 0.5rem 0 0;
-    font-size: 1.1rem;
+    margin: var(--adm-s2) 0 0;
+    padding-bottom: var(--adm-s2);
+    border-bottom: 1px solid var(--adm-line);
+    font-size: var(--adm-fs-h3);
+    line-height: var(--adm-lh-h3);
   }
 
-  /* Each card keeps its own height, at the top of its row (Phase 11a-2: a card stretched to the height of its neighbour whose names were open). */
+  /* Prompt 39: the cards of a row one width and one height (the open names of one card make its row taller, every card with it). Art of the
+     Possibility takes the whole row. */
   .tally__grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
-    align-items: start;
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+    align-items: stretch;
+    gap: var(--adm-gutter);
+  }
+
+  .tally__cell {
+    display: grid;
+    min-width: 0;
+  }
+
+  .tally__cell > :global(*) {
+    min-width: 0;
+  }
+
+  .tally__cell--wide {
+    grid-column: 1 / -1;
   }
 
   /* Prompt 34: the sessions of the page one list, and the session chosen beside it on a laptop (above it, narrower than 1,100 px). */
@@ -690,14 +755,19 @@
     list-style: none;
   }
 
+  /* Every row two lines, one height: the client; the date, the status's chip and the answers. The chosen one a 3 px primary edge on a wash. */
   .session-list__item {
     display: grid;
-    gap: 0.15rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    column-gap: var(--adm-s2);
+    align-content: center;
+    gap: var(--adm-s1);
     width: 100%;
-    min-height: 44px;
-    padding: 0.65rem 0.9rem;
+    min-height: 72px;
+    padding: var(--adm-s3) var(--adm-s4) var(--adm-s3) calc(var(--adm-s4) - 3px);
     border: 1px solid var(--adm-line);
-    border-left: 4px solid transparent;
+    border-left: 3px solid transparent;
     border-radius: 0;
     background: var(--adm-card);
     color: var(--adm-ink);
@@ -711,17 +781,39 @@
   }
 
   .session-list__item[aria-current='true'] {
-    border-left-color: var(--adm-green);
-    background: var(--adm-green-wash);
+    border-left-color: var(--adm-primary);
+    background: var(--adm-primary-wash);
   }
 
   .session-list__name {
-    font-weight: 600;
+    overflow: hidden;
+    font-weight: var(--fw-semibold);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .session-list__answers {
+    color: var(--adm-ink-2);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
   }
 
   .session-list__meta {
-    color: var(--adm-muted);
-    font-size: 1rem;
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: var(--adm-s2);
+    min-width: 0;
+    overflow: hidden;
+    color: var(--adm-ink-2);
+    font-size: var(--adm-fs-body);
+    white-space: nowrap;
+  }
+
+  .session-list__status {
+    flex: none;
+    min-height: 0;
+    padding-block: 2px;
   }
 
   .results-layout__session {
@@ -738,8 +830,13 @@
     padding-bottom: 1rem;
   }
 
-  .results-layout__session > :global(article > :not(.card__head)) {
-    margin-inline: 1rem;
+  /* (One inner padding, 24, for the session's head, its figures, Downloads, the charts and the people.) */
+  .results-layout__session > :global(article) {
+    padding-inline: var(--adm-s5);
+  }
+
+  .results-layout__session > :global(article > .card__head) {
+    padding: var(--adm-s5) 0 0;
   }
 
   .session__title {
@@ -785,28 +882,18 @@
 
   /* (Prompt 38: the Danger area, set apart at the foot of the card, inside its edges.) */
   .card__foot {
-    margin: var(--adm-s5) var(--adm-s4) var(--adm-s4);
+    margin: var(--adm-s5) 0 var(--adm-s4);
   }
 
   .card__foot p {
     margin: 0;
   }
 
+  /* Prompt 39: the sessions 3 of the page's 12 columns (at least 280 px), the session chosen 9, on one top line. */
   @media (min-width: 1100px) {
     .results-layout {
-      grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr);
-    }
-  }
-
-  @media (min-width: 1100px) {
-    .tally__grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
-
-  @media (min-width: 1600px) {
-    .tally__grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: minmax(280px, 3fr) minmax(0, 9fr);
+      gap: var(--adm-gutter);
     }
   }
 </style>

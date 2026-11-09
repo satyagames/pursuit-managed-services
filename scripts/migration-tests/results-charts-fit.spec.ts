@@ -196,7 +196,8 @@ test('the admin view: every tooltip of every chart is whole, seen at its corners
   expect(problems).toEqual([]);
 });
 
-test('a card beside one with its names open keeps its own height, on the Live display and on Results', async ({ browser }) => {
+// (Prompt 39: on Results the cards of a row are one height, so the card beside grows with its row; on the Live display it keeps its own.)
+test('a card beside one with its names open keeps its own height on the Live display, and on Results grows with its row', async ({ browser }) => {
   test.setTimeout(120_000);
   const page = await pageAt(browser, { width: 1280, height: 900, scale: 1 });
   await openDisplay(page, sessions.vine);
@@ -218,8 +219,12 @@ test('a card beside one with its names open keeps its own height, on the Live di
     await expect(page.locator(`${scope} .result-card[data-question="v1"]`).getByTestId('names-panel')).toBeVisible();
     const [opened, beside] = [await box('v1', scope), await box('v2', scope)];
     expect(opened.height, `${scope}: the card with its names open is taller`).toBeGreaterThan(first.height + 40);
-    expect(beside, `${scope}: the card beside it keeps its own place and height`).toEqual(second);
-    expect(await emptyRoom(page), `${scope}: no card has empty room under its last piece`).toEqual([]);
+    if (scope === 'section.live') {
+      expect(beside, `${scope}: the card beside it keeps its own place and height`).toEqual(second);
+      expect(await emptyRoom(page), `${scope}: no card has empty room under its last piece`).toEqual([]);
+    } else {
+      expect(beside, `${scope}: the card beside it keeps its place and takes its row's height`).toEqual({ top: second.top, height: opened.height });
+    }
     await page.keyboard.press('Escape');
   }
   await page.context().close();

@@ -40,6 +40,7 @@ export const PATHS = Object.freeze({
   'arrow-left': 'M19 12H5M12 19l-7-7l7-7',
   grip: 'M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01',
   more: 'M5 12h.01M12 12h.01M19 12h.01',
+  menu: 'M4 6h16M4 12h16M4 18h16',
   close: 'M6 6l12 12M18 6L6 18',
   'chevron-down': 'M6 9l6 6l6-6',
   'chevron-right': 'M9 6l6 6l-6 6',

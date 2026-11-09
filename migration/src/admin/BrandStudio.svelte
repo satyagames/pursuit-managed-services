@@ -406,11 +406,20 @@
     margin: 0;
   }
 
+  /* Prompt 39: the preview 7 of the page's 12 columns, the controls 5, on one top line. */
   .brand__grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 1.5rem;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: var(--adm-gutter);
     align-items: start;
+  }
+
+  .brand__grid > .brand__preview {
+    grid-column: span 7;
+  }
+
+  .brand__grid > .brand__controls {
+    grid-column: span 5;
   }
 
   .brand__controls,
@@ -468,6 +477,11 @@
   @media (max-width: 820px) {
     .brand__grid {
       grid-template-columns: minmax(0, 1fr);
+    }
+
+    .brand__grid > .brand__preview,
+    .brand__grid > .brand__controls {
+      grid-column: 1 / -1;
     }
 
     .brand__preview {

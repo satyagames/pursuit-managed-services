@@ -220,6 +220,29 @@
     gap: 1rem 1.5rem;
   }
 
+  /* Prompt 39: in the session shown on Results, from 1,280 px, For leaders, For the room and Data in three equal columns, each its label over
+     its buttons, stacked the column's width and one height, their words from the left; the Dark or Light look sits inside For the room. In
+     Delete's narrow warning they stay as they were. */
+  .report-exports__buttons :global(.btn) {
+    min-height: var(--target-min);
+  }
+
+  @media (min-width: 1280px) {
+    :global(.results-layout__session) .report-exports__groups {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    :global(.results-layout__session) .report-exports__buttons {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    :global(.results-layout__session) .report-exports__buttons :global(.btn) {
+      justify-content: flex-start;
+      text-align: left;
+    }
+  }
+
   .report-exports__group {
     display: grid;
     align-content: start;

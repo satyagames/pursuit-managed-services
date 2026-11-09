@@ -49,6 +49,13 @@
   --viz-ramp-5-4: #0076a8;
   --viz-ramp-5-5: #00547a;
 
+  /* An Art of the Possible tile on the admin page (Prompt 39): a softened teal ramp, light to deep, its average always printed on it, black words
+     on the first three and white on the last (each 4.5:1 or better). The wall and paper keep the blue ramp of four. */
+  --viz-heat-1: #e6f4f1;
+  --viz-heat-2: #a9dacf;
+  --viz-heat-3: #5bae9d;
+  --viz-heat-4: #1f6f62;
+
   /* Words: the main text, the secondary (7.38:1) and the muted (4.44:1, so only at 18px and more, or bold at 14px and more). */
   --viz-text: #000000;
   --viz-text-secondary: #53565a;

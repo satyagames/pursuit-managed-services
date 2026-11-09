@@ -20,6 +20,7 @@
   import TodayShare from './TodayShare.svelte';
   import TodayStatus from './TodayStatus.svelte';
   import StickyBar from './StickyBar.svelte';
+  import { stickyIfFits } from '../lib/admin/sticky-fit.js';
   import type { IconName } from './Icon.svelte';
   import { writeSummary } from '../lib/admin/session-summaries.js';
 
@@ -513,7 +514,7 @@
 
       </div>
 
-      <div class="today__side">
+      <div class="today__side" use:stickyIfFits>
         <section class="card-panel controls" aria-labelledby="controls-heading">
           <h3 id="controls-heading">Session settings</h3>
           <TodayControls
@@ -559,7 +560,7 @@
 {/if}
 
 <style>
-  /* Prompt 38: 8 + 4 on the 12-column grid from 1,000 px; one column under it. */
+  /* Prompt 39: 8 + 4 of the page's 12 columns from 1,000 px, both columns on one top line; one column under it. */
   .today__grid {
     display: grid;
     gap: var(--adm-gutter);
@@ -574,20 +575,23 @@
     min-width: 0;
   }
 
-  /* The side column stays under the bar as the page scrolls, so End session is in view. */
   @media (min-width: 1000px) {
     .today__grid {
-      grid-template-columns: minmax(0, 8fr) minmax(0, 4fr);
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+    }
+
+    .today__main {
+      grid-column: span 8;
     }
 
     .today__side {
+      grid-column: span 4;
+    }
+
+    /* The side column stays under the bar as the page scrolls, only while all of it fits above the bottom bar (lib/admin/sticky-fit.js). */
+    .today__side:global([data-sticky='true']) {
       position: sticky;
-      top: calc(52px + var(--adm-s5));
-      max-height: calc(100vh - 52px - var(--adm-bar-height) - var(--adm-s7));
-      overflow-y: auto;
-      /* (Room inside the scroll for a control's 9 px focus ring.) */
-      margin: calc(-1 * var(--adm-s3));
-      padding: var(--adm-s3);
+      top: calc(var(--adm-bar-h) + var(--adm-s4));
     }
   }
 

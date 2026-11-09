@@ -184,10 +184,11 @@ test('the label of this copy is in the admin bar, beside the product name, and n
   await expect(page.getByLabel('PIN')).toBeVisible();
   await expect(page.getByText('Test, folder 3'), 'not on the PIN screen').toHaveCount(0);
   await unlock();
-  const label = page.getByTestId('copy-label');
-  await expect(label).toHaveText('Test, folder 3');
-  await expect(page.locator('.shell__bar .shell__brand').getByTestId('copy-label')).toBeVisible();
-  await expect(page.getByText('Test, folder 3')).toHaveCount(1);
+  // (Prompt 39: the bar says "PMS Admin" and no pill; the copy's label is the brand's tooltip, so two folders can still be told apart.)
+  const label = page.locator('.shell__bar .shell__brand');
+  await expect(label).toHaveAttribute('title', 'Test, folder 3');
+  await expect(page.getByTestId('copy-label')).toHaveCount(0);
+  await expect(page.getByTestId('shell-title')).toContainText('PMS Admin');
   const findings = browserName === 'chromium' ? [...(await axeCheck(page, 'admin bar with a label (1280)')).findings] : [];
   await page.screenshot({ path: `${shots}admin-label-${browserName}.png` });
 
@@ -196,7 +197,7 @@ test('the label of this copy is in the admin bar, beside the product name, and n
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload();
   await unlock();
-  await expect(label).toHaveText('Regional leadership offsite, test copy 3');
+  await expect(label).toHaveAttribute('title', 'Regional leadership offsite, test copy 3');
   await expect.poll(() => noSidewaysScroll(page)).toBe(true);
   if (browserName === 'chromium') findings.push(...(await axeCheck(page, 'admin bar with the longest label (390)')).findings);
   expect(describeFindings(findings)).toBe('');
@@ -206,7 +207,7 @@ test('the label of this copy is in the admin bar, beside the product name, and n
   served.settings = { configVersion: 1, listPrefix: 'PMS3' };
   await page.reload();
   await unlock();
-  await expect(label).toHaveCount(0);
+  await expect(label).not.toHaveAttribute('title', /./);
   // The participant page and Setup's own bar do not show it (Setup lists it as a row of its panel).
   served.settings = { configVersion: 1, listPrefix: 'PMS3', label: 'Test, folder 3' };
   await page.goto(pageUrl('index.html'));

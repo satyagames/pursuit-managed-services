@@ -51,17 +51,17 @@ function pairFailures(css) {
   return failures;
 }
 
-const SCALE = new Set(['0', 'auto', '6px', '4px', '8px', '12px', '16px', '24px', '32px', '48px']);
+const SCALE = new Set(['0', 'auto', '100%', '6px', '4px', '8px', '12px', '16px', '24px', '32px', '48px']);
 /** Each padding, margin or gap value of `css` that is off the scale, as "selector: property value". */
 function offScale(css) {
   const off = [];
   const body = css.replace(/\/\*[\s\S]*?\*\//g, '');
   for (const rule of body.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
     for (const decl of rule[2].matchAll(/(?:^|;)\s*((?:padding|margin|gap|row-gap|column-gap)(?:-[a-z-]+)?)\s*:\s*([^;]+)/g)) {
-      // A step of the scale, the gutter (24 or 16) and the bar's height are tokens; env() is the device's safe area; calc(), max() and their
+      // A step of the scale, the gutter (24 or 16), the bars' heights and the page's padding and width (Prompt 39) are tokens; 100% is the window; env() is the device's safe area; calc(), max() and their
       // operators and plain multipliers only combine them. Whatever is left must be on the scale.
       const parts = decl[2]
-        .replace(/var\(--adm-(?:s[1-7]|gutter|bar-height)\)/g, ' ')
+        .replace(/var\(--adm-(?:s[1-7]|gutter|bar-height|bar-h|page-pad|page-max|inset)\)/g, ' ')
         .replace(/env\([^()]*\)/g, ' ')
         .replace(/\b(?:calc|max|min)\(|[(),]|\s[+*/-]\s/g, ' ')
         .trim().split(/\s+/).filter((part) => part && !/^\d+$/.test(part));
@@ -79,7 +79,11 @@ describe('the admin look (Prompt 38)', () => {
     for (const name of ['grad-green', 'grad-teal', 'grad-amber', 'grad-rose', 'grad-slate', 'grad-green-dark', 'grad-teal-dark', 'grad-amber-dark']) assert.match(css, new RegExp(`--adm-${name}: linear-gradient\\(90deg`), name);
     for (const step of [4, 8, 12, 16, 24, 32, 48]) assert.match(css, new RegExp(`--adm-s\\d: ${step}px;`), `the ${step} px step`);
     assert.match(css, /--adm-radius: 14px;/);
-    assert.match(css, /--adm-content-max: 1280px;/);
+    // (Prompt 39: no 1,280 px cap; the page is the window wide, centred only past 1,920 px, and the bar 56 px.)
+    assert.match(css, /--adm-page-max: 1920px;/);
+    assert.match(css, /--adm-page-pad: clamp\(16px, 2vw, 32px\);/);
+    assert.match(css, /--adm-bar-h: 56px;/);
+    assert.doesNotMatch(css, /--adm-content-max/);
     assert.match(css, /--adm-bar-height: 64px;/);
   });
 
@@ -117,5 +121,16 @@ describe('the admin look (Prompt 38)', () => {
     const admin = await readFile(path.join(ROOT, 'migration/src/admin-main.ts'), 'utf8');
     assert.ok(admin.indexOf("'./admin-look.css'") > admin.indexOf("'./admin.css'"), 'after admin.css');
     for (const file of ['main.ts', 'setup-main.ts']) assert.doesNotMatch(await readFile(path.join(ROOT, 'migration/src', file), 'utf8'), /admin-look\.css/, file);
+  });
+});
+
+describe('a side column sticks only while it fits (Prompt 39, lib/admin/sticky-fit.js)', () => {
+  it('fits when the column, the 56 px bar, the bottom bar and 16 px above and below are no taller than the window', async () => {
+    const { fitsWindow, STICKY_ROOM } = await import('../migration/src/lib/admin/sticky-fit.js');
+    assert.equal(STICKY_ROOM, 88);
+    assert.equal(fitsWindow(500, 652, 64), true, '500 + 88 + 64 = 652');
+    assert.equal(fitsWindow(501, 652, 64), false, 'a pixel taller scrolls with the page');
+    assert.equal(fitsWindow(700, 800), true, 'no bottom bar');
+    assert.equal(fitsWindow(0, 800), false, 'a column not drawn yet does not stick');
   });
 });

@@ -63,8 +63,8 @@
     <span class="who__badge" aria-hidden="true">{identity.initials}</span>
     <span class="who__text" aria-hidden="true">
       <span class="who__name">{identity.name}</span>
-      <span class="who__role" data-testid="identity-role">{identity.roleLine}{#if identity.endsSoon}<span class="who__ends" data-testid="identity-ends">Ends {identity.endsSoon.day}</span>{/if}</span>
-      {#if identity.does}<span class="who__does" data-testid="identity-does">{identity.does}</span>{/if}
+      <!-- (Prompt 39: the role alone below 1,280 px, "Super admin · All clients" from there; the long description is in the popover only.) -->
+      <span class="who__role" data-testid="identity-role">{identity.role}{#if identity.reach}<span class="who__reach">{` · ${identity.reach}`}</span>{/if}{#if identity.endsSoon}<span class="who__ends" data-testid="identity-ends">Ends {identity.endsSoon.day}</span>{/if}</span>
     </span>
     <span class="who__arrow" aria-hidden="true"><Icon name="chevron-down" size={16} /></span>
   </button>
@@ -72,8 +72,8 @@
   {#if open}
     <section bind:this={panel} id={panelId} class="who__panel" aria-labelledby="your-access-title" data-testid="access-popover">
       <h2 id="your-access-title" tabindex="-1">Your access</h2>
-      <p class="who__person"><strong>{identity.name}</strong><br /><span class="who__muted">Signed in with your Deloitte account</span></p>
-      {#if identity.does}<p class="who__muted">{identity.does}.</p>{/if}
+      <p class="who__person"><strong>{identity.name}</strong></p>
+      {#if identity.does}<p class="who__muted" data-testid="identity-does">{identity.does}.</p>{/if}
 
       {#if identity.roles.length}
         <table class="who__roles">
@@ -92,9 +92,6 @@
       <ul class="who__can" data-testid="access-can-do">
         {#each identity.canDo as line (line)}<li>{line}</li>{/each}
       </ul>
-
-      <h3>Not available to you</h3>
-      <p data-testid="access-not-available">{identity.notAvailable}</p>
 
       <p class="who__ask">Need a different role? Ask a Super admin.</p>
       <button class="btn" type="button" onclick={() => void copy()}>Copy my details</button>
@@ -169,16 +166,8 @@
     white-space: nowrap;
   }
 
-  .who__does {
-    overflow: hidden;
-    max-width: 22rem;
-    color: var(--adm-text-muted);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
   @media (max-width: 1279px) {
-    .who__does {
+    .who__reach {
       display: none;
     }
   }
@@ -210,11 +199,11 @@
     top: calc(100% + 0.5rem);
     right: 0;
     z-index: 20;
-    width: min(26rem, calc(100vw - 2rem));
+    width: min(360px, calc(100vw - 32px));
     max-height: calc(100vh - 5rem);
     overflow-y: auto;
     box-sizing: border-box;
-    padding: 1rem 1.25rem 1.25rem;
+    padding: 20px;
     border: 1px solid var(--adm-card-line);
     border-radius: 0.75rem;
     background: var(--adm-card);
@@ -223,7 +212,7 @@
   }
 
   .who__panel h2 {
-    margin: 0 0 0.5rem;
+    margin: 0 0 8px;
     font-size: 1.25rem;
   }
 
@@ -255,7 +244,8 @@
 
   .who__can {
     margin: 0;
-    padding-left: 1.25rem;
+    padding-left: 0;
+    list-style-position: inside;
   }
 
   .who__ask {

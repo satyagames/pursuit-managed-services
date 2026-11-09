@@ -575,3 +575,16 @@ export const PHASE_38 = Object.freeze({
   participantAfter: 193_978, adminAfter: 714_365,
   participantUtilities: PHASE_11A.participantUtilities,
 });
+
+/**
+ * Prompt 39 (the admin page on the whole width: the 56 px bar, the 12 columns, the popover, Results' charts and Art of the Possibility),
+ * measured from where Prompt 38 left the pages (cb08557: participant 193,978 B, admin 714,653 B). The participant page may not change at all, and
+ * its Tailwind rules stay its own (no bare "table" or "@container" in a new file: Tailwind reads every file under migration/). The brief asked the
+ * admin page to stay under 700,000 B; it already stood at 714,653 B, so it is held to its 720,000 B budget. `adminAfter` is the page when the
+ * work stopped.
+ */
+export const PHASE_39 = Object.freeze({
+  participantBefore: 193_978, adminBefore: 714_653, participantAllowance: 0,
+  participantAfter: 193_978, adminAfter: 717_609,
+  participantUtilities: PHASE_11A.participantUtilities,
+});

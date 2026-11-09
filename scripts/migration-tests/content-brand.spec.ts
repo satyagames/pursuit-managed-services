@@ -390,7 +390,8 @@ test('no request for opening, switching or keeping a view; the hidden view runs 
 });
 
 for (const size of [{ width: 1366, height: 768 }, { width: 1180, height: 820 }]) {
-  test(`at ${size.width} x ${size.height} the sticky header and strip with the top tabs take at most a fifth of the height, stay in reach, and cover neither Brand's preview nor the Save bar`, async ({ page }) => {
+  // (Prompt 39: the client's row is full width and scrolls with the page; the strip of the two parts under it sticks under the 56 px bar.)
+  test(`at ${size.width} x ${size.height} the sticky strip with the bar takes at most a fifth of the height, stays in reach, and covers neither Brand's preview nor the Save bar`, async ({ page }) => {
     // A long list of activities, so that the page scrolls well past the header.
     for (let index = 0; index < 12; index += 1) await addActivity('c-kroger', { title: `Long list ${index + 1}`, enabled: false, questions: [{ prompt: 'Long?', options: [['Yes', true], ['No', false]] }] });
     await page.setViewportSize(size);
@@ -398,14 +399,13 @@ for (const size of [{ width: 1366, height: 768 }, { width: 1180, height: 820 }])
     await expect(page.locator('.content-activities h3')).toBeVisible();
     const geometry = () => page.evaluate(() => {
       const box = (selector: string) => { const rect = document.querySelector(selector)!.getBoundingClientRect(); return { top: rect.top, bottom: rect.bottom }; };
-      return { nav: box('.shell__nav'), spine: box('.content-spine'), picker: box('#content-client'), strip: box('.content-strip'), height: window.innerHeight };
+      return { nav: box('.shell__bar'), spine: box('.content-strip'), strip: box('.content-strip'), height: window.innerHeight };
     });
     await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight }));
     const scrolled = await geometry();
     expect(scrolled.spine.top, 'stuck under the top tabs').toBeCloseTo(scrolled.nav.bottom, 0);
     expect(scrolled.spine.bottom, 'the sticky block and the top tabs within a fifth of the height').toBeLessThanOrEqual(scrolled.height * 0.2 + 0.5);
     expect(scrolled.nav.top).toBeGreaterThanOrEqual(-0.5);
-    expect(scrolled.picker.top, 'the picker in reach').toBeGreaterThanOrEqual(scrolled.nav.bottom - 0.5);
     expect(scrolled.strip.top, 'the strip in reach').toBeGreaterThanOrEqual(scrolled.nav.bottom - 0.5);
 
     // The question editor's Save bar, with the page scrolled to the editor: below the sticky block.

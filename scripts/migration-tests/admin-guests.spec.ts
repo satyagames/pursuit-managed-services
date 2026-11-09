@@ -62,7 +62,7 @@ test('a pasted list is read before anything is saved: blank lines, commas, repea
   const roster = await rosterOf(session.id);
   expect(roster.map((visitor: Visitor) => visitor.displayName).sort()).toEqual(['A'.repeat(60), 'Casey Park', 'Jordan Lee', 'Morgan Day', 'Riley Fox', 'Someone']);
   expect(roster.every((visitor: Visitor & { enabled: boolean }) => visitor.enabled === true)).toBe(true);
-  await expect(page.locator('li.row[data-guest]')).toHaveCount(6);
+  await expect(page.locator('tr[data-guest]')).toHaveCount(6);
   await expect(page.getByTestId('guest-summary')).toContainText('6 guests: 6 no code, 0 not scanned, 0 joined, 0 completed.');
 
   // The same list again, and a name that differs only in case and spacing: nothing new.
@@ -445,7 +445,7 @@ test('Guests and QR and the print view fit 390, 820 and 1440 wide: no sideways s
 test('keyboard: the guest controls come in reading order and show the green ring', async ({ page }) => {
   await guestSession(names(2));
   await openAdmin(page, local, 'Guests and QR');
-  await expect(page.locator('li.row[data-guest]')).toHaveCount(2);
+  await expect(page.locator('tr[data-guest]')).toHaveCount(2);
   await page.getByRole('button', { name: 'Refresh' }).focus();
   // Focus given by a script draws no ring until a key has been used: move off and back with the keyboard.
   await page.keyboard.press('Shift+Tab');

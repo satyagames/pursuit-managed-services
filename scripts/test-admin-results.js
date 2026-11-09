@@ -179,7 +179,8 @@ describe('Results: the session page (Prompt 34)', () => {
     const order = [at('class="glance"'), at('<ReportExports'), at('<details class="tally"'), at('<Fold title="People"'), at('class="card__foot"')];
     assert.deepEqual([...order].sort((a, b) => a - b), order, 'figures, Downloads, charts, people, then the foot');
     assert.ok(card.indexOf('data-delete-session') > at('class="card__foot"'), 'Delete is in the foot of the session, not beside Live display');
-    assert.match(card, /<summary>Charts · /, 'the charts are called Charts, not Live results');
+    // (Prompt 39: a chevron, the word Charts and the answers in the summary.)
+    assert.match(card, /<summary class="tally__summary"><Icon name="chevron-right" size=\{18\} \/><span>Charts<\/span>/, 'the charts are called Charts, not Live results');
   });
 
   it('Downloads holds every file in three groups, and the packs are made by the one maker the Live display uses', async () => {

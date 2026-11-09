@@ -24,7 +24,8 @@ const openTab = async (page: Page, tab: string) => {
   await page.evaluate(() => document.fonts.ready);
 };
 
-test('no sideways scroll at 1024, 1280 and 1440 px, and the content is at most 1,280 px wide', async ({ page }) => {
+// (Prompt 39: the 1,280 px cap is gone; the content is the window's width, up to 1,920 px, less the page padding.)
+test('no sideways scroll at 1024, 1280 and 1440 px, and the content is the whole width of the window', async ({ page }) => {
   await mkdir(pictures, { recursive: true });
   for (const width of WIDTHS) {
     await page.setViewportSize({ width, height: 800 });
@@ -32,12 +33,13 @@ test('no sideways scroll at 1024, 1280 and 1440 px, and the content is at most 1
     for (const tab of TABS) {
       await openTab(page, tab);
       const at = `${tab} at ${width} px`;
-      const { scroll, inner, body } = await page.evaluate(() => {
+      const { scroll, inner, body, room } = await page.evaluate(() => {
         const panel = document.querySelector('#admin-panel')!.getBoundingClientRect();
-        return { scroll: document.documentElement.scrollWidth, inner: window.innerWidth, body: panel.width };
+        return { scroll: document.documentElement.scrollWidth, inner: window.innerWidth, body: panel.width, room: document.documentElement.clientWidth };
       });
       expect(scroll, `${at}: no sideways scroll`).toBeLessThanOrEqual(inner);
-      expect(body, `${at}: the content and its margins`).toBeLessThanOrEqual(1280 + 64 + 1);
+      expect(body, `${at}: the content and its padding, the whole width`).toBeGreaterThanOrEqual(Math.min(room, 1920) - 1);
+      expect(body, `${at}: never past 1,920 px`).toBeLessThanOrEqual(1920 + 1);
       if (width === 1440) await page.screenshot({ path: `${pictures}${tab.split(' ')[0].toLowerCase()}-${width}.png`, fullPage: true });
     }
   }

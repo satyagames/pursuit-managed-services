@@ -345,15 +345,17 @@
     </section>
 {/snippet}
 
+<!-- Prompt 39: the title and Add client on one row above both columns; with a client open, the list is 4 of the 12 columns (at least 340 px)
+     and its sessions and team 8, both on one top line. -->
 <div class="clients" class:clients--open={workspace !== null}>
-<section class="panel clients-panel clients__list" aria-busy={loading || busy}>
-  <header class="panel__head">
+  <header class="panel__head clients__head">
     <div>
       <h2 bind:this={clientsHeading} tabindex="-1"><Icon name="building" />Clients</h2>
       <p class="muted">The clients you visit: open one to plan its sessions and choose its team, or open its Brand to set its look.</p>
     </div>
     <button class="btn btn--primary btn--with-icon" type="button" onclick={() => openEditor(null)} disabled={busy}><Icon name="plus" /> Add client</button>
   </header>
+<section class="panel clients-panel clients__list" aria-busy={loading || busy} aria-label="Clients">
   {#if loading}<div class="adm-card adm-skeleton" aria-hidden="true"><span></span><span></span><span></span><span></span></div><p class="sr-only" role="status">Loading clients...</p>
   {:else if error}<p class="error" role="alert">{error}</p>
   {:else if clients.length === 0}<div class="adm-empty"><Icon name="building" /><p>No clients yet. Add the first one you are visiting.</p><button class="btn btn--with-icon" type="button" onclick={() => openEditor(null)} disabled={busy}><Icon name="plus" />Add client</button></div>
@@ -422,8 +424,14 @@
 <style>
   .clients {
     display: grid;
-    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0 var(--adm-gutter);
     align-items: start;
+  }
+
+  .clients > * {
+    grid-column: 1 / -1;
+    min-width: 0;
   }
 
   /* Below 1,100 px a client's page replaces the list, as before. */
@@ -433,14 +441,20 @@
     }
   }
 
-  /* On a laptop the list stays on the left and the client's sessions and team open on the right (Prompt 32). */
+  /* On a laptop the list stays on the left (4 of 12, at least 340 px) and the client's sessions and team open on the right (8 of 12). */
   @media (min-width: 1100px) {
     .clients--open {
-      grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+      grid-template-columns: minmax(340px, 4fr) minmax(0, 8fr);
     }
 
-    .clients__detail {
-      min-width: 0;
+    .clients--open .clients__list {
+      grid-column: 1;
+      grid-row: 2;
+    }
+
+    .clients--open .clients__detail {
+      grid-column: 2;
+      grid-row: 2;
     }
 
     .row--open {
@@ -449,8 +463,25 @@
     }
   }
 
+  /* The actions right-aligned; in the full list, from 1,280 px, on one line. */
   .client-row {
     flex-wrap: wrap;
+  }
+
+  .client-row .row__actions {
+    justify-content: flex-end;
+    margin-left: auto;
+  }
+
+  @media (min-width: 1280px) {
+    .clients:not(.clients--open) .client-row {
+      flex-wrap: nowrap;
+    }
+
+    .clients:not(.clients--open) .client-row .row__actions {
+      flex: none;
+      flex-wrap: nowrap;
+    }
   }
 
   .client-row--archived .row__title {
@@ -460,7 +491,7 @@
   .row__actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: var(--adm-s2);
   }
 
   .row__title {

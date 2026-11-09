@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { test, expect, type Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { ds, openAdmin, startLocal, stopLocal, today, type Local } from './admin-local.js';
+import { chooseTab, ds, openAdmin, startLocal, stopLocal, today, type Local } from './admin-local.js';
 
 // Prompt 32, step 1: the admin page uses the whole laptop screen. No container is capped (the 1,120 px of admin.css and the 1,000 px of the legacy
 // sheet are gone): the content runs edge to edge with clamp(16px, 2vw, 32px) at the sides. At 1,100 px and wider the brand, the section tabs and the
@@ -47,7 +47,7 @@ const geometry = (page: Page) => page.evaluate(() => {
 });
 
 const openTab = async (page: Page, tab: string) => {
-  await page.getByRole('tab', { name: tab, exact: true }).click();
+  await chooseTab(page, tab);
   // (Prompt 33: the Guests and QR tab's title is "Guests and QR codes".)
   await expect(page.getByRole('heading', { name: tab === 'Guests and QR' ? 'Guests and QR codes' : tab, exact: true }).first()).toBeVisible();
   // Measured once the tab has read what it shows: a loading line is shorter than the screen it stands for.
@@ -56,7 +56,9 @@ const openTab = async (page: Page, tab: string) => {
   await page.evaluate(() => document.fonts.ready);
 };
 
-test('on a laptop the content runs edge to edge and the brand, tabs and person share one 52 px bar', async ({ page }) => {
+// (Prompt 39: the page is the window's width less clamp(16px, 2vw, 32px) at each side, up to 1,920 px; the bar is 56 px at every width; the
+// help sits beside the heading only when it fits there on one line, else under it.)
+test('on a laptop the content runs edge to edge and the brand, tabs and person share one 56 px bar', async ({ page }) => {
   await mkdir(pictures, { recursive: true });
   for (const size of LAPTOPS) {
     await page.setViewportSize(size);
@@ -67,11 +69,10 @@ test('on a laptop the content runs edge to edge and the brand, tabs and person s
       const g = await geometry(page);
       expect(g.scrollWidth, `${at}: no sideways scroll`).toBeLessThanOrEqual(g.innerWidth);
       expect(g.head, `${at}: the tab has a heading`).not.toBeNull();
-      // (Prompt 38: the content is at most 1,280 px, centred, with the 32 px page margin.)
-      const margin = Math.max(32, (g.width - 1280) / 2);
+      const margin = Math.max(Math.min(32, Math.max(16, g.width * 0.02)), (g.width - 1920) / 2 + Math.min(32, Math.max(16, g.width * 0.02)));
       expect(Math.abs(g.head!.left - margin), `${at}: the gap at the left`).toBeLessThanOrEqual(2);
       expect(Math.abs(g.width - g.head!.right - margin), `${at}: the gap at the right`).toBeLessThanOrEqual(2);
-      expect(g.bar!.height, `${at}: the bar's height`).toBeLessThanOrEqual(53);
+      expect(g.bar!.height, `${at}: the bar's height`).toBe(56);
       for (const [part, where] of [['the brand', g.brand], ['the tabs', g.tabs], ['the person', g.user]] as const) {
         expect(where, `${at}: ${part} is shown`).not.toBeNull();
         expect(where!.top, `${at}: ${part} is in the bar`).toBeGreaterThanOrEqual(g.bar!.top - 1);
@@ -79,8 +80,8 @@ test('on a laptop the content runs edge to edge and the brand, tabs and person s
       }
       expect(g.brand!.right, `${at}: the brand comes before the tabs`).toBeLessThanOrEqual(g.tabs!.left + 1);
       expect(g.tabs!.right, `${at}: the tabs come before the person`).toBeLessThanOrEqual(g.user!.left + 1);
-      // The heading and its help on one line: the help starts above the heading's foot.
-      expect(g.help!.top, `${at}: the help is beside the heading, not under it`).toBeLessThan(g.title!.bottom);
+      // The help beside the heading or under it, never above it.
+      expect(g.help!.top, `${at}: the help is beside or under the heading`).toBeGreaterThanOrEqual(g.title!.top - 1);
       // A control the keyboard scrolls to stops below the sticky bar, with room for its 9 px ring.
       expect(g.scrollPadding, `${at}: scroll-padding-top clears the sticky bar and the ring`).toBeGreaterThanOrEqual(g.sticky + 9);
       if (size.width === 1366 || size.width === 1920) await page.screenshot({ path: `${pictures}${tab.split(' ')[0].toLowerCase()}-${size.width}x${size.height}.png` });
@@ -88,7 +89,8 @@ test('on a laptop the content runs edge to edge and the brand, tabs and person s
   }
 });
 
-test('at 683 px (a 1366 px laptop at 200 percent) the bar is two rows as before, only the tab row sticks, and nothing scrolls sideways', async ({ page }) => {
+// (Prompt 39: below 1,024 px the tabs are one Menu in the one sticky bar.)
+test('at 683 px (a 1366 px laptop at 200 percent) the tabs are a Menu in the one bar, which sticks, and nothing scrolls sideways', async ({ page }) => {
   await page.setViewportSize(ZOOMED);
   await openAdmin(page, local!);
   for (const tab of TABS) {
@@ -96,10 +98,9 @@ test('at 683 px (a 1366 px laptop at 200 percent) the bar is two rows as before,
     const at = `${tab} at 683 x 700`;
     const g = await geometry(page);
     expect(g.scrollWidth, `${at}: no sideways scroll`).toBeLessThanOrEqual(g.innerWidth);
-    expect(g.tabs!.top, `${at}: the tabs are a row of their own, under the brand`).toBeGreaterThanOrEqual(g.brand!.bottom);
-    expect(await page.locator('.shell__bar').evaluate((element) => getComputedStyle(element).position), `${at}: the brand row scrolls away`).not.toBe('sticky');
-    expect(await page.locator('.shell__nav').evaluate((element) => getComputedStyle(element).position), `${at}: the tab row sticks`).toBe('sticky');
-    expect(g.scrollPadding, `${at}: scroll-padding-top clears the tab row and the ring`).toBeGreaterThanOrEqual(g.sticky + 9);
+    await expect(page.getByTestId('tabs-menu'), `${at}: Menu`).toBeVisible();
+    expect(await page.locator('.shell__bar').evaluate((element) => getComputedStyle(element).position), `${at}: the bar sticks`).toBe('sticky');
+    expect(g.scrollPadding, `${at}: scroll-padding-top clears the bar and the ring`).toBeGreaterThanOrEqual(g.sticky + 9);
   }
   await mkdir(pictures, { recursive: true });
   await openTab(page, 'Today');
@@ -115,7 +116,7 @@ const columnsOf = (page: Page) => page.evaluate(() => Object.fromEntries(['main'
 })));
 const inView = (page: Page, name: string) => page.getByRole('button', { name, exact: true }).evaluate((element) => {
   const box = element.getBoundingClientRect();
-  return box.top >= 52 && box.bottom <= window.innerHeight && box.left >= 0 && box.right <= document.documentElement.clientWidth;
+  return box.top >= 56 && box.bottom <= window.innerHeight && box.left >= 0 && box.right <= document.documentElement.clientWidth;
 });
 
 // Prompt 38: two columns, 8 + 4 (the live session, Readiness and the session picked; the settings and Share), the readiness line first, the passed
@@ -146,17 +147,19 @@ test('Today on a laptop: 8 + 4; the readiness line first; the passed checks fold
   }
 });
 
-test('Today live at 1366 x 650: End session in view, the settings stay in view as the page scrolls; Change opens the radios that set the session', async ({ page }) => {
+// (Prompt 39: the settings column sticks only while all of it fits above the bottom bar; at 1366 x 650 it does not, so it scrolls with the page and
+// End session is reached by scrolling, never hidden under a bar.)
+test('Today live at 1366 x 650: the settings column scrolls with the page when it does not fit; End session is reached; Change opens the radios that set the session', async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 650 });
   await openAdmin(page, local!);
   await page.getByLabel('Client', { exact: true }).selectOption({ label: "Domino's" });
   await page.getByRole('button', { name: 'Go live', exact: true }).click();
   await expect(page.locator('section[data-live]')).toContainText('LIVE');
-  expect(await inView(page, 'End session'), 'End session in view').toBe(true);
-  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-  expect(await inView(page, 'End session'), 'End session in view at the foot of the page').toBe(true);
-  const controls = await page.locator('.today__side').boundingBox();
-  expect(controls!.y, 'the settings stay under the bar').toBeGreaterThanOrEqual(52);
+  const side = page.locator('.today__side');
+  const fits = await side.evaluate((element) => element.scrollHeight + 88 + (document.querySelector('.adm-bar')?.getBoundingClientRect().height ?? 0) <= window.innerHeight);
+  await expect(side).toHaveAttribute('data-sticky', String(fits));
+  await page.getByRole('button', { name: 'End session', exact: true }).scrollIntoViewIfNeeded();
+  expect(await inView(page, 'End session'), 'End session in view once scrolled to').toBe(true);
   await expect(page.getByTestId('controls-summary')).toContainText('Sequential');
   await page.getByRole('button', { name: 'Change' }).click();
   for (const group of ['How people are identified', 'Activity flow', 'Confidence check']) {
@@ -252,13 +255,13 @@ test('Guests and QR on a laptop: the three steps left to right, the guest list u
     await page.setViewportSize(size);
     await openAdmin(page, local!, 'Guests and QR');
     const at = `Guests and QR at ${size.width} x ${size.height}`;
-    await expect(page.locator('li.row[data-guest]').first()).toBeVisible();
+    await expect(page.locator('tr[data-guest]').first()).toBeVisible();
     const [add, make, print] = await stepBoxes(page);
     expect(make.x, `${at}: Make codes beside Add guests`).toBeGreaterThanOrEqual(add.x + add.width);
     expect(print.x, `${at}: Print or share beside Make codes`).toBeGreaterThanOrEqual(make.x + make.width);
     expect(Math.abs(make.y - add.y) + Math.abs(print.y - add.y), `${at}: one row`).toBeLessThanOrEqual(1);
     expect(Math.abs(make.height - add.height) + Math.abs(print.height - add.height), `${at}: one height`).toBeLessThanOrEqual(2);
-    const rows = await page.locator('li.row[data-guest]').first().boundingBox();
+    const rows = await page.locator('tr[data-guest]').first().boundingBox();
     expect(rows!.y, `${at}: the guest list under the steps`).toBeGreaterThanOrEqual(add.y + add.height);
     const printButton = await page.getByRole('button', { name: /^Print QR sheet/ }).boundingBox();
     expect(printButton!.x, `${at}: Print QR sheet in its step`).toBeGreaterThanOrEqual(print.x);
@@ -271,7 +274,7 @@ test('Guests and QR at 683 px: the steps follow one another', async ({ page }) =
   await guestsLive(3);
   await page.setViewportSize(ZOOMED);
   await openAdmin(page, local!, 'Guests and QR');
-  await expect(page.locator('li.row[data-guest]').first()).toBeVisible();
+  await expect(page.locator('tr[data-guest]').first()).toBeVisible();
   const [add, make, print] = await stepBoxes(page);
   expect(make.y).toBeGreaterThanOrEqual(add.y + add.height);
   expect(print.y).toBeGreaterThanOrEqual(make.y + make.height);
