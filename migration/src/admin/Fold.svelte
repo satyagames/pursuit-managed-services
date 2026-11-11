@@ -65,9 +65,9 @@
   }
 
   .fold__button:focus-visible {
-    outline: 3px solid var(--focus);
+    outline: 2px solid var(--focus);
     outline-offset: -3px;
-    box-shadow: inset 0 0 0 6px var(--adm-ink);
+    box-shadow: inset 0 0 0 7px var(--adm-accent-glow);
   }
 
   .fold__summary {

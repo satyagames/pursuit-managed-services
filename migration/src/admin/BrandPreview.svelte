@@ -135,14 +135,14 @@
     position: relative;
     overflow: hidden;
     border-radius: 0.75rem;
-    box-shadow: 0 0 0 1px var(--adm-line, #d0d5dd), 0 0.5rem 1.5rem rgb(0 0 0 / 0.18);
-    background: #000102;
+    box-shadow: 0 0 0 1px var(--adm-line), var(--adm-shadow-pop);
+    background: var(--adm-stage);
   }
 
   .bprev__frame {
     display: block;
     border: 0;
     transform-origin: top left;
-    background: #000102;
+    background: var(--adm-stage);
   }
 </style>

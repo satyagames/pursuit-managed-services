@@ -316,7 +316,7 @@
               {@const said = shiftWords(row, row.guests)}
               <li class="dash__bar-row">
                 <span class="dash__bar-label">{row.name}</span>
-                <span class="dash__bar-track" aria-hidden="true">
+                <span class="dash__bar-track" class:dash__bar-track--none={row.index === null} aria-hidden="true">
                   <span class="dash__bar" style:width="{Math.min(100, ((row.index ?? 0) / scaleTop) * 100)}%"></span>
                   <span class="dash__bar-line" style:left="{(100 / scaleTop) * 100}%"></span>
                 </span>
@@ -522,7 +522,7 @@
   .dash__chip[aria-pressed='true'] {
     border-color: var(--ink);
     background: var(--ink);
-    color: #fff;
+    color: var(--adm-on-primary);
   }
 
   .dash__field select,
@@ -579,8 +579,8 @@
     padding: 0.75rem 1rem;
     border-top: 4px solid var(--viz-brand);
     border-radius: 6px;
-    background: #fff;
-    box-shadow: 0 1px 4px rgb(0 0 0 / 12%);
+    background: var(--adm-surface);
+    box-shadow: var(--adm-shadow);
   }
 
   .dash__tile-name {
@@ -666,15 +666,20 @@
   .dash__bar-track {
     position: relative;
     height: 1.1rem;
-    background: var(--viz-grid, #e6e6e6);
+    background: var(--viz-grid);
     border-radius: 3px;
   }
 
+  /* Prompt 41: one colour, graph 1, 45% to full; "Not measured" is a grey track (graph 3 at 30%) with the word beside it. */
   .dash__bar {
     position: absolute;
     inset: 0 auto 0 0;
-    background: var(--viz-primary);
+    background: var(--viz-bar, var(--viz-primary));
     border-radius: 3px;
+  }
+
+  .dash__bar-track--none {
+    background: var(--viz-not-measured, var(--viz-grid));
   }
 
   .dash__bar--before {
@@ -714,7 +719,7 @@
 
   .dash__client {
     padding: 0.5rem 0;
-    border-bottom: 1px solid var(--line, #d0d0ce);
+    border-bottom: 1px solid var(--adm-line);
   }
 
   .dash__client-head {

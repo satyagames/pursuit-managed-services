@@ -242,8 +242,8 @@ html {
 
 /* The ring inside the tab, with its ink band inside too: the tab is as tall as the bar, so a ring outside it would be cut off. */
 .shell__nav .tab:focus-visible {
-  outline-offset: -6px;
-  box-shadow: inset 0 0 0 9px var(--adm-ink);
+  outline-offset: -4px;
+  box-shadow: inset 0 0 0 8px var(--adm-accent-glow);
 }
 
 /* Menu: below 1,024 px only. */
@@ -448,7 +448,7 @@ html {
 .step__mark {
   border-width: 1.5px;
   border-color: var(--adm-primary);
-  color: var(--adm-primary);
+  color: var(--adm-link);
 }
 
 .step[data-done='true'] .step__mark {
@@ -494,8 +494,8 @@ html {
 }
 
 .btn:hover:not(:disabled) {
-  background: var(--adm-surface-2);
-  border-color: var(--adm-ink-2);
+  background: var(--adm-primary-wash);
+  border-color: var(--adm-line-strong);
 }
 
 .btn--primary {
@@ -523,7 +523,7 @@ html {
 .btn--quiet {
   border-color: transparent;
   background: transparent;
-  color: var(--adm-primary);
+  color: var(--adm-link);
 }
 
 .input,
@@ -555,8 +555,9 @@ body.admin textarea {
   color: var(--adm-ink);
 }
 
+/* Prompt 41: words in the primary's shade (#1F7009), which is 4.5:1 or better on the page, a stripe and a wash as well as on a card. */
 body.admin a:not(.btn) {
-  color: var(--adm-primary);
+  color: var(--adm-link);
 }
 
 /* ---- Chips: an icon and a word, never a dot alone ------------------------------------------- */
@@ -568,6 +569,7 @@ body.admin a:not(.btn) {
   padding: 0 var(--adm-s3) 0 var(--adm-s2);
   border-radius: 999px;
   background: var(--adm-idle-bg);
+  box-shadow: inset 0 0 0 1px var(--adm-line); /* the neutral chip is --adm-surface-2, nearly white: its edge shows it */
   color: var(--adm-idle-ink);
   font-size: var(--adm-fs-body);
   font-weight: var(--fw-semibold);
@@ -586,11 +588,16 @@ body.admin a:not(.btn) {
   height: 16px;
 }
 
-.chip--ok { background: var(--adm-ok-wash); color: var(--adm-ok-ink); }
-.chip--warn { background: var(--adm-warn-wash); color: var(--adm-warn-ink); }
-.chip--danger { background: var(--adm-danger-wash); color: var(--adm-danger-ink); }
-.chip--info { background: var(--adm-info-wash); color: var(--adm-info-ink); }
-.chip--primary { background: var(--adm-primary-wash); color: var(--adm-primary-deep); }
+.chip--ok { background: var(--adm-ok-wash); box-shadow: none; color: var(--adm-ok-ink); }
+.chip--warn { background: var(--adm-warn-wash); box-shadow: none; color: var(--adm-warn-ink); }
+.chip--danger { background: var(--adm-danger-wash); box-shadow: none; color: var(--adm-danger-ink); }
+.chip--info { background: var(--adm-info-wash); box-shadow: none; color: var(--adm-info-ink); }
+.chip--primary { background: var(--adm-primary-wash); box-shadow: none; color: var(--adm-primary-deep); }
+/* Prompt 41: a status chip's icon is in its status colour (3:1 or better on its wash); the word stays the darker ink. */
+.chip--ok .icon { color: var(--adm-ok); }
+.chip--warn .icon { color: var(--adm-warn); }
+.chip--danger .icon { color: var(--adm-danger); }
+.chip--info .icon { color: var(--adm-info); }
 
 .pill {
   background: var(--adm-idle-bg);
@@ -876,7 +883,7 @@ html:has(.adm-bar) {
 .activity--selected {
   border-color: var(--adm-primary);
   background: var(--adm-primary-wash);
-  box-shadow: inset 3px 0 0 var(--adm-primary);
+  box-shadow: inset 3px 0 0 var(--adm-accent); /* Prompt 41: a selected card's edge is the accent, on the wash */
 }
 
 /* ---- A "more" menu ------------------------------------------------------------------------ */
@@ -1037,7 +1044,7 @@ body.admin div.error[role='alert']::before {
 .adm-selected {
   border-color: var(--adm-primary);
   background: var(--adm-primary-wash);
-  box-shadow: inset 3px 0 0 var(--adm-primary);
+  box-shadow: inset 3px 0 0 var(--adm-accent); /* Prompt 41: a selected card's edge is the accent, on the wash */
 }
 
 /* The open client's context strip: its logo, name and status and the way back, held at the top of the right column while it scrolls. */

@@ -203,8 +203,8 @@
   }
 
   .seg__option:has(input:focus-visible) {
-    outline: 3px solid var(--focus);
-    outline-offset: -3px;
+    outline: 2px solid var(--focus);
+    outline-offset: -2px;
   }
 
   .seg__meaning {

@@ -8,24 +8,26 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { contrastRatio } from '../migration/src/lib/brand/theme.js';
+import { resolver } from './admin-token-values.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const tokens = () => readFile(path.join(ROOT, 'migration/src/styles/admin-tokens.css'), 'utf8');
 const look = () => readFile(path.join(ROOT, 'migration/src/admin-look.css'), 'utf8');
-const valueIn = (css) => (name) => new RegExp(`--${name}:\\s*(#[0-9a-f]{6})`, 'i').exec(css)?.[1]?.toLowerCase();
+// (Prompt 41: the names are aliases of the Deloitte green palette now, so a value follows its var() chain.)
+const valueIn = (css) => resolver(css);
 
-/** The brief's table. */
+/** Prompt 38's names, on Prompt 41's Deloitte green palette, which replaced Prompt 38's colours (scripts/test-admin-palette.js holds the brief). */
 const PALETTE = {
-  'adm-bg': '#f6f7f3', 'adm-surface': '#ffffff', 'adm-surface-2': '#fafbf8', 'adm-line': '#e7ebe3', 'adm-line-strong': '#d6ddd2',
-  'adm-ink': '#1f2a24', 'adm-ink-2': '#4b574f', 'adm-subtle': '#7b867f', 'adm-primary': '#2f6b4f', 'adm-primary-deep': '#22513b',
-  'adm-primary-wash': '#ebf3ee', 'adm-accent': '#a9cb6b', 'adm-info': '#3b7f8c', 'adm-warn': '#b7791f', 'adm-danger': '#b4443a', 'adm-ok': '#3f8f5a',
-  'adm-info-wash': '#e8f2f4', 'adm-warn-wash': '#fbf3e2', 'adm-danger-wash': '#fbedeb', 'adm-ok-wash': '#e9f4ec', 'adm-dark1': '#16231c',
+  'adm-bg': '#f5f6f4', 'adm-surface': '#ffffff', 'adm-surface-2': '#fafaf9', 'adm-line': '#e9e9e9', 'adm-line-strong': '#d3d3d3',
+  'adm-ink': '#222222', 'adm-ink-2': '#595959', 'adm-subtle': '#7a7a7a', 'adm-primary': '#26890d', 'adm-primary-deep': '#1f7009',
+  'adm-primary-wash': '#eaf4e6', 'adm-accent': '#0df200', 'adm-info': '#0097a9', 'adm-warn': '#b7791f', 'adm-danger': '#b4443a', 'adm-ok': '#26890d',
+  'adm-info-wash': '#e6f5f6', 'adm-warn-wash': '#fbf3e2', 'adm-danger-wash': '#fbedeb', 'adm-ok-wash': '#eaf4e6', 'adm-dark1': '#222222',
 };
 
 /** Words on their grounds: 4.5:1. */
 const TEXT = [
   ['adm-ink', 'adm-bg'], ['adm-ink', 'adm-surface'], ['adm-ink', 'adm-surface-2'], ['adm-ink-2', 'adm-bg'], ['adm-ink-2', 'adm-surface'],
-  ['adm-ink-2', 'adm-surface-2'], ['adm-ink-2', 'adm-line'], ['adm-primary', 'adm-surface'], ['adm-primary', 'adm-bg'], ['adm-primary-deep', 'adm-primary-wash'],
+  ['adm-ink-2', 'adm-surface-2'], ['adm-ink-2', 'adm-line'], ['adm-primary', 'adm-surface'], ['adm-primary-deep', 'adm-bg'], ['adm-primary-deep', 'adm-primary-wash'],
   ['adm-on-deep', 'adm-primary'], ['adm-on-deep', 'adm-primary-deep'], ['adm-ink', 'adm-accent'], ['adm-on-deep', 'adm-dark1'],
   ['adm-info-ink', 'adm-info-wash'], ['adm-warn-ink', 'adm-warn-wash'], ['adm-danger-ink', 'adm-danger-wash'], ['adm-ok-ink', 'adm-ok-wash'],
   ['adm-ink', 'adm-info-wash'], ['adm-ink', 'adm-warn-wash'], ['adm-ink', 'adm-danger-wash'], ['adm-ink', 'adm-ok-wash'], ['adm-idle-ink', 'adm-idle-bg'],
@@ -97,17 +99,18 @@ describe('the admin look (Prompt 38)', () => {
 
   it('the check fails when a word colour is set to 4.4:1', async () => {
     const css = await tokens();
-    const weakened = css.replace(/--adm-ink-2:\s*#[0-9a-f]{6}/i, '--adm-ink-2: #787878');
+    const weakened = css.replace(/--adm-neutral-strong:\s*#[0-9a-f]{6}/i, '--adm-neutral-strong: #787878');
     assert.ok(pairFailures(weakened).some((failure) => failure.startsWith('adm-ink-2 on adm-surface: 4.4')));
   });
 
-  it('the brief\'s muted, warn and ok are under 4.5:1 on white, so they are never words: no rule of the look sets them as a colour of text', async () => {
+  it('muted, warn and info are under 4.5:1 on white (ok is under it on the page), so they are never words: no rule of the look sets them as a colour of text', async () => {
     const value = valueIn(await tokens());
-    for (const name of ['adm-subtle', 'adm-warn', 'adm-ok']) assert.ok(contrastRatio(value(name), '#ffffff') < 4.5, name);
+    for (const name of ['adm-subtle', 'adm-warn', 'adm-info']) assert.ok(contrastRatio(value(name), '#ffffff') < 4.5, name);
+    assert.ok(contrastRatio(value('adm-ok'), value('adm-bg')) < 4.5, 'ok on the page');
     const css = (await look()).replace(/\/\*[\s\S]*?\*\//g, '');
     for (const rule of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
       if (/\.icon\b|> \.icon/.test(rule[1])) continue;
-      assert.doesNotMatch(rule[2], /(?:^|;)\s*color:\s*var\(--adm-(?:subtle|warn|ok)\)/, `${rule[1].trim()}: a mark colour used for words`);
+      assert.doesNotMatch(rule[2], /(?:^|;)\s*color:\s*var\(--adm-(?:subtle|warn|ok|info|neutral)\)/, `${rule[1].trim()}: a mark colour used for words`);
     }
   });
 

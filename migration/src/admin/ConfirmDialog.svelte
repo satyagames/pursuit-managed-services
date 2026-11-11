@@ -65,11 +65,11 @@
     border-radius: 1rem;
     color: var(--adm-ink);
     background: var(--adm-card);
-    box-shadow: 0 1.5rem 4rem rgb(11 31 58 / 0.35);
+    box-shadow: var(--adm-shadow-dialog);
   }
 
   .confirm::backdrop {
-    background: rgb(11 31 58 / 0.55);
+    background: var(--adm-scrim);
   }
 
   .confirm__body {
@@ -103,7 +103,7 @@
   .btn--danger-solid {
     border-color: var(--danger);
     background: var(--danger);
-    color: #fff;
+    color: var(--adm-on-primary);
   }
 
   .btn--danger-solid:hover:not(:disabled) {

@@ -94,7 +94,7 @@
 
   .checks__show {
     margin-inline-start: auto;
-    color: var(--adm-primary);
+    color: var(--adm-link); /* (Prompt 41: the primary is 4.36:1 on the stripe; its shade 6.0:1) */
   }
 
   .checks.checks--folded {

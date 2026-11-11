@@ -314,7 +314,7 @@
   .users__chip[aria-pressed='true'] {
     border-color: var(--ink);
     background: var(--ink);
-    color: #fff;
+    color: var(--adm-on-primary);
   }
 
 </style>

@@ -85,9 +85,9 @@ flowchart LR
 | `migration/src/routes/` | The participant page's screens: Welcome, the Activities hub, the quiz route, the finale, "not live", the preview, and the old addresses that redirect. | 10 |
 | `migration/src/setup/` | Setup's pieces (Svelte): the copy panel, where the lists are, the plan view, and the sample pictures as data. | 6 |
 | `migration/src/unsupported/` | The "needs a recent browser" notice: a page and an ES5 check, put into each HTML shell at build time. | 1 |
-| `scripts/` | Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager. | 170 |
+| `scripts/` | Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager. | 172 |
 | `scripts/local-site/` | The local PCOE stand-in (`npm run local:site`), its scenarios and VJR's dummy dataset, the screenshot harness and the measurements. | 11 |
-| `scripts/migration-tests/` | The Playwright specs of `npm run test:migration`, and their harnesses (`admin-local.ts`, `polling-support.ts`, `fixtures.ts`). | 96 |
+| `scripts/migration-tests/` | The Playwright specs of `npm run test:migration`, and their harnesses (`admin-local.ts`, `polling-support.ts`, `fixtures.ts`). | 98 |
 | `scripts/rehearsal-tests/` | The rehearsal of RUNBOOK.md on the mock with a package's own pages (`npm run test:rehearsal`). | 1 |
 | `scripts/schema-baseline/` | The schema as it was before Phase 10c-2b, and the scripts that translated the request baselines (each baseline names the one that touched it). | 12 |
 | `scripts/styleguide-tests/` | The styleguide's audit (`npm run test:styleguide`). | 1 |
@@ -172,7 +172,7 @@ A client's look: deriving a readable theme from a colour, the stored theme, Bran
 
 - **Imports from:** `lib/common`, `lib/data`, `lib/participant`
 - **Imported by:** `lib/admin`, `lib/data`, `lib/exports`, `lib/participant`, `lib/setup`, `src/admin`, `src/components`, `src/dev`
-- **Node suites that import it:** `test-admin-look.js`, `test-admin-today.js`, `test-brand-storage.js`, `test-brand.js`, `test-guest-picture.js`, `test-hub-look.js`, `test-live-view.js`, `test-motion-switch.js`, `test-participant-contrast.js`, `test-results-palette.js`, `test-review-9b.js`, `test-sample-pictures.js`, `test-seeds.js`, `test-sharepoint.js`, `test-theme.js`
+- **Node suites that import it:** `test-admin-look.js`, `test-admin-palette.js`, `test-admin-today.js`, `test-brand-storage.js`, `test-brand.js`, `test-guest-picture.js`, `test-hub-look.js`, `test-live-view.js`, `test-motion-switch.js`, `test-participant-contrast.js`, `test-results-palette.js`, `test-review-9b.js`, `test-sample-pictures.js`, `test-seeds.js`, `test-sharepoint.js`, `test-theme.js`
 
 | Module | What it is (its header) | Exports |
 |---|---|---|

@@ -86,7 +86,7 @@
     border: 1px solid var(--line);
     border-radius: 0.75rem;
     background: var(--card);
-    box-shadow: 0 0.5rem 1.5rem rgb(11 31 58 / 0.18);
+    box-shadow: var(--adm-shadow-pop);
   }
 
   .picker__option {
@@ -99,7 +99,7 @@
 
   .picker__option--active,
   .picker__option:hover {
-    background: #e2e8f0;
+    background: var(--adm-primary-wash);
     outline: 2px solid var(--ink);
     outline-offset: -2px;
   }

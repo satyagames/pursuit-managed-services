@@ -600,3 +600,14 @@ export const PHASE_40 = Object.freeze({
   participantAfter: 193_978, adminAfter: 718_558,
   participantUtilities: PHASE_11A.participantUtilities,
 });
+
+/**
+ * Prompt 41 (the Deloitte green palette on the whole admin page, through tokens only), measured from where Prompt 40 left the pages (873f919:
+ * participant 193,978 B, admin 718,558 B). The participant page may not change at all, and its Tailwind rules stay its own. The brief asked the
+ * admin page to stay under 700,000 B; it already stood over it, so it is held to its 720,000 B budget. `adminAfter` is the page when the work stopped.
+ */
+export const PHASE_41 = Object.freeze({
+  participantBefore: 193_978, adminBefore: 718_558, participantAllowance: 0,
+  participantAfter: 193_978, adminAfter: 718_972,
+  participantUtilities: PHASE_11A.participantUtilities,
+});

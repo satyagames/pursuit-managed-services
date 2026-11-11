@@ -477,7 +477,7 @@ test('the crop dialog works from the keyboard: it opens on the crop area, Tab wa
   await page.keyboard.press('Shift+Tab');
   await expect(area).toBeFocused();
   const ring = await area.evaluate((element) => { const style = getComputedStyle(element); return [style.outlineStyle, style.outlineWidth]; });
-  expect(ring).toEqual(['solid', '3px']);
+  expect(ring).toEqual(['solid', '2px']); // (Prompt 41: the admin's ring is 2 px)
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
   await expect(card(page, 'hero').locator('button[data-choose]')).toBeFocused();

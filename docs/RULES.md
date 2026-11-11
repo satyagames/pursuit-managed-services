@@ -1921,14 +1921,8 @@ against them at 1366 by 650, 1920 by 950 and 683 by 700, and `admin-explains.spe
 - **Every screen answers "are we ready, and what next" first**, shows the one next action, and folds the rest with a line of what it holds now
   (`.adm-fold` and its `.adm-fold__summary`): advanced settings, history, filters, bulk tools, passed checks and danger actions. Nothing is folded
   blind.
-- **The palette** is `migration/src/styles/admin-tokens.css` by the brief's names: `--adm-bg` #F6F7F3, `--adm-surface` #FFFFFF, `--adm-surface-2`
-  #FAFBF8, `--adm-line` #E7EBE3, `--adm-line-strong` #D6DDD2, `--adm-ink` #1F2A24, `--adm-ink-2` #4B574F, `--adm-subtle` (the brief's muted)
-  #7B867F, `--adm-primary` #2F6B4F, `--adm-primary-deep` #22513B, `--adm-primary-wash` #EBF3EE, `--adm-accent` (lime) #A9CB6B, info, warn, danger
-  and ok (#3B7F8C, #B7791F, #B4443A, #3F8F5A) with their washes, and `--adm-dark1` #16231C for the live wall. The names the screens used before
-  (`--adm-card`, `--adm-muted`, `--adm-deep`, ...) point at the same palette. Muted, warn and ok are under 4.5:1 on white, so they are marks only;
-  words on a wash take its `*-ink` (`--adm-ok-ink` #2B6A40, `--adm-warn-ink` #7A4E12, `--adm-danger-ink` #9A3A31, `--adm-info-ink` #2C6370).
-  `scripts/test-admin-look.js` holds every value, every pair (words 4.5:1, marks 3:1) and that `admin-look.css` writes no colour of its own. No
-  black bar: the header is the surface with a line under it, and the Deloitte wordmark's letters are ink there.
+- **The palette**: Prompt 38's colours were replaced by Prompt 41's Deloitte green (see "Rules from Prompt 41"); its names point at that
+  palette. No black bar: the header is the surface with a line under it, and the Deloitte wordmark's letters are ink there.
 - **The files keep their own look.** The PDF, the PowerPoint and the leader report draw with `migration/src/styles/look-tokens.css` (`--look-*`),
   which no page loads; `lib/exports/report-look.js` is held equal to it.
 - **Type: Open Sans only**, embedded (400, 600, 700). Display 28/36, Title 20/28, H2 18/26, H3 16/24, Body 16/24, Label 13/16 upper case (column
@@ -2025,13 +2019,13 @@ And for the parts:
   `.tab + .tab::before` in `admin-look.css`, so it is never read and there is none before the first tab or after the last, and it never meets the
   active tab's underline on the bar's bottom edge. Each tab has 14 px at each side (`--adm-tab-pad`) and 9 px between two tabs
   (`--adm-tab-gap`: 4 px, the divider, 4 px), so the word is as far from the divider on each side; the icon is 8 px from the word. Hover is the
-  primary wash; the active tab is ink with the lime underline the tab's whole width. The row stays one line with no scrollbar: from 1,280 to
+  primary wash; the active tab is ink with the accent underline the tab's whole width. The row stays one line with no scrollbar: from 1,280 to
   1,365 px the tabs have 12 px at each side and the bar's parts 12 px between them, from 1,024 to 1,279 px 4 px and 4 px between tabs (the
   divider in its middle); below 1,024 px the Menu's list has no dividers.
 - **A list and its detail stay side by side** (`.adm-sticky-col`, `.adm-selected`, `.adm-context` in `admin-look.css`). In a split view the
   column that names the selection holds under the bar (and under Content's strip, `--adm-sticky-top`), 16 px down, as tall as the window leaves it
   less 32 px (and the bottom bar), and scrolls inside itself: Clients' and People's list on the left, Content's activities and its questions. The
-  selection is the primary 3 px left edge on the primary wash, in every list; when a client or person is opened its row is brought into the list's
+  selection is the accent 3 px left edge on the primary wash (Prompt 41), in every list; when a client or person is opened its row is brought into the list's
   view by scrolling the list alone (`showInColumn`, `lib/admin/sticky-fit.js`). A client's page starts with a 48 px strip held at the top of its
   column: the logo, the name, the Active or Archived chip and Back to clients (the one Back button). Below 1,100 px the client or person replaces the
   list, as before, and the strip is what says which one it is. A row's more menu opens upward when below would run past its column. On a
@@ -2049,6 +2043,72 @@ And for the parts:
   px inside its padding, so they would not line up. The label stays 16 px (rule 9), not the brief's 12, and a field 44 px tall, not 40.
 - `scripts/migration-tests/admin-related.spec.ts` holds the dividers, the Clients list and strip, the last activity's questions, Brand's order and
   People's labels at 1280, 1440 and 1920 px, and writes the pictures to `test-results/admin/related/`.
+
+## Rules from Prompt 41 (the Deloitte green palette on the whole admin page; keep them holding)
+
+- **One place for every colour.** `migration/src/styles/admin-tokens.css` holds every colour of the admin page and Setup (the brief's
+  tokens file; it kept its name, which the tests and both pages' entries read). No admin style writes a hex, `rgb()` or `hsl()`
+  of its own: `scripts/test-admin-palette.js` reads every `<style>`, `style=` and sheet of `migration/src/admin/`, `AdminApp.svelte`,
+  `SetupApp.svelte`, `admin.css`, `admin-look.css`, `setup.css` and `dev/AdminStyleguide.svelte` and fails on one (the wordmark's
+  `[fill='#fff']` selectors excepted). A colour a screen shows as data (a client's own brand colour) is not a style. The legacy sheets
+  (`styles/legacy/`) are overridden, never edited. The participant page never loads the file.
+- **The palette**, from six brand values only (neutral #222222 at 60%, accent #0DF200, secondary accent #26890D, graphs #0097A9, #00A3E0,
+  #75787B) and tints and shades of them. The alpha values are written as the solid colour each makes on white:
+
+  | Token | Value | Use |
+  |---|---|---|
+  | `--adm-ink` | #222222 | headings, body text, values |
+  | `--adm-neutral` | #7A7A7A (#222222 at 60%) | icons at rest, placeholders, large figures; never words under 24 px |
+  | `--adm-neutral-strong` | #595959 (75%) | every secondary word, hints, meta lines, inactive tabs |
+  | `--adm-line` | #E9E9E9 (10%) | card strokes, dividers, table lines, a bar's track |
+  | `--adm-line-strong` | #D3D3D3 (20%) | input borders |
+  | `--adm-bg`, `--adm-surface`, `--adm-surface-2` | #F5F6F4, #FFFFFF, #FAFAF9 | the page; cards; stripes, insets, a neutral chip |
+  | `--adm-primary` | #26890D | primary buttons (white words), Go live, active icons, the focus ring, a selected card's border, a switch that is on |
+  | `--adm-primary-hover` | #1F7009 | hover and pressed; every word in the primary's colour (links, Show, quiet buttons: `--adm-link`) |
+  | `--adm-primary-wash` | #EAF4E6 | selected rows, success chips, hover wash, group bands |
+  | `--adm-accent` | #0DF200 | decoration only (below) |
+  | `--adm-on-accent` | #222222 | words or an icon on an accent fill |
+  | `--adm-graph-1`, `--adm-graph-2`, `--adm-graph-3` | #0097A9, #00A3E0, #75787B | charts, with their tints `--adm-graph-1-45` and the rest |
+  | `--adm-dark` | #222222 | the dark live wall and any dark plate |
+
+  Prompt 38's names (`--adm-card`, `--adm-muted`, `--adm-deep`, `--adm-lime`, `--adm-ink-2` and the rest) are aliases of these, so every screen
+  took the palette at once. `--focus` is the primary on the admin page and Setup (the participant page keeps Deloitte green).
+- **#0DF200 is decoration only.** It is 1.5:1 on white: the active tab's 3 px underline, a selected card's 3 px left edge (on the primary wash),
+  a progress bar's end, the live dot, a card's top rule, an initials badge (ink words) and the focus ring's glow (`--adm-accent-glow`, 35%). It is
+  never words, never behind words that are not ink, never a large fill. `scripts/test-admin-palette.js` fails on a `color:` of it in any admin
+  style, and `scripts/migration-tests/admin-palette.spec.ts` on any drawn element with words in it or on it.
+- **Contrast.** Words are 4.5:1 and marks (an icon, a graph mark, a ring, a selected edge) 3:1 on what they sit on, at every size: the page's
+  16 px floor (rule 9) and axe leave no "14 px and larger" allowance. So the 60% neutral (4.29:1 on white) is never words, and words in the
+  primary take its shade #1F7009 (the primary is 4.50:1 on white with white words on it, but 4.15:1 on the page, 4.36:1 on a stripe and 3.98:1 on
+  its wash). `scripts/test-admin-palette.js` prints every pair with its ratio, and the brand's own pairs under a floor as REPORTED with the only use
+  they may have: the accent on white (1.53) and on the page (1.41), the neutral on white (4.29), the primary on the page (4.15) and on its wash
+  (3.98), #00A3E0 on white (2.87: a bar's value is always written beside it) and white on #0097A9 (3.50: no white words on a heat tile).
+- **The focus ring** is 2 px of `--focus` (the primary), 2 px off the control, with the accent at 35% glowing 8 px from the control's edge
+  (`box-shadow: 0 0 0 8px var(--adm-accent-glow)`); where the ring would be cut (a tab, an edge-to-edge summary, the panel) it is drawn inside.
+- **Status keeps its meaning, shape and word**, and the green is never the only "OK": success is the primary with `check-circle` on the primary
+  wash (words #1F7009); info is #0097A9 as the icon only, on its 10% wash, words ink; warning is #B7791F as the icon only (`alert-triangle`) on
+  #FBF3E2, words #7A4E12; danger is #B4443A (`alert-octagon`) on #FBEDEB, its words in the same colour (4.8:1); Live is the accent dot with the
+  word "Live" in ink; disabled is `--adm-disabled`. A chip's icon is in its status colour; a neutral chip is `--adm-surface-2` with a 1 px line
+  edge and #595959 words. Low, Medium and High keep their letters and shapes: danger, the amber's shade and the primary.
+- **Components.** The bar is white with a 1 px line under it; the active tab is ink with its icon in the primary and the accent underline;
+  the other tabs #595959. Primary buttons are the primary with white words; secondary buttons white with a `--adm-line-strong` border, ink
+  words and the primary wash on hover; danger buttons white with danger words and border, never green. Cards are white, 1 px line,
+  `--adm-shadow` (`0 1px 2px rgb(34 34 34 / 0.05), 0 8px 24px rgb(34 34 34 / 0.06)`). Switches: on is the primary with a white knob; off keeps
+  a #595959 edge (3:1 for the control's boundary; the brief's 20% line is 1.5:1).
+- **Charts on the admin page** draw with the three graph colours and their tints only (`--viz-*` re-pointed in `admin-tokens.css`, which loads
+  after `results-tokens.css`). Every bar is `--viz-bar`, graph 1 from 45% to full, left to right, rounded 6 px at its end; the top choice and the
+  correct answer keep the bar's colour and are told by their words (the "Correct" tick in the primary). A second series is graph 2, a third
+  graph 3. Single-value meters, the dashboard's "Moved to confident" and its shift are graph 1, the baseline a 2 px ink line; "Not measured" is a
+  grey track (graph 3 at 30%) with the word. A confidence scale is graph 1's tints. Art of Possibility's tiles run white to #0097A9 (10, 45, 65
+  and 100% for its four steps) with every figure in ink (4.55:1 or better; white is under 4.5:1 on every step). Gridlines are the line. The
+  dark wall is #222222 with white words and figures, the accent for lines and dots only and the bars in the graph colours (each 3:1 or better
+  on #222222, so none needed lightening). "View as table" stays. The PDF, PowerPoint and leader report keep their own palettes
+  (`results-tokens.css`, read by `lib/results/results-palette.js`, and `look-tokens.css`).
+- **The styleguide** (`dev/AdminStyleguide.svelte`) shows every palette and status token with its name, value and contrast on white with a
+  pass or fail badge (a mark and a word), a chart in the three graph colours, the heat scale, and the states of a button, a chip, a tab and a card.
+- `scripts/migration-tests/admin-palette.spec.ts` checks, on the built page at 1440 px, the underline #0DF200, the primary button #26890D with
+  white words, the page, the bar and the ring; runs axe on Today, Clients, Content's activities and Brand, Guests, Results and People; and
+  writes their pictures (and a dialog's) to `test-results/admin/palette/`.
 
 ## Before finishing a change
 

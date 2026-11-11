@@ -55,9 +55,9 @@
   }
 
   .role-switch__button:focus-visible {
-    outline: 3px solid var(--focus);
-    outline-offset: 3px;
-    box-shadow: 0 0 0 3px var(--adm-ink), 0 0 0 9px var(--adm-ink);
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 8px var(--adm-accent-glow);
   }
 
   .role-switch__track {

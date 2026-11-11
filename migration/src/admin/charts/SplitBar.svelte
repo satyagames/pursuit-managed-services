@@ -185,7 +185,7 @@
   .split__slice {
     display: block;
     width: calc(var(--share) * (100% - 2px));
-    background: var(--viz-primary-tint);
+    background: var(--viz-secondary, var(--viz-primary-tint));
     border-radius: 4px 0 0 4px;
     transition: width 400ms ease-out;
   }
@@ -195,8 +195,9 @@
     border-radius: 0 4px 4px 0;
   }
 
-  .split__slice--correct {
-    background: var(--viz-correct);
+  /* Prompt 41: the correct side keeps its series' colour; its tick and the word "Correct" mark it. */
+  .split__slice--true.split__slice--correct {
+    background: var(--viz-primary);
   }
 
   .split:not([data-drawn]) .split__slice {

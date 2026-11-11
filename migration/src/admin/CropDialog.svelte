@@ -215,11 +215,11 @@
     border-radius: 1rem;
     color: var(--adm-ink);
     background: var(--adm-card);
-    box-shadow: 0 1.5rem 4rem rgb(11 31 58 / 0.35);
+    box-shadow: var(--adm-shadow-dialog);
   }
 
   .crop::backdrop {
-    background: rgb(11 31 58 / 0.55);
+    background: var(--adm-scrim);
   }
 
   .crop__actions {
@@ -264,7 +264,7 @@
     overflow: hidden;
     touch-action: none;
     cursor: grab;
-    background: #1b2430;
+    background: var(--adm-stage);
     border-radius: 0.5rem;
     box-shadow: 0 0 0 1px var(--adm-line);
     user-select: none;
@@ -278,7 +278,7 @@
   /* A checkerboard shows what is see-through. */
   .crop__frame--checker {
     background:
-      conic-gradient(#8a93a0 25%, #aeb5c0 0 50%, #8a93a0 0 75%, #aeb5c0 0) 0 0 / 20px 20px;
+      conic-gradient(var(--adm-check-a) 25%, var(--adm-check-b) 0 50%, var(--adm-check-a) 0 75%, var(--adm-check-b) 0) 0 0 / 20px 20px;
   }
 
   .crop__image {
@@ -299,11 +299,11 @@
   .crop__guide rect,
   .crop__guide ellipse {
     fill: none;
-    stroke: #fff;
+    stroke: var(--adm-surface);
     stroke-width: 2;
     stroke-dasharray: 6 5;
     vector-effect: non-scaling-stroke;
-    filter: drop-shadow(0 0 1px rgb(0 0 0 / 0.9));
+    filter: drop-shadow(0 0 1px var(--adm-picture-edge));
   }
 
   .crop__swatch {

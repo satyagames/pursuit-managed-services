@@ -106,13 +106,13 @@
     padding: 0.75rem;
     border: 1px solid var(--ink);
     border-radius: 6px;
-    background: #fff;
+    background: var(--adm-surface);
     color: var(--ink);
     font-size: 1rem;
     font-weight: 400;
     font-style: normal;
     line-height: 1.4;
-    box-shadow: 0 4px 16px rgb(0 0 0 / 15%);
+    box-shadow: var(--adm-shadow-pop);
   }
 
   .metric-info__tip[data-open='true'] {
@@ -121,6 +121,6 @@
   }
 
   .metric-info__example {
-    color: var(--muted, #53565a);
+    color: var(--adm-muted);
   }
 </style>

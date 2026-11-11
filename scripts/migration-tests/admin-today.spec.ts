@@ -806,7 +806,7 @@ test('keyboard: the tab row is one stop with arrows, every control shows the gre
       };
     });
     order.push(`${focused.role}:${focused.name}`);
-    if (focused.outline !== 'solid 3px' || !focused.halo) rings.push(`${focused.role}:${focused.name} ${focused.outline}`);
+    if (focused.outline !== 'solid 2px' || !focused.halo) rings.push(`${focused.role}:${focused.name} ${focused.outline}`);
   }
   expect(rings, 'every stop draws the 3px green ring with its halo').toEqual([]);
   // (Prompt 39: the bar is read left to right: the tabs, then the person and Lock.)

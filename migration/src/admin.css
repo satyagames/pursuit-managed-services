@@ -46,12 +46,12 @@ html {
   scroll-padding-top: var(--adm-sticky-room);
 }
 
-/* Visible keyboard focus on every control: the Deloitte-green ring with a band of navy on each side of it, as on the participant page. On the admin's white
-   the green alone is 2.3:1; with navy against it on both sides it is well over 3:1 (Phase 8: it was a 2px halo with a 1px gap, so the ring touched the white). */
+/* Visible keyboard focus on every control: 2 px of the primary (#26890D, 4.5:1 on white, 4.0:1 on a wash)
+   with the accent at 35% glowing 4 px outside it (Prompt 41; Phase 8's green ring between navy bands is gone). */
 :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
-  outline: 3px solid var(--focus);
-  outline-offset: 3px;
-  box-shadow: 0 0 0 3px var(--adm-ink), 0 0 0 9px var(--adm-ink);
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 8px var(--adm-accent-glow);
 }
 
 /* A heading that script moved focus to (a new screen) shows the ring only to someone on the keyboard (lib/common/focus.ts marks it), as on the participant page. */
@@ -61,29 +61,29 @@ html {
 }
 
 /* A summary that fills a card edge to edge (Results' "Live results") would have its ring cut by the card's rounded clip (Phase 15, A-02): its ring is drawn
-   just inside it, still green between two bands of navy. */
+   just inside it, the glow inside too. */
 .card .tally > summary:focus-visible {
-  outline-offset: -6px;
-  box-shadow: inset 0 0 0 9px var(--adm-ink);
+  outline-offset: -4px;
+  box-shadow: inset 0 0 0 8px var(--adm-accent-glow);
 }
 
 :where(h1, h2, h3, h4, h5, h6)[tabindex='-1'][data-keyboard-focus]:focus {
-  outline: 3px solid var(--focus);
-  outline-offset: 3px;
-  box-shadow: 0 0 0 3px var(--adm-ink), 0 0 0 9px var(--adm-ink);
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 8px var(--adm-accent-glow);
 }
 
 /* A date field keeps focus inside its own month, day and year parts, which :focus-visible does not report on the field itself. */
 input[type='date']:focus-within {
-  outline: 3px solid var(--focus);
-  outline-offset: 3px;
-  box-shadow: 0 0 0 3px var(--adm-ink), 0 0 0 9px var(--adm-ink);
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 8px var(--adm-accent-glow);
 }
 
 .switch input:focus-visible + .switch__track {
-  outline: 3px solid var(--focus);
-  outline-offset: 3px;
-  box-shadow: 0 0 0 3px var(--adm-ink), 0 0 0 9px var(--adm-ink);
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 8px var(--adm-accent-glow);
 }
 
 /* Controls */
@@ -119,20 +119,20 @@ input[type='date']:focus-within {
 }
 
 .btn--bar {
-  border-color: rgb(255 255 255 / 0.55);
+  border-color: var(--adm-on-dark-line);
   background: transparent;
-  color: #fff;
+  color: var(--adm-on-primary);
 }
 
 .btn--bar:hover:not(:disabled) {
-  background: rgb(255 255 255 / 0.12);
+  background: var(--adm-on-dark-wash);
 }
 
 .input,
 .select,
 .color,
 .login__pin {
-  border: 1px solid #aebbcc;
+  border: 1px solid var(--adm-line-strong);
   border-radius: 0.65rem;
   font-family: inherit;
 }
@@ -149,8 +149,8 @@ input[type='date']:focus-within {
   -webkit-appearance: none;
   min-height: 44px;
   padding: 0.5rem 2.5rem 0.5rem 0.75rem;
-  background-color: #fff;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m3 6 5 5 5-5' fill='none' stroke='%23334155' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-color: var(--adm-surface);
+  background-image: var(--adm-chevron);
   background-repeat: no-repeat;
   background-position: right 0.85rem center;
   background-size: 0.9rem;
@@ -213,11 +213,10 @@ input[type='date']:focus-within {
   padding: 1.5rem clamp(1rem, 2vw, 2rem) 4rem;
 }
 
-/* The panel runs edge to edge, so its ring is drawn just inside it, green between two bands of ink, as Results' "Live results" summary's (Prompt 38:
-   on the calmer page ground the green alone is 1.88:1). */
+/* The panel runs edge to edge, so its ring is drawn just inside it, as Results' "Live results" summary's. */
 .shell__body:focus-visible {
-  outline-offset: -6px;
-  box-shadow: inset 0 0 0 9px var(--adm-ink);
+  outline-offset: -4px;
+  box-shadow: inset 0 0 0 8px var(--adm-accent-glow);
 }
 
 /* (Not the Live display's: its type is sized to the screen it is on.) */
@@ -340,7 +339,7 @@ input[type='date']:focus-within {
 .qr__image {
   width: min(280px, 70vw);
   aspect-ratio: 1;
-  background: #fff;
+  background: var(--adm-surface);
   border: 1px solid var(--line);
   border-radius: 12px;
 }
@@ -359,11 +358,11 @@ input[type='date']:focus-within {
   padding: 0;
   border: 0;
   border-radius: 16px;
-  box-shadow: 0 20px 60px rgb(15 23 42 / 0.35);
+  box-shadow: var(--adm-shadow-dialog);
 }
 
 .preview-dialog::backdrop {
-  background: rgb(15 23 42 / 0.5);
+  background: var(--adm-scrim);
 }
 
 .preview__banner {
@@ -424,8 +423,8 @@ input[type='date']:focus-within {
 }
 
 .pill--unused {
-  background: #dbe7fb;
-  color: #17376b;
+  background: var(--adm-info-wash);
+  color: var(--adm-info-ink);
 }
 
 .pill--used,
@@ -712,7 +711,7 @@ input[type='date']:focus-within {
   border-radius: 1rem;
   color: var(--adm-ink);
   background: var(--adm-card);
-  box-shadow: 0 1.5rem 4rem rgb(11 31 58 / 0.35);
+  box-shadow: var(--adm-shadow-dialog);
 }
 
 .adm-dialog--wide {
@@ -720,7 +719,7 @@ input[type='date']:focus-within {
 }
 
 .adm-dialog::backdrop {
-  background: rgb(11 31 58 / 0.55);
+  background: var(--adm-scrim);
 }
 
 .adm-dialog__body {
@@ -890,8 +889,8 @@ input[type='date']:focus-within {
   width: 191mm;
   padding: 8mm;
   zoom: var(--sheet-zoom, 1);
-  background: #fff;
-  box-shadow: 0 0.2rem 1rem rgb(11 31 58 / 0.18);
+  background: var(--adm-paper);
+  box-shadow: var(--adm-shadow-pop);
   break-after: page;
   page-break-after: always;
 }
@@ -912,9 +911,9 @@ input[type='date']:focus-within {
   height: 61mm;
   padding: 2.5mm 3mm;
   overflow: hidden;
-  border: 0.3mm dashed #8a8f98;
-  color: #000;
-  background: #fff;
+  border: 0.3mm dashed var(--adm-neutral);
+  color: var(--adm-paper-ink);
+  background: var(--adm-paper);
   text-align: center;
   break-inside: avoid;
   page-break-inside: avoid;
@@ -983,7 +982,7 @@ input[type='date']:focus-within {
   body,
   body.admin {
     margin: 0;
-    background: #fff;
+    background: var(--adm-paper);
   }
 
   .no-print,

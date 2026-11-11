@@ -137,7 +137,7 @@
 
   .brand__preset[aria-pressed='true'] {
     border-color: var(--adm-ink);
-    box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--adm-ink);
+    box-shadow: 0 0 0 3px var(--adm-surface), 0 0 0 5px var(--adm-ink);
   }
 
   .brand__plate {
@@ -173,8 +173,8 @@
     border-radius: 50%;
   }
 
-  .brand__chip--light { background: #fff; }
-  .brand__chip--dark { background: #0b1f3a; }
+  .brand__chip--light { background: var(--adm-surface); }
+  .brand__chip--dark { background: var(--adm-dark-sample); }
 
   .brand__strip {
     position: relative;
@@ -184,20 +184,20 @@
     gap: 0.75rem;
     min-height: 5rem;
     padding: 1rem;
-    color: #fff;
+    color: var(--adm-on-primary);
     border-radius: 0.65rem;
   }
 
   .brand__strip-pill {
     padding: 0.5rem 1rem;
-    background: rgb(255 255 255 / 0.14);
-    border: 1px solid #fff;
+    background: var(--adm-on-dark-wash);
+    border: 1px solid var(--adm-on-primary);
     border-radius: 999px;
   }
 
   .brand__strip-button {
     padding: 0.5rem 1.25rem;
-    border: 1px solid rgb(255 255 255 / 0.7);
+    border: 1px solid var(--adm-on-dark-line);
     border-radius: 999px;
     font-weight: var(--fw-semibold);
   }
@@ -205,7 +205,7 @@
   .brand__strip-hex {
     margin-left: auto;
     font: 0.8125rem/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
-    text-shadow: 0 1px 2px rgb(0 0 0 / 0.6);
+    text-shadow: 0 1px 2px var(--adm-dark-shadow);
   }
 
   .brand__adjusted {

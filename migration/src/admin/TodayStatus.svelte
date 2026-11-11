@@ -78,15 +78,16 @@
     opacity: 0.55;
   }
 
+  /* Live (Prompt 41): the dot in the accent, the word in ink. */
   .badge--live {
-    color: var(--adm-ok-ink);
+    color: var(--adm-ink);
     background: var(--adm-ok-bg);
   }
 
   .badge--live .badge__dot {
-    background: var(--focus);
+    background: var(--adm-live);
     opacity: 1;
-    box-shadow: 0 0 0 0.2rem rgb(134 188 37 / 0.3);
+    box-shadow: 0 0 0 0.2rem var(--adm-accent-glow);
   }
 
   .facts {
