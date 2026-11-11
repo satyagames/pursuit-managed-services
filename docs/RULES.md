@@ -2152,6 +2152,37 @@ They change some of Prompt 35's rules above (each says so there); the rest of Pr
 - **The budget.** The participant page may not grow for this prompt (CLAUDE.md rule 3; `PHASE_42` in `scripts/bundle-budget.js`): it ended 36 B
   smaller. The admin page carries the hub for Brand Studio's preview, so it shrank too; no admin file changed.
 
+## Rules from Prompt 43 (Today, Session settings: chips and a Change / Hide toggle; keep them holding)
+
+They replace Prompt 38's one line of the three settings with Change and Done (`controlsSummary` is gone).
+
+- **Disclosure toggle.** A toggle that opens and folds a panel never turns into a save-style word ("Done"): it keeps its place and its width (both
+  words share one cell, so the wider one sets it), says Change folded and Hide open, and only its chevron (`chevron-down`) turns, 180 degrees, up
+  when open. It is a real `<button aria-expanded aria-controls>`, words in `--adm-primary-deep` on no border, 44 px high (CLAUDE.md rule 9, not the brief's 36 px), a wash on hover. Settings
+  that save the moment they change say so in a footer line ("Changes save automatically", with `check-circle`); while a change is written it says
+  "Saving…", and a write that fails says its error with `alert-triangle` and Retry. The footer is `aria-live="polite"`.
+- **Session settings' chips** (`settingsChips` in `lib/admin/today-view.js`, `admin/TodayControls.svelte`): icon first, then a short word, one row,
+  never wrapped or cut: `badge` Staff sign in or `qr` Guests scan QR; `steps` Sequential or `grid` Open; `gauge` Confidence off or on. The neutral
+  chip is admin-look.css's `.chip`; one changed from the default (`SETTINGS_DEFAULTS`: staff sign-in, sequential, the confidence check off) is
+  `.chip--primary`, so a leader sees what is not standard. A chip is 44 px high (rule 9, not the brief's 32 px) with 12 px words, and its
+  accessible name is its value and its group ("Sequential, Activity flow"), never "Change", which is the toggle's alone. When the chips do not fit beside the toggle they go under it together, and the toggle
+  stays at the top right. A chip opens the panel at its group with that group's first control focused; a second click does not fold it: only the
+  toggle, Esc (the focus goes back to the toggle), Go live and End session fold it. Folded is the default, and the state lasts only the tab's visit.
+- **The panel**: a 3 px primary left edge on the primary wash at 40 percent, 16 px in, rounded 12; three groups (label 12 px, 600, +2 percent; a
+  segmented control of two equal segments, 40 px high, the chosen one filled primary with white words and a tick; its one line under it). Inside a
+  control Left and Right move the focus and Space or Enter chooses (an arrow alone never writes). A change never folds the panel, and a write that
+  failed or a confirm that said no puts the control back on what is saved. The panel opens by its height in 200 ms and the chevron turns in 160 ms
+  at full motion; at calm, off or the device's reduced motion (`motionLevel()` below full) both change at once.
+- **The staff-mode notice is in the card once**: under How people are identified, in the open panel, only while Staff sign in is chosen
+  (`staffNotice`). Folded, the Identification chip carries an `alert-triangle` marker whose tooltip and accessible name are the sentence. Readiness
+  keeps its Staff mode warning.
+- **Who may change them**: the chips and the toggle need `events.run` for the session shown (`can()`); without it the chips are plain words, with no
+  pointer, no hover and no toggle. (Today itself is the tab of `events.run`, so no persona reaches that case now; `scripts/test-today-view.js` pins it.)
+- **Icons**: `badge` (Staff sign in), `steps` (sequential activities) and `grid` (open activities, in any order) joined the table (paths only, one
+  meaning each, `admin/icon-meanings.js`).
+- **The budget.** The participant page did not change (`PHASE_43` in `scripts/bundle-budget.js`). The brief asked the admin page to stay under
+  700,000 B; it already stood at 718,034 B, so it is held to its 720,000 B budget: 719,982 B when the work stopped.
+
 ## Before finishing a change
 
 - Always: `npm run check:svelte` and `npm test` (the documents, the module map and the project map among it). If you added, moved or renamed a

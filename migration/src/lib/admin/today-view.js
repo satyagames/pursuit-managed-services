@@ -3,7 +3,7 @@
 // list. Plain JS with JSDoc and no DOM or Svelte (scripts/test-today-view.js). Phase 17 moved these out of AdminToday.svelte unchanged; the
 // rules of readiness and going live stay in admin-today.js. Reads nothing and writes nothing.
 
-import { localDate } from './admin-today.js';
+import { STAFF_MODE_WARNING, isStaffMode, localDate } from './admin-today.js';
 import { errorText } from './session-notice.js';
 
 /**
@@ -73,14 +73,31 @@ export const upsertSession = (list, next) => list.some((item) => item.id === nex
  */
 export const failureText = (cause, fallback) => errorText(cause, fallback);
 
+/** Today's session settings as a new session starts (lib/data/today.js): staff sign-in, sequential, the confidence check off. */
+export const SETTINGS_DEFAULTS = Object.freeze({ participationMode: 'staff', activityFlow: 'sequential', confidenceCheck: false });
+
 /**
- * Today's three session settings in one line, folded until Change is pressed (Prompt 38): "Guests scan a personal QR · Sequential · Confidence
- * check off". The words are the controls' own, and an unset mode is staff sign-in, as the data layer reads it.
- * @param {{ participationMode?: string, activityFlow?: string, confidenceCheck?: boolean | null } | null} session
+ * The staff-mode notice (STAFF_MODE_WARNING) while Staff sign in is chosen and the session has not ended, else ''.
+ * @param {{ participationMode?: string, status?: string } | null} session
  */
-export function controlsSummary(session) {
-  if (!session) return '';
-  const mode = session.participationMode === 'client-visit' ? 'Guests scan a personal QR' : 'Staff sign in';
-  const flow = session.activityFlow === 'open' ? 'Open' : 'Sequential';
-  return `${mode} · ${flow} · Confidence check ${session.confidenceCheck === true ? 'on' : 'off'}`;
+export const staffNotice = (session) => (session && isStaffMode(session) && session.status !== 'completed' ? STAFF_MODE_WARNING : '');
+
+/**
+ * Today's three session settings as three chips, icon first then a short word (Prompt 43, which replaced Prompt 38's one line): how people are
+ * identified, the activity flow, the confidence check. `group` is the panel's group the chip opens; `changed` marks a value other than
+ * SETTINGS_DEFAULTS; the Identification chip carries the staff-mode notice as `warning` (its marker's words). An unset mode is staff sign-in, as the
+ * data layer reads it.
+ * @param {{ participationMode?: string, activityFlow?: string, confidenceCheck?: boolean | null, status?: string } | null} session
+ * @returns {{ group: 'mode' | 'flow' | 'check', icon: string, text: string, changed: boolean, warning: string }[]}
+ */
+export function settingsChips(session) {
+  if (!session) return [];
+  const guests = session.participationMode === 'client-visit';
+  const open = session.activityFlow === 'open';
+  const check = session.confidenceCheck === true;
+  return [
+    { group: 'mode', icon: guests ? 'qr' : 'badge', text: guests ? 'Guests scan QR' : 'Staff sign in', changed: guests, warning: staffNotice(session) },
+    { group: 'flow', icon: open ? 'grid' : 'steps', text: open ? 'Open' : 'Sequential', changed: open, warning: '' },
+    { group: 'check', icon: 'gauge', text: `Confidence ${check ? 'on' : 'off'}`, changed: check !== SETTINGS_DEFAULTS.confidenceCheck, warning: '' },
+  ];
 }

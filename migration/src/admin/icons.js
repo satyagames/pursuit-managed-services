@@ -46,6 +46,10 @@ export const PATHS = Object.freeze({
   'chevron-right': 'M9 6l6 6l-6 6',
   check: 'M5 12.5l4.5 4.5L19 7',
   'rotate-left': 'M4 12a8 8 0 1 0 2.3-5.7M4 4v5h5',
+  // Session settings' chips (Prompt 43): how people are identified, and the activity flow.
+  badge: 'M5 4h14v17H5zM10 4V2h4v2M14.5 11a2.5 2.5 0 1 1-5 0a2.5 2.5 0 0 1 5 0zM8 18a4 4 0 0 1 8 0',
+  steps: 'M3 20h5v-5h5v-5h5V5h3',
+  grid: 'M4 4h16v16H4zM4 9.3h16M4 14.7h16M9.3 4v16M14.7 4v16',
   sliders: 'M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1M15 4v4M9 10v4M17 16v4',
   // Files and pictures.
   printer: 'M6 9V3h12v6M6 18H4v-7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7h-2M6 14h12v7H6z',

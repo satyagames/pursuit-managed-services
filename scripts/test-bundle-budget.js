@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
 import { PAGES, ROOT, analyzePage } from './analyze-bundle.js';
-import { BUDGET, FORBIDDEN, PHASE_8, PHASE_9A, PHASE_9B, PHASE_10B, PHASE_10C1, PHASE_10C2A, PHASE_10C2B, PHASE_10C3, PHASE_10F, PHASE_10G, PHASE_10H, PHASE_10I, PHASE_10J, PHASE_11A, PHASE_11A3, PHASE_11B, PHASE_12, PHASE_13, PHASE_14, PHASE_15, PHASE_16, PHASE_17, PHASE_18, PHASE_19, PHASE_20, PHASE_21A, PHASE_21B, PHASE_21C, PHASE_21D, PHASE_21E, PHASE_21F, PHASE_21G, PHASE_22, PHASE_23, PHASE_24, PHASE_26, PHASE_32, PHASE_33, PHASE_34, PHASE_35, PHASE_36, PHASE_38, PHASE_39, PHASE_40, PHASE_41, PHASE_42, checkBudgets, utilityClasses } from './bundle-budget.js';
+import { BUDGET, FORBIDDEN, PHASE_8, PHASE_9A, PHASE_9B, PHASE_10B, PHASE_10C1, PHASE_10C2A, PHASE_10C2B, PHASE_10C3, PHASE_10F, PHASE_10G, PHASE_10H, PHASE_10I, PHASE_10J, PHASE_11A, PHASE_11A3, PHASE_11B, PHASE_12, PHASE_13, PHASE_14, PHASE_15, PHASE_16, PHASE_17, PHASE_18, PHASE_19, PHASE_20, PHASE_21A, PHASE_21B, PHASE_21C, PHASE_21D, PHASE_21E, PHASE_21F, PHASE_21G, PHASE_22, PHASE_23, PHASE_24, PHASE_26, PHASE_32, PHASE_33, PHASE_34, PHASE_35, PHASE_36, PHASE_38, PHASE_39, PHASE_40, PHASE_41, PHASE_42, PHASE_43, checkBudgets, utilityClasses } from './bundle-budget.js';
 import { SAMPLE_PICTURE_NAMES } from '../migration/src/lib/setup/sample-pictures.js';
 import { pageProblems } from './release-proofs.js';
 
@@ -541,6 +541,16 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
     assert.ok(built.admin.htmlGzip < BUDGET.admin, `the admin page is under its ${bytes(BUDGET.admin)} budget`);
     assert.match(built.participant.html, /Tap a box and choose Low, Medium or High./, 'the participant page has the level menu');
     assert.doesNotMatch(built.participant.html, /Press and hold|Cleared. Undo|data-holding|rating-mosaic/, 'and none of what went');
+  });
+
+  it('Prompt 43 (Today, Session settings: chips and a Change / Hide toggle) left the participant page exactly as it was and kept the admin page under its budget', () => {
+    console.log(`  Prompt 43: the participant page ${bytes(PHASE_43.participantBefore)} -> ${bytes(built.participant.htmlGzip)} gzip; the admin page ${bytes(PHASE_43.adminBefore)} -> ${bytes(built.admin.htmlGzip)} (the brief asked 700,000 B; the budget is ${bytes(BUDGET.admin)})`);
+    assert.equal(built.participant.htmlGzip, PHASE_43.participantBefore, 'the participant page did not change');
+    assert.equal(PHASE_43.participantAfter - PHASE_43.participantBefore, PHASE_43.participantAllowance, 'as measured when Prompt 43 ended');
+    assert.deepEqual(utilityClasses(built.participant.html), [...PHASE_43.participantUtilities], "the participant page's Tailwind rules are the ones it had");
+    assert.ok(built.admin.htmlGzip < BUDGET.admin, `the admin page is under its ${bytes(BUDGET.admin)} budget`);
+    assert.match(built.admin.html, /Changes save automatically/, 'the admin page has the settings footer');
+    assert.doesNotMatch(built.participant.html, /Changes save automatically|settings__fold/, 'and the participant page none of it');
   });
 
   it('the Tailwind rules check can fail: a rule added to the participant page, or one taken away, is found', () => {

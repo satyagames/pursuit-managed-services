@@ -21,6 +21,8 @@ const BRIEF = {
   Pictures: 'image', 'Single select': 'radio', 'Multi select': 'checks', 'True or false': 'toggle', 'Confidence question': 'slider', Ranked: 'podium',
   'Open text': 'message', 'Art of the Possible': 'matrix', 'Move up': 'arrow-up', 'Move down': 'arrow-down', Blocker: 'alert-octagon',
   Warning: 'alert-triangle', Ready: 'check-circle', Info: 'info', Setup: 'database', 'Sign in': 'lock',
+  // Prompt 43: Session settings' chips.
+  'Staff sign in': 'badge', Sequential: 'steps', 'Open flow': 'grid',
 };
 
 async function namesAsked() {

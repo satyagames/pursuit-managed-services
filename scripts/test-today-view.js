@@ -4,9 +4,14 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  controlsSummary, failureText, goLiveLabel, goLiveWhy, levelCounts, otherSessionsOf, pickableClients, readinessSummary, sinceText, upsertSession,
+  failureText, goLiveLabel, goLiveWhy, levelCounts, otherSessionsOf, pickableClients, readinessSummary, settingsChips, sinceText, staffNotice, upsertSession,
 } from '../migration/src/lib/admin/today-view.js';
-import { localDate } from '../migration/src/lib/admin/admin-today.js';
+import { STAFF_MODE_WARNING, localDate } from '../migration/src/lib/admin/admin-today.js';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 describe("the admin's Today screen, worked out before it draws (Phase 17)", () => {
   it('"Live since": a time today, a date and time on another day, "not recorded" when there is none or it cannot be read', () => {
@@ -19,11 +24,61 @@ describe("the admin's Today screen, worked out before it draws (Phase 17)", () =
     assert.equal(sinceText('not a date', today), 'not recorded');
   });
 
-  it('Prompt 38: the three settings in one line; an unset mode is staff sign-in, as the data layer reads it', () => {
-    assert.equal(controlsSummary(null), '');
-    assert.equal(controlsSummary({}), 'Staff sign in · Sequential · Confidence check off');
-    assert.equal(controlsSummary({ participationMode: 'staff', activityFlow: 'open', confidenceCheck: true }), 'Staff sign in · Open · Confidence check on');
-    assert.equal(controlsSummary({ participationMode: 'client-visit', activityFlow: 'sequential', confidenceCheck: false }), 'Guests scan a personal QR · Sequential · Confidence check off');
+  it('Prompt 43: the three settings are three chips, icon first then a short word, for all eight combinations; an unset mode is staff sign-in', () => {
+    assert.deepEqual(settingsChips(null), []);
+    const words = (session) => settingsChips(session).map((chip) => `${chip.icon} ${chip.text}`);
+    assert.deepEqual(words({}), ['badge Staff sign in', 'steps Sequential', 'gauge Confidence off']);
+    const table = [
+      ['staff', 'sequential', false, ['badge Staff sign in', 'steps Sequential', 'gauge Confidence off']],
+      ['staff', 'sequential', true, ['badge Staff sign in', 'steps Sequential', 'gauge Confidence on']],
+      ['staff', 'open', false, ['badge Staff sign in', 'grid Open', 'gauge Confidence off']],
+      ['staff', 'open', true, ['badge Staff sign in', 'grid Open', 'gauge Confidence on']],
+      ['client-visit', 'sequential', false, ['qr Guests scan QR', 'steps Sequential', 'gauge Confidence off']],
+      ['client-visit', 'sequential', true, ['qr Guests scan QR', 'steps Sequential', 'gauge Confidence on']],
+      ['client-visit', 'open', false, ['qr Guests scan QR', 'grid Open', 'gauge Confidence off']],
+      ['client-visit', 'open', true, ['qr Guests scan QR', 'grid Open', 'gauge Confidence on']],
+    ];
+    for (const [participationMode, activityFlow, confidenceCheck, expected] of table) {
+      const chips = settingsChips({ participationMode, activityFlow, confidenceCheck });
+      assert.deepEqual(chips.map((chip) => `${chip.icon} ${chip.text}`), expected, `${participationMode} ${activityFlow} ${confidenceCheck}`);
+      assert.deepEqual(chips.map((chip) => chip.group), ['mode', 'flow', 'check'], 'one chip per group, in the order of the panel');
+    }
+  });
+
+  it('Prompt 43: a chip changed from the default (staff sign-in, sequential, confidence off) is marked, so a leader sees what is non-standard', () => {
+    const changed = (session) => settingsChips(session).map((chip) => chip.changed);
+    assert.deepEqual(changed({}), [false, false, false]);
+    assert.deepEqual(changed({ participationMode: 'staff', activityFlow: 'sequential', confidenceCheck: false }), [false, false, false]);
+    assert.deepEqual(changed({ participationMode: 'client-visit', activityFlow: 'sequential', confidenceCheck: false }), [true, false, false]);
+    assert.deepEqual(changed({ participationMode: 'staff', activityFlow: 'open', confidenceCheck: false }), [false, true, false]);
+    assert.deepEqual(changed({ participationMode: 'staff', activityFlow: 'sequential', confidenceCheck: true }), [false, false, true]);
+    assert.deepEqual(changed({ participationMode: 'client-visit', activityFlow: 'open', confidenceCheck: true }), [true, true, true]);
+  });
+
+  it('Prompt 43: the staff-mode notice only while Staff sign in is chosen (and the session has not ended); the Identification chip carries it as a marker', () => {
+    assert.equal(staffNotice(null), '');
+    assert.equal(staffNotice({}), STAFF_MODE_WARNING);
+    assert.equal(staffNotice({ participationMode: 'staff' }), STAFF_MODE_WARNING);
+    assert.equal(staffNotice({ participationMode: 'client-visit' }), '');
+    assert.equal(staffNotice({ participationMode: 'staff', status: 'completed' }), '');
+    assert.equal(settingsChips({ participationMode: 'staff' })[0].warning, STAFF_MODE_WARNING);
+    assert.equal(settingsChips({ participationMode: 'client-visit' })[0].warning, '');
+    assert.ok(settingsChips({}).slice(1).every((chip) => chip.warning === ''), 'only the Identification chip carries it');
+  });
+
+  it('Prompt 43: without events.run for the session shown, the chips are not buttons and there is no toggle or panel; the toggle never says Done', async () => {
+    const read = (file) => readFile(path.join(ROOT, 'migration/src/admin', file), 'utf8');
+    const [controls, today] = await Promise.all([read('TodayControls.svelte'), read('AdminToday.svelte')]);
+    assert.match(today, /mayChange=\{!access \|\| can\(access, 'events\.run', \{ clientId: controlSession\?\.clientId \}\)\}/, 'AdminToday asks can() for the session shown');
+    const markup = controls.slice(controls.indexOf('</script>'), controls.indexOf('<style>'));
+    const chipsAt = markup.indexOf('{#each chips as chip');
+    const chipBlock = markup.slice(chipsAt, markup.indexOf('{/each}', chipsAt));
+    assert.match(chipBlock, /this=\{mayChange \? 'button' : 'span'\}/, 'a button only when the person may change it, else a plain chip');
+    assert.match(controls, /button\.chip \{[^}]*cursor: pointer/, 'the pointer and the hover only on a chip that is a button');
+    assert.match(chipBlock, /onclick=\{mayChange \? /, 'a plain chip opens nothing');
+    assert.equal((markup.match(/\{#if mayChange\}/g) ?? []).length, 2, 'the toggle and the panel each behind mayChange');
+    assert.ok(!/>\s*Done\s*</.test(markup) && !/'Done'/.test(controls), 'no Done in the card');
+    assert.match(markup, />Change<\/span><span[^>]*>Hide<\/span>/, 'both words, one shown');
   });
 
   it('the readiness line: checking, blockers (and warnings), ready with warnings, ready', () => {
