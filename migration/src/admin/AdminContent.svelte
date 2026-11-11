@@ -337,8 +337,10 @@
     object-fit: contain;
   }
 
+  /* (Beside its picker, not above it: no inset, Prompt 40.) */
   .content-client__label {
     margin: 0;
+    padding-inline-start: 0;
   }
 
   .content-client__pick {

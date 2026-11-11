@@ -325,7 +325,7 @@
       recordAnswer(sectionId, ungradedRecord(question, answer, answerRecord(question.id)));
       if (isMatrix) {
         dropMatrixDraft(question.id);
-        // (Prompt 35) What the hub's mosaic and the thank-you count draw: this visit's, in memory, from the answer just saved.
+        // (Prompt 35) What the thank-you counts: this visit's, in memory, from the answer just saved (the hub's mosaic went in Prompt 42).
         const shape = { rows: question.options, criteria: question.criteria ?? [] };
         visitRatings[sectionId] = glanceOf(decodeAnswer(answer, shape).grid, shape);
       }

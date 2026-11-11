@@ -54,9 +54,6 @@ export function decodeAnswer(list, shape = {}) {
   return { grid, dropped };
 }
 
-/** A tap: not rated, then Low, Medium, High, and not rated again. @param {number | undefined} level @returns {number | undefined} */
-export const cycle = (level) => (level === 3 ? undefined : (level ?? 0) + 1);
-
 /** The boxes still to rate, of the rows and criteria the question has now. @param {Grid} grid @param {Shape} shape */
 export function cellsLeft(grid, { rows, criteria }) {
   let left = 0;

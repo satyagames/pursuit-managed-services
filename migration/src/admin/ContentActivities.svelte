@@ -334,7 +334,7 @@
 {#if working}<p role="status" class="content-working">{working}</p>{/if}
 
 <div class="content-layout">
-  <section class="content-activities" aria-labelledby="activities-heading">
+  <section class="content-activities adm-sticky-col" aria-labelledby="activities-heading">
     <!-- (Prompt 32: at the top of the activities, so the questions beside them start higher on a laptop.) -->
     <SampleNotice client={client as never} {busy} onConfirm={() => void confirmSample()} />
     <div class="content-check" data-testid="content-check">
@@ -366,11 +366,12 @@
     {/if}
   </section>
 
-  <section class="content-detail" aria-label="Questions of the selected activity">
+  <section class="content-detail adm-sticky-col" aria-label="Questions of the selected activity">
     {#if selected}
       {#key selected.id}
         <ContentQuestions
           section={selected}
+          place={owned.findIndex((entry) => entry.id === selected.id) + 1}
           clientSlug={effectiveSlug(dataService, client)}
           {onToast}
           onChanged={(sectionId, questionIds) => { sections = sections.map((item) => item.id === sectionId ? { ...item, questionIds } : item); }}

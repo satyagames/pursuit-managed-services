@@ -304,13 +304,13 @@
     position: relative;
     width: min(100%, var(--frame-max, 14rem));
     overflow: hidden;
-    background: #1b2430;
+    background: var(--adm-stage);
     border-radius: 0.5rem;
     box-shadow: 0 0 0 1px var(--adm-line);
   }
 
   .asset__frame--checker {
-    background: conic-gradient(#8a93a0 25%, #aeb5c0 0 50%, #8a93a0 0 75%, #aeb5c0 0) 0 0 / 16px 16px;
+    background: conic-gradient(var(--adm-check-a) 25%, var(--adm-check-b) 0 50%, var(--adm-check-a) 0 75%, var(--adm-check-b) 0) 0 0 / 16px 16px;
   }
 
   .asset__frame--aim {
@@ -351,11 +351,11 @@
   .asset__guide rect,
   .asset__guide ellipse {
     fill: none;
-    stroke: #fff;
+    stroke: var(--adm-surface);
     stroke-width: 2;
     stroke-dasharray: 6 5;
     vector-effect: non-scaling-stroke;
-    filter: drop-shadow(0 0 1px rgb(0 0 0 / 0.9));
+    filter: drop-shadow(0 0 1px var(--adm-picture-edge));
   }
 
   .asset__focus {
@@ -363,7 +363,7 @@
     width: 1.1rem;
     height: 1.1rem;
     background: var(--focus);
-    border: 2px solid #fff;
+    border: 2px solid var(--adm-surface);
     border-radius: 50%;
     box-shadow: 0 0 0 2px var(--adm-ink);
     transform: translate(-50%, -50%);

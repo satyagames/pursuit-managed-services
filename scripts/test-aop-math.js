@@ -2,7 +2,8 @@
 // worked out by hand. The hand-worked oracle of the brief is the first describe: three guests, two rows, three criteria.
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { MAX_MATRIX_ANSWER, cellsLeft, cycle, decodeAnswer, encodeAnswer, isComplete, nextEmpty } from '../migration/src/lib/participant/aop-answer.js';
+import * as aopAnswer from '../migration/src/lib/participant/aop-answer.js';
+const { MAX_MATRIX_ANSWER, cellsLeft, decodeAnswer, encodeAnswer, isComplete, nextEmpty } = aopAnswer;
 import { aopResults, byGroup, criterionProfile, poolAop, whereToStart } from '../migration/src/lib/results/aop-math.js';
 
 const V = { id: 'c-aaaaaa', label: 'Volume', direction: 'favours' };
@@ -200,8 +201,8 @@ describe('the answer', () => {
   it('a later rating of the same cell wins, as an edit would', () => {
     assert.equal(decodeAnswer(['row-a:c-aaaaaa=1', 'row-a:c-aaaaaa=3'], shape).grid['row-a'][V.id], 3);
   });
-  it('cycles unset, Low, Medium, High, unset', () => {
-    assert.deepEqual([cycle(undefined), cycle(1), cycle(2), cycle(3), cycle(0)], [1, 2, 3, undefined, 1]);
+  it('has no tap cycle (Prompt 42): a tap opens the level menu, and only a choice in it rates (lib/participant/aop-menu.js)', () => {
+    assert.equal('cycle' in aopAnswer, false);
   });
   it('counts what is left, is complete at none, and finds the next empty box from where it is', () => {
     const grid = { 'row-a': { [V.id]: 1 } };

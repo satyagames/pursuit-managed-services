@@ -23,7 +23,7 @@
 
   .client-tags__tag {
     padding: 0.1rem 0.6rem;
-    border: 1px solid var(--line, #d0d0ce);
+    border: 1px solid var(--adm-line);
     border-radius: 999px;
     color: var(--ink);
     font-size: 1rem;

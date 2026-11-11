@@ -118,7 +118,7 @@
     <form class="reporting__form" onsubmit={(event) => void save(event)} novalidate>
       <div class="field">
         <label class="field__label" for="reporting-month">Fiscal year starts in</label>
-        <select id="reporting-month" class="input" bind:value={month} disabled={saving}>
+        <select id="reporting-month" class="select select--block" bind:value={month} disabled={saving}>
           {#each MONTH_NAMES as name, at (name)}<option value={String(at + 1)}>{name}</option>{/each}
         </select>
       </div>

@@ -53,6 +53,12 @@ async function atQuestion(page: Page, fake: Fake, token: string) {
 const axeOn = async (page: Page) => expect((await new AxeBuilder({ page }).include('[data-testid="matrix"]').analyze()).violations.map((each) => `${each.id}: ${each.nodes[0]?.target}`)).toEqual([]);
 const saved = (fake: Fake, trackIndex = 0) => JSON.parse(fake.lists.get('responses')?.[trackIndex]?.ResponsesJson ?? '[]');
 const send = (page: Page) => page.getByRole('button', { name: /^Send/ });
+const progress = (page: Page) => page.getByRole('progressbar', { name: 'Your progress' });
+/** Prompt 42: a tap opens the box's choices, and the choice rates it. */
+async function rate(page: Page, name: string, level: 'Low' | 'Medium' | 'High') {
+  await page.getByRole('button', { name }).click();
+  await page.getByRole('menu').getByRole('menuitemradio', { name: level }).click();
+}
 
 test.describe('the guest', () => {
   test('rates by keyboard alone; Send says what is left and turns on at none; what is saved is one answer; a changed rating does not move the first', async ({ page }) => {
@@ -69,17 +75,19 @@ test.describe('the guest', () => {
     await expect(page.getByRole('button', { name: 'Sub-process 1, Strategic value: High' })).toBeFocused();
     await page.keyboard.press('Delete');
     await expect(first).toBeFocused();
+    // (Prompt 42: Space and Down open the choices; Page Down moves to the row below.)
     await page.keyboard.press('Space');
+    await page.keyboard.press('Enter');
     await expect(page.getByRole('button', { name: 'Sub-process 1, Strategic value: Low' })).toBeVisible();
     await page.keyboard.press('ArrowRight');
     await page.keyboard.press('m');
-    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('PageDown');
     await page.keyboard.press('h');
     await page.keyboard.press('ArrowLeft');
     await expect(send(page)).toHaveText('Send (1 box left)');
     await page.keyboard.press('l');
-    await expect(page.getByTestId('matrix-count')).toHaveText('4 of 4 rated');
-    await expect(page.getByText('All rated', { exact: true })).toBeVisible();
+    await expect(progress(page)).toHaveAttribute('aria-valuenow', '4');
+    await expect(page.getByText('All done', { exact: true })).toBeVisible();
     await expect(send(page)).toHaveText('Send');
     await send(page).click();
     await expect(page.getByRole('heading', { name: /Nice work/ })).toBeVisible();
@@ -90,8 +98,8 @@ test.describe('the guest', () => {
     expect(record.answer).toEqual(encodeAnswer({ [optionIds[0]]: { [criteria[0].id]: 1, [criteria[1].id]: 2 }, [optionIds[1]]: { [criteria[1].id]: 3, [criteria[0].id]: 1 } }));
     // A returning guest sees what they sent, and may change it: the first answer stands.
     await page.getByRole('button', { name: 'Change my ratings' }).click();
-    await expect(page.getByTestId('matrix-count')).toHaveText('4 of 4 rated');
-    await page.getByRole('button', { name: 'Sub-process 1, Strategic value: Low' }).click();
+    await expect(progress(page)).toHaveAttribute('aria-valuenow', '4');
+    await rate(page, 'Sub-process 1, Strategic value: Low', 'Medium');
     await send(page).click();
     await expect(page.getByRole('heading', { name: /Nice work/ })).toBeVisible();
     await expect.poll(() => saved(fake)[0].answer.join()).toContain('=2');
@@ -103,12 +111,12 @@ test.describe('the guest', () => {
     const { fake, tokens } = await site();
     await atQuestion(page, fake, tokens[0]);
     await page.getByRole('button', { name: 'All at once' }).click(); // (Prompt 35: an iPad in portrait starts One at a time)
-    await page.getByRole('button', { name: 'Sub-process 1, Strategic value: not rated' }).click();
-    await page.getByRole('button', { name: 'Sub-process 2, Volume / repeatability: not rated' }).click();
-    await expect(page.getByTestId('matrix-count')).toHaveText('2 of 4 rated');
+    await rate(page, 'Sub-process 1, Strategic value: not rated', 'Low');
+    await rate(page, 'Sub-process 2, Volume / repeatability: not rated', 'Low');
+    await expect(progress(page)).toHaveAttribute('aria-valuenow', '2');
     expect(fake.lists.get('responses')?.length ?? 0).toBe(0);
     await page.reload();
-    await expect(page.getByTestId('matrix-count')).toHaveText('2 of 4 rated');
+    await expect(progress(page)).toHaveAttribute('aria-valuenow', '2');
   });
 
   test('axe finds nothing in either view, Next empty box finds the box, the hint opens, and the targets are big enough', async ({ page }) => {
@@ -119,7 +127,7 @@ test.describe('the guest', () => {
     const box = await page.getByRole('button', { name: 'Sub-process 1, Strategic value: not rated' }).boundingBox();
     expect(box!.height).toBeGreaterThanOrEqual(44);
     expect(box!.width).toBeGreaterThanOrEqual(44);
-    await page.getByRole('button', { name: 'Sub-process 1, Strategic value: not rated' }).click();
+    await rate(page, 'Sub-process 1, Strategic value: not rated', 'Low');
     await page.getByRole('button', { name: 'Next empty box' }).click();
     await expect(page.getByRole('button', { name: 'Sub-process 1, Volume / repeatability: not rated' })).toBeFocused();
     await page.getByRole('button', { name: 'About Strategic value' }).first().click();
@@ -133,7 +141,7 @@ test.describe('the guest', () => {
     const segment = await page.getByRole('group', { name: 'Volume / repeatability' }).getByRole('button', { name: 'High' }).boundingBox();
     expect(segment!.height).toBeGreaterThanOrEqual(56);
     await page.getByRole('group', { name: 'Volume / repeatability' }).getByRole('button', { name: 'High' }).click();
-    await expect(page.getByTestId('matrix-count')).toHaveText('2 of 15 rated');
+    await expect(progress(page)).toHaveAttribute('aria-valuenow', '2');
     await page.getByRole('button', { name: 'Next sub-process' }).click(); // (Prompt 35: the card's own Next)
     await expect(page.getByText('Sub-process 2 of 3')).toBeVisible();
     await page.screenshot({ path: `${shots}one-at-a-time-ipad.png`, fullPage: true });
@@ -153,7 +161,8 @@ test.describe('the guest', () => {
     const { fake, tokens } = await site({ rows: 25, criteria: 6 });
     await atQuestion(page, fake, tokens[0]);
     await page.getByRole('button', { name: 'All at once' }).click();
-    await expect(page.getByTestId('matrix-count')).toHaveText('0 of 150 rated');
+    await expect(progress(page)).toHaveAttribute('aria-valuenow', '0');
+    await expect(progress(page)).toHaveAttribute('aria-valuetext', '0 of 150 boxes');
     // (Prompt 35: the page scrolls, not the grid, and the header stays under the strip that stays at the top.)
     const head = page.getByRole('columnheader', { name: 'Interest' });
     await page.evaluate(() => window.scrollTo(0, 1200));

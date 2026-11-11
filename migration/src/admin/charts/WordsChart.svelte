@@ -145,7 +145,7 @@
   }
 
   .words__word[aria-pressed='true'] {
-    color: #fff;
+    color: var(--adm-ink); /* ink on graph 1, 4.55:1 (white is 3.5:1) */
     background: var(--viz-primary);
     border-color: var(--viz-primary);
   }

@@ -560,6 +560,7 @@ export const PHASE_35 = Object.freeze({
  */
 export const PHASE_36 = Object.freeze({
   participantBefore: 189_903, adminBefore: 700_077, participantAllowance: 4_096,
+  participantAfter: 193_978,
   participantUtilities: PHASE_11A.participantUtilities,
 });
 
@@ -586,5 +587,41 @@ export const PHASE_38 = Object.freeze({
 export const PHASE_39 = Object.freeze({
   participantBefore: 193_978, adminBefore: 714_653, participantAllowance: 0,
   participantAfter: 193_978, adminAfter: 717_609,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
+
+/**
+ * Prompt 40 (dividers between the bar's tabs, a list and its detail held side by side, Brand's controls left of its preview, field labels in line
+ * with their fields), measured from where Prompt 39 left the pages (17b268c: participant 193,978 B, admin 717,588 B). The participant page
+ * may not change at all, and its Tailwind rules stay its own. The brief asked the admin page to stay under 700,000 B; it already stood over it,
+ * so it is held to its 720,000 B budget. `adminAfter` is the page when the work stopped.
+ */
+export const PHASE_40 = Object.freeze({
+  participantBefore: 193_978, adminBefore: 717_588, participantAllowance: 0,
+  participantAfter: 193_978, adminAfter: 718_558,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
+
+/**
+ * Prompt 41 (the Deloitte green palette on the whole admin page, through tokens only), measured from where Prompt 40 left the pages (873f919:
+ * participant 193,978 B, admin 718,558 B). The participant page may not change at all, and its Tailwind rules stay its own. The brief asked the
+ * admin page to stay under 700,000 B; it already stood over it, so it is held to its 720,000 B budget. `adminAfter` is the page when the work stopped.
+ */
+export const PHASE_41 = Object.freeze({
+  participantBefore: 193_978, adminBefore: 718_558, participantAllowance: 0,
+  participantAfter: 193_978, adminAfter: 718_972,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
+
+/**
+ * Prompt 42 (the Art of Possibility's participant polish: wider card margins, one tap opens the level menu, headings in two lines, a legend of colour
+ * and word, no counts outside the summary, no Undo, no grid icon), measured from where Prompt 41 left the pages (b2d2ad8, built on 11 Nov 2026:
+ * participant 193,978 B, admin 718,978 B). The participant page may not grow at all (CLAUDE.md rule 3; the brief expected it to shrink, and it did:
+ * the press and hold, Undo, the count pills and the mosaic went). The admin page carries the hub for Brand Studio's preview, so it shrinks with it;
+ * no admin file changed. `participantAfter` and `adminAfter` are the pages when the work stopped.
+ */
+export const PHASE_42 = Object.freeze({
+  participantBefore: 193_978, adminBefore: 718_978, participantAllowance: 0,
+  participantAfter: 193_942, adminAfter: 718_034,
   participantUtilities: PHASE_11A.participantUtilities,
 });

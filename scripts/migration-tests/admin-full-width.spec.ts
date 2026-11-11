@@ -83,7 +83,7 @@ const measure = (page: Page) => page.evaluate(() => {
   const end = box(document.querySelector('.shell__end'))!;
   // The splits: each pair of columns that sit side by side.
   const pairs: [string, string][] = [['.today__main', '.today__side'], ['.clients__list', '.clients__detail'], ['.content-activities', '.content-detail'],
-    ['.brand__preview', '.brand__controls'], ['.session-list', '.results-layout__session'], ['.people__list', '.people__detail']];
+    ['.brand__controls', '.brand__preview'], ['.session-list', '.results-layout__session'], ['.people__list', '.people__detail']];
   const splits = pairs.map(([a, b]) => ({ a, b, one: box(document.querySelector(a)), two: box(document.querySelector(b)) }))
     .filter(({ one, two }) => one && two && one.right <= two.left + 1)
     .map(({ a, b, one, two }) => ({ pair: `${a} | ${b}`, gap: Math.abs(one!.top - two!.top) }));

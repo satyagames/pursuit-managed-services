@@ -84,7 +84,7 @@
     background: var(--viz-surface);
     border: 1px solid var(--viz-text-secondary);
     border-radius: 0.4rem;
-    box-shadow: 0 4px 14px rgb(0 0 0 / 0.16);
+    box-shadow: var(--adm-shadow-pop);
     pointer-events: none;
     overflow-wrap: anywhere;
   }

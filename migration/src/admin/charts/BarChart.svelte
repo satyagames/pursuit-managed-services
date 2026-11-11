@@ -258,17 +258,19 @@
     display: block;
     width: calc(var(--share) * 100%);
     height: var(--bar-thickness);
-    background: var(--viz-primary-tint);
-    border-radius: 0 4px 4px 0; /* rounded at the value's end, square on the baseline */
+    /* Prompt 41: every bar is graph 1, from 45% to full, left to right. The top choice and the correct answer are told by their words ("Top
+       choice", the tick and "Correct"), never by the bar's colour; the gradient is decoration and the value is written beside it. */
+    background: var(--viz-bar, var(--viz-primary-tint));
+    border-radius: 0 6px 6px 0; /* rounded at the value's end, square on the baseline */
     transition: width 400ms ease-out;
   }
 
   .bars__bar--top {
-    background: var(--viz-primary);
+    background: var(--viz-bar, var(--viz-primary));
   }
 
   .bars__bar--correct {
-    background: var(--viz-correct);
+    background: var(--viz-bar, var(--viz-correct));
   }
 
   .bars:not([data-drawn]) .bars__bar {

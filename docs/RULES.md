@@ -1858,21 +1858,22 @@ against them at 1366 by 650, 1920 by 950 and 683 by 700, and `admin-explains.spe
   up, H), in `migration/src/styles/aop-level-tokens.css` on a white well: the one set of colours on the participant page that is not the client's plate
   (the site owner's grant, for this question only). Medium and High are too light for white alone, so every rated box has an edge of its own darker
   colour (3:1 or more); Low's white letter is 19 px bold. `scripts/test-participant-contrast.js` reads the file and fails when a pair drops under its
-  floor. The words "Colour shows the rating, not good or bad." stay under the strip.
-- **Boxes are 48 px or more, headings are whole words, the page scrolls once.** A criterion heading wraps between words only; the grid has no scroll
+  floor. The words "Colour shows the rating, not good or bad." stay under the strip (Prompt 42: under the legend).
+- **Boxes are 48 px or more, headings are whole words, the page scrolls once.** A criterion heading wraps between words only (Prompt 42: in two lines at
+  most, its qualifier in its note); the grid has no scroll
   of its own (only when a guest chose it on a screen narrower than `gridWidthFor`, `lib/participant/aop-view.js`); the strip stays at the top in the
   grid. The view starts from the width and the orientation (`defaultView`), and a choice lasts the visit.
 - **The stored answer does not change.** A box changes in place (`setCell`) and `encodeAnswer` stores exactly what Prompt 34 stored
   (`scripts/test-aop-view.js`: random runs of taps against the old copy, and a golden answer).
-- **A press held 650 ms opens the level menu and never also rates**; Enter, the menu key, Shift+F10 and a right-click open the same menu; Escape
-  closes it and puts the keyboard back on the box; it is never a trap. A clear offers Undo for 8 seconds; Undo fills only boxes still empty.
+- **Replaced by Prompt 42:** a tap opens the level menu, and only a choice in it rates the box; there is no press and hold, no tap-to-cycle and no
+  Undo (see "Rules from Prompt 42"). Escape still closes the menu and puts the keyboard back on the box; it is never a trap.
 - **Motion through the plan only.** Every effect is in `lib/motion/aop-motion-plan.js` (transform and opacity only, each length a token of
   `TOKENS.aop`, a fade at the reduced level, nothing at none) and is played by `lib/motion/motion.ts` (`playEffect`, `flyOff`, `playWave`). No
   more than `MAX_CONCURRENT` (16) things move at once: Clear all flies at most 15 copies, the wave is spaced to 13 or fewer, and many boxes changing in
   one go do not fade their colour. The milestones are 25, 50 and 75 percent rounded up (17, 33 and 49 of 65), each said once a visit.
-- **Sound through `lib/effects/effects.ts` only** (`aopRate`, `aopHoldOpen`, `aopRowDone`, `aopMilestone`, `aopClearAll`, `aopAllRated`), behind the
+- **Sound through `lib/effects/effects.ts` only** (`aopRate`, `aopRowDone`, `aopMilestone`, `aopClearAll`, `aopAllRated`; Prompt 42 took out the hold's cue), behind the
   Sound switch, started only inside a tap; the cues are data in `sound-cues.js`, in C major pentatonic, and the rating cues share one 60 ms gate.
-- **"Your ratings at a glance", the hub's mosaic and the thank-you's count are the guest's own**, made on the device (`highestRated`, `glanceOf`;
+- **"Your ratings at a glance" and the thank-you's count are the guest's own** (Prompt 42 took out the hub's mosaic), made on the device (`highestRated`, `glanceOf`;
   `lib/participant/aop-glance.svelte.ts` holds this visit's, in memory): nothing new is stored or sent and no one else sees them.
 - **The admin page does not carry the rating grid**: `migration/vite.admin.config.ts` puts `MatrixRating.admin.svelte` in its place (Brand Studio's
   sample has no such question). The participant page may grow by 12,288 B gzip for this prompt (`PHASE_35`).
@@ -1921,14 +1922,8 @@ against them at 1366 by 650, 1920 by 950 and 683 by 700, and `admin-explains.spe
 - **Every screen answers "are we ready, and what next" first**, shows the one next action, and folds the rest with a line of what it holds now
   (`.adm-fold` and its `.adm-fold__summary`): advanced settings, history, filters, bulk tools, passed checks and danger actions. Nothing is folded
   blind.
-- **The palette** is `migration/src/styles/admin-tokens.css` by the brief's names: `--adm-bg` #F6F7F3, `--adm-surface` #FFFFFF, `--adm-surface-2`
-  #FAFBF8, `--adm-line` #E7EBE3, `--adm-line-strong` #D6DDD2, `--adm-ink` #1F2A24, `--adm-ink-2` #4B574F, `--adm-subtle` (the brief's muted)
-  #7B867F, `--adm-primary` #2F6B4F, `--adm-primary-deep` #22513B, `--adm-primary-wash` #EBF3EE, `--adm-accent` (lime) #A9CB6B, info, warn, danger
-  and ok (#3B7F8C, #B7791F, #B4443A, #3F8F5A) with their washes, and `--adm-dark1` #16231C for the live wall. The names the screens used before
-  (`--adm-card`, `--adm-muted`, `--adm-deep`, ...) point at the same palette. Muted, warn and ok are under 4.5:1 on white, so they are marks only;
-  words on a wash take its `*-ink` (`--adm-ok-ink` #2B6A40, `--adm-warn-ink` #7A4E12, `--adm-danger-ink` #9A3A31, `--adm-info-ink` #2C6370).
-  `scripts/test-admin-look.js` holds every value, every pair (words 4.5:1, marks 3:1) and that `admin-look.css` writes no colour of its own. No
-  black bar: the header is the surface with a line under it, and the Deloitte wordmark's letters are ink there.
+- **The palette**: Prompt 38's colours were replaced by Prompt 41's Deloitte green (see "Rules from Prompt 41"); its names point at that
+  palette. No black bar: the header is the surface with a line under it, and the Deloitte wordmark's letters are ink there.
 - **The files keep their own look.** The PDF, the PowerPoint and the leader report draw with `migration/src/styles/look-tokens.css` (`--look-*`),
   which no page loads; `lib/exports/report-look.js` is held equal to it.
 - **Type: Open Sans only**, embedded (400, 600, 700). Display 28/36, Title 20/28, H2 18/26, H3 16/24, Body 16/24, Label 13/16 upper case (column
@@ -1972,7 +1967,7 @@ The general alignment rules, for every admin screen:
    `admin.css`, from 1,024 px). The description sits beside the title only when it fits there on one line; longer, it goes under the title and
    never wraps beside a button.
 3. **A split view's columns start on one top line** and use the same card padding: Today 8 + 4, Clients 4 (at least 340 px) + 8 with the title
-   and Add client above both, Content's activities 5 + questions 7, Brand's preview 7 + controls 5, Results' sessions 3 (at least 280 px) + the
+   and Add client above both, Content's activities 5 + questions 7, Brand's controls 5 + preview 7 (Prompt 40), Results' sessions 3 (at least 280 px) + the
    session 9, People 4 + 8 with the title row above both. A side column sticks under the bar only while all of it fits above the bottom bar
    (`lib/admin/sticky-fit.js`, `data-sticky`); a taller one scrolls with the page.
 4. **Cards in a row are one height**, and buttons in a row one height and one radius. The brief's 36 px buttons are 44 px here: the target size of
@@ -2018,6 +2013,144 @@ And for the parts:
   page); `PHASE_39` in `scripts/bundle-budget.js` holds the participant page as it was.
 - `scripts/migration-tests/admin-full-width.spec.ts` holds all of this at 1024, 1280, 1366, 1440, 1536 and 1920 px and writes the pictures of
   1440 and 1920 to `test-results/admin/full-width/`.
+
+## Rules from Prompt 40 (tab dividers, a list and its detail kept side by side, edit left and preview right, labels in line; keep them holding)
+
+- **Tab dividers.** Between each two neighbouring tabs of the bar, a 1 x 20 px divider in `--adm-line`, in the bar's middle: drawn as
+  `.tab + .tab::before` in `admin-look.css`, so it is never read and there is none before the first tab or after the last, and it never meets the
+  active tab's underline on the bar's bottom edge. Each tab has 14 px at each side (`--adm-tab-pad`) and 9 px between two tabs
+  (`--adm-tab-gap`: 4 px, the divider, 4 px), so the word is as far from the divider on each side; the icon is 8 px from the word. Hover is the
+  primary wash; the active tab is ink with the accent underline the tab's whole width. The row stays one line with no scrollbar: from 1,280 to
+  1,365 px the tabs have 12 px at each side and the bar's parts 12 px between them, from 1,024 to 1,279 px 4 px and 4 px between tabs (the
+  divider in its middle); below 1,024 px the Menu's list has no dividers.
+- **A list and its detail stay side by side** (`.adm-sticky-col`, `.adm-selected`, `.adm-context` in `admin-look.css`). In a split view the
+  column that names the selection holds under the bar (and under Content's strip, `--adm-sticky-top`), 16 px down, as tall as the window leaves it
+  less 32 px (and the bottom bar), and scrolls inside itself: Clients' and People's list on the left, Content's activities and its questions. The
+  selection is the accent 3 px left edge on the primary wash (Prompt 41), in every list; when a client or person is opened its row is brought into the list's
+  view by scrolling the list alone (`showInColumn`, `lib/admin/sticky-fit.js`). A client's page starts with a 48 px strip held at the top of its
+  column: the logo, the name, the Active or Archived chip and Back to clients (the one Back button). Below 1,100 px the client or person replaces the
+  list, as before, and the strip is what says which one it is. A row's more menu opens upward when below would run past its column. On a
+  view-only screen (a disabled fieldset) nothing in a column can take the focus, so it scrolls with the page there (axe's scrollable-region rule).
+- **Content's activities**: choosing an activity never moves the page and the focus stays on the row pressed; its questions are beside it, the
+  panel's title its place and name ("5 · Straight Talk") with Add question, at the top of the panel at any scroll. A long list of activities
+  fades at its foot. The question rows keep their own Edit and Delete.
+- **Edit left, preview right.** Brand's controls are 5 of the 12 columns on the left and the preview 7 on the right, held under Content's strip
+  16 px down, its Device and Screen switches above it. The controls in this order: Pictures, then Colours (both open), then Animations, folded
+  to one line that says whether it is on; the reading and the keyboard order are the same. Below 1,100 px the controls come first and the preview
+  under them. The sticky bar keeps where Brand stands on the left and Revert to saved and Save brand on the right.
+- **Field labels in line.** Every `.field__label` over a field starts where the field's words do: `--adm-field-inset` (13 px, the field's 1 px
+  border and its 12 px padding), one rule in `admin-look.css` for every filter, editor and dialog. A label beside its field (Content's Client)
+  has no inset. A `<select>` in a field is the page's drawn `.select` (`.select--block` for the full width): a native select draws its words a few
+  px inside its padding, so they would not line up. The label stays 16 px (rule 9), not the brief's 12, and a field 44 px tall, not 40.
+- `scripts/migration-tests/admin-related.spec.ts` holds the dividers, the Clients list and strip, the last activity's questions, Brand's order and
+  People's labels at 1280, 1440 and 1920 px, and writes the pictures to `test-results/admin/related/`.
+
+## Rules from Prompt 41 (the Deloitte green palette on the whole admin page; keep them holding)
+
+- **One place for every colour.** `migration/src/styles/admin-tokens.css` holds every colour of the admin page and Setup (the brief's
+  tokens file; it kept its name, which the tests and both pages' entries read). No admin style writes a hex, `rgb()` or `hsl()`
+  of its own: `scripts/test-admin-palette.js` reads every `<style>`, `style=` and sheet of `migration/src/admin/`, `AdminApp.svelte`,
+  `SetupApp.svelte`, `admin.css`, `admin-look.css`, `setup.css` and `dev/AdminStyleguide.svelte` and fails on one (the wordmark's
+  `[fill='#fff']` selectors excepted). A colour a screen shows as data (a client's own brand colour) is not a style. The legacy sheets
+  (`styles/legacy/`) are overridden, never edited. The participant page never loads the file.
+- **The palette**, from six brand values only (neutral #222222 at 60%, accent #0DF200, secondary accent #26890D, graphs #0097A9, #00A3E0,
+  #75787B) and tints and shades of them. The alpha values are written as the solid colour each makes on white:
+
+  | Token | Value | Use |
+  |---|---|---|
+  | `--adm-ink` | #222222 | headings, body text, values |
+  | `--adm-neutral` | #7A7A7A (#222222 at 60%) | icons at rest, placeholders, large figures; never words under 24 px |
+  | `--adm-neutral-strong` | #595959 (75%) | every secondary word, hints, meta lines, inactive tabs |
+  | `--adm-line` | #E9E9E9 (10%) | card strokes, dividers, table lines, a bar's track |
+  | `--adm-line-strong` | #D3D3D3 (20%) | input borders |
+  | `--adm-bg`, `--adm-surface`, `--adm-surface-2` | #F5F6F4, #FFFFFF, #FAFAF9 | the page; cards; stripes, insets, a neutral chip |
+  | `--adm-primary` | #26890D | primary buttons (white words), Go live, active icons, the focus ring, a selected card's border, a switch that is on |
+  | `--adm-primary-hover` | #1F7009 | hover and pressed; every word in the primary's colour (links, Show, quiet buttons: `--adm-link`) |
+  | `--adm-primary-wash` | #EAF4E6 | selected rows, success chips, hover wash, group bands |
+  | `--adm-accent` | #0DF200 | decoration only (below) |
+  | `--adm-on-accent` | #222222 | words or an icon on an accent fill |
+  | `--adm-graph-1`, `--adm-graph-2`, `--adm-graph-3` | #0097A9, #00A3E0, #75787B | charts, with their tints `--adm-graph-1-45` and the rest |
+  | `--adm-dark` | #222222 | the dark live wall and any dark plate |
+
+  Prompt 38's names (`--adm-card`, `--adm-muted`, `--adm-deep`, `--adm-lime`, `--adm-ink-2` and the rest) are aliases of these, so every screen
+  took the palette at once. `--focus` is the primary on the admin page and Setup (the participant page keeps Deloitte green).
+- **#0DF200 is decoration only.** It is 1.5:1 on white: the active tab's 3 px underline, a selected card's 3 px left edge (on the primary wash),
+  a progress bar's end, the live dot, a card's top rule, an initials badge (ink words) and the focus ring's glow (`--adm-accent-glow`, 35%). It is
+  never words, never behind words that are not ink, never a large fill. `scripts/test-admin-palette.js` fails on a `color:` of it in any admin
+  style, and `scripts/migration-tests/admin-palette.spec.ts` on any drawn element with words in it or on it.
+- **Contrast.** Words are 4.5:1 and marks (an icon, a graph mark, a ring, a selected edge) 3:1 on what they sit on, at every size: the page's
+  16 px floor (rule 9) and axe leave no "14 px and larger" allowance. So the 60% neutral (4.29:1 on white) is never words, and words in the
+  primary take its shade #1F7009 (the primary is 4.50:1 on white with white words on it, but 4.15:1 on the page, 4.36:1 on a stripe and 3.98:1 on
+  its wash). `scripts/test-admin-palette.js` prints every pair with its ratio, and the brand's own pairs under a floor as REPORTED with the only use
+  they may have: the accent on white (1.53) and on the page (1.41), the neutral on white (4.29), the primary on the page (4.15) and on its wash
+  (3.98), #00A3E0 on white (2.87: a bar's value is always written beside it) and white on #0097A9 (3.50: no white words on a heat tile).
+- **The focus ring** is 2 px of `--focus` (the primary), 2 px off the control, with the accent at 35% glowing 8 px from the control's edge
+  (`box-shadow: 0 0 0 8px var(--adm-accent-glow)`); where the ring would be cut (a tab, an edge-to-edge summary, the panel) it is drawn inside.
+- **Status keeps its meaning, shape and word**, and the green is never the only "OK": success is the primary with `check-circle` on the primary
+  wash (words #1F7009); info is #0097A9 as the icon only, on its 10% wash, words ink; warning is #B7791F as the icon only (`alert-triangle`) on
+  #FBF3E2, words #7A4E12; danger is #B4443A (`alert-octagon`) on #FBEDEB, its words in the same colour (4.8:1); Live is the accent dot with the
+  word "Live" in ink; disabled is `--adm-disabled`. A chip's icon is in its status colour; a neutral chip is `--adm-surface-2` with a 1 px line
+  edge and #595959 words. Low, Medium and High keep their letters and shapes: danger, the amber's shade and the primary.
+- **Components.** The bar is white with a 1 px line under it; the active tab is ink with its icon in the primary and the accent underline;
+  the other tabs #595959. Primary buttons are the primary with white words; secondary buttons white with a `--adm-line-strong` border, ink
+  words and the primary wash on hover; danger buttons white with danger words and border, never green. Cards are white, 1 px line,
+  `--adm-shadow` (`0 1px 2px rgb(34 34 34 / 0.05), 0 8px 24px rgb(34 34 34 / 0.06)`). Switches: on is the primary with a white knob; off keeps
+  a #595959 edge (3:1 for the control's boundary; the brief's 20% line is 1.5:1).
+- **Charts on the admin page** draw with the three graph colours and their tints only (`--viz-*` re-pointed in `admin-tokens.css`, which loads
+  after `results-tokens.css`). Every bar is `--viz-bar`, graph 1 from 45% to full, left to right, rounded 6 px at its end; the top choice and the
+  correct answer keep the bar's colour and are told by their words (the "Correct" tick in the primary). A second series is graph 2, a third
+  graph 3. Single-value meters, the dashboard's "Moved to confident" and its shift are graph 1, the baseline a 2 px ink line; "Not measured" is a
+  grey track (graph 3 at 30%) with the word. A confidence scale is graph 1's tints. Art of Possibility's tiles run white to #0097A9 (10, 45, 65
+  and 100% for its four steps) with every figure in ink (4.55:1 or better; white is under 4.5:1 on every step). Gridlines are the line. The
+  dark wall is #222222 with white words and figures, the accent for lines and dots only and the bars in the graph colours (each 3:1 or better
+  on #222222, so none needed lightening). "View as table" stays. The PDF, PowerPoint and leader report keep their own palettes
+  (`results-tokens.css`, read by `lib/results/results-palette.js`, and `look-tokens.css`).
+- **The styleguide** (`dev/AdminStyleguide.svelte`) shows every palette and status token with its name, value and contrast on white with a
+  pass or fail badge (a mark and a word), a chart in the three graph colours, the heat scale, and the states of a button, a chip, a tab and a card.
+- `scripts/migration-tests/admin-palette.spec.ts` checks, on the built page at 1440 px, the underline #0DF200, the primary button #26890D with
+  white words, the page, the bar and the ring; runs axe on Today, Clients, Content's activities and Brand, Guests, Results and People; and
+  writes their pictures (and a dialog's) to `test-results/admin/palette/`.
+
+## Rules from Prompt 42 (the Art of Possibility, participant polish; keep them holding)
+
+They change some of Prompt 35's rules above (each says so there); the rest of Prompt 35 holds.
+
+- **The card's margins.** The white card (`.matrix`) has 32 px of padding (20 px under 600 px), and its instructions, its strip and the grid's first and
+  last columns keep 8 px more (`--matrix-inset`), so the instructions and the first row's names start on one line. The summary card and the One at a
+  time card take the same padding. The parts are 24 px apart, and the card is 24 px under the question's heading. The grid never gets a scroll of its
+  own for this: when thirteen rows do not fit an iPad in landscape, the page scrolls.
+- **One tap opens the choices; nothing else rates a box.** A tap or click on a box opens its level menu (`lib/participant/aop-menu.js`: `menuStep`),
+  a second tap on the same box closes it, a tap on another box moves it there: one menu at a time. Low, Medium, High, and Clear only when the box has a
+  rating (`menuChoices`), each row 48 px by 120 px or more, with the box's colour, shape and letter and its word; the chosen level has a check and a
+  dark outline. A choice sets exactly that level, plays the rating's cue, closes the menu and leaves the keyboard on the box. The menu opens below the
+  box with a 6 px gap, above when there is no room in the card or on the screen, and from the box's right edge on the last two columns (`placeMenu`);
+  it never covers its box. Escape, a tap outside, a choice, Tab and a scroll of more than 24 px close it, and the keyboard goes back to the box (after a
+  tap outside, only when the tap did not land on something of its own). There is no press and hold (a long press is a tap), no tap-to-cycle
+  (`cycle` is gone from `aop-answer.js`) and no Undo: "Clear all", in the ⋯ menu, asks "Remove all your ratings?" with Cancel and Remove.
+- **The keys.** A box is a button with `aria-haspopup="menu"` and `aria-expanded`, described by "Enter opens the choices; L, M or H rates; Delete
+  clears." Enter, Space and Down open the menu (`role="menu"`, `role="menuitemradio"`); Up and Down move in it and go round; L, M and H set a box
+  without the menu and in it; Delete and Backspace clear; Escape closes. Left and Right move along the rows, Up and Page Up and Page Down between them;
+  the menu key, Shift+F10 and a right-click open the menu too.
+- **Quick.** The menu is in the next frame after the tap and fades in over at most 120 ms (`TOKENS.aop.spring`), not at all at the reduced level or
+  with motion off; a choice paints in under 100 ms at a 4x slower processor (`aop-tap-menu.spec.ts` measures and prints both).
+- **Headings in two lines of whole words.** A criterion heading is its name, 13 px, 600, line height 1.25, centred and on the bottom line above its ⓘ,
+  so every ⓘ is on one line and every heading cell one height. A qualifier in brackets at the end of a label ("(counts against)") is not in the
+  heading: it is in the ⓘ note, in its exact words, and in the heading's accessible name (`headingParts`). The criteria columns are one width, at
+  least 112 px (with six criteria or more, Prompt 35's 96 px); the first column takes an equal share where there is room and 100 px (86 px) below
+  1,024 px (`GRID_MIN_WIDTH`, `gridWidthFor`). A heading that would take a third line closes its letters up a little, then the first column narrows,
+  then the columns widen and the grid scrolls inside its card (`fitHeadings`, `data-fit`); a grid that scrolls inside its card keeps its headings at
+  its own top. The sample fits an iPad upright at 112 px with nothing scrolling sideways.
+- **The legend is colour and word.** Three 14 px swatches, each with Low, Medium or High: no figure, no shape, no letter. On a wide screen (1,024 px and
+  more) it sits left of the view switch, one height and one line; on a narrower one under the switch, on its right edge. "Colour shows the rating,
+  not good or bad." is under the legend, right-aligned, in the muted grey (16 px, CLAUDE.md rule 9, not the brief's 12 px). The counts are in the
+  summary only ("You rated all 65 boxes" and its three figures). The strip has no count and no "rated": only the thin bar (`role="progressbar"`,
+  "Your progress", its value spoken as "12 of 65 boxes") and Next empty box ("All done" at the end).
+- **No grid icon.** The summary card has no mosaic beside its headline, and the hub's finished activity has none beside its pill (which keeps its own
+  state icon). The mosaic component is gone; the thank-you still counts the visit's ratings (`glanceOf` now keeps only that total).
+- **The stored answer did not change**: `encodeAnswer` and `decodeAnswer` are as they were, and the golden answer of `scripts/test-aop-view.js` reads
+  back the same.
+- **The budget.** The participant page may not grow for this prompt (CLAUDE.md rule 3; `PHASE_42` in `scripts/bundle-budget.js`): it ended 36 B
+  smaller. The admin page carries the hub for Brand Studio's preview, so it shrank too; no admin file changed.
 
 ## Before finishing a change
 

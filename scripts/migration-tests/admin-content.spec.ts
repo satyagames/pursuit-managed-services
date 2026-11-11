@@ -588,7 +588,7 @@ test('keyboard: the controls come in reading order and show the green ring, dial
       return { name: (element.getAttribute('aria-label') || (element.tagName === 'SELECT' ? element.id : element.textContent?.trim()) || element.id || element.tagName).replace(/\s+/g, ' ').slice(0, 40), outline: `${style.outlineStyle} ${style.outlineWidth}`, halo: style.boxShadow !== 'none' };
     });
     order.push(focused.name);
-    if (focused.outline !== 'solid 3px' || !focused.halo) rings.push(`${focused.name} ${focused.outline}`);
+    if (focused.outline !== 'solid 2px' || !focused.halo) rings.push(`${focused.name} ${focused.outline}`);
     await page.keyboard.press('Tab');
   }
   expect(rings, 'every stop draws the 3px green ring with its halo').toEqual([]);

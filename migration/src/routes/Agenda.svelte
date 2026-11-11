@@ -18,8 +18,6 @@
   import { APP_NAME } from '../lib/common/app-name.js';
   import { motion, motionLevel, watchMoment } from '../lib/motion/motion.js';
   import { TOKENS } from '../lib/motion/motion-plan.js';
-  import RatingMosaic from '../components/RatingMosaic.svelte';
-  import { visitRatings } from '../lib/participant/aop-glance.svelte.js';
   import { clearEffects, hubAllDone, hubJourney, hubLocked, hubStamp, hubUnlock } from '../lib/effects/effects.js';
   import {
     BEAT_LENGTH, LOCKED_LINE, SHAKE_LENGTH, WATCH_AT, beatEnd, heldLooks, hubCount, hubMoment, lockedTapAllowed, momentAnnouncement, type Beat,
@@ -268,7 +266,7 @@
           label={pill.title} state={pill.state} look={held[pill.id]} from={fromLook[pill.id] ?? null} moment={moments[pill.id] ?? null}
           answered={pill.answered ?? 0} total={pill.total ?? 0} next={pill.next ?? false}
           onlockedtap={() => lockedTap(pill.id)} onclick={() => go(`/quiz/${pill.id}`)}
-        />{#if pill.state === 'done' && visitRatings[pill.id]}{@const mine = visitRatings[pill.id]}<span class="pms-mosaic"><RatingMosaic levels={mine.levels} cell={4} label="Your ratings: {mine.low} Low, {mine.medium} Medium, {mine.high} High" /></span>{/if}</li>
+        /></li>
       {/each}
     </ul>
   {/if}
@@ -281,24 +279,6 @@
 </section>
 
 <style>
-  /* (Prompt 35) This visit's Art of Possibility ratings, a small mosaic on the plate beside the finished activity. */
-  .pms-activities > li:has(.pms-mosaic) {
-    position: relative;
-  }
-
-  /* Beside "Done", inside the pill's line; a tap goes through to the pill. */
-  .pms-mosaic {
-    position: absolute;
-    top: 50%;
-    right: 7.5rem;
-    display: grid;
-    padding: 3px;
-    background: var(--plate);
-    border-radius: 6px;
-    transform: translateY(-50%);
-    pointer-events: none;
-  }
-
   .pms-hub {
     display: flex;
     flex: 1;

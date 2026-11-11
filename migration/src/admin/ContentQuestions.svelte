@@ -13,8 +13,10 @@
 
   type Section = { id: string; title: string; clientId?: string | null; questionIds?: string[] };
 
-  let { section, clientSlug, onToast, onChanged }: {
+  let { section, place = 0, clientSlug, onToast, onChanged }: {
     section: Section;
+    /** (Prompt 40) The activity's place in its client's list (1 is the first; 0 for the confidence check): the panel's title repeats it. */
+    place?: number;
     /** The activity's client's slug, for the name a picture is stored under. */
     clientSlug: string;
     onToast: (message: string, kind?: 'info' | 'success' | 'error') => void;
@@ -182,8 +184,8 @@
 <div class="questions" aria-busy={loading || busy || editorBusy}>
   <div class="panel__head questions__head">
     <div>
-      <h3 id="questions-heading">Questions</h3>
-      <p class="muted small">{section.title}. Changes to a live activity are live for participants.</p>
+      <h3 id="questions-heading" data-testid="questions-title">{place ? `${place} · ` : ''}{section.title}</h3>
+      <p class="muted small">Its questions. Changes to a live activity are live for participants.</p>
     </div>
     <button class="btn btn--with-icon" type="button" data-add-question aria-expanded={editingId === NEW} aria-controls={editingId === NEW ? editorId(NEW) : undefined} onclick={() => request(NEW)} disabled={busy || loading || editorBusy}><Icon name="plus" />Add question</button>
   </div>

@@ -532,13 +532,13 @@
     /* Prompt 34: the wall in one of two looks, chosen before it opens (LiveSteps.svelte's Wall: Dark or Light). Each is flat (no gradient, no
        client colour: the client's logo keeps its place in the heading). The wall's own names (--wall-*) are the ground, the words, the figures and
        the hairlines; the charts' colour names (--viz-*) point at the admin tokens, so a chart draws on either with nothing of its own changed.
-       DARK, the data look: black, white words and lime figures (7:1 or better, scripts/test-admin-today.js); the top choice lime, the rest deep
-       green, the correct answer sky (with its tick and the word), a scale's steps one lime (each has its count written). */
+       DARK, the data look (Prompt 41): #222222, white words and figures; the accent #0DF200 for lines and dots only; the bars in the three graph
+       colours (each 3:1 or better on #222222, scripts/test-admin-palette.js); the correct answer's tick in the primary, with the word. */
     --wall-ground: var(--adm-bar-black);
     --wall-ink: var(--adm-on-deep);
-    --wall-figure: var(--adm-lime);
-    --wall-line: var(--adm-lime);
-    --wall-step: var(--adm-lime);
+    --wall-figure: var(--adm-on-primary);
+    --wall-line: var(--adm-accent);
+    --wall-step: var(--adm-graph-1);
     color: var(--wall-ink);
     background: var(--wall-ground);
     --viz-surface: var(--wall-ground);
@@ -546,33 +546,34 @@
     --viz-text-secondary: var(--wall-ink);
     --viz-text-muted: var(--wall-ink);
     --viz-grid: var(--adm-text-muted);
-    --viz-band-shade: var(--adm-text);
-    --viz-primary: var(--adm-lime);
-    --viz-primary-tint: var(--adm-deep);
-    --viz-correct: var(--adm-sky);
+    --viz-band-shade: var(--adm-dark-2);
+    --viz-primary: var(--adm-graph-1);
+    --viz-primary-tint: var(--adm-graph-1-60);
+    --viz-correct: var(--adm-primary);
     --viz-marker: var(--wall-ink);
-    --viz-brand: var(--adm-lime);
-    --viz-band-high: var(--adm-lime);
+    --viz-brand: var(--adm-accent);
+    --viz-band-high: var(--wall-ink);
     --viz-band-medium: var(--wall-ink);
-    --viz-band-low: var(--adm-sky);
+    --viz-band-low: var(--wall-ink);
   }
 
-  /* LIGHT, for a bright room: white, the dark text, figures in the deep green (6.7:1, at hero size), the top choice deep green and the rest
-     lime (each bar has its value written beside it), the correct answer link blue, lines in the card line, a scale's steps deep green. */
+  /* LIGHT, for a bright room: white, the ink, figures in the primary's shade (6.2:1), the bars in the graph colours (each has its value
+     written beside it), the correct answer's tick in the primary, lines in the card line, a scale's steps graph 1. */
   .live--present.live--light {
     --wall-ground: var(--adm-card);
     --wall-ink: var(--adm-text);
     --wall-figure: var(--adm-deep);
     --wall-line: var(--adm-card-line);
-    --wall-step: var(--adm-deep);
+    --wall-step: var(--adm-graph-1);
     --viz-grid: var(--adm-card-line);
     --viz-band-shade: var(--adm-wash);
-    --viz-primary: var(--adm-deep);
-    --viz-primary-tint: var(--adm-lime);
-    --viz-correct: var(--adm-link);
-    --viz-brand: var(--adm-deep);
-    --viz-band-high: var(--adm-deep);
-    --viz-band-low: var(--adm-link);
+    --viz-primary: var(--adm-graph-1);
+    --viz-primary-tint: var(--adm-graph-1-60);
+    --viz-correct: var(--adm-primary);
+    --viz-brand: var(--adm-accent);
+    --viz-band-high: var(--adm-primary);
+    --viz-band-medium: var(--adm-warn-ink);
+    --viz-band-low: var(--adm-danger);
   }
 
   .live--present :global(.scale) {
@@ -581,7 +582,7 @@
     --viz-ramp-5-1: var(--wall-step); --viz-ramp-5-2: var(--wall-step); --viz-ramp-5-3: var(--wall-step); --viz-ramp-5-4: var(--wall-step); --viz-ramp-5-5: var(--wall-step);
   }
 
-  /* Words on a fill the dark wall recolours: a chosen word is black on lime (9.2:1); Art of the Possible's light heat steps black, its dark ones white. */
+  /* Words on a fill the wall recolours: a chosen word is ink on graph 1 (4.55:1); every Art of the Possible step is ink (white is under 4.5:1 on each). */
   .live--present:not(.live--light) :global(.words__word[aria-pressed='true']) {
     color: var(--adm-bar-black);
   }
@@ -591,7 +592,7 @@
   }
 
   .live--present :global(.aop__heat:is([data-tone='2'], [data-tone='3'])) {
-    color: var(--adm-on-deep);
+    color: var(--adm-bar-black);
   }
 
   /* The wall's buttons: outlined, in the wall's words on its ground, with its hairline. */

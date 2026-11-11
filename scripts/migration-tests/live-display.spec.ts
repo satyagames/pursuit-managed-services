@@ -749,7 +749,7 @@ test('every capability the Master screen had is in the Live display: live tally,
 // Prompt 34: the wall's dark data look, read from the back of a room. At 1920 by 1080 each question's hero figure is 96 px or more and every label
 // 28 px or more; the wall is flat black; neither the wall at 1366 or 1920 nor the admin view scrolls sideways; the headline's figures are Bold and
 // one measure is underlined, never an answer.
-test('the wall at 1080p: a hero figure of 96 px, labels of 28 px, flat dark green-black, the headline\'s figures in Bold, no sideways scroll', async ({ page }) => {
+test('the wall at 1080p: a hero figure of 96 px, labels of 28 px, flat #222222, the headline\'s figures in Bold, no sideways scroll', async ({ page }) => {
   await liveKroger();
   await page.setViewportSize({ width: 1920, height: 1080 });
   await openAdmin(page, local);
@@ -759,8 +759,8 @@ test('the wall at 1080p: a hero figure of 96 px, labels of 28 px, flat dark gree
   await page.getByRole('button', { name: 'Show the wall full screen' }).click();
   await expect(display(page)).toHaveAttribute('data-presenting', 'true');
   expect(await display(page).evaluate((element) => getComputedStyle(element).backgroundImage)).toBe('none');
-  // (Prompt 38: no pure black anywhere; the wall is the palette's dark1, #16231C, still flat: no gradient, no picture.)
-  expect(await display(page).evaluate((element) => getComputedStyle(element).backgroundColor)).toBe('rgb(22, 35, 28)');
+  // (Prompt 38: no pure black anywhere, still flat: no gradient, no picture. Prompt 41: the dark wall is the brand's #222222.)
+  expect(await display(page).evaluate((element) => getComputedStyle(element).backgroundColor)).toBe('rgb(34, 34, 34)');
   const hero = display(page).getByTestId('wall-hero');
   await expect(hero).toBeVisible();
   const px = (selector: string) => display(page).locator(selector).evaluateAll((elements) => elements.map((element) => parseFloat(getComputedStyle(element).fontSize)));

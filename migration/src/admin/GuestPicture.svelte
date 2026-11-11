@@ -105,7 +105,7 @@
   }
 
   .guest-picture::backdrop {
-    background: rgb(11 31 58 / 0.55);
+    background: var(--adm-scrim);
   }
 
   .guest-picture h3 {

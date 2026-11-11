@@ -11,7 +11,8 @@ import { CUES, toneSignature } from '../../migration/src/lib/effects/sound-cues.
 // Prompt 35: the Art of Possibility as one calm screen, in the BUILT participant page against the mocked SharePoint REST, with the manager's sample (13
 // sub-processes by the five default criteria). At an iPad in landscape and in portrait, a 1366 x 650 laptop and a 390 px phone: no sideways scroll, the page
 // is the one thing that scrolls, every criterion heading is shown whole, boxes are 48 px, the headings stay in view, the first-box bubble shows once, the
-// notes open beside their heading, the strip counts, and what is stored is what Prompt 34 stored for the same ratings.
+// notes open beside their heading, the strip shows the progress, and what is stored is what Prompt 34 stored for the same ratings. (Prompt 42: a tap
+// opens a box's choices; the legend is colour and word; the counts are in the summary only; no Undo; no mosaic on the hub.)
 
 const shots = fileURLToPath(new URL('../../test-results/aop-calm-screen/', import.meta.url));
 const today = localDate();
@@ -55,6 +56,12 @@ async function open(page: Page, fake: Fake, token: string, size: { width: number
 const box = (page: Page, row: string, criterion: string) => page.getByRole('button', { name: new RegExp(`^${row.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}, ${criterion.replace(/\//g, '\\/')}: `) });
 const noSidewaysScroll = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
 const saved = (fake: Fake) => JSON.parse(fake.lists.get('responses')?.[0]?.ResponsesJson ?? '[]');
+const progress = (page: Page) => page.getByRole('progressbar', { name: 'Your progress' });
+/** Prompt 42: a tap opens the box's choices, and the choice rates it. */
+async function rate(page: Page, target: ReturnType<typeof box>, level: 'Low' | 'Medium' | 'High' | 'Clear') {
+  await target.click();
+  await page.getByRole('menu').getByRole('menuitemradio', { name: level }).click();
+}
 const axeOn = async (page: Page) => expect((await new AxeBuilder({ page }).include('[data-testid="matrix"]').analyze()).violations.map((each) => `${each.id}: ${each.nodes[0]?.target}`)).toEqual([]);
 
 /** Every word of every criterion heading on one line of its own heading, and inside its cell: no word is split or cut. */
@@ -116,30 +123,24 @@ test.describe('the Art of Possibility, one calm screen (Prompt 35)', () => {
     });
   }
 
-  test('press and hold opens the choices and never also rates; the keys; Escape; Undo (laptop)', async ({ page }) => {
+  test('a tap opens the choices and never rates by itself (Prompt 42: no press and hold, no tap-to-cycle); the keys; Escape; Clear all asks (laptop)', async ({ page }) => {
     const { fake, token } = await site();
     await open(page, fake, token, SIZES.laptop);
-    await expect(page.getByText('Tap a box to rate it. Press and hold for choices.')).toBeVisible();
-    await expect(page.getByTestId('matrix-teach')).toHaveText('Tap to rate. Press and hold for choices.');
+    await expect(page.getByText('Tap a box and choose Low, Medium or High.')).toBeVisible();
+    await expect(page.getByTestId('matrix-teach')).toHaveText('Tap to rate');
     const gl = box(page, 'Corp accounting – GL', 'Strategic value');
     const menu = page.getByRole('menu');
 
-    // Hold: the ring fills, the choices open, and letting go does not also rate. A frame strip of the hold is kept for the report.
+    // A tap: the choices open on the box, and nothing is rated until one is chosen. The bubble stays until the first rating.
     const at = (await gl.boundingBox())!;
-    const clip = { x: at.x - 24, y: at.y - 24, width: at.width + 48, height: at.height + 140 };
-    await page.mouse.move(at.x + at.width / 2, at.y + at.height / 2);
-    await page.mouse.down();
-    for (const ms of [0, 200, 400]) {
-      await page.screenshot({ path: `${shots}hold-${String(ms).padStart(3, '0')}ms.png`, clip });
-      await page.waitForTimeout(200);
-    }
+    const clip = { x: at.x - 24, y: at.y - 24, width: at.width + 220, height: at.height + 260 };
+    await gl.click();
     await expect(menu).toBeVisible();
-    await page.screenshot({ path: `${shots}hold-open.png`, clip });
-    await page.mouse.up();
-    await expect(menu).toBeVisible();
+    await page.screenshot({ path: `${shots}tap-open.png`, clip });
     await expect(gl).toHaveAttribute('data-level', '0');
-    await expect(page.getByTestId('matrix-teach')).toHaveCount(0);
-    await expect(menu.getByRole('menuitemradio')).toHaveText(['L Low', 'M Medium', 'H High', 'Clear']);
+    await expect(page.getByTestId('matrix-teach')).toHaveCount(1);
+    for (const [index, name] of ['Low', 'Medium', 'High'].entries()) await expect(menu.getByRole('menuitemradio').nth(index)).toHaveAccessibleName(name);
+    await expect(menu.getByRole('menuitemradio')).toHaveCount(3);
     await expect(menu.getByRole('menuitemradio', { name: 'Low' })).toBeFocused();
     for (const item of await menu.getByRole('menuitemradio').all()) expect((await item.boundingBox())!.height).toBeGreaterThanOrEqual(48);
     await axeOn(page);
@@ -148,34 +149,27 @@ test.describe('the Art of Possibility, one calm screen (Prompt 35)', () => {
     await expect(menu).toHaveCount(0);
     await expect(gl).toHaveAttribute('data-level', '2');
     await expect(gl).toBeFocused();
+    await expect(page.getByTestId('matrix-teach')).toHaveCount(0);
 
-    // A short press still rates the next level.
+    // Another tap opens the choices again and changes nothing; Escape closes them and puts the keyboard back on the box.
     await gl.click();
-    await expect(gl).toHaveAttribute('data-level', '3');
-
-    // Escape closes the choices, changes nothing, and puts the keyboard back on the box.
-    await page.mouse.move(at.x + at.width / 2, at.y + at.height / 2);
-    await page.mouse.down();
-    await expect(menu).toBeVisible();
-    await page.mouse.up();
-    await expect(menu.getByRole('menuitemradio', { name: 'High' })).toHaveAttribute('aria-checked', 'true');
+    await expect(menu.getByRole('menuitemradio', { name: 'Medium' })).toHaveAttribute('aria-checked', 'true');
+    await expect(gl).toHaveAttribute('data-level', '2');
     await page.keyboard.press('Escape');
     await expect(menu).toHaveCount(0);
     await expect(gl).toBeFocused();
-    await expect(gl).toHaveAttribute('data-level', '3');
+    await expect(gl).toHaveAttribute('data-level', '2');
 
-    // The keyboard's equal: Enter opens the choices on the box's level; arrows and Enter pick; a cleared box offers Undo.
+    // The keyboard: Enter opens the choices on the box's level; arrows and Enter pick; Clear (offered once rated) empties the box, with no Undo.
     await page.keyboard.press('Enter');
-    await expect(menu.getByRole('menuitemradio', { name: 'High' })).toBeFocused();
+    await expect(menu.getByRole('menuitemradio', { name: 'Medium' })).toBeFocused();
+    await page.keyboard.press('ArrowDown');
     await page.keyboard.press('ArrowDown');
     await expect(menu.getByRole('menuitemradio', { name: 'Clear' })).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(gl).toHaveAttribute('data-level', '0');
     await expect(gl).toBeFocused();
-    await expect(page.getByTestId('matrix-undo')).toContainText('Cleared.');
-    await page.getByRole('button', { name: 'Undo' }).click();
-    await expect(gl).toHaveAttribute('data-level', '3');
-    await expect(page.getByTestId('matrix-undo')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Undo' })).toHaveCount(0);
 
     // The menu key (Shift+F10) opens it too, and Tab leaves it: it is not a trap.
     await gl.focus();
@@ -184,12 +178,17 @@ test.describe('the Art of Possibility, one calm screen (Prompt 35)', () => {
     await page.keyboard.press('Tab');
     await expect(menu).toHaveCount(0);
 
-    // L, M, H set; Delete clears; Space takes the next level.
+    // L, M, H set; Delete clears; Space opens the choices (it never takes the next level).
     await gl.focus();
-    for (const [key, level] of [['l', '1'], ['m', '2'], ['h', '3'], ['Delete', '0'], ['Space', '1']]) {
+    for (const [key, level] of [['l', '1'], ['m', '2'], ['h', '3'], ['Delete', '0']]) {
       await page.keyboard.press(key);
       await expect(gl).toHaveAttribute('data-level', level);
     }
+    await page.keyboard.press('Space');
+    await expect(menu).toBeVisible();
+    await expect(gl).toHaveAttribute('data-level', '0');
+    await page.keyboard.press('l');
+    await expect(gl).toHaveAttribute('data-level', '1');
 
     // On the last row the choices open above the box when there is no room below.
     const last = box(page, 'National admin', 'Outsourcing suitability');
@@ -202,23 +201,19 @@ test.describe('the Art of Possibility, one calm screen (Prompt 35)', () => {
     expect(menuAt.x + menuAt.width).toBeLessThanOrEqual(SIZES.laptop.width);
     await page.keyboard.press('Escape');
 
-    // Clear all asks, then offers Undo for 8 seconds, and Undo puts every rating back.
+    // Clear all asks first, in plain words, and nothing brings the ratings back (Prompt 42: no Undo).
     await page.keyboard.press('h');
-    await expect(page.getByTestId('matrix-count')).toHaveText('2 of 65 rated');
+    await expect(progress(page)).toHaveAttribute('aria-valuenow', '2');
     await page.getByRole('button', { name: 'More choices' }).click();
     await page.getByRole('button', { name: 'Clear all' }).click();
-    await page.getByRole('button', { name: 'Yes, clear all' }).click();
-    await expect(page.getByTestId('matrix-count')).toHaveText('0 of 65 rated');
-    await expect(page.getByTestId('matrix-undo')).toContainText('Cleared.');
-    await page.getByRole('button', { name: 'Undo' }).click();
-    await expect(page.getByTestId('matrix-count')).toHaveText('2 of 65 rated');
-    await expect(gl).toHaveAttribute('data-level', '1');
-    await page.getByRole('button', { name: 'More choices' }).click();
+    await expect(page.getByText('Remove all your ratings?')).toBeVisible();
+    await page.getByRole('button', { name: 'Cancel' }).click();
+    await expect(progress(page)).toHaveAttribute('aria-valuenow', '2');
     await page.getByRole('button', { name: 'Clear all' }).click();
-    await page.getByRole('button', { name: 'Yes, clear all' }).click();
-    await expect(page.getByTestId('matrix-undo')).toBeVisible();
-    await page.waitForTimeout(8300);
-    await expect(page.getByTestId('matrix-undo')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Remove' }).click();
+    await expect(progress(page)).toHaveAttribute('aria-valuenow', '0');
+    await expect(page.getByRole('button', { name: 'Undo' })).toHaveCount(0);
+    await expect(gl).toHaveAttribute('data-level', '0');
   });
 
   test('One at a time on a phone: a card per sub-process, the words shown, it moves on after the last box, Previous stops it', async ({ page }) => {
@@ -263,7 +258,7 @@ test.describe('the Art of Possibility, one calm screen (Prompt 35)', () => {
     await card.getByRole('button', { name: 'Next sub-process' }).click();
     await expect(card.getByText('Sub-process 4 of 13')).toBeVisible();
     await expect(card.getByRole('heading', { name: 'Treasury' })).toBeVisible();
-    await expect(page.getByTestId('matrix-count')).toHaveText('10 of 65 rated');
+    await expect(progress(page)).toHaveAttribute('aria-valuenow', '10');
   });
 
   test('One at a time with motion off waits for Next', async ({ page }) => {
@@ -304,9 +299,9 @@ test.describe('the Art of Possibility, one calm screen (Prompt 35)', () => {
       }
     };
 
-    // A tap: the box's content pops and a ripple grows from the touch point.
+    // A choice: the box's content pops and a ripple grows from the box (Prompt 42: the tap opens the choices).
     const gl = box(page, 'Corp accounting – GL', 'Strategic value');
-    await gl.click();
+    await rate(page, gl, 'Low');
     expect(await gl.locator('.matrix-face').evaluate((node) => node.getAnimations().length)).toBe(1);
     expect(await page.locator('.matrix-ripple').evaluate((node) => node.getAnimations().length)).toBe(1);
     await page.waitForTimeout(500);
@@ -332,19 +327,21 @@ test.describe('the Art of Possibility, one calm screen (Prompt 35)', () => {
     await expect(label).toHaveText('Halfway');
     await nextAndRate(16);
     await expect(label).toHaveText('Nearly there');
-    await expect(page.getByTestId('matrix-count')).toHaveText('49 of 65 rated');
+    await expect(progress(page)).toHaveAttribute('aria-valuenow', '49');
 
-    // Clear all: copies of the rated boxes fly off, never more than 16 things moving, and they are gone; Undo brings the ratings back and says no milestone again.
+    // Clear all: copies of the rated boxes fly off, never more than 16 things moving, and they are gone (Prompt 42: asked first; no Undo). Rating the
+    // boxes again says no milestone a second time.
     await page.waitForTimeout(1800);
     await page.getByRole('button', { name: 'More choices' }).click();
     await page.getByRole('button', { name: 'Clear all' }).click();
-    const flying = await most(() => page.getByRole('button', { name: 'Yes, clear all' }).click(), 1200);
+    const flying = await most(() => page.getByRole('button', { name: 'Remove' }).click(), 1200);
     console.log(`  Clear all: at most ${flying} animations at once`);
     expect(flying).toBeGreaterThan(0);
     expect(flying).toBeLessThanOrEqual(16);
     await expect(page.locator('.motion-copy')).toHaveCount(0);
-    await page.getByRole('button', { name: 'Undo' }).click();
-    await expect(page.getByTestId('matrix-count')).toHaveText('49 of 65 rated');
+    await expect(progress(page)).toHaveAttribute('aria-valuenow', '0');
+    await nextAndRate(49);
+    await expect(progress(page)).toHaveAttribute('aria-valuenow', '49');
     await expect(label).toHaveCount(0);
 
     // The last box: the wave runs through the grid under the cap, and the bar's check arrives.
@@ -373,7 +370,7 @@ test.describe('the Art of Possibility, one calm screen (Prompt 35)', () => {
     expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
     await page.getByRole('button', { name: 'More choices' }).click();
     await page.getByRole('button', { name: 'Clear all' }).click();
-    await page.getByRole('button', { name: 'Yes, clear all' }).click();
+    await page.getByRole('button', { name: 'Remove' }).click();
     await expect(page.locator('.motion-copy')).toHaveCount(0);
     expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
   });
@@ -406,14 +403,14 @@ test.describe('the Art of Possibility, one calm screen (Prompt 35)', () => {
     const wave = await frames(async () => { await page.getByRole('button', { name: /Next empty box/ }).click(); await page.keyboard.press('m'); }, 1000);
     await page.getByRole('button', { name: 'More choices' }).click();
     await page.getByRole('button', { name: 'Clear all' }).click();
-    const cleared = await frames(() => page.getByRole('button', { name: 'Yes, clear all' }).click(), 1000);
+    const cleared = await frames(() => page.getByRole('button', { name: 'Remove' }).click(), 1000);
     await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
     console.log(`  4x slowdown: the wave ${wave.fps.toFixed(0)} fps (slowest frame ${wave.worst.toFixed(0)} ms); Clear all ${cleared.fps.toFixed(0)} fps (slowest frame ${cleared.worst.toFixed(0)} ms)`);
     expect(wave.fps).toBeGreaterThanOrEqual(30);
     expect(cleared.fps).toBeGreaterThanOrEqual(30);
   });
 
-  test('the sounds, with sound on: a note per level, the clear\'s tick, the hold, a finished row, the milestones, Clear all, every box rated with its burst; a fast run never piles up', async ({ page }) => {
+  test('the sounds, with sound on: a note per level, the clear\'s tick, opening the choices is silent, a finished row, the milestones, Clear all, every box rated with its burst; a fast run never piles up', async ({ page }) => {
     const { fake, token } = await site();
     await installAudioStub(page, {});
     await installConfettiSpy(page);
@@ -424,29 +421,26 @@ test.describe('the Art of Possibility, one calm screen (Prompt 35)', () => {
     const first = (name: keyof typeof CUES) => toneSignature(CUES[name])[0];
     const gl = box(page, 'Corp accounting – GL', 'Strategic value');
 
-    // A tap a level: Low G3, Medium E4, High C5; a clear is the soft tick (noise, no note).
-    for (const name of ['rateLow', 'rateMedium', 'rateHigh'] as const) {
+    // A choice a level: Low G3, Medium E4, High C5; a clear is the soft tick (noise, no note). Opening the choices plays nothing (Prompt 42).
+    for (const [name, level] of [['rateLow', 'Low'], ['rateMedium', 'Medium'], ['rateHigh', 'High']] as const) {
       const before = (await heard()).length;
       await gl.click();
+      await expect(page.getByRole('menu')).toBeVisible();
+      await page.waitForTimeout(80);
+      expect(await since(before), 'opening the choices is silent').toEqual([]);
+      await page.getByRole('menu').getByRole('menuitemradio', { name: level }).click();
       await expect.poll(async () => (await since(before))[0]).toBe(first(name));
       await page.waitForTimeout(80);
     }
     const noise = (await readAudio(page)).noise;
     const before = (await heard()).length;
-    await gl.click();
+    await rate(page, gl, 'Clear');
     await expect.poll(async () => (await readAudio(page)).noise).toBeGreaterThan(noise);
     expect(await since(before)).toEqual([]);
-
-    // The hold opens the menu with its blip (E5, G5 and a quiet A5).
-    const at = (await gl.boundingBox())!;
-    let mark = (await heard()).length;
-    await page.mouse.move(at.x + at.width / 2, at.y + at.height / 2);
-    await page.mouse.down();
-    await expect(page.getByRole('menu')).toBeVisible();
-    await page.mouse.up();
-    await expect.poll(async () => await since(mark)).toEqual(toneSignature(CUES.holdOpen));
+    await gl.focus();
     await page.keyboard.press('m');
     await page.waitForTimeout(80);
+    let mark = (await heard()).length;
 
     // A fast run of 20 key presses: the rating cues start at most once every 60 ms.
     mark = (await heard()).length;
@@ -459,7 +453,7 @@ test.describe('the Art of Possibility, one calm screen (Prompt 35)', () => {
     expect(notes).toBeGreaterThan(0);
     expect(notes).toBeLessThanOrEqual(Math.floor(span / 60) + 1);
 
-    // A finished row: two notes up, E5 then G5 (no A5: that is the hold's).
+    // A finished row: two notes up, E5 then G5.
     await gl.focus();
     for (const key of ['ArrowRight', 'm', 'ArrowRight', 'm', 'ArrowRight', 'm']) { await page.keyboard.press(key); await page.waitForTimeout(100); }
     await page.keyboard.press('ArrowRight');
@@ -479,12 +473,11 @@ test.describe('the Art of Possibility, one calm screen (Prompt 35)', () => {
     await page.getByRole('button', { name: 'More choices' }).click();
     await page.getByRole('button', { name: 'Clear all' }).click();
     mark = (await heard()).length;
-    await page.getByRole('button', { name: 'Yes, clear all' }).click();
+    await page.getByRole('button', { name: 'Remove' }).click();
     await expect.poll(async () => await since(mark)).toEqual(toneSignature(CUES.clearAll));
-    await page.getByRole('button', { name: 'Undo' }).click();
 
     // Every box rated: the arpeggio, and the small burst from the bar.
-    for (let at = 0; at < 47; at += 1) { await page.getByRole('button', { name: /Next empty box/ }).click(); await page.keyboard.press('l'); }
+    for (let at = 0; at < 64; at += 1) { await page.getByRole('button', { name: /Next empty box/ }).click(); await page.keyboard.press('l'); }
     await page.waitForTimeout(400);
     await resetConfetti(page);
     mark = (await heard()).length;
@@ -515,7 +508,7 @@ test.describe('the Art of Possibility, one calm screen (Prompt 35)', () => {
     expect((await readAudio(quiet)).contexts).toBe(0);
   });
 
-  test('a tap shows its colour within 100 ms at a 4x slower processor (Chromium, measured and printed)', async ({ page, browserName }) => {
+  test('a choice shows its colour within 100 ms at a 4x slower processor (Chromium, measured and printed)', async ({ page, browserName }) => {
     test.skip(browserName !== 'chromium', 'the processor slowdown is Chromium\'s (DevTools protocol)');
     const { fake, token } = await site();
     await open(page, fake, token, SIZES['ipad-landscape']);
@@ -538,6 +531,7 @@ test.describe('the Art of Possibility, one calm screen (Prompt 35)', () => {
     for (const row of ROWS.slice(0, 4)) {
       for (const criterion of CRITERIA.slice(0, 3)) {
         await box(page, row[0], criterion.label).click();
+        await page.getByRole('menu').getByRole('menuitemradio', { name: 'High' }).click();
         await page.waitForTimeout(120);
       }
     }
@@ -545,7 +539,7 @@ test.describe('the Art of Possibility, one calm screen (Prompt 35)', () => {
     await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
     const median = taps[Math.floor(taps.length / 2)];
     const worst = taps[taps.length - 1];
-    console.log(`  tap to paint at 4x slowdown, ${taps.length} taps: median ${median.toFixed(1)} ms, slowest ${worst.toFixed(1)} ms`);
+    console.log(`  choice to paint at 4x slowdown, ${taps.length} taps: median ${median.toFixed(1)} ms, slowest ${worst.toFixed(1)} ms`);
     expect(taps.length).toBe(12);
     expect(median).toBeLessThan(100);
   });
@@ -555,28 +549,28 @@ test.describe('the Art of Possibility, one calm screen (Prompt 35)', () => {
     await open(page, fake, token, SIZES['ipad-landscape']);
     // The bubble points at the first empty box, and goes for this visit after the first rating.
     const teach = page.getByTestId('matrix-teach');
-    await expect(teach).toHaveText('Tap to rate. Press and hold for choices.');
+    await expect(teach).toHaveText('Tap to rate');
     const firstBox = box(page, 'Corp accounting – GL', 'Strategic value');
     await expect(firstBox).toHaveAttribute('aria-describedby', /teach/);
-    await firstBox.click();
+    await rate(page, firstBox, 'Low');
     await expect(box(page, 'Corp accounting – GL', 'Strategic value')).toHaveAttribute('data-level', '1');
     await expect(teach).toHaveCount(0);
     await page.getByRole('button', { name: 'One at a time' }).click();
     await page.getByRole('button', { name: 'All at once' }).click();
     await expect(teach).toHaveCount(0);
 
-    // A tap: Low, Medium, High, then clear; each with its letter and its shape.
+    // Each choice: Low, Medium, High, then Clear; each with its letter and its shape.
     const gl = box(page, 'Corp accounting – GL', 'Volume / repeatability');
-    for (const [level, letter] of [['1', 'L'], ['2', 'M'], ['3', 'H']]) {
-      await gl.click();
+    for (const [level, letter, name] of [['1', 'L', 'Low'], ['2', 'M', 'Medium'], ['3', 'H', 'High']] as const) {
+      await rate(page, gl, name);
       await expect(gl).toHaveAttribute('data-level', level);
       await expect(gl).toHaveText(letter);
       await expect(gl.locator('svg path')).toHaveCount(1);
     }
-    await gl.click();
+    await rate(page, gl, 'Clear');
     await expect(gl).toHaveAttribute('data-level', '0');
-    await expect(page.getByTestId('matrix-count')).toHaveText('1 of 65 rated');
-    await expect(page.getByTestId('matrix-pill-low')).toHaveText('Low 1');
+    await expect(progress(page)).toHaveAttribute('aria-valuenow', '1');
+    await expect(page.getByTestId('matrix-legend')).toHaveText(/^Low\s*Medium\s*High$/);
     await expect(page.getByRole('button', { name: /Next empty box/ })).toContainText('64 left');
     await expect(page.getByText('Colour shows the rating, not good or bad.')).toBeVisible();
 
@@ -612,8 +606,8 @@ test.describe('the Art of Possibility, one calm screen (Prompt 35)', () => {
     // Clear all is in the "More choices" menu and asks first.
     await page.getByRole('button', { name: 'More choices' }).click();
     await page.getByRole('button', { name: 'Clear all' }).click();
-    await page.getByRole('button', { name: 'Yes, clear all' }).click();
-    await expect(page.getByTestId('matrix-count')).toHaveText('0 of 65 rated');
+    await page.getByRole('button', { name: 'Remove' }).click();
+    await expect(progress(page)).toHaveAttribute('aria-valuenow', '0');
     await expect(page.getByTestId('matrix-glance')).toHaveCount(0);
 
     // Every box High through Next empty box, then Send: the answer Prompt 34 stored for the same ratings.
@@ -621,11 +615,11 @@ test.describe('the Art of Possibility, one calm screen (Prompt 35)', () => {
       await page.getByRole('button', { name: /Next empty box/ }).click();
       await page.keyboard.press('h');
     }
-    await expect(page.getByRole('button', { name: 'All rated' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'All done' })).toBeDisabled();
     // (Prompt 35) Your ratings at a glance: under the grid once every box is rated; made on the device from the draft, nothing more is stored or sent.
     const glance = page.getByTestId('matrix-glance');
     await expect(glance.getByRole('heading', { name: 'You rated all 65 boxes' })).toBeVisible();
-    await expect(glance.getByRole('img', { name: 'Your 65 ratings: 0 Low, 0 Medium, 65 High' })).toBeVisible();
+    await expect(glance.getByRole('img')).toHaveCount(0); // (Prompt 42: no mosaic beside the headline)
     await expect(glance.getByTestId('matrix-tally')).toHaveText(['Low 0', 'Medium 0', 'High 65']);
     await expect(glance).toContainText('Your highest-rated sub-process was Corp accounting – GL (5 High).');
     await axeOn(page);
@@ -636,11 +630,12 @@ test.describe('the Art of Possibility, one calm screen (Prompt 35)', () => {
     const all = Object.fromEntries(OPTION_IDS.map((id) => [id, Object.fromEntries(CRITERIA.map((criterion) => [criterion.id, 3]))]));
     expect(record.answer).toEqual(encodeAnswer(all));
 
-    // (Prompt 35) The hub: the finished activity carries a small mosaic of this guest's ratings (this visit's, from the device; no request).
+    // (Prompt 42) The hub: the finished activity has no mosaic any more, and nothing about the ratings is requested.
     const requests: string[] = [];
     page.on('request', (request) => requests.push(request.url()));
     await page.getByRole('button', { name: 'Back to activities' }).click();
-    await expect(page.getByRole('img', { name: 'Your ratings: 0 Low, 0 Medium, 65 High' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /The Art of Possibility, done/ })).toBeVisible();
+    await expect(page.getByRole('img', { name: /Your ratings/ })).toHaveCount(0);
     await page.waitForTimeout(2500); // (the hub's stamp moment settles)
     await page.screenshot({ path: `${shots}hub-badge.png`, fullPage: true });
     // The thank-you: the ratings are in, and how many.

@@ -17,6 +17,8 @@ async function openBrand(page: Page, name = 'Kroger') {
   await openAdmin(page, local, 'Clients');
   await page.locator('.row').filter({ hasText: name }).getByRole('button', { name: 'Brand' }).click();
   await expect(page.getByRole('heading', { name: new RegExp(`Brand · ${name}`) })).toBeVisible();
+  // (Prompt 40: Animations is folded under Pictures and Colours, its state in one line: opened here to reach the switch.)
+  await page.getByTestId('brand-motion-fold').locator('summary').click();
 }
 
 test('Today and Brand Studio flip the same stored value, by keyboard as well as by tap, and say so', async ({ page }) => {
@@ -35,6 +37,7 @@ test('Today and Brand Studio flip the same stored value, by keyboard as well as 
   expect(((await ds.getClient('c-kroger')) as { themeVersion?: number }).themeVersion, 'the theme\'s version is not moved by the switch').toBe(version);
 
   await openBrand(page);
+  await expect(page.getByTestId('brand-motion-fold').locator('summary'), 'the folded line says it too').toContainText('Off for participants');
   const studio = theSwitch(page);
   await expect(studio, 'Brand Studio shows what Today saved').toHaveAttribute('aria-checked', 'false');
   await expect(page.getByText('Turns the screen transitions and the celebration confetti on or off for participants.')).toBeVisible();

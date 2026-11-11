@@ -9,6 +9,9 @@ import { themedSite, openParticipant, a11yPack, pageUrl, serveSharePoint, THEMES
 // the key that does what Tab does elsewhere.)
 
 const RING = ['solid', '3px', 'rgb(134, 188, 37)'];
+// Prompt 41: the admin page's ring is 2 px of its primary, #26890D, with the accent's glow outside it.
+const ADMIN_RING = ['solid', '2px', 'rgb(38, 137, 13)'];
+const ringOf = (page: Page) => (/admin.html/.test(page.url()) ? ADMIN_RING : RING);
 
 type Stop = { uid: number; tag: string; name: string; ring: string[]; heading: boolean; marked: boolean; inside: string | null };
 
@@ -64,7 +67,7 @@ class Keys {
     await this.page.keyboard.press(key(this.browserName, shift));
     const stop = await stopOf(this.page);
     if (stop && stop.inside !== 'hidden' && !stop.name.startsWith('__tab-')) {
-      expect(stop.ring, `the ring on "${stop.name}"`).toEqual(RING);
+      expect(stop.ring, `the ring on "${stop.name}"`).toEqual(ringOf(this.page));
       this.stops.push(stop.name);
     }
     return stop;
@@ -324,7 +327,7 @@ test.describe('the admin, with the keyboard alone', () => {
     await page.keyboard.press('Enter');
     await expect(page.getByRole('tab', { name: 'Today' })).toHaveAttribute('aria-selected', 'true');
     await expect.poll(async () => (await stopOf(page))?.heading ?? false, { message: 'after unlocking, focus is on a heading (the PIN field has gone)', timeout: 5000 }).toBe(true);
-    expect((await stopOf(page))?.ring, 'the ring on that heading').toEqual(RING);
+    expect((await stopOf(page))?.ring, 'the ring on that heading').toEqual(ADMIN_RING);
     // Today reads what it shows, and its controls are off until it has. The walk below counts the Tab stops forwards and then backwards, so
     // it must start once they are on: a panel that finished loading between the two walks gave 3 stops one way and 9 the other (seen once
     // in 1,062 tests in Phase 10c-1, and never in 15 repeats; the race was in this test, not in the page).

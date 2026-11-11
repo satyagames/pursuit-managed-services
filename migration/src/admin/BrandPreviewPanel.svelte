@@ -77,7 +77,7 @@
   }
 
   .brand__tab[aria-pressed='true'] {
-    color: #fff;
+    color: var(--adm-on-primary);
     background: var(--adm-ink);
     border-color: var(--adm-ink);
   }
@@ -100,7 +100,7 @@
   .brand__qr {
     width: 9rem;
     height: 9rem;
-    background: #fff;
+    background: var(--adm-surface);
   }
 
   .mono {

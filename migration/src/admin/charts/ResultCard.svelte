@@ -360,7 +360,7 @@
   }
 
   .result-card__hero-figure {
-    color: var(--wall-figure, var(--adm-lime));
+    color: var(--wall-figure, var(--adm-ink));
     font-size: calc(3.2rem * var(--chart-scale, 1));
     font-weight: 600;
     font-variant-numeric: proportional-nums;

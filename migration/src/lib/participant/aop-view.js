@@ -1,23 +1,28 @@
 // The rules behind the Art of Possibility's one calm screen (Prompt 35), with no DOM (scripts/test-aop-view.js): which view a guest starts in, the counts
-// of the status strip, a finished row, and the per-box update. pager/MatrixRating.svelte draws what this says.
+// of the summary, a finished row, and the per-box update. pager/MatrixRating.svelte draws what this says.
 //
 // The per-box update changes one box of the guest's grid in place (in the page the grid is Svelte state, so only that box, its row and the strip are
 // drawn again) instead of copying the whole grid on every tap; lib/participant/aop-answer.js's encodeAnswer then stores exactly what a copy stored.
 
-import { LEVELS } from './aop-answer.js';
+import { LEVELS, cellsLeft } from './aop-answer.js';
 import { TOKENS } from '../motion/motion-plan.js';
 
 /** @typedef {import('./aop-answer.js').Grid} Grid */
 /** @typedef {import('./aop-answer.js').Shape} Shape */
 
 /**
- * The narrowest each part of the grid may be, px: the sub-process column, the People column, a criterion (whole words, Prompt 35), and the page's
- * gutters with the card's own padding on the stage this question uses.
+ * The narrowest each part of the grid may be, px: the sub-process column, the People column, a criterion (112 px, equal, a heading in at most two lines
+ * of whole words: Prompt 42), and the page's gutters with the card's own padding (32 px each side; the 8 px kept beside the first and last columns is
+ * inside those columns). Six criteria or more (`dense`, past the brief's five) may narrow to Prompt 35's 96 px, with a narrower first column.
+ * MatrixRating.svelte's narrow-screen columns are these numbers.
  */
-export const GRID_MIN_WIDTH = Object.freeze({ process: 112, people: 56, criterion: 96, frame: 52 });
+export const GRID_MIN_WIDTH = Object.freeze({ process: 100, people: 52, criterion: 112, frame: 105, dense: Object.freeze({ from: 6, process: 86, criterion: 96 }) });
 
 /** The narrowest window, px, in which the grid of `criteria` criteria fits with no sideways scroll. @param {number} criteria */
-export const gridWidthFor = (criteria) => GRID_MIN_WIDTH.process + GRID_MIN_WIDTH.people + criteria * GRID_MIN_WIDTH.criterion + GRID_MIN_WIDTH.frame;
+export function gridWidthFor(criteria) {
+  const { process, criterion } = criteria >= GRID_MIN_WIDTH.dense.from ? GRID_MIN_WIDTH.dense : GRID_MIN_WIDTH;
+  return process + GRID_MIN_WIDTH.people + criteria * criterion + GRID_MIN_WIDTH.frame;
+}
 
 /** The width from which a landscape window starts in the grid. */
 export const GRID_FROM = 700;
@@ -56,8 +61,6 @@ export function setCell(grid, rowId, criterionId, level) {
   (grid[rowId] ??= {})[criterionId] = level;
 }
 
-/** How long a press is held before the level menu opens, ms: the motion token the ring fills in (lib/motion/motion-tokens.css --motion-aop-hold). */
-export const HOLD_MS = TOKENS.aop.hold;
 /** How long One at a time shows a finished sub-process before the next, ms (the motion token --motion-aop-advance). */
 export const ADVANCE_MS = TOKENS.aop.advance;
 
@@ -66,37 +69,6 @@ export const ADVANCE_MS = TOKENS.aop.advance;
  * moves on with Next, so nothing changes under them). @param {{ wasDone: boolean, isDone: boolean, at: number, count: number, level: 'full' | 'reduced' | 'none' }} input
  */
 export const advancesAfter = ({ wasDone, isDone, at, count, level }) => !wasDone && isDone && at < count - 1 && level !== 'none';
-
-/** How long "Cleared. Undo" stays, ms. */
-export const UNDO_MS = 8000;
-
-/** @typedef {{ rowId: string, criterionId: string, level: number }} Cleared */
-
-/**
- * The ratings a clear takes away: of `boxes` when given, else of every box of the question as it is now. An empty box gives nothing.
- * @param {Grid} grid @param {Shape} shape @param {{ rowId: string, criterionId: string }[]} [boxes] @returns {Cleared[]}
- */
-export function clearedOf(grid, { rows, criteria }, boxes) {
-  const list = boxes ?? rows.flatMap((row) => criteria.map((criterion) => ({ rowId: row.id, criterionId: criterion.id })));
-  /** @type {Cleared[]} */
-  const out = [];
-  for (const { rowId, criterionId } of list) {
-    const level = grid?.[rowId]?.[criterionId];
-    if (LEVELS.includes(level)) out.push({ rowId, criterionId, level });
-  }
-  return out;
-}
-
-/** Undo: puts the cleared ratings back, each only where its box is still empty (a box rated since keeps that rating). Returns how many came back. @param {Grid} grid @param {Cleared[]} cleared */
-export function restoreInto(grid, cleared) {
-  let back = 0;
-  for (const { rowId, criterionId, level } of cleared) {
-    if (LEVELS.includes(grid?.[rowId]?.[criterionId])) continue;
-    setCell(grid, rowId, criterionId, level);
-    back += 1;
-  }
-  return back;
-}
 
 /**
  * "Your ratings at a glance" (Prompt 35): the guest's highest-rated sub-process, the first row with the most Highs, or null when no row has one. Made on
@@ -116,14 +88,10 @@ export function highestRated(grid, { rows, criteria }) {
 /** The card's one sentence, from a fixed template with no judgement words; '' when there is nothing to say. @param {{ label: string, highs: number } | null} best */
 export const highestSentence = (best) => (best ? `Your highest-rated sub-process was ${best.label} (${best.highs} High).` : '');
 
-/** @typedef {{ levels: number[][], low: number, medium: number, high: number, total: number }} Glance */
+/** @typedef {{ total: number }} Glance */
 
 /**
- * A grid as the hub and the thank-you keep it for the visit (lib/participant/aop-glance.svelte.ts): each box's level row by row (0 for an empty box) and the
- * three counts. @param {Grid} grid @param {Shape} shape @returns {Glance}
+ * A grid's rated boxes as the thank-you keeps them for the visit ("65 ratings", lib/participant/aop-glance.svelte.ts). @param {Grid} grid @param {Shape} shape
+ * @returns {Glance}
  */
-export function glanceOf(grid, shape) {
-  const levels = shape.rows.map((row) => shape.criteria.map((criterion) => (LEVELS.includes(grid?.[row.id]?.[criterion.id]) ? grid[row.id][criterion.id] : 0)));
-  const counts = levelCounts(grid, shape);
-  return { levels, low: counts[1], medium: counts[2], high: counts[3], total: counts[1] + counts[2] + counts[3] };
-}
+export const glanceOf = (grid, shape) => ({ total: shape.rows.length * shape.criteria.length - cellsLeft(grid, shape) });

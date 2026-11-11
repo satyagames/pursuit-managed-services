@@ -26,6 +26,7 @@ import {
 import { resolveClientTheme } from '../migration/src/lib/brand/client-theme.js';
 import { schemaSpecs } from '../migration/src/lib/setup/setup-checks.js';
 import { contrastRatio, deriveTheme } from '../migration/src/lib/brand/theme.js';
+import { resolver } from './admin-token-values.js';
 import { samplePack } from '../migration/src/lib/setup/sample-clients.js';
 import { seedPack } from '../migration/src/lib/setup/seed.js';
 import { STRAYS, TITLE, UNINDEXED, createSharePointFake, plainTitles } from './sharepoint-fake.js';
@@ -383,7 +384,7 @@ describe('clients', () => {
 describe('colours', () => {
   it('every text pair on the admin page is at least 4.5:1', async () => {
     const css = await readFile(path.join(ROOT, 'migration/src/styles/admin-tokens.css'), 'utf8');
-    const value = (name) => new RegExp(`--${name}:\\s*(#[0-9a-f]{6})`, 'i').exec(css)?.[1];
+    const value = resolver(css); // (Prompt 41: the names are aliases of the palette; a value follows its var() chain)
     const pairs = [
       ['adm-ink', 'adm-bg'], ['adm-ink', 'adm-card'], ['adm-muted', 'adm-bg'], ['adm-muted', 'adm-card'],
       ['adm-ok-ink', 'adm-ok-bg'], ['adm-warn-ink', 'adm-warn-bg'], ['adm-bad-ink', 'adm-bad-bg'], ['adm-idle-ink', 'adm-idle-bg'],
@@ -413,7 +414,7 @@ describe('colours', () => {
     ['adm-deep', 'adm-card'], ['adm-lime', 'adm-bar-black'],
   ];
   function lookFailures(css) {
-    const value = (name) => new RegExp(`--${name}:\\s*(#[0-9a-f]{6})`, 'i').exec(css)?.[1];
+    const value = resolver(css);
     const failures = [];
     for (const [pairs, least] of [[DELOITTE_TEXT, 4.5], [DELOITTE_MARKS, 3]]) {
       for (const [ink, ground] of pairs) {
@@ -441,7 +442,7 @@ describe('colours', () => {
   ];
   it('the chip, the "Ends" word and the strip\'s words and buttons are at least 4.5:1 on their surfaces', async () => {
     const css = await readFile(path.join(ROOT, 'migration/src/styles/admin-tokens.css'), 'utf8');
-    const value = (name) => new RegExp(`--${name}:\\s*(#[0-9a-f]{6})`, 'i').exec(css)?.[1];
+    const value = resolver(css);
     for (const [ink, ground] of IDENTITY_TEXT) {
       assert.ok(value(ink) && value(ground), `${ink} and ${ground} are defined`);
       assert.ok(contrastRatio(value(ink), value(ground)) >= 4.5, `${ink} on ${ground}: ${contrastRatio(value(ink), value(ground)).toFixed(2)}`);
@@ -470,7 +471,7 @@ describe('colours', () => {
   const EXPLAINS_MARKS = [['adm-deep', 'adm-card'], ['adm-deep', 'adm-bg'], ['adm-green', 'adm-card'], ['adm-muted', 'adm-card']];
   it('the fold, the switches, the icon buttons, the breadcrumb, the steps and the two parts pass on their surfaces, with no colour of their own', async () => {
     const css = await readFile(path.join(ROOT, 'migration/src/styles/admin-tokens.css'), 'utf8');
-    const value = (name) => new RegExp(`--${name}:\\s*(#[0-9a-f]{6})`, 'i').exec(css)?.[1];
+    const value = resolver(css);
     for (const [pairs, least] of [[EXPLAINS_TEXT, 4.5], [EXPLAINS_MARKS, 3]]) {
       for (const [ink, ground] of pairs) {
         assert.ok(value(ink) && value(ground), `${ink} and ${ground} are defined`);
@@ -483,14 +484,16 @@ describe('colours', () => {
       assert.ok(style, `${file} has its styles`);
       assert.doesNotMatch(style, /#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(|:\s*(?:white|black)\b/i, `${file}: a colour of its own`);
       const used = [...style.matchAll(/var\(--(adm-[a-z-]+)\)/g)].map((match) => match[1]);
-      for (const token of used) assert.ok(value(token), `${file}: --${token} is a colour of admin-tokens.css`);
+      // (Prompt 41: the focus ring's glow is the accent at 35%, a token written as rgb() in admin-tokens.css.)
+      for (const token of used) assert.ok(value(token) || (token === 'adm-accent-glow' && css.includes('--adm-accent-glow: rgb(')), `${file}: --${token} is a colour of admin-tokens.css`);
     }
   });
 
   it('the Deloitte look fails when a text pair is set to 4.4:1', async () => {
     const css = await readFile(path.join(ROOT, 'migration/src/styles/admin-tokens.css'), 'utf8');
     // #787878 on white is 4.42:1.
-    const weakened = css.replace(/--adm-text-muted:\s*#[0-9a-f]{6}/i, '--adm-text-muted: #787878');
+    // (Prompt 41: --adm-text-muted is an alias of --adm-neutral-strong, so the palette's colour is the one weakened.)
+    const weakened = css.replace(/--adm-neutral-strong:\s*#[0-9a-f]{6}/i, '--adm-neutral-strong: #787878');
     assert.notEqual(weakened, css);
     assert.ok(lookFailures(weakened).some((failure) => failure.startsWith('adm-text-muted on adm-card: 4.4')));
   });

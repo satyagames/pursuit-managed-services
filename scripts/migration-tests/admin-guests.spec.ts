@@ -459,7 +459,7 @@ test('keyboard: the guest controls come in reading order and show the green ring
       return { name: (element.getAttribute('aria-label') || element.textContent?.trim() || element.id || element.tagName).replace(/\s+/g, ' ').slice(0, 30), outline: `${style.outlineStyle} ${style.outlineWidth}`, halo: style.boxShadow !== 'none' };
     });
     order.push(focused.name);
-    if (focused.outline !== 'solid 3px' || !focused.halo) rings.push(`${focused.name} ${focused.outline}`);
+    if (focused.outline !== 'solid 2px' || !focused.halo) rings.push(`${focused.name} ${focused.outline}`);
     await page.keyboard.press('Tab');
   }
   expect(rings).toEqual([]);

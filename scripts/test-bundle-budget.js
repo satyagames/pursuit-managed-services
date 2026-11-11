@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
 import { PAGES, ROOT, analyzePage } from './analyze-bundle.js';
-import { BUDGET, FORBIDDEN, PHASE_8, PHASE_9A, PHASE_9B, PHASE_10B, PHASE_10C1, PHASE_10C2A, PHASE_10C2B, PHASE_10C3, PHASE_10F, PHASE_10G, PHASE_10H, PHASE_10I, PHASE_10J, PHASE_11A, PHASE_11A3, PHASE_11B, PHASE_12, PHASE_13, PHASE_14, PHASE_15, PHASE_16, PHASE_17, PHASE_18, PHASE_19, PHASE_20, PHASE_21A, PHASE_21B, PHASE_21C, PHASE_21D, PHASE_21E, PHASE_21F, PHASE_21G, PHASE_22, PHASE_23, PHASE_24, PHASE_26, PHASE_32, PHASE_33, PHASE_34, PHASE_35, PHASE_36, PHASE_38, PHASE_39, checkBudgets, utilityClasses } from './bundle-budget.js';
+import { BUDGET, FORBIDDEN, PHASE_8, PHASE_9A, PHASE_9B, PHASE_10B, PHASE_10C1, PHASE_10C2A, PHASE_10C2B, PHASE_10C3, PHASE_10F, PHASE_10G, PHASE_10H, PHASE_10I, PHASE_10J, PHASE_11A, PHASE_11A3, PHASE_11B, PHASE_12, PHASE_13, PHASE_14, PHASE_15, PHASE_16, PHASE_17, PHASE_18, PHASE_19, PHASE_20, PHASE_21A, PHASE_21B, PHASE_21C, PHASE_21D, PHASE_21E, PHASE_21F, PHASE_21G, PHASE_22, PHASE_23, PHASE_24, PHASE_26, PHASE_32, PHASE_33, PHASE_34, PHASE_35, PHASE_36, PHASE_38, PHASE_39, PHASE_40, PHASE_41, PHASE_42, checkBudgets, utilityClasses } from './bundle-budget.js';
 import { SAMPLE_PICTURE_NAMES } from '../migration/src/lib/setup/sample-pictures.js';
 import { pageProblems } from './release-proofs.js';
 
@@ -489,8 +489,9 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
   });
 
   it('Prompt 36 (the grand finale) grew the participant page by at most 4 KB gzip, kept it under its ceiling and its Tailwind rules, and kept the admin page under its budget', () => {
-    const grown = built.participant.htmlGzip - PHASE_36.participantBefore;
-    console.log(`  Prompt 36: the participant page ${bytes(PHASE_36.participantBefore)} -> ${bytes(built.participant.htmlGzip)} gzip (${grown >= 0 ? '+' : ''}${grown} B of ${bytes(PHASE_36.participantAllowance)}); the admin page ${bytes(PHASE_36.adminBefore)} -> ${bytes(built.admin.htmlGzip)}`);
+    // (Measured when the prompt ended: Prompt 42's change is held to its own allowance below.)
+    const grown = PHASE_36.participantAfter - PHASE_36.participantBefore;
+    console.log(`  Prompt 36: the participant page ${bytes(PHASE_36.participantBefore)} -> ${bytes(PHASE_36.participantAfter)} gzip when it ended (${grown >= 0 ? '+' : ''}${grown} B of ${bytes(PHASE_36.participantAllowance)}); the admin page ${bytes(PHASE_36.adminBefore)} -> ${bytes(built.admin.htmlGzip)}`);
     assert.ok(grown <= PHASE_36.participantAllowance, `the participant page grew ${grown} B, over the ${PHASE_36.participantAllowance} B allowance`);
     assert.ok(built.participant.htmlGzip < BUDGET.participantCeiling);
     assert.deepEqual(utilityClasses(built.participant.html), [...PHASE_36.participantUtilities], "the participant page's Tailwind rules are the ones it had");
@@ -499,17 +500,47 @@ describe('Phase 8: the unsupported-browser notice, and nothing of the test tools
 
 
   it('Prompt 38 (the admin redesign) left the participant page exactly as it was, with its Tailwind rules, and kept the admin page under its budget', () => {
-    console.log(`  Prompt 38: the participant page ${bytes(PHASE_38.participantBefore)} -> ${bytes(built.participant.htmlGzip)} gzip; the admin page ${bytes(PHASE_38.adminBefore)} -> ${bytes(built.admin.htmlGzip)} (the brief asked 700,000 B; the budget is ${bytes(BUDGET.admin)})`);
-    assert.equal(built.participant.htmlGzip - PHASE_38.participantBefore, PHASE_38.participantAllowance, 'the participant page is the same size');
+    console.log(`  Prompt 38: the participant page ${bytes(PHASE_38.participantBefore)} -> ${bytes(PHASE_38.participantAfter)} gzip when it ended; the admin page ${bytes(PHASE_38.adminBefore)} -> ${bytes(built.admin.htmlGzip)} (the brief asked 700,000 B; the budget is ${bytes(BUDGET.admin)})`);
+    // (Measured when the prompt ended: Prompt 42's change is held to its own allowance below.)
+    assert.equal(PHASE_38.participantAfter - PHASE_38.participantBefore, PHASE_38.participantAllowance, 'the participant page was the same size when Prompt 38 ended');
     assert.deepEqual(utilityClasses(built.participant.html), [...PHASE_38.participantUtilities], "the participant page's Tailwind rules are the ones it had");
     assert.ok(built.admin.htmlGzip < BUDGET.admin, `the admin page is under its ${bytes(BUDGET.admin)} budget`);
   });
 
   it('Prompt 39 (the admin page on the whole width) left the participant page exactly as it was, with its Tailwind rules, and kept the admin page under its budget', () => {
-    console.log(`  Prompt 39: the participant page ${bytes(PHASE_39.participantBefore)} -> ${bytes(built.participant.htmlGzip)} gzip; the admin page ${bytes(PHASE_39.adminBefore)} -> ${bytes(built.admin.htmlGzip)} (the brief asked 700,000 B; the budget is ${bytes(BUDGET.admin)})`);
-    assert.equal(built.participant.htmlGzip - PHASE_39.participantBefore, PHASE_39.participantAllowance, 'the participant page is the same size');
+    console.log(`  Prompt 39: the participant page ${bytes(PHASE_39.participantBefore)} -> ${bytes(PHASE_39.participantAfter)} gzip when it ended; the admin page ${bytes(PHASE_39.adminBefore)} -> ${bytes(built.admin.htmlGzip)} (the brief asked 700,000 B; the budget is ${bytes(BUDGET.admin)})`);
+    // (Measured when the prompt ended: Prompt 42's change is held to its own allowance below.)
+    assert.equal(PHASE_39.participantAfter - PHASE_39.participantBefore, PHASE_39.participantAllowance, 'the participant page was the same size when Prompt 39 ended');
     assert.deepEqual(utilityClasses(built.participant.html), [...PHASE_39.participantUtilities], "the participant page's Tailwind rules are the ones it had");
     assert.ok(built.admin.htmlGzip < BUDGET.admin, `the admin page is under its ${bytes(BUDGET.admin)} budget`);
+  });
+
+  it('Prompt 40 (tab dividers, a list and its detail side by side, Brand edit left) left the participant page exactly as it was and kept the admin page under its budget', () => {
+    console.log(`  Prompt 40: the participant page ${bytes(PHASE_40.participantBefore)} -> ${bytes(PHASE_40.participantAfter)} gzip when it ended; the admin page ${bytes(PHASE_40.adminBefore)} -> ${bytes(built.admin.htmlGzip)} (the brief asked 700,000 B; the budget is ${bytes(BUDGET.admin)})`);
+    // (Measured when the prompt ended: Prompt 42's change is held to its own allowance below.)
+    assert.equal(PHASE_40.participantAfter - PHASE_40.participantBefore, PHASE_40.participantAllowance, 'the participant page was the same size when Prompt 40 ended');
+    assert.deepEqual(utilityClasses(built.participant.html), [...PHASE_40.participantUtilities], "the participant page's Tailwind rules are the ones it had");
+    assert.ok(built.admin.htmlGzip < BUDGET.admin, `the admin page is under its ${bytes(BUDGET.admin)} budget`);
+  });
+
+  it('Prompt 41 (the Deloitte green palette, tokens only) left the participant page exactly as it was and kept the admin page under its budget', () => {
+    console.log(`  Prompt 41: the participant page ${bytes(PHASE_41.participantBefore)} -> ${bytes(PHASE_41.participantAfter)} gzip when it ended; the admin page ${bytes(PHASE_41.adminBefore)} -> ${bytes(built.admin.htmlGzip)} (the brief asked 700,000 B; the budget is ${bytes(BUDGET.admin)})`);
+    // (Measured when the prompt ended: Prompt 42's change is held to its own allowance below.)
+    assert.equal(PHASE_41.participantAfter - PHASE_41.participantBefore, PHASE_41.participantAllowance, 'the participant page was the same size when Prompt 41 ended');
+    assert.deepEqual(utilityClasses(built.participant.html), [...PHASE_41.participantUtilities], "the participant page's Tailwind rules are the ones it had");
+    assert.ok(built.admin.htmlGzip < BUDGET.admin, `the admin page is under its ${bytes(BUDGET.admin)} budget`);
+  });
+
+  it('Prompt 42 (the Art of Possibility participant polish) did not grow the participant page, kept its Tailwind rules, carried the menu and none of the press and hold, Undo or mosaic, and kept the admin page under its budget', () => {
+    const grown = built.participant.htmlGzip - PHASE_42.participantBefore;
+    console.log(`  Prompt 42: the participant page ${bytes(PHASE_42.participantBefore)} -> ${bytes(built.participant.htmlGzip)} gzip (${grown >= 0 ? '+' : ''}${grown} B; the ceiling is ${bytes(BUDGET.participantCeiling)}); the admin page ${bytes(PHASE_42.adminBefore)} -> ${bytes(built.admin.htmlGzip)}`);
+    assert.ok(grown <= PHASE_42.participantAllowance, `the participant page grew ${grown} B; it may not grow`);
+    assert.ok(PHASE_42.participantAfter - PHASE_42.participantBefore <= PHASE_42.participantAllowance, 'as measured when Prompt 42 ended');
+    assert.ok(built.participant.htmlGzip < 450_000 && built.participant.htmlGzip < BUDGET.participantCeiling);
+    assert.deepEqual(utilityClasses(built.participant.html), [...PHASE_42.participantUtilities], "the participant page's Tailwind rules are the ones it had");
+    assert.ok(built.admin.htmlGzip < BUDGET.admin, `the admin page is under its ${bytes(BUDGET.admin)} budget`);
+    assert.match(built.participant.html, /Tap a box and choose Low, Medium or High./, 'the participant page has the level menu');
+    assert.doesNotMatch(built.participant.html, /Press and hold|Cleared. Undo|data-holding|rating-mosaic/, 'and none of what went');
   });
 
   it('the Tailwind rules check can fail: a rule added to the participant page, or one taken away, is found', () => {

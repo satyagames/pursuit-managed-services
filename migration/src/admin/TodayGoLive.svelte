@@ -102,7 +102,7 @@
     padding: 0;
     border: 0;
     background: none;
-    color: var(--adm-primary);
+    color: var(--adm-link);
     font: inherit;
     text-decoration: underline;
     cursor: pointer;

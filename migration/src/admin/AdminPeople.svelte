@@ -7,6 +7,7 @@
   // (AuditReview.svelte, Prompt 21, Phase 7: the audit list, read only). Prompt 32: on a laptop the person opens beside the list, in place; below
   // 1,100 px they replace it, as before. From 1,600 px a Super admin who has checked site access sees who is waiting in a third column.
   import { onMount, tick } from 'svelte';
+  import { showInColumn } from '../lib/admin/sticky-fit.js';
   import * as dataService from '../lib/data/dataService.js';
   import { focusHeading } from '../lib/common/focus.js';
   import { can } from '../lib/access/can.js';
@@ -65,6 +66,12 @@
   const clientChoices = $derived([...clients].sort((a, b) => String(a.name ?? a.id).localeCompare(String(b.name ?? b.id))));
   const sessionChoices = $derived(sessionsOfClient(sessions, clientId));
   const open = $derived(openKey ? everyone.find((row) => row.key === openKey) ?? null : null);
+  /** (Prompt 40) The list holds under the bar while the person's page scrolls beside it; the open row is brought into its view. */
+  let listBox = $state<HTMLElement>();
+  $effect(() => {
+    if (!openKey) return;
+    void tick().then(() => showInColumn(listBox, listBox?.querySelector('[data-testid="user-row"][aria-current="true"]')));
+  });
   /** (Prompt 32) Who is waiting for site access, by name, once Check site access has found them: what the page already holds, nothing read for it. */
   const waitingRows = $derived(waitingKeys ? everyone.filter((row) => waitingKeys!.includes(row.key)) : null);
   const filtering = $derived(chip !== 'all' || Boolean(search.trim()) || Boolean(clientId) || status !== 'all');
@@ -106,7 +113,7 @@
           <button class="btn btn--primary btn--with-icon" type="button" onclick={() => { adding = true; giveNext = true; }}><Icon name="key" /> Give access</button>{/if}
       </div>
     </header>
-  <section class="panel people__list" aria-labelledby="users-heading" aria-busy={loading}>
+  <section class="panel people__list" class:adm-sticky-col={open !== null} bind:this={listBox} aria-labelledby="users-heading" aria-busy={loading}>
     {#if loading}<div class="adm-card adm-skeleton" aria-hidden="true"><span></span><span></span><span></span><span></span></div><p class="sr-only" role="status">Loading people...</p>
     {:else if error}<p class="error" role="alert">{error}</p>
     {:else}
@@ -115,17 +122,17 @@
         <div class="field"><label class="field__label" for="users-search">Search people</label>
           <input id="users-search" class="input" type="search" autocomplete="off" bind:value={search} oninput={() => { page = 1; }} placeholder="Name or email" /></div>
         <div class="field"><label class="field__label" for="users-client">Client</label>
-          <select id="users-client" class="input" bind:value={clientId} onchange={() => { sessionId = ''; page = 1; }}>
+          <select id="users-client" class="select select--block" bind:value={clientId} onchange={() => { sessionId = ''; page = 1; }}>
             <option value="">All clients</option>
             {#each clientChoices as client}<option value={client.id}>{client.name ?? client.id}</option>{/each}
           </select></div>
         <div class="field"><label class="field__label" for="users-session">Session</label>
-          <select id="users-session" class="input" bind:value={sessionId} onchange={() => { page = 1; }} disabled={!clientId}>
+          <select id="users-session" class="select select--block" bind:value={sessionId} onchange={() => { page = 1; }} disabled={!clientId}>
             <option value="">{clientId ? 'All sessions' : 'Choose a client first'}</option>
             {#each sessionChoices as session}<option value={session.id}>{session.label}</option>{/each}
           </select></div>
         <div class="field"><label class="field__label" for="users-status">Status</label>
-          <select id="users-status" class="input" bind:value={status} onchange={() => { page = 1; }}>
+          <select id="users-status" class="select select--block" bind:value={status} onchange={() => { page = 1; }}>
             <option value="all">All</option><option value="Active">Active</option><option value="Disabled">Turned off</option>
           </select></div>
       </div>
@@ -145,7 +152,7 @@
       {:else}
         <ul class="rows" aria-label="People">
           {#each paged.items as row (row.key)}
-            <li class="row" class:row--open={row.key === openKey} data-testid="user-row" aria-current={row.key === openKey ? 'true' : undefined}>
+            <li class="row" class:row--open={row.key === openKey} class:adm-selected={row.key === openKey} data-testid="user-row" aria-current={row.key === openKey ? 'true' : undefined}>
               <div class="row__main">
                 <span class="row__title">{row.name}
                   {#if row.status === 'Disabled'}<span class="pill pill--expired">Turned off</span>{/if}
@@ -254,10 +261,6 @@
       flex-basis: 100%;
     }
 
-    .row--open {
-      border-color: var(--adm-deep);
-      box-shadow: inset 4px 0 0 var(--adm-deep);
-    }
   }
 
   @media (min-width: 1600px) {
@@ -311,7 +314,7 @@
   .users__chip[aria-pressed='true'] {
     border-color: var(--ink);
     background: var(--ink);
-    color: #fff;
+    color: var(--adm-on-primary);
   }
 
 </style>

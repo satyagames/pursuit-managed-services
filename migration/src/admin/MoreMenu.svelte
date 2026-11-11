@@ -9,6 +9,8 @@
   let { label, items }: { label: string; items: Item[] } = $props();
 
   let open = $state(false);
+  /** (Prompt 40) Opens upward when below would run past the column that scrolls inside itself (or the window). */
+  let up = $state(false);
   let button = $state<HTMLButtonElement>();
   let list = $state<HTMLUListElement>();
   const id = `more-${Math.random().toString(36).slice(2, 9)}`;
@@ -17,6 +19,10 @@
 
   async function show() {
     open = true;
+    up = false;
+    await tick();
+    const room = button?.closest('.adm-sticky-col')?.getBoundingClientRect().bottom ?? window.innerHeight;
+    if (list && button && list.getBoundingClientRect().bottom > room && button.getBoundingClientRect().top - list.offsetHeight > 0) up = true;
     await tick();
     entries()[0]?.focus();
   }
@@ -51,7 +57,7 @@
   </button>
   {#if open}
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-    <ul bind:this={list} id={id} class="adm-menu__list" role="menu" aria-label={label} onkeydown={onKey}>
+    <ul bind:this={list} id={id} class="adm-menu__list" class:adm-menu__list--up={up} role="menu" aria-label={label} onkeydown={onKey}>
       {#each items as item (item.label)}
         <li role="none">
           <button type="button" role="menuitem" class:is-danger={item.danger} disabled={item.disabled} onclick={() => { hide(); item.onclick(); }}>

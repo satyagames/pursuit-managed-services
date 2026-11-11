@@ -1,52 +1,112 @@
-/* Colours, type, spacing and surfaces for the admin page (Prompt 38: calm and premium). The participant page never loads this file, so
- * nothing here reaches it. The Phase 1 tokens (tokens.css) still give the font stack, the targets and the green focus ring.
+/* Colours, type, spacing and surfaces for the admin page and Setup. The participant page never loads this file, so nothing here reaches it.
+ * The Phase 1 tokens (tokens.css) still give the font stack and the targets; the focus ring's colour is re-pointed here (--focus).
  *
- * Two groups:
- *   1. The palette (Prompt 38's table), by its own names: --adm-surface, --adm-ink-2, --adm-primary-wash and the rest.
- *   2. The names the screens already use (--adm-card, --adm-muted, --adm-deep, ...), each pointed at the palette, so every screen changed at once.
- * The files' look (the colours the PDF, the PowerPoint and the leader report draw with) is styles/look-tokens.css, which no page loads.
+ * Prompt 41: the Deloitte green palette. Every colour of the admin page is written here and nowhere else (scripts/test-admin-palette.js fails on a
+ * hex, rgb() or hsl() in an admin component). The six brand values, and only tints and shades of them:
+ *   neutral #222222 at 60%, accent #0DF200, secondary accent #26890D, graphs #0097A9, #00A3E0 and #75787B.
+ * The brief's alpha values (#222222 at 60%, 75%, 10%, 20%) are written as the solid colour each makes on white, so a pair's contrast is the same
+ * on every surface it sits on.
  *
- * Three of the brief's colours are under 4.5:1 on white (muted 3.8, warn 3.6, ok 4.0): they are marks (an icon, a dot, a bar), never words. Words
- * in a status chip take the darker *-ink beside their wash. scripts/test-admin-today.js holds every pair. */
+ * Four groups:
+ *   1. The palette, by the brief's names with the admin's prefix (--adm-ink, --adm-neutral, --adm-primary, --adm-accent, --adm-graph-1, ...).
+ *      (The bare names are taken: --accent is the legacy sheets' button colour, so the palette keeps --adm-.)
+ *   2. Status: success, info, warning, danger, live, disabled.
+ *   3. The names the screens already used (--adm-card, --adm-muted, --adm-deep, ...), each pointed at the palette.
+ *   4. The charts' names (--viz-*), re-pointed at the graph colours for the admin page only. The paper files keep styles/results-tokens.css.
+ *
+ * What the numbers forced (scripts/test-admin-palette.js prints every pair):
+ *   - #0DF200 is 1.5:1 on white: decoration only (the active tab's underline, a selected card's edge, a progress bar's end, the live dot, the
+ *     focus glow). Never words, never behind words, never a large fill.
+ *   - #26890D is 4.50:1 on white, and white words on it 4.50:1: buttons, chips, Go live, links on a card. On the page (#F5F6F4) and on its own
+ *     wash it is under 4.5:1, so words there take --adm-primary-hover (#1F7009, 5.5:1 or better).
+ *   - --adm-neutral (#7A7A7A) is 4.29:1 on white, under the 4.5:1 that 16 px words need (rule 9, axe): icons, placeholders, rules and large
+ *     figures only. Secondary words are --adm-neutral-strong (#595959, 7.0:1), at every size. */
 
 :root {
   /* ---- 1. The palette ------------------------------------------------------------------- */
-  --adm-bg: #f6f7f3; /* the page */
+  --adm-ink: #222222; /* headings, body text, values */
+  --adm-neutral: #7a7a7a; /* #222222 at 60% on white, 4.29:1: icons at rest, placeholders, large figures. Never words under 24 px. */
+  --adm-neutral-strong: #595959; /* #222222 at 75% on white, 7.0:1: every secondary word, hints, meta lines */
+  --adm-line: #e9e9e9; /* #222222 at 10%: card strokes, dividers, table lines, a bar's track */
+  --adm-line-strong: #d3d3d3; /* #222222 at 20%: input borders, the off switch */
+  --adm-bg: #f5f6f4; /* the page */
   --adm-surface: #ffffff; /* cards */
-  --adm-surface-2: #fafbf8; /* table stripes, inset areas */
-  --adm-line: #e7ebe3; /* card strokes, dividers */
-  --adm-line-strong: #d6ddd2; /* inputs */
-  --adm-ink: #1f2a24; /* text */
-  --adm-ink-2: #4b574f; /* secondary text */
-  --adm-subtle: #7b867f; /* the brief's "muted": hints drawn as marks (icons, empty-state art), 3.8:1, never words */
-  --adm-primary: #2f6b4f; /* buttons, links, the active tab's icon */
-  --adm-primary-deep: #22513b; /* hover, figures */
-  --adm-primary-wash: #ebf3ee; /* selected rows, chips */
-  --adm-accent: #a9cb6b; /* lime, the one accent: the active tab's underline, a progress bar's end. Never words. */
-  --adm-info: #3b7f8c;
-  --adm-warn: #b7791f;
-  --adm-danger: #b4443a;
-  --adm-ok: #3f8f5a;
-  --adm-info-wash: #e8f2f4;
-  --adm-warn-wash: #fbf3e2;
-  --adm-danger-wash: #fbedeb;
-  --adm-ok-wash: #e9f4ec;
-  /* Words on each wash (4.5:1 or better). */
-  --adm-info-ink: #2c6370;
-  --adm-warn-ink: #7a4e12;
-  --adm-danger-ink: #9a3a31;
-  --adm-ok-ink: #2b6a40;
-  --adm-dark1: #16231c; /* the live wall's header only */
+  --adm-surface-2: #fafaf9; /* stripes, inset areas, a neutral chip */
+  --adm-primary: #26890d; /* primary buttons (white words), links on a card, active icons, the focus ring, a selected edge, a switch that is on */
+  --adm-primary-hover: #1f7009; /* the primary darkened 15%: hover and pressed; primary words on the page or on a wash */
+  --adm-primary-wash: #eaf4e6; /* the primary at 10% on white: selected rows, chips, the hover wash */
+  --adm-on-primary: #ffffff;
+  --adm-accent: #0df200; /* decoration only: see above */
+  --adm-on-accent: #222222; /* words or an icon on an accent fill */
+  --adm-accent-glow: rgb(13 242 0 / 0.35); /* the focus ring's outer glow */
+  --adm-graph-1: #0097a9;
+  --adm-graph-2: #00a3e0;
+  --adm-graph-3: #75787b;
+  /* Tints of the graph colours on white. */
+  --adm-graph-1-10: #e6f5f6;
+  --adm-graph-1-25: #bfe5ea;
+  --adm-graph-1-35: #a6dbe1;
+  --adm-graph-1-45: #8cd0d8;
+  --adm-graph-1-60: #66c1cb;
+  --adm-graph-1-65: #59bbc7;
+  --adm-graph-1-85: #26a7b6;
+  --adm-graph-2-35: #a6dff4;
+  --adm-graph-2-45: #8cd6f1;
+  --adm-graph-2-60: #66c8ec;
+  --adm-graph-3-30: #d6d7d7; /* "Not measured": a grey track with its word */
+  --adm-graph-3-35: #cfd0d1;
+  --adm-graph-3-45: #c1c2c4;
+  --adm-graph-3-60: #acaeb0;
+  --adm-dark-2: #313131; /* #222222 with 7% white: a band on the dark wall */
+  --adm-dark: #222222; /* the live wall's dark ground and any dark plate: white words, accent lines and dots */
 
-  /* Bars and progress: left to right, light to deep (Prompt 38). The dark wall's pairs run deep to light. */
-  --adm-grad-green: linear-gradient(90deg, #9ccdac, #2f6b4f);
-  --adm-grad-teal: linear-gradient(90deg, #9ccad2, #3b7f8c);
-  --adm-grad-amber: linear-gradient(90deg, #f4d79b, #c98e2e);
-  --adm-grad-rose: linear-gradient(90deg, #f3b3ab, #d2594c);
-  --adm-grad-slate: linear-gradient(90deg, #d3dad5, #7b867f);
-  --adm-grad-green-dark: linear-gradient(90deg, #2f8f63, #9be3b8);
-  --adm-grad-teal-dark: linear-gradient(90deg, #2e8797, #8fdce8);
-  --adm-grad-amber-dark: linear-gradient(90deg, #b98a30, #f6d58d);
+  /* ---- 2. Status: each keeps its icon and its word; the green brand is never the only "OK" ------------------- */
+  --adm-ok: var(--adm-primary); /* check-circle */
+  --adm-ok-wash: var(--adm-primary-wash);
+  --adm-ok-ink: var(--adm-primary-hover);
+  --adm-info: var(--adm-graph-1); /* 3.5:1: an icon only */
+  --adm-info-wash: var(--adm-graph-1-10);
+  --adm-info-ink: var(--adm-ink);
+  --adm-warn: #b7791f; /* alert-triangle, 3.6:1: an icon only */
+  --adm-warn-wash: #fbf3e2;
+  --adm-warn-ink: #7a4e12; /* the amber's shade, for words on its wash (6.5:1) */
+  --adm-danger: #b4443a; /* alert-octagon; 5.5:1 on white, 4.8:1 on its wash, so also its words */
+  --adm-danger-wash: #fbedeb;
+  --adm-danger-ink: var(--adm-danger);
+  --adm-danger-line: #e5beba; /* the danger colour at 35% */
+  --adm-live: var(--adm-accent); /* the dot; the word "Live" is --adm-ink */
+  --adm-disabled: #bdbdbd; /* --adm-neutral at 50% */
+
+  /* Bars and meters: left to right, the colour at 45% to the full colour (decoration: the value is written in --adm-ink beside it). */
+  --adm-grad-graph-1: linear-gradient(90deg, var(--adm-graph-1-45), var(--adm-graph-1));
+  --adm-grad-graph-2: linear-gradient(90deg, var(--adm-graph-2-45), var(--adm-graph-2));
+  --adm-grad-graph-3: linear-gradient(90deg, var(--adm-graph-3-45), var(--adm-graph-3));
+  --adm-grad-warn: linear-gradient(90deg, #dfc39a, var(--adm-warn));
+  --adm-grad-danger: linear-gradient(90deg, #ddaba6, var(--adm-danger));
+  /* Prompt 38's names, on the graph colours: a meter is graph 1, teal graph 2, slate graph 3; amber and rose are the status colours. */
+  --adm-grad-green: linear-gradient(90deg, var(--adm-graph-1-45), var(--adm-graph-1));
+  --adm-grad-teal: linear-gradient(90deg, var(--adm-graph-2-45), var(--adm-graph-2));
+  --adm-grad-slate: linear-gradient(90deg, var(--adm-graph-3-45), var(--adm-graph-3));
+  --adm-grad-amber: linear-gradient(90deg, #dfc39a, var(--adm-warn));
+  --adm-grad-rose: linear-gradient(90deg, #ddaba6, var(--adm-danger));
+  /* The dark wall's: the full colour to its 45% tint. */
+  --adm-grad-green-dark: linear-gradient(90deg, var(--adm-graph-1), var(--adm-graph-1-45));
+  --adm-grad-teal-dark: linear-gradient(90deg, var(--adm-graph-2), var(--adm-graph-2-45));
+  --adm-grad-amber-dark: linear-gradient(90deg, var(--adm-graph-3), var(--adm-graph-3-45));
+
+  /* Pictures: a picture's dark stage and the checks behind a transparent one (Brand's uploader and its crop). */
+  --adm-stage: var(--adm-dark);
+  --adm-check-a: var(--adm-graph-3-60);
+  --adm-check-b: var(--adm-graph-3-35);
+  --adm-picture-edge: rgb(34 34 34 / 0.9); /* a crop handle's hairline shadow */
+  --adm-on-dark-wash: rgb(255 255 255 / 0.14); /* a chip on a dark sample */
+  --adm-on-dark-line: rgb(255 255 255 / 0.7);
+  --adm-dark-shadow: rgb(0 0 0 / 0.6); /* words on a client's picture */
+  /* A drawn <select>'s chevron, in --adm-neutral-strong (a data URI cannot read a custom property, so its colour is written here). */
+  --adm-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m3 6 5 5 5-5' fill='none' stroke='%23595959' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --adm-paper: #ffffff; /* the QR sheet on paper */
+  --adm-paper-ink: #000000;
+  --adm-dark-sample: #0b1f3a; /* Brand's "on a dark background" sample: a client's colour is shown on it, so it stays the client's dark */
 
   /* Type (Open Sans only). Running text keeps the repo's 16 px floor (CLAUDE.md rule 9), so Body and Small are 16 px, not the brief's 14 and 13. */
   --adm-fs-display: 1.75rem; /* 28 / 36, 600 */
@@ -78,49 +138,100 @@
   --adm-page-pad: clamp(16px, 2vw, 32px);
   --adm-bar-h: 56px;
   --adm-gutter: 24px;
+  /* Prompt 40: a header tab's 14 px at each side and the 9 px between two tabs (4 px, the 1 px divider, 4 px); a field label's inset, the
+     field's 1 px border and its 12 px padding, so the label starts where the field's words do. */
+  --adm-tab-pad: 14px;
+  --adm-tab-gap: 9px;
+  --adm-field-inset: 13px;
 
   /* Surfaces. */
   --adm-radius: 14px;
   --adm-radius-sm: 10px;
   --adm-radius-bar: 6px;
-  --adm-shadow: 0 1px 2px rgb(31 42 36 / 0.04), 0 8px 24px rgb(31 42 36 / 0.05);
-  --adm-shadow-up: 0 -6px 20px rgb(31 42 36 / 0.07);
-  --adm-shadow-dialog: 0 24px 64px rgb(31 42 36 / 0.18);
-  --adm-scrim: rgb(31 42 36 / 0.4);
+  --adm-shadow: 0 1px 2px rgb(34 34 34 / 0.05), 0 8px 24px rgb(34 34 34 / 0.06);
+  --adm-shadow-up: 0 -6px 20px rgb(34 34 34 / 0.07);
+  --adm-shadow-dialog: 0 24px 64px rgb(34 34 34 / 0.18);
+  --adm-scrim: rgb(34 34 34 / 0.45);
+  --adm-shadow-pop: 0 4px 16px rgb(34 34 34 / 0.15); /* a tooltip, a popover, a menu */
+  --adm-shadow-lift: 0 2px 10px rgb(34 34 34 / 0.3); /* a control floating on the wall */
   --adm-bar-height: 64px;
 
-  /* ---- 2. The names the screens use, on the palette --------------------------------------- */
-  --adm-card: #ffffff;
-  --adm-muted: #4b574f; /* = ink-2: every use of it is words */
-  --adm-bar: #16231c;
-  --adm-ok-bg: #e9f4ec;
-  --adm-warn-bg: #fbf3e2;
-  --adm-bad-bg: #fbedeb;
-  --adm-bad-ink: #9a3a31;
-  --adm-bad-line: #e9bdb7;
-  --adm-idle-bg: #eef1ec;
-  --adm-idle-ink: #4b574f;
-  --adm-bar-black: #16231c; /* tooltips and the wall: dark1, no pure black */
-  --adm-wash: #fafbf8;
-  --adm-card-line: #e7ebe3;
-  --adm-text: #1f2a24;
-  --adm-text-muted: #4b574f;
-  --adm-on-deep: #ffffff;
-  --adm-deep: #22513b;
-  --adm-green: #2f6b4f;
-  --adm-lime: #a9cb6b;
-  --adm-green-wash: #ebf3ee;
-  --adm-teal: #2c6370;
-  --adm-teal-wash: #e8f2f4;
-  --adm-link: #2f6b4f;
-  --adm-sky: #3b7f8c;
+  /* ---- 3. The names the screens use, on the palette --------------------------------------- */
+  --adm-card: var(--adm-surface);
+  --adm-muted: var(--adm-neutral-strong); /* every use of it is words */
+  --adm-ink-2: var(--adm-neutral-strong);
+  --adm-subtle: var(--adm-neutral); /* marks only */
+  --adm-primary-deep: var(--adm-primary-hover);
+  --adm-dark1: var(--adm-dark);
+  --adm-bar: var(--adm-dark);
+  --adm-ok-bg: var(--adm-ok-wash);
+  --adm-warn-bg: var(--adm-warn-wash);
+  --adm-bad-bg: var(--adm-danger-wash);
+  --adm-bad-ink: var(--adm-danger);
+  --adm-bad-line: var(--adm-danger-line);
+  --adm-idle-bg: var(--adm-surface-2);
+  --adm-idle-ink: var(--adm-neutral-strong);
+  --adm-bar-black: var(--adm-dark); /* tooltips and the wall */
+  --adm-wash: var(--adm-surface-2);
+  --adm-card-line: var(--adm-line);
+  --adm-text: var(--adm-ink);
+  --adm-text-muted: var(--adm-neutral-strong);
+  --adm-on-deep: var(--adm-on-primary);
+  --adm-deep: var(--adm-primary-hover);
+  --adm-green: var(--adm-primary);
+  --adm-lime: var(--adm-accent);
+  --adm-green-wash: var(--adm-primary-wash);
+  --adm-teal: var(--adm-ink); /* was words in teal; #0097A9 is 3.5:1, so the words are ink and the teal is the icon */
+  --adm-teal-wash: var(--adm-info-wash);
+  --adm-link: var(--adm-primary-hover); /* links sit on the page as well as on cards */
+  --adm-sky: var(--adm-graph-2);
 
   --ink: var(--adm-ink);
   --muted: var(--adm-muted);
   --line: var(--adm-line);
   --bg: var(--adm-bg);
   --card: var(--adm-card);
-  --accent: var(--adm-primary);
-  --ok: #2b6a40;
-  --warn: #7a4e12;
+  --accent: var(--adm-primary); /* the legacy sheets' buttons and links, not the brief's accent */
+  --ok: var(--adm-ok-ink);
+  --warn: var(--adm-warn-ink);
+  --focus: var(--adm-primary); /* the ring: 2 px of the primary with the accent's glow outside it (admin.css) */
+
+  /* ---- 4. The charts on the admin page: the three graph colours and their tints only --------------- */
+  --viz-primary: var(--adm-graph-1);
+  --viz-primary-tint: var(--adm-graph-1-60);
+  --viz-secondary: var(--adm-graph-2);
+  --viz-tertiary: var(--adm-graph-3);
+  --viz-bar: var(--adm-grad-graph-1); /* every bar: the top choice and the correct answer are marked in words, never by the bar's colour */
+  --viz-correct: var(--adm-primary); /* the tick of "Correct" (check-circle), never a bar */
+  --viz-marker: var(--adm-ink); /* the average and the baseline: 2 px of ink with their label */
+  --viz-brand: var(--adm-accent); /* a card's top rule */
+  --viz-band-high: var(--adm-primary);
+  --viz-band-medium: var(--adm-warn-ink);
+  --viz-band-low: var(--adm-danger);
+  --viz-ramp-3-1: var(--adm-graph-1-35);
+  --viz-ramp-3-2: var(--adm-graph-1-65);
+  --viz-ramp-3-3: var(--adm-graph-1);
+  --viz-ramp-4-1: var(--adm-graph-1-10);
+  --viz-ramp-4-2: var(--adm-graph-1-45);
+  --viz-ramp-4-3: var(--adm-graph-1-65);
+  --viz-ramp-4-4: var(--adm-graph-1);
+  --viz-ramp-5-1: var(--adm-graph-1-25);
+  --viz-ramp-5-2: var(--adm-graph-1-45);
+  --viz-ramp-5-3: var(--adm-graph-1-65);
+  --viz-ramp-5-4: var(--adm-graph-1-85);
+  --viz-ramp-5-5: var(--adm-graph-1);
+  /* Art of Possibility's tiles: white to #0097A9. Every figure is ink: white words are under 4.5:1 on every step (3.5:1 at full); ink is
+     4.55:1 or better on each. */
+  --viz-heat-1: var(--adm-graph-1-10);
+  --viz-heat-2: var(--adm-graph-1-45);
+  --viz-heat-3: var(--adm-graph-1-65);
+  --viz-heat-4: var(--adm-graph-1);
+  --viz-heat-ink: var(--adm-ink);
+  --viz-text: var(--adm-ink);
+  --viz-text-secondary: var(--adm-neutral-strong);
+  --viz-text-muted: var(--adm-neutral-strong);
+  --viz-grid: var(--adm-line);
+  --viz-surface: var(--adm-surface);
+  --viz-band-shade: var(--adm-surface-2);
+  --viz-not-measured: var(--adm-graph-3-30);
 }

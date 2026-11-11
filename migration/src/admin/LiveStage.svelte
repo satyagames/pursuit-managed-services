@@ -125,7 +125,7 @@
     background: var(--wall-ground);
     border: 1.5px solid var(--wall-line);
     border-radius: 999px;
-    box-shadow: 0 2px 10px rgb(0 0 0 / 0.3);
+    box-shadow: var(--adm-shadow-lift);
     pointer-events: none;
   }
 

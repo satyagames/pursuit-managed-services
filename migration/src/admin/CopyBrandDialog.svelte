@@ -62,11 +62,11 @@
     border-radius: 1rem;
     color: var(--adm-ink);
     background: var(--adm-card);
-    box-shadow: 0 1.5rem 4rem rgb(11 31 58 / 0.35);
+    box-shadow: var(--adm-shadow-dialog);
   }
 
   .copy::backdrop {
-    background: rgb(11 31 58 / 0.55);
+    background: var(--adm-scrim);
   }
 
   .copy__body {

@@ -6,8 +6,9 @@ import './styles/legacy/admin.css';
 import './styles/tokens.css';
 import './styles/fonts-admin.css';
 import './styles/fonts-fallback.css';
-import './styles/admin-tokens.css';
 import './styles/results-tokens.css';
+// (Prompt 41: after results-tokens.css, so the admin's own --viz-* names, on the graph colours, win on the page; paper keeps results-tokens.css.)
+import './styles/admin-tokens.css';
 import './lib/motion/motion-tokens.css';
 import AdminApp from './AdminApp.svelte';
 import { closeSignInPopup, isSignInPopup } from './lib/common/sign-in-popup.js';

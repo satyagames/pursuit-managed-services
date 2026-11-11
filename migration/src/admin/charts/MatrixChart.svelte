@@ -220,7 +220,7 @@
     overflow-wrap: break-word;
   }
 
-  /* Each average on a tile: light to deep teal, the figure in the middle, always printed (results-tokens.css: 4.5:1 or better). */
+  /* Each average on a tile: white to #0097A9 (Prompt 41), the figure in the middle, always printed, in ink on every step (4.55:1 or better). */
   .aop:not(.aop--fit) .aop__grid .aop__heat {
     padding: 4px;
     background: var(--viz-surface);
@@ -236,7 +236,7 @@
   .aop:not(.aop--fit) .aop__heat[data-tone='0'] .aop__tile { color: var(--viz-text); background: var(--viz-heat-1); }
   .aop:not(.aop--fit) .aop__heat[data-tone='1'] .aop__tile { color: var(--viz-text); background: var(--viz-heat-2); }
   .aop:not(.aop--fit) .aop__heat[data-tone='2'] .aop__tile { color: var(--viz-text); background: var(--viz-heat-3); }
-  .aop:not(.aop--fit) .aop__heat[data-tone='3'] .aop__tile { color: var(--viz-surface); background: var(--viz-heat-4); }
+  .aop:not(.aop--fit) .aop__heat[data-tone='3'] .aop__tile { color: var(--viz-heat-ink, var(--viz-surface)); background: var(--viz-heat-4); }
 
   .aop__grid {
     width: 100%;
@@ -285,8 +285,8 @@
 
   .aop__heat[data-tone='0'] { color: var(--viz-text); background: var(--viz-ramp-4-1); }
   .aop__heat[data-tone='1'] { color: var(--viz-text); background: var(--viz-ramp-4-2); }
-  .aop__heat[data-tone='2'] { color: var(--viz-surface); background: var(--viz-ramp-4-3); }
-  .aop__heat[data-tone='3'] { color: var(--viz-surface); background: var(--viz-ramp-4-4); }
+  .aop__heat[data-tone='2'] { color: var(--viz-heat-ink, var(--viz-surface)); background: var(--viz-ramp-4-3); }
+  .aop__heat[data-tone='3'] { color: var(--viz-heat-ink, var(--viz-surface)); background: var(--viz-ramp-4-4); }
 
   .aop__score {
     font-weight: 700;
