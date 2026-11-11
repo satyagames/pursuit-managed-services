@@ -53,7 +53,7 @@
       <summary><Icon name="sliders" />Filters <span class="adm-fold__summary">{filtering ? 'Some changes are hidden' : 'Showing every change'}</span></summary>
     <div class="audit__bar">
       <div class="field"><label class="field__label" for="audit-action">What was done</label>
-        <select id="audit-action" class="input" bind:value={action} onchange={() => { page = 1; }}>
+        <select id="audit-action" class="select select--block" bind:value={action} onchange={() => { page = 1; }}>
           {#each AUDIT_FILTERS as choice (choice.id)}<option value={choice.id}>{choice.label}</option>{/each}
         </select></div>
       <div class="field"><label class="field__label" for="audit-person">Person</label>

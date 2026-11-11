@@ -78,6 +78,11 @@
   --adm-page-pad: clamp(16px, 2vw, 32px);
   --adm-bar-h: 56px;
   --adm-gutter: 24px;
+  /* Prompt 40: a header tab's 14 px at each side and the 9 px between two tabs (4 px, the 1 px divider, 4 px); a field label's inset, the
+     field's 1 px border and its 12 px padding, so the label starts where the field's words do. */
+  --adm-tab-pad: 14px;
+  --adm-tab-gap: 9px;
+  --adm-field-inset: 13px;
 
   /* Surfaces. */
   --adm-radius: 14px;

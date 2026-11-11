@@ -621,6 +621,35 @@ input[type='date']:focus-within {
   align-items: center;
 }
 
+/* Prompt 40: from 960 px both columns hold under Content's strip and scroll inside themselves, so the chosen activity's questions are beside
+   it wherever it is in the list. The questions' head (the activity's place and name, Add question) stays at the top of its column; a long list
+   of activities fades at its foot to say there is more. */
+@media (min-width: 960px) {
+  .content-detail .questions__head {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    margin-bottom: 0.5rem;
+    padding-block: 0.25rem 0.5rem;
+    background: var(--adm-bg);
+  }
+
+  .content-activities::after {
+    content: '';
+    position: sticky;
+    bottom: 0;
+    display: block;
+    height: 24px;
+    margin-top: -24px;
+    background: linear-gradient(to bottom, transparent, var(--adm-bg));
+    pointer-events: none;
+  }
+
+  .content-activities > .rows:last-of-type {
+    margin-bottom: 24px;
+  }
+}
+
 .opt {
   flex-wrap: wrap;
 }

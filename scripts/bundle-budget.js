@@ -588,3 +588,15 @@ export const PHASE_39 = Object.freeze({
   participantAfter: 193_978, adminAfter: 717_609,
   participantUtilities: PHASE_11A.participantUtilities,
 });
+
+/**
+ * Prompt 40 (dividers between the bar's tabs, a list and its detail held side by side, Brand's controls left of its preview, field labels in line
+ * with their fields), measured from where Prompt 39 left the pages (17b268c: participant 193,978 B, admin 717,588 B). The participant page
+ * may not change at all, and its Tailwind rules stay its own. The brief asked the admin page to stay under 700,000 B; it already stood over it,
+ * so it is held to its 720,000 B budget. `adminAfter` is the page when the work stopped.
+ */
+export const PHASE_40 = Object.freeze({
+  participantBefore: 193_978, adminBefore: 717_588, participantAllowance: 0,
+  participantAfter: 193_978, adminAfter: 718_558,
+  participantUtilities: PHASE_11A.participantUtilities,
+});

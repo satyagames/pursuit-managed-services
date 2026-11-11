@@ -87,11 +87,11 @@
   <form class="give" onsubmit={give} novalidate>
     <h2 id="give-title">Give access to {person.name}</h2>
     <label class="field"><span class="field__label">Role</span>
-      <select class="input" bind:value={role} disabled={busy} aria-describedby="give-role-does">{#each ROLE_CHOICES as choice}<option value={choice}>{choice}</option>{/each}</select>
+      <select class="select select--block" bind:value={role} disabled={busy} aria-describedby="give-role-does">{#each ROLE_CHOICES as choice}<option value={choice}>{choice}</option>{/each}</select>
       <span id="give-role-does" class="muted small" data-testid="role-does">{ROLE_SUMMARY[role as keyof typeof ROLE_SUMMARY] ?? ''}</span>
     </label>
     <label class="field"><span class="field__label">Where</span>
-      <select class="input" bind:value={place} disabled={busy}>
+      <select class="select select--block" bind:value={place} disabled={busy}>
         <option value="client">One client</option>
         <option value="session">One session</option>
         {#if periodOffered}<option value="period">All clients, for a period</option>{/if}
@@ -99,7 +99,7 @@
     </label>
     {#if place !== 'period'}
       <label class="field"><span class="field__label">Client</span>
-        <select class="input" bind:value={clientId} onchange={() => { sessionId = ''; }} disabled={busy}>
+        <select class="select select--block" bind:value={clientId} onchange={() => { sessionId = ''; }} disabled={busy}>
           <option value="">Choose a client</option>
           {#each clientChoices as client}<option value={client.id}>{client.name ?? client.id}</option>{/each}
         </select>
@@ -107,7 +107,7 @@
     {/if}
     {#if place === 'session'}
       <label class="field"><span class="field__label">Session</span>
-        <select class="input" bind:value={sessionId} disabled={busy || !clientId}>
+        <select class="select select--block" bind:value={sessionId} disabled={busy || !clientId}>
           <option value="">{clientId ? 'Choose a session' : 'Choose a client first'}</option>
           {#each sessionChoices as session}<option value={session.id}>{session.label}</option>{/each}
         </select>

@@ -67,30 +67,30 @@ const status = (page: Page) => page.getByTestId('brand-status');
 
 // ---- Where it lives and how it is laid out ---------------------------------------------------------------
 
-test('Brand Studio opens from a client row, with the real preview and the controls side by side, the preview first', async ({ page }) => {
+test('Brand Studio opens from a client row, with the real preview and the controls side by side, the controls first', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await openBrand(page);
   await expect(page.getByRole('group', { name: 'Device' }).getByRole('button')).toHaveText(devices.map((device) => device.label));
   await expect(page.getByRole('group', { name: 'Screen' }).getByRole('button')).toHaveText([...scenes]);
   await expect(previewFrame(page).getByRole('heading', { name: 'Hi Jane Doe!' })).toBeVisible();
   await expect(status(page)).toHaveText('All changes saved');
-  // Two columns: the preview first, on the left (Prompt 38; it was on the right), and the controls to its right.
+  // Two columns: the controls on the left and the preview to their right (Prompt 40, as before Prompt 38).
   const [controls, preview] = await Promise.all([page.locator('.brand__controls').boundingBox(), page.locator('.brand__preview').boundingBox()]);
-  expect(controls!.x).toBeGreaterThan(preview!.x + preview!.width - 1);
+  expect(preview!.x).toBeGreaterThan(controls!.x + controls!.width - 1);
   // Back to the list.
   await page.getByRole('tab', { name: 'Clients', exact: true }).click(); // (Phase 18: Brand is a view of Content; no Back button)
   await expect(page.getByRole('heading', { name: 'Clients', exact: true })).toBeVisible();
 });
 
-test('at 820 wide and below the preview sits above the controls; nothing scrolls sideways and every target is 44px', async ({ page }) => {
+test('under 1,100 wide the preview sits below the controls; nothing scrolls sideways and every target is 44px', async ({ page }) => {
   await openBrand(page);
   for (const viewport of viewports) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await expect(previewFrame(page).getByRole('heading', { name: 'Hi Jane Doe!' })).toBeVisible();
     const [controls, preview] = await Promise.all([page.locator('.brand__controls').boundingBox(), page.locator('.brand__preview').boundingBox()]);
-    // (Prompt 38: the preview first, so on a narrow screen it is above the controls, and beside them on the left when there is room.)
-    if (viewport.width <= 820) expect(controls!.y, `${viewport.width}: the controls below the preview`).toBeGreaterThanOrEqual(preview!.y + preview!.height - 1);
-    else expect(controls!.x, `${viewport.width}: beside`).toBeGreaterThan(preview!.x + preview!.width - 1);
+    // (Prompt 40: the controls first, so on a narrow screen the preview is under them, and beside them on the right when there is room.)
+    if (viewport.width < 1100) expect(preview!.y, `${viewport.width}: the preview below the controls`).toBeGreaterThanOrEqual(controls!.y + controls!.height - 1);
+    else expect(preview!.x, `${viewport.width}: beside`).toBeGreaterThan(controls!.x + controls!.width - 1);
     await expectFits(page, `Brand Studio at ${viewport.width}`);
     await shoot(page, `brand-studio-${viewport.width}`);
   }

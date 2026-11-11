@@ -1972,7 +1972,7 @@ The general alignment rules, for every admin screen:
    `admin.css`, from 1,024 px). The description sits beside the title only when it fits there on one line; longer, it goes under the title and
    never wraps beside a button.
 3. **A split view's columns start on one top line** and use the same card padding: Today 8 + 4, Clients 4 (at least 340 px) + 8 with the title
-   and Add client above both, Content's activities 5 + questions 7, Brand's preview 7 + controls 5, Results' sessions 3 (at least 280 px) + the
+   and Add client above both, Content's activities 5 + questions 7, Brand's controls 5 + preview 7 (Prompt 40), Results' sessions 3 (at least 280 px) + the
    session 9, People 4 + 8 with the title row above both. A side column sticks under the bar only while all of it fits above the bottom bar
    (`lib/admin/sticky-fit.js`, `data-sticky`); a taller one scrolls with the page.
 4. **Cards in a row are one height**, and buttons in a row one height and one radius. The brief's 36 px buttons are 44 px here: the target size of
@@ -2018,6 +2018,37 @@ And for the parts:
   page); `PHASE_39` in `scripts/bundle-budget.js` holds the participant page as it was.
 - `scripts/migration-tests/admin-full-width.spec.ts` holds all of this at 1024, 1280, 1366, 1440, 1536 and 1920 px and writes the pictures of
   1440 and 1920 to `test-results/admin/full-width/`.
+
+## Rules from Prompt 40 (tab dividers, a list and its detail kept side by side, edit left and preview right, labels in line; keep them holding)
+
+- **Tab dividers.** Between each two neighbouring tabs of the bar, a 1 x 20 px divider in `--adm-line`, in the bar's middle: drawn as
+  `.tab + .tab::before` in `admin-look.css`, so it is never read and there is none before the first tab or after the last, and it never meets the
+  active tab's underline on the bar's bottom edge. Each tab has 14 px at each side (`--adm-tab-pad`) and 9 px between two tabs
+  (`--adm-tab-gap`: 4 px, the divider, 4 px), so the word is as far from the divider on each side; the icon is 8 px from the word. Hover is the
+  primary wash; the active tab is ink with the lime underline the tab's whole width. The row stays one line with no scrollbar: from 1,280 to
+  1,365 px the tabs have 12 px at each side and the bar's parts 12 px between them, from 1,024 to 1,279 px 4 px and 4 px between tabs (the
+  divider in its middle); below 1,024 px the Menu's list has no dividers.
+- **A list and its detail stay side by side** (`.adm-sticky-col`, `.adm-selected`, `.adm-context` in `admin-look.css`). In a split view the
+  column that names the selection holds under the bar (and under Content's strip, `--adm-sticky-top`), 16 px down, as tall as the window leaves it
+  less 32 px (and the bottom bar), and scrolls inside itself: Clients' and People's list on the left, Content's activities and its questions. The
+  selection is the primary 3 px left edge on the primary wash, in every list; when a client or person is opened its row is brought into the list's
+  view by scrolling the list alone (`showInColumn`, `lib/admin/sticky-fit.js`). A client's page starts with a 48 px strip held at the top of its
+  column: the logo, the name, the Active or Archived chip and Back to clients (the one Back button). Below 1,100 px the client or person replaces the
+  list, as before, and the strip is what says which one it is. A row's more menu opens upward when below would run past its column. On a
+  view-only screen (a disabled fieldset) nothing in a column can take the focus, so it scrolls with the page there (axe's scrollable-region rule).
+- **Content's activities**: choosing an activity never moves the page and the focus stays on the row pressed; its questions are beside it, the
+  panel's title its place and name ("5 · Straight Talk") with Add question, at the top of the panel at any scroll. A long list of activities
+  fades at its foot. The question rows keep their own Edit and Delete.
+- **Edit left, preview right.** Brand's controls are 5 of the 12 columns on the left and the preview 7 on the right, held under Content's strip
+  16 px down, its Device and Screen switches above it. The controls in this order: Pictures, then Colours (both open), then Animations, folded
+  to one line that says whether it is on; the reading and the keyboard order are the same. Below 1,100 px the controls come first and the preview
+  under them. The sticky bar keeps where Brand stands on the left and Revert to saved and Save brand on the right.
+- **Field labels in line.** Every `.field__label` over a field starts where the field's words do: `--adm-field-inset` (13 px, the field's 1 px
+  border and its 12 px padding), one rule in `admin-look.css` for every filter, editor and dialog. A label beside its field (Content's Client)
+  has no inset. A `<select>` in a field is the page's drawn `.select` (`.select--block` for the full width): a native select draws its words a few
+  px inside its padding, so they would not line up. The label stays 16 px (rule 9), not the brief's 12, and a field 44 px tall, not 40.
+- `scripts/migration-tests/admin-related.spec.ts` holds the dividers, the Clients list and strip, the last activity's questions, Brand's order and
+  People's labels at 1280, 1440 and 1920 px, and writes the pictures to `test-results/admin/related/`.
 
 ## Before finishing a change
 

@@ -224,9 +224,9 @@ test('Content on a laptop: activities beside their questions, and Brand\'s contr
     await page.getByRole('tab', { name: /^Brand/ }).click();
     const controls = await page.locator('.brand__controls').boundingBox();
     const preview = page.locator('.brand__preview');
-    // (Prompt 38: the preview first, the controls beside it.)
+    // (Prompt 40: the controls first, the preview beside them on the right.)
     const shown = (await preview.boundingBox())!;
-    expect(controls!.x, `${at}: the controls beside the preview`).toBeGreaterThanOrEqual(shown.x + shown.width);
+    expect(shown.x, `${at}: the preview beside the controls`).toBeGreaterThanOrEqual(controls!.x + controls!.width);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `${at}: no sideways scroll`).toBe(true);
     if (size.width === 1366 || size.width === 1920) await page.screenshot({ path: `${pictures}content-brand-${size.width}x${size.height}.png` });
     // (Part of the way down the controls: the preview is held until the controls end, and an iPhone's preview is taller than a 650 px window.)

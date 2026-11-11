@@ -15,6 +15,7 @@
   import ClientWorkspace from './ClientWorkspace.svelte';
   import { confirmSampleClient, readSessionResponses } from '../lib/admin/adminData.js';
   import { withoutRetiredLogo } from '../lib/brand/retired-logos.js';
+  import { showInColumn } from '../lib/admin/sticky-fit.js';
   import {
     MAX_CLIENT_NAME, clientProblems, clientRows, clientUsage, createClientRecord, defaultEventTitle, formOf, isClientLive, recentCodes, setClientStatus, slugProblem,
     updateClientRecord,
@@ -81,6 +82,13 @@
   let workspace = $state<Client | null>(null);
   /** (Prompt 33) The client's own details are being edited from its page: the editor is drawn there, under Client details. */
   const inWorkspace = $derived(Boolean(workspace && editing && editing.id === workspace.id));
+  /** (Prompt 40) The list, which holds under the bar while the client's page scrolls beside it; the open client's row is brought into its view. */
+  let listBox = $state<HTMLElement>();
+  $effect(() => {
+    const id = workspace?.id;
+    if (!id) return;
+    void tick().then(() => showInColumn(listBox, listBox?.querySelector('.client-row[aria-current="true"]')));
+  });
 
   const rows = $derived(clientRows({ clients, sessions, sections, liveClientId }));
   const where = $derived(pagerState({ total: rows.length, pageSize: PER_PAGE.clients, page }));
@@ -355,7 +363,7 @@
     </div>
     <button class="btn btn--primary btn--with-icon" type="button" onclick={() => openEditor(null)} disabled={busy}><Icon name="plus" /> Add client</button>
   </header>
-<section class="panel clients-panel clients__list" aria-busy={loading || busy} aria-label="Clients">
+<section class="panel clients-panel clients__list" class:adm-sticky-col={workspace !== null} bind:this={listBox} aria-busy={loading || busy} aria-label="Clients">
   {#if loading}<div class="adm-card adm-skeleton" aria-hidden="true"><span></span><span></span><span></span><span></span></div><p class="sr-only" role="status">Loading clients...</p>
   {:else if error}<p class="error" role="alert">{error}</p>
   {:else if clients.length === 0}<div class="adm-empty"><Icon name="building" /><p>No clients yet. Add the first one you are visiting.</p><button class="btn btn--with-icon" type="button" onclick={() => openEditor(null)} disabled={busy}><Icon name="plus" />Add client</button></div>
@@ -363,7 +371,7 @@
     <ul class="rows">
       {#each shownRows as row (row.client.id)}
         {@const client = row.client}
-        <li class="row client-row" class:client-row--archived={row.archived} class:row--open={workspace?.id === client.id} aria-current={workspace?.id === client.id ? 'true' : undefined}>
+        <li class="row client-row" class:client-row--archived={row.archived} class:row--open={workspace?.id === client.id} class:adm-selected={workspace?.id === client.id} aria-current={workspace?.id === client.id ? 'true' : undefined}>
           {#if withoutRetiredLogo(client.logoUrl)}<img class="logo" src={embeddedAssetUrl(withoutRetiredLogo(client.logoUrl) ?? '') ?? ''} alt="" onerror={(event) => { (event.currentTarget as HTMLImageElement).hidden = true; }} />{/if}
           <div class="row__main">
             <span class="row__title">{client.name}
@@ -455,11 +463,6 @@
     .clients--open .clients__detail {
       grid-column: 2;
       grid-row: 2;
-    }
-
-    .row--open {
-      border-color: var(--adm-deep);
-      box-shadow: inset 4px 0 0 var(--adm-deep);
     }
   }
 

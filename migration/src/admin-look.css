@@ -174,10 +174,11 @@ html {
   border: 0;
 }
 
+/* (Prompt 40: 14 px inside each tab, and between two tabs 4 px, a 1 px divider 20 px high, 4 px: the word is as far from the divider on each side.) */
 .shell__nav .tabs {
   display: flex;
   align-items: stretch;
-  gap: var(--adm-s1);
+  gap: var(--adm-tab-gap);
   height: 100%;
   margin: 0;
   padding: 0;
@@ -185,14 +186,15 @@ html {
 }
 
 .shell__nav .tab {
+  position: relative;
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
-  gap: 6px;
+  gap: var(--adm-s2);
   box-sizing: border-box;
   height: 100%;
   min-height: var(--target-min);
-  padding: 0 var(--adm-s2);
+  padding: 0 var(--adm-tab-pad);
   border: 0;
   border-block: 3px solid transparent;
   border-radius: 0;
@@ -209,7 +211,21 @@ html {
   color: var(--adm-ink-2);
 }
 
+/* The divider: drawn, never read (a pseudo-element has no words), in the middle of the 9 px between two neighbours; none before the first or
+ * after the last. It is 20 px of the bar's middle, so it never meets the active tab's underline on the bar's bottom edge. */
+.shell__nav .tab + .tab::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: calc(-1 * var(--adm-s1) - 1px);
+  top: calc(50% - 10px);
+  width: 1px;
+  height: 20px;
+  background: var(--adm-line);
+  pointer-events: none;
+}
+
 .shell__nav .tab:hover {
+  background: var(--adm-primary-wash);
   color: var(--adm-ink);
   text-decoration: none;
 }
@@ -245,13 +261,29 @@ html {
     width: 72px;
   }
 
-  .shell__nav .tabs {
-    gap: 0;
-  }
-
   .shell__nav .tab {
     gap: var(--adm-s1);
     padding: 0 var(--adm-s1);
+  }
+
+  /* (Prompt 40: 4 px between two tabs here, the divider in its middle; the word still as far from it on each side.) */
+  .shell__nav .tabs {
+    gap: var(--adm-s1);
+  }
+
+  .shell__nav .tab + .tab::before {
+    inset-inline-start: calc(-1 * var(--adm-s1) / 2 - 0.5px);
+  }
+}
+
+/* 1,280 to 1,365 px, where the chip also names its reach: 12 px inside each tab and 12 px between the bar's three parts keep it on one line. */
+@media (min-width: 1280px) and (max-width: 1365px) {
+  .shell__bar {
+    gap: var(--adm-s3);
+  }
+
+  .shell__nav .tab {
+    padding: 0 var(--adm-s3);
   }
 }
 
@@ -290,6 +322,7 @@ html {
     z-index: 20;
     display: none;
     flex-direction: column;
+    gap: 0;
     height: auto;
     min-width: 16rem;
     padding: var(--adm-s1);
@@ -309,6 +342,11 @@ html {
     padding: 0 var(--adm-s3);
     border-block: 0;
     border-inline-start: 3px solid transparent;
+  }
+
+  /* (In the Menu's list the tabs are one under another: no divider.) */
+  .shell__nav .tab + .tab::before {
+    content: none;
   }
 
   .shell__nav .tab[aria-selected='true'] {
@@ -508,7 +546,10 @@ body.admin textarea {
   gap: 6px;
 }
 
+/* Prompt 40: every field's label starts where the field's words do (its 1 px border and 12 px padding in), not at the rounded edge; one rule for
+ * every label over a field on the admin page (filters, editors, dialogs). The words stay 16 px (body text never under 16 px). */
 .field__label {
+  padding-inline-start: var(--adm-field-inset);
   font-size: var(--adm-fs-body);
   font-weight: var(--fw-semibold);
   color: var(--adm-ink);
@@ -835,7 +876,7 @@ html:has(.adm-bar) {
 .activity--selected {
   border-color: var(--adm-primary);
   background: var(--adm-primary-wash);
-  box-shadow: none;
+  box-shadow: inset 3px 0 0 var(--adm-primary);
 }
 
 /* ---- A "more" menu ------------------------------------------------------------------------ */
@@ -964,4 +1005,90 @@ body.admin div.error[role='alert']::before {
 .dialog {
   border-radius: var(--adm-radius);
   box-shadow: var(--adm-shadow-dialog);
+}
+
+/* ---- A list and its detail stay related (Prompt 40) -------------------------------------------------------------------------------------------
+ * In a split view the column that names the selection (Clients' and People's list on the left, Content's questions on the right) holds under the
+ * bar, and under Content's strip there, 16 px down, as tall as the window leaves it (less a bottom bar), and scrolls inside itself: the other
+ * column scrolls with the page and the two stay side by side. The selection is the primary 3 px edge on the left and the wash, in both columns. */
+@media (min-width: 960px) {
+  .adm-sticky-col {
+    position: sticky;
+    top: calc(var(--adm-sticky-top, var(--adm-bar-h)) + var(--adm-s4));
+    max-height: calc(100dvh - var(--adm-sticky-top, var(--adm-bar-h)) - var(--adm-s6));
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  /* On a view-only screen (ViewOnly.svelte's disabled fieldset) nothing in the column can take the focus, so the keyboard could not scroll it:
+   * it scrolls with the page there. */
+  .view-only .adm-sticky-col,
+  .shell__body:has(.adm-bar) .view-only .adm-sticky-col {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .shell__body:has(.adm-bar) .adm-sticky-col {
+    max-height: calc(100dvh - var(--adm-sticky-top, var(--adm-bar-h)) - var(--adm-s6) - var(--adm-bar-height));
+  }
+}
+
+.adm-selected {
+  border-color: var(--adm-primary);
+  background: var(--adm-primary-wash);
+  box-shadow: inset 3px 0 0 var(--adm-primary);
+}
+
+/* The open client's context strip: its logo, name and status and the way back, held at the top of the right column while it scrolls. */
+.adm-context {
+  position: sticky;
+  top: var(--adm-sticky-top, var(--adm-bar-h));
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: var(--adm-s3);
+  box-sizing: border-box;
+  min-height: 48px;
+  padding: 0 var(--adm-s3);
+  border-bottom: 1px solid var(--adm-line);
+  background: var(--adm-surface);
+}
+
+.adm-context__logo {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.adm-context__name {
+  overflow: hidden;
+  min-width: 0;
+  font-weight: var(--fw-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adm-context > .btn {
+  flex: none;
+  margin-inline-start: auto;
+}
+
+/* What the keyboard or a focused heading brings into view stops under the strip too. */
+html:has(.adm-context) {
+  --adm-sticky-room: calc(var(--adm-bar-h) + 48px + var(--adm-s4));
+}
+
+/* A row's more menu at the foot of a column that scrolls inside itself opens upward (MoreMenu.svelte). */
+.adm-menu__list.adm-menu__list--up {
+  top: auto;
+  bottom: calc(100% + var(--adm-s1));
+}
+
+/* A <select> drawn by the page (admin.css `.select`), the whole width of its field: its words start where its label does, which a native
+ * select's (4 px further in, in Chromium) do not (Prompt 40). */
+.select.select--block {
+  width: 100%;
+  max-width: none;
 }

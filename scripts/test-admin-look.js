@@ -61,7 +61,7 @@ function offScale(css) {
       // A step of the scale, the gutter (24 or 16), the bars' heights and the page's padding and width (Prompt 39) are tokens; 100% is the window; env() is the device's safe area; calc(), max() and their
       // operators and plain multipliers only combine them. Whatever is left must be on the scale.
       const parts = decl[2]
-        .replace(/var\(--adm-(?:s[1-7]|gutter|bar-height|bar-h|page-pad|page-max|inset)\)/g, ' ')
+        .replace(/var\(--adm-(?:s[1-7]|gutter|bar-height|bar-h|page-pad|page-max|inset|tab-pad|tab-gap|field-inset)\)/g, ' ')
         .replace(/env\([^()]*\)/g, ' ')
         .replace(/\b(?:calc|max|min)\(|[(),]|\s[+*/-]\s/g, ' ')
         .trim().split(/\s+/).filter((part) => part && !/^\d+$/.test(part));
@@ -85,6 +85,10 @@ describe('the admin look (Prompt 38)', () => {
     assert.match(css, /--adm-bar-h: 56px;/);
     assert.doesNotMatch(css, /--adm-content-max/);
     assert.match(css, /--adm-bar-height: 64px;/);
+    // (Prompt 40: the tabs' 14 px and the 4 + 1 + 4 px between them; a label's inset is the field's border and padding.)
+    assert.match(css, /--adm-tab-pad: 14px;/);
+    assert.match(css, /--adm-tab-gap: 9px;/);
+    assert.match(css, /--adm-field-inset: 13px;/);
   });
 
   it('words are 4.5:1 and marks 3:1 on their grounds', async () => {
@@ -132,5 +136,19 @@ describe('a side column sticks only while it fits (Prompt 39, lib/admin/sticky-f
     assert.equal(fitsWindow(501, 652, 64), false, 'a pixel taller scrolls with the page');
     assert.equal(fitsWindow(700, 800), true, 'no bottom bar');
     assert.equal(fitsWindow(0, 800), false, 'a column not drawn yet does not stick');
+  });
+});
+
+describe('the selected row is shown inside its own scrolling column (Prompt 40, lib/admin/sticky-fit.js)', () => {
+  it('scrolls the column, not the page, by the least that shows the whole row', async () => {
+    const { scrollToShow } = await import('../migration/src/lib/admin/sticky-fit.js');
+    // A column 400 px high at scroll 0: a row from 100 to 160 is in view already.
+    assert.equal(scrollToShow({ scrollTop: 0, height: 400 }, { top: 100, height: 60 }), 0);
+    // A row from 600 to 660 (in the column's content): scrolled so its bottom is the column's.
+    assert.equal(scrollToShow({ scrollTop: 0, height: 400 }, { top: 600, height: 60 }), 260);
+    // Above what shows: scrolled so its top is the column's.
+    assert.equal(scrollToShow({ scrollTop: 500, height: 400 }, { top: 120, height: 60 }), 120);
+    // Taller than the column: its top.
+    assert.equal(scrollToShow({ scrollTop: 0, height: 100 }, { top: 300, height: 200 }), 300);
   });
 });

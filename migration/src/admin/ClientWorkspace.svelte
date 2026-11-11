@@ -16,8 +16,10 @@
   import ClientSessions from './ClientSessions.svelte';
   import ClientTagChips from './ClientTagChips.svelte';
   import ClientTeam from './ClientTeam.svelte';
+  import { embeddedAssetUrl } from '../lib/brand/assets.js';
+  import { withoutRetiredLogo } from '../lib/brand/retired-logos.js';
 
-  type Client = { id: string; name: string; slug?: string; status?: string; industry?: string | null; region?: string | null };
+  type Client = { id: string; name: string; slug?: string; status?: string; logoUrl?: string | null; industry?: string | null; region?: string | null };
 
   let { client, clients = [], access = null, onBack, onEdit, editor, onToast }: {
     client: Client;
@@ -52,6 +54,11 @@
   /** Its Industry and Region as saved here (Clients reads them again on the way back). */
   let tags = $state<{ industry: string; region: string } | null>(null);
   const shown = $derived({ ...client, ...(tags ?? {}) });
+
+  /** (Prompt 40) The context strip's logo and status: which client this page is, held in view as it scrolls. */
+  const logoAt = $derived(withoutRetiredLogo(client.logoUrl ?? null));
+  const logo = $derived(logoAt ? embeddedAssetUrl(logoAt) ?? '' : '');
+  const archived = $derived(client.status === 'archived');
 
   const fiscalStartMonth = $derived(settings?.fiscalYearStartMonth ?? DEFAULT_FISCAL_START);
 
@@ -90,6 +97,13 @@
 </script>
 
 <section class="panel workspace" aria-labelledby="workspace-heading" aria-busy={loading}>
+  <!-- (Prompt 40: the client this page is, and the way back, held at the top of the column while the page scrolls.) -->
+  <div class="adm-context" data-testid="client-context">
+    {#if logo}<img class="adm-context__logo" src={logo} alt="" onerror={(event) => { (event.currentTarget as HTMLImageElement).hidden = true; }} />{/if}
+    <span class="adm-context__name">{client.name}</span>
+    <span class="pill" class:pill--archived={archived}>{archived ? 'Archived' : 'Active'}</span>
+    <button class="btn btn--back" type="button" onclick={onBack}><Icon name="arrow-left" /> Back to clients</button>
+  </div>
   <Breadcrumb parts={crumbs} />
   <header class="panel__head">
     <div>
@@ -97,7 +111,6 @@
       <p class="muted">Plan this client's sessions and choose who runs them; a Producer starts a session on Today.</p>
       <ClientTagChips client={shown} />
     </div>
-    <button class="btn btn--back" type="button" onclick={onBack}><Icon name="arrow-left" /> Back to clients</button>
   </header>
   {#if loading}<p class="muted" role="status">Loading sessions and team...</p>
   {:else if error}<p class="error" role="alert">{error}</p>

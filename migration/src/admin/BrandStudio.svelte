@@ -28,6 +28,7 @@
   import ConfirmDialog from './ConfirmDialog.svelte';
   import CopyBrandDialog from './CopyBrandDialog.svelte';
   import MotionSwitch from './MotionSwitch.svelte';
+  import Icon from './Icon.svelte';
 
   type Client = {
     id: string; name: string; slug?: string; status?: string; logoUrl?: string | null; primaryColor?: string; secondaryColor?: string;
@@ -294,27 +295,10 @@
     <span class="pill" class:pill--in-progress={dirty} class:pill--completed={!dirty} data-testid="brand-status">{dirty ? 'Unsaved changes' : 'All changes saved'}</span>
   </header>
 
-  <!-- (Prompt 38: the preview first, the controls second; Save and Revert are the sticky bar's.) -->
+  <!-- (Prompt 40: edit on the left, the preview on the right, as in the earlier design; Pictures, then Colours, then the folded rest. Save and
+       Revert are the sticky bar's.) -->
   <div class="brand__grid">
-    <aside class="brand__preview" aria-label="Preview">
-      <BrandPreviewPanel
-        {look} tokens={report.theme.tokens} {device} {scene} {deviceId} {sceneId} clientName={record.name} {deviceUrl} {deviceQr}
-        onDevice={(id) => { deviceId = id; }} onScene={(id) => { sceneId = id; }} onShowQr={() => void showDeviceQr()} {onToast}
-      />
-    </aside>
     <div class="brand__controls">
-      <!-- Colours -->
-      <section class="card brand__card" aria-labelledby="brand-colours">
-        <h3 id="brand-colours">Colours</h3>
-        <BrandColours
-          {draft} {primaryTyped} {accentTyped} {report} {gradient}
-          onTypePrimary={typePrimary} onPrimaryBlur={() => { primaryTyped = null; }} onSetPrimary={setPrimary}
-          onTypeAccent={typeAccent} onAccentBlur={() => { accentTyped = null; }} onSetAccent={setAccent}
-          onPlate={(plate) => { draft.plate = plate; touched(); }}
-        />
-      </section>
-
-      <!-- Pictures -->
       <section class="brand__pictures" aria-labelledby="brand-pictures">
         <h3 id="brand-pictures">Pictures</h3>
         <p class="muted small">Welcome shows the hero badge if there is one; otherwise the logo on the plate; otherwise the name in type. The background sits behind every screen. Pictures are cropped and shrunk to the right size here, in your browser, and uploaded when you save.</p>
@@ -332,10 +316,20 @@
         {/each}
       </section>
 
-      <section class="card brand__card" aria-labelledby="brand-motion">
-        <h3 id="brand-motion">Animations</h3>
-        <MotionSwitch client={record} help onSaved={(written) => { record = { ...record, theme: written.theme }; onSaved(record); }} {onToast} />
+      <section class="card brand__card" aria-labelledby="brand-colours">
+        <h3 id="brand-colours">Colours</h3>
+        <BrandColours
+          {draft} {primaryTyped} {accentTyped} {report} {gradient}
+          onTypePrimary={typePrimary} onPrimaryBlur={() => { primaryTyped = null; }} onSetPrimary={setPrimary}
+          onTypeAccent={typeAccent} onAccentBlur={() => { accentTyped = null; }} onSetAccent={setAccent}
+          onPlate={(plate) => { draft.plate = plate; touched(); }}
+        />
       </section>
+
+      <details class="card brand__card adm-fold brand__fold" data-testid="brand-motion-fold">
+        <summary><Icon name="chevron-right" /><span id="brand-motion">Animations</span> <span class="adm-fold__summary">{motionEnabled(record.theme) ? 'On' : 'Off'} for participants</span></summary>
+        <MotionSwitch client={record} help onSaved={(written) => { record = { ...record, theme: written.theme }; onSaved(record); }} {onToast} />
+      </details>
 
       <div class="brand__actions card" role="group" aria-label="Save">
         <div class="brand__buttons">
@@ -347,7 +341,12 @@
         <p class="muted small">Standard blue is {DEFAULT_PRIMARY}. Resetting changes the colours and the plate, not the pictures.</p>
       </div>
     </div>
-
+    <aside class="brand__preview" aria-label="Preview">
+      <BrandPreviewPanel
+        {look} tokens={report.theme.tokens} {device} {scene} {deviceId} {sceneId} clientName={record.name} {deviceUrl} {deviceQr}
+        onDevice={(id) => { deviceId = id; }} onScene={(id) => { sceneId = id; }} onShowQr={() => void showDeviceQr()} {onToast}
+      />
+    </aside>
   </div>
   <StickyBar label="Brand" icon={dirty ? 'alert-triangle' : 'check-circle'} tone={dirty ? 'warn' : 'ok'} context={busy ? 'Saving...' : dirty ? 'Changes not saved' : 'All changes saved'}
     primary={{ label: busy ? 'Saving...' : 'Save brand', icon: 'check', onclick: () => void save(), disabled: busy || !dirty }}
@@ -406,7 +405,7 @@
     margin: 0;
   }
 
-  /* Prompt 39: the preview 7 of the page's 12 columns, the controls 5, on one top line. */
+  /* Prompt 40: the controls 5 of the page's 12 columns on the left, the preview 7 on the right, on one top line. */
   .brand__grid {
     display: grid;
     grid-template-columns: repeat(12, minmax(0, 1fr));
@@ -463,7 +462,7 @@
 
   .brand__preview {
     position: sticky;
-    top: calc(var(--adm-sticky-top, 0px) + 0.5rem);
+    top: calc(var(--adm-sticky-top, 0px) + var(--adm-s4));
     display: grid;
     gap: 0.6rem;
     min-width: 0;
@@ -473,8 +472,8 @@
     color: var(--adm-bad-ink);
   }
 
-  /* On a narrow window the preview stays first, above the controls. */
-  @media (max-width: 820px) {
+  /* Under 1,100 px the controls come first and the preview under them, as they are read. */
+  @media (max-width: 1099px) {
     .brand__grid {
       grid-template-columns: minmax(0, 1fr);
     }
