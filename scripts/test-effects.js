@@ -24,7 +24,7 @@ const root = path.join(import.meta.dirname, '..');
 // The brief's table: the longest each cue may run, in seconds.
 const BRIEF_MAX = { soundOn: 0.3, pick: 0.06, correctFirst: 0.5, correctRetry: 0.3, incorrect: 0.4, revealed: 0.3, activityComplete: 1.0, finale: 4.6, stamp: 0.25, unlock: 0.6, locked: 0.25, allDone: 0.8,
   // Prompt 35: the Art of Possibility.
-  rateLow: 0.12, rateMedium: 0.12, rateHigh: 0.14, rateClear: 0.06, holdOpen: 0.15, rowDone: 0.2, milestoneQuarter: 0.35, milestoneHalf: 0.35, milestoneNearly: 0.35, clearAll: 0.4, allRated: 1.0 };
+  rateLow: 0.12, rateMedium: 0.12, rateHigh: 0.14, rateClear: 0.06, rowDone: 0.2, milestoneQuarter: 0.35, milestoneHalf: 0.35, milestoneNearly: 0.35, clearAll: 0.4, allRated: 1.0 };
 
 test('there is a cue for every moment in the brief, each within the brief\'s length', () => {
   assert.deepEqual([...CUE_NAMES].sort(), Object.keys(BRIEF_MAX).sort());
@@ -143,7 +143,7 @@ test('every hub sound goes through the one door behind the switch, and sparks on
 
 // C major pentatonic: C D E G A, so a fast run of ratings sounds like a tune and not noise.
 const PENTATONIC = new Set(['C', 'D', 'E', 'G', 'A']);
-const AOP_CUES = ['rateLow', 'rateMedium', 'rateHigh', 'rateClear', 'holdOpen', 'rowDone', 'milestoneQuarter', 'milestoneHalf', 'milestoneNearly', 'clearAll', 'allRated'];
+const AOP_CUES = ['rateLow', 'rateMedium', 'rateHigh', 'rateClear', 'rowDone', 'milestoneQuarter', 'milestoneHalf', 'milestoneNearly', 'clearAll', 'allRated'];
 
 test('the finale (Prompt 36): a rising swell, a four-note chord bloom as the medal lands, then a bell rain that thins out, under 4.6 s', () => {
   const cue = CUES.finale;
@@ -189,7 +189,6 @@ test('the Art of Possibility cues are in C major pentatonic, and built as the br
   assert.ok(tones('rateHigh').some((note) => Math.abs(note.freq - 2 * main('rateHigh')[0].freq) < 1 && note.level < main('rateHigh')[0].level / 2), 'a faint octave shimmer');
   assert.deepEqual(tones('rateClear'), [], 'a noise tick, no note');
   assert.ok(CUES.rateClear.notes[0].level < CUES.pick.notes[0].level, 'softer than the pick');
-  assert.deepEqual(names('holdOpen'), ['E5', 'G5']);
   assert.deepEqual(names('rowDone'), ['E5', 'G5']);
   assert.ok(Math.max(...tones('rowDone').map((note) => note.level)) < Math.max(...tones('rateMedium').map((note) => note.level)), 'a finished row is quieter than a rating');
   assert.deepEqual([names('milestoneQuarter'), names('milestoneHalf'), names('milestoneNearly')], [['C5'], ['E5'], ['G5']], 'one note each, rising');
@@ -210,7 +209,7 @@ test('no Art of Possibility cue repeats a note louder than it just played it', (
 
 test('the rating cues share one gate: at most one starts in any 60 ms, so a run of 20 fast taps never piles up', () => {
   assert.equal(RATE_GAP_MS, 60);
-  assert.deepEqual([...RATING_CUES].sort(), ['clearAll', 'holdOpen', 'rateClear', 'rateHigh', 'rateLow', 'rateMedium'].sort());
+  assert.deepEqual([...RATING_CUES].sort(), ['clearAll', 'rateClear', 'rateHigh', 'rateLow', 'rateMedium'].sort());
   const gate = createVoiceGate();
   const order = ['rateLow', 'rateMedium', 'rateHigh', 'rateClear'];
   const started = [];
@@ -229,12 +228,14 @@ test('the rating cues share one gate: at most one starts in any 60 ms, so a run 
 });
 
 test('the Art of Possibility\'s moments (Prompt 35): each its own cue, confetti only when every box is rated, through the one door', async () => {
-  for (const name of ['rateLow', 'rateMedium', 'rateHigh', 'rateClear', 'holdOpen', 'rowDone', 'milestoneQuarter', 'milestoneHalf', 'milestoneNearly', 'clearAll']) {
+  assert.equal('holdOpen' in EFFECTS, false, 'Prompt 42: no press and hold, so no cue for it');
+  for (const name of ['rateLow', 'rateMedium', 'rateHigh', 'rateClear', 'rowDone', 'milestoneQuarter', 'milestoneHalf', 'milestoneNearly', 'clearAll']) {
     assert.deepEqual(EFFECTS[name], { cue: name, confetti: null }, name);
   }
   assert.deepEqual(EFFECTS.allRated, { cue: 'allRated', confetti: 'small' }, 'the small burst, from the bar');
   const effects = await readFile(path.join(root, 'migration/src/lib/effects/effects.ts'), 'utf8');
-  for (const name of ['aopRate', 'aopHoldOpen', 'aopRowDone', 'aopMilestone', 'aopClearAll', 'aopAllRated']) assert.match(effects, new RegExp(`export function ${name}\\(`), name);
+  assert.doesNotMatch(effects, /aopHoldOpen/);
+  for (const name of ['aopRate', 'aopRowDone', 'aopMilestone', 'aopClearAll', 'aopAllRated']) assert.match(effects, new RegExp(`export function ${name}\\(`), name);
   assert.match(effects, /export function aopRate\(level: number \| undefined\): void \{\s*run\(/, 'a rating goes through run(), behind the switch');
   const grid = await readFile(path.join(root, 'migration/src/pager/MatrixRating.svelte'), 'utf8');
   assert.match(grid, /from '\.\.\/lib\/effects\/effects\.js'/, 'the grid asks effects.ts for its moments');
@@ -309,7 +310,7 @@ test('the other moments: a tick on a pick, the activity and finale cues with the
 
 test('Next, Back, Home and the Welcome tap have no effect to run', () => {
   // (Prompt 35 adds the Art of Possibility's eleven moments, none of them a Next, a Back, a Home or the Welcome tap.)
-  assert.deepEqual(Object.keys(EFFECTS).sort(), ['activityComplete', 'allDone', 'allRated', 'clearAll', 'finale', 'holdOpen', 'locked', 'milestoneHalf', 'milestoneNearly', 'milestoneQuarter', 'pick', 'rateClear', 'rateHigh', 'rateLow', 'rateMedium', 'rowDone', 'soundOn', 'stamp', 'unlock']);
+  assert.deepEqual(Object.keys(EFFECTS).sort(), ['activityComplete', 'allDone', 'allRated', 'clearAll', 'finale', 'locked', 'milestoneHalf', 'milestoneNearly', 'milestoneQuarter', 'pick', 'rateClear', 'rateHigh', 'rateLow', 'rateMedium', 'rowDone', 'soundOn', 'stamp', 'unlock']);
 });
 
 // ---- The saved choice ---------------------------------------------------------------------------------------

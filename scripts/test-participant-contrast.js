@@ -36,6 +36,8 @@ const PAIRS = [
   ['--aop-well-ink', '--aop-wash', 4.5, 'words on a row band and the view switch'],
   ['--aop-well-ink', '--aop-done-wash', 4.5, 'words on a finished row'],
   ['--aop-well-ink', '--aop-rule', 4.5, 'words on the track of the bar'],
+  // (Prompt 42) The caption under the legend, in the muted grey; the level menu's words, and its chosen row on the wash, are the words above.
+  ['--aop-empty-edge', '--aop-well', 4.5, 'the caption under the legend'],
 ];
 
 describe('the three rating colours (Prompt 35)', () => {
@@ -62,6 +64,18 @@ describe('the three rating colours (Prompt 35)', () => {
     assert.ok(dark >= 3);
     // On the light plate the well is the plate's own white: what must show is every box's edge, held above.
     assert.equal(PLATE_COLOURS.light, token('--aop-well'));
+  });
+
+  it('the level menu and the legend take the boxes\' own colours, edges, shapes and letters (Prompt 42)', async () => {
+    const grid = await readFile(path.join(ROOT, 'migration', 'src', 'pager', 'MatrixRating.svelte'), 'utf8');
+    for (const [level, name] of [[1, 'low'], [2, 'medium'], [3, 'high']]) {
+      const rule = grid.match(new RegExp(String.raw`\[data-level='${level}'\]:is\(([^)]*)\) \{([^}]*)\}`));
+      assert.ok(rule, `the level ${level} rule`);
+      assert.deepEqual(rule[1].split(',').map((each) => each.trim()).sort(), ['.matrix-cell', '.matrix-chip', '.matrix-segment', '.matrix-swatch'], 'a box, a menu or summary chip, a segment and a legend swatch: one rule');
+      assert.match(rule[2], new RegExp(String.raw`color: var\(--aop-on-${name}\);\s*background: var\(--aop-${name}\);\s*border: 2px solid var\(--aop-${name}-edge\);`));
+    }
+    assert.ok(grid.includes('<span class="matrix-chip" data-level={choice} aria-hidden="true">{@render mark(choice, 12)}<span class="matrix-chip-letter">'), 'each menu row has the shape and the letter');
+    assert.match(grid, /\.matrix-chip-letter \{\s*font-size: var\(--aop-letter-size\);\s*font-weight: var\(--aop-letter-weight\);/, 'the menu letter is the box letter (19 px bold)');
   });
 
   it('a Low letter is large text: 19 px and bold (WCAG large text is 18.66 px bold or 24 px)', () => {

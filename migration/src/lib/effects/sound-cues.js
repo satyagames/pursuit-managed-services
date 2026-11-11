@@ -25,7 +25,7 @@
  * }} Note
  * @typedef {{ label: string, max: number, gain: number, notes: Note[] }} CueSpec
  * @typedef {'soundOn' | 'pick' | 'correctFirst' | 'correctRetry' | 'incorrect' | 'revealed' | 'activityComplete' | 'finale' | 'stamp' | 'unlock' | 'locked' | 'allDone'
- *   | 'rateLow' | 'rateMedium' | 'rateHigh' | 'rateClear' | 'holdOpen' | 'rowDone' | 'milestoneQuarter' | 'milestoneHalf' | 'milestoneNearly' | 'clearAll' | 'allRated'} CueName
+ *   | 'rateLow' | 'rateMedium' | 'rateHigh' | 'rateClear' | 'rowDone' | 'milestoneQuarter' | 'milestoneHalf' | 'milestoneNearly' | 'clearAll' | 'allRated'} CueName
  */
 
 // Equal temperament, A4 = 440 Hz.
@@ -213,16 +213,6 @@ export const CUES = {
     notes: [{ kind: 'noise', at: 0, attack: 0.002, hold: 0.004, release: 0.05, level: 0.5, filter: { type: 'lowpass', freq: 3000, q: 0.707 } }],
   },
 
-  // The press-and-hold ring has filled and the level menu opens: a short blip up, E5 then G5, with a quiet A5 on top so it is not the finished row.
-  holdOpen: {
-    label: 'Choices open', max: 0.15, gain: 1.0,
-    notes: [
-      triangle(HZ.E5, 0, 0.05, { hold: 0.01, lowpass: 4200, level: 0.3 }),
-      triangle(HZ.G5, 0.06, 0.07, { hold: 0.01, lowpass: 4200, level: 0.3 }),
-      sine(HZ.A5, 0.06, 0.06, { level: 0.05 }),
-    ],
-  },
-
   // A row's fifth box: two quick notes up (E5, G5), softer notes than a rating's (the trim keeps it as loud to the ear as every other cue).
   rowDone: {
     label: 'Row finished', max: 0.2, gain: 1.035,
@@ -290,7 +280,7 @@ export const MAX_VOICES = 3;
 export const RETRIGGER_MS = 80;
 export const RATE_GAP_MS = 60;
 /** The cues a tap on a box makes: together they start at most once every RATE_GAP_MS, so a fast run of taps drops the extras rather than piling up. */
-export const RATING_CUES = Object.freeze(new Set(['rateLow', 'rateMedium', 'rateHigh', 'rateClear', 'holdOpen', 'clearAll']));
+export const RATING_CUES = Object.freeze(new Set(['rateLow', 'rateMedium', 'rateHigh', 'rateClear', 'clearAll']));
 
 /**
  * Decides whether a cue may start. The same cue within RETRIGGER_MS of its last start is ignored,

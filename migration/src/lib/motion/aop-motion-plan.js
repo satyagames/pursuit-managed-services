@@ -2,7 +2,7 @@
 // (no DOM, no timers), so `node --test` covers it (scripts/test-aop-motion.js); lib/motion/motion.ts is the only file that plays one (`playEffect`, `flyOff`).
 //
 // Every effect moves transform and opacity only, and every length is a token (TOKENS.aop, declared again as --motion-aop-* in motion-tokens.css). At the
-// reduced level an effect only fades, or does nothing when it is movement only (a pop, a bump, a ripple, a sheen, the wave, a pulse); at none it is nothing.
+// reduced level an effect only fades, or does nothing when it is movement only (a pop, a ripple, a sheen, the wave, a pulse, the menu); at none it is nothing.
 // The completion wave and Clear all's fly-away are spaced so that no more than MAX_CONCURRENT things move at once, and the milestones are the guest's
 // 25, 50 and 75 percent, each said once.
 
@@ -27,8 +27,6 @@ export const FLY_REACH = 48;
 export const AOP_EFFECTS = Object.freeze({
   // A box takes its level: its content pops.
   pop: { full: () => ({ keyframes: [{ transform: scale(0.8) }, { transform: scale(1.08), offset: 0.6 }, { transform: scale(1) }], easing: curve('standard') }) },
-  // A count pill changes.
-  bump: { full: () => ({ keyframes: [{ transform: scale(1) }, { transform: scale(1.12), offset: 0.4 }, { transform: scale(1) }], easing: curve('standard') }) },
   // A soft circle grows from the touch point (one element for the whole grid, moved there).
   ripple: {
     full: ({ x = 0, y = 0 }) => ({
@@ -78,11 +76,8 @@ export const AOP_EFFECTS = Object.freeze({
   },
   // Every box rated: each box swells once as the wave reaches it.
   wave: { full: ({ delay = 0 }) => ({ keyframes: [{ transform: scale(1) }, { transform: scale(1.12), offset: 0.5 }, { transform: scale(1) }], easing: curve('standard'), delay }) },
-  // The level menu springs open.
-  spring: {
-    full: () => ({ keyframes: [{ transform: scale(0.72), opacity: 0 }, { transform: scale(1), opacity: 1 }], easing: curve('pop') }),
-    reduced: () => ({ keyframes: [{ opacity: 0 }, { opacity: 1 }], easing: curve('standard') }),
-  },
+  // The level menu fades open, within 120 ms; at the reduced level it is simply there (Prompt 42).
+  spring: { full: () => ({ keyframes: [{ opacity: 0 }, { opacity: 1 }], easing: curve('enter') }) },
   // "Your ratings at a glance" rises in under the grid.
   rise: {
     full: () => ({ keyframes: [{ transform: 'translateY(16px)', opacity: 0 }, { transform: 'translateY(0)', opacity: 1 }], easing: curve('enter') }),

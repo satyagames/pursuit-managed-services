@@ -1858,21 +1858,22 @@ against them at 1366 by 650, 1920 by 950 and 683 by 700, and `admin-explains.spe
   up, H), in `migration/src/styles/aop-level-tokens.css` on a white well: the one set of colours on the participant page that is not the client's plate
   (the site owner's grant, for this question only). Medium and High are too light for white alone, so every rated box has an edge of its own darker
   colour (3:1 or more); Low's white letter is 19 px bold. `scripts/test-participant-contrast.js` reads the file and fails when a pair drops under its
-  floor. The words "Colour shows the rating, not good or bad." stay under the strip.
-- **Boxes are 48 px or more, headings are whole words, the page scrolls once.** A criterion heading wraps between words only; the grid has no scroll
+  floor. The words "Colour shows the rating, not good or bad." stay under the strip (Prompt 42: under the legend).
+- **Boxes are 48 px or more, headings are whole words, the page scrolls once.** A criterion heading wraps between words only (Prompt 42: in two lines at
+  most, its qualifier in its note); the grid has no scroll
   of its own (only when a guest chose it on a screen narrower than `gridWidthFor`, `lib/participant/aop-view.js`); the strip stays at the top in the
   grid. The view starts from the width and the orientation (`defaultView`), and a choice lasts the visit.
 - **The stored answer does not change.** A box changes in place (`setCell`) and `encodeAnswer` stores exactly what Prompt 34 stored
   (`scripts/test-aop-view.js`: random runs of taps against the old copy, and a golden answer).
-- **A press held 650 ms opens the level menu and never also rates**; Enter, the menu key, Shift+F10 and a right-click open the same menu; Escape
-  closes it and puts the keyboard back on the box; it is never a trap. A clear offers Undo for 8 seconds; Undo fills only boxes still empty.
+- **Replaced by Prompt 42:** a tap opens the level menu, and only a choice in it rates the box; there is no press and hold, no tap-to-cycle and no
+  Undo (see "Rules from Prompt 42"). Escape still closes the menu and puts the keyboard back on the box; it is never a trap.
 - **Motion through the plan only.** Every effect is in `lib/motion/aop-motion-plan.js` (transform and opacity only, each length a token of
   `TOKENS.aop`, a fade at the reduced level, nothing at none) and is played by `lib/motion/motion.ts` (`playEffect`, `flyOff`, `playWave`). No
   more than `MAX_CONCURRENT` (16) things move at once: Clear all flies at most 15 copies, the wave is spaced to 13 or fewer, and many boxes changing in
   one go do not fade their colour. The milestones are 25, 50 and 75 percent rounded up (17, 33 and 49 of 65), each said once a visit.
-- **Sound through `lib/effects/effects.ts` only** (`aopRate`, `aopHoldOpen`, `aopRowDone`, `aopMilestone`, `aopClearAll`, `aopAllRated`), behind the
+- **Sound through `lib/effects/effects.ts` only** (`aopRate`, `aopRowDone`, `aopMilestone`, `aopClearAll`, `aopAllRated`; Prompt 42 took out the hold's cue), behind the
   Sound switch, started only inside a tap; the cues are data in `sound-cues.js`, in C major pentatonic, and the rating cues share one 60 ms gate.
-- **"Your ratings at a glance", the hub's mosaic and the thank-you's count are the guest's own**, made on the device (`highestRated`, `glanceOf`;
+- **"Your ratings at a glance" and the thank-you's count are the guest's own** (Prompt 42 took out the hub's mosaic), made on the device (`highestRated`, `glanceOf`;
   `lib/participant/aop-glance.svelte.ts` holds this visit's, in memory): nothing new is stored or sent and no one else sees them.
 - **The admin page does not carry the rating grid**: `migration/vite.admin.config.ts` puts `MatrixRating.admin.svelte` in its place (Brand Studio's
   sample has no such question). The participant page may grow by 12,288 B gzip for this prompt (`PHASE_35`).
@@ -2109,6 +2110,47 @@ And for the parts:
 - `scripts/migration-tests/admin-palette.spec.ts` checks, on the built page at 1440 px, the underline #0DF200, the primary button #26890D with
   white words, the page, the bar and the ring; runs axe on Today, Clients, Content's activities and Brand, Guests, Results and People; and
   writes their pictures (and a dialog's) to `test-results/admin/palette/`.
+
+## Rules from Prompt 42 (the Art of Possibility, participant polish; keep them holding)
+
+They change some of Prompt 35's rules above (each says so there); the rest of Prompt 35 holds.
+
+- **The card's margins.** The white card (`.matrix`) has 32 px of padding (20 px under 600 px), and its instructions, its strip and the grid's first and
+  last columns keep 8 px more (`--matrix-inset`), so the instructions and the first row's names start on one line. The summary card and the One at a
+  time card take the same padding. The parts are 24 px apart, and the card is 24 px under the question's heading. The grid never gets a scroll of its
+  own for this: when thirteen rows do not fit an iPad in landscape, the page scrolls.
+- **One tap opens the choices; nothing else rates a box.** A tap or click on a box opens its level menu (`lib/participant/aop-menu.js`: `menuStep`),
+  a second tap on the same box closes it, a tap on another box moves it there: one menu at a time. Low, Medium, High, and Clear only when the box has a
+  rating (`menuChoices`), each row 48 px by 120 px or more, with the box's colour, shape and letter and its word; the chosen level has a check and a
+  dark outline. A choice sets exactly that level, plays the rating's cue, closes the menu and leaves the keyboard on the box. The menu opens below the
+  box with a 6 px gap, above when there is no room in the card or on the screen, and from the box's right edge on the last two columns (`placeMenu`);
+  it never covers its box. Escape, a tap outside, a choice, Tab and a scroll of more than 24 px close it, and the keyboard goes back to the box (after a
+  tap outside, only when the tap did not land on something of its own). There is no press and hold (a long press is a tap), no tap-to-cycle
+  (`cycle` is gone from `aop-answer.js`) and no Undo: "Clear all", in the ⋯ menu, asks "Remove all your ratings?" with Cancel and Remove.
+- **The keys.** A box is a button with `aria-haspopup="menu"` and `aria-expanded`, described by "Enter opens the choices; L, M or H rates; Delete
+  clears." Enter, Space and Down open the menu (`role="menu"`, `role="menuitemradio"`); Up and Down move in it and go round; L, M and H set a box
+  without the menu and in it; Delete and Backspace clear; Escape closes. Left and Right move along the rows, Up and Page Up and Page Down between them;
+  the menu key, Shift+F10 and a right-click open the menu too.
+- **Quick.** The menu is in the next frame after the tap and fades in over at most 120 ms (`TOKENS.aop.spring`), not at all at the reduced level or
+  with motion off; a choice paints in under 100 ms at a 4x slower processor (`aop-tap-menu.spec.ts` measures and prints both).
+- **Headings in two lines of whole words.** A criterion heading is its name, 13 px, 600, line height 1.25, centred and on the bottom line above its ⓘ,
+  so every ⓘ is on one line and every heading cell one height. A qualifier in brackets at the end of a label ("(counts against)") is not in the
+  heading: it is in the ⓘ note, in its exact words, and in the heading's accessible name (`headingParts`). The criteria columns are one width, at
+  least 112 px (with six criteria or more, Prompt 35's 96 px); the first column takes an equal share where there is room and 100 px (86 px) below
+  1,024 px (`GRID_MIN_WIDTH`, `gridWidthFor`). A heading that would take a third line closes its letters up a little, then the first column narrows,
+  then the columns widen and the grid scrolls inside its card (`fitHeadings`, `data-fit`); a grid that scrolls inside its card keeps its headings at
+  its own top. The sample fits an iPad upright at 112 px with nothing scrolling sideways.
+- **The legend is colour and word.** Three 14 px swatches, each with Low, Medium or High: no figure, no shape, no letter. On a wide screen (1,024 px and
+  more) it sits left of the view switch, one height and one line; on a narrower one under the switch, on its right edge. "Colour shows the rating,
+  not good or bad." is under the legend, right-aligned, in the muted grey (16 px, CLAUDE.md rule 9, not the brief's 12 px). The counts are in the
+  summary only ("You rated all 65 boxes" and its three figures). The strip has no count and no "rated": only the thin bar (`role="progressbar"`,
+  "Your progress", its value spoken as "12 of 65 boxes") and Next empty box ("All done" at the end).
+- **No grid icon.** The summary card has no mosaic beside its headline, and the hub's finished activity has none beside its pill (which keeps its own
+  state icon). The mosaic component is gone; the thank-you still counts the visit's ratings (`glanceOf` now keeps only that total).
+- **The stored answer did not change**: `encodeAnswer` and `decodeAnswer` are as they were, and the golden answer of `scripts/test-aop-view.js` reads
+  back the same.
+- **The budget.** The participant page may not grow for this prompt (CLAUDE.md rule 3; `PHASE_42` in `scripts/bundle-budget.js`): it ended 36 B
+  smaller. The admin page carries the hub for Brand Studio's preview, so it shrank too; no admin file changed.
 
 ## Before finishing a change
 

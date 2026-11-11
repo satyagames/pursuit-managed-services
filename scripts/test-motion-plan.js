@@ -269,8 +269,8 @@ describe('the tokens', () => {
   });
 
   it('the Art of Possibility\'s lengths (Prompt 35) are the brief\'s, and the CSS declares them', async () => {
-    assert.deepEqual(Object.keys(TOKENS.aop).slice(0, 2), ['hold', 'advance']); // (the rest: scripts/test-aop-motion.js)
-    assert.equal(TOKENS.aop.hold, 650);
+    assert.deepEqual(Object.keys(TOKENS.aop).slice(0, 1), ['advance']); // (the rest: scripts/test-aop-motion.js)
+    assert.equal('hold' in TOKENS.aop, false, 'Prompt 42: no press and hold');
     assert.equal(TOKENS.aop.advance, 600);
     const css = await tokensCss();
     const declared = Object.fromEntries([...css.matchAll(/(--motion-[\w-]+)\s*:\s*([^;]+);/g)].map((match) => [match[1], match[2].trim()]));

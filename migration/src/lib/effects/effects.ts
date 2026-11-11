@@ -207,11 +207,6 @@ export function aopRate(level: number | undefined): void {
   run(RATE_EFFECTS[level ?? 0] ?? EFFECTS.rateClear);
 }
 
-/** The press-and-hold ring has filled and the level menu opens. */
-export function aopHoldOpen(): void {
-  run(EFFECTS.holdOpen);
-}
-
 /** A row (a sub-process) has every box rated. */
 export function aopRowDone(): void {
   run(EFFECTS.rowDone);

@@ -560,6 +560,7 @@ export const PHASE_35 = Object.freeze({
  */
 export const PHASE_36 = Object.freeze({
   participantBefore: 189_903, adminBefore: 700_077, participantAllowance: 4_096,
+  participantAfter: 193_978,
   participantUtilities: PHASE_11A.participantUtilities,
 });
 
@@ -609,5 +610,18 @@ export const PHASE_40 = Object.freeze({
 export const PHASE_41 = Object.freeze({
   participantBefore: 193_978, adminBefore: 718_558, participantAllowance: 0,
   participantAfter: 193_978, adminAfter: 718_972,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
+
+/**
+ * Prompt 42 (the Art of Possibility's participant polish: wider card margins, one tap opens the level menu, headings in two lines, a legend of colour
+ * and word, no counts outside the summary, no Undo, no grid icon), measured from where Prompt 41 left the pages (b2d2ad8, built on 11 Nov 2026:
+ * participant 193,978 B, admin 718,978 B). The participant page may not grow at all (CLAUDE.md rule 3; the brief expected it to shrink, and it did:
+ * the press and hold, Undo, the count pills and the mosaic went). The admin page carries the hub for Brand Studio's preview, so it shrinks with it;
+ * no admin file changed. `participantAfter` and `adminAfter` are the pages when the work stopped.
+ */
+export const PHASE_42 = Object.freeze({
+  participantBefore: 193_978, adminBefore: 718_978, participantAllowance: 0,
+  participantAfter: 193_942, adminAfter: 718_034,
   participantUtilities: PHASE_11A.participantUtilities,
 });
