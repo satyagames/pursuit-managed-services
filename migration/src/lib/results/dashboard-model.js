@@ -54,7 +54,7 @@ const signed = (value) => (value === null ? '' : `${Math.round(value) > 0 ? '+' 
  * The days and quarters a choice of period covers: { from, to, periods, words }.
  * @param {any} filters @param {number} startMonth
  */
-export function windowOf(filters, startMonth) {
+function windowOf(filters, startMonth) {
   const year = /^FY\d{2}$/.test(filters.year ?? '') ? filters.year : String(filters.period ?? '').slice(0, 4);
   if (filters.span === 'month' && /^\d{4}-\d{2}$/.test(filters.month ?? '')) {
     const [y, m] = filters.month.split('-').map(Number);

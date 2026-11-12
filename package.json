@@ -26,7 +26,7 @@
     "build:lists-reference": "node scripts/build-lists-reference.js",
     "docs:lists": "node scripts/run-tests.js --suite docs:lists",
     "docs:modules": "node scripts/build-modules-map.js",
-    "docs:check": "node scripts/check-docs.js",
+    "docs:check": "node scripts/check-docs.js && node scripts/check-unused-exports.js --check",
     "docs:project-map": "node scripts/build-project-map.js",
     "test:namespace": "node scripts/run-tests.js --suite test:namespace",
     "test:provision": "node scripts/run-tests.js --suite test:provision",

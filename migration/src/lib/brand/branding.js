@@ -36,8 +36,6 @@ const cssString = (value) => `"${String(value).replace(/[\\"]/g, '\\$&').replace
 
 let current = { ...DEFAULT_BRAND, clientId: null };
 
-/** The brand last applied: { clientId, name, logoUrl, primaryColor, secondaryColor }. */
-export const currentBrand = () => current;
 
 /** The client whose brand a route shows: the one it names, else the client of the session it names, else none. */
 async function clientIdFor({ state, sessionId }) {

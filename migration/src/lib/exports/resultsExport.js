@@ -11,7 +11,7 @@
  * Nothing here fetches data. Every file shows each question as the Live display's chart does,
  * from the same chart model (Phase 11b) and the same takeaways (lib/results/export-summary.js, Phase 13),
  * so every file agrees with what the screen shows. The PDF and PPT are built from one layout
- * (see "The summary pack"), so they match each other too. The caller passes the client's brand (branding.js's currentBrand()) and the
+ * (see "The summary pack"), so they match each other too. The caller passes the client's brand (branding.js's) and the
  * Results palette; without a brand the report is unbranded.
  */
 
@@ -23,7 +23,7 @@ import { PACK_PAGE, SHEET, SHEET_OFFSET, FONT, buildReport, channels, layoutRepo
 import { exportFileName, saveBlob } from './summary-csv.js';
 // (Prompt 44: the CSV is lib/exports/summary-csv.js, the pack's model and layout lib/exports/summary-pack.js; their names are passed on here, as before.)
 export { liveSections, PACK_PAGE, PACK_BODY_BOTTOM, buildReport, layoutReport } from './summary-pack.js';
-export { SUMMARY_COLUMNS, summaryRows, resultsToCsv, summaryCsvFile, exportFileName, downloadCsv } from './summary-csv.js';
+export { resultsToCsv, summaryCsvFile, exportFileName, downloadCsv } from './summary-csv.js';
 
 // (The charts' palette in each look is report-look.js's, shared with the leader report; passed on here as it always was.)
 export { packPalette };

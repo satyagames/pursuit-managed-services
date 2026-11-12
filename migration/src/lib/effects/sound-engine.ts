@@ -62,7 +62,7 @@ interface ScheduledCue {
 }
 
 /** Schedules every note of `spec` on `ctx`, starting at `when`, into `destination`. */
-export function scheduleCue(ctx: BaseAudioContext, destination: AudioNode, spec: CueSpec, when: number): ScheduledCue {
+function scheduleCue(ctx: BaseAudioContext, destination: AudioNode, spec: CueSpec, when: number): ScheduledCue {
   const trim = ctx.createGain();
   trim.gain.value = spec.gain;
   trim.connect(destination);

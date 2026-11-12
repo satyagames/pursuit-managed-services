@@ -32,7 +32,7 @@ import { decodeAnswer, MATRIX_TYPE } from '../participant/aop-answer.js';
 import { words, share, byId, list, plural, wholePercent, printColours, clock } from './leader-report-text.js';
 // (Prompt 44: the small helpers, the print colours and the clock are lib/exports/leader-report-text.js, the participant CSV lib/exports/leader-report-csv.js; their names are passed on here, as before. The counting rules stay here.)
 export { STRAY_TITLE, wholePercent, printColours } from './leader-report-text.js';
-export { CSV_COLUMNS, CHECK_CSV_COLUMNS, csvColumns, csvCell, participantAnswersRows, participantAnswersCsv, MATRIX_CSV_COLUMNS, hasMatrix, matrixLongCsv, reportFileName } from './leader-report-csv.js';
+export { CSV_COLUMNS, CHECK_CSV_COLUMNS, csvCell, participantAnswersRows, participantAnswersCsv, MATRIX_CSV_COLUMNS, hasMatrix, matrixLongCsv, reportFileName } from './leader-report-csv.js';
 
 /** @typedef {{ id: string, [key: string]: any }} Row */
 /** @typedef {'graded' | 'choice' | 'multi' | 'scale' | 'ranking' | 'text' | 'matrix'} Kind */

@@ -93,7 +93,7 @@ export function pairCheckAnswers(answers, { questionId, scoreOf }) {
  * @param {{ id: string, value?: unknown }[]} options
  * @returns {(answer: unknown) => number | null}
  */
-export function scorerOf(options) {
+function scorerOf(options) {
   const values = new Map((options ?? []).map((option) => [String(option.id), Number(option.value)]));
   return (answer) => { const value = values.get(String(answer)); return value === undefined || !Number.isFinite(value) ? null : value; };
 }

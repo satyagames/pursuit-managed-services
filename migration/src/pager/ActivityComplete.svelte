@@ -2,7 +2,6 @@
   import { onMount } from 'svelte';
   import { CheckBadge, HomeButton, PillButton } from '../components/index.js';
   import { focusHeading } from '../lib/common/focus.js';
-  import { hiLine } from '../lib/participant/pager-logic.js';
   import { motion } from '../lib/motion/motion.js';
 
   let { name, title, right, total, allDone, onback, onfinish, onhome, onchange }: {

@@ -23,7 +23,7 @@ const TYPE_WORDS = Object.freeze({
  * first row. A written-answer question's rows are the words that came up most (each with the comments it is in). Then every comment is a row of
  * its own, "Comment", with no name and no share. Numbers are numbers.
  */
-export function summaryRows(results, brand = {}) {
+function summaryRows(results, brand = {}) {
   const report = buildReport(results, brand);
   const head = [report.clientName, report.sessionDay];
   const rows = [];

@@ -51,7 +51,7 @@ The 15 largest source files: `pager/MatrixRating.svelte` 1,497; `admin.css` 1,26
 - [x] **44e** The admin's shared primitives (admin/ui/), after an inventory.
 - [ ] **44f** The oversized files split along their seams (the JS modules first; the Svelte components after 44g, which gives the admin page back the bytes a child component costs).
 - [x] **44g** The admin's styles in cascade layers under styles/admin/; tokens only for colour.
-- [ ] **44h** scripts/check-unused-exports.js and the dead exports.
+- [x] **44h** scripts/check-unused-exports.js and the dead exports.
 - [ ] **44i** The documents.
 
 ## Step notes
@@ -147,6 +147,23 @@ the PDF is given), marked `data colour:` where they are written and listed in `D
 lint fails on any other hex in the admin's code (the scan finds exactly those four, in five places). The tests that read the old sheets by
 path read the new parts (`test-admin-look.js`, `test-admin-palette.js`, `test-ux-12.js`). Pages: the participant page the same bytes; the
 admin page 719,930 B (52 B under pms-43); Setup 816,784 B (+6 B on pms-43). Pictures: no difference at 1280, 1440 and 1920.
+
+**44h.** `scripts/check-unused-exports.js` (no dependency: a word search of `migration/src` and `scripts/`, comments left out, a name passed on
+by `export { } from` not counted as a use) found 55 exported names of `lib/` that no other file uses, and 219 that only `scripts/` uses (those
+are kept: a test uses each; the brief's `firstTab`, `clientsFor`, `lookFailures`, `permissionSteps`, `PMS_GROUPS`, `SECRET_LISTS`,
+`planLines`, `renderCueOffline` are among them). Of the 55: five were used nowhere, not even in their own module, and are deleted
+(`copiedNotice` of `lib/admin/aop-editor.js`, `currentBrand` of `lib/brand/branding.js`, `CHART_ORDER`, `hexOf` and `rgbOf` of
+`lib/exports/report-look.js`; the two comments that named them say it otherwise); 13 functions used only inside their module are no longer
+exported (`htmlOf`, `changeOf`, `mayReadClient`, `coveredBelow`, `renderView`, `encodeCanvas`, `isKioskMode`, `scheduleCue`, `readFace`,
+`summaryRows`, `scorerOf`, `windowOf`, `scoreboardOf`), and `resultsExport.js` and `leader-report.js` no longer pass on `SUMMARY_COLUMNS`,
+`summaryRows` and `csvColumns`, which nothing imported. The 36 `const` bindings used only inside their module stay exported: taking their
+export away made the participant page 38 B and the admin page 91 B bigger (the bundler treats an exported const otherwise), which is a change
+of the page. They and `sanitize` (DOMPurify's name, which jsPDF imports from the admin build's stub) are the 37 names of
+`scripts/unused-exports.baseline.json`, each with why; `npm run docs:check` now runs the check and fails on an unused export not listed there,
+or a listed one used again (`scripts/test-unused-exports.js` holds both). Nothing of the data layer's surface (`scripts/data-surface.json`,
+`docs/DATA-FLOW.md`) was among them. Unused imports in `.svelte` and `.ts` files: 2 before (`dayWords` in `UserDetail.svelte`, `hiLine` in
+`ActivityComplete.svelte`), none after; `check:svelte` 0 warnings before and after. Pages: the participant page the same bytes; the admin page
+719,913 B (69 B under pms-43); Setup 816,784 B. Pictures: no difference.
 
 ## Found, not changed
 

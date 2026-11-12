@@ -8,7 +8,7 @@
   import { focusHeading } from '../lib/common/focus.js';
   import { can } from '../lib/access/can.js';
   import { grantRole, revokeProblem } from '../lib/access/grants.js';
-  import { dayWords, reachWords } from '../lib/access/people.js';
+  import { reachWords } from '../lib/access/people.js';
   import { historyOf, loseWords, removeRole, setExtras, setStatus } from '../lib/access/people-ops.js';
   import { errorText } from '../lib/admin/session-notice.js';
   import ConfirmDialog from './ui/ConfirmDialog.svelte';

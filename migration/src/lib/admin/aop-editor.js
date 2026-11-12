@@ -55,8 +55,6 @@ export const editingNotice = (guests) => (guests > 0
 /** The client a question's rows were copied from, while they have not been saved here: '' otherwise. @param {{ layout?: string | null } | null | undefined} question */
 export const copiedFrom = (question) => (typeof question?.layout === 'string' && question.layout.startsWith(COPIED_FROM) ? question.layout.slice(COPIED_FROM.length) : '');
 
-/** The notice on a copy: the same words in the copy's plan and in its editor. @param {string} from @param {string} to */
-export const copiedNotice = (from, to) => `This list is ${from}'s. Replace the sub-processes before using it${to ? ` for ${to}` : ''}.`;
 
 /** One cell of a pasted line: its quotes off, as Excel writes a cell with a comma or a line in it. */
 const cellOf = (text) => { const trimmed = text.trim(); return trimmed.length > 1 && trimmed.startsWith('"') && trimmed.endsWith('"') ? trimmed.slice(1, -1).replace(/""/g, '"').trim() : trimmed; };

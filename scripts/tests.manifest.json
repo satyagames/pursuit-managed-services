@@ -137,7 +137,8 @@
       "scripts/test-modules-map.js",
       "scripts/test-project-map.js",
       "scripts/test-package-scripts.js",
-      "scripts/test-boundaries.js"
+      "scripts/test-boundaries.js",
+      "scripts/test-unused-exports.js"
     ]
   },
   "suites": {
