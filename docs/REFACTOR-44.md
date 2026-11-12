@@ -49,7 +49,7 @@ The 15 largest source files: `pager/MatrixRating.svelte` 1,497; `admin.css` 1,26
 - [x] **44c** Boundaries: the layers written down; a door, migration/src/preview/index.ts; scripts/test-boundaries.js.
 - [x] **44d** One tab registry (lib/admin/tabs.js) and the router (lib/admin/router.ts).
 - [x] **44e** The admin's shared primitives (admin/ui/), after an inventory.
-- [ ] **44f** The oversized files split along their seams.
+- [ ] **44f** The oversized files split along their seams (the JS modules first; the Svelte components after 44g, which gives the admin page back the bytes a child component costs).
 - [ ] **44g** The admin's styles in cascade layers under styles/admin/; tokens only for colour.
 - [ ] **44h** scripts/check-unused-exports.js and the dead exports.
 - [ ] **44i** The documents.
@@ -112,6 +112,24 @@ script (23), reads `<PageHead ... focusable>` as such a heading, so it keeps its
 of `AssetUploader.svelte` and `CropDialog.svelte` are not icons (see "Found, not changed"). Pages: the participant page and Setup the same bytes;
 the admin page 719,980 B. Pictures: no difference.
 
+**44f (JS).** Five of the seven modules over 500 lines are split by concern, by moving whole top-level declarations, unchanged, into new
+modules; the old module passes every public name on (`export { ... } from`), so no caller and no test changed its import:
+`lib/exports/resultsExport.js` 716 -> 225 (the summary pack's model and layout `summary-pack.js` 424, the CSV and saving `summary-csv.js` 86),
+`lib/results/results-chart-model.js` 635 -> 423 (who answered and the shares `chart-answers.js` 113, the words of written answers
+`chart-words.js` 116), `lib/exports/leader-report.js` 592 -> 473 (the small helpers, the print colours and the clock `leader-report-text.js`
+55, the participant CSV and `csvCell` `leader-report-csv.js` 80; the counting rules stay), `lib/setup/provision.js` 549 -> 281 (reading the
+site `provision-site.js` 99, the plan `provision-plan.js` 186; Create stays), `lib/setup/list-permissions.js` 539 -> 461 (the check half
+`list-permissions-check.js` 86). The tests that read these modules' text by path now read the parts too, so each keeps its reach
+(`test-bundle-budget.js`: nothing that the admin build stubs; `test-scope.js`: Survey feedback; `test-provision.js`: POST and MERGE only,
+one SchemaXml; `test-site-access.js`: the words name no site), and `scripts/mutate-leader-report.js` makes a mutation in the part that now
+holds its text, held by the same suite (`PASSED_ON`, `REPORT_PARTS`): 70 mutations caught, 1 surviving, as before the split (see "Found, not
+changed"). `test:report` 168 of 168, `test:charts` 71 of 71, the oracle over 500 seeds passes. Left over the target, with why: `lib/data/core.js`
+(590 lines) holds all of the data layer's state and its one request path, under Phase 17's own limit of 600 lines; what is not state there is a
+handful of one-line helpers, not worth a part that `scripts/test-data-modules.js` would have to admit. `lib/exports/leader-report-layout.js`
+(612 lines) is one function, `compose()`, a closure over the page being filled (its cursor, its pages, its measure); splitting it is a
+rewrite of the report's layout, not a move. Pages: the participant page the same bytes; the admin page 719,995 B (+13 B on pms-43, inside its
+720,000 B budget, and given back in 44g); Setup 816,912 B (+134 B; it has no budget). Pictures: no difference.
+
 ## Found, not changed
 
 - `scripts/test-identity-words.js` (Prompt 32's words beside the person's name, 30 tests, all passing) was in no npm script, although
@@ -127,6 +145,9 @@ the admin page 719,980 B. Pictures: no difference.
 - Two tests of `scripts/migration-tests/admin-explains.spec.ts` fail in Chromium on the `pms-43` pages as on these: "every tab: ... the main
   action is green" (Today) and "Content: ... the chosen part is on the primary wash". They pinned colours that Prompt 41's palette changed; they
   were left as they are.
+- One mutation of `npm run test:report:mutations` survives on the `pms-43` code as on this: 56, "The leader report's rules wear the client's
+  colour again" (`GREEN = accent` in `leader-report-layout.js`, held by `test-leader-report-glance.js`). The test it names does not catch it;
+  the files were not changed for it.
 
 ## Chosen not to do
 - **Moving the eleven allowed modules to their right layer** (for example the stored formats of `confidence-check.js` and `aop-answer.js` to

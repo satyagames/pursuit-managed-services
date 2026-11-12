@@ -22,6 +22,14 @@ const SOURCE = path.join(LIB, 'exports', 'leader-report.js');
 // The rule that names a participant moved to its own file in Phase 7c. A mutation's text is found in exactly one of these two files.
 const NAMES = path.join(LIB, 'results', 'participant-names.js');
 const TESTS = path.join(ROOT, 'scripts', 'test-leader-report.js');
+/** Prompt 44: the parts leader-report.js passes on. */
+const REPORT_PARTS = ['leader-report-text.js', 'leader-report-csv.js'].map((file) => path.join(LIB, 'exports', file));
+/** Prompt 44: the files that pass on parts which were their own lines, and those parts. */
+const PASSED_ON = {
+  'migration/src/lib/exports/resultsExport.js': ['migration/src/lib/exports/summary-pack.js', 'migration/src/lib/exports/summary-csv.js'],
+  'migration/src/lib/exports/leader-report.js': ['migration/src/lib/exports/leader-report-text.js', 'migration/src/lib/exports/leader-report-csv.js'],
+  'migration/src/lib/results/results-chart-model.js': ['migration/src/lib/results/chart-answers.js', 'migration/src/lib/results/chart-words.js'],
+};
 
 /** [what is broken, the exact text to find (once), what to put in its place, and (Phase 11b) { file, tests } when it is not the counting's] */
 const MUTATIONS = [
@@ -294,8 +302,15 @@ for (const [what, find, replace, where] of MUTATIONS) {
   number += 1;
   if (where) {
     // Phase 11b: a mutation of another file, held by the suites it names.
-    const original = path.join(ROOT, where.file);
-    const text = await readFile(original, 'utf8');
+    let original = path.join(ROOT, where.file);
+    let text = await readFile(original, 'utf8');
+    // (Prompt 44: a file that passes on parts which were its own lines: the mutation is made in the part that now holds its text.)
+    if (text.split(find).length - 1 === 0 && PASSED_ON[where.file]) {
+      for (const part of PASSED_ON[where.file]) {
+        const partText = await readFile(path.join(ROOT, part), 'utf8');
+        if (partText.split(find).length - 1 === 1) { original = path.join(ROOT, part); text = partText; break; }
+      }
+    }
     if (text.split(find).length - 1 !== 1) {
       console.error(`Mutation ${number} no longer applies (its text is in ${where.file} ${text.split(find).length - 1} times, not once): ${what}`);
       process.exit(1);
@@ -312,6 +327,22 @@ for (const [what, find, replace, where] of MUTATIONS) {
   }
   const inReport = source.split(find).length - 1;
   const inNames = names.split(find).length - 1;
+  // (Prompt 44: leader-report.js passes on two parts that were its own lines, leader-report-text.js and leader-report-csv.js. A counting
+  // mutation whose text is now in one of them is made there and held by the same suite, through the redirect the drawing mutations use.)
+  const inPart = [];
+  for (const part of REPORT_PARTS) if ((await readFile(part, 'utf8')).split(find).length - 1 === 1) inPart.push(part);
+  if (inReport + inNames === 0 && inPart.length === 1) {
+    const text = await readFile(inPart[0], 'utf8');
+    const copy = path.join(path.dirname(inPart[0]), `.${path.basename(inPart[0], '.js')}.mutant-${number}.js`);
+    await writeFile(copy, text.replace(find, replace));
+    let result;
+    try { result = runWith([path.relative(ROOT, TESTS)], inPart[0], copy); } finally { await rm(copy, { force: true }); }
+    const failed = failures(result);
+    const killed = result.status !== 0;
+    if (!killed) survived.push(what);
+    console.log(`${killed ? 'caught  ' : 'SURVIVED'}  ${String(number).padStart(2)}  ${what}${killed ? `  (${failed} test${failed === '1' ? '' : 's'} failed)` : ''}`);
+    continue;
+  }
   if (inReport + inNames !== 1) {
     console.error(`Mutation ${number} no longer applies (its text is in the files ${inReport + inNames} times, not once): ${what}`);
     process.exit(1);

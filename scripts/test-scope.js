@@ -281,9 +281,10 @@ describe('Survey feedback: the words change, the stored key does not', () => {
   const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
   it('the question editor and the exports say Survey feedback', () => {
     assert.match(read('migration/src/admin/QuestionEditor.svelte'), /'open-text-feedback': \{ label: 'Survey feedback'/);
-    assert.match(read('migration/src/lib/exports/resultsExport.js'), /'open-text-feedback': 'Survey feedback'/);
+    // (Prompt 44: the CSV's words moved, unchanged, from resultsExport.js to summary-csv.js, which resultsExport.js passes on.)
+    assert.match(read('migration/src/lib/exports/summary-csv.js'), /'open-text-feedback': 'Survey feedback'/);
     assert.doesNotMatch(read('migration/src/admin/QuestionEditor.svelte'), /Open text feedback|Open feedback/);
-    assert.doesNotMatch(read('migration/src/lib/exports/resultsExport.js'), /Written answer|Open feedback/);
+    for (const file of ['resultsExport.js', 'summary-csv.js', 'summary-pack.js']) assert.doesNotMatch(read(`migration/src/lib/exports/${file}`), /Written answer|Open feedback/);
   });
   it('the stored type is still open-text-feedback in the schema, the pager and the tally', () => {
     assert.match(read('migration/src/lib/schema/pms-schema-meta.js'), /'open-text-feedback'/);

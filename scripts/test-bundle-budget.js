@@ -88,10 +88,11 @@ describe('the page budgets', () => {
   });
 
   it('is honest about what the admin build leaves out: only jsPDF\'s HTML and SVG paths, which no export calls', async () => {
-    const source = await readFile(path.join(ROOT, 'migration/src/lib/exports/resultsExport.js'), 'utf8');
+    // (Prompt 44: resultsExport.js passes on summary-pack.js and summary-csv.js, which were its own lines: all three are read.)
+    const source = (await Promise.all(['resultsExport.js', 'summary-pack.js', 'summary-csv.js'].map((file) => readFile(path.join(ROOT, 'migration/src/lib/exports', file), 'utf8')))).join(String.fromCharCode(10));
     // The admin build stubs html2canvas, canvg and dompurify (migration/vite.admin.config.ts); these are the calls that need them.
     assert.doesNotMatch(source, /\.html\(|addSvgAsImage|\.svg\(|html2canvas|canvg|dompurify/i, 'resultsExport.js must not use what the admin build stubs');
-    for (const file of ['leader-report-pdf.js', 'leader-report-layout.js', 'leader-report.js', 'report-fonts.js']) {
+    for (const file of ['leader-report-pdf.js', 'leader-report-layout.js', 'leader-report.js', 'leader-report-text.js', 'leader-report-csv.js', 'report-fonts.js']) {
       const report = await readFile(path.join(ROOT, 'migration/src/lib/exports', file), 'utf8');
       assert.doesNotMatch(report, /\.html\(|addSvgAsImage|\.svg\(|html2canvas|canvg|dompurify/i, `${file} must not use what the admin build stubs`);
     }

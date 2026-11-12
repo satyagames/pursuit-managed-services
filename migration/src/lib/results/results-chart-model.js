@@ -18,8 +18,12 @@
 //   - for written answers, the words that came up most: repeated words, counted by comment, never a summary or a theme.
 
 import { isGraded } from '../participant/pager-logic.js';
-import { nameParticipants, ownerOf, withNamesHidden } from './participant-names.js';
 import { aopResults, byGroup, countedGrid, whereToStart } from './aop-math.js';
+import { people, byTime, whoOf, wholePercents, listOf, labelOf } from './chart-answers.js';
+import { topWords } from './chart-words.js';
+// (Prompt 44: who answered and the shares are lib/results/chart-answers.js, the words of written answers lib/results/chart-words.js; their names are passed on here, as before.)
+export { namesFor, picturesFor, answersOf, people, numberWords, FEW_ANSWERS, fewAnswersLine, answerCounts, answersFrom, wholePercents } from './chart-answers.js';
+export { TOP_WORDS, FIRST_COMMENTS, STOP_WORDS, wordsIn, foldPlural, topWords, segmentsOf } from './chart-words.js';
 
 /** @typedef {{ id: string, label?: string, value?: unknown, correct?: boolean | null, count?: number, score?: number, [key: string]: any }} TallyOption */
 /** @typedef {{ questionId?: string, clientTrackId?: string | null, clientId?: string | null, answer: unknown, timestamp?: string | null, [key: string]: any }} TallyAnswer */
@@ -30,144 +34,6 @@ export const NO_ANSWERS = 'No answers yet.';
 export const MULTI_CAPTION = 'People could pick several answers, so the bars add up to more than 100%.';
 export const RANKING_CAPTION = '100 means everyone ranked it first; 0 means everyone ranked it last.';
 export const WORDS_HEADING = 'Words that came up most';
-/** The words shown for written answers, at most. */
-export const TOP_WORDS = 8;
-/** A word must be in at least this many different comments to be shown. */
-const MIN_COMMENTS = 2;
-/** Shorter words are left out. */
-const MIN_LETTERS = 3;
-/** How many comments are shown before "Show more". */
-export const FIRST_COMMENTS = 20;
-
-/**
- * Common English words that say nothing about what people meant, left out of "Words that came up most". Reviewed by hand: function words,
- * auxiliaries and their contractions (with a straight apostrophe; a curly one is made straight before the look-up). Words of one or two letters
- * are left out by length, so they are not listed. Sorted and in small letters (a test holds both).
- */
-export const STOP_WORDS = Object.freeze(new Set([
-  'about', 'above', 'after', 'again', 'against', 'ain\'t', 'all', 'also', 'and', 'any', 'are', 'aren', 'aren\'t', 'because', 'been', 'before',
-  'being', 'below', 'between', 'both', 'but', 'can', 'can\'t', 'cannot', 'could', 'couldn', 'couldn\'t', 'did', 'didn', 'didn\'t', 'does',
-  'doesn', 'doesn\'t', 'doing', 'don', 'don\'t', 'down', 'during', 'each', 'either', 'etc', 'even', 'ever', 'every', 'few', 'for', 'from',
-  'further', 'get', 'gets', 'got', 'had', 'hadn', 'hadn\'t', 'has', 'hasn', 'hasn\'t', 'have', 'haven', 'haven\'t', 'having', 'he\'d', 'he\'ll',
-  'he\'s', 'her', 'here', 'here\'s', 'hers', 'herself', 'him', 'himself', 'his', 'how', 'how\'s', 'i\'ll', 'i\'ve', 'into', 'isn', 'isn\'t',
-  'it\'d', 'it\'ll', 'it\'s', 'its', 'itself', 'just', 'let', 'let\'s', 'many', 'may', 'might', 'more', 'most', 'much', 'must', 'mustn',
-  'mustn\'t', 'myself', 'need', 'neither', 'nor', 'not', 'now', 'off', 'once', 'one', 'only', 'other', 'others', 'our', 'ours', 'ourselves',
-  'out', 'over', 'own', 'quite', 'rather', 'really', 'same', 'shall', 'shan', 'shan\'t', 'she', 'she\'d', 'she\'ll', 'she\'s', 'should',
-  'should\'ve', 'shouldn', 'shouldn\'t', 'since', 'some', 'such', 'than', 'that', 'that\'s', 'the', 'their', 'theirs', 'them', 'themselves',
-  'then', 'there', 'there\'s', 'these', 'they', 'they\'d', 'they\'ll', 'they\'re', 'they\'ve', 'this', 'those', 'though', 'through', 'too',
-  'under', 'until', 'upon', 'very', 'via', 'was', 'wasn', 'wasn\'t', 'we\'d', 'we\'ll', 'we\'re', 'we\'ve', 'were', 'weren', 'weren\'t', 'what',
-  'what\'s', 'when', 'when\'s', 'where', 'where\'s', 'whether', 'which', 'while', 'who', 'who\'s', 'whom', 'whose', 'why', 'why\'s', 'will',
-  'with', 'within', 'without', 'won', 'won\'t', 'would', 'wouldn', 'wouldn\'t', 'yet', 'you', 'you\'d', 'you\'ll', 'you\'re', 'you\'ve', 'your',
-  'yours', 'yourself', 'yourselves',
-]));
-
-// ---- Who answered ---------------------------------------------------------------------------------------------------------------------
-
-/**
- * Who is who, by the key an answer carries (its visit, see ownerOf): the names lib/results/participant-names.js gives, so the chart's names are the
- * Results rows' and the leader report's. `visits` and `roster` are what Admin → Results reads besides the tracks (lib/admin/admin-results.js
- * readNameSources); without them a staff sign-in is "Unnamed participant N" (a guest's QR name is on the track itself). With `hide` (the Hide names
- * switch, Prompt 21 decision B) everyone is "Guest N" in the same order.
- * @param {{ tracks?: any[], answers?: TallyAnswer[], visits?: any[], roster?: any[] }} records
- * @param {{ hide?: boolean }} [shown]
- * @returns {Map<string, string>}
- */
-export function namesFor({ tracks = [], answers = [], visits = [], roster = [] }, { hide = false } = {}) {
-  const named = nameParticipants({ tracks, visits, roster, answers: answers.map((answer) => ({ clientTrackId: answer.clientTrackId ?? null, clientId: answer.clientId ?? null })) });
-  const people = hide ? withNamesHidden(named) : named;
-  return new Map(people.map((person) => [person.key, person.name]));
-}
-
-/**
- * Whose picture is whose, by visit (Prompt 23): the same people as namesFor, and none at all when names are hidden, so a chart that is given this shows the silhouette for everyone
- * else. Only the admin view of Results calls this: the wall, the exports and the dashboard never do.
- * @param {{ tracks?: any[], visits?: any[], roster?: any[] }} records @param {{ hide?: boolean }} [shown] @returns {Map<string, string>}
- */
-export function picturesFor({ tracks = [], visits = [], roster = [] }, { hide = false } = {}) {
-  if (hide) return new Map();
-  return new Map(nameParticipants({ tracks, visits, roster }).filter((person) => person.pictureUrl).map((person) => [person.key, person.pictureUrl]));
-}
-
-/** Every answer of a results tree ({ sections: [{ questions: [{ responses }] }] }), for namesFor(). @param {{ sections?: { questions?: TallyQuestion[] }[] }} results */
-export const answersOf = (results) => (results.sections ?? []).flatMap((section) => (section.questions ?? []).flatMap((question) => question.responses ?? []));
-
-/** "1 person", "2 people". @param {number} count */
-export const people = (count) => `${count} ${count === 1 ? 'person' : 'people'}`;
-
-const SMALL = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
-
-/** A count in running words as the language guide (p. 40) has it: one to nine spelled out, 10 and more as figures with commas. @param {number} count */
-export const numberWords = (count) => (Number.isInteger(count) && count >= 1 && count <= 9 ? SMALL[count] : count.toLocaleString('en-US'));
-
-/** Under this many answers a share is said to rest on few (Phase 13): a percentage of three people must not read like one of three hundred. */
-export const FEW_ANSWERS = 5;
-
-/** "Only four answers." under FEW_ANSWERS; nothing at that many or more, and nothing for none (NO_ANSWERS says so). @param {number} answered */
-export const fewAnswersLine = (answered) => (answered > 0 && answered < FEW_ANSWERS ? `Only ${numberWords(answered)} ${answered === 1 ? 'answer' : 'answers'}.` : '');
-
-const byTime = (a, b) => String(a.at ?? '').localeCompare(String(b.at ?? '')) || a.name.localeCompare(b.name);
-
-/** @param {TallyAnswer} answer @param {Map<string, string> | null} names */
-function whoOf(answer, names) {
-  if (!names) return null;
-  const key = ownerOf(answer);
-  if (key === null) return null;
-  return { key, name: names.get(key) ?? 'Unnamed participant', at: answer.timestamp ?? null };
-}
-
-/**
- * "N answers from M iPads" over `questions` (Phase 11a-2, part D, VJR's choice of 16 Oct 2026): N is the answers to them (each question's `respondents`),
- * and M the visits those answers came from (ownerOf), each once. A visit that answered nothing is not counted (on the real site Kroger's header said "34
- * answers from 5 iPads" with one visit that had answered nothing: it says 4 now), nor one whose answers could not be read (they are not among the answers,
- * and the notice above them says so). The Live display's header, each Results card's summary and (since Phase 11b) the Live display's one-page PDF and PowerPoint
- * say it this way; the leader report's "participants" are every visit, on purpose.
- * @param {TallyQuestion[]} questions
- */
-export function answerCounts(questions) {
-  const visits = new Set();
-  let answers = 0;
-  for (const question of questions) {
-    answers += Number(question.respondents ?? (question.responses ?? []).length) || 0;
-    for (const response of question.responses ?? []) {
-      const key = ownerOf(response);
-      if (key !== null) visits.add(key);
-    }
-  }
-  return { answers, visits: visits.size };
-}
-
-/** "34 answers from 4 iPads", and in the singular "1 answer from 1 iPad" (Phase 11b: it said "1 answers from 1 iPads"). @param {{ answers: number, visits: number }} counts */
-export const answersFrom = ({ answers, visits }) => `${answers} ${answers === 1 ? 'answer' : 'answers'} from ${visits} ${visits === 1 ? 'iPad' : 'iPads'}`;
-
-// ---- Shares -----------------------------------------------------------------------------------------------------------------------------
-
-/**
- * Whole percentages of `total` that add up to exactly 100 (the largest-remainder rule): each share is rounded down, and the points left over
- * go to the largest remainders, the larger count first and then the earlier one. All 0 when nobody answered. When the counts add up to less
- * than `total` (answers to an option that has gone), pass that rest as the last count: it takes its share of the 100 and the others stay honest.
- * @param {number[]} counts @param {number} total
- */
-export function wholePercents(counts, total) {
-  if (!(total > 0)) return counts.map(() => 0);
-  const exact = counts.map((count) => (count * 100) / total);
-  const floors = exact.map((value) => Math.floor(value + 1e-9));
-  let left = 100 - floors.reduce((sum, value) => sum + value, 0);
-  const order = exact.map((value, index) => ({ index, rest: value - floors[index], count: counts[index] }))
-    .sort((a, b) => b.rest - a.rest || b.count - a.count || a.index - b.index);
-  for (const { index, rest } of order) {
-    if (left <= 0) break;
-    if (rest <= 1e-9) continue;
-    floors[index] += 1;
-    left -= 1;
-  }
-  return floors;
-}
-
-/** "X and Y", "X, Y and Z". @param {string[]} items */
-const listOf = (items) => (items.length <= 1 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`);
-
-const labelOf = (option) => (typeof option.label === 'string' && option.label.trim() ? option.label.trim() : 'Untitled answer');
-
 // ---- The headline in parts, and the hero figure (Prompt 34) ------------------------------------------------------------------------------
 // The wall draws its one headline sentence with the figures in Bold and the measure's name underlined. Which words those are is the template's,
 // never read from the words: each headline below is written as parts, `{ text, strong }` for a figure and `{ text, measure }` for the measure's
@@ -526,85 +392,6 @@ function matrixChart(question, options, responses, { names, guests, groups, answ
   };
 }
 
-// ---- Written answers ------------------------------------------------------------------------------------------------------------------
-
-// A word: letters, marks and digits in any script, with an apostrophe inside it ("don't", "l'été").
-const WORD = /[\p{L}\p{M}\p{N}]+(?:['’][\p{L}\p{M}\p{N}]+)*/gu;
-const DIGITS = /^[\p{N}'’]+$/u;
-
-/**
- * The words of a text, each with where it is: `{ start, end, word }`, `word` in small letters with a straight apostrophe. Numbers, words of
- * fewer than MIN_LETTERS letters and STOP_WORDS are left out.
- * @param {string} text
- */
-export function wordsIn(text) {
-  const found = [];
-  for (const match of String(text).matchAll(WORD)) {
-    const word = match[0].toLocaleLowerCase('en').replace(/’/g, '\'');
-    if (DIGITS.test(word) || [...word.replace(/'/g, '')].length < MIN_LETTERS || STOP_WORDS.has(word)) continue;
-    found.push({ start: /** @type {number} */ (match.index), end: /** @type {number} */ (match.index) + match[0].length, word });
-  }
-  return found;
-}
-
-/**
- * The singular a simple plural folds into, when that singular is itself among `known` words: "prices" with "price", "boxes" with "box",
- * "parties" with "party". A plural whose singular nobody wrote stays as it is (so "news" is never "new" unless someone wrote "new").
- * @param {string} word @param {Set<string>} known
- */
-export function foldPlural(word, known) {
-  if (!word.endsWith('s') || word.endsWith('ss') || word.endsWith('us') || word.endsWith('is') || word.endsWith('\'s')) return word;
-  const candidates = [];
-  if (word.endsWith('ies') && word.length > 4) candidates.push(`${word.slice(0, -3)}y`);
-  if (/(?:s|x|z|ch|sh)es$/.test(word)) candidates.push(word.slice(0, -2));
-  candidates.push(word.slice(0, -1));
-  return candidates.find((candidate) => candidate.length >= MIN_LETTERS && known.has(candidate)) ?? word;
-}
-
-/**
- * The words that came up most in a set of comments: each word (a plural folded into its singular when both were written) counted once per
- * comment, kept when it is in at least MIN_COMMENTS comments, the TOP_WORDS most common first (a tie in the order of the alphabet), each
- * with the comments that hold it and where it is in each.
- * @param {{ id: string, text: string }[]} comments
- */
-export function topWords(comments) {
-  const tokens = comments.map((comment) => ({ id: comment.id, words: wordsIn(comment.text) }));
-  const known = new Set(tokens.flatMap((entry) => entry.words.map((token) => token.word)));
-  /** @type {Map<string, { word: string, comments: Map<string, [number, number][]> }>} */
-  const byWord = new Map();
-  for (const { id, words } of tokens) {
-    for (const token of words) {
-      const key = foldPlural(token.word, known);
-      const entry = byWord.get(key) ?? { word: key, comments: new Map() };
-      entry.comments.set(id, [...(entry.comments.get(id) ?? []), [token.start, token.end]]);
-      byWord.set(key, entry);
-    }
-  }
-  return [...byWord.values()]
-    .filter((entry) => entry.comments.size >= MIN_COMMENTS)
-    .sort((a, b) => b.comments.size - a.comments.size || a.word.localeCompare(b.word))
-    .slice(0, TOP_WORDS)
-    .map((entry) => ({ word: entry.word, count: entry.comments.size, commentIds: [...entry.comments.keys()], spans: Object.fromEntries(entry.comments) }));
-}
-
-/**
- * A text cut into the parts a highlighted word makes: `[{ text, hit }]`, in order, joined back the text as it was.
- * @param {string} text @param {[number, number][]} [spans]
- */
-export function segmentsOf(text, spans = []) {
-  const parts = [];
-  let at = 0;
-  for (const [start, end] of [...spans].sort((a, b) => a[0] - b[0])) {
-    if (start < at) continue;
-    if (start > at) parts.push({ text: text.slice(at, start), hit: false });
-    parts.push({ text: text.slice(start, end), hit: true });
-    at = end;
-  }
-  if (at < text.length || parts.length === 0) parts.push({ text: text.slice(at), hit: false });
-  return parts;
-}
-
-/** @param {TallyAnswer[]} responses @param {Map<string, string> | null} names @param {number} answered */
 function textChart(responses, names, answered) {
   const written = responses
     .map((response, index) => ({ response, index, text: typeof response.answer === 'string' ? response.answer : String(response.answer ?? '') }))
