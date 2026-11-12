@@ -1,7 +1,7 @@
 <script lang="ts">
   import { errorText } from '../lib/admin/session-notice.js';
   import { onMount, tick } from 'svelte';
-  import GuestAvatar from '../components/GuestAvatar.svelte';
+  import { GuestAvatar } from '../preview/index.js';
   import GuestPicture from './GuestPicture.svelte';
   import { clearGuestPicture, picturesLine, setGuestPicture } from '../lib/admin/guest-picture.js';
   import type { Prepared } from '../lib/brand/asset-image.js';

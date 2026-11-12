@@ -1,6 +1,6 @@
 <script lang="ts">
   import { people } from '../../lib/results/results-chart-model.js';
-  import GuestAvatar from '../../components/GuestAvatar.svelte';
+  import { GuestAvatar } from '../../preview/index.js';
   import { placeName, timeOf, type Who } from './chart-ui.js';
 
   // Who picked an answer (admin view only): under its card, "Who picked: 1014 Vine Street, Cincinnati (2 people)" and each name with the time they

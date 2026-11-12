@@ -330,6 +330,7 @@
     "migration/src/lib/settings": "How a page starts: the browser check, where its settings come from (`pms-config.txt`, the build, its address), which site and lists are its own, and the stop screen.",
     "migration/src/lib/setup": "The Setup page's own modules: the plan and Create, Mark the site as ready, the admins, the seed-file import, the sample clients and their pictures, the self-test's probes.",
     "migration/src/pager": "The pager: one question per screen, its answers, and an activity's completion screen.",
+    "migration/src/preview": "The one door through which the admin page shows the participant's own screens and pieces (Brand Studio's preview, the activity preview, a guest's avatar): `index.ts`, re-exports only (Prompt 44).",
     "migration/src/routes": "The participant page's screens: Welcome, the Activities hub, the quiz route, the finale, \"not live\", the preview, and the old addresses that redirect.",
     "migration/src/setup": "Setup's pieces (Svelte): the copy panel, where the lists are, the plan view, and the sample pictures as data.",
     "migration/src/styles": "Tokens (colour, type), the focus ring, the fonts (inlined Open Sans and the metric-matched fallback), the Results palette, and `legacy/`, the old sheets the pages still load.",

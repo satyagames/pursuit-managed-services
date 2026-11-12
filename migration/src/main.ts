@@ -1,3 +1,5 @@
+// The participant page's entry: its sheets in their order, the kiosk rule, then the app, mounted once the page knows its site and lists.
+// It holds no rule of its own; what the page does is in App.svelte and lib/participant.
 import './lib/settings/support.js';
 import { startPage } from './lib/settings/start.js';
 import * as dataService from './lib/data/dataService.js';

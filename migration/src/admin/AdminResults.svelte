@@ -14,7 +14,7 @@
   import { adminDelay } from '../lib/common/poll-schedule.js';
   import { REMOVE_VISIT_CONFIRM, canRemoveVisit, forgetNameSources, glanceOf, leadFigures, holdNameSources, keepShownOrder, newestFirst, readNameSources, resultRows, rowsInOrder, rowsToLookForAgain, sessionsNeedingNames, type NameSources } from '../lib/admin/admin-results.js';
   import { answerCounts, answersFrom, answersOf, chartsOf, namesFor, picturesFor } from '../lib/results/results-chart-model.js';
-  import GuestAvatar from '../components/GuestAvatar.svelte';
+  import { GuestAvatar } from '../preview/index.js';
   import { DELETE_SESSION, cardCounts, deleteSessionData, deleteSessionWarning, deletedText, progressText, refusedText, stoppedText } from '../lib/admin/session-delete.js';
   import { focusHeading } from '../lib/common/focus.js';
   import { PER_PAGE, hashWithPage, pageOfHash, pageRows, pagerState } from '../lib/common/paging.js';

@@ -46,7 +46,7 @@ The 15 largest source files: `pager/MatrixRating.svelte` 1,497; `admin.css` 1,26
 
 - [x] **44a** Baselines: the picture spec, the pages' bytes, the request baselines, the bundle sizes, this file.
 - [x] **44b** Scripts: one `perf` and one `console:errors`; `scripts/test-package-scripts.js`; `npm test` from `scripts/tests.manifest.json`.
-- [ ] **44c** Boundaries: the layers written down; a door, migration/src/preview/index.ts; scripts/test-boundaries.js.
+- [x] **44c** Boundaries: the layers written down; a door, migration/src/preview/index.ts; scripts/test-boundaries.js.
 - [ ] **44d** One tab registry (lib/admin/tabs.js) and the router (lib/admin/router.ts).
 - [ ] **44e** The admin's shared primitives (admin/ui/), after an inventory.
 - [ ] **44f** The oversized files split along their seams.
@@ -64,8 +64,24 @@ hand-written list, the same 115 (the test compares the two lists, pinned as they
 their file lists are what they were. Six files are not in npm test, each with its reason in `excluded`: four that build or read a build with
 Vite, the local site's, and `scripts/test-identity-words.js` (see "Found, not changed").
 
+**44c.** The layers are written once, in `scripts/test-boundaries.js` (`LAYERS`), and in `docs/DECISIONS.md` ("The codebase"). The admin's
+fifteen imports of the participant's pieces (`GuestAvatar` in six screens, `DeloitteWordmark` in two, and Brand Studio's and the activity
+preview's `AppShell`, `HeaderGreeting`, `SoundToggle`, `ActivityPager`, `Agenda`, `Quiz`, `ThankYou`, `Welcome`) go through
+`migration/src/preview/index.ts`, which only re-exports; no file moved. The test failed first on those fifteen and on two modules without a
+header (`main.ts`, `components/index.ts`, which have one now). Eleven exceptions are allowed, each with its reason: the data layer reads three
+formats defined higher up (a picture's name, the confidence check's record ids, an Art of the Possible answer), Results reads the fiscal period
+from `lib/admin/session-plan.js` and the counting rules from the leader report, Setup's sample pictures are data in `setup/`, and the
+styleguide is reached only under `import.meta.env.DEV`. Pages, built under one name: the participant page and Setup the same bytes; the
+admin page 719,982 -> 719,818 B gzip (the modules' order changed). Pictures: no difference.
+
 ## Found, not changed
 
 - `scripts/test-identity-words.js` (Prompt 32's words beside the person's name, 30 tests, all passing) was in no npm script, although
   `docs/DECISIONS.md` names it as what enforces that decision. It is listed in the manifest's `excluded` with that reason, so that npm test runs
   the same files as before; adding it to a group is the owner's call.
+
+## Chosen not to do
+- **Moving the eleven allowed modules to their right layer** (for example the stored formats of `confidence-check.js` and `aop-answer.js` to
+  `lib/schema`, `periodOf` to `lib/results`). Each module also holds code its own layer uses (the check's flow, the pager's grid rules, the
+  session plan), so a move is a split of the module, it changes the paths that 20 to 30 files and tests read, and Phase 17 pinned the data
+  layer's parts and their imports. It is left as the allow-list, which only shrinks, for a commit of its own.

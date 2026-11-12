@@ -1,7 +1,7 @@
 <script lang="ts">
   import { mount, unmount } from 'svelte';
   import { embeddedAssetUrl } from '../lib/brand/assets.js';
-  import DeloitteWordmark from '../components/DeloitteWordmark.svelte';
+  import { DeloitteWordmark } from '../preview/index.js';
   import { APP_NAME } from '../lib/common/app-name.js';
   import { buildLeaderReport, hasMatrix, matrixLongCsv, participantAnswersCsv, reportFileName } from '../lib/exports/leader-report.js';
   import { readLeaderReportRecords } from '../lib/exports/leader-report-data.js';

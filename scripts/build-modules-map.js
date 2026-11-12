@@ -34,6 +34,7 @@ export const PURPOSE = {
   'migration/src/components': 'The participant page\'s building blocks (Svelte): the shell, pills, buttons, the hero plate, tiles, the progress bar, the sound switch.',
   'migration/src/pager': 'The pager: one question per screen, its answers, and an activity\'s completion screen.',
   'migration/src/routes': 'The participant page\'s screens: Welcome, the Activities hub, the quiz route, the finale, "not live", the preview, and the old addresses that redirect.',
+  'migration/src/preview': 'The one door through which the admin page shows the participant\'s own screens and pieces (Brand Studio\'s preview, the activity preview, a guest\'s avatar): `index.ts`, re-exports only (Prompt 44).',
   'migration/src/setup': 'Setup\'s pieces (Svelte): the copy panel, where the lists are, the plan view, and the sample pictures as data.',
   'migration/src/dev': 'The styleguide, `#/styleguide` on the dev server only (absent from builds).',
   'migration/src/unsupported': 'The "needs a recent browser" notice: a page and an ES5 check, put into each HTML shell at build time.',

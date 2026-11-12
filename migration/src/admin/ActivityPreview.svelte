@@ -3,7 +3,7 @@
   import * as dataService from '../lib/data/dataService.js';
   import tokensCss from '../styles/tokens.css?inline';
   import baseCss from '../styles/base.css?inline';
-  import Quiz from '../routes/Quiz.svelte';
+  import { Quiz } from '../preview/index.js';
   import { resolveClientTheme } from '../lib/brand/client-theme.js';
   import { applyTheme } from '../lib/brand/theme.js';
 

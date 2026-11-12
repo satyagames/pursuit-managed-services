@@ -82,10 +82,11 @@ flowchart LR
 | `migration/src/lib/settings/` | How a page starts: the browser check, where its settings come from (`pms-config.txt`, the build, its address), which site and lists are its own, and the stop screen. | 8 |
 | `migration/src/lib/setup/` | The Setup page's own modules: the plan and Create, Mark the site as ready, the admins, the seed-file import, the sample clients and their pictures, the self-test's probes. | 11 |
 | `migration/src/pager/` | The pager: one question per screen, its answers, and an activity's completion screen. | 5 |
+| `migration/src/preview/` | The one door through which the admin page shows the participant's own screens and pieces (Brand Studio's preview, the activity preview, a guest's avatar): `index.ts`, re-exports only (Prompt 44). | 1 |
 | `migration/src/routes/` | The participant page's screens: Welcome, the Activities hub, the quiz route, the finale, "not live", the preview, and the old addresses that redirect. | 10 |
 | `migration/src/setup/` | Setup's pieces (Svelte): the copy panel, where the lists are, the plan view, and the sample pictures as data. | 6 |
 | `migration/src/unsupported/` | The "needs a recent browser" notice: a page and an ES5 check, put into each HTML shell at build time. | 1 |
-| `scripts/` | Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager. | 174 |
+| `scripts/` | Node tests (`test-*.js`, run by `npm test` and the `test:*` scripts), the mocked SharePoint (`sharepoint-fake.js`), the oracle, the bundle and request baselines, the generators and the release packager. | 175 |
 | `scripts/local-site/` | The local PCOE stand-in (`npm run local:site`), its scenarios and VJR's dummy dataset, the screenshot harness and the measurements. | 11 |
 | `scripts/migration-tests/` | The Playwright specs of `npm run test:migration`, and their harnesses (`admin-local.ts`, `polling-support.ts`, `fixtures.ts`). | 101 |
 | `scripts/rehearsal-tests/` | The rehearsal of RUNBOOK.md on the mock with a package's own pages (`npm run test:rehearsal`). | 1 |

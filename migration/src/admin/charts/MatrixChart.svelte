@@ -1,5 +1,5 @@
 <script lang="ts">
-  import GuestAvatar from '../../components/GuestAvatar.svelte';
+  import { GuestAvatar } from '../../preview/index.js';
   import MetricInfo from '../MetricInfo.svelte';
   import type { Snippet } from 'svelte';
   import { timeOf, type Chart, type Who } from './chart-ui.js';
