@@ -462,7 +462,8 @@ describe('Create: the one door it writes through', () => {
 
 describe('Create: what the module may send', () => {
   it('its source sends POST and MERGE only: no DELETE, no recycle, nothing that changes a column\'s type or renames a list', async () => {
-    const source = await readFile(path.join(import.meta.dirname, '..', 'migration/src/lib/setup/provision.js'), 'utf8');
+    // (Prompt 44: provision.js passes on provision-site.js and provision-plan.js, which were its own lines: the three are read as one.)
+    const source = (await Promise.all(['provision.js', 'provision-site.js', 'provision-plan.js'].map((file) => readFile(path.join(import.meta.dirname, '..', 'migration/src/lib/setup', file), 'utf8')))).join(String.fromCharCode(10));
     const code = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
     assert.doesNotMatch(code, /'DELETE'|"DELETE"|`DELETE`/, 'no DELETE');
     assert.doesNotMatch(code, /recycle|deleteObject|breakRoleInheritance/i, 'no recycle');

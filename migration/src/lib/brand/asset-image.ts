@@ -82,7 +82,7 @@ function drawReduced(target: CanvasRenderingContext2D, source: CanvasImageSource
 }
 
 /** The cropped view drawn at `share` of the slot's size (1 = exactly the slot's). */
-export function renderView(decoded: Decoded, spec: SlotSpec, view: View, width = spec.width, height = spec.height): HTMLCanvasElement {
+function renderView(decoded: Decoded, spec: SlotSpec, view: View, width = spec.width, height = spec.height): HTMLCanvasElement {
   const canvas = canvasOf(width, height);
   const ctx = context(canvas);
   // A picture that cannot be transparent (the background, a JPEG) starts on the page's own near-black, never on nothing.
@@ -101,7 +101,7 @@ export function renderView(decoded: Decoded, spec: SlotSpec, view: View, width =
 }
 
 /** What `canvas.toBlob` really made. A browser that cannot make `mime` answers with a PNG, which the caller notices. */
-export function encodeCanvas(canvas: HTMLCanvasElement, mime: string, quality?: number): Promise<Encoded | null> {
+function encodeCanvas(canvas: HTMLCanvasElement, mime: string, quality?: number): Promise<Encoded | null> {
   return new Promise((resolve) => {
     try {
       canvas.toBlob((blob) => resolve(blob ? { mime: blob.type || 'image/png', bytes: blob.size, data: blob } : null), mime, quality);

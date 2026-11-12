@@ -478,7 +478,7 @@ describe('colours', () => {
         assert.ok(contrastRatio(value(ink), value(ground)) >= least, `${ink} on ${ground}: ${contrastRatio(value(ink), value(ground)).toFixed(2)}`);
       }
     }
-    for (const file of ['Icon.svelte', 'Fold.svelte', 'IconButton.svelte', 'RoleSwitch.svelte', 'Breadcrumb.svelte']) {
+    for (const file of ['Icon.svelte', 'ui/Fold.svelte', 'IconButton.svelte', 'RoleSwitch.svelte', 'ui/Breadcrumb.svelte']) {
       const source = await readFile(path.join(ROOT, 'migration/src/admin', file), 'utf8');
       const style = /<style>([\s\S]*)<\/style>/.exec(source)?.[1] ?? '';
       assert.ok(style, `${file} has its styles`);

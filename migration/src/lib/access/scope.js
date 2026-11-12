@@ -66,7 +66,7 @@ export const inPeriod = (reach, date) => Boolean(dayOf(date)) && reach.periods.s
 /** Whether the reach covers a session ({ id, clientId, date }) to read its answers. */
 export const mayReadSession = (reach, session) => reach.all || reach.sessionIds.has(session.id) || reach.clientIds.has(session.clientId) || inPeriod(reach, session.date);
 /** Whether the reach lets a client's record (its name, look and activities) be read. With `sessions`, a period reaches only the clients that have a session in it. */
-export function mayReadClient(reach, clientId, sessions) {
+function mayReadClient(reach, clientId, sessions) {
   if (reach.all || reach.clientIds.has(clientId) || reach.sessionClients.has(clientId)) return true;
   if (!reach.periods.length) return false;
   return sessions ? sessions.some((session) => session.clientId === clientId && inPeriod(reach, session.date)) : true;

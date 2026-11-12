@@ -163,7 +163,8 @@ describe('F-20: confetti from a completed activity does not fall on the next act
 describe('F-15: Content: an activity\'s buttons fit one line on a laptop, Delete apart at the end', () => {
   it('admin.css: the activities column is the wider one, and Delete is pushed to the row end', async () => {
     const { readFileSync } = await import('node:fs');
-    const css = readFileSync(new URL('../migration/src/admin.css', import.meta.url), 'utf8');
+    // (Prompt 44: src/admin.css is styles/admin/ now; Content's rules are content.css.)
+    const css = readFileSync(new URL('../migration/src/styles/admin/content.css', import.meta.url), 'utf8');
     // (Prompt 39: the activities 5 of the 12 columns and the questions 7; an activity's buttons still fit their own line at 1,280 px.)
     assert.match(css, /\.content-layout\s*\{\s*grid-template-columns:\s*repeat\(12, minmax\(0, 1fr\)\);/);
     assert.match(css, /\.content-layout > \.content-activities\s*\{\s*grid-column:\s*span 5;/);

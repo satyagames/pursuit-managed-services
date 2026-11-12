@@ -1,3 +1,5 @@
+// The participant's shared pieces (pills, the bar, the badge, the wordmark...), passed on by name for the screens and the styleguide.
+// It holds no code. The admin page reaches the few it shows through preview/index.ts instead.
 export { default as ActivityPill } from './ActivityPill.svelte';
 export { default as ActionBar } from './ActionBar.svelte';
 export { default as AppShell } from './AppShell.svelte';

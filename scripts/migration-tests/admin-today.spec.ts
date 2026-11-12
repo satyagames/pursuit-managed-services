@@ -94,7 +94,7 @@ const status = (page: Page) => page.locator('section[data-live]');
 // Delete are in its more menu; a new client's short name and words are folded under More details, and its button says Add client.
 const recheck = (page: Page) => page.getByTestId('sticky-bar').getByRole('button', { name: 'Re-check' });
 async function openSettings(page: Page) {
-  const toggle = page.getByRole('button', { name: /^(Change|Done)$/ });
+  const toggle = page.getByRole('button', { name: /^(Change|Hide)$/ }); // (Prompt 43: the toggle says Change or Hide, never Done)
   await expect(toggle).toBeVisible();
   if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
 }
@@ -366,8 +366,11 @@ test('each readiness blocker disables Go live and says why; each warning shows a
   await go.click();
   await expect(page.getByText('Verified: participants now see Warn Co')).toBeVisible();
 
-  // Phase 9b (DI-1): the live session is in staff mode, so the rule is on the screen beside "How people are identified" ...
+  // Phase 9b (DI-1): the live session is in staff mode, so the rule is on the screen beside "How people are identified" (Prompt 43: under it, in the
+  // open panel; folded, a marker on the Identification chip) ...
   const staffWarning = page.getByTestId('staff-mode-warning');
+  await expect(page.getByTestId('staff-mode-marker')).toBeVisible();
+  await openSettings(page);
   await expect(staffWarning).toHaveText("Staff mode: every person needs their own sign-in. iPads that share one sign-in must use Guests scan a personal QR, or two people's answers will be mixed.");
   await expect(check(page, 'staff-signin')).toHaveAttribute('data-level', 'warning');
   await expect(page.getByTestId('bar-wall'), 'a warning never blocks: it is live, and the bar offers the wall').toBeVisible();

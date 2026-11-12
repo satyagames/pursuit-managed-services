@@ -1,0 +1,149 @@
+/* Prompt 44: the admin page's base, the first part of what was src/admin.css (lines 1 to 158, unchanged): the focus ring, the controls. */
+/* The admin page, over the legacy admin sheet (migration/src/styles/legacy/admin.css, which the old admin still uses
+ * and which this file never edits): Open Sans, the Phase 1 tokens, light surfaces, a navy bar with the
+ * Deloitte wordmark, and a tab row that scrolls sideways on a phone. */
+
+html {
+  background: var(--adm-bg);
+}
+
+body.admin {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.5;
+  background: var(--adm-bg);
+  color: var(--adm-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: var(--fw-bold);
+  line-height: 1.25;
+}
+
+h2 {
+  font-size: 1.5rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* The tab row sticks to the top of the window, so a control that the keyboard scrolls into view must stop BELOW it, not under it (Phase 8: on Results the
+   first Tab scrolled "Refresh" under the sticky row, with half of its ring hidden). The row is 62 px high and the ring reaches 9 px beyond a control. */
+html {
+  /* (Phase 16: named, so what scrolls into view in place, such as a question's editor, allows for it too.) */
+  --adm-sticky-room: 5.5rem;
+  scroll-padding-top: var(--adm-sticky-room);
+}
+
+/* Visible keyboard focus on every control: 2 px of the primary (#26890D, 4.5:1 on white, 4.0:1 on a wash)
+   with the accent at 35% glowing 4 px outside it (Prompt 41; Phase 8's green ring between navy bands is gone). */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 8px var(--adm-accent-glow);
+}
+
+/* A heading that script moved focus to (a new screen) shows the ring only to someone on the keyboard (lib/common/focus.ts marks it), as on the participant page. */
+:where(h1, h2, h3, h4, h5, h6)[tabindex='-1']:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* A summary that fills a card edge to edge (Results' "Live results") would have its ring cut by the card's rounded clip (Phase 15, A-02): its ring is drawn
+   just inside it, the glow inside too. */
+.card .tally > summary:focus-visible {
+  outline-offset: -4px;
+  box-shadow: inset 0 0 0 8px var(--adm-accent-glow);
+}
+
+:where(h1, h2, h3, h4, h5, h6)[tabindex='-1'][data-keyboard-focus]:focus {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 8px var(--adm-accent-glow);
+}
+
+/* A date field keeps focus inside its own month, day and year parts, which :focus-visible does not report on the field itself. */
+input[type='date']:focus-within {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 8px var(--adm-accent-glow);
+}
+
+.switch input:focus-visible + .switch__track {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 8px var(--adm-accent-glow);
+}
+
+/* Controls */
+.btn {
+  min-height: var(--target-min);
+  padding: 0 1.1rem;
+  border: 1px solid var(--adm-line);
+  border-radius: 0.65rem;
+  background: var(--adm-card);
+  color: var(--adm-ink);
+  font-weight: var(--fw-semibold);
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--adm-bg);
+}
+
+/* The one main action of a screen is the deep green (Prompt 33, rule 1): white on --adm-green is held to 4.5:1 by scripts/test-admin-today.js. */
+.btn--primary {
+  background: var(--adm-green);
+  border-color: var(--adm-green);
+  color: var(--adm-on-deep);
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: var(--adm-green);
+  filter: brightness(0.93);
+}
+
+
+.btn--bar {
+  background: transparent;
+}
+
+
+.input,
+.select,
+.color,
+.login__pin {
+  border: 1px solid var(--adm-line-strong);
+  border-radius: 0.65rem;
+  font-family: inherit;
+}
+
+.select {
+  max-width: 100%;
+}
+
+/* WebKit draws a <select> natively, at about 27 px, whatever min-height says: a target under 44 px for a finger, and a focus halo it ignores.
+   Drawing the box ourselves, with a chevron, makes it the same 44 px control in every engine. (The arrow is decoration: the control is still a
+   <select>, with its own list, on every device.) */
+.select {
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 44px;
+  padding: 0.5rem 2.5rem 0.5rem 0.75rem;
+  background-color: var(--adm-surface);
+  background-image: var(--adm-chevron);
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  background-size: 0.9rem;
+}

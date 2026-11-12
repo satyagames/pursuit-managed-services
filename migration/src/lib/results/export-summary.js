@@ -39,7 +39,7 @@ const best = (charts, score) => charts.map((chart, order) => ({ chart, order, sc
  * The graded questions' scoreboard: how many, their average share right first time, and the one most missed. Null without an answered graded question.
  * @param {Chart[]} charts
  */
-export function scoreboardOf(charts) {
+function scoreboardOf(charts) {
   const graded = charts.filter((chart) => chart.graded && chart.answered > 0);
   if (graded.length === 0) return null;
   const shares = graded.map((chart) => (chart.right ?? 0) / chart.answered);

@@ -11,7 +11,7 @@
   import { localDate } from '../lib/admin/admin-today.js';
   import { planProblems, planSessionFor, sessionRows } from '../lib/admin/session-plan.js';
   import { nextFreeDate, pageStorage, prefsKeyOf, recall, remember, sessionNameFor } from '../lib/admin/admin-defaults.js';
-  import StickyBar from './StickyBar.svelte';
+  import StickyBar from './ui/StickyBar.svelte';
 
   let { open = $bindable(false), client, access = null, sessions, settings, users, assignments, fiscalStartMonth, onPlanned, onToast }: {
     client: { id: string; name: string; slug?: string };

@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
+  import PageHead from './ui/PageHead.svelte';
   // History of changes (Prompt 21, Phase 7): a Super admin's read-only review of the audit list (decision J), opened from People. It reads PMSAuditLog once
   // (as a person's history does) and filters it here (lib/access/audit-review.js: what was done, a person, from and to, 50 lines a page). Nothing on it
   // writes: a line is never changed or removed from the page, and the list's own permissions hold the same (lib/setup/list-permissions.js).
@@ -38,12 +39,8 @@
 
 <section class="panel" aria-labelledby="audit-heading" aria-busy={loading}>
   <button class="btn btn--back" type="button" onclick={onBack}><Icon name="arrow-left" /> Back to people</button>
-  <header class="panel__head">
-    <div>
-      <h2 id="audit-heading" bind:this={heading} tabindex="-1">History of changes</h2>
-      <p class="muted">Every time access was given, removed, turned off or on, and every person added, newest first. Nothing here can be changed.</p>
-    </div>
-  </header>
+  <PageHead id="audit-heading" title="History of changes" focusable bind:heading
+    description="Every time access was given, removed, turned off or on, and every person added, newest first. Nothing here can be changed." />
 
   {#if loading}<p class="muted" role="status">Reading the history of changes...</p>
   {:else if error}<p class="error" role="alert">{error}</p>

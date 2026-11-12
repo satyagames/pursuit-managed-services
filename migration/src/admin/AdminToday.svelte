@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
   import Icon from './Icon.svelte';
+  import PageHead from './ui/PageHead.svelte';
   import {
     POLL_MS, blockedReason, evaluateReadiness, goLive, isCalendarDate, liveStatus, loadReadinessInputs, heldSchemaOf, holdSchema, loadToday, localDate, makeSessionLive,
     needsSwitchConfirmation, pollToday, startPlannedSession, switchDialog,
@@ -12,14 +13,14 @@
   import {
     failureText as failed, goLiveLabel, goLiveWhy, levelCounts, otherSessionsOf, pickableClients, readinessSummary, sinceText, upsertSession as upsert,
   } from '../lib/admin/today-view.js';
-  import ConfirmDialog from './ConfirmDialog.svelte';
+  import ConfirmDialog from './ui/ConfirmDialog.svelte';
   import TodayControls from './TodayControls.svelte';
   import TodayGoLive from './TodayGoLive.svelte';
   import TodayReadiness from './TodayReadiness.svelte';
   import TodaySessions from './TodaySessions.svelte';
   import TodayShare from './TodayShare.svelte';
   import TodayStatus from './TodayStatus.svelte';
-  import StickyBar from './StickyBar.svelte';
+  import StickyBar from './ui/StickyBar.svelte';
   import { stickyIfFits } from '../lib/admin/sticky-fit.js';
   import type { IconName } from './Icon.svelte';
   import { writeSummary } from '../lib/admin/session-summaries.js';
@@ -81,6 +82,10 @@
   let shareUrl = $state('');
   let shareQr = $state('');
   let allSessions = $state(false);
+  /** Prompt 43: the last session setting that could not be written, and how to write it again; Go live and End session fold the panel. */
+  let saveError = $state('');
+  let retrySetting = () => {};
+  let foldSignal = $state(0);
 
   let alive = true;
   let polling = false;
@@ -321,6 +326,7 @@
 
   async function execute(wanted: Wanted) {
     epoch += 1;
+    foldSignal += 1;
     goingLive = true;
     problem = '';
     verified = '';
@@ -353,6 +359,12 @@
 
   // ---- Controls on the live session ----------------------------------------------------------------
 
+  /** Prompt 43: a setting that could not be written says so in the panel's footer, with Retry (which writes it again). */
+  function settingFailed(cause: unknown, fallback: string, again: () => void) {
+    saveError = failed(cause, fallback);
+    retrySetting = again;
+  }
+
   async function setMode(mode: 'client-visit' | 'staff') {
     if (!controlSession || controlsBusy || (controlSession.participationMode ?? 'staff') === mode) return;
     if (mode === 'staff' && controlSession.participationMode === 'client-visit'
@@ -360,13 +372,14 @@
     controlsBusy = true;
     epoch += 1;
     problem = '';
+    saveError = '';
     try {
       const updated = await dataService.setSessionParticipationMode(controlSession.id, mode) as Session;
       sessions = upsert(sessions, { ...controlSession, ...updated });
       onToast(mode === 'client-visit' ? 'Guests now scan a personal QR' : 'Staff now sign in', 'success');
       if (client && targetId === controlSession.id) await recheckInputs();
     } catch (cause) {
-      problem = failed(cause, 'Could not change how people are identified.');
+      settingFailed(cause, 'Could not change how people are identified.', () => void setMode(mode));
     } finally {
       epoch += 1;
       controlsBusy = false;
@@ -378,12 +391,13 @@
     controlsBusy = true;
     epoch += 1;
     problem = '';
+    saveError = '';
     try {
       const updated = await dataService.updateSession(controlSession.id, { activityFlow: flow }) as Session;
       sessions = upsert(sessions, { ...controlSession, ...updated, activityFlow: flow });
       onToast(`Activity flow is ${flow}`, 'success');
     } catch (cause) {
-      problem = failed(cause, 'Could not change the activity flow.');
+      settingFailed(cause, 'Could not change the activity flow.', () => void setFlow(flow));
     } finally {
       epoch += 1;
       controlsBusy = false;
@@ -396,12 +410,13 @@
     controlsBusy = true;
     epoch += 1;
     problem = '';
+    saveError = '';
     try {
       const updated = await dataService.updateSession(controlSession.id, { confidenceCheck: on }) as Session;
       sessions = upsert(sessions, { ...controlSession, ...updated, confidenceCheck: on });
       onToast(`The confidence check is ${on ? 'on' : 'off'}`, 'success');
     } catch (cause) {
-      problem = failed(cause, 'Could not change the confidence check.');
+      settingFailed(cause, 'Could not change the confidence check.', () => void setCheck(on));
     } finally {
       epoch += 1;
       controlsBusy = false;
@@ -412,6 +427,7 @@
     if (controlsBusy) return;
     const owner = nameOf(session.clientId);
     if (!window.confirm(`End the ${owner} session? iPads can't join or resume afterwards, and QR codes nobody has scanned stop working.`)) return;
+    foldSignal += 1;
     controlsBusy = true;
     epoch += 1;
     problem = '';
@@ -467,9 +483,7 @@
 </script>
 
 <section class="today" aria-busy={!loaded || busy}>
-  <header class="panel__head">
-    <div><h2><Icon name="calendar-check" />Today</h2><p class="muted">Pick the client and the date, check it is ready, then Go live from the bar below.</p></div>
-  </header>
+  <PageHead icon="calendar-check" title="Today" description="Pick the client and the date, check it is ready, then Go live from the bar below." />
 
   {#if !loaded}
     <div class="today__grid" aria-hidden="true">
@@ -519,6 +533,7 @@
           <h3 id="controls-heading">Session settings</h3>
           <TodayControls
             {controlSession} {controlClient} owner={controlSession ? nameOf(controlSession.clientId) : ''} live={status.live} {controlsBusy}
+            mayChange={!access || can(access, 'events.run', { clientId: controlSession?.clientId })} {saveError} {foldSignal} onRetry={() => retrySetting()}
             onSetMode={(mode) => void setMode(mode)} onSetFlow={(flow) => void setFlow(flow)} onSetCheck={(on) => void setCheck(on)} onEnd={(session) => void endIt(session)} onReopen={(session) => void reopenIt(session)}
             onMotionSaved={(written) => { clients = clients.map((entry) => (entry.id === written.id ? { ...entry, theme: written.theme as Client['theme'] } : entry)); }} {onToast}
           />

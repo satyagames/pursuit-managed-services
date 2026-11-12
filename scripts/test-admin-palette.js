@@ -93,7 +93,9 @@ async function sources() {
     }
   };
   await walk('migration/src/admin');
-  files.push('migration/src/AdminApp.svelte', 'migration/src/SetupApp.svelte', 'migration/src/admin.css', 'migration/src/admin-look.css',
+  // (Prompt 44: src/admin.css and src/admin-look.css are the sheets of styles/admin/ now, in their order.)
+  await walk('migration/src/styles/admin');
+  files.push('migration/src/AdminApp.svelte', 'migration/src/SetupApp.svelte',
     'migration/src/setup.css', 'migration/src/dev/AdminStyleguide.svelte');
   return files;
 }
@@ -108,6 +110,40 @@ export function styleText(file, text) {
 }
 
 export const COLOUR = /#[0-9a-f]{3,8}\b|%23[0-9a-f]{3,8}\b|rgba?\(|hsla?\(|:\s*(?:white|black)\s*[;}]/i;
+
+/**
+ * Prompt 44: the colours admin code writes as data, not as a style: each is marked in its file with a comment (`data colour: ...`) and listed
+ * here with why it stays literal. Anything else in code is a token.
+ */
+export const DATA_COLOURS = [
+  { file: 'migration/src/admin/BrandColours.svelte', value: '#ffffff', why: 'the accent picker\'s starting value when a client has no accent: a native colour input needs a literal #rrggbb, and it is the client\'s data, not the page\'s look' },
+  { file: 'migration/src/lib/admin/live-view.js', value: '#0f172a', why: 'the Live display\'s stand-in for a client with no primary colour, passed to the exports as the client\'s colour (data, as Phase 11b had it)' },
+  { file: 'migration/src/lib/admin/live-view.js', value: '#64748b', why: 'the stand-in for a client with no secondary colour, passed on as the client\'s colour (data)' },
+  { file: 'migration/src/admin/ReportExports.svelte', value: '#000000', why: 'an SVG path with no fill of its own is black by the SVG rule; the PDF writer is given that literal for it, so the file draws what the screen does' },
+];
+
+/** Every admin file with code: the components' scripts and markup, lib/admin, and the two apps. */
+async function codeSources() {
+  const files = [];
+  const walk = async (dir) => {
+    for (const entry of await readdir(path.join(ROOT, dir), { withFileTypes: true })) {
+      const rel = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) await walk(rel);
+      else if (/\.(svelte|js|ts)$/.test(entry.name) && !entry.name.startsWith('.')) files.push(rel);
+    }
+  };
+  await walk('migration/src/admin');
+  await walk('migration/src/lib/admin');
+  files.push('migration/src/AdminApp.svelte', 'migration/src/SetupApp.svelte');
+  return files;
+}
+
+/** The hex colours written in a file's code, its comments, <style> blocks (the style lint's) and HTML entities left out. */
+export function codeColours(text) {
+  const code = text.replace(/<style[^>]*>[\s\S]*?<\/style>/g, '').replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:'"`\\])\/\/[^\n]*/g, '$1').replace(/&#x?[0-9a-f]+;/gi, '');
+  return [...code.matchAll(/['"`]\s*(#[0-9a-f]{3,8})\b/gi)].map((match) => match[1]);
+}
 
 describe('the Deloitte green palette (Prompt 41)', () => {
   it('every token of the brief exists with its value', async () => {
@@ -185,6 +221,25 @@ describe('the Deloitte green palette (Prompt 41)', () => {
     assert.deepEqual(offences, []);
   });
 
+  it('no admin code writes a hex colour either, except the data colours listed with why (Prompt 44)', async () => {
+    const offences = [];
+    const seen = new Set();
+    for (const file of await codeSources()) {
+      for (const value of codeColours(await read(file))) {
+        const listed = DATA_COLOURS.find((entry) => entry.file === file && entry.value === value.toLowerCase());
+        if (listed) seen.add(`${file} ${value.toLowerCase()}`);
+        else offences.push(`${file}: ${value} (a colour is a token of admin-tokens.css or results-tokens.css; a data colour is listed in DATA_COLOURS with why)`);
+      }
+    }
+    assert.deepEqual(offences, []);
+    assert.deepEqual(DATA_COLOURS.filter((entry) => !seen.has(`${entry.file} ${entry.value}`)).map((entry) => `${entry.file} ${entry.value}`), [], 'a listed data colour that is no longer there');
+    for (const entry of DATA_COLOURS) assert.ok(entry.why.length > 20, `${entry.file} ${entry.value}: why it stays literal`);
+    for (const entry of DATA_COLOURS) assert.match(await read(entry.file), /data colour: /, `${entry.file}: the colour is marked where it is written`);
+    // The check can fail.
+    assert.deepEqual(codeColours("const x = { fill: '#26890d' }; // '#ffffff' in a comment\n/* '#000' */"), ['#26890d']);
+    assert.deepEqual(codeColours('<p>&#8226;</p><style>.x { color: #fff; }</style>'), []);
+  });
+
   it('the lint can fail', () => {
     assert.ok(COLOUR.test(styleText('x.svelte', '<div></div><style>.x { color: #26890d; }</style>')));
     assert.ok(COLOUR.test(styleText('x.svelte', '<div style="color: rgb(0 0 0)"></div>')));
@@ -193,12 +248,12 @@ describe('the Deloitte green palette (Prompt 41)', () => {
   });
 
   it('the focus ring is 2 px of the primary with the accent at 35% outside it; the active tab\'s underline is the accent', async () => {
-    const admin = await read('migration/src/admin.css');
+    const admin = await read('migration/src/styles/admin/base.css');
     const ring = /:where\(a, button, input, select, textarea, summary, \[tabindex\]\):focus-visible \{([^}]*)\}/.exec(admin)?.[1] ?? '';
     assert.match(ring, /outline: 2px solid var\(--focus\);/);
     assert.match(ring, /box-shadow: 0 0 0 \d+px var\(--adm-accent-glow\);/);
     assert.equal(resolver(await read(TOKENS))('focus'), '#26890d');
-    const look = await read('migration/src/admin-look.css');
+    const look = (await Promise.all(['look-type-bar.css', 'look-surfaces.css', 'look-menus.css'].map((file) => read(`migration/src/styles/admin/${file}`)))).join(String.fromCharCode(10));
     assert.match(look, /border-bottom-color: var\(--adm-accent\);/);
   });
 });

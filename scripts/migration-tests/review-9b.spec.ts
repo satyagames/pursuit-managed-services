@@ -449,6 +449,7 @@ test('axe finds nothing on the new states: the notices, the Remove buttons, the 
   // Today with the warning beside "How people are identified" (a live staff-mode session).
   await admin.getByRole('tab', { name: 'Today', exact: true }).click();
   await admin.getByRole('button', { name: 'Go live' }).click();
+  await admin.getByTestId('settings-toggle').click(); // (Prompt 43: the notice is in the open panel, under Identification)
   await expect(admin.getByTestId('staff-mode-warning')).toBeVisible();
   await look(admin, 'Today with the staff-mode warning beside the controls');
 

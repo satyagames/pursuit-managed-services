@@ -13,7 +13,7 @@
   import { TEAM_ROLES, addToTeam, teamCandidates, teamProblems, teamRows } from '../lib/access/team.js';
   import { errorText } from '../lib/admin/session-notice.js';
   import SiteAccessHandoff from './SiteAccessHandoff.svelte';
-  import ConfirmDialog from './ConfirmDialog.svelte';
+  import ConfirmDialog from './ui/ConfirmDialog.svelte';
   import IconButton from './IconButton.svelte';
   import Icon from './Icon.svelte';
   import EmailBox from './EmailBox.svelte';

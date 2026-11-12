@@ -5,7 +5,7 @@
   import { participantPageUrl, qrImage } from '../lib/admin/admin-links.js';
   import { completedTrackIds, guestRows, paginate, printCards } from '../lib/admin/admin-content.js';
   import { pageSizeFor, pageStorage, prefsKeyOf, recall, remember } from '../lib/admin/admin-defaults.js';
-  import StickyBar from './StickyBar.svelte';
+  import StickyBar from './ui/StickyBar.svelte';
 
   // The guest QR sheet: a card for each guest who holds a code nobody has scanned. Prompt 38: 6 to a page (2 columns by 3 rows, larger codes) by
   // default, or 12 (3 by 4); the paper is A4, or US Letter where the browser's language says Letter is the paper, and the last choice is remembered.

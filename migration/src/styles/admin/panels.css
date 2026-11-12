@@ -1,0 +1,207 @@
+/* Prompt 44: the panels carried over from the Phase 4 admin, what was src/admin.css lines 277 to 491, unchanged. */
+/* Panels carried over from the Phase 4 admin */
+.panel__head h2 {
+  margin-bottom: 0.25rem;
+}
+
+.card,
+.row {
+  border-color: var(--adm-line);
+}
+
+.panel-error {
+  min-height: 12rem;
+}
+
+.content-editor {
+  display: grid;
+  margin-top: 1.5rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.user-setup__roster {
+  min-width: 0;
+}
+
+.user-setup__roster,
+.user-setup__visits {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.user-setup__qr {
+  max-width: 34rem;
+}
+
+.editor-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.sr-only-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+.qr-editor {
+  justify-items: start;
+}
+
+.qr__image {
+  width: min(280px, 70vw);
+  aspect-ratio: 1;
+  background: var(--adm-surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.qr__warn {
+  width: 100%;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  background: var(--adm-warn-bg);
+  color: var(--adm-warn-ink);
+}
+
+.preview-dialog {
+  width: min(860px, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  padding: 0;
+  border: 0;
+  border-radius: 16px;
+  box-shadow: var(--adm-shadow-dialog);
+}
+
+.preview-dialog::backdrop {
+  background: var(--adm-scrim);
+}
+
+.preview__banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  background: var(--adm-warn-bg);
+  color: var(--adm-warn-ink);
+}
+
+.preview__banner .pill {
+  margin-left: auto;
+}
+
+.preview__frame {
+  max-height: 65vh;
+  overflow: auto;
+  border-top: 1px solid var(--line);
+}
+
+.preview__foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.preview__actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.qr__url {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.qr__url .input {
+  min-width: 0;
+  font: 1rem/1.3 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.pill {
+  display: inline-block;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: var(--fw-semibold);
+}
+
+
+.pill--used,
+.pill--completed {
+  background: var(--adm-ok-bg);
+  color: var(--adm-ok-ink);
+}
+
+.pill--expired {
+  background: var(--adm-bad-bg);
+  color: var(--adm-bad-ink);
+}
+
+.pill--in-progress {
+  background: var(--adm-warn-bg);
+  color: var(--adm-warn-ink);
+}
+
+/* A visit whose saved answers could not be read (Phase 9b): not "not started", and not counted. The existing error tint. */
+.pill--unreadable {
+  background: var(--adm-bad-bg);
+  color: var(--adm-bad-ink);
+}
+
+/* "N participants' answers could not be read and are not counted ...", beside the export buttons and under the Live display's header. */
+.card__unreadable,
+.live__unreadable {
+  margin: 0.5rem 0;
+}
+
+.tag {
+  background: var(--adm-idle-bg);
+  color: var(--adm-idle-ink);
+}
+
+.hint {
+  color: var(--adm-muted);
+}
+
+.notice {
+  padding: 0.6rem 0.9rem;
+  border-radius: 0.6rem;
+  background: var(--adm-warn-bg);
+  color: var(--adm-warn-ink);
+}
+
+@media (max-width: 760px) {
+  .field-row {
+    grid-template-columns: 1fr;
+  }
+
+  .qr__url {
+    grid-template-columns: 1fr auto;
+  }
+
+  .qr__url a {
+    grid-column: 1 / -1;
+  }
+
+  .row {
+    flex-wrap: wrap;
+  }
+}

@@ -19,8 +19,8 @@ export function liveBrand(client, fallbackName) {
   return {
     name: (typeof client?.name === 'string' && client.name.trim()) || fallbackName,
     logoUrl: embeddedAssetUrl(typeof client?.logoUrl === 'string' && client.logoUrl.trim() ? withoutRetiredLogo(client.logoUrl.trim()) : null),
-    primary: colours.primaryColor ?? '#0f172a',
-    secondary: colours.secondaryColor ?? '#64748b',
+    primary: colours.primaryColor ?? '#0f172a', /* data colour: the stand-in for a client with no primary colour */
+    secondary: colours.secondaryColor ?? '#64748b', /* data colour: the stand-in for a client with no secondary colour */
   };
 }
 

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
+  import PageHead from './ui/PageHead.svelte';
   import * as dataService from '../lib/data/dataService.js';
   import { focusHeading } from '../lib/common/focus.js';
   import { fieldProblem } from '../lib/access/field-values.js';
@@ -105,13 +106,10 @@
 </script>
 
 <section class="panel reporting" aria-labelledby="reporting-heading" aria-busy={loading || saving || Boolean(moving)}>
-  <header class="panel__head">
-    <div>
-      <h2 id="reporting-heading" bind:this={heading} tabindex="-1">Reporting settings</h2>
-      <p class="muted">What the Leadership dashboard counts quarters from, and how few answers it marks as a low sample. Only a Super admin changes them; each change is kept in the history of changes.</p>
-    </div>
-    <button class="btn" type="button" onclick={onBack}>Back to the dashboard</button>
-  </header>
+  <PageHead id="reporting-heading" title="Reporting settings" focusable bind:heading
+    description="What the Leadership dashboard counts quarters from, and how few answers it marks as a low sample. Only a Super admin changes them; each change is kept in the history of changes.">
+    {#snippet actions()}<button class="btn" type="button" onclick={onBack}>Back to the dashboard</button>{/snippet}
+  </PageHead>
   {#if loading}<p role="status">Loading the settings...</p>
   {:else if error}<p class="error" role="alert">{error}</p>
   {:else}

@@ -3,7 +3,7 @@
   // change (never to the button, which may have gone disabled). A control at an end stays in the tab order with aria-disabled, so focus is never lost.
   // It draws nothing with one page. The sums are lib/common/paging.js's; the screen owns the page and reads nothing for a change of page.
   import { tick } from 'svelte';
-  import { focusHeading } from '../lib/common/focus.js';
+  import { focusHeading } from '../../lib/common/focus.js';
 
   let { state: where, label = 'Pages', heading = null, onPage }: {
     state: { page: number; pages: number; line: string; range: string; hasPrevious: boolean; hasNext: boolean };

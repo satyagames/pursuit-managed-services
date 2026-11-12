@@ -5,7 +5,7 @@
   import type { View } from '../lib/brand/crop-math.js';
   import { inspectFile } from '../lib/brand/image-sniff.js';
   import { PICTURE_CONSENT } from '../lib/admin/guest-picture.js';
-  import GuestAvatar from '../components/GuestAvatar.svelte';
+  import { GuestAvatar } from '../preview/index.js';
   import CropDialog from './CropDialog.svelte';
 
   // Adding a guest's picture (Prompt 23, board 16): Take photo or Choose file, a round crop, and a finished picture of 256 by 256 under 60 KB, re-encoded in the browser, which

@@ -48,7 +48,7 @@
   <label class="field__label" for="brand-accent">Accent (optional)</label>
   <div class="brand__colour">
     <input id="brand-accent" class="input mono" value={accentTyped ?? draft.accent ?? ''} placeholder="None" oninput={(event) => onTypeAccent(event.currentTarget.value)} onblur={onAccentBlur} autocapitalize="off" autocorrect="off" spellcheck="false" aria-describedby="brand-accent-help" aria-invalid={colourInvalid(accentTyped, { blankIsNone: true })} />
-    <input class="color" type="color" aria-label="Accent colour picker" value={(draft.accent ?? '#ffffff').toLowerCase()} oninput={(event) => onSetAccent(parseColour(event.currentTarget.value))} />
+    <input class="color" type="color" aria-label="Accent colour picker" value={(draft.accent ?? '#ffffff' /* data colour: the picker's start when the client has no accent */).toLowerCase()} oninput={(event) => onSetAccent(parseColour(event.currentTarget.value))} />
     <button class="btn" type="button" disabled={draft.accent === null} onclick={() => onSetAccent(null)}>No accent</button>
   </div>
   <span id="brand-accent-help" class="small muted">Decoration only: a thin rule under titles and a ring on the logo plate. It never colours a button, and it only shows where it stands out enough.</span>

@@ -160,3 +160,21 @@ Brand Studio moved from a Clients row into the Content tab (docs/DECISIONS.md, "
 
 Kept: `BrandStudio`'s `onClose` prop and its Back button for the screen on its own (Setup does not mount it today; a test may), and the leave
 dialog's title "Leave Brand Studio?" (the tool keeps its name inside the Brand view).
+
+## Prompt 44: the architecture refactor
+
+Proved as Phase 14's and Phase 17's were: the three pages built under one name and compared with `pms-43`'s, the 31 pictures of
+`npm run test:refactor`, the request baselines and the node gates. The record is [docs/REFACTOR-44.md](docs/REFACTOR-44.md).
+
+| What | Evidence | Commit |
+|---|---|---|
+| The second `perf` and `console:errors` keys of `package.json` | The same command each; `scripts/test-package-scripts.js` failed on them. | 44b |
+| `npm test`'s hand-written list of 115 files | The same 115 run from `scripts/tests.manifest.json`, compared in the test. | 44b |
+| `admin.css` and `admin-look.css` (as files) | Their lines, unchanged and in their order, are `migration/src/styles/admin/`. | 44g |
+| 30 declarations of `admin.css` overridden by the look | A later rule of the very same selector set each on the admin page; Setup draws none of those selectors. The pictures and the pages' sizes (admin -52 B). | 44g |
+| `copiedNotice` (`lib/admin/aop-editor.js`), `currentBrand` (`lib/brand/branding.js`), `CHART_ORDER`, `hexOf`, `rgbOf` (`lib/exports/report-look.js`) | Used nowhere, not even in their own module (`scripts/check-unused-exports.js`). | 44h |
+| The export of 13 functions used only in their own module, and three names two facades passed on that nothing imported | The same search. | 44h |
+| Two unused imports (`dayWords` in `UserDetail.svelte`, `hiLine` in `ActivityComplete.svelte`) | A search of every import against its file. | 44h |
+
+Kept, with why: the 36 `const` bindings only their own module reads (taking their export made the pages bigger) and `sanitize`, in
+`scripts/unused-exports.baseline.json`; no rule of the admin's sheets matches nothing (Phase 17 took those out).

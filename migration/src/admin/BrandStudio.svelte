@@ -24,8 +24,8 @@
   import AssetUploader from './AssetUploader.svelte';
   import BrandColours from './BrandColours.svelte';
   import BrandPreviewPanel from './BrandPreviewPanel.svelte';
-  import StickyBar from './StickyBar.svelte';
-  import ConfirmDialog from './ConfirmDialog.svelte';
+  import StickyBar from './ui/StickyBar.svelte';
+  import ConfirmDialog from './ui/ConfirmDialog.svelte';
   import CopyBrandDialog from './CopyBrandDialog.svelte';
   import MotionSwitch from './MotionSwitch.svelte';
   import Icon from './Icon.svelte';

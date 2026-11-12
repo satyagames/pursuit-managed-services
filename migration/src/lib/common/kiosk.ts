@@ -15,7 +15,7 @@ const TEXT_TARGET = 'input, textarea, [contenteditable]';
 type KioskWindow = Pick<Window, 'location' | 'matchMedia'> & { navigator: Navigator & { standalone?: boolean } };
 
 /** True when the page should behave like a locked-down kiosk. */
-export function isKioskMode(win: KioskWindow = window): boolean {
+function isKioskMode(win: KioskWindow = window): boolean {
   const flag = (query: string) => new URLSearchParams(query).get('kiosk') === '1';
   // ?kiosk=1 can sit before the hash (index.html?kiosk=1#/welcome) or inside it (#/welcome?kiosk=1).
   const hashQuery = win.location.hash.includes('?') ? win.location.hash.slice(win.location.hash.indexOf('?')) : '';

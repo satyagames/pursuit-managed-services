@@ -28,7 +28,7 @@ async function inflate(base64) {
  * @param {Uint8Array} bytes
  * @returns {{ has: (codePoint: number) => boolean, advance: (codePoint: number) => number }}
  */
-export function readFace(bytes) {
+function readFace(bytes) {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const tables = new Map();
   for (let index = 0, count = view.getUint16(4); index < count; index += 1) {

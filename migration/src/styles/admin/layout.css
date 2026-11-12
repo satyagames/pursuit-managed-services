@@ -1,0 +1,105 @@
+/* Prompt 44: the sign-in screen and the shell, what was src/admin.css lines 159 to 276, unchanged. */
+/* Login */
+.login {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 1.25rem;
+  padding: 1.5rem 1rem;
+}
+
+.login__brand {
+  display: grid;
+  place-items: center;
+  width: min(360px, 100%);
+  padding: 1.1rem 1.5rem;
+  border-radius: 1rem;
+}
+
+.login__wordmark {
+  width: 9rem;
+}
+
+.login__card {
+  border: 1px solid var(--adm-line);
+  box-shadow: none;
+}
+
+/* The card and the brand block are 360 px wide at most, but the legacy rules size them without counting their own padding, so on a narrow window or with larger
+   text they reached past it (Phase 8: 70 px past a 320 px window). Count the padding, let the card's one column shrink, and let the PIN field be as wide as it. */
+.login__card,
+.login__brand {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.login__card {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.login__pin {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+
+
+/* Shell. Prompt 32: no container is capped (this sheet's 1,120 px and the legacy sheet's 1,000 px are gone); the page runs edge to edge
+   with the gutter at the sides, and only running text keeps a measure (72ch, not the Live display's: its type is sized to the screen it is on).
+   (Prompt 44: the page's width, margin and padding, the measure, and the error toast's colour are decided once, by the look,
+   look-surfaces.css and look-type-bar.css: what this sheet said of them was always overridden there. The legacy sheet's 1,000 px cap,
+   centred, is overridden by the look; that sheet is never edited. Setup draws no shell.) */
+
+/* The panel runs edge to edge, so its ring is drawn just inside it, as Results' "Live results" summary's. */
+.shell__body:focus-visible {
+  outline-offset: -4px;
+  box-shadow: inset 0 0 0 8px var(--adm-accent-glow);
+}
+
+
+/* (Prompt 34: the Live display in the page runs edge to edge as every other tab does since Prompt 32; it is watched on a laptop.) */
+
+/* (Prompt 39: the one bar at every width is admin-look.css's.) */
+@media (min-width: 1024px) {
+  /* One title line: each tab's heading, its help and its buttons share a line; the help wraps under the heading when the line is short. */
+  .panel__head {
+    /* (Prompt 39: the title and the actions on one baseline; a description under the title runs below the buttons, never squeezed beside them.) */
+    align-items: baseline;
+    gap: 0.5rem 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .panel__head > div:first-child {
+    display: flex;
+    /* (Prompt 39: small enough a basis that a row of actions stays beside the title; the description then goes under it.) */
+    flex: 1 1 16rem;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 1rem;
+    min-width: 0;
+  }
+
+  .panel__head > div:first-child > :is(h2, h3) {
+    margin: 0;
+  }
+
+  /* Prompt 39 (RULES, the alignment rules, 2): the description beside the title only when it fits there on one line; longer, it goes under the
+     title whole, and never wraps beside a button. (A flex item's own width decides its line: up to the box's whole width, then it wraps.) */
+  .shell__body .panel__head > div:first-child > p {
+    flex: 0 1 auto;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  /* The title row: the title on the left, the page's actions on the right, on one line. */
+  .panel__head > :is(.panel__actions, .results-actions, .dash__actions) {
+    flex: none;
+    justify-content: flex-end;
+    margin-left: auto;
+  }
+}
+
+.toast {
+  background: var(--adm-ink);
+}
+

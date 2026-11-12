@@ -28,7 +28,7 @@ const titleIn = (resource) => {
  * What a write request changes: { key, op, id } (key a list's key or `library`), 'none' for a request that changes nothing of the app's (the write
  * token, a search of the directory), or null when it cannot be told.
  */
-export function changeOf(method, resource, headers, keyOfTitle) {
+function changeOf(method, resource, headers, keyOfTitle) {
   const path = String(resource).split('?')[0];
   if (path === '/contextinfo') return 'none';
   if (/clientPeoplePickerSearchUser$/.test(path)) return 'none'; // (a search of the directory: it changes nothing)

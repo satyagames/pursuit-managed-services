@@ -3,7 +3,7 @@
 // to the bar's bottom, and puts it back to 0 when the keyboard closes. No timer: the viewport's own resize and scroll events. The admin page's alone.
 
 /** How many CSS pixels at the foot of the layout the keyboard (or anything else) hides: 0 when nothing does. */
-export function coveredBelow(layoutHeight: number, viewportHeight: number, viewportTop: number): number {
+function coveredBelow(layoutHeight: number, viewportHeight: number, viewportTop: number): number {
   const covered = Math.round(layoutHeight - (viewportHeight + viewportTop));
   return covered > 0 ? covered : 0;
 }

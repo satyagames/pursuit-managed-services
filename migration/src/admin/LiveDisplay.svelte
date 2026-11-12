@@ -20,7 +20,7 @@
   import LiveNotices from './LiveNotices.svelte';
   import LiveSteps from './LiveSteps.svelte';
   import type { Look } from './LookChoice.svelte';
-  import Breadcrumb from './Breadcrumb.svelte';
+  import Breadcrumb from './ui/Breadcrumb.svelte';
   import LiveSections from './LiveSections.svelte';
   import LiveStage from './LiveStage.svelte';
 

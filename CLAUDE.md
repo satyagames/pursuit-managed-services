@@ -24,7 +24,7 @@ On the Windows checkout the system Node is 20: run Node 22 from `.local/node22/n
 | The local server alone / one page alone | `npm run dev:api`; `npm run dev:svelte` (5173), `npm run dev:svelte:admin` (5175), `npm run dev:svelte:setup` (5176) |
 | Build the files to upload (pages + `pms-config.txt` in `build-svelte/upload/`) | `npm run build` (`-- --zip`) |
 | Build the three pages only | `npm run build:svelte:release` (into `build-svelte/release/`) |
-| Fast checks, after every change | `npm run check:svelte`, then `npm test` (about 20 s) |
+| Fast checks, after every change | `npm run check:svelte`, then `npm test` (about 20 s; its files are `scripts/tests.manifest.json`), `npm run docs:check`; after a build, `npm run test:refactor` for a change of structure |
 | Results and exports | `npm run test:report`, `npm run test:report:mutations`, `npm run oracle -- --seeds 500`, `npm run test:charts` |
 | Browsers | `npm run test:migration` (Chromium, WebKit, Firefox; about 45 min) |
 | What each journey costs; the pages' red lines | `npm run perf` (`-- --write AFTER`, `-- --check`); `npm run console:errors` (build first) |
@@ -40,9 +40,9 @@ On the Windows checkout the system Node is 20: run Node 22 from `.local/node22/n
 | `migration/src/lib/<folder>/` | The modules, by folder: `data`, `schema`, `settings`, `participant`, `common`, `admin`, `results`, `exports`, `brand`, `effects`, `motion`, `setup`, `access`. Every file starts with a header saying what it owns. |
 | `migration/src/lib/data/dataService.js` | The data layer's door, which every importer uses: it passes on the calls of the parts of `lib/data/` (Phase 17). `core.js` holds all its state and sends every request to SharePoint (or the local server); `records.js`, `today.js`, `responses.js`, `qr-scan.js`, `watch.js` and the rest are one job each (the list is at the top of `dataService.js`). Every page carries all of it. |
 | `migration/src/lib/schema/pms-schema.js` | The one place a list or column is named. `pms-schema-meta.js` says everything else about them. |
-| `migration/src/admin/`, `admin/charts/` | The admin page's screens and the hand-drawn Results charts. Content is one client's workspace whose views (Activities, Brand Studio) are listed in `lib/admin/admin-content-views.js`. |
+| `migration/src/admin/`, `admin/charts/`, `admin/ui/` | The admin page's screens, the hand-drawn Results charts, and the shared pieces (`PageHead`, `ConfirmDialog`, `Pager`, `StickyBar`, `Breadcrumb`, `Fold`). The tabs are one list (`lib/admin/tabs.js`), the addresses `lib/admin/router.ts`. Content is one client's workspace whose views (Activities, Brand Studio) are listed in `lib/admin/admin-content-views.js`. The participant's pieces it shows come through `migration/src/preview/index.ts` only. |
 | `migration/src/routes/`, `pager/`, `components/` | The participant page's screens, the one-question-per-screen pager, its building blocks. |
-| `migration/src/styles/` | Tokens, the focus ring, fonts, `results-tokens.css` (the chart palette), `legacy/` (old sheets: override, never edit). |
+| `migration/src/styles/` | Tokens, the focus ring, fonts, `results-tokens.css` (the chart palette), `admin/` (the admin's sheets: `index.css` in one order, then `look.css`), `legacy/` (old sheets: override, never edit). |
 | `server/` | The local stand-in for SharePoint (`server/data/*.json` is committed seed data; only `server/store.js` touches it). |
 | `scripts/` | Node tests (`test-*.js`), the mocked SharePoint (`sharepoint-fake.js`), the oracle, baselines, generators, the packager. |
 | `scripts/migration-tests/` | The Playwright specs. |

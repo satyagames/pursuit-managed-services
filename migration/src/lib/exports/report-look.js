@@ -8,7 +8,7 @@
 //   - Lime and sky are marks, never words on white (2.3:1 and 2.8:1): a lime bar or a sky rule under words always has a word or a label beside it.
 //   - The highlighter is black words on lime (9.2:1); the dark text token on lime is only 7.7:1, under the 7.9:1 the owner asked for.
 //   - On black (the wall, and a dark figures page) words and figures are white or lime, both 7:1 or better.
-//   - Charts take CHART_ORDER in order: deep green, lime, sky, teal, link blue.
+//   - Charts take the colours in this order: deep green, lime, sky, teal, link blue.
 
 import { contrastRatio } from '../brand/theme.js';
 
@@ -50,8 +50,6 @@ export const LOOK = Object.freeze({
   sky: '#00A3E0',
 });
 
-/** The order a chart's series take (Prompt 31): deep green, lime, sky blue, teal, link blue. */
-export const CHART_ORDER = Object.freeze(['deep', 'lime', 'sky', 'teal', 'link']);
 
 /** Words on their surfaces in the files: 4.5:1. [ink, ground]. */
 export const TEXT_PAIRS = Object.freeze([
@@ -100,6 +98,3 @@ export function packPalette(look, base) {
     : { ...base, primary: L.deep, tint: L.lime, correct: L.link, marker: L.deep, brand: L.lime, text: L.text, textSecondary: L.textMuted, textMuted: L.textMuted, grid: L.cardLine, surface: L.page, bandShade: L.wash, bandHigh: L.deep, ramps: { 3: [L.lime, L.green, L.deep], 4: [L.cardLine, L.lime, L.green, L.deep], 5: [L.cardLine, L.lime, L.green, L.teal, L.deep] } };
 }
 
-/** A colour as the writers take it: "#046A38" as "046A38" (PptxGenJS), or as [r, g, b] (jsPDF). */
-export const hexOf = (/** @type {string} */ colour) => colour.slice(1);
-export const rgbOf = (/** @type {string} */ colour) => [1, 3, 5].map((at) => parseInt(colour.slice(at, at + 2), 16));

@@ -1,0 +1,246 @@
+/* Prompt 44: the admin page explains itself (Prompt 33), the steps, the guest list, the QR sheet six to a page: src/admin.css lines 1019 to the end, unchanged. */
+/* Prompt 33, the admin page explains itself. A tab's title carries its icon, in the deep green, on the title's line. */
+.panel__head h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.panel__head h2 > .icon {
+  color: var(--adm-deep);
+}
+
+/* One line under a section's heading saying what the section is ("Sessions: each time you run the app for this client."). */
+.part__intro {
+  margin: 0;
+  color: var(--adm-muted);
+}
+
+/* A field's own line: "Required" in words, and one line on what a field changes. */
+.field__required {
+  margin-inline-start: 0.5rem;
+  color: var(--adm-muted);
+  font-weight: var(--fw-regular);
+}
+
+/* Numbered steps where a task has an order (rule 4): the current one has the deep green edge and the words "Do this now"; a done one a check. */
+.steps {
+  display: grid;
+  gap: 1.5rem;
+  margin: 1rem 0 1.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+/* Prompt 39: the three steps equal in width and in height. */
+@media (min-width: 1100px) {
+  .steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+  }
+}
+
+/* The guest list: rows the width of the page in columns; it scrolls inside its box, never the page, when the window is narrow. */
+.guests__scroll {
+  /* (Its own containing block, so the hidden "Actions" header stays inside it.) */
+  position: relative;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.guests__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.guests__table th,
+.guests__table td {
+  padding: var(--adm-s2) var(--adm-s3);
+  border-bottom: 1px solid var(--adm-line);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.guests__table thead th {
+  white-space: nowrap;
+}
+
+.guests__table tbody th {
+  font-weight: var(--fw-regular);
+}
+
+.guests__who {
+  display: flex;
+  align-items: center;
+  gap: var(--adm-s3);
+  min-width: 12rem;
+}
+
+.guests__code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: nowrap;
+}
+
+.guests__table .row__actions {
+  justify-content: flex-end;
+}
+
+.step {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--adm-line);
+  border-radius: 0.65rem;
+  background: var(--adm-card);
+}
+
+.step[aria-current='step'] {
+  border: 2px solid var(--adm-deep);
+  padding: calc(1rem - 1px);
+}
+
+.step__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.step__mark {
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid var(--adm-deep);
+  border-radius: 50%;
+  font-weight: var(--fw-semibold);
+}
+
+.step[data-done='true'] .step__mark {
+  color: var(--adm-on-deep);
+}
+
+.step__now {
+  margin-inline-start: auto;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 1rem;
+  font-weight: var(--fw-semibold);
+}
+
+.step__summary {
+  margin: 0;
+}
+
+.step__why {
+  margin: 0;
+  color: var(--adm-muted);
+}
+
+.step__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+@media (forced-colors: active) {
+  .step,
+  .step__mark {
+    border-color: CanvasText;
+  }
+
+  .step[aria-current='step'] {
+    border-color: Highlight;
+  }
+}
+
+/* A button with an icon before its words: the two on one line, centred. */
+.btn--with-icon,
+.btn--back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* A field's label with the word "Required" beside it, outside the label so the field's name stays its label's words (the field carries required). */
+.field__line {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.field__line .field__required {
+  margin-inline-start: 0;
+}
+
+/* Prompt 38: six to a page, 2 columns by 3 rows of 90 by 82 mm cards with 4 mm between (184 by 254 mm), which sits inside the 8 mm margins of
+   both A4 (194 by 281) and US Letter (200 by 263); the code is 52 mm, larger than on the twelve. The paper and the count are chosen above the sheet. */
+.print-page--6 {
+  grid-template-columns: repeat(2, 90mm);
+  grid-auto-rows: 82mm;
+  width: 184mm;
+}
+
+.print-page--6 .print-card {
+  grid-template-rows: 16mm 52mm auto auto;
+  width: 90mm;
+  height: 82mm;
+  padding: 3mm 4mm;
+}
+
+.print-page--6 .print-card__qr {
+  width: 52mm;
+  height: 52mm;
+}
+
+.print-page--6 .print-card__name {
+  max-height: 16mm;
+  font-size: 20pt;
+}
+
+/* A long name steps down here too: the 20 pt above outranks the card's own long sizes, and cut the longest names off at two lines. */
+.print-page--6 .print-card__name--long {
+  font-size: 15pt;
+}
+
+.print-page--6 .print-card__name--longest {
+  font-size: 12pt;
+}
+
+.print-page--6 .print-card__client {
+  font-size: 11pt;
+}
+
+.print-page--6 .print-card__cta {
+  font-size: 13pt;
+}
+
+.print-view {
+  padding-bottom: 6rem;
+}
+
+.print-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+}
+
+.print-choice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 1rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+@media print {
+  .print-view {
+    padding-bottom: 0;
+  }
+}

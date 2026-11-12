@@ -5,7 +5,8 @@
   import { heldRead, holdRead } from '../lib/admin/list-cache.js';
   import { activitiesOfClient, defaultClientId, lastClientId, rememberClient } from '../lib/admin/admin-content.js';
   import Icon, { type IconName } from './Icon.svelte';
-  import Breadcrumb from './Breadcrumb.svelte';
+  import PageHead from './ui/PageHead.svelte';
+  import Breadcrumb from './ui/Breadcrumb.svelte';
   import { CONTENT_VIEWS, DEFAULT_VIEW, lookWord, stepView, viewBadge, viewById } from '../lib/admin/admin-content-views.js';
   import { mayLeave } from '../lib/admin/unsaved.js';
   import { focusHeading } from '../lib/common/focus.js';
@@ -197,12 +198,7 @@
 </script>
 
 <section class="panel content-panel" aria-busy={loading || busy}>
-  <header class="panel__head">
-    <div>
-      <h2><Icon name="layers" />Content</h2>
-      <p class="muted">Choose a client, then change what its people answer or how its pages look.</p>
-    </div>
-  </header>
+  <PageHead icon="layers" title="Content" description="Choose a client, then change what its people answer or how its pages look." />
 
   {#if loading}
     <div class="adm-card adm-skeleton" aria-hidden="true"><span></span><span></span><span></span><span></span></div><p class="sr-only" role="status">Loading content...</p>

@@ -625,3 +625,26 @@ export const PHASE_42 = Object.freeze({
   participantAfter: 193_942, adminAfter: 718_034,
   participantUtilities: PHASE_11A.participantUtilities,
 });
+
+/**
+ * Prompt 43 (Today, Session settings: three chips, a Change / Hide toggle that keeps its place, a panel that says changes save automatically),
+ * measured from where Prompt 42 left the pages (705dd41: participant 193,942 B, admin 718,034 B). The participant page may not change at all, and its
+ * Tailwind rules stay its own. The brief asked the admin page to stay under 700,000 B; it already stood over it, so it is held to its 720,000 B
+ * budget. `adminAfter` is the page when the work stopped.
+ */
+export const PHASE_43 = Object.freeze({
+  participantBefore: 193_942, adminBefore: 718_034, participantAllowance: 0,
+  participantAfter: 193_942, adminAfter: 719_982,
+  participantUtilities: PHASE_11A.participantUtilities,
+});
+
+/**
+ * Prompt 44 (the behaviour-preserving refactor), measured from where Prompt 43 left the pages (842d9e4: participant 193,942 B, admin 719,982 B).
+ * The participant page may not change at all, and its Tailwind rules stay its own; the admin page may not grow (the brief asked it to shrink, and
+ * it did; its 700,000 B wish was already passed before the work, so it is held to its 720,000 B budget). `adminAfter` is the page when the work stopped.
+ */
+export const PHASE_44 = Object.freeze({
+  participantBefore: 193_942, adminBefore: 719_982, participantAllowance: 0,
+  participantAfter: 193_942, adminAfter: 719_913,
+  participantUtilities: PHASE_11A.participantUtilities,
+});

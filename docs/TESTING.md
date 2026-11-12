@@ -19,6 +19,7 @@ What each gate proves, how long it takes on the development machine (a Windows l
 |---|---|---:|
 | `npm run check:svelte` | TypeScript and Svelte diagnostics: 0 errors, 0 warnings. | 6 s |
 | `npm test` | Every node suite: the data layer on both adapters (the mocked SharePoint REST and the real local server), the request baselines, the bundle budgets, the counting rules, the exports read back, the schema, the documents (`scripts/check-docs.js`) and the module headers. | 20 s |
+| `npm run test:refactor` | Prompt 44: 31 pictures of the built pages (admin, participant, Setup; motion off, the clock held) against `test-results/refactor-before/`; more than 0.1% of a page's pixels changed fails. Build first. | 20 s |
 | `npm run test:baseline` | Every SharePoint request ten mocked suites send is the one recorded in `scripts/request-baseline/` (part of `npm test`). A difference is a finding, never a reason to re-record. | in `npm test` |
 | `npm run test:bundle` | The three pages' sizes against their budgets, the participant page free of the admin's libraries, and each phase's recorded sizes (part of `npm test`). | 5 s |
 | `npm run test:report` | The leader report, its PDF, the CSVs and the Live display's summary pack, held to sessions worked out by hand and read back with pdf.js. | 4 s |
@@ -63,7 +64,7 @@ seven sizes.
   `build-svelte/release/`. No subfolders are needed on SharePoint. `npm run build` ([scripts/build.js](../scripts/build.js)) runs it and
   gathers the four files to upload (the three pages and `pms-config.txt`) into `build-svelte/upload/` (`-- --zip` for `upload.zip`).
   The official package with checksums remains `npm run package:release`. (`npm run test:build` was the legacy build's test; it is gone.)
-- `npm test` — the node suites listed in `package.json` (1,475 tests, about 20 seconds); the first is [scripts/test-sessions.js](../scripts/test-sessions.js), which spins up a
+- `npm test` — the node suites of the ten groups of `scripts/tests.manifest.json`, run by `scripts/run-tests.js` in one `node --test` (Prompt 44: they were listed in `package.json`; every `scripts/test-*.js` is in a group or excluded with why, and a per-area script such as `test:report` runs its suite of the same manifest) (1,475 tests, about 20 seconds); the first is [scripts/test-sessions.js](../scripts/test-sessions.js), which spins up a
   real server against a scratch copy of `server/data/`, and drives it through
   `dataService` to exercise track merge/resume, admin restart, and QR token
   lifecycle. Run this after touching `server/`, `lib/data/`, or session/track logic.

@@ -405,7 +405,7 @@ describe('Part 3: the hand-off', () => {
     assert.match(read('migration/src/admin/SiteAccessDrift.svelte'), /Waiting for site access/);
   });
   it('the words name no site', () => {
-    for (const file of ['migration/src/lib/access/site-access.js', 'migration/src/lib/setup/list-permissions.js']) assert.doesNotMatch(read(file).replace(/^\s*\/\/.*$/gm, ''), /PCOE/);
+    for (const file of ['migration/src/lib/access/site-access.js', 'migration/src/lib/setup/list-permissions.js', 'migration/src/lib/setup/list-permissions-check.js']) assert.doesNotMatch(read(file).replace(/^\s*\/\/.*$/gm, ''), /PCOE/);
   });
 });
 

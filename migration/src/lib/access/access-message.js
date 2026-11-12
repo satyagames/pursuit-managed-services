@@ -49,7 +49,7 @@ const escapeHtml = (text) => String(text).replace(/&/g, '&amp;').replace(/</g, '
  * A message's text as HTML for SharePoint's mail: every character of it escaped, newlines as <br>, the link (when it is in the text) as an <a>.
  * @param {string} text @param {string} [link]
  */
-export function htmlOf(text, link = '') {
+function htmlOf(text, link = '') {
   const safe = escapeHtml(text).replace(/\r?\n/g, '<br>');
   if (!link) return safe;
   const shown = escapeHtml(link);

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { mount, unmount } from 'svelte';
   import { embeddedAssetUrl } from '../lib/brand/assets.js';
-  import DeloitteWordmark from '../components/DeloitteWordmark.svelte';
+  import { DeloitteWordmark } from '../preview/index.js';
   import { APP_NAME } from '../lib/common/app-name.js';
   import { buildLeaderReport, hasMatrix, matrixLongCsv, participantAnswersCsv, reportFileName } from '../lib/exports/leader-report.js';
   import { readLeaderReportRecords } from '../lib/exports/leader-report-data.js';
@@ -80,6 +80,7 @@
       return {
         viewBox: (svg.getAttribute('viewBox') ?? '').split(/\s+/).map(Number),
         shapes: [...svg.querySelectorAll('path, rect')].map((shape) => (shape.tagName.toLowerCase() === 'path'
+          /* data colour: an SVG shape with no fill is black by the SVG rule, and the PDF is given that literal */
           ? { fill: shape.getAttribute('fill') ?? '#000000', d: shape.getAttribute('d') ?? '' }
           : { fill: shape.getAttribute('fill') ?? '#000000', rect: ['x', 'y', 'width', 'height'].map((name) => Number(shape.getAttribute(name))) })),
       };

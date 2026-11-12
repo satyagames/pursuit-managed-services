@@ -140,7 +140,8 @@ test('a heading is focused by script only through lib/common/focus.ts, and only 
     const name = file.split(path.sep).join('/');
     if (name.startsWith('migration/src/dev/') || name.endsWith('lib/common/focus.ts')) continue;
     const text = (await read(file)).replace(/<!--[\s\S]*?-->|\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
-    const headings = [...text.matchAll(/<h[1-6]\b[^>]*\btabindex="-1"[^>]*>/g)];
+    // (Prompt 44: a screen's title row drawn by admin/ui/PageHead.svelte with `focusable` is a focusable heading of that screen.)
+    const headings = [...text.matchAll(/<h[1-6]\b[^>]*\btabindex="-1"[^>]*>|<PageHead\b[^>]*\bfocusable\b/g)];
     if (headings.length > 0) {
       focused += 1;
       // (From inside lib/ itself the import is './focus.js': the stop screen of lib/settings/start.ts, Phase 10b.)

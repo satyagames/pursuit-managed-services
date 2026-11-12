@@ -6,7 +6,7 @@
   import { focusHeading } from '../lib/common/focus.js';
   import { APP_NAME } from '../lib/common/app-name.js';
   import { NO_ACCESS_SITE_LINE, myDetails, noAccessWords } from '../lib/access/access-words.js';
-  import DeloitteWordmark from '../components/DeloitteWordmark.svelte';
+  import { DeloitteWordmark } from '../preview/index.js';
 
   let { person, reason, support = '' }: { person: { name?: string; email?: string } | null; reason: string | null; support?: string } = $props();
   let heading = $state<HTMLElement>();

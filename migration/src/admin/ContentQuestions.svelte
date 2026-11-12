@@ -6,7 +6,7 @@
   import { layoutApplies, orderedContent } from '../lib/admin/admin-content.js';
   import { revealer, setLeaveGuard } from '../lib/admin/unsaved.js';
   import { questionLayout } from '../lib/participant/pager-logic.js';
-  import ConfirmDialog from './ConfirmDialog.svelte';
+  import ConfirmDialog from './ui/ConfirmDialog.svelte';
   import Icon, { type IconName } from './Icon.svelte';
   import { TYPE_ICON } from './icons.js';
   import QuestionEditor, { QUESTION_SPECS, type Draft, type Option, type Question, type QuestionType } from './QuestionEditor.svelte';

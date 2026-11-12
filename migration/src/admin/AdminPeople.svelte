@@ -15,7 +15,7 @@
   import { errorText } from '../lib/admin/session-notice.js';
   import { PEOPLE_INDEX } from '../lib/admin/list-index.js';
   import { hashWithPage, pageOfHash, pagerState } from '../lib/common/paging.js';
-  import Pager from './Pager.svelte';
+  import Pager from './ui/Pager.svelte';
   import UserAdd from './UserAdd.svelte';
   import UserDetail from './UserDetail.svelte';
   import AuditReview from './AuditReview.svelte';

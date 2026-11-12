@@ -12,8 +12,8 @@ import './styles/admin-tokens.css';
 import './lib/motion/motion-tokens.css';
 import AdminApp from './AdminApp.svelte';
 import { closeSignInPopup, isSignInPopup } from './lib/common/sign-in-popup.js';
-import './admin.css';
-import './admin-look.css';
+import './styles/admin/index.css';
+import './styles/admin/look.css';
 
 if (isSignInPopup()) closeSignInPopup();
 const target = document.getElementById('admin-app');
