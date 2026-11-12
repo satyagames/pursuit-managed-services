@@ -70,6 +70,7 @@
     "test:build:svelte:release": "node --test scripts/test-svelte-release.js",
     "check:svelte": "svelte-check --tsconfig migration/tsconfig.json",
     "test:migration": "npm run build:svelte:release && playwright test --config migration/playwright.config.ts",
+    "test:refactor": "playwright test --config migration/playwright.refactor.config.ts",
     "export:sharepoint": "node scripts/export-sharepoint-seed.js",
     "local:site": "node scripts/local-site/server.js",
     "test:local-site": "node --test scripts/test-local-site.js",
