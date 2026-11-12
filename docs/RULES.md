@@ -2183,6 +2183,46 @@ They replace Prompt 38's one line of the three settings with Change and Done (`c
 - **The budget.** The participant page did not change (`PHASE_43` in `scripts/bundle-budget.js`). The brief asked the admin page to stay under
   700,000 B; it already stood at 718,034 B, so it is held to its 720,000 B budget: 719,982 B when the work stopped.
 
+## Architecture (Prompt 44; keep it holding)
+
+A refactor of structure only: the pages were compared with `pms-43`'s, picture by picture and byte by byte, after every step. The record is
+[REFACTOR-44.md](REFACTOR-44.md).
+
+- **Layers, low to high**: `lib/schema`; `lib/data` (its door `dataService.js`); `lib/common`, `lib/settings`, `lib/access`; `lib/participant`,
+  `lib/results`, `lib/brand`, `lib/effects`, `lib/motion`; `lib/admin`, `lib/exports`, `lib/setup`; the screens and pieces (`components/`,
+  `pager/`, `routes/`, `admin/`, `setup/`, `preview/`); the apps; the entries. A layer never imports a higher one; `styles/`, `assets/` and
+  `unsupported/` are no layer and anyone may use them. Nothing the participant page reaches is in `admin/`, `lib/admin`, `lib/exports` or
+  `lib/setup`. Outside `lib/data` only `dataService.js` is imported (and its two helpers with no state, `read-groups.js` and `session.js`).
+  No import cycle; every `.js` and `.ts` module has its header. `scripts/test-boundaries.js` builds the import graph and prints each breach;
+  its `ALLOWED` list holds the eleven known exceptions, each with why, and only shrinks.
+- **The preview door**: the admin's screens show the participant's own pieces (Brand Studio's preview, the activity preview, a guest's
+  avatar, the wordmark) only through `migration/src/preview/index.ts`, which re-exports them and holds no code.
+- **The tab registry**: the admin page's six tabs are `ADMIN_TABS` in `lib/admin/tabs.js` (id, words, icon, the actions that open each from
+  `TAB_ACTIONS`, order, whether the PIN's legacy admin sees it); its addresses are `lib/admin/router.ts`'s pure functions. `AdminApp.svelte`
+  only wires them, and chooses each tab's screen by id (`scripts/test-admin-router.js`). A tab is one row there.
+- **The admin's shared pieces** are `admin/ui/`: `PageHead` (a screen's title row: icon, title, one line, actions), `ConfirmDialog`, `Pager`,
+  `StickyBar`, `Breadcrumb`, `Fold`. A piece goes there when three screens or more would write it. A screen's scoped styles do not reach the
+  markup a child component draws: a screen that styles the title row (`.clients > *`) names it (`:global(.clients__head)`), or keeps its own
+  markup (People, a person's page). `scripts/migration-tests/admin-ui.spec.ts` holds the title row.
+- **The admin's sheets** are `styles/admin/`: `index.css` imports, in one order, the parts that were `admin.css` (Setup loads it too), and
+  `look.css` the three parts of the look that were `admin-look.css` (the admin page alone, after it). Not cascade layers: the legacy sheet and
+  every component's own styles are not in a layer and would beat every rule that is (Prompt 44 measured it: seven screens changed). A
+  declaration that a later rule of the very same selector always overrides, on a selector Setup never draws, is not written. The one
+  `!important` is print's `no-print`.
+- **Colour** is a token (`styles/admin-tokens.css`, `styles/results-tokens.css`); a hex value in the admin's code is a data colour, marked
+  `data colour:` where it is written and listed in `DATA_COLOURS` (`scripts/test-admin-palette.js`).
+- **File sizes**: a `.svelte` under 450 lines and a `.js` or `.ts` under 500 is the target. A module over it is split by moving whole
+  declarations into parts and passing every name on from the old path (`export { ... } from`), so no import changes; a test that reads its
+  text by path reads the parts too. Known exceptions, with why: `lib/data/core.js` (all of the data layer's state and its one request path,
+  under Phase 17's 600), `lib/exports/leader-report-layout.js` (one closure over the page being filled), and the fifteen components over
+  450 lines (REFACTOR-44.md, "Chosen not to do").
+- **Tests and exports**: `npm test` runs `scripts/tests.manifest.json`'s groups; every `scripts/test-*.js` is in one group, or excluded with why
+  (`scripts/test-package-scripts.js`, which also fails on a script key written twice). An exported name of `lib/` nothing else uses is listed,
+  with why, in `scripts/unused-exports.baseline.json` (`npm run docs:check`). A `const` keeps its export even if only its own module reads it:
+  the bundler treats an exported const otherwise, and taking the export away made the pages bigger.
+- **The refactor's pictures**: `npm run test:refactor` (build first) compares 31 screens with `test-results/refactor-before/`; record them
+  again only on purpose (`-- --update-snapshots`), on a branch whose pages are the ones to keep.
+
 ## Before finishing a change
 
 - Always: `npm run check:svelte` and `npm test` (the documents, the module map and the project map among it). If you added, moved or renamed a

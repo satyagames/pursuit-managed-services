@@ -52,7 +52,28 @@ The 15 largest source files: `pager/MatrixRating.svelte` 1,497; `admin.css` 1,26
 - [ ] **44f** The oversized files split along their seams (the JS modules first; the Svelte components after 44g, which gives the admin page back the bytes a child component costs).
 - [x] **44g** The admin's styles in cascade layers under styles/admin/; tokens only for colour.
 - [x] **44h** scripts/check-unused-exports.js and the dead exports.
-- [ ] **44i** The documents.
+- [x] **44i** The documents.
+
+## Before and after
+
+| Measure | Before (`pms-43`) | After (`pms-44`) |
+|---|---|---|
+| The 15 largest source files (lines) | `MatrixRating.svelte` 1,497; `admin.css` 1,267; `admin-look.css` 1,101; `AdminResults.svelte` 899; `LeaderDashboard.svelte` 781; `resultsExport.js` 716; `AdminToday.svelte` 659; `results-chart-model.js` 635; `LiveDisplay.svelte` 628; `leader-report-layout.js` 612; `leader-report.js` 592; `core.js` 590; `ActivityPager.svelte` 567; `provision.js` 549; `list-permissions.js` 539 | `MatrixRating.svelte` 1,497; `AdminResults.svelte` 903; `LeaderDashboard.svelte` 781; `AdminToday.svelte` 658; `LiveDisplay.svelte` 628; `leader-report-layout.js` 612; `core.js` 590; `ActivityPager.svelte` 567; `AdminClients.svelte` 525; `AdminContent.svelte` 510; `Styleguide.svelte` 509; `look-surfaces.css` 498; `admin-today.js` 498; `BrandStudio.svelte` 494; `AdminGuests.svelte` 493 |
+| `.svelte` over 450 lines | 15 | 15 (not split: "Chosen not to do") |
+| `.js` / `.ts` over 500 lines | 7 | 2 (`core.js` 590, `leader-report-layout.js` 612, each with why) |
+| Lines in `migration/src` (`.svelte`, `.js`, `.ts`; with the `.css`) | 49,954; 53,831 | 50,098; 53,945 (the new tests' helpers, the headers of the new modules, the registry and router) |
+| Admin CSS | 2 sheets, 2,368 lines, whose order rested on two imports; 47 selectors written in both; 1 `!important` | 9 parts in `styles/admin/`, 2,338 lines, in one order (`index.css`, `look.css`); 40 selectors in both sets, none of whose declarations is decided twice on the admin page (the rest are Setup's own look); 1 `!important`, with its reason |
+| Hex colours in admin code outside the token sheets | 4 values in 3 files, unmarked | the same 4, each a data colour, marked and listed (`DATA_COLOURS`); any other fails |
+| Exported names of `lib/` nothing else uses | 55 | 37, each listed with why (`scripts/unused-exports.baseline.json`) |
+| Unused imports in `.svelte` and `.ts` | 2 | 0 |
+| `check:svelte` warnings | 0 (515 files) | 0 (528 files) |
+| Participant page (gzip -9) | 193,942 B | 193,942 B, the same bytes (built under one name) |
+| Admin page (gzip -9) | 719,982 B | 719,913 B (-69 B) |
+| Setup page (gzip -9) | 816,778 B | 816,784 B (+6 B; it has no budget) |
+| `npm test` | 115 files, 2,375 tests (1 failing: `MODULES.md` stale), 22.9 s | 120 files (the same 115, and the five tests this prompt added), 2,402 tests, all passing, 20.0 s |
+| Screenshot comparison (31 pictures, 0.1% allowed) | the "before" pictures | every picture: 0 pixels over the allowance (each step, and at the end) |
+| Request baselines | 20 files | unchanged: the same 20 files, byte for byte (sha-256), and `npm run test:baseline` passes |
+| Long suites | | In Chromium: `test:report` 168 of 168, `test:report:mutations` 70 caught and 1 surviving (as on `pms-43`), `test:charts` 71 of 71, the oracle over 500 seeds 0 differences, `test:a11y` 102 of 103, and 20 admin and participant journey specs 267 of 271. The five browser failures (`reflow.spec.ts` 200% text at 820 px, counted in both runs; `participant.spec.ts` Today and Guests; two of `admin-explains.spec.ts`) fail on the `pms-43` pages too. WebKit and Firefox not run. |
 
 ## Step notes
 
@@ -183,9 +204,26 @@ or a listed one used again (`scripts/test-unused-exports.js` holds both). Nothin
 - One mutation of `npm run test:report:mutations` survives on the `pms-43` code as on this: 56, "The leader report's rules wear the client's
   colour again" (`GREEN = accent` in `leader-report-layout.js`, held by `test-leader-report-glance.js`). The test it names does not catch it;
   the files were not changed for it.
+- Two more Chromium specs fail on the `pms-43` pages as on these: `reflow.spec.ts`, "admin: every tab at 200% text size at 820 px: no sideways
+  scroll, nothing sticking out or cut off", and `participant.spec.ts`, "Admin Today and Guests and QR: live session, visit mode, roster, QR
+  codes ...". They were left as they are.
 
 ## Chosen not to do
 - **Moving the eleven allowed modules to their right layer** (for example the stored formats of `confidence-check.js` and `aop-answer.js` to
   `lib/schema`, `periodOf` to `lib/results`). Each module also holds code its own layer uses (the check's flow, the pager's grid rules, the
   session plan), so a move is a split of the module, it changes the paths that 20 to 30 files and tests read, and Phase 17 pinned the data
   layer's parts and their imports. It is left as the allow-list, which only shrinks, for a commit of its own.
+- **Splitting the fifteen components over 450 lines into child components** (44f's second half: `MatrixRating.svelte`, `AdminResults`,
+  `LeaderDashboard`, `AdminToday`, `LiveDisplay`, `ActivityPager`, `AdminClients`, `AdminContent`, `Styleguide`, `BrandStudio`, `AdminGuests`,
+  `SetupApp`, `App`, `QuestionEditor`, `TodayControls`). Measured first: their length is mostly script wired to the component's own state
+  (`AdminToday` 483 of 658 lines, `LiveDisplay` 443 of 628, `AdminResults` 467 of 903, `App` 417 of 475) and, in `MatrixRating`, its sheet
+  (847 of 1,497). Three things stood in the way, each a change of the page: the participant page may not change by a byte (`PHASE_43` and
+  `PHASE_44` pin it, and `MatrixRating` is the largest part of its script), and a child component adds its own code to a page; the admin page
+  had 69 B before it would be larger than `pms-43` left it, less than one child component costs; and a screen's scoped styles do not reach a
+  child's markup (44e found one such rule by its picture), so each of these sheets would have to be moved into the children rule by rule and
+  proved screen by screen. The pure helpers inside the scripts are small (`AdminResults`: `sessionWord`, `statusText`, `counts`,
+  `answeredIn`, about 40 lines), and moving them would not bring one file under its target. The next step, for a prompt of its own: raise
+  the admin page's budget by the cost of the children (the owner's call, as for Prompts 34 and 38), then split one screen at a time with its
+  sheet, its pictures and its view model's tests.
+- **Cascade layers** for the admin's sheets: see 44g (seven screens changed and the page grew 349 B). The order is one file instead.
+- **A component loader in the tab registry** (44d): the screens are a higher layer than `lib/admin`, and a loader would make each tab load later.
