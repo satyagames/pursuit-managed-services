@@ -34,7 +34,10 @@ async function namesAsked() {
     for (const match of source.matchAll(/\bicon=["']([a-z-]+)["']/g)) asked.add(match[1]);
     for (const match of source.matchAll(/\bicon: '([a-z-]+)'/g)) asked.add(match[1]);
   }
-  for (const match of (await readFile(path.join(ROOT, 'migration/src/lib/admin/admin-content-views.js'), 'utf8')).matchAll(/icon: '([a-z-]+)'/g)) asked.add(match[1]);
+  // (The lists of views and of tabs name their icons: Prompt 44 moved the tabs' out of AdminApp.svelte into lib/admin/tabs.js.)
+  for (const list of ['migration/src/lib/admin/admin-content-views.js', 'migration/src/lib/admin/tabs.js']) {
+    for (const match of (await readFile(path.join(ROOT, list), 'utf8')).matchAll(/icon: '([a-z-]+)'/g)) asked.add(match[1]);
+  }
   return asked;
 }
 

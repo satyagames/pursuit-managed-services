@@ -61,7 +61,7 @@ export const ALLOWED = [
   ['App.svelte', 'dev/Styleguide.svelte', 'the styleguide is a development page: App.svelte imports it only under import.meta.env.DEV, so no build carries it'],
 ];
 
-const walk = (dir) => readdirSync(dir).flatMap((name) => {
+const walk = (dir) => readdirSync(dir).filter((name) => !name.startsWith('.')).flatMap((name) => {
   const full = path.join(dir, name);
   return statSync(full).isDirectory() ? walk(full) : [full];
 });

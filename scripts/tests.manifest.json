@@ -53,7 +53,8 @@
       "scripts/test-reporting-settings.js",
       "scripts/test-aop-editor.js",
       "scripts/test-guest-picture.js",
-      "scripts/test-access-message.js"
+      "scripts/test-access-message.js",
+      "scripts/test-admin-router.js"
     ],
     "results": [
       "scripts/test-results-chart-model.js",

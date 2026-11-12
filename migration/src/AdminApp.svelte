@@ -4,12 +4,12 @@
   import * as dataService from './lib/data/dataService.js';
   import { login } from './lib/admin/admin-pin.js';
   import { unlockFailureText } from './lib/admin/admin-unlock.js';
-  import { liveDisplayHash, liveDisplayOfHash } from './lib/common/admin-address.js';
-  import { wallHash, wallOfHash } from './lib/admin/live-wall.js';
   import { APP_NAME, APP_SHORT_NAME } from './lib/common/app-name.js';
   import { deployment } from './lib/settings/start.js';
   import { mayLeave } from './lib/admin/unsaved.js';
-  import { DEFAULT_VIEW, hashOfView, lastView, rememberView, viewOfHash } from './lib/admin/admin-content-views.js';
+  import { DEFAULT_VIEW, lastView, rememberView } from './lib/admin/admin-content-views.js';
+  import { ADMIN_TABS } from './lib/admin/tabs.js';
+  import { PRINT_HASH, contentViewOf, hashOfTab, liveHash, liveOfHash, openingScreen, tabKeyTarget, tabOfHash } from './lib/admin/router.js';
   import DeloitteWordmark from './components/DeloitteWordmark.svelte';
   import Icon, { type IconName } from './admin/Icon.svelte';
   import AdminClients from './admin/AdminClients.svelte';
@@ -33,21 +33,12 @@
   import WelcomeStrip from './admin/WelcomeStrip.svelte';
 
   type Admin = { id: string; name?: string };
-  type Tab = 'today' | 'clients' | 'content' | 'guests' | 'results' | 'users';
+  type Tab = (typeof ADMIN_TABS)[number]['id'];
   type ContentRows = { settings: unknown[]; clients: unknown[]; sections: unknown[] };
 
-  // The day's work first. Content is the old Activities and Content tabs in one, scoped by client (Phase 5b).
+  // The tabs, their words, icons and order are one list (lib/admin/tabs.js, Prompt 44); the addresses are lib/admin/router.ts's.
   // (Prompt 38: each tab's icon, admin/icons.js; beside the word, so aria-hidden.)
-  const tabs: { id: Tab; title: string; icon: IconName }[] = [
-    { id: 'today', title: 'Today', icon: 'calendar-check' },
-    { id: 'clients', title: 'Clients', icon: 'building' },
-    { id: 'content', title: 'Content', icon: 'layers' },
-    { id: 'guests', title: 'Guests and QR', icon: 'qr' },
-    { id: 'results', title: 'Results', icon: 'bar-chart' },
-    { id: 'users', title: 'People', icon: 'users' },
-  ];
-  /** The address of the guest QR sheet. It is a view of this page, not a tab: Back returns to Guests and QR. */
-  const PRINT_HASH = '#print-guests';
+  const tabs = ADMIN_TABS as unknown as { id: Tab; title: string; icon: IconName; legacy: boolean }[];
 
   /** This copy's label, from its settings ("Test, folder 3"): shown in the bar, so that two folders on one site can be told apart. */
   const label = typeof deployment()?.settings?.label === 'string' ? String(deployment()?.settings?.label) : '';
@@ -82,7 +73,7 @@
   let signIn = $state<'checking' | 'pin' | 'no-access'>(onSharePoint ? 'checking' : 'pin');
   let access = $state<any>(null);
   /** The tabs this person's role may open: the menu is the role matrix's (lib/access/scope.js, Phase 4), for a Producer, a Designer or Leadership as for a Super admin. Before there is an access, none but People is shown, as before. */
-  const shownTabs = $derived(access ? tabsFor(access, tabs) : tabs.filter((tab) => tab.id !== 'users'));
+  const shownTabs = $derived(access ? tabsFor(access, tabs) : tabs.filter((tab) => tab.legacy));
   /** Who is signed in, with what role, for the bar's chip and the welcome strip (lib/access/identity-words.js): from the access already read, nothing more. A PIN shows the name alone, as before. */
   const identity = $derived(identityOf(access, { tabs, name: admin?.name ?? '' }));
   let accessOpen = $state(false);
@@ -169,18 +160,10 @@
     return () => keepAlive.stop();
   });
 
-  /** The Live display a hash asks for, and whether it is the wall; null when the hash is not the Live display's. */
-  function liveOfHash(hash: string): { sessionId: string; wall: boolean } | null {
-    const wall = wallOfHash(hash);
-    if (wall !== null) return { sessionId: wall, wall: true };
-    const live = liveDisplayOfHash(hash);
-    return live === null ? null : { sessionId: live, wall: false };
-  }
-
-  // Content's addresses (#content, #content/brand, the old #sections of the Activities tab) are its views' (lib/admin/admin-content-views.js).
-  const tabFromHash = (): Tab | null => (viewOfHash(window.location.hash) !== null ? 'content' : shownTabs.find((tab) => `#${tab.id}` === window.location.hash.split('?')[0])?.id ?? null);
+  // Content's addresses (#content, #content/brand, the old #sections of the Activities tab) are its views' (lib/admin/router.ts).
+  const tabFromHash = (): Tab | null => tabOfHash(window.location.hash, shownTabs);
   /** The address of a tab: Content's carries its view. */
-  const hashOf = (tab: Tab) => (tab === 'content' ? hashOfView(contentView) : `#${tab}`);
+  const hashOf = (tab: Tab) => hashOfTab(tab, contentView);
 
   async function unlock(event: SubmitEvent) {
     event.preventDefault();
@@ -211,15 +194,13 @@
 
   /** The shell opens where the address says (a tab, the Live display, the QR sheet), and says where the person is. */
   function openShell() {
-    printing = window.location.hash === PRINT_HASH;
-    const view = liveOfHash(window.location.hash);
-    liveDisplay = view?.sessionId ?? null;
-    wallPage = view?.wall ?? false;
     // (An address for a screen the role does not open is not followed: the first tab it does open is shown.)
-    if (printing && access && !tabAllowed(access, 'guests')) printing = false;
-    if (liveDisplay !== null && access && !tabAllowed(access, 'results')) { liveDisplay = null; wallPage = false; }
-    activeTab = printing ? 'guests' : liveDisplay !== null ? 'results' : tabFromHash() ?? shownTabs[0]?.id ?? 'today';
-    if (activeTab === 'content') setContentView(viewOfHash(window.location.hash) ?? DEFAULT_VIEW);
+    const screen = openingScreen(window.location.hash, shownTabs, access ? (tab: string) => tabAllowed(access, tab) : null);
+    printing = screen.printing;
+    liveDisplay = screen.liveDisplay;
+    wallPage = screen.wall;
+    activeTab = screen.tab as Tab;
+    if (activeTab === 'content') setContentView(contentViewOf(window.location.hash));
     void newScreen();
   }
 
@@ -263,7 +244,7 @@
     activeTab = 'results';
     liveDisplay = sessionId;
     wallPage = wall && sessionId !== '';
-    try { window.history.replaceState(window.history.state, '', wallPage ? wallHash(sessionId) : liveDisplayHash(sessionId)); } catch { /* the view still opens */ }
+    try { window.history.replaceState(window.history.state, '', liveHash(sessionId, wallPage)); } catch { /* the view still opens */ }
     window.scrollTo({ top: 0 });
   }
 
@@ -287,10 +268,10 @@
 
   /** Content's view changed (its strip, an address, the tab opened): kept for the visit and in the address. */
   function setContentView(view: string) {
-    contentView = viewOfHash(hashOfView(view)) ?? DEFAULT_VIEW;
+    contentView = contentViewOf(hashOfTab('content', view));
     rememberView(contentView);
     if (activeTab === 'content' && liveDisplay === null) {
-      try { window.history.replaceState(window.history.state, '', hashOfView(contentView)); } catch { /* the view still switches */ }
+      try { window.history.replaceState(window.history.state, '', hashOfTab('content', contentView)); } catch { /* the view still switches */ }
     }
   }
 
@@ -326,7 +307,7 @@
     if (view !== null) { if (view.sessionId !== liveDisplay || view.wall !== wallPage) void openLiveDisplay(view.sessionId, view.wall); return; }
     const tab = tabFromHash();
     if (tab === 'content') {
-      const view = viewOfHash(window.location.hash) ?? DEFAULT_VIEW;
+      const view = contentViewOf(window.location.hash);
       if (activeTab !== 'content' || liveDisplay !== null) void open(tab, { view });
       else if (view !== contentView) setContentView(view);
       return;
@@ -335,12 +316,8 @@
   }
 
   function onTabKeydown(event: KeyboardEvent, index: number) {
-    let next = index;
-    if (event.key === 'ArrowRight') next = (index + 1) % shownTabs.length;
-    else if (event.key === 'ArrowLeft') next = (index - 1 + shownTabs.length) % shownTabs.length;
-    else if (event.key === 'Home') next = 0;
-    else if (event.key === 'End') next = shownTabs.length - 1;
-    else return;
+    const next = tabKeyTarget(event.key, index, shownTabs.length);
+    if (next === null) return;
     event.preventDefault();
     void open(shownTabs[next].id).then((opened) => document.getElementById(`admin-tab-${opened ? shownTabs[next].id : activeTab}`)?.focus());
   }

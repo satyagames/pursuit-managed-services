@@ -47,7 +47,7 @@ The 15 largest source files: `pager/MatrixRating.svelte` 1,497; `admin.css` 1,26
 - [x] **44a** Baselines: the picture spec, the pages' bytes, the request baselines, the bundle sizes, this file.
 - [x] **44b** Scripts: one `perf` and one `console:errors`; `scripts/test-package-scripts.js`; `npm test` from `scripts/tests.manifest.json`.
 - [x] **44c** Boundaries: the layers written down; a door, migration/src/preview/index.ts; scripts/test-boundaries.js.
-- [ ] **44d** One tab registry (lib/admin/tabs.js) and the router (lib/admin/router.ts).
+- [x] **44d** One tab registry (lib/admin/tabs.js) and the router (lib/admin/router.ts).
 - [ ] **44e** The admin's shared primitives (admin/ui/), after an inventory.
 - [ ] **44f** The oversized files split along their seams.
 - [ ] **44g** The admin's styles in cascade layers under styles/admin/; tokens only for colour.
@@ -74,11 +74,27 @@ from `lib/admin/session-plan.js` and the counting rules from the leader report, 
 styleguide is reached only under `import.meta.env.DEV`. Pages, built under one name: the participant page and Setup the same bytes; the
 admin page 719,982 -> 719,818 B gzip (the modules' order changed). Pictures: no difference.
 
+**44d.** `lib/admin/tabs.js` (`ADMIN_TABS`) is the one list of the six tabs: id, words, icon, the actions that open each (taken by id from
+`TAB_ACTIONS` in `lib/access/scope.js`, which stays the role matrix's, so the layer below need not read the admin's list), order, and whether the
+PIN's legacy admin sees it. `AdminApp.svelte` draws the bar, the Menu and the panel from it, and reads and writes every address through
+`lib/admin/router.ts` (`liveOfHash`, `liveHash`, `tabOfHash`, `hashOfTab`, `contentViewOf`, `openingScreen`, `tabKeyTarget`, `PRINT_HASH`), the
+functions it held inside, moved with no change of what they return. `scripts/test-admin-router.js` (9 tests: the addresses, the guards, the
+keys, and that `AdminApp.svelte` has no list or address code of its own and a panel for every tab) failed first on `AdminApp.svelte`.
+`scripts/test-admin-icons.js` now also reads `tabs.js`, so it still sees the tabs' icons. Not done as the brief has it: the registry holds no
+component loader (the screens are a higher layer than `lib/admin`; a loader would also make each tab load later, which is a change), and the
+identity popover's "What you can do" keeps its own order of the role matrix's modules (`lib/access/identity-words.js`, a lower layer).
+Pages: the participant page and Setup the same bytes; the admin page 719,977 B (pms-43: 719,982 B). Pictures: no difference. In Chromium,
+`content-brand`, `role-scoping`, `identity-chip` and the Menu test of `admin-full-width` (35 tests) pass.
+
 ## Found, not changed
 
 - `scripts/test-identity-words.js` (Prompt 32's words beside the person's name, 30 tests, all passing) was in no npm script, although
   `docs/DECISIONS.md` names it as what enforces that decision. It is listed in the manifest's `excluded` with that reason, so that npm test runs
   the same files as before; adding it to a group is the owner's call.
+- A race between two suites of `npm test`, seen once in this work: `scripts/test-motion-switch.js` writes and removes
+  `migration/src/lib/brand/.client-theme.pms14.tmp.js` while `scripts/test-data-modules.js` walks the tree, which then fails on a file that has
+  just gone (ENOENT). It is older than this prompt and passes when run again. `scripts/test-boundaries.js` skips files whose names start with a dot,
+  so it cannot meet it; the two older suites were left as they are (a fix there is a change to tests that guard live behaviour).
 
 ## Chosen not to do
 - **Moving the eleven allowed modules to their right layer** (for example the stored formats of `confidence-check.js` and `aop-answer.js` to

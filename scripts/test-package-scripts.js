@@ -106,7 +106,7 @@ motion-switch confidence-check access users sessions-plan scope guest-group inde
 access-recheck hardening reporting-settings aop-math aop-view aop-editor aop-results guest-picture site-access-words site-access site-sync
 access-message`.split(/\s+/).map((name) => `scripts/test-${name}.js`);
 /** The tests Prompt 44 added to npm test. */
-const ADDED_44 = ['scripts/test-package-scripts.js', 'scripts/test-boundaries.js', 'scripts/test-admin-router.js', 'scripts/test-admin-tabs.js', 'scripts/test-unused-exports.js']
+const ADDED_44 = ['scripts/test-package-scripts.js', 'scripts/test-boundaries.js', 'scripts/test-admin-router.js', 'scripts/test-unused-exports.js']
   .filter((file) => existsSync(path.join(ROOT, file)));
 
 describe('the test manifest (scripts/tests.manifest.json)', async () => {
