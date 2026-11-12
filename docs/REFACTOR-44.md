@@ -50,7 +50,7 @@ The 15 largest source files: `pager/MatrixRating.svelte` 1,497; `admin.css` 1,26
 - [x] **44d** One tab registry (lib/admin/tabs.js) and the router (lib/admin/router.ts).
 - [x] **44e** The admin's shared primitives (admin/ui/), after an inventory.
 - [ ] **44f** The oversized files split along their seams (the JS modules first; the Svelte components after 44g, which gives the admin page back the bytes a child component costs).
-- [ ] **44g** The admin's styles in cascade layers under styles/admin/; tokens only for colour.
+- [x] **44g** The admin's styles in cascade layers under styles/admin/; tokens only for colour.
 - [ ] **44h** scripts/check-unused-exports.js and the dead exports.
 - [ ] **44i** The documents.
 
@@ -129,6 +129,24 @@ handful of one-line helpers, not worth a part that `scripts/test-data-modules.js
 (612 lines) is one function, `compose()`, a closure over the page being filled (its cursor, its pages, its measure); splitting it is a
 rewrite of the report's layout, not a move. Pages: the participant page the same bytes; the admin page 719,995 B (+13 B on pms-43, inside its
 720,000 B budget, and given back in 44g); Setup 816,912 B (+134 B; it has no budget). Pictures: no difference.
+
+**44g.** `admin.css` (1,267 lines) and `admin-look.css` (1,101) are `migration/src/styles/admin/`: `index.css` imports, in their old
+order, `base.css` (the focus ring, the controls), `layout.css` (sign-in, the shell), `panels.css`, `content.css`, `guests.css` (with the QR
+sheet and its print sheet) and `explains.css` (Prompt 33's rules, the steps, the guest list, the six-to-a-page sheet); `look.css` imports
+`look-type-bar.css`, `look-surfaces.css` and `look-menus.css`. Each part is a run of the old lines, moved unchanged, so the cascade is what it
+was; the admin page loads `index.css` then `look.css`, Setup `index.css` alone, as before. Before any other change the three pages built to the
+same sizes. Then, of the 47 selectors written in both old sheets, the declarations that the look always overrides on the admin page, on
+selectors Setup never draws (Setup loads `admin.css` without the look, so there they are live), were taken out: 30 declarations (`.btn--danger`,
+`.btn--bar`, `.shell__body`, `.toast--error`, `.pill`, `.adm-dialog`, `.step__now` and others; their comments kept as one note). No rule matches
+nothing: a scan of every class against every source found none (Phase 17 took those out). The one `!important` (in print, nothing marked
+`no-print` shows) is kept, with its reason beside it. Cascade layers were tried and not kept: with the sheets in `@layer base, layout,
+components, screens, look`, the legacy sheet and every component's own styles, which are not in a layer, beat every rule in one; seven of
+the eleven picture tests failed (Today 26 px taller, and more) and the admin page grew by 349 B, over its budget. Colour: the four hex values
+left in admin code are data colours (the accent picker's start, the Live display's stand-ins for a client with no colours, the SVG fill
+the PDF is given), marked `data colour:` where they are written and listed in `DATA_COLOURS` in `scripts/test-admin-palette.js`, whose new
+lint fails on any other hex in the admin's code (the scan finds exactly those four, in five places). The tests that read the old sheets by
+path read the new parts (`test-admin-look.js`, `test-admin-palette.js`, `test-ux-12.js`). Pages: the participant page the same bytes; the
+admin page 719,930 B (52 B under pms-43); Setup 816,784 B (+6 B on pms-43). Pictures: no difference at 1280, 1440 and 1920.
 
 ## Found, not changed
 

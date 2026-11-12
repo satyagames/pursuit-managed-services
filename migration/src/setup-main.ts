@@ -11,7 +11,7 @@ import './styles/fonts-fallback.css';
 import './styles/admin-tokens.css';
 import { mount } from 'svelte';
 import SetupApp from './SetupApp.svelte';
-import './admin.css';
+import './styles/admin/index.css';
 import './setup.css';
 
 const target = document.getElementById('setup-app');

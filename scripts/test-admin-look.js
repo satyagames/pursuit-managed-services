@@ -12,7 +12,8 @@ import { resolver } from './admin-token-values.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const tokens = () => readFile(path.join(ROOT, 'migration/src/styles/admin-tokens.css'), 'utf8');
-const look = () => readFile(path.join(ROOT, 'migration/src/admin-look.css'), 'utf8');
+// (Prompt 44: what was src/admin-look.css is the three look-*.css of styles/admin/, in its order.)
+const look = async () => (await Promise.all(['look-type-bar.css', 'look-surfaces.css', 'look-menus.css'].map((file) => readFile(path.join(ROOT, 'migration/src/styles/admin', file), 'utf8')))).join(String.fromCharCode(10));
 // (Prompt 41: the names are aliases of the Deloitte green palette now, so a value follows its var() chain.)
 const valueIn = (css) => resolver(css);
 
@@ -126,8 +127,11 @@ describe('the admin look (Prompt 38)', () => {
 
   it('the admin page loads the look after admin.css; the participant page and Setup do not', async () => {
     const admin = await readFile(path.join(ROOT, 'migration/src/admin-main.ts'), 'utf8');
-    assert.ok(admin.indexOf("'./admin-look.css'") > admin.indexOf("'./admin.css'"), 'after admin.css');
-    for (const file of ['main.ts', 'setup-main.ts']) assert.doesNotMatch(await readFile(path.join(ROOT, 'migration/src', file), 'utf8'), /admin-look\.css/, file);
+    // (Prompt 44: the sheets are styles/admin/index.css, then the look, styles/admin/look.css, its three parts in their order.)
+    assert.ok(admin.indexOf("'./styles/admin/look.css'") > admin.indexOf("'./styles/admin/index.css'"), 'after the admin sheets');
+    const parts = (await readFile(path.join(ROOT, 'migration/src/styles/admin/look.css'), 'utf8')).match(/@import '\.\/look-[a-z-]+\.css';/g) ?? [];
+    assert.deepEqual(parts, ["@import './look-type-bar.css';", "@import './look-surfaces.css';", "@import './look-menus.css';"]);
+    for (const file of ['main.ts', 'setup-main.ts']) assert.doesNotMatch(await readFile(path.join(ROOT, 'migration/src', file), 'utf8'), /admin-look\.css|admin\/look\.css/, file);
   });
 });
 

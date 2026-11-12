@@ -1,0 +1,233 @@
+/* Prompt 44: the look, its third part: Content's grip, the "more" menu, forced colours, print. What was src/admin-look.css lines 870 to the end, unchanged. */
+/* ---- Content's activities: the grip and the place ---------------------------------------- */
+.activity__grip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--adm-s1);
+  color: var(--adm-ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.activity__grip .icon {
+  color: var(--adm-subtle);
+}
+
+.activity--selected {
+  border-color: var(--adm-primary);
+  background: var(--adm-primary-wash);
+  box-shadow: inset 3px 0 0 var(--adm-accent); /* Prompt 41: a selected card's edge is the accent, on the wash */
+}
+
+/* ---- A "more" menu ------------------------------------------------------------------------ */
+.adm-menu {
+  position: relative;
+}
+
+.adm-menu__list {
+  position: absolute;
+  inset-inline-end: 0;
+  top: calc(100% + var(--adm-s1));
+  z-index: 12;
+  display: grid;
+  min-width: 12rem;
+  margin: 0;
+  padding: var(--adm-s1);
+  border: 1px solid var(--adm-line);
+  border-radius: var(--adm-radius-sm);
+  background: var(--adm-surface);
+  box-shadow: var(--adm-shadow);
+  list-style: none;
+}
+
+.adm-menu__list button {
+  display: flex;
+  align-items: center;
+  gap: var(--adm-s2);
+  width: 100%;
+  min-height: var(--target-min);
+  padding: 0 var(--adm-s3);
+  border: 0;
+  border-radius: var(--adm-radius-bar);
+  background: transparent;
+  color: var(--adm-ink);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.adm-menu__list button:hover {
+  background: var(--adm-surface-2);
+}
+
+.adm-menu__list button.is-danger {
+  color: var(--adm-danger-ink);
+}
+
+@media (forced-colors: active) {
+  .adm-bar,
+  .card,
+  .adm-card,
+  .chip {
+    border: 1px solid CanvasText;
+  }
+
+  /* The wordmark's letters (ink on the light bar) in the system's text colour, so they show on whatever ground forced colours gives the bar. */
+  .shell__wordmark :is(path, rect)[fill='#fff'],
+  .login__wordmark :is(path, rect)[fill='#fff'] {
+    fill: CanvasText;
+  }
+}
+
+/* ---- Guests: one guest by name; the rest folded ------------------------------------------- */
+.guest-one {
+  display: grid;
+  gap: var(--adm-s3);
+  max-width: 40rem;
+}
+
+.guest-one__line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--adm-s3);
+}
+
+/* ---- History of changes: a day's heading between its changes ------------------------------ */
+.audit__day {
+  padding: var(--adm-s4) 0 var(--adm-s2);
+  list-style: none;
+}
+
+/* ---- Errors (Prompt 38): what happened and what to do, in ink on the danger wash, with the warning triangle; never red words alone. The triangle
+   is admin/icons.js's alert-triangle, drawn as a mask in the danger colour. ---- */
+body.admin .error {
+  color: var(--adm-danger-ink);
+}
+
+body.admin .error::before {
+  content: '';
+  display: inline-block;
+  width: 1.1em;
+  height: 1.1em;
+  margin-inline-end: var(--adm-s1);
+  vertical-align: -0.2em;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3l10 18H2zM12 10v4M12 17.5h.01' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3l10 18H2zM12 10v4M12 17.5h.01' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+body.admin p.error[role='alert'],
+body.admin div.error[role='alert'] {
+  padding: var(--adm-s3) var(--adm-s4);
+  border-radius: var(--adm-radius-sm);
+  background: var(--adm-danger-wash);
+  color: var(--adm-ink);
+}
+
+body.admin p.error[role='alert']::before,
+body.admin div.error[role='alert']::before {
+  background: var(--adm-danger);
+}
+
+/* ---- Dialogs keep their actions in reach: a bar at the dialog's foot ------------------------ */
+.dialog .dialog__actions,
+.adm-dialog .dialog__actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  margin-top: var(--adm-s2);
+  padding-block: var(--adm-s3);
+  border-top: 1px solid var(--adm-line);
+  background: var(--adm-surface);
+}
+
+.dialog {
+  border-radius: var(--adm-radius);
+  box-shadow: var(--adm-shadow-dialog);
+}
+
+/* ---- A list and its detail stay related (Prompt 40) -------------------------------------------------------------------------------------------
+ * In a split view the column that names the selection (Clients' and People's list on the left, Content's questions on the right) holds under the
+ * bar, and under Content's strip there, 16 px down, as tall as the window leaves it (less a bottom bar), and scrolls inside itself: the other
+ * column scrolls with the page and the two stay side by side. The selection is the primary 3 px edge on the left and the wash, in both columns. */
+@media (min-width: 960px) {
+  .adm-sticky-col {
+    position: sticky;
+    top: calc(var(--adm-sticky-top, var(--adm-bar-h)) + var(--adm-s4));
+    max-height: calc(100dvh - var(--adm-sticky-top, var(--adm-bar-h)) - var(--adm-s6));
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  /* On a view-only screen (ViewOnly.svelte's disabled fieldset) nothing in the column can take the focus, so the keyboard could not scroll it:
+   * it scrolls with the page there. */
+  .view-only .adm-sticky-col,
+  .shell__body:has(.adm-bar) .view-only .adm-sticky-col {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .shell__body:has(.adm-bar) .adm-sticky-col {
+    max-height: calc(100dvh - var(--adm-sticky-top, var(--adm-bar-h)) - var(--adm-s6) - var(--adm-bar-height));
+  }
+}
+
+.adm-selected {
+  border-color: var(--adm-primary);
+  background: var(--adm-primary-wash);
+  box-shadow: inset 3px 0 0 var(--adm-accent); /* Prompt 41: a selected card's edge is the accent, on the wash */
+}
+
+/* The open client's context strip: its logo, name and status and the way back, held at the top of the right column while it scrolls. */
+.adm-context {
+  position: sticky;
+  top: var(--adm-sticky-top, var(--adm-bar-h));
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: var(--adm-s3);
+  box-sizing: border-box;
+  min-height: 48px;
+  padding: 0 var(--adm-s3);
+  border-bottom: 1px solid var(--adm-line);
+  background: var(--adm-surface);
+}
+
+.adm-context__logo {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.adm-context__name {
+  overflow: hidden;
+  min-width: 0;
+  font-weight: var(--fw-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adm-context > .btn {
+  flex: none;
+  margin-inline-start: auto;
+}
+
+/* What the keyboard or a focused heading brings into view stops under the strip too. */
+html:has(.adm-context) {
+  --adm-sticky-room: calc(var(--adm-bar-h) + 48px + var(--adm-s4));
+}
+
+/* A row's more menu at the foot of a column that scrolls inside itself opens upward (MoreMenu.svelte). */
+.adm-menu__list.adm-menu__list--up {
+  top: auto;
+  bottom: calc(100% + var(--adm-s1));
+}
+
+/* A <select> drawn by the page (admin.css `.select`), the whole width of its field: its words start where its label does, which a native
+ * select's (4 px further in, in Chromium) do not (Prompt 40). */
+.select.select--block {
+  width: 100%;
+  max-width: none;
+}

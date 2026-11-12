@@ -1,0 +1,220 @@
+/* Prompt 44: Guests and QR, the guest QR sheet and its print sheet, what was src/admin.css lines 800 to 1018, unchanged. */
+/* ---- Guests and QR ---- */
+
+.guests-actions {
+  justify-content: flex-end;
+}
+
+.guests-progress {
+  margin: 0.75rem 0;
+}
+
+.guests-progress p {
+  margin: 0 0 0.35rem;
+}
+
+.guests-add {
+  display: grid;
+  gap: 0.6rem;
+  justify-items: start;
+  margin: 0.75rem 0 1rem;
+  max-width: 40rem;
+}
+
+.guests-add .field {
+  width: 100%;
+}
+
+.qr__url--short {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+/* ---- The guest QR sheet: a page of its own, and the print stylesheet ---- */
+
+@page {
+  margin: 8mm;
+}
+
+.print-view {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 1rem 1rem 3rem;
+}
+
+.print-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.print-toolbar__title {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.print-note {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.print-note p {
+  margin: 0;
+}
+
+.print-sheet-wrap {
+  overflow: hidden;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  background: var(--adm-idle-bg);
+}
+
+.print-sheet {
+  display: grid;
+  gap: 1rem;
+  justify-content: center;
+}
+
+/* A page is three 61 mm cards across and four down with 4 mm between: 191 by 256 mm, which sits inside
+   the 8 mm margins of both A4 (194 by 281) and US Letter (200 by 263). */
+.print-page {
+  box-sizing: content-box;
+  display: grid;
+  grid-template-columns: repeat(3, 61mm);
+  grid-auto-rows: 61mm;
+  gap: 4mm;
+  justify-content: center;
+  align-content: start;
+  width: 191mm;
+  padding: 8mm;
+  zoom: var(--sheet-zoom, 1);
+  background: var(--adm-paper);
+  box-shadow: var(--adm-shadow-pop);
+  break-after: page;
+  page-break-after: always;
+}
+
+.print-page:last-of-type {
+  break-after: auto;
+  page-break-after: auto;
+}
+
+.print-card {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: 12mm 32mm auto auto;
+  align-content: center;
+  justify-items: center;
+  gap: 1mm;
+  width: 61mm;
+  height: 61mm;
+  padding: 2.5mm 3mm;
+  overflow: hidden;
+  border: 0.3mm dashed var(--adm-neutral);
+  color: var(--adm-paper-ink);
+  background: var(--adm-paper);
+  text-align: center;
+  break-inside: avoid;
+  page-break-inside: avoid;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.print-card__name {
+  display: -webkit-box;
+  align-self: center;
+  max-height: 12mm;
+  margin: 0;
+  overflow: hidden;
+  font-size: 16pt;
+  font-weight: 700;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.print-card__name--long {
+  font-size: 12.5pt;
+}
+
+.print-card__name--longest {
+  font-size: 10pt;
+  -webkit-line-clamp: 3;
+}
+
+.print-card__qr {
+  width: 32mm;
+  height: 32mm;
+}
+
+.print-card__client {
+  margin: 0;
+  font-size: 9pt;
+  line-height: 1.1;
+}
+
+.print-card__cta {
+  margin: 0;
+  font-size: 11pt;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+@media (max-width: 760px) {
+  .opt__picture {
+    grid-template-columns: 1fr;
+  }
+
+  .guests-actions {
+    justify-content: flex-start;
+  }
+
+  /* A guest's name gets the whole line; their buttons sit under it. */
+  .guests-panel .row__actions {
+    flex: 1 0 100%;
+  }
+}
+
+@media print {
+  html,
+  body,
+  body.admin {
+    margin: 0;
+    background: var(--adm-paper);
+  }
+
+  /* (The one !important of the admin's sheets: on paper nothing marked no-print shows, whatever a screen's own sheet says of its display.) */
+  .no-print,
+  .toast {
+    display: none !important;
+  }
+
+  .print-view {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .print-sheet-wrap {
+    overflow: visible;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+  }
+
+  .print-sheet {
+    display: block;
+  }
+
+  .print-page {
+    width: auto;
+    padding: 0;
+    zoom: 1;
+    background: none;
+    box-shadow: none;
+  }
+}

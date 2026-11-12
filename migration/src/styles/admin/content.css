@@ -1,0 +1,297 @@
+/* Prompt 44: Content (the client switcher, the activities, the dialogs), what was src/admin.css lines 492 to 799, unchanged. */
+/* ---- Content (Phase 5b): the client switcher, the activities, the dialogs ---- */
+
+.pill--live {
+  color: var(--adm-ok-ink);
+  background: var(--adm-ok-bg);
+  letter-spacing: 0.03em;
+}
+
+.pill--archived {
+  color: var(--adm-warn-ink);
+  background: var(--adm-warn-bg);
+}
+
+.btn--icon {
+  min-width: var(--target-min);
+  padding: 0 0.5rem;
+}
+
+.row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* A check box with its words: the whole label is the target. */
+.tick {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: var(--target-min);
+  min-height: var(--target-min);
+  cursor: pointer;
+}
+
+.tick input {
+  flex: none;
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+.content-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.content-bar__pick {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.content-working {
+  margin: 0 0 0.75rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 0.6rem;
+  background: var(--adm-idle-bg);
+  color: var(--adm-idle-ink);
+}
+
+.content-layout {
+  display: grid;
+  gap: 1.5rem;
+}
+
+/* Prompt 39: the activities 5 of the page's 12 columns, the questions 7, on one top line. */
+@media (min-width: 960px) {
+  .content-layout {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: var(--adm-gutter);
+    align-items: start;
+  }
+
+  .content-layout > .content-activities {
+    grid-column: span 5;
+    min-width: 0;
+  }
+
+  .content-layout > .content-detail {
+    grid-column: span 7;
+    min-width: 0;
+  }
+}
+
+.content-activities > h3,
+.content-detail h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+}
+
+.activity {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+
+.activity__select {
+  display: grid;
+  flex: 1 1 10rem;
+  min-width: 0;
+  min-height: var(--target-min);
+  padding: 0.25rem 0.25rem;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.activity__actions {
+  flex: 1 0 100%;
+}
+
+.activity__actions .btn--danger {
+  margin-left: auto;
+}
+
+.questions__head {
+  align-items: center;
+}
+
+/* Prompt 40: from 960 px both columns hold under Content's strip and scroll inside themselves, so the chosen activity's questions are beside
+   it wherever it is in the list. The questions' head (the activity's place and name, Add question) stays at the top of its column; a long list
+   of activities fades at its foot to say there is more. */
+@media (min-width: 960px) {
+  .content-detail .questions__head {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    margin-bottom: 0.5rem;
+    padding-block: 0.25rem 0.5rem;
+    background: var(--adm-bg);
+  }
+
+  .content-activities::after {
+    content: '';
+    position: sticky;
+    bottom: 0;
+    display: block;
+    height: 24px;
+    margin-top: -24px;
+    background: linear-gradient(to bottom, transparent, var(--adm-bg));
+    pointer-events: none;
+  }
+
+  .content-activities > .rows:last-of-type {
+    margin-bottom: 24px;
+  }
+}
+
+.opt {
+  flex-wrap: wrap;
+}
+
+.opt__line {
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.opt__line .input {
+  flex: 1 1 10rem;
+  min-width: 0;
+}
+
+.opt--tile {
+  padding: 0.5rem;
+  border: 1px solid var(--adm-line);
+  border-radius: 0.65rem;
+  background: var(--adm-bg);
+}
+
+.opt__picture {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 7rem;
+  align-items: center;
+  flex: 1 1 100%;
+  gap: 0.5rem;
+}
+
+.opt__upload {
+  grid-column: 1 / -1;
+}
+
+.opt__preview {
+  display: grid;
+  place-items: center;
+  min-height: 4.5rem;
+  padding: 0.25rem;
+  border: 1px dashed var(--adm-line);
+  border-radius: 0.5rem;
+  background: var(--adm-card);
+  text-align: center;
+}
+
+.opt__preview img {
+  max-width: 100%;
+  max-height: 4rem;
+  object-fit: contain;
+}
+
+.adm-dialog {
+  width: min(34rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  padding: 0;
+  overflow: auto;
+  border: 0;
+}
+
+.adm-dialog--wide {
+  width: min(46rem, calc(100vw - 2rem));
+}
+
+.adm-dialog::backdrop {
+  background: var(--adm-scrim);
+}
+
+.adm-dialog__body {
+  display: grid;
+}
+
+.adm-dialog__body h2 {
+  margin: 0;
+}
+
+.copy-list {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.copy-row {
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--adm-line);
+  border-radius: 0.65rem;
+}
+
+.copy-row__text {
+  display: grid;
+}
+
+.copy-summary {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 0.6rem;
+  background: var(--adm-idle-bg);
+  color: var(--adm-ink);
+}
+
+.copy-summary__skips {
+  color: var(--adm-warn-ink);
+}
+
+.copy-progress,
+.guests-progress progress {
+  width: 100%;
+  height: 0.9rem;
+  accent-color: var(--adm-primary);
+}
+
+.copy-result,
+.guests-report {
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  border-radius: 0.6rem;
+  background: var(--adm-ok-bg);
+  color: var(--adm-ok-ink);
+}
+
+.copy-result ul {
+  margin: 0.4rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.copy-result--warning,
+.guests-report--warning {
+  background: var(--adm-warn-bg);
+  color: var(--adm-warn-ink);
+}
+
+.copy-result--error,
+.guests-report--error {
+  background: var(--adm-bad-bg);
+  color: var(--adm-bad-ink);
+}

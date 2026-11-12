@@ -1,0 +1,8 @@
+/* Prompt 44: the admin page's sheets in their one order (what src/admin.css was, in its order). The admin page and Setup load it; the
+   admin page then loads look.css. Each part says which lines of the old sheet it holds. */
+@import './base.css';
+@import './layout.css';
+@import './panels.css';
+@import './content.css';
+@import './guests.css';
+@import './explains.css';

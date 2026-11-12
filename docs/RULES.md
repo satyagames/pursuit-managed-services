@@ -341,7 +341,7 @@ in `migration/src/`, not by editing them, so that what the tests measure stays w
   page follows a `hashchange` too, so an address pasted into an open tab works). The page imports `styles/tokens.css`, `styles/fonts-admin.css`
   (Open Sans 400, 600 and 700 only: all six faces would add 62 KB gzip, three add 31) and `styles/admin-tokens.css` (the light
   surfaces and status tints, every text pair held to 4.5:1 by `scripts/test-admin-today.js`) over
-  `migration/src/styles/legacy/admin.css`, which was the legacy admin's sheet and is left as it is; `src/admin.css` overrides it. The bar is navy because the
+  `migration/src/styles/legacy/admin.css`, which was the legacy admin's sheet and is left as it is; `styles/admin/index.css` overrides it. The bar is navy because the
   Deloitte wordmark is white. Targets are 44px, focus is the green ring with a navy halo, no page scrolls sideways at 390 wide.
 - **Today** (`admin/AdminToday.svelte`, which holds its state and draws its cards through `TodayStatus`, `TodayGoLive`, `TodayReadiness`, `TodayControls`,
   `TodayShare` and `TodaySessions` since Phase 17; logic in `lib/admin/admin-today.js` and `lib/admin/today-view.js`, no DOM, unit-tested): the status panel, the
@@ -1105,7 +1105,7 @@ QA-TESTING.md items 150 to 156.
   `admin/charts/chart-ui.ts`, no file there uses a size query (`@container` is a class to Tailwind), and `chart-ui.ts` keeps the word "container" on purpose (it was in the
   removed card, and without it the participant page loses its `.container` rule). Check a new file under `migration/` with `npm run test:bundle`.
 - **The admin page may not grow past where Phase 10j left it** (606,141 B in this checkout; it is 552,083 B, 54,058 B smaller). Setup is byte for byte as it was (the Results
-  grid's rules are in `AdminResults.svelte`, not `src/admin.css`, which Setup loads too).
+  grid's rules are in `AdminResults.svelte`, not `styles/admin/index.css`, which Setup loads too).
 - **Full screen's fit**: the card's chart never shrinks below what it needs (so a card too tall overflows where the fit loop sees it and makes the type smaller, instead of
   drawing over its own words); written answers keep at least one comment's room. The wall specs run with the display's own cover (as on an iPad): Playwright's WebKit often
   ends its own element full screen by itself in a headless window.
@@ -1779,7 +1779,7 @@ Results is a leader's view as well (boards 9 and 12): `admin/LeaderDashboard.sve
 
 - **The words of who you are come from `identityOf`** (`lib/access/identity-words.js`, held by `scripts/test-identity-words.js`), made from the access the page already read: no request for the chip, the Your access popover or the welcome strip. A PIN sign-in has no chip. "Ends" shows within `ENDS_SOON_DAYS` (14); the popover names the person, never their email.
 - **The welcome strip's one memory** is `localStorage` under `pms.welcome.<hash>`, read and written in try/catch; when storage is blocked it shows once in each tab. Nothing else of a person is stored.
-- **No container is capped.** The admin page runs edge to edge with the gutter `clamp(1rem, 2vw, 2rem)`; running text is at most 72ch. (Prompt 39: the bar is one 56 px bar at every width, in `admin-look.css`; see its rules.) `scroll-padding-top` clears the bar, with room for the 9 px ring.
+- **No container is capped.** The admin page runs edge to edge with the gutter `clamp(1rem, 2vw, 2rem)`; running text is at most 72ch. (Prompt 39: the bar is one 56 px bar at every width, in the look (`styles/admin/look.css`); see its rules.) `scroll-padding-top` clears the bar, with room for the 9 px ring.
 - **Each tab's columns start at 1,100 px**, by CSS grid, and below it the tab is as it was: Today's three zones (Controls sticky, End session always in view), People's person and Clients' client beside the list, Guests and QR's names and codes, Results' open sessions and the narrow list of the others, the dashboard's charts beside the By client rows. Content's two views were side by side already.
 - **A column moves nothing's order.** What a test or a screen reader reads first stays first: Results keeps the open (newest) session on the left, and the card after a delete is found by its session, not its place in the page.
 - **Colours only from `admin-tokens.css`**, each pair with its contrast test (`scripts/test-admin-today.js`). The participant page's bytes do not change (`npm run test:bundle`): a comment's word such as "table" in a new admin file can add a Tailwind rule to it.
@@ -1930,7 +1930,7 @@ against them at 1366 by 650, 1920 by 950 and 683 by 700, and `admin-explains.spe
   heads and eyebrows only, never a sentence), Figure 32/40. Running text keeps the 16 px floor of CLAUDE.md rule 9, so Body and Small are 16 px, not
   the brief's 14 and 13. A paragraph is at most 68 characters wide.
 - **The grid** (Prompt 39 replaced the 1,280 px cap: see its rules): a 24 px gutter (16 under 900 px); Today is 8 + 4. Spacing only on the scale
-  4, 8, 12, 16, 24, 32, 48 (and 6 between a label and its field): `scripts/test-admin-look.js` lints `admin-look.css`. Cards: radius 14, a 1 px
+  4, 8, 12, 16, 24, 32, 48 (and 6 between a label and its field): `scripts/test-admin-look.js` lints the look (`styles/admin/look.css`). Cards: radius 14, a 1 px
   line, the soft shadow; status goes in a chip, never in a border.
 - **Icons**: `migration/src/admin/icons.js`, drawn by `admin/Icon.svelte` (its API as before): one 24 grid, a 1.75 stroke in `currentColor`, round
   caps, no fill, 20 px in the UI and 16 px in a chip. Each icon has one meaning (`admin/icon-meanings.js`, which the page does not carry): Today
@@ -1961,7 +1961,7 @@ The general alignment rules, for every admin screen:
 1. **One page container, one 12-column grid, 24 px gutters, page padding `clamp(16px, 2vw, 32px)`.** The container is the window's width
    (`--adm-page-max` 1,920 px, centred only past it; `--adm-page-pad`; `admin-tokens.css`). The bar and every page share it: the bar's inner
    edges are `--adm-inset`, so the wordmark and the first card's edge line up, and the person's chip ends on the content's right edge. No other
-   side margin, wrapper or gutter element. `.adm-grid` and `.adm-span-N` in `admin-look.css` are the grid; a screen's own split uses
+   side margin, wrapper or gutter element. `.adm-grid` and `.adm-span-N` in the look (`styles/admin/look.css`) are the grid; a screen's own split uses
    `repeat(12, minmax(0, 1fr))` and spans.
 2. **The title row**: icon, title and a one-line description on the left, the page's actions on the right, on one baseline (`.panel__head`,
    `admin.css`, from 1,024 px). The description sits beside the title only when it fits there on one line; longer, it goes under the title and
@@ -1972,7 +1972,7 @@ The general alignment rules, for every admin screen:
    (`lib/admin/sticky-fit.js`, `data-sticky`); a taller one scrolls with the page.
 4. **Cards in a row are one height**, and buttons in a row one height and one radius. The brief's 36 px buttons are 44 px here: the target size of
    CLAUDE.md rule 9 wins.
-5. **Spacing only from the scale** 4, 8, 12, 16, 24, 32, 48 (`scripts/test-admin-look.js` lints `admin-look.css`; the page's padding and width
+5. **Spacing only from the scale** 4, 8, 12, 16, 24, 32, 48 (`scripts/test-admin-look.js` lints the look (`styles/admin/look.css`); the page's padding and width
    and the bars' heights are tokens).
 6. **No sideways scrolling** except inside a table or matrix card (the guest list, Art of the Possible), which scrolls inside its box.
 7. **The sticky bottom bar** spans the page container's width: its buttons end on the content's right edge.
@@ -2017,13 +2017,13 @@ And for the parts:
 ## Rules from Prompt 40 (tab dividers, a list and its detail kept side by side, edit left and preview right, labels in line; keep them holding)
 
 - **Tab dividers.** Between each two neighbouring tabs of the bar, a 1 x 20 px divider in `--adm-line`, in the bar's middle: drawn as
-  `.tab + .tab::before` in `admin-look.css`, so it is never read and there is none before the first tab or after the last, and it never meets the
+  `.tab + .tab::before` in the look (`styles/admin/look.css`), so it is never read and there is none before the first tab or after the last, and it never meets the
   active tab's underline on the bar's bottom edge. Each tab has 14 px at each side (`--adm-tab-pad`) and 9 px between two tabs
   (`--adm-tab-gap`: 4 px, the divider, 4 px), so the word is as far from the divider on each side; the icon is 8 px from the word. Hover is the
   primary wash; the active tab is ink with the accent underline the tab's whole width. The row stays one line with no scrollbar: from 1,280 to
   1,365 px the tabs have 12 px at each side and the bar's parts 12 px between them, from 1,024 to 1,279 px 4 px and 4 px between tabs (the
   divider in its middle); below 1,024 px the Menu's list has no dividers.
-- **A list and its detail stay side by side** (`.adm-sticky-col`, `.adm-selected`, `.adm-context` in `admin-look.css`). In a split view the
+- **A list and its detail stay side by side** (`.adm-sticky-col`, `.adm-selected`, `.adm-context` in the look (`styles/admin/look.css`)). In a split view the
   column that names the selection holds under the bar (and under Content's strip, `--adm-sticky-top`), 16 px down, as tall as the window leaves it
   less 32 px (and the bottom bar), and scrolls inside itself: Clients' and People's list on the left, Content's activities and its questions. The
   selection is the accent 3 px left edge on the primary wash (Prompt 41), in every list; when a client or person is opened its row is brought into the list's
@@ -2039,7 +2039,7 @@ And for the parts:
   to one line that says whether it is on; the reading and the keyboard order are the same. Below 1,100 px the controls come first and the preview
   under them. The sticky bar keeps where Brand stands on the left and Revert to saved and Save brand on the right.
 - **Field labels in line.** Every `.field__label` over a field starts where the field's words do: `--adm-field-inset` (13 px, the field's 1 px
-  border and its 12 px padding), one rule in `admin-look.css` for every filter, editor and dialog. A label beside its field (Content's Client)
+  border and its 12 px padding), one rule in the look (`styles/admin/look.css`) for every filter, editor and dialog. A label beside its field (Content's Client)
   has no inset. A `<select>` in a field is the page's drawn `.select` (`.select--block` for the full width): a native select draws its words a few
   px inside its padding, so they would not line up. The label stays 16 px (rule 9), not the brief's 12, and a field 44 px tall, not 40.
 - `scripts/migration-tests/admin-related.spec.ts` holds the dividers, the Clients list and strip, the last activity's questions, Brand's order and
@@ -2050,7 +2050,7 @@ And for the parts:
 - **One place for every colour.** `migration/src/styles/admin-tokens.css` holds every colour of the admin page and Setup (the brief's
   tokens file; it kept its name, which the tests and both pages' entries read). No admin style writes a hex, `rgb()` or `hsl()`
   of its own: `scripts/test-admin-palette.js` reads every `<style>`, `style=` and sheet of `migration/src/admin/`, `AdminApp.svelte`,
-  `SetupApp.svelte`, `admin.css`, `admin-look.css`, `setup.css` and `dev/AdminStyleguide.svelte` and fails on one (the wordmark's
+  `SetupApp.svelte`, `admin.css`, the look (`styles/admin/look.css`), `setup.css` and `dev/AdminStyleguide.svelte` and fails on one (the wordmark's
   `[fill='#fff']` selectors excepted). A colour a screen shows as data (a client's own brand colour) is not a style. The legacy sheets
   (`styles/legacy/`) are overridden, never edited. The participant page never loads the file.
 - **The palette**, from six brand values only (neutral #222222 at 60%, accent #0DF200, secondary accent #26890D, graphs #0097A9, #00A3E0,
@@ -2163,7 +2163,7 @@ They replace Prompt 38's one line of the three settings with Change and Done (`c
   "Saving…", and a write that fails says its error with `alert-triangle` and Retry. The footer is `aria-live="polite"`.
 - **Session settings' chips** (`settingsChips` in `lib/admin/today-view.js`, `admin/TodayControls.svelte`): icon first, then a short word, one row,
   never wrapped or cut: `badge` Staff sign in or `qr` Guests scan QR; `steps` Sequential or `grid` Open; `gauge` Confidence off or on. The neutral
-  chip is admin-look.css's `.chip`; one changed from the default (`SETTINGS_DEFAULTS`: staff sign-in, sequential, the confidence check off) is
+  chip is the look's `.chip` (`styles/admin/look-surfaces.css`); one changed from the default (`SETTINGS_DEFAULTS`: staff sign-in, sequential, the confidence check off) is
   `.chip--primary`, so a leader sees what is not standard. A chip is 44 px high (rule 9, not the brief's 32 px) with 12 px words, and its
   accessible name is its value and its group ("Sequential, Activity flow"), never "Change", which is the toggle's alone. When the chips do not fit beside the toggle they go under it together, and the toggle
   stays at the top right. A chip opens the panel at its group with that group's first control focused; a second click does not fold it: only the

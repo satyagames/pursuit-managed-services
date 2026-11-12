@@ -1,0 +1,498 @@
+/* Prompt 44: the look, its second part: the page's container and grid, cards, controls, chips, messages, empty states, folds, dialogs, the sticky bar, the Danger area. What was src/admin-look.css lines 372 to 869, unchanged. */
+/* ---- The page: one container, one 12-column grid with 24 px gutters ---------------------------------------------------------------------- */
+.shell__body {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--adm-page-max);
+  margin: 0 auto;
+  padding: var(--adm-s5) var(--adm-page-pad);
+}
+
+/* Room under the content for the sticky bar, on a screen that has one. */
+.shell__body:has(.adm-bar) {
+  padding-bottom: calc(var(--adm-bar-height) + var(--adm-s5));
+}
+
+/* The grid: .adm-grid holds 12 columns; .adm-span-N takes N of them (all 12 under 1,100 px, where a split view stacks). */
+.adm-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--adm-gutter);
+  align-items: start;
+}
+
+.adm-grid > * {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+@media (min-width: 1100px) {
+  .adm-span-3 { grid-column: span 3; }
+  .adm-span-4 { grid-column: span 4; }
+  .adm-span-5 { grid-column: span 5; }
+  .adm-span-6 { grid-column: span 6; }
+  .adm-span-7 { grid-column: span 7; }
+  .adm-span-8 { grid-column: span 8; }
+  .adm-span-9 { grid-column: span 9; }
+}
+
+@media (max-width: 899px) {
+  :root {
+    --adm-gutter: 16px;
+  }
+}
+
+/* ---- Cards: radius 14, a 1 px line, a soft shadow; status goes in a chip, never in the border ---- */
+.card,
+.content-editor,
+.step,
+.adm-card {
+  border: 1px solid var(--adm-line);
+  border-radius: var(--adm-radius);
+  background: var(--adm-surface);
+  box-shadow: var(--adm-shadow);
+}
+
+.card {
+  margin-bottom: var(--adm-s5);
+}
+
+.adm-card {
+  padding: var(--adm-s5);
+}
+
+.content-editor {
+  padding: var(--adm-s5);
+  gap: var(--adm-s4);
+}
+
+.step {
+  padding: var(--adm-s5);
+}
+
+.step[aria-current='step'] {
+  border: 1px solid var(--adm-line);
+  padding: var(--adm-s5);
+}
+
+.step__mark {
+  border-width: 1.5px;
+  border-color: var(--adm-primary);
+  color: var(--adm-link);
+}
+
+.step[data-done='true'] .step__mark {
+  background: var(--adm-primary);
+}
+
+.step__now {
+  background: var(--adm-primary-wash);
+  color: var(--adm-primary-deep);
+}
+
+.row {
+  border-color: var(--adm-line);
+  border-radius: var(--adm-radius-sm);
+  background: var(--adm-surface);
+}
+
+/* Dividers: 1 px line, inset 24 inside a card. */
+.adm-divider {
+  height: 1px;
+  margin: var(--adm-s4) var(--adm-s5);
+  border: 0;
+  background: var(--adm-line);
+}
+
+/* A long list scrolls inside its card with a soft fade at its foot; the header and the bar stay. */
+.adm-scroll {
+  max-height: min(60vh, 560px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  mask-image: linear-gradient(to bottom, var(--adm-ink) calc(100% - var(--adm-s5)), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, var(--adm-ink) calc(100% - var(--adm-s5)), transparent);
+  padding-bottom: var(--adm-s5);
+}
+
+/* ---- Controls ------------------------------------------------------------------------------ */
+.btn {
+  border-color: var(--adm-line-strong);
+  border-radius: var(--adm-radius-sm);
+  background: var(--adm-surface);
+  color: var(--adm-ink);
+  font-weight: var(--fw-semibold);
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--adm-primary-wash);
+  border-color: var(--adm-line-strong);
+}
+
+.btn--primary {
+  background: var(--adm-primary);
+  border-color: var(--adm-primary);
+  color: var(--adm-on-deep);
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: var(--adm-primary-deep);
+  border-color: var(--adm-primary-deep);
+  filter: none;
+}
+
+.btn--danger {
+  color: var(--adm-danger-ink);
+  border-color: var(--adm-bad-line);
+}
+
+.btn--danger:hover:not(:disabled) {
+  background: var(--adm-danger-wash);
+  border-color: var(--adm-danger);
+}
+
+.btn--quiet {
+  border-color: transparent;
+  background: transparent;
+  color: var(--adm-link);
+}
+
+.input,
+.select,
+.color,
+.login__pin,
+body.admin textarea {
+  border-color: var(--adm-line-strong);
+  border-radius: var(--adm-radius-sm);
+  background-color: var(--adm-surface);
+  color: var(--adm-ink);
+}
+
+.input:hover,
+.select:hover {
+  border-color: var(--adm-ink-2);
+}
+
+.field {
+  gap: 6px;
+}
+
+/* Prompt 40: every field's label starts where the field's words do (its 1 px border and 12 px padding in), not at the rounded edge; one rule for
+ * every label over a field on the admin page (filters, editors, dialogs). The words stay 16 px (body text never under 16 px). */
+.field__label {
+  padding-inline-start: var(--adm-field-inset);
+  font-size: var(--adm-fs-body);
+  font-weight: var(--fw-semibold);
+  color: var(--adm-ink);
+}
+
+/* Prompt 41: words in the primary's shade (#1F7009), which is 4.5:1 or better on the page, a stripe and a wash as well as on a card. */
+body.admin a:not(.btn) {
+  color: var(--adm-link);
+}
+
+/* ---- Chips: an icon and a word, never a dot alone ------------------------------------------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--adm-s1);
+  min-height: 28px;
+  padding: 0 var(--adm-s3) 0 var(--adm-s2);
+  border-radius: 999px;
+  background: var(--adm-idle-bg);
+  box-shadow: inset 0 0 0 1px var(--adm-line); /* the neutral chip is --adm-surface-2, nearly white: its edge shows it */
+  color: var(--adm-idle-ink);
+  font-size: var(--adm-fs-body);
+  font-weight: var(--fw-semibold);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* In a row (a question's type), a chip is as tall as its words. */
+.row__main .chip {
+  min-height: 0;
+  padding-block: var(--adm-s1);
+}
+
+.chip .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.chip--ok { background: var(--adm-ok-wash); box-shadow: none; color: var(--adm-ok-ink); }
+.chip--warn { background: var(--adm-warn-wash); box-shadow: none; color: var(--adm-warn-ink); }
+.chip--danger { background: var(--adm-danger-wash); box-shadow: none; color: var(--adm-danger-ink); }
+.chip--info { background: var(--adm-info-wash); box-shadow: none; color: var(--adm-info-ink); }
+.chip--primary { background: var(--adm-primary-wash); box-shadow: none; color: var(--adm-primary-deep); }
+/* Prompt 41: a status chip's icon is in its status colour (3:1 or better on its wash); the word stays the darker ink. */
+.chip--ok .icon { color: var(--adm-ok); }
+.chip--warn .icon { color: var(--adm-warn); }
+.chip--danger .icon { color: var(--adm-danger); }
+.chip--info .icon { color: var(--adm-info); }
+
+.pill {
+  background: var(--adm-idle-bg);
+  color: var(--adm-idle-ink);
+}
+
+.pill--unused { background: var(--adm-info-wash); color: var(--adm-info-ink); }
+.pill--used,
+.pill--completed,
+.pill--live { background: var(--adm-ok-wash); color: var(--adm-ok-ink); }
+.pill--expired,
+.pill--unreadable { background: var(--adm-danger-wash); color: var(--adm-danger-ink); }
+.pill--in-progress,
+.pill--archived { background: var(--adm-warn-wash); color: var(--adm-warn-ink); }
+
+/* ---- Messages: what happened and what to do, in ink on a wash, with its icon ----------------- */
+.notice {
+  border-radius: var(--adm-radius-sm);
+  background: var(--adm-warn-wash);
+  color: var(--adm-ink);
+}
+
+.adm-message {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--adm-s3);
+  padding: var(--adm-s3) var(--adm-s4);
+  border-radius: var(--adm-radius-sm);
+  background: var(--adm-info-wash);
+  color: var(--adm-ink);
+}
+
+.adm-message > .icon {
+  color: var(--adm-info);
+}
+
+.adm-message--error { background: var(--adm-danger-wash); }
+.adm-message--error > .icon { color: var(--adm-danger); }
+.adm-message--warn { background: var(--adm-warn-wash); }
+.adm-message--warn > .icon { color: var(--adm-warn); }
+.adm-message--ok { background: var(--adm-ok-wash); }
+.adm-message--ok > .icon { color: var(--adm-ok); }
+
+body.admin .error {
+  color: var(--adm-danger-ink);
+}
+
+.toast {
+  border-radius: var(--adm-radius-sm);
+  background: var(--adm-ink);
+}
+
+.toast--error {
+  background: var(--adm-danger-ink);
+}
+
+/* ---- Empty states: a muted icon, one sentence, one action ------------------------------------ */
+.adm-empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--adm-s3);
+  padding: var(--adm-s7) var(--adm-s5);
+  text-align: center;
+  color: var(--adm-ink-2);
+}
+
+.adm-empty > .icon {
+  width: 32px;
+  height: 32px;
+  color: var(--adm-subtle);
+}
+
+.adm-empty p {
+  margin: 0;
+}
+
+/* ---- Loading: skeleton lines in the line colour, not spinners --------------------------------- */
+.adm-skeleton {
+  display: grid;
+  gap: var(--adm-s3);
+}
+
+.adm-skeleton > span {
+  display: block;
+  height: var(--adm-s4);
+  border-radius: var(--adm-radius-bar);
+  background: var(--adm-line);
+}
+
+.adm-skeleton > span:nth-child(2n) {
+  width: 72%;
+}
+
+.adm-skeleton > span:nth-child(3n) {
+  width: 48%;
+}
+
+/* ---- Folded sections ---------------------------------------------------------------------- */
+.adm-fold > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--adm-s2);
+  min-height: var(--target-min);
+  cursor: pointer;
+  list-style: none;
+  font-weight: var(--fw-semibold);
+}
+
+.adm-fold > summary::-webkit-details-marker {
+  display: none;
+}
+
+.adm-fold > summary .icon:first-child {
+  transition: transform var(--motion-duration-cell) var(--motion-ease-standard);
+}
+
+.adm-fold[open] > summary .icon:first-child {
+  transform: rotate(90deg);
+}
+
+.adm-fold__summary {
+  color: var(--adm-ink-2);
+  font-weight: var(--fw-regular);
+}
+
+/* ---- Dialogs: title, one sentence, fields, then actions right-aligned (primary last) --------- */
+.adm-dialog {
+  border-radius: var(--adm-radius);
+  background: var(--adm-surface);
+  color: var(--adm-ink);
+  box-shadow: var(--adm-shadow-dialog);
+}
+
+.adm-dialog::backdrop,
+.preview-dialog::backdrop,
+.dialog::backdrop {
+  background: var(--adm-scrim);
+}
+
+.adm-dialog__body {
+  gap: var(--adm-s4);
+  padding: var(--adm-s5);
+}
+
+.adm-dialog__body h2 {
+  font-size: var(--adm-fs-title);
+  line-height: var(--adm-lh-title);
+}
+
+.dialog__actions,
+.adm-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--adm-s2);
+}
+
+/* ---- Bars and progress: left-to-right gradients, radius 6, on a line track -------------------- */
+.adm-meter {
+  display: block;
+  height: 12px;
+  overflow: hidden;
+  border-radius: var(--adm-radius-bar);
+  background: var(--adm-line);
+}
+
+.adm-meter > span {
+  display: block;
+  height: 100%;
+  border-radius: var(--adm-radius-bar);
+  background: var(--adm-grad-green);
+}
+
+.adm-meter--teal > span { background: var(--adm-grad-teal); }
+.adm-meter--amber > span { background: var(--adm-grad-amber); }
+.adm-meter--rose > span { background: var(--adm-grad-rose); }
+.adm-meter--slate > span { background: var(--adm-grad-slate); }
+
+/* ---- The sticky bottom bar: 64 px, context on the left, one primary and one secondary on the right ---- */
+.adm-bar {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 8;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--adm-s4);
+  min-height: calc(var(--adm-bar-height) + env(safe-area-inset-bottom, 0px));
+  /* (Prompt 39: the page container's edges, so its buttons end on the content's right edge.) */
+  padding: var(--adm-s2) max(var(--adm-page-pad), calc((100% - var(--adm-page-max)) / 2 + var(--adm-page-pad)), env(safe-area-inset-right, 0px)) calc(var(--adm-s2) + env(safe-area-inset-bottom, 0px)) max(var(--adm-page-pad), calc((100% - var(--adm-page-max)) / 2 + var(--adm-page-pad)), env(safe-area-inset-left, 0px));
+  border-top: 1px solid var(--adm-line);
+  background: var(--adm-surface);
+  box-shadow: var(--adm-shadow-up);
+}
+
+/* A field the keyboard moves to stops above the bar, never under it (only where there is a bar: elsewhere a control near the foot of the window
+   would scroll the page for nothing). */
+html:has(.adm-bar) {
+  scroll-padding-bottom: calc(var(--adm-bar-height) + var(--adm-s4));
+}
+
+/* An iPad's keyboard: the bar rides above it (lib/admin/sticky-bar.ts writes how much the keyboard covers). */
+.adm-bar {
+  bottom: var(--adm-keyboard, 0px);
+}
+
+.adm-bar__context,
+.shell__body .adm-bar p.adm-bar__context {
+  max-width: none;
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--adm-s2);
+  min-width: 0;
+  margin: 0;
+  color: var(--adm-ink);
+  font-weight: var(--fw-semibold);
+}
+
+.adm-bar__context > .icon {
+  color: var(--adm-primary);
+}
+
+.adm-bar__context[data-tone='warn'] > .icon { color: var(--adm-warn); }
+.adm-bar__context[data-tone='danger'] > .icon { color: var(--adm-danger); }
+
+.adm-bar__actions {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--adm-s2);
+}
+
+@media (max-width: 899px) {
+  .adm-bar {
+    /* Narrower, but never into a phone's notch or rounded corner. */
+    padding-inline: max(var(--adm-s4), env(safe-area-inset-left, 0px)) max(var(--adm-s4), env(safe-area-inset-right, 0px));
+  }
+}
+
+@media print {
+  .adm-bar {
+    display: none;
+  }
+}
+
+/* ---- The Danger area: last in its card, set apart ----------------------------------------- */
+.adm-danger,
+.card__foot[data-danger] {
+  display: grid;
+  gap: var(--adm-s3);
+  margin-top: var(--adm-s5);
+  padding: var(--adm-s4);
+  border-radius: var(--adm-radius-sm);
+  background: var(--adm-danger-wash);
+}
+
+.adm-danger h4,
+.card__foot[data-danger] h4 {
+  display: flex;
+  align-items: center;
+  gap: var(--adm-s2);
+  margin: 0;
+  font-size: var(--adm-fs-h3);
+  color: var(--adm-danger-ink);
+}
