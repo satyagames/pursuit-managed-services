@@ -9,11 +9,12 @@
   import { errorText } from '../lib/admin/session-notice.js';
   import { focusHeading } from '../lib/common/focus.js';
   import { PER_PAGE, pageRows, pagerState } from '../lib/common/paging.js';
-  import Pager from './Pager.svelte';
+  import Pager from './ui/Pager.svelte';
   import { can, canView } from '../lib/access/can.js';
   import { readDashboard, rebuildSummaries } from '../lib/admin/session-summaries.js';
   import { BASELINES } from '../lib/results/index-math.js';
   import Icon from './Icon.svelte';
+  import PageHead from './ui/PageHead.svelte';
   import { SPANS, dashboardFileName, dashboardOf, defaultFilters, emptyStateOf, filterOptions, rebuildQuestion, reportCsv, shiftWords } from '../lib/results/dashboard-model.js';
   import { METRICS } from '../lib/results/metric-words.js';
   import { readQueries, reachOf, sessionsFor } from '../lib/access/scope.js';
@@ -177,11 +178,9 @@
   <ReportingSettings {access} onBack={closeSettings} onSaved={() => void load()} {onToast} />
 {:else}
 <section class="panel dash" aria-busy={loading || Boolean(rebuilding)} aria-labelledby="dash-title">
-  <header class="panel__head">
-    <div>
-      <h2 id="dash-title" bind:this={heading} tabindex="-1">Leadership dashboard</h2>
-      <p class="muted">Each figure comes from the sessions' summaries, written when a session ends. Press i beside a figure to see how it is worked out.</p>
-    </div>
+  <PageHead id="dash-title" title="Leadership dashboard" focusable bind:heading
+    description="Each figure comes from the sessions' summaries, written when a session ends. Press i beside a figure to see how it is worked out.">
+    {#snippet actions()}
     <div class="dash__actions">
       {@render viewSwitch?.()}
       <button class="btn btn--small" type="button" onclick={saveView}>Save this view</button>
@@ -189,7 +188,8 @@
       <button class="btn btn--small btn--primary" type="button" onclick={exportReport} disabled={board.empty}>Export report</button>
       {#if maySettings}<button class="btn btn--small" id="dash-settings" type="button" onclick={() => { settingsOpen = true; }}>Reporting settings</button>{/if}
     </div>
-  </header>
+    {/snippet}
+  </PageHead>
 
   {#if loading}<p role="status">Loading the dashboard...</p>
   {:else if error}<p class="error" role="alert">{error}</p>

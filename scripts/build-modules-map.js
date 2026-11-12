@@ -30,6 +30,7 @@ export const PURPOSE = {
   'migration/src/lib/motion': 'The participant screens\' motion, behind one door (`motion.ts`): the plan by kind of question and part of a screen, the tokens and shapes (CSS), the level and the governor.',
   'migration/src/lib/setup': 'The Setup page\'s own modules: the plan and Create, Mark the site as ready, the admins, the seed-file import, the sample clients and their pictures, the self-test\'s probes.',
   'migration/src/admin': 'The admin page\'s screens (Svelte): the five tabs, Brand Studio, dialogs, the Live display, the print sheet, the report buttons.',
+  'migration/src/admin/ui': 'The admin\'s shared pieces (Prompt 44), each used by three screens or more: a screen\'s title row (`PageHead`), a fold (`Fold`), the confirm dialog, the sticky bar, the pager, the breadcrumb.',
   'migration/src/admin/charts': 'The Results charts, drawn by hand in HTML and SVG (no chart library): the card, bars, the scale, the split bar, words, names, the table view, the tooltip.',
   'migration/src/components': 'The participant page\'s building blocks (Svelte): the shell, pills, buttons, the hero plate, tiles, the progress bar, the sound switch.',
   'migration/src/pager': 'The pager: one question per screen, its answers, and an activity\'s completion screen.',

@@ -1795,11 +1795,11 @@ against them at 1366 by 650, 1920 by 950 and 683 by 700, and `admin-explains.spe
 2. **Name the thing being changed.** A form, panel or dialog's title says the verb and the object, with the owner: "Add a session to Kroger", "Edit
    client details: Kroger", "Add a team member to Kroger", "Remove Admin from Mathur, Pulkit?". Its buttons repeat the verb: "Add session", "Save
    client", "Save brand", "Save question", "Save activity"; never a bare Save, OK or Submit.
-3. **Show where you are.** Inside a client, a person or a part of Content, a breadcrumb (`admin/Breadcrumb.svelte`) names the way there, every part
+3. **Show where you are.** Inside a client, a person or a part of Content, a breadcrumb (`admin/ui/Breadcrumb.svelte`) names the way there, every part
    but the last a button back.
 4. **Show the steps** only where a task has an order (Guests and QR): numbered, the current one marked in words ("Do this now") and with its border,
    a done one with a check and a line of what was done; a step that cannot work yet is disabled with its reason beside it (aria-describedby).
-5. **Fold what is not the main job** (`admin/Fold.svelte`): a header button with aria-expanded and aria-controls (chevron, icon, title, a count or
+5. **Fold what is not the main job** (`admin/ui/Fold.svelte`): a header button with aria-expanded and aria-controls (chevron, icon, title, a count or
    one-line summary, Show or Hide in words), the panel `hidden` while closed so Tab skips it. It starts closed on every visit: open or closed is held
    in the component alone, never stored. Folding reads nothing new; what is inside is read as it was.
 6. **Icons** (`admin/Icon.svelte`, one 24 px grid, round caps, one of each; since Prompt 38 a 1.75 stroke and the table in `admin/icons.js`, see "Rules from Prompt 38"): plus adds, the pencil edits, the round
@@ -1941,7 +1941,7 @@ against them at 1366 by 650, 1920 by 950 and 683 by 700, and `admin-explains.spe
   types (`radio`, `checks`, `toggle`, `slider`, `podium`, `message`, `matrix`), Move `arrow-up` and `arrow-down` (no more ▲ ▼), and readiness: a
   blocker `alert-octagon`, a warning `alert-triangle`, ready `check-circle`, information `info`, each a different shape. `scripts/test-admin-icons.js`
   holds the table, the meanings and the stroke. An icon beside a word is `aria-hidden`; an icon alone is a button named in words.
-- **The sticky bar** (`admin/StickyBar.svelte`): 64 px at the foot of the window, where the screen stands on the left ("Ready to go live", "Changes
+- **The sticky bar** (`admin/ui/StickyBar.svelte`): 64 px at the foot of the window, where the screen stands on the left ("Ready to go live", "Changes
   not saved") and exactly one primary action and at most one secondary on the right. A destructive action is never in it. The page leaves room
   under its content; a focused field stops above it (`scroll-padding-bottom`); on an iPad it rides above the keyboard (`lib/admin/sticky-bar.ts`
   follows the visual viewport). Today (Go live, or Show the wall once live), Add session (Create session), Brand (Save brand) and the QR sheet

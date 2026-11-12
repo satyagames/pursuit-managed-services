@@ -11,7 +11,7 @@
   import { dayWords, reachWords } from '../lib/access/people.js';
   import { historyOf, loseWords, removeRole, setExtras, setStatus } from '../lib/access/people-ops.js';
   import { errorText } from '../lib/admin/session-notice.js';
-  import ConfirmDialog from './ConfirmDialog.svelte';
+  import ConfirmDialog from './ui/ConfirmDialog.svelte';
   import GiveAccess from './GiveAccess.svelte';
   import SiteAccessHandoff from './SiteAccessHandoff.svelte';
   import EmailBox from './EmailBox.svelte';
@@ -19,8 +19,8 @@
   import { MANAGED_GROUPS, desiredGroups, groupIds } from '../lib/access/site-access.js';
   import Icon from './Icon.svelte';
   import IconButton from './IconButton.svelte';
-  import Breadcrumb from './Breadcrumb.svelte';
-  import Fold from './Fold.svelte';
+  import Breadcrumb from './ui/Breadcrumb.svelte';
+  import Fold from './ui/Fold.svelte';
   import RoleSwitch from './RoleSwitch.svelte';
 
   type Row = { key: string; name: string; email: string; status: string; assignments: any[] };

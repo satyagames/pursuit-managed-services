@@ -7,7 +7,8 @@
   // shown as labels under its name.
   import { onMount, type Snippet } from 'svelte';
   import Icon from './Icon.svelte';
-  import Breadcrumb from './Breadcrumb.svelte';
+  import PageHead from './ui/PageHead.svelte';
+  import Breadcrumb from './ui/Breadcrumb.svelte';
   import * as dataService from '../lib/data/dataService.js';
   import { focusHeading } from '../lib/common/focus.js';
   import { errorText } from '../lib/admin/session-notice.js';
@@ -105,13 +106,10 @@
     <button class="btn btn--back" type="button" onclick={onBack}><Icon name="arrow-left" /> Back to clients</button>
   </div>
   <Breadcrumb parts={crumbs} />
-  <header class="panel__head">
-    <div>
-      <h2 id="workspace-heading" bind:this={heading} tabindex="-1"><Icon name="building" />{client.name}</h2>
-      <p class="muted">Plan this client's sessions and choose who runs them; a Producer starts a session on Today.</p>
-      <ClientTagChips client={shown} />
-    </div>
-  </header>
+  <PageHead id="workspace-heading" icon="building" title={client.name} focusable bind:heading
+    description="Plan this client's sessions and choose who runs them; a Producer starts a session on Today.">
+    {#snippet extra()}<ClientTagChips client={shown} />{/snippet}
+  </PageHead>
   {#if loading}<p class="muted" role="status">Loading sessions and team...</p>
   {:else if error}<p class="error" role="alert">{error}</p>
   {:else}

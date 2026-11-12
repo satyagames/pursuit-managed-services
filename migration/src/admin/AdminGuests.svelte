@@ -8,9 +8,10 @@
   import * as dataService from '../lib/data/dataService.js';
   import { PER_PAGE, pageRows, pagerState } from '../lib/common/paging.js';
   import { focusHeading } from '../lib/common/focus.js';
-  import Pager from './Pager.svelte';
+  import Pager from './ui/Pager.svelte';
   import Icon, { type IconName } from './Icon.svelte';
-  import Fold from './Fold.svelte';
+  import PageHead from './ui/PageHead.svelte';
+  import Fold from './ui/Fold.svelte';
   import { loadGuestState, refreshGuestState, type GuestState, type GuestToken, type GuestVisitor } from '../lib/admin/adminData.js';
   import { copyText, participantPageUrl, qrImage } from '../lib/admin/admin-links.js';
   import { isAccessDenied } from '../lib/access/access-denied.js';
@@ -325,10 +326,9 @@
 </script>
 
 <section class="panel guests-panel" aria-busy={loading || busy}>
-  <header class="panel__head">
-    <div><h2><Icon name="qr" />Guests and QR codes</h2><p class="muted">Add the people you expect, make a QR code for each, then print or share them.</p></div>
-    {#if session && guestMode}<div class="panel__actions"><button class="btn" type="button" onclick={() => void refresh()} disabled={busy}>Refresh</button></div>{/if}
-  </header>
+  <PageHead icon="qr" title="Guests and QR codes" description="Add the people you expect, make a QR code for each, then print or share them.">
+    {#snippet actions()}{#if session && guestMode}<div class="panel__actions"><button class="btn" type="button" onclick={() => void refresh()} disabled={busy}>Refresh</button></div>{/if}{/snippet}
+  </PageHead>
   {#if loading}<div class="adm-card adm-skeleton" aria-hidden="true"><span></span><span></span><span></span><span></span></div><p class="sr-only" role="status">Loading Guests and QR...</p>
   {:else if elsewhere}<p class="notice" role="status" data-testid="guests-elsewhere">A session you have not been given is live. Guests and QR works on the live session of the clients and sessions you hold.</p>
   {:else if error && !session}<p class="error" role="alert">{error}</p>

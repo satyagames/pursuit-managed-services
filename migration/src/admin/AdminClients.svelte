@@ -5,8 +5,9 @@
   import { PER_PAGE, hashWithPage, pageOfHash, pageRows, pagerState } from '../lib/common/paging.js';
   import { focusHeading } from '../lib/common/focus.js';
   import { heldRead, holdRead } from '../lib/admin/list-cache.js';
-  import Pager from './Pager.svelte';
+  import Pager from './ui/Pager.svelte';
   import Icon from './Icon.svelte';
+  import PageHead from './ui/PageHead.svelte';
   import MoreMenu from './MoreMenu.svelte';
   import { embeddedAssetUrl } from '../lib/brand/assets.js';
   import { viewById } from '../lib/admin/admin-content-views.js';
@@ -356,13 +357,10 @@
 <!-- Prompt 39: the title and Add client on one row above both columns; with a client open, the list is 4 of the 12 columns (at least 340 px)
      and its sessions and team 8, both on one top line. -->
 <div class="clients" class:clients--open={workspace !== null}>
-  <header class="panel__head clients__head">
-    <div>
-      <h2 bind:this={clientsHeading} tabindex="-1"><Icon name="building" />Clients</h2>
-      <p class="muted">The clients you visit: open one to plan its sessions and choose its team, or open its Brand to set its look.</p>
-    </div>
-    <button class="btn btn--primary btn--with-icon" type="button" onclick={() => openEditor(null)} disabled={busy}><Icon name="plus" /> Add client</button>
-  </header>
+  <PageHead headClass="clients__head" icon="building" title="Clients" focusable bind:heading={clientsHeading}
+    description="The clients you visit: open one to plan its sessions and choose its team, or open its Brand to set its look.">
+    {#snippet actions()}<button class="btn btn--primary btn--with-icon" type="button" onclick={() => openEditor(null)} disabled={busy}><Icon name="plus" /> Add client</button>{/snippet}
+  </PageHead>
 <section class="panel clients-panel clients__list" class:adm-sticky-col={workspace !== null} bind:this={listBox} aria-busy={loading || busy} aria-label="Clients">
   {#if loading}<div class="adm-card adm-skeleton" aria-hidden="true"><span></span><span></span><span></span><span></span></div><p class="sr-only" role="status">Loading clients...</p>
   {:else if error}<p class="error" role="alert">{error}</p>
@@ -437,7 +435,9 @@
     align-items: start;
   }
 
-  .clients > * {
+
+  .clients > *,
+  .clients > :global(.clients__head) {
     grid-column: 1 / -1;
     min-width: 0;
   }

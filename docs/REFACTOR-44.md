@@ -48,7 +48,7 @@ The 15 largest source files: `pager/MatrixRating.svelte` 1,497; `admin.css` 1,26
 - [x] **44b** Scripts: one `perf` and one `console:errors`; `scripts/test-package-scripts.js`; `npm test` from `scripts/tests.manifest.json`.
 - [x] **44c** Boundaries: the layers written down; a door, migration/src/preview/index.ts; scripts/test-boundaries.js.
 - [x] **44d** One tab registry (lib/admin/tabs.js) and the router (lib/admin/router.ts).
-- [ ] **44e** The admin's shared primitives (admin/ui/), after an inventory.
+- [x] **44e** The admin's shared primitives (admin/ui/), after an inventory.
 - [ ] **44f** The oversized files split along their seams.
 - [ ] **44g** The admin's styles in cascade layers under styles/admin/; tokens only for colour.
 - [ ] **44h** scripts/check-unused-exports.js and the dead exports.
@@ -86,15 +86,47 @@ identity popover's "What you can do" keeps its own order of the role matrix's mo
 Pages: the participant page and Setup the same bytes; the admin page 719,977 B (pms-43: 719,982 B). Pictures: no difference. In Chromium,
 `content-brand`, `role-scoping`, `identity-chip` and the Menu test of `admin-full-width` (35 tests) pass.
 
+**44e.** The inventory (markup or a component written in three admin screens or more), and what became of each:
+
+| Pattern | Where | Done |
+|---|---|---|
+| A screen's title row: icon, h2, a line of words, actions | 12 screens | `admin/ui/PageHead.svelte`, in 9 (Today, Clients, Content, Guests and QR, Results, a client's page, the Leadership dashboard, Reporting settings, History of changes); People and a person's page keep their own, because their sheets style the row themselves (`.people__head`, `.detail__head h2`), which a child component's markup would not receive |
+| Confirm dialog | 7 screens | already one component: moved to `admin/ui/ConfirmDialog.svelte` |
+| Pager | 5 screens | moved to `admin/ui/Pager.svelte` |
+| Sticky bar | 4 screens | moved to `admin/ui/StickyBar.svelte` |
+| Breadcrumb | 4 screens | moved to `admin/ui/Breadcrumb.svelte` |
+| Fold (disclosure) | 3 screens | moved to `admin/ui/Fold.svelte` |
+| Other dialogs (`<dialog>` of their own) | 8 files | not extracted: each has its own class, sheet and closing rule (`oncancel` held while busy, or `onclose`), so one frame would change one of them |
+| Segmented controls | Today's settings (radiogroup), the wall's look (pressed buttons), Results' view switch, Content's views (tabs) | not extracted: four different roles and keys; one control would change what a screen reader hears |
+| Chip | 5 uses in 5 files, each a different look | not extracted |
+| Empty state | 5 uses in 4 files, different words and shapes | not extracted |
+| Field with label, master and detail | written as classes of the sheets, not as markup | left to the sheets (44g) |
+| Disclosure toggles (`aria-expanded`) | 21 in 16 files: menus, popovers, the Change / Hide toggle, Fold | Fold is the one disclosure; the rest are menus and popovers, other patterns |
+
+`PageHead` draws the markup each screen wrote (`header.panel__head`, the words in its first div, the heading then the line, the actions after),
+so admin.css's rules reach it as before; a screen's own scoped rule does not reach a child component's element, and the one that did (Clients'
+`.clients > *`, which spans the title row across the grid) now names it (`.clients > :global(.clients__head)`). The picture comparison found
+that (the Clients screen 72 px taller) before it was fixed. `scripts/migration-tests/admin-ui.spec.ts` holds the title row's markup and focus
+on every screen; it passes on the `pms-43` pages and on these. `scripts/test-foundation.js`, which counts the files with a heading focused by
+script (23), reads `<PageHead ... focusable>` as such a heading, so it keeps its reach (it failed at 18 until it did). Icons: the two inline SVGs
+of `AssetUploader.svelte` and `CropDialog.svelte` are not icons (see "Found, not changed"). Pages: the participant page and Setup the same bytes;
+the admin page 719,980 B. Pictures: no difference.
+
 ## Found, not changed
 
 - `scripts/test-identity-words.js` (Prompt 32's words beside the person's name, 30 tests, all passing) was in no npm script, although
   `docs/DECISIONS.md` names it as what enforces that decision. It is listed in the manifest's `excluded` with that reason, so that npm test runs
   the same files as before; adding it to a group is the owner's call.
 - A race between two suites of `npm test`, seen once in this work: `scripts/test-motion-switch.js` writes and removes
-  `migration/src/lib/brand/.client-theme.pms14.tmp.js` while `scripts/test-data-modules.js` walks the tree, which then fails on a file that has
+  a copy of `client-theme.js` beside it (`.client-theme.pms14.tmp.js`) while `scripts/test-data-modules.js` walks the tree, which then fails on a file that has
   just gone (ENOENT). It is older than this prompt and passes when run again. `scripts/test-boundaries.js` skips files whose names start with a dot,
   so it cannot meet it; the two older suites were left as they are (a fix there is a change to tests that guard live behaviour).
+- The two inline SVGs outside `admin/Icon.svelte` (`AssetUploader.svelte`, `CropDialog.svelte`) are the crop guide: an ellipse or a rectangle
+  drawn from the picture slot's own geometry in a 0-to-1 box stretched over the picture. `Icon.svelte` draws a fixed path in a 24 px box, so
+  drawing the guide with it would change what is drawn. They are left; the guide is in two files only, under the three-uses rule.
+- Two tests of `scripts/migration-tests/admin-explains.spec.ts` fail in Chromium on the `pms-43` pages as on these: "every tab: ... the main
+  action is green" (Today) and "Content: ... the chosen part is on the primary wash". They pinned colours that Prompt 41's palette changed; they
+  were left as they are.
 
 ## Chosen not to do
 - **Moving the eleven allowed modules to their right layer** (for example the stored formats of `confidence-check.js` and `aop-answer.js` to

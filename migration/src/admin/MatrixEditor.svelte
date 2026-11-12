@@ -1,7 +1,7 @@
 <script lang="ts">
   import { AOP_LIMITS, DIRECTIONS } from '../lib/schema/aop-rules.js';
   import { editingNotice, newCriterion, parsePastedRows, rowsLine } from '../lib/admin/aop-editor.js';
-  import ConfirmDialog from './ConfirmDialog.svelte';
+  import ConfirmDialog from './ui/ConfirmDialog.svelte';
   import Icon from './Icon.svelte';
 
   // The part of a question's editor that an Art of the Possible question has instead of options (Prompt 23, board 16): its criteria and its sub-processes. The rows are the

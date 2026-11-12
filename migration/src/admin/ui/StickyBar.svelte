@@ -4,8 +4,8 @@
   // in its card's Danger area. The page leaves room under its content for it (admin-look.css), and on an iPad it rides above the keyboard
   // (lib/admin/sticky-bar.ts). It is a labelled group (a region would ask every part of the page to be one), so a screen reader names it.
   import { onMount } from 'svelte';
-  import Icon, { type IconName } from './Icon.svelte';
-  import { followKeyboard } from '../lib/admin/sticky-bar.js';
+  import Icon, { type IconName } from '../Icon.svelte';
+  import { followKeyboard } from '../../lib/admin/sticky-bar.js';
 
   type Action = { label: string; icon?: IconName; onclick: () => void; disabled?: boolean; describedBy?: string; testid?: string };
 

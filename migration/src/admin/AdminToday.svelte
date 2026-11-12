@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
   import Icon from './Icon.svelte';
+  import PageHead from './ui/PageHead.svelte';
   import {
     POLL_MS, blockedReason, evaluateReadiness, goLive, isCalendarDate, liveStatus, loadReadinessInputs, heldSchemaOf, holdSchema, loadToday, localDate, makeSessionLive,
     needsSwitchConfirmation, pollToday, startPlannedSession, switchDialog,
@@ -12,14 +13,14 @@
   import {
     failureText as failed, goLiveLabel, goLiveWhy, levelCounts, otherSessionsOf, pickableClients, readinessSummary, sinceText, upsertSession as upsert,
   } from '../lib/admin/today-view.js';
-  import ConfirmDialog from './ConfirmDialog.svelte';
+  import ConfirmDialog from './ui/ConfirmDialog.svelte';
   import TodayControls from './TodayControls.svelte';
   import TodayGoLive from './TodayGoLive.svelte';
   import TodayReadiness from './TodayReadiness.svelte';
   import TodaySessions from './TodaySessions.svelte';
   import TodayShare from './TodayShare.svelte';
   import TodayStatus from './TodayStatus.svelte';
-  import StickyBar from './StickyBar.svelte';
+  import StickyBar from './ui/StickyBar.svelte';
   import { stickyIfFits } from '../lib/admin/sticky-fit.js';
   import type { IconName } from './Icon.svelte';
   import { writeSummary } from '../lib/admin/session-summaries.js';
@@ -482,9 +483,7 @@
 </script>
 
 <section class="today" aria-busy={!loaded || busy}>
-  <header class="panel__head">
-    <div><h2><Icon name="calendar-check" />Today</h2><p class="muted">Pick the client and the date, check it is ready, then Go live from the bar below.</p></div>
-  </header>
+  <PageHead icon="calendar-check" title="Today" description="Pick the client and the date, check it is ready, then Go live from the bar below." />
 
   {#if !loaded}
     <div class="today__grid" aria-hidden="true">

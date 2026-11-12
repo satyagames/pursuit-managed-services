@@ -5,7 +5,7 @@
   // bindable, so a screen can open it when a deep link or a search reaches something inside. What is inside loads as it did before: folding
   // reads nothing.
   import type { Snippet } from 'svelte';
-  import Icon, { type IconName } from './Icon.svelte';
+  import Icon, { type IconName } from '../Icon.svelte';
 
   let { title, summary = '', icon, open = $bindable(false), testid, children }: {
     title: string;

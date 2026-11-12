@@ -3,7 +3,8 @@
   import { onMount, tick, untrack, type Snippet } from 'svelte';
   import * as dataService from '../lib/data/dataService.js';
   import Icon from './Icon.svelte';
-  import Fold from './Fold.svelte';
+  import PageHead from './ui/PageHead.svelte';
+  import Fold from './ui/Fold.svelte';
   /** (Prompt 33) A session's status in words, not the stored word ("in-progress"). */
   const sessionWord = (status: string | null | undefined) => ({ 'in-progress': 'In progress', 'not-started': 'Not started', completed: 'Ended', planned: 'Planned', scheduled: 'Planned' } as Record<string, string>)[String(status)] ?? (status ? String(status) : 'Status unknown');
   import { restartClientTrack, getSessionResults, removeEmptyVisit } from '../lib/admin/adminData.js';
@@ -19,8 +20,8 @@
   import { focusHeading } from '../lib/common/focus.js';
   import { PER_PAGE, hashWithPage, pageOfHash, pageRows, pagerState } from '../lib/common/paging.js';
   import { RESULTS_INDEX } from '../lib/admin/list-index.js';
-  import Pager from './Pager.svelte';
-  import ConfirmDialog from './ConfirmDialog.svelte';
+  import Pager from './ui/Pager.svelte';
+  import ConfirmDialog from './ui/ConfirmDialog.svelte';
   import ReportExports from './ReportExports.svelte';
   import ConfidenceShift from './ConfidenceShift.svelte';
   import ResultCard from './charts/ResultCard.svelte';
@@ -467,7 +468,10 @@
 
 <section class="panel sessions-panel" aria-busy={loading || busy}>
   <!-- (Prompt 39: one title row: the title and its line on the left; the view switch, Hide names, Refresh and the time on the right.) -->
-  <header class="panel__head results-head"><div><h2 bind:this={pageHeading} tabindex="-1"><Icon name="bar-chart" />Results</h2><p class="muted">How each session went: open one for its charts, the people who took part and the reports for leaders; the live session refreshes every {local ? 'few seconds' : '15 seconds'}.</p></div><div class="results-actions">{@render viewSwitch?.()}{#if mayName}<label class="choice"><input type="checkbox" checked={hideNames} onchange={(event) => onHideNames((event.currentTarget as HTMLInputElement).checked)} /><span>Hide names</span></label>{/if}<button class="btn btn--small" type="button" onclick={() => refreshAll()} disabled={busy}>Refresh</button><span class="muted results-updated" data-testid="results-updated">{updated}</span></div></header>
+  <PageHead headClass="results-head" icon="bar-chart" title="Results" focusable bind:heading={pageHeading}
+    description={`How each session went: open one for its charts, the people who took part and the reports for leaders; the live session refreshes every ${local ? 'few seconds' : '15 seconds'}.`}>
+    {#snippet actions()}<div class="results-actions">{@render viewSwitch?.()}{#if mayName}<label class="choice"><input type="checkbox" checked={hideNames} onchange={(event) => onHideNames((event.currentTarget as HTMLInputElement).checked)} /><span>Hide names</span></label>{/if}<button class="btn btn--small" type="button" onclick={() => refreshAll()} disabled={busy}>Refresh</button><span class="muted results-updated" data-testid="results-updated">{updated}</span></div>{/snippet}
+  </PageHead>
   {#if loading}<div class="adm-card adm-skeleton" aria-hidden="true"><span></span><span></span><span></span><span></span></div><p class="sr-only" role="status">Loading results...</p>
   {:else if error}<p class="error" role="alert">{error}</p>
   {:else if sessionRows.length === 0}<div class="adm-empty"><Icon name="bar-chart" /><p>No sessions yet. Results appear here once a session has gone live on Today.</p></div>
