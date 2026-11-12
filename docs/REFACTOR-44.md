@@ -45,11 +45,27 @@ The 15 largest source files: `pager/MatrixRating.svelte` 1,497; `admin.css` 1,26
 ## The plan and where it stands
 
 - [x] **44a** Baselines: the picture spec, the pages' bytes, the request baselines, the bundle sizes, this file.
-- [ ] **44b** Scripts: one `perf` and one `console:errors`; `scripts/test-package-scripts.js`; `npm test` from `scripts/tests.manifest.json`.
-- [ ] **44c** Boundaries: the layers written down; `migration/src/preview/index.ts`; `scripts/test-boundaries.js`.
-- [ ] **44d** One tab registry (`lib/admin/tabs.js`) and the router (`lib/admin/router.ts`).
-- [ ] **44e** The admin's shared primitives (`admin/ui/`), after an inventory.
+- [x] **44b** Scripts: one `perf` and one `console:errors`; `scripts/test-package-scripts.js`; `npm test` from `scripts/tests.manifest.json`.
+- [ ] **44c** Boundaries: the layers written down; a door, migration/src/preview/index.ts; scripts/test-boundaries.js.
+- [ ] **44d** One tab registry (lib/admin/tabs.js) and the router (lib/admin/router.ts).
+- [ ] **44e** The admin's shared primitives (admin/ui/), after an inventory.
 - [ ] **44f** The oversized files split along their seams.
-- [ ] **44g** The admin's styles in cascade layers under `styles/admin/`; tokens only for colour.
-- [ ] **44h** `scripts/check-unused-exports.js` and the dead exports.
+- [ ] **44g** The admin's styles in cascade layers under styles/admin/; tokens only for colour.
+- [ ] **44h** scripts/check-unused-exports.js and the dead exports.
 - [ ] **44i** The documents.
+
+## Step notes
+
+**44b.** The two `perf` keys and the two `console:errors` keys were the same command each; one of each is kept. `scripts/test-package-scripts.js`
+reads package.json's text, so a key written twice is seen (it failed first on `perf` and `console:errors`). `npm test` is now
+`node scripts/run-tests.js`, which runs in one `node --test` every file of the ten groups of `scripts/tests.manifest.json`: the 115 files of the
+hand-written list, the same 115 (the test compares the two lists, pinned as they were on `pms-43`), and the tests this prompt adds
+(`scripts/test-package-scripts.js` here). The 27 per-area scripts (`test:report`, `test:charts`, ...) read their own suite of the same manifest, and
+their file lists are what they were. Six files are not in npm test, each with its reason in `excluded`: four that build or read a build with
+Vite, the local site's, and `scripts/test-identity-words.js` (see "Found, not changed").
+
+## Found, not changed
+
+- `scripts/test-identity-words.js` (Prompt 32's words beside the person's name, 30 tests, all passing) was in no npm script, although
+  `docs/DECISIONS.md` names it as what enforces that decision. It is listed in the manifest's `excluded` with that reason, so that npm test runs
+  the same files as before; adding it to a group is the owner's call.
